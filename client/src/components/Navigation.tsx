@@ -19,12 +19,12 @@ export default function Navigation() {
   ];
 
   return (
-    <nav className="bg-primary text-primary-foreground sticky top-0 z-50 shadow-md">
+    <nav className="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">
-            <img src={logoImg} alt="RE Data Metrix" className="h-10 w-10" />
-            <span className="font-bold text-xl">RE Data Metrix</span>
+            <img src={logoImg} alt="RE Data Metrix" className="h-16 w-16" />
+            <span className="font-bold text-2xl text-primary">RE Data Metrix</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -33,8 +33,8 @@ export default function Navigation() {
               <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                 <Button
                   variant="ghost"
-                  className={`text-primary-foreground hover:text-accent ${
-                    location === link.href ? "text-accent" : ""
+                  className={`text-foreground hover:text-primary ${
+                    location === link.href ? "text-primary font-semibold" : ""
                   }`}
                 >
                   {link.label}
@@ -52,7 +52,7 @@ export default function Navigation() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-primary-foreground"
+            className="md:hidden text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             data-testid="button-mobile-menu"
           >
@@ -67,8 +67,8 @@ export default function Navigation() {
               <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant="ghost"
-                  className={`w-full justify-start text-primary-foreground hover:text-accent ${
-                    location === link.href ? "text-accent" : ""
+                  className={`w-full justify-start text-foreground hover:text-primary ${
+                    location === link.href ? "text-primary font-semibold" : ""
                   }`}
                 >
                   {link.label}

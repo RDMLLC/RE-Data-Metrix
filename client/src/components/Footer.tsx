@@ -12,13 +12,15 @@ export default function Footer() {
           {/* Company Info */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8" />
-              <span className="font-bold text-lg">RE Data Metrix</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2">
+                <img src={logoImg} alt="RE Data Metrix" className="h-12 w-12" />
+              </div>
+              <div>
+                <div className="font-bold text-xl">RE Data Metrix</div>
+                <div className="text-accent text-sm italic">Turning Terms into Returns</div>
+              </div>
             </div>
-            <p className="text-primary-foreground/80 text-sm mb-2 italic">
-              Turning Terms into Returns
-            </p>
-            <p className="text-primary-foreground/80 text-sm mb-4">
+            <p className="text-primary-foreground/90 mb-4">
               Changing the way real estate investors analyse and fund their deals.
             </p>
             <div className="space-y-2 text-sm text-primary-foreground/80">

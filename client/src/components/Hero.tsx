@@ -19,8 +19,10 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-24">
-        <div className="mb-8 flex justify-center">
-          <img src={logoFullImg} alt="RE Data Metrix - Turning Terms into Returns" className="h-32 md:h-40 w-auto" />
+        <div className="mb-12 flex justify-center">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
+            <img src={logoFullImg} alt="RE Data Metrix - Turning Terms into Returns" className="h-48 md:h-64 w-auto" />
+          </div>
         </div>
         
         <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
