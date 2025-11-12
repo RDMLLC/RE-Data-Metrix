@@ -11,50 +11,66 @@ export default function Hero() {
   };
 
   return (
-    <div className="relative min-h-[600px] lg:min-h-[700px] flex items-center justify-center overflow-hidden">
-      {/* Video Background Placeholder with gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/90">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItaDJWMzRoLTJ6bTAtNHYyaDJ2LTJoLTJ6bS0yIDJoMnYtMmgtMnYyem0wLTJ2LTJoLTJ2Mmgyem0tMiAwaDJ2LTJoLTJ2MnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10"></div>
-      </div>
+    <div className="relative min-h-[600px] lg:min-h-[700px] flex items-center overflow-hidden bg-gradient-to-br from-primary via-primary/95 to-primary/90">
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItaDJWMzRoLTJ6bTAtNHYyaDJ2LTJoLTJ6bS0yIDJoMnYtMmgtMnYyem0wLTJ2LTJoLTJ2Mmgyem0tMiAwaDJ2LTJoLTJ2MnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10"></div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-24">
-        <div className="mb-12 flex justify-center">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
-            <img src={logoFullImg} alt="RE Data Metrix - Turning Terms into Returns" className="h-48 md:h-64 w-auto" />
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Video Placeholder */}
+          <div className="order-2 lg:order-1">
+            <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/40 to-primary/60 backdrop-blur-sm">
+                <div className="text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                    <div className="w-0 h-0 border-l-[20px] border-l-white border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent ml-1"></div>
+                  </div>
+                  <p className="text-white/90 text-lg font-medium">Marketing Video</p>
+                  <p className="text-white/70 text-sm mt-1">Coming Soon</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Text Content */}
+          <div className="order-1 lg:order-2 text-center lg:text-left">
+            <div className="mb-8 flex justify-center lg:justify-start">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
+                <img src={logoFullImg} alt="RE Data Metrix - Turning Terms into Returns" className="h-32 md:h-40 w-auto" />
+              </div>
+            </div>
+            
+            <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+              Changing the way real estate investors{" "}
+              <span className="text-accent">analyse and fund</span> their deals!
+            </h1>
+            
+            <p className="text-lg lg:text-xl text-white/90 mb-8">
+              Connect with lenders, analyze profitability beyond standard tools, and streamline your investment journey with our monthly subscription platform.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <Button
+                size="lg"
+                className="bg-accent text-accent-foreground hover:bg-accent text-lg px-8 py-6"
+                onClick={scrollToForm}
+                data-testid="button-get-started"
+              >
+                Get Early Access
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20 text-lg px-8 py-6"
+                onClick={() => window.location.href = '/about'}
+                data-testid="button-learn-more"
+              >
+                Learn More
+              </Button>
+            </div>
           </div>
         </div>
-        
-        <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-          Changing the way real estate investors{" "}
-          <span className="text-accent">analyse and fund</span> their deals!
-        </h1>
-        
-        <p className="text-xl lg:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
-          Connect with lenders, analyze profitability beyond standard tools, and streamline your investment journey with our monthly subscription platform.
-        </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button
-            size="lg"
-            className="bg-accent text-accent-foreground hover:bg-accent text-lg px-8 py-6"
-            onClick={scrollToForm}
-            data-testid="button-get-started"
-          >
-            Get Early Access
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20 text-lg px-8 py-6"
-            onClick={() => window.location.href = '/about'}
-            data-testid="button-learn-more"
-          >
-            Learn More
-          </Button>
-        </div>
-
-        <div className="mt-16 animate-bounce">
+        <div className="mt-16 text-center animate-bounce">
           <ChevronDown className="h-8 w-8 text-accent mx-auto" />
         </div>
       </div>
