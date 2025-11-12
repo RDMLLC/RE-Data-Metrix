@@ -66,14 +66,14 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-foreground font-medium">
+              <FormLabel className="text-primary-foreground font-medium">
                 Name <span className="text-accent">*</span>
               </FormLabel>
               <FormControl>
                 <Input
                   placeholder="John Doe"
                   {...field}
-                  className="border-border focus:ring-accent"
+                  className="border-white/20 bg-white/10 text-white placeholder:text-white/60 focus:ring-accent"
                   data-testid="input-name"
                 />
               </FormControl>
@@ -87,14 +87,14 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           name="company"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-foreground font-medium">
+              <FormLabel className="text-primary-foreground font-medium">
                 Company <span className="text-accent">*</span>
               </FormLabel>
               <FormControl>
                 <Input
                   placeholder="Your Company LLC"
                   {...field}
-                  className="border-border focus:ring-accent"
+                  className="border-white/20 bg-white/10 text-white placeholder:text-white/60 focus:ring-accent"
                   data-testid="input-company"
                 />
               </FormControl>
@@ -108,7 +108,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-foreground font-medium">
+              <FormLabel className="text-primary-foreground font-medium">
                 Email Address <span className="text-accent">*</span>
               </FormLabel>
               <FormControl>
@@ -116,7 +116,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
                   type="email"
                   placeholder="john@example.com"
                   {...field}
-                  className="border-border focus:ring-accent"
+                  className="border-white/20 bg-white/10 text-white placeholder:text-white/60 focus:ring-accent"
                   data-testid="input-email"
                 />
               </FormControl>
@@ -130,7 +130,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-foreground font-medium">
+              <FormLabel className="text-primary-foreground font-medium">
                 Phone Number (Optional)
               </FormLabel>
               <FormControl>
@@ -138,7 +138,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
                   type="tel"
                   placeholder="(555) 123-4567"
                   {...field}
-                  className="border-border focus:ring-accent"
+                  className="border-white/20 bg-white/10 text-white placeholder:text-white/60 focus:ring-accent"
                   data-testid="input-phone"
                 />
               </FormControl>
@@ -156,12 +156,12 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
-                  className="border-border data-[state=checked]:bg-accent data-[state=checked]:border-accent"
+                  className="border-white/40 bg-white/10 data-[state=checked]:bg-accent data-[state=checked]:border-accent"
                   data-testid="checkbox-consent"
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel className="text-sm text-foreground font-normal cursor-pointer">
+                <FormLabel className="text-sm text-primary-foreground font-normal cursor-pointer">
                   I consent to receive updates and information about RE Data Metrix <span className="text-accent">*</span>
                 </FormLabel>
                 <FormMessage />
@@ -172,11 +172,11 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
 
         <Button
           type="submit"
-          className="w-full bg-primary text-primary-foreground hover:bg-primary"
+          className="w-full bg-accent text-accent-foreground hover:bg-accent"
           size="lg"
           data-testid="button-submit"
         >
-          Join the Waitlist
+          Lock in my Discount
         </Button>
       </form>
     </Form>
