@@ -10,18 +10,31 @@ import { insertLoanProductSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { Link } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { LoanProduct } from "@shared/schema";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
+  const lenderId = "temp-lender-id";
+
+  const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
+    queryKey: ["/api/loan-products", lenderId],
+    queryFn: async () => {
+      const res = await fetch(`/api/loan-products/${lenderId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch loan products");
+      return res.json();
+    },
+  });
 
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/loan-products", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-products", lenderId] });
       toast({
         title: "Product Added",
         description: "Your loan product has been added successfully.",
@@ -50,7 +63,7 @@ export default function LenderLoanProducts() {
       costPerDraw: insertLoanProductSchema.shape.costPerDraw.nullable().optional(),
     })),
     defaultValues: {
-      lenderId: "temp-lender-id",
+      lenderId,
       productName: "",
       newInvestorOk: false,
       minCreditScore: null,
@@ -463,10 +476,72 @@ export default function LenderLoanProducts() {
 
           <Card className="p-8">
             <h2 className="text-2xl font-semibold text-primary mb-6">Your Loan Products</h2>
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No loan products added yet.</p>
-              <p className="mt-2">Use the form above to add your first loan product.</p>
-            </div>
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>Loading loan products...</p>
+              </div>
+            ) : !loanProducts || loanProducts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No loan products added yet.</p>
+                <p className="mt-2">Use the form above to add your first loan product.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {loanProducts.map((product) => (
+                  <Card key={product.id} className="p-6" data-testid={`product-card-${product.id}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-primary" data-testid={`product-name-${product.id}`}>
+                          {product.productName}
+                        </h3>
+                        {!product.isActive && (
+                          <span className="text-sm text-muted-foreground">(Inactive)</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      {product.newInvestorOk !== null && (
+                        <div>
+                          <span className="text-muted-foreground">New Investor OK:</span>
+                          <span className="ml-2 font-medium">{product.newInvestorOk ? "Yes" : "No"}</span>
+                        </div>
+                      )}
+                      {product.minCreditScore !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Min Credit:</span>
+                          <span className="ml-2 font-medium">{product.minCreditScore}</span>
+                        </div>
+                      )}
+                      {product.interestRate !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Interest Rate:</span>
+                          <span className="ml-2 font-medium">{product.interestRate}%</span>
+                        </div>
+                      )}
+                      {product.maxLtvBuy !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Max LTV:</span>
+                          <span className="ml-2 font-medium">{product.maxLtvBuy}%</span>
+                        </div>
+                      )}
+                      {product.points !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Points:</span>
+                          <span className="ml-2 font-medium">{product.points}</span>
+                        </div>
+                      )}
+                      {product.estimatedAppraisalCost !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Appraisal Cost:</span>
+                          <span className="ml-2 font-medium">${product.estimatedAppraisalCost}</span>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>
