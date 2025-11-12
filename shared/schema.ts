@@ -56,6 +56,7 @@ export type Lender = typeof lenders.$inferSelect;
 export const lenderQuestionnaires = pgTable("lender_questionnaires", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   lenderId: varchar("lender_id").notNull().references(() => lenders.id),
+  companyDescription: text("company_description"),
   businessStructure: text("business_structure"),
   yearsInBusiness: integer("years_in_business"),
   statesOperating: text("states_operating"),

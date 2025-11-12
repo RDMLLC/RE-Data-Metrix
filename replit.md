@@ -167,15 +167,21 @@ Currently minimal authentication infrastructure. Schema includes user and lender
 - Lenders can save questionnaire, add multiple loan products, and see them displayed
 - All form validations working correctly
 - Optional numeric fields handled properly with nullable types
+- Company Info section tested and working with all 6 new fields
+
+**Questionnaire Form Sections:**
+1. **Company Info** - Company Name, Contact Name, Phone Number, Email Address, Website, What's cool about your company?
+2. **Lending Criteria** - Business Structure, Years in Business, States Operating, Specializations, Loan Amounts, Credit Requirements, Checkboxes for new investors and deferred interest
 
 **Known Limitations**:
 - Password storage is plaintext (marked as TODO for production)
-- Edit/delete buttons not yet in UI (API routes exist)
+- Edit/delete buttons not yet in UI for loan products (API routes exist)
 - Using placeholder lenderId "temp-lender-id" for testing
+- Company contact fields (name, email, phone, website) currently submitted with questionnaire; should be separated to update lenders table when real auth is implemented
 
 **Files Modified**:
-- `shared/schema.ts` - Updated loan_products schema
+- `shared/schema.ts` - Updated loan_products schema, added companyDescription to lenderQuestionnaires
 - `server/storage.ts` - Added CRUD methods for questionnaire and loan products
 - `server/routes.ts` - Implemented all API endpoints
-- `client/src/pages/LenderQuestionnaire.tsx` - Wired to backend with React Query
+- `client/src/pages/LenderQuestionnaire.tsx` - Added Company Info section, wired to backend with React Query
 - `client/src/pages/LenderLoanProducts.tsx` - Complete form + product display with backend integration

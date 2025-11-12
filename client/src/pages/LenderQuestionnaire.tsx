@@ -38,6 +38,12 @@ export default function LenderQuestionnaire() {
 
   const form = useForm<any>({
     resolver: zodResolver(insertLenderQuestionnaireSchema.extend({
+      companyName: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
+      contactName: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
+      phone: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
+      email: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
+      website: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
+      companyDescription: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
       businessStructure: insertLenderQuestionnaireSchema.shape.businessStructure.nullable().optional(),
       statesOperating: insertLenderQuestionnaireSchema.shape.statesOperating.nullable().optional(),
       specializations: insertLenderQuestionnaireSchema.shape.specializations.nullable().optional(),
@@ -48,6 +54,12 @@ export default function LenderQuestionnaire() {
     })),
     defaultValues: {
       lenderId: "temp-lender-id",
+      companyName: "",
+      contactName: "",
+      phone: "",
+      email: "",
+      website: "",
+      companyDescription: "",
       businessStructure: null,
       yearsInBusiness: null,
       statesOperating: null,
@@ -89,10 +101,137 @@ export default function LenderQuestionnaire() {
 
           <Card className="p-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="businessStructure"
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* Company Info Section */}
+                <div>
+                  <h2 className="text-2xl font-semibold text-primary mb-6">Company Info</h2>
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Company Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              placeholder="Enter your company name"
+                              data-testid="input-company-name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="contactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Contact Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              placeholder="Enter contact person's name"
+                              data-testid="input-contact-name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Phone Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              type="tel"
+                              placeholder="(555) 123-4567"
+                              data-testid="input-phone"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Email Address</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              type="email"
+                              placeholder="contact@company.com"
+                              data-testid="input-email"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Website</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              type="url"
+                              placeholder="https://www.company.com"
+                              data-testid="input-website"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="companyDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">What's cool about your company?</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              value={field.value || ""}
+                              placeholder="Tell us what makes your company unique..."
+                              data-testid="input-company-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Lending Criteria Section */}
+                <div>
+                  <h2 className="text-2xl font-semibold text-primary mb-6">Lending Criteria</h2>
+                  <div className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="businessStructure"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground">Business Structure</FormLabel>
@@ -270,6 +409,8 @@ export default function LenderQuestionnaire() {
                     </FormItem>
                   )}
                 />
+                  </div>
+                </div>
 
                 <div className="flex gap-4 pt-6">
                   <Button
