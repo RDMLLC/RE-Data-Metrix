@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
-import logoFullImg from "@assets/Logo (2)_1762969260482.jpg";
 
 export default function Hero() {
   const scrollToForm = () => {
@@ -33,18 +32,12 @@ export default function Hero() {
 
           {/* Right: Text Content */}
           <div className="order-1 lg:order-2 text-center lg:text-left">
-            <div className="mb-8 flex justify-center lg:justify-start">
-              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
-                <img src={logoFullImg} alt="RE Data Metrix - Turning Terms into Returns" className="h-32 md:h-40 w-auto" />
-              </div>
-            </div>
-            
-            <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight">
               Changing the way real estate investors{" "}
               <span className="text-accent">analyse and fund</span> their deals!
             </h1>
             
-            <p className="text-lg lg:text-xl text-white/90 mb-8">
+            <p className="text-xl lg:text-2xl text-white/90 mb-10">
               Connect with lenders, analyze profitability beyond standard tools, and streamline your investment journey with our monthly subscription platform.
             </p>
 
