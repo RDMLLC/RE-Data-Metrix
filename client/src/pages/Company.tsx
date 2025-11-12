@@ -77,31 +77,9 @@ export default function Company() {
 
             <Card className="p-8">
               <h3 className="text-2xl font-semibold text-primary mb-4">Advanced Profitability Analysis</h3>
-              <p className="text-lg text-foreground mb-4">
-                Our deal analysis tools go far beyond basic calculators. We provide:
+              <p className="text-lg text-foreground">
+                We let you take your analysis further by comparing individual loan products from numerous lenders to determine how the loan impacts your overall profitability, but also your cash-on-cash return, your annualized ROI, and more.
               </p>
-              <ul className="space-y-2 text-foreground ml-6">
-                <li className="flex items-start gap-2">
-                  <span className="text-accent mt-1">✓</span>
-                  <span>Multi-scenario modeling for purchase, rehab, and exit strategies</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent mt-1">✓</span>
-                  <span>Cash flow projections with market-based assumptions</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent mt-1">✓</span>
-                  <span>ROI calculations including all hidden costs and fees</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent mt-1">✓</span>
-                  <span>Risk assessment and sensitivity analysis</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-accent mt-1">✓</span>
-                  <span>Comparative analysis across multiple financing options</span>
-                </li>
-              </ul>
             </Card>
 
             <Card className="p-8">
