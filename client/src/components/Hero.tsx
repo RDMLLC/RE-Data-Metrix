@@ -15,18 +15,15 @@ export default function Hero() {
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left: Video Placeholder */}
+          {/* Left: Video */}
           <div className="order-2 lg:order-1">
             <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/40 to-primary/60 backdrop-blur-sm">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <div className="w-0 h-0 border-l-[20px] border-l-white border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent ml-1"></div>
-                  </div>
-                  <p className="text-white/90 text-lg font-medium">Marketing Video</p>
-                  <p className="text-white/70 text-sm mt-1">Coming Soon</p>
-                </div>
-              </div>
+              <iframe
+                src="https://drive.google.com/file/d/1Tt1ueicHS-ZREPBdIHPmvi3Ebak9xsYy/preview"
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay"
+                title="RE Data Metrix Marketing Video"
+              />
             </div>
           </div>
 
