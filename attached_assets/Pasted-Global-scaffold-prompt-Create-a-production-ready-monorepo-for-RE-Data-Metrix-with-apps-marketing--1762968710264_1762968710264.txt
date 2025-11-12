@@ -1,0 +1,44 @@
+Global scaffold prompt
+"Create a production‑ready monorepo for RE Data Metrix with apps/marketing (static marketing site), apps/app (login + future dashboard), services/api (backend), and a shared packages/ui folder using the color palette and page content from the worksheet, and prepare Static (marketing) and Autoscale (API) deployments plus a Scheduled job placeholder in Replit Deployments."​​
+"Add environment templates (.env.sample), wire secrets via Replit secrets, and include docs for connecting custom domains to marketing at www.<domain>, app at app.<domain>, and API at api.<domain> with Replit‑managed SSL."​
+
+Marketing site prompt
+"Build the Home page to play a hero video and display the copy ‘Changing the way real estate investors analyse and fund their deals!’ plus a prelaunch signup form (Name, Company, Email, Phone optional) with a consent checkbox and a ‘Thank you! We’ll keep you informed of our progress!’ confirmation."​
+"Implement About Us and The Company pages with the provided copy describing RDM’s mission, monthly subscription, profitability analysis beyond standard deal tools, and one‑click application flow, leaving ‘Deal Analysis’, ‘Lenders’, and ‘Additional Resources’ as Coming Soon placeholders with image slots."​
+"Add a Login page that repeats the prelaunch signup form and confirmation, and a Contact Us page with fields (Name, Company name, Email address, Phone number, Comments) and a ‘Thank you for reaching out. We’ll respond shortly.’ confirmation."​
+
+CRM integration prompt
+"Connect the Home, Login, and Contact forms to Zoho CRM, mapping the fields exactly as specified in the worksheet and storing marketing opt‑in from the consent checkbox; include an integration note describing where to set Zoho tokens in Replit secrets."​
+"Record submissions with clear source tags (home_prelaunch, login_prelaunch, contact_us) and render the specified on‑page confirmation messages after successful CRM writes."​
+
+Branding and theme prompt
+"Implement the site theme using: Primary deep navy/indigo #1E3A8A (headers/nav/charts), Accent metallic gold #D4AF37 (CTAs/KPIs/dividers), Success emerald/dark green #0F7B49 (positive states/financial cues), Neutrals white #FFFFFF, charcoal #1F2937, light gray #E5E7EB, with optional slate/indigo/teal variants for secondary UI."​
+"Apply the palette to buttons, forms, and table states as described, ensuring accessible contrast on text and UI elements and reserving gold for accent rather than body copy."​
+
+Lenders database prompt
+"Create a secured Lenders section (admin‑only at launch) that stores main lender records and a questionnaire, marking fields flagged ‘Y’ in the worksheet as searchable (Company Name; broker vs direct lender; fastest close time; creative lending; new‑investor friendly; minimum credit score; deferred payments; rolled points; 100% purchase+rehab; multi‑unit financing; DSCR loans; operates in all 50 states or per‑state checkboxes)."​
+"Build the state selection subtable (all 50 states with checkboxes) and ensure the Lenders tab can later expose a search UI using only the worksheet’s ‘Y’ searchable fields in the MVP."​
+
+Loan products database prompt
+"Create a loan_products table and entry form for lenders to input products at launch, with fields exactly as specified: product name, new‑investor OK, minimum credit score, max lend/buy, max lend/rehab, interest rate, deferred (yes/no), drawn‑funds only (yes/no), points deferred (count), max loan/ARV, appraisal required, estimated appraisal cost, doc prep fees, cost per draw, and seed example rows from the worksheet."​
+"Associate products to lender records, validate numeric/percent fields, and store booleans and enumerations as structured types for future deal analysis queries."​
+
+API and data prompt
+"Stand up a services/api service that exposes endpoints to submit prelaunch leads, contact messages, and lender/product admin data, with server‑side validation and rate limiting, persisting to the lender and loan product tables in preparation for the Deal Analysis feature."​
+"Use Replit’s managed SQL/PostgreSQL (with an environment toggle to switch to an external Postgres later), provide SQL migrations, and include a seeds script that loads the example loan products."​​
+
+Deployment prompt
+"Publish apps/marketing as a Static Deployment and services/api as an Autoscale Deployment, and add a Scheduled Deployment placeholder for nightly routines (e.g., lender/product refresh or data checks) with instructions on how to enable later."​
+"Document how to connect custom domains for www/app/api subdomains and verify certificate issuance, and include a runbook for redeploys and rollbacks."​
+
+Monitoring and ops prompt
+"Enable Published App Monitoring with request logs, status codes, and basic performance analytics for both marketing and API, and ship structured logs for easier debugging in production."​
+"Add /health endpoints for uptime checks, and include instructions for viewing logs, error traces, and request metrics in the Replit monitoring UI."​
+
+Footer and company details prompt
+"Place company identification in the footer (RE Data Metrix, LLC; 8735 Dunwoody Pl, Suite R; Atlanta, GA 30350) and add a placeholder for a forthcoming phone number."​
+"Link to Contact and Privacy/Terms pages from the footer to align with trust expectations for a finance‑focused SaaS site."​
+
+QA checklist prompt
+"Verify that form submissions create CRM records with correct field mappings and sources and display the exact confirmation messages specified in the worksheet."​
+"Confirm deployments are live, custom domains resolve with valid SSL, API health checks pass, logs appear in Published App Monitoring, and access to lender/product admin screens is restricted until public launch."​
