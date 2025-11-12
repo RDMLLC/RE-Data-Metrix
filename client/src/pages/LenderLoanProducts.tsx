@@ -488,7 +488,11 @@ export default function LenderLoanProducts() {
             ) : (
               <div className="space-y-4">
                 {loanProducts.map((product) => (
-                  <Card key={product.id} className="p-6" data-testid={`product-card-${product.id}`}>
+                  <div 
+                    key={product.id} 
+                    className="p-6 rounded-md border bg-muted/30 hover-elevate" 
+                    data-testid={`product-card-${product.id}`}
+                  >
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-xl font-semibold text-primary" data-testid={`product-name-${product.id}`}>
@@ -538,7 +542,7 @@ export default function LenderLoanProducts() {
                         </div>
                       )}
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             )}
