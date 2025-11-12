@@ -13,6 +13,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
+  updateLenderCompanyInfo(data: any): Promise<any>;
+  getLenderCompanyInfo(lenderId: string): Promise<any>;
+  
   upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire>;
   getLenderQuestionnaire(lenderId: string): Promise<LenderQuestionnaire | undefined>;
   
@@ -26,11 +29,13 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private questionnaires: Map<string, LenderQuestionnaire>;
   private loanProducts: Map<string, LoanProduct>;
+  private companyInfo: Map<string, any>;
 
   constructor() {
     this.users = new Map();
     this.questionnaires = new Map();
     this.loanProducts = new Map();
+    this.companyInfo = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -50,6 +55,48 @@ export class MemStorage implements IStorage {
     return user;
   }
 
+  async updateLenderCompanyInfo(data: any): Promise<any> {
+    const lenderId = data.lenderId;
+    const existing = this.companyInfo.get(lenderId);
+    
+    const updated = {
+      ...existing,
+      ...data,
+      lenderId,
+    };
+    
+    this.companyInfo.set(lenderId, updated);
+    
+    const questionnaire = await this.getLenderQuestionnaire(lenderId);
+    if (questionnaire && data.companyDescription) {
+      await this.upsertLenderQuestionnaire({
+        lenderId,
+        companyDescription: data.companyDescription,
+        businessStructure: questionnaire.businessStructure,
+        yearsInBusiness: questionnaire.yearsInBusiness,
+        statesOperating: questionnaire.statesOperating,
+        specializations: questionnaire.specializations,
+        minLoanAmount: questionnaire.minLoanAmount,
+        maxLoanAmount: questionnaire.maxLoanAmount,
+        creditRequirements: questionnaire.creditRequirements,
+        workWithNewInvestors: questionnaire.workWithNewInvestors,
+        offerDeferredInterest: questionnaire.offerDeferredInterest,
+      });
+    }
+    
+    return updated;
+  }
+
+  async getLenderCompanyInfo(lenderId: string): Promise<any> {
+    const info = this.companyInfo.get(lenderId);
+    const questionnaire = await this.getLenderQuestionnaire(lenderId);
+    
+    return {
+      ...info,
+      companyDescription: questionnaire?.companyDescription || info?.companyDescription,
+    };
+  }
+
   async upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire> {
     const existing = Array.from(this.questionnaires.values()).find(
       (q) => q.lenderId === data.lenderId
@@ -59,15 +106,16 @@ export class MemStorage implements IStorage {
       const updated: LenderQuestionnaire = {
         ...existing,
         ...data,
-        businessStructure: data.businessStructure ?? null,
-        yearsInBusiness: data.yearsInBusiness ?? null,
-        statesOperating: data.statesOperating ?? null,
-        specializations: data.specializations ?? null,
-        minLoanAmount: data.minLoanAmount ?? null,
-        maxLoanAmount: data.maxLoanAmount ?? null,
-        creditRequirements: data.creditRequirements ?? null,
-        workWithNewInvestors: data.workWithNewInvestors ?? false,
-        offerDeferredInterest: data.offerDeferredInterest ?? false,
+        companyDescription: data.companyDescription ?? existing.companyDescription ?? null,
+        businessStructure: data.businessStructure ?? existing.businessStructure ?? null,
+        yearsInBusiness: data.yearsInBusiness ?? existing.yearsInBusiness ?? null,
+        statesOperating: data.statesOperating ?? existing.statesOperating ?? null,
+        specializations: data.specializations ?? existing.specializations ?? null,
+        minLoanAmount: data.minLoanAmount ?? existing.minLoanAmount ?? null,
+        maxLoanAmount: data.maxLoanAmount ?? existing.maxLoanAmount ?? null,
+        creditRequirements: data.creditRequirements ?? existing.creditRequirements ?? null,
+        workWithNewInvestors: data.workWithNewInvestors ?? existing.workWithNewInvestors ?? false,
+        offerDeferredInterest: data.offerDeferredInterest ?? existing.offerDeferredInterest ?? false,
         updatedAt: new Date(),
       };
       this.questionnaires.set(existing.id, updated);
@@ -77,6 +125,7 @@ export class MemStorage implements IStorage {
       const questionnaire: LenderQuestionnaire = {
         id,
         lenderId: data.lenderId,
+        companyDescription: data.companyDescription ?? null,
         businessStructure: data.businessStructure ?? null,
         yearsInBusiness: data.yearsInBusiness ?? null,
         statesOperating: data.statesOperating ?? null,

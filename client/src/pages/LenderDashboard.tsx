@@ -18,25 +18,26 @@ export default function LenderDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Company Profile Card */}
+            {/* Company Info Card */}
             <Card className="p-6 hover-elevate">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Building2 className="h-6 w-6 text-primary" />
                 </div>
-                <h2 className="text-xl font-semibold text-primary">Company Profile</h2>
+                <h2 className="text-xl font-semibold text-primary">Company Info</h2>
               </div>
               <p className="text-muted-foreground mb-6">
                 Update your company information, contact details, and business credentials
               </p>
-              <Button
-                className="w-full"
-                variant="default"
-                data-testid="button-company-profile"
-                disabled
-              >
-                Manage Profile (Coming Soon)
-              </Button>
+              <Link href="/lender-company-info">
+                <Button
+                  className="w-full"
+                  variant="default"
+                  data-testid="button-company-info"
+                >
+                  Manage Company Info
+                </Button>
+              </Link>
             </Card>
 
             {/* Questionnaire Card */}

@@ -17,6 +17,7 @@ import Terms from "@/pages/Terms";
 import LenderDashboard from "@/pages/LenderDashboard";
 import LenderQuestionnaire from "@/pages/LenderQuestionnaire";
 import LenderLoanProducts from "@/pages/LenderLoanProducts";
+import LenderCompanyInfo from "@/pages/LenderCompanyInfo";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/lender-portal" component={LenderDashboard} />
       <Route path="/lender-dashboard" component={LenderDashboard} />
+      <Route path="/lender-company-info" component={LenderCompanyInfo} />
       <Route path="/lender-questionnaire" component={LenderQuestionnaire} />
       <Route path="/lender-loan-products" component={LenderLoanProducts} />
       <Route component={NotFound} />

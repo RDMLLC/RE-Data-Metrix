@@ -2,8 +2,42 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertLenderQuestionnaireSchema, insertLoanProductSchema } from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Company Info Routes
+  const companyInfoSchema = z.object({
+    lenderId: z.string(),
+    companyName: z.string().optional(),
+    contactName: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().optional(),
+    website: z.string().optional(),
+    companyDescription: z.string().optional(),
+  });
+
+  app.post("/api/lender-company-info", async (req, res) => {
+    try {
+      const validatedData = companyInfoSchema.parse(req.body);
+      const updated = await storage.updateLenderCompanyInfo(validatedData);
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid company info data" });
+    }
+  });
+
+  app.get("/api/lender-company-info/:lenderId", async (req, res) => {
+    try {
+      const companyInfo = await storage.getLenderCompanyInfo(req.params.lenderId);
+      if (!companyInfo) {
+        return res.status(404).json({ error: "Company info not found" });
+      }
+      res.json(companyInfo);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch company info" });
+    }
+  });
   
   // Lender Questionnaire Routes
   app.post("/api/lender-questionnaire", async (req, res) => {
