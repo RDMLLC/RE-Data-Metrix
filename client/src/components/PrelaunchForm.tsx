@@ -10,7 +10,7 @@ import { CheckCircle2 } from "lucide-react";
 
 const prelaunchSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  company: z.string().min(2, "Company name must be at least 2 characters"),
+  company: z.string().optional(),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   consent: z.boolean().refine(val => val === true, {
@@ -88,7 +88,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-primary-foreground font-medium">
-                Company <span className="text-accent">*</span>
+                Company (Optional)
               </FormLabel>
               <FormControl>
                 <Input

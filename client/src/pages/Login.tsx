@@ -34,10 +34,10 @@ export default function Login() {
 
             {/* Right Side - Form */}
             <div className="lg:col-span-3">
-              <Card className="p-8 shadow-xl">
+              <Card className="p-8 shadow-xl bg-primary text-primary-foreground">
                 <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-primary mb-2">Join the Waitlist</h1>
-                  <p className="text-muted-foreground">
+                  <h1 className="text-3xl font-bold mb-2">Join the Waitlist</h1>
+                  <p className="text-primary-foreground/80">
                     We're launching soon! Sign up to get early access and be among the first to experience our platform.
                   </p>
                 </div>
