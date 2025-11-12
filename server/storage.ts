@@ -1,20 +1,36 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { 
+  type User, 
+  type InsertUser,
+  type LenderQuestionnaire,
+  type InsertLenderQuestionnaire,
+  type LoanProduct,
+  type InsertLoanProduct
+} from "@shared/schema";
 import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire>;
+  getLenderQuestionnaire(lenderId: string): Promise<LenderQuestionnaire | undefined>;
+  
+  createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct>;
+  getLoanProducts(lenderId: string): Promise<LoanProduct[]>;
+  updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined>;
+  deleteLoanProduct(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
+  private questionnaires: Map<string, LenderQuestionnaire>;
+  private loanProducts: Map<string, LoanProduct>;
 
   constructor() {
     this.users = new Map();
+    this.questionnaires = new Map();
+    this.loanProducts = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -32,6 +48,104 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
+  }
+
+  async upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire> {
+    const existing = Array.from(this.questionnaires.values()).find(
+      (q) => q.lenderId === data.lenderId
+    );
+    
+    if (existing) {
+      const updated: LenderQuestionnaire = {
+        ...existing,
+        ...data,
+        businessStructure: data.businessStructure ?? null,
+        yearsInBusiness: data.yearsInBusiness ?? null,
+        statesOperating: data.statesOperating ?? null,
+        specializations: data.specializations ?? null,
+        minLoanAmount: data.minLoanAmount ?? null,
+        maxLoanAmount: data.maxLoanAmount ?? null,
+        creditRequirements: data.creditRequirements ?? null,
+        workWithNewInvestors: data.workWithNewInvestors ?? false,
+        offerDeferredInterest: data.offerDeferredInterest ?? false,
+        updatedAt: new Date(),
+      };
+      this.questionnaires.set(existing.id, updated);
+      return updated;
+    } else {
+      const id = randomUUID();
+      const questionnaire: LenderQuestionnaire = {
+        id,
+        lenderId: data.lenderId,
+        businessStructure: data.businessStructure ?? null,
+        yearsInBusiness: data.yearsInBusiness ?? null,
+        statesOperating: data.statesOperating ?? null,
+        specializations: data.specializations ?? null,
+        minLoanAmount: data.minLoanAmount ?? null,
+        maxLoanAmount: data.maxLoanAmount ?? null,
+        creditRequirements: data.creditRequirements ?? null,
+        workWithNewInvestors: data.workWithNewInvestors ?? false,
+        offerDeferredInterest: data.offerDeferredInterest ?? false,
+        updatedAt: new Date(),
+      };
+      this.questionnaires.set(id, questionnaire);
+      return questionnaire;
+    }
+  }
+
+  async getLenderQuestionnaire(lenderId: string): Promise<LenderQuestionnaire | undefined> {
+    return Array.from(this.questionnaires.values()).find(
+      (q) => q.lenderId === lenderId
+    );
+  }
+
+  async createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct> {
+    const id = randomUUID();
+    const loanProduct: LoanProduct = {
+      id,
+      lenderId: data.lenderId,
+      productName: data.productName,
+      newInvestorOk: data.newInvestorOk ?? false,
+      minCreditScore: data.minCreditScore ?? null,
+      maxLtvBuy: data.maxLtvBuy ?? null,
+      maxLendRehab: data.maxLendRehab ?? null,
+      interestRate: data.interestRate ?? null,
+      interestDeferred: data.interestDeferred ?? false,
+      drawnFundsOnly: data.drawnFundsOnly ?? false,
+      points: data.points ?? null,
+      pointsDeferred: data.pointsDeferred ?? false,
+      maxLoanArv: data.maxLoanArv ?? null,
+      appraisalRequired: data.appraisalRequired ?? false,
+      estimatedAppraisalCost: data.estimatedAppraisalCost ?? null,
+      fees: data.fees ?? null,
+      costPerDraw: data.costPerDraw ?? null,
+      isActive: data.isActive ?? true,
+      createdAt: new Date(),
+    };
+    this.loanProducts.set(id, loanProduct);
+    return loanProduct;
+  }
+
+  async getLoanProducts(lenderId: string): Promise<LoanProduct[]> {
+    return Array.from(this.loanProducts.values()).filter(
+      (p) => p.lenderId === lenderId
+    );
+  }
+
+  async updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined> {
+    const existing = this.loanProducts.get(id);
+    if (!existing) return undefined;
+    
+    const updated: LoanProduct = {
+      ...existing,
+      ...data,
+    };
+    this.loanProducts.set(id, updated);
+    return updated;
+  }
+
+  async deleteLoanProduct(id: string): Promise<boolean> {
+    return this.loanProducts.delete(id);
   }
 }
 

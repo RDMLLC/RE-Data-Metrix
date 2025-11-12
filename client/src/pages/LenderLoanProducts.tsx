@@ -10,9 +10,32 @@ import { insertLoanProductSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { Link } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
+
+  const createProductMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/loan-products", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
+      toast({
+        title: "Product Added",
+        description: "Your loan product has been added successfully.",
+      });
+      form.reset();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add loan product. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<any>({
     resolver: zodResolver(insertLoanProductSchema.extend({
@@ -48,12 +71,7 @@ export default function LenderLoanProducts() {
   });
 
   const onSubmit = async (data: any) => {
-    toast({
-      title: "Product Added",
-      description: "Your loan product has been added successfully.",
-    });
-    console.log("Loan product data:", data);
-    form.reset();
+    createProductMutation.mutate(data);
   };
 
   return (
@@ -426,8 +444,9 @@ export default function LenderLoanProducts() {
                     type="submit"
                     className="flex-1"
                     data-testid="button-add-product"
+                    disabled={createProductMutation.isPending}
                   >
-                    Add Product
+                    {createProductMutation.isPending ? "Adding..." : "Add Product"}
                   </Button>
                   <Button
                     type="button"

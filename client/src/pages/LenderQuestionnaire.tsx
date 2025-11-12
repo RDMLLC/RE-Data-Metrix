@@ -10,9 +10,31 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLenderQuestionnaireSchema, type InsertLenderQuestionnaire } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function LenderQuestionnaire() {
   const { toast } = useToast();
+
+  const saveQuestionnaireMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/lender-questionnaire", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lender-questionnaire"] });
+      toast({
+        title: "Questionnaire Saved",
+        description: "Your lender questionnaire has been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save questionnaire. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<any>({
     resolver: zodResolver(insertLenderQuestionnaireSchema.extend({
@@ -38,12 +60,8 @@ export default function LenderQuestionnaire() {
     },
   });
 
-  const onSubmit = async (data: InsertLenderQuestionnaire) => {
-    toast({
-      title: "Questionnaire Saved",
-      description: "Your lender questionnaire has been updated successfully.",
-    });
-    console.log("Questionnaire data:", data);
+  const onSubmit = async (data: any) => {
+    saveQuestionnaireMutation.mutate(data);
   };
 
   return (
@@ -258,8 +276,9 @@ export default function LenderQuestionnaire() {
                     type="submit"
                     className="flex-1"
                     data-testid="button-save-questionnaire"
+                    disabled={saveQuestionnaireMutation.isPending}
                   >
-                    Save Questionnaire
+                    {saveQuestionnaireMutation.isPending ? "Saving..." : "Save Questionnaire"}
                   </Button>
                   <Link href="/lender-dashboard">
                     <Button
