@@ -89,11 +89,11 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold text-primary mb-4">
-              Join the Waitlist
+              Lock in your Pre-Launch Discount Now
             </h2>
             <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
             <p className="text-xl text-muted-foreground">
-              Be among the first to experience the future of real estate investment analysis and funding.
+              No obligation, just a great discount and early access when we launch
             </p>
           </div>
 
