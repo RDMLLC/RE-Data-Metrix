@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import marketingVideo from "@assets/Real Estate Profits, Lender Referrals_video_1080 (3)_1762983667120.mp4";
 
 export default function Hero() {
   const scrollToForm = () => {
@@ -18,12 +19,16 @@ export default function Hero() {
           {/* Left: Video */}
           <div className="order-2 lg:order-1">
             <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
-              <iframe
-                src="https://drive.google.com/file/d/1Tt1ueicHS-ZREPBdIHPmvi3Ebak9xsYy/preview"
-                className="absolute inset-0 w-full h-full"
-                allow="autoplay"
-                title="RE Data Metrix Marketing Video"
-              />
+              <video
+                className="absolute inset-0 w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+              >
+                <source src={marketingVideo} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
 
