@@ -21,7 +21,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-primary-foreground/90 mb-4">
-              Changing the way real estate investors analyse and fund their deals.
+              Changing the way real estate investors analyze and fund their deals.
             </p>
             <div className="space-y-2 text-sm text-primary-foreground/80">
               <div className="flex items-start gap-2">

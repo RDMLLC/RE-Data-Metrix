@@ -85,7 +85,7 @@ export default function Company() {
             <Card className="p-8">
               <h3 className="text-2xl font-semibold text-primary mb-4">One-Click Lender Access</h3>
               <p className="text-lg text-foreground">
-                Once you've analyzed your deal and funding options, connect directly with our network of verified lenders through our streamlined application flow. Don't have a deal to analyse, or just want to find a lender that meets your needs? You can search for a lender that meets your needs. Are you looking for lenders that offer deferred interest? Have less stringent credit requirements? Aren't afraid to deal with a new investor? Just enter your criteria, hit search, and you're one click away from accessing their information and application.
+                Once you've analyzed your deal and funding options, connect directly with our network of verified lenders through our streamlined application flow. Don't have a deal to analyze, or just want to find a lender that meets your needs? You can search for a lender that meets your needs. Are you looking for lenders that offer deferred interest? Have less stringent credit requirements? Aren't afraid to deal with a new investor? Just enter your criteria, hit search, and you're one click away from accessing their information and application.
               </p>
             </Card>
           </div>

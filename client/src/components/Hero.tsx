@@ -31,11 +31,11 @@ export default function Hero() {
           <div className="order-1 lg:order-2 text-center lg:text-left">
             <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight">
               Changing the way real estate investors{" "}
-              <span className="text-accent">analyse and fund</span> their deals!
+              <span className="text-accent">analyze and fund</span> their deals!
             </h1>
             
             <p className="text-xl lg:text-2xl text-white/90 mb-10">
-              Connect with lenders, analyze profitability beyond standard tools, and streamline your investment journey with our monthly subscription platform.
+              Analyze deals and compare individual loan products to see the impact on your cash-on-cash, ROI and annualized ROI. And then connect with the lender of your choice with the click of a button!
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
