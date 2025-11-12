@@ -21,8 +21,7 @@ export default function Hero() {
             <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
               <video
                 className="absolute inset-0 w-full h-full object-cover"
-                autoPlay
-                muted
+                controls
                 loop
                 playsInline
               >
