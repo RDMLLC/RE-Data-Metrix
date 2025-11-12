@@ -34,7 +34,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
       company: "",
       email: "",
       phone: "",
-      consent: false,
+      consent: true,
     },
   });
 

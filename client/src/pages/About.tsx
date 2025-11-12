@@ -100,7 +100,7 @@ export default function About() {
             <Card className="p-6">
               <h3 className="text-xl font-semibold text-primary mb-2">Partnership</h3>
               <p className="text-muted-foreground">
-                Building lasting relationships between investors and lenders based on trust and mutual success.
+                Building lasting relationships between investors, lenders, and other partners based on trust and mutual success.
               </p>
             </Card>
           </div>

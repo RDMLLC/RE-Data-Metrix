@@ -83,9 +83,9 @@ export default function Company() {
             </Card>
 
             <Card className="p-8">
-              <h3 className="text-2xl font-semibold text-primary mb-4">One-Click Lender Applications</h3>
+              <h3 className="text-2xl font-semibold text-primary mb-4">One-Click Lender Access</h3>
               <p className="text-lg text-foreground">
-                Once you've analyzed your deal, connect directly with our network of verified lenders through our streamlined application flow. Submit your information once, and we'll match you with lenders who specialize in your deal type, location, and financing needs. Save time, reduce friction, and close deals faster.
+                Once you've analyzed your deal and funding options, connect directly with our network of verified lenders through our streamlined application flow. Don't have a deal to analyse, or just want to find a lender that meets your needs? You can search for a lender that meets your needs. Are you looking for lenders that offer deferred interest? Have less stringent credit requirements? Aren't afraid to deal with a new investor? Just enter your criteria, hit search, and you're one click away from accessing their information and application.
               </p>
             </Card>
           </div>

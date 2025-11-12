@@ -41,7 +41,7 @@ export default function ComingSoon({ title, description, imageSrc, imageAlt }: C
       </div>
 
       <div className="bg-card rounded-lg p-8 shadow-md max-w-md mx-auto">
-        <h2 className="text-2xl font-semibold text-center mb-4">Get Notified When We Launch</h2>
+        <h2 className="text-2xl font-semibold text-center mb-4">Lock in your Discount Now</h2>
         
         {notified ? (
           <div className="bg-success/10 border-l-4 border-success rounded-md p-4" data-testid="text-notify-confirmation">
@@ -66,7 +66,7 @@ export default function ComingSoon({ title, description, imageSrc, imageAlt }: C
               className="w-full bg-accent text-accent-foreground hover:bg-accent"
               data-testid="button-notify"
             >
-              Notify Me
+              Lock in my Discount
             </Button>
           </form>
         )}

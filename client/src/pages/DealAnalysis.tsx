@@ -7,7 +7,7 @@ export default function DealAnalysis() {
     <Layout>
       <ComingSoon
         title="Deal Analysis"
-        description="Advanced profitability analysis tools that go beyond standard deal calculators. Analyze multiple scenarios, model cash flows, assess risks, and compare financing options—all in one comprehensive platform."
+        description="There are so many funding scenarios available, it can be hard to determine which is the best. Additionally, there are so many 'hidden' costs associated with real estate. Costs like lenders' fees, title search and insurance, utilities, property insurance, and HOA fees can erode profitability without you even realizing it. Let us help you find the most profitable loan for your deal."
         imageSrc={dealAnalysisImg}
         imageAlt="Deal Analysis Dashboard Preview"
       />

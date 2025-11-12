@@ -1,0 +1,21 @@
+Change the "One-Click Lender Applications" box to say:
+
+One-Click Lender Access
+
+Once you've analyzed your deal and funding options, connect directly with our network of verified lenders through our streamlined application flow. Don't have a deal to analyse, or just want to find a lender that meets your needs? You can search for a lender that meets your needs. Are you looking for lenders that offer deferred interest? Have less stringent credit requirements? Aren't afraid to deal with a new investor? Just enter your criteria, hit search, and you're one click away from finding your perfect lender. 
+
+
+Change "Get Notified When We Launch" to "Lock in your Discount Now"
+
+Change everywhere is says "Get Notified When We Launch" to "Lock in your Discount Now"
+
+Change all buttons that say "Notify Me" to Lock in my Discount"
+
+Change "Educational content, market insights, and tools to help you become a more successful real estate investor. From beginner guides to advanced strategies, we've got you covered." to Tools are important in your business. What this space for solutions ranging from property management, to lead generation, legal, networking, and more."
+
+Make the "I consent" button preselected. 
+
+Change "Advanced profitability analysis tools that go beyond standard deal calculators. Analyze multiple scenarios, model cash flows, assess risks, and compare financing options—all in one comprehensive platform." to "There are so many funding scenarios available, it can be hard to determine which is the best. Additionally, there are so many "hidden" costs associated with real estate. Costs like lenders' fees, title search and insurance, utilities, property insurance, and HOA fees can really add up. Our tool will help you get a handle on them. We autopopulate estimated costs based on the property, its location, etc and you can adjust them if needed to be exact for your project. And it all happens automatically!" Add another paragraph "As an example, suppose you have a real estate deal that will allow you to make $60,000 on it, but it will cost you $60,000 out of pocket. While another loan will have you make "only" $50,0000, but it will only require $25,000 out of pocket costs. Would you spend another $35,000 to make another $10,000? Or would you be better off going with the $25,000 out of pocket costs and using the "extra" $35,000 to do another deal? In the scenario above, you would an additional $40,000 in profit, not $10,000! Your cash-on-cash return for the first scenario is 83%, while the second scenario is %200! If the total time for the project was four months, your annualized ROI would 249% or 600% respectively. RE Data Metrix will help you get granular and maximize your returns." 
+
+Change "Building lasting relationships between investors and lenders based on trust and mutual success." to "Building lasting relationships between investors, lenders, and other partners based on trust and mutual success."
+

@@ -7,7 +7,7 @@ export default function Resources() {
     <Layout>
       <ComingSoon
         title="Additional Resources"
-        description="Educational content, market insights, and tools to help you become a more successful real estate investor. From beginner guides to advanced strategies, we've got you covered."
+        description="Tools are important in your business. Watch this space for solutions ranging from property management, to lead generation, legal, networking, and more."
         imageSrc={resourcesImg}
         imageAlt="Learning Resources and Materials"
       />
