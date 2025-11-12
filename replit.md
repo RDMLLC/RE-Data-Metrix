@@ -32,11 +32,11 @@ Preferred communication style: Simple, everyday language.
 
 **Runtime**: Node.js with Express.js framework running in ES Module mode.
 
-**API Structure**: RESTful API architecture with routes prefixed under `/api`. Currently minimal implementation with storage interface pattern prepared for CRUD operations.
+**API Structure**: RESTful API architecture with routes prefixed under `/api`. Fully implemented with storage interface pattern for CRUD operations.
 
 **Session Management**: Uses connect-pg-simple for PostgreSQL session storage (infrastructure prepared but not fully implemented).
 
-**Data Storage Pattern**: Abstracted storage interface (`IStorage`) with in-memory implementation (`MemStorage`) as placeholder. Designed to be swapped with database-backed implementation.
+**Data Storage Pattern**: Abstracted storage interface (`IStorage`) with in-memory implementation (`MemStorage`). Fully functional with CRUD methods for lender questionnaires and loan products.
 
 ### Database Architecture
 
@@ -47,9 +47,9 @@ Preferred communication style: Simple, everyday language.
 **Schema Design**:
 - **users**: Basic authentication (id, username, password)
 - **prelaunch_signups**: Early access registrations with source tracking (home_prelaunch, login_prelaunch)
-- **lenders**: Lender company profiles and credentials
-- **lender_questionnaires**: Detailed lender criteria (states, specializations, credit requirements, investor experience)
-- **loan_products**: Individual loan offerings with terms, rates, and requirements
+- **lenders**: Lender company profiles and credentials (companyName, email, password, contactName, phone, website)
+- **lender_questionnaires**: Detailed lender criteria (businessStructure, yearsInBusiness, statesOperating, specializations, minLoanAmount, maxLoanAmount, creditRequirements, workWithNewInvestors, offerDeferredInterest)
+- **loan_products**: 15-field loan offerings including productName, newInvestorOk, minCreditScore, maxLtvBuy, maxLendRehab, interestRate, interestDeferred, drawnFundsOnly, points, pointsDeferred, maxLoanArv, appraisalRequired, estimatedAppraisalCost, fees, costPerDraw, and isActive flag
 
 **Migrations**: Drizzle Kit manages schema migrations stored in `/migrations` directory.
 
@@ -61,13 +61,13 @@ Currently minimal authentication infrastructure. Schema includes user and lender
 
 **Client-Side**: react-hook-form with @hookform/resolvers for Zod schema integration. Validation schemas defined using drizzle-zod for database-backed forms.
 
-**Server-Side**: Validation logic prepared through Zod schemas but API endpoints not yet implemented.
+**Server-Side**: Full Zod schema validation on API endpoints with proper error handling and type safety.
 
 **Form Types**:
 - Prelaunch signup forms (home and login pages)
 - Contact form
-- Lender questionnaire (multi-field business profile)
-- Loan product entry form
+- Lender questionnaire (multi-field business profile, fully functional with backend persistence)
+- Loan product entry form (15 fields, fully functional with backend persistence and display)
 
 ### Build & Deployment
 
@@ -129,3 +129,53 @@ Currently minimal authentication infrastructure. Schema includes user and lender
 - Runtime error modal plugin
 - Cartographer plugin (development only)
 - Dev banner plugin (development only)
+
+## Recent Changes
+
+### Lender Portal Backend Implementation (Latest)
+
+**Date**: Current session
+
+**Overview**: Implemented complete backend persistence and UI integration for the lender portal, enabling lenders to save and manage their questionnaire data and loan products.
+
+**Schema Updates**:
+- Completely rebuilt `loan_products` table to match user requirements with 15 fields
+- Added proper nullable fields for optional loan product attributes
+- Implemented `isActive` boolean flag for product lifecycle management
+
+**Backend Implementation**:
+- Created storage interface methods: `saveLenderQuestionnaire`, `getLenderQuestionnaire`, `createLoanProduct`, `getLoanProducts`, `updateLoanProduct`, `deleteLoanProduct`
+- Implemented API routes:
+  - POST `/api/lender-questionnaire` - Upsert questionnaire data
+  - GET `/api/lender-questionnaire/:lenderId` - Retrieve questionnaire
+  - POST `/api/loan-products` - Create new loan product
+  - GET `/api/loan-products/:lenderId` - Get all products for lender
+  - PATCH `/api/loan-products/:id` - Update product
+  - DELETE `/api/loan-products/:id` - Delete product
+- Full Zod validation on all endpoints using schemas from drizzle-zod
+
+**Frontend Integration**:
+- Wired both forms to backend using React Query mutations
+- Proper cache invalidation after mutations using hierarchical query keys
+- Added `useQuery` to fetch and display saved loan products
+- Loading states, error handling, and success toasts
+- Product list displays immediately after adding products (cache invalidation works correctly)
+- Used styled divs instead of nested Cards for product display items
+
+**Testing**:
+- End-to-end playwright tests confirm full data persistence flow
+- Lenders can save questionnaire, add multiple loan products, and see them displayed
+- All form validations working correctly
+- Optional numeric fields handled properly with nullable types
+
+**Known Limitations**:
+- Password storage is plaintext (marked as TODO for production)
+- Edit/delete buttons not yet in UI (API routes exist)
+- Using placeholder lenderId "temp-lender-id" for testing
+
+**Files Modified**:
+- `shared/schema.ts` - Updated loan_products schema
+- `server/storage.ts` - Added CRUD methods for questionnaire and loan products
+- `server/routes.ts` - Implemented all API endpoints
+- `client/src/pages/LenderQuestionnaire.tsx` - Wired to backend with React Query
+- `client/src/pages/LenderLoanProducts.tsx` - Complete form + product display with backend integration
