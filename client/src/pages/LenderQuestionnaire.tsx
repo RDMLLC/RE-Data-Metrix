@@ -1,23 +1,52 @@
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertLenderQuestionnaireSchema, type InsertLenderQuestionnaire } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { z } from "zod";
+import { useState } from "react";
+
+const US_STATES = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
+  "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
+  "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+  "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
+  "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
+  "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
+  "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
+];
+
+const questionnaireSchema = z.object({
+  lenderId: z.string(),
+  brokerOrDirectLender: z.string().optional(),
+  fastestClosingTime: z.string().optional(),
+  offerNonTraditionalLending: z.string().optional(),
+  workWithNewInvestors: z.string().optional(),
+  minCreditScore: z.string().optional(),
+  offerDeferredPayment: z.string().optional(),
+  offerRolledPoints: z.string().optional(),
+  offer100PercentFunding: z.string().optional(),
+  offerMultiUnitFinancing: z.string().optional(),
+  offerDscrLoans: z.string().optional(),
+  offerLoansAllStates: z.string().optional(),
+  statesServiced: z.array(z.string()).optional(),
+});
+
+type QuestionnaireForm = z.infer<typeof questionnaireSchema>;
 
 export default function LenderQuestionnaire() {
   const { toast } = useToast();
+  const [showStatesSelection, setShowStatesSelection] = useState(false);
 
   const saveQuestionnaireMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: QuestionnaireForm) => {
       return await apiRequest("POST", "/api/lender-questionnaire", data);
     },
     onSuccess: () => {
@@ -36,45 +65,30 @@ export default function LenderQuestionnaire() {
     },
   });
 
-  const form = useForm<any>({
-    resolver: zodResolver(insertLenderQuestionnaireSchema.extend({
-      companyName: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
-      contactName: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
-      phone: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
-      email: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
-      website: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
-      companyDescription: insertLenderQuestionnaireSchema.shape.companyDescription.nullable().optional(),
-      businessStructure: insertLenderQuestionnaireSchema.shape.businessStructure.nullable().optional(),
-      statesOperating: insertLenderQuestionnaireSchema.shape.statesOperating.nullable().optional(),
-      specializations: insertLenderQuestionnaireSchema.shape.specializations.nullable().optional(),
-      minLoanAmount: insertLenderQuestionnaireSchema.shape.minLoanAmount.nullable().optional(),
-      maxLoanAmount: insertLenderQuestionnaireSchema.shape.maxLoanAmount.nullable().optional(),
-      creditRequirements: insertLenderQuestionnaireSchema.shape.creditRequirements.nullable().optional(),
-      yearsInBusiness: insertLenderQuestionnaireSchema.shape.yearsInBusiness.nullable().optional(),
-    })),
+  const form = useForm<QuestionnaireForm>({
+    resolver: zodResolver(questionnaireSchema),
     defaultValues: {
       lenderId: "temp-lender-id",
-      companyName: "",
-      contactName: "",
-      phone: "",
-      email: "",
-      website: "",
-      companyDescription: "",
-      businessStructure: null,
-      yearsInBusiness: null,
-      statesOperating: null,
-      specializations: null,
-      minLoanAmount: null,
-      maxLoanAmount: null,
-      creditRequirements: null,
-      workWithNewInvestors: false,
-      offerDeferredInterest: false,
+      brokerOrDirectLender: "",
+      fastestClosingTime: "",
+      offerNonTraditionalLending: "",
+      workWithNewInvestors: "",
+      minCreditScore: "",
+      offerDeferredPayment: "",
+      offerRolledPoints: "",
+      offer100PercentFunding: "",
+      offerMultiUnitFinancing: "",
+      offerDscrLoans: "",
+      offerLoansAllStates: "",
+      statesServiced: [],
     },
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: QuestionnaireForm) => {
     saveQuestionnaireMutation.mutate(data);
   };
+
+  const offerLoansAllStates = form.watch("offerLoansAllStates");
 
   return (
     <Layout>
@@ -95,322 +109,331 @@ export default function LenderQuestionnaire() {
             <h1 className="text-4xl font-bold text-primary mb-4">Lender Questionnaire</h1>
             <div className="h-1 w-24 bg-accent mb-4"></div>
             <p className="text-lg text-muted-foreground">
-              Complete this questionnaire to help investors understand your lending criteria and capabilities
+              Complete this questionnaire to help investors understand your lending criteria
             </p>
           </div>
 
           <Card className="p-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {/* Company Info Section */}
-                <div>
-                  <h2 className="text-2xl font-semibold text-primary mb-6">Company Info</h2>
-                  <div className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Company Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ""}
-                              placeholder="Enter your company name"
-                              data-testid="input-company-name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="contactName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Contact Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ""}
-                              placeholder="Enter contact person's name"
-                              data-testid="input-contact-name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Phone Number</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ""}
-                              type="tel"
-                              placeholder="(555) 123-4567"
-                              data-testid="input-phone"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Email Address</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ""}
-                              type="email"
-                              placeholder="contact@company.com"
-                              data-testid="input-email"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="website"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">Website</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ""}
-                              type="url"
-                              placeholder="https://www.company.com"
-                              data-testid="input-website"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="companyDescription"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-foreground">What's cool about your company?</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              {...field}
-                              value={field.value || ""}
-                              placeholder="Tell us what makes your company unique..."
-                              data-testid="input-company-description"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Lending Criteria Section */}
-                <div>
-                  <h2 className="text-2xl font-semibold text-primary mb-6">Lending Criteria</h2>
-                  <div className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="businessStructure"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Business Structure</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          placeholder="e.g., LLC, Corporation, Partnership"
-                          data-testid="input-business-structure"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                
+                {/* Are you a broker or direct lender? */}
                 <FormField
                   control={form.control}
-                  name="yearsInBusiness"
+                  name="brokerOrDirectLender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground">Years in Business</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          placeholder="Enter number of years"
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                          value={field.value || ""}
-                          data-testid="input-years-business"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="statesOperating"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">States Operating In</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value || ""}
-                          placeholder="List the states where you operate (e.g., GA, FL, NC)"
-                          data-testid="input-states"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="specializations"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Specializations</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value || ""}
-                          placeholder="Describe your lending specializations (e.g., fix-and-flip, rental properties, commercial)"
-                          data-testid="input-specializations"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="minLoanAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Minimum Loan Amount</FormLabel>
+                      <FormLabel className="text-foreground">Are you a broker or direct lender?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="$50,000"
-                            data-testid="input-min-loan"
-                          />
+                          <SelectTrigger data-testid="select-broker-or-lender">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="maxLoanAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Maximum Loan Amount</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="$5,000,000"
-                            data-testid="input-max-loan"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="creditRequirements"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Credit Requirements</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value || ""}
-                          placeholder="Describe your credit score requirements and other credit considerations"
-                          data-testid="input-credit-requirements"
-                        />
-                      </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                {/* What is the fastest you can close a loan? */}
+                <FormField
+                  control={form.control}
+                  name="fastestClosingTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">What is the fastest you can close a loan?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-closing-time">
+                            <SelectValue placeholder="Select timeframe" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1-7 DAYS">1-7 DAYS</SelectItem>
+                          <SelectItem value="8-14 DAYS">8-14 DAYS</SelectItem>
+                          <SelectItem value="15-21 DAYS">15-21 DAYS</SelectItem>
+                          <SelectItem value="21-30 DAYS">21-30 DAYS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you offer non-traditional / creative lending? */}
+                <FormField
+                  control={form.control}
+                  name="offerNonTraditionalLending"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer non-traditional / creative lending?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-non-traditional">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you work with new investors? */}
                 <FormField
                   control={form.control}
                   name="workWithNewInvestors"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value || false}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-new-investors"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-foreground">
-                          I work with new/first-time investors
-                        </FormLabel>
-                      </div>
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you work with new investors?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-new-investors">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                {/* What is the minimum credit score you will work with? */}
                 <FormField
                   control={form.control}
-                  name="offerDeferredInterest"
+                  name="minCreditScore"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value || false}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-deferred-interest"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-foreground">
-                          I offer deferred interest options
-                        </FormLabel>
-                      </div>
+                    <FormItem>
+                      <FormLabel className="text-foreground">What is the minimum credit score you will work with?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-credit-score">
+                            <SelectValue placeholder="Select credit score range" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Below 600">Below 600</SelectItem>
+                          <SelectItem value="600-649">600-649</SelectItem>
+                          <SelectItem value="650-699">650-699</SelectItem>
+                          <SelectItem value="700+">700+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-                  </div>
-                </div>
+
+                {/* Do you offer deferred payment loans? */}
+                <FormField
+                  control={form.control}
+                  name="offerDeferredPayment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer deferred payment loans?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-deferred-payment">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you offer rolled / points on the back? */}
+                <FormField
+                  control={form.control}
+                  name="offerRolledPoints"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer rolled / points on the back?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-rolled-points">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you offer 100% funding of both the purchase and the rehab? */}
+                <FormField
+                  control={form.control}
+                  name="offer100PercentFunding"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer 100% funding of both the purchase and the rehab?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-100-percent-funding">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you offer financing on multi-unit properties? (5+ units) */}
+                <FormField
+                  control={form.control}
+                  name="offerMultiUnitFinancing"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer financing on multi-unit properties? (5+ units)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-multi-unit">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you offer DSCR loans? */}
+                <FormField
+                  control={form.control}
+                  name="offerDscrLoans"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer DSCR loans?</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-dscr-loans">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Do you offer loans in all 50 States? Y/N */}
+                <FormField
+                  control={form.control}
+                  name="offerLoansAllStates"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Do you offer loans in all 50 States?</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setShowStatesSelection(value === "No");
+                          if (value === "Yes") {
+                            form.setValue("statesServiced", []);
+                          }
+                        }} 
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-all-states">
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* States Serviced - Only show if "No" to all 50 states */}
+                {(offerLoansAllStates === "No" || showStatesSelection) && (
+                  <FormField
+                    control={form.control}
+                    name="statesServiced"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel className="text-foreground mb-4 block">
+                          Select the states where you offer loans:
+                        </FormLabel>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto border rounded-md p-4">
+                          {US_STATES.map((state) => (
+                            <FormField
+                              key={state}
+                              control={form.control}
+                              name="statesServiced"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={state}
+                                    className="flex flex-row items-start space-x-2 space-y-0"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(state)}
+                                        onCheckedChange={(checked) => {
+                                          return checked
+                                            ? field.onChange([...(field.value || []), state])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                  (value) => value !== state
+                                                )
+                                              );
+                                        }}
+                                        data-testid={`checkbox-state-${state.toLowerCase().replace(/\s+/g, '-')}`}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="text-sm font-normal">
+                                      {state}
+                                    </FormLabel>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <div className="flex gap-4 pt-6">
                   <Button

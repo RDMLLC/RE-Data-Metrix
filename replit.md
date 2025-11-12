@@ -132,56 +132,75 @@ Currently minimal authentication infrastructure. Schema includes user and lender
 
 ## Recent Changes
 
-### Lender Portal Backend Implementation (Latest)
+### Lender Portal - Company Info and Questionnaire Separation (Latest)
 
-**Date**: Current session
+**Date**: November 12, 2025
 
-**Overview**: Implemented complete backend persistence and UI integration for the lender portal, enabling lenders to save and manage their questionnaire data and loan products.
+**Overview**: Separated Company Info from Questionnaire into two distinct sections, rebuilt questionnaire with new dropdown-based fields per user specifications.
 
-**Schema Updates**:
-- Completely rebuilt `loan_products` table to match user requirements with 15 fields
-- Added proper nullable fields for optional loan product attributes
-- Implemented `isActive` boolean flag for product lifecycle management
+**Company Info Implementation**:
+- Created standalone Company Info page (`/lender-company-info`)
+- 6 fields: Company Name, Contact Name, Phone Number, Email Address, Website, "What's cool about your company?"
+- Updated dashboard: Changed "Company Profile" to "Company Info" and activated the card
+- New API endpoints:
+  - POST `/api/lender-company-info` - Save company information
+  - GET `/api/lender-company-info/:lenderId` - Retrieve company information
+- Separate storage in MemStorage for company info data
 
-**Backend Implementation**:
-- Created storage interface methods: `saveLenderQuestionnaire`, `getLenderQuestionnaire`, `createLoanProduct`, `getLoanProducts`, `updateLoanProduct`, `deleteLoanProduct`
-- Implemented API routes:
-  - POST `/api/lender-questionnaire` - Upsert questionnaire data
-  - GET `/api/lender-questionnaire/:lenderId` - Retrieve questionnaire
-  - POST `/api/loan-products` - Create new loan product
-  - GET `/api/loan-products/:lenderId` - Get all products for lender
-  - PATCH `/api/loan-products/:id` - Update product
-  - DELETE `/api/loan-products/:id` - Delete product
-- Full Zod validation on all endpoints using schemas from drizzle-zod
+**Questionnaire Rebuild**:
+- Completely rebuilt questionnaire schema with 12 new fields:
+  1. Are you a broker or direct lender? (Y/N dropdown)
+  2. What is the fastest you can close a loan? (1-7 DAYS, 8-14 DAYS, 15-21 DAYS, 21-30 DAYS)
+  3. Do you offer non-traditional / creative lending? (Y/N dropdown)
+  4. Do you work with new investors? (Y/N dropdown)
+  5. What is the minimum credit score you will work with? (Below 600, 600-649, 650-699, 700+)
+  6. Do you offer deferred payment loans? (Y/N dropdown)
+  7. Do you offer rolled / points on the back? (Y/N dropdown)
+  8. Do you offer 100% funding of both the purchase and the rehab? (Y/N dropdown)
+  9. Do you offer financing on multi-unit properties? (5+ units) (Y/N dropdown)
+  10. Do you offer DSCR loans? (Y/N dropdown)
+  11. Do you offer loans in all 50 States? (Y/N dropdown)
+  12. State selection checkboxes (conditional - appears only if "No" to all 50 states)
 
-**Frontend Integration**:
-- Wired both forms to backend using React Query mutations
-- Proper cache invalidation after mutations using hierarchical query keys
-- Added `useQuery` to fetch and display saved loan products
-- Loading states, error handling, and success toasts
-- Product list displays immediately after adding products (cache invalidation works correctly)
-- Used styled divs instead of nested Cards for product display items
+**Schema Changes** (`shared/schema.ts`):
+- Replaced old questionnaire fields with new dropdown-based fields
+- All fields stored as text for dropdown selections
+- Added `statesServiced` as text array for state checkboxes
+- Removed old fields: companyDescription, businessStructure, yearsInBusiness, statesOperating, specializations, minLoanAmount, maxLoanAmount, creditRequirements, workWithNewInvestors (boolean), offerDeferredInterest (boolean)
+
+**Frontend Implementation**:
+- Clean questionnaire UI with shadcn Select components for all dropdowns
+- Conditional rendering of state checkboxes based on "all 50 states" selection
+- All 50 US states displayed in a scrollable grid with checkboxes
+- React Hook Form with Zod validation
+- Success toast notifications on save
 
 **Testing**:
-- End-to-end playwright tests confirm full data persistence flow
-- Lenders can save questionnaire, add multiple loan products, and see them displayed
-- All form validations working correctly
-- Optional numeric fields handled properly with nullable types
-- Company Info section tested and working with all 6 new fields
+- End-to-end playwright test confirms all dropdowns work correctly
+- State selection shows/hides based on "all 50 states" answer
+- Form submission and data persistence verified
+- Company Info form saves independently from questionnaire
 
-**Questionnaire Form Sections:**
-1. **Company Info** - Company Name, Contact Name, Phone Number, Email Address, Website, What's cool about your company?
-2. **Lending Criteria** - Business Structure, Years in Business, States Operating, Specializations, Loan Amounts, Credit Requirements, Checkboxes for new investors and deferred interest
+**Loan Products** (unchanged):
+- 15-field loan product form fully functional
+- Backend persistence and display working correctly
+
+**Architecture Notes**:
+- Company Info is now completely separate from Questionnaire
+- Company Info accessed via dashboard card
+- Questionnaire accessed via separate dashboard card
+- Both save to independent storage structures
+
+**Files Modified**:
+- `shared/schema.ts` - Rebuilt lenderQuestionnaires table with new fields
+- `server/storage.ts` - Updated upsertLenderQuestionnaire method, added company info methods
+- `server/routes.ts` - Added company info API endpoints
+- `client/src/pages/LenderQuestionnaire.tsx` - Complete rebuild with new dropdown fields
+- `client/src/pages/LenderCompanyInfo.tsx` - New file for company information
+- `client/src/pages/LenderDashboard.tsx` - Updated to show "Company Info" instead of "Company Profile"
+- `client/src/App.tsx` - Added route for company info page
 
 **Known Limitations**:
 - Password storage is plaintext (marked as TODO for production)
-- Edit/delete buttons not yet in UI for loan products (API routes exist)
 - Using placeholder lenderId "temp-lender-id" for testing
-- Company contact fields (name, email, phone, website) currently submitted with questionnaire; should be separated to update lenders table when real auth is implemented
-
-**Files Modified**:
-- `shared/schema.ts` - Updated loan_products schema, added companyDescription to lenderQuestionnaires
-- `server/storage.ts` - Added CRUD methods for questionnaire and loan products
-- `server/routes.ts` - Implemented all API endpoints
-- `client/src/pages/LenderQuestionnaire.tsx` - Added Company Info section, wired to backend with React Query
-- `client/src/pages/LenderLoanProducts.tsx` - Complete form + product display with backend integration
+- Edit/delete buttons not yet in UI for loan products (API routes exist)

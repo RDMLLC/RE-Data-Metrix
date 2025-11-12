@@ -67,34 +67,13 @@ export class MemStorage implements IStorage {
     
     this.companyInfo.set(lenderId, updated);
     
-    const questionnaire = await this.getLenderQuestionnaire(lenderId);
-    if (questionnaire && data.companyDescription) {
-      await this.upsertLenderQuestionnaire({
-        lenderId,
-        companyDescription: data.companyDescription,
-        businessStructure: questionnaire.businessStructure,
-        yearsInBusiness: questionnaire.yearsInBusiness,
-        statesOperating: questionnaire.statesOperating,
-        specializations: questionnaire.specializations,
-        minLoanAmount: questionnaire.minLoanAmount,
-        maxLoanAmount: questionnaire.maxLoanAmount,
-        creditRequirements: questionnaire.creditRequirements,
-        workWithNewInvestors: questionnaire.workWithNewInvestors,
-        offerDeferredInterest: questionnaire.offerDeferredInterest,
-      });
-    }
-    
     return updated;
   }
 
   async getLenderCompanyInfo(lenderId: string): Promise<any> {
     const info = this.companyInfo.get(lenderId);
-    const questionnaire = await this.getLenderQuestionnaire(lenderId);
     
-    return {
-      ...info,
-      companyDescription: questionnaire?.companyDescription || info?.companyDescription,
-    };
+    return info;
   }
 
   async upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire> {
@@ -106,16 +85,18 @@ export class MemStorage implements IStorage {
       const updated: LenderQuestionnaire = {
         ...existing,
         ...data,
-        companyDescription: data.companyDescription ?? existing.companyDescription ?? null,
-        businessStructure: data.businessStructure ?? existing.businessStructure ?? null,
-        yearsInBusiness: data.yearsInBusiness ?? existing.yearsInBusiness ?? null,
-        statesOperating: data.statesOperating ?? existing.statesOperating ?? null,
-        specializations: data.specializations ?? existing.specializations ?? null,
-        minLoanAmount: data.minLoanAmount ?? existing.minLoanAmount ?? null,
-        maxLoanAmount: data.maxLoanAmount ?? existing.maxLoanAmount ?? null,
-        creditRequirements: data.creditRequirements ?? existing.creditRequirements ?? null,
-        workWithNewInvestors: data.workWithNewInvestors ?? existing.workWithNewInvestors ?? false,
-        offerDeferredInterest: data.offerDeferredInterest ?? existing.offerDeferredInterest ?? false,
+        brokerOrDirectLender: data.brokerOrDirectLender ?? existing.brokerOrDirectLender ?? null,
+        fastestClosingTime: data.fastestClosingTime ?? existing.fastestClosingTime ?? null,
+        offerNonTraditionalLending: data.offerNonTraditionalLending ?? existing.offerNonTraditionalLending ?? null,
+        workWithNewInvestors: data.workWithNewInvestors ?? existing.workWithNewInvestors ?? null,
+        minCreditScore: data.minCreditScore ?? existing.minCreditScore ?? null,
+        offerDeferredPayment: data.offerDeferredPayment ?? existing.offerDeferredPayment ?? null,
+        offerRolledPoints: data.offerRolledPoints ?? existing.offerRolledPoints ?? null,
+        offer100PercentFunding: data.offer100PercentFunding ?? existing.offer100PercentFunding ?? null,
+        offerMultiUnitFinancing: data.offerMultiUnitFinancing ?? existing.offerMultiUnitFinancing ?? null,
+        offerDscrLoans: data.offerDscrLoans ?? existing.offerDscrLoans ?? null,
+        offerLoansAllStates: data.offerLoansAllStates ?? existing.offerLoansAllStates ?? null,
+        statesServiced: data.statesServiced ?? existing.statesServiced ?? null,
         updatedAt: new Date(),
       };
       this.questionnaires.set(existing.id, updated);
@@ -125,16 +106,18 @@ export class MemStorage implements IStorage {
       const questionnaire: LenderQuestionnaire = {
         id,
         lenderId: data.lenderId,
-        companyDescription: data.companyDescription ?? null,
-        businessStructure: data.businessStructure ?? null,
-        yearsInBusiness: data.yearsInBusiness ?? null,
-        statesOperating: data.statesOperating ?? null,
-        specializations: data.specializations ?? null,
-        minLoanAmount: data.minLoanAmount ?? null,
-        maxLoanAmount: data.maxLoanAmount ?? null,
-        creditRequirements: data.creditRequirements ?? null,
-        workWithNewInvestors: data.workWithNewInvestors ?? false,
-        offerDeferredInterest: data.offerDeferredInterest ?? false,
+        brokerOrDirectLender: data.brokerOrDirectLender ?? null,
+        fastestClosingTime: data.fastestClosingTime ?? null,
+        offerNonTraditionalLending: data.offerNonTraditionalLending ?? null,
+        workWithNewInvestors: data.workWithNewInvestors ?? null,
+        minCreditScore: data.minCreditScore ?? null,
+        offerDeferredPayment: data.offerDeferredPayment ?? null,
+        offerRolledPoints: data.offerRolledPoints ?? null,
+        offer100PercentFunding: data.offer100PercentFunding ?? null,
+        offerMultiUnitFinancing: data.offerMultiUnitFinancing ?? null,
+        offerDscrLoans: data.offerDscrLoans ?? null,
+        offerLoansAllStates: data.offerLoansAllStates ?? null,
+        statesServiced: data.statesServiced ?? null,
         updatedAt: new Date(),
       };
       this.questionnaires.set(id, questionnaire);
