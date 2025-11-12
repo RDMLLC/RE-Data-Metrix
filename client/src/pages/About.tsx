@@ -36,7 +36,7 @@ export default function About() {
               <ul className="space-y-3 text-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-success mt-1">•</span>
-                  <span>Monthly subscription model that makes powerful tools accessible to everyone</span>
+                  <span>Affordable subscription model that makes powerful tools accessible to everyone</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-success mt-1">•</span>
@@ -94,7 +94,7 @@ export default function About() {
             <Card className="p-6">
               <h3 className="text-xl font-semibold text-primary mb-2">Accessibility</h3>
               <p className="text-muted-foreground">
-                Making professional-grade tools affordable through our monthly subscription model.
+                Making professional-grade tools affordable through our affordable subscription model.
               </p>
             </Card>
             <Card className="p-6">

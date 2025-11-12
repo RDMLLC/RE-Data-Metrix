@@ -69,7 +69,7 @@ export default function Company() {
           
           <div className="space-y-6">
             <Card className="p-8">
-              <h3 className="text-2xl font-semibold text-primary mb-4">Monthly Subscription Model</h3>
+              <h3 className="text-2xl font-semibold text-primary mb-4">Affordable Subscription Model</h3>
               <p className="text-lg text-foreground">
                 For a simple monthly fee, gain unlimited access to our comprehensive suite of deal analysis tools, lender database, and application platform. No hidden fees, no per-transaction charges—just straightforward pricing that scales with your success.
               </p>
