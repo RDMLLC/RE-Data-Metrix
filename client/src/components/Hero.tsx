@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import logoFullImg from "@assets/Logo (2)_1762969260482.jpg";
 
 export default function Hero() {
   const scrollToForm = () => {
@@ -18,6 +19,10 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-24">
+        <div className="mb-8 flex justify-center">
+          <img src={logoFullImg} alt="RE Data Metrix - Turning Terms into Returns" className="h-32 md:h-40 w-auto" />
+        </div>
+        
         <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
           Changing the way real estate investors{" "}
           <span className="text-accent">analyse and fund</span> their deals!

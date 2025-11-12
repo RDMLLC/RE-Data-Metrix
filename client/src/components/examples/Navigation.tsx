@@ -1,5 +1,9 @@
 import Navigation from '../Navigation';
 
 export default function NavigationExample() {
-  return <Navigation />;
+  return (
+    <div className="bg-background">
+      <Navigation />
+    </div>
+  );
 }

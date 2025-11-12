@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Building2, MapPin, Phone, Mail } from "lucide-react";
+import { MapPin, Phone } from "lucide-react";
+import logoImg from "@assets/Transparent Logo_1762969260481.png";
 
 export default function Footer() {
   return (
@@ -10,10 +11,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           {/* Company Info */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Building2 className="h-6 w-6 text-accent" />
+            <div className="flex items-center gap-3 mb-4">
+              <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8" />
               <span className="font-bold text-lg">RE Data Metrix</span>
             </div>
+            <p className="text-primary-foreground/80 text-sm mb-2 italic">
+              Turning Terms into Returns
+            </p>
             <p className="text-primary-foreground/80 text-sm mb-4">
               Changing the way real estate investors analyse and fund their deals.
             </p>

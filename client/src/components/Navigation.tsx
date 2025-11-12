@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Building2, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import logoImg from "@assets/Transparent Logo_1762969260481.png";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -21,8 +22,8 @@ export default function Navigation() {
     <nav className="bg-primary text-primary-foreground sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">
-            <Building2 className="h-8 w-8 text-accent" />
+          <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">
+            <img src={logoImg} alt="RE Data Metrix" className="h-10 w-10" />
             <span className="font-bold text-xl">RE Data Metrix</span>
           </Link>
 
