@@ -2,7 +2,7 @@ import Layout from "@/components/Layout";
 import Hero from "@/components/Hero";
 import PrelaunchForm from "@/components/PrelaunchForm";
 import { Card } from "@/components/ui/card";
-import { TrendingUp, Users, DollarSign, BarChart3, Zap, Shield } from "lucide-react";
+import { Users, BarChart3, Shield } from "lucide-react";
 
 export default function Home() {
   const features = [
@@ -15,21 +15,6 @@ export default function Home() {
       icon: <Users className="h-8 w-8 text-accent" />,
       title: "Lender Network",
       description: "Connect with verified lenders who understand real estate investment and creative financing."
-    },
-    {
-      icon: <Zap className="h-8 w-8 text-accent" />,
-      title: "One-Click Applications",
-      description: "Streamlined application process to get funding faster and close deals with confidence."
-    },
-    {
-      icon: <DollarSign className="h-8 w-8 text-accent" />,
-      title: "Monthly Subscription",
-      description: "Affordable access to powerful tools and resources without breaking the bank."
-    },
-    {
-      icon: <TrendingUp className="h-8 w-8 text-accent" />,
-      title: "Real-Time Insights",
-      description: "Stay updated with market trends and funding opportunities tailored to your investment strategy."
     },
     {
       icon: <Shield className="h-8 w-8 text-accent" />,
