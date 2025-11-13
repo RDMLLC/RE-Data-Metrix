@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { MapPin, Phone } from "lucide-react";
+import { SiFacebook, SiLinkedin } from "react-icons/si";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 
 export default function Footer() {
@@ -36,6 +37,29 @@ export default function Footer() {
                 <Phone className="h-4 w-4 text-accent" />
                 <span>(888) 450-4408</span>
               </div>
+            </div>
+            
+            <div className="flex gap-4 mt-6">
+              <a
+                href="https://www.facebook.com/profile.php?id=61582008407624"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white/10 backdrop-blur-sm p-2 rounded-lg hover-elevate active-elevate-2 transition-colors text-accent"
+                aria-label="Visit our Facebook page"
+                data-testid="link-facebook"
+              >
+                <SiFacebook className="h-5 w-5" />
+              </a>
+              <a
+                href="https://linkedin.com/company/re-data-metrix-llc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white/10 backdrop-blur-sm p-2 rounded-lg hover-elevate active-elevate-2 transition-colors text-accent"
+                aria-label="Visit our LinkedIn page"
+                data-testid="link-linkedin"
+              >
+                <SiLinkedin className="h-5 w-5" />
+              </a>
             </div>
           </div>
 
