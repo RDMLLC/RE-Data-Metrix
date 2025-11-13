@@ -117,13 +117,13 @@ export default function LenderQuestionnaire() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 
-                {/* Are you a broker or direct lender? */}
+                {/* Are you a direct lender or broker? */}
                 <FormField
                   control={form.control}
                   name="brokerOrDirectLender"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground">Are you a broker or direct lender?</FormLabel>
+                      <FormLabel className="text-foreground">Are you a direct lender or broker?</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-broker-or-lender">
@@ -131,8 +131,8 @@ export default function LenderQuestionnaire() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
+                          <SelectItem value="Lender">Lender</SelectItem>
+                          <SelectItem value="Broker">Broker</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -158,6 +158,7 @@ export default function LenderQuestionnaire() {
                           <SelectItem value="8-14 DAYS">8-14 DAYS</SelectItem>
                           <SelectItem value="15-21 DAYS">15-21 DAYS</SelectItem>
                           <SelectItem value="21-30 DAYS">21-30 DAYS</SelectItem>
+                          <SelectItem value="More than 30 days">More than 30 days</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

@@ -119,7 +119,7 @@ export default function LenderLoanProducts() {
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="productName"
@@ -138,53 +138,80 @@ export default function LenderLoanProducts() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="newInvestorOk"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">New investor OK?</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value === "true")}
-                        value={field.value ? "true" : "false"}
-                      >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="newInvestorOk"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">New investor OK?</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "true")}
+                          value={field.value ? "true" : "false"}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-new-investor">
+                              <SelectValue placeholder="Select option" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="minCreditScore"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Min Credit Score</FormLabel>
                         <FormControl>
-                          <SelectTrigger data-testid="select-new-investor">
-                            <SelectValue placeholder="Select option" />
-                          </SelectTrigger>
+                          <Input
+                            {...field}
+                            type="number"
+                            placeholder="660"
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                            value={field.value || ""}
+                            data-testid="input-min-credit-score"
+                          />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="true">Yes</SelectItem>
-                          <SelectItem value="false">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="minCreditScore"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Minimum Credit Score</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          placeholder="660"
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                          value={field.value || ""}
-                          data-testid="input-min-credit-score"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="drawnFundsOnly"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Drawn Funds Only</FormLabel>
+                        <Select
+                          onValueChange={(value) => field.onChange(value === "true")}
+                          value={field.value ? "true" : "false"}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-drawn-funds">
+                              <SelectValue placeholder="Select option" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="true">Yes</SelectItem>
+                            <SelectItem value="false">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="maxLtvBuy"
@@ -226,7 +253,7 @@ export default function LenderLoanProducts() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="interestRate"
@@ -271,34 +298,7 @@ export default function LenderLoanProducts() {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="drawnFundsOnly"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Drawn Funds Only</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(value === "true")}
-                        value={field.value ? "true" : "false"}
-                      >
-                        <FormControl>
-                          <SelectTrigger data-testid="select-drawn-funds">
-                            <SelectValue placeholder="Select option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="true">Yes</SelectItem>
-                          <SelectItem value="false">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
                     name="points"
@@ -318,7 +318,9 @@ export default function LenderLoanProducts() {
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="pointsDeferred"
@@ -343,9 +345,7 @@ export default function LenderLoanProducts() {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
                     name="maxLoanArv"
@@ -365,7 +365,9 @@ export default function LenderLoanProducts() {
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="appraisalRequired"
@@ -390,67 +392,69 @@ export default function LenderLoanProducts() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="estimatedAppraisalCost"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Est. Appraisal Cost ($)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            type="text"
+                            placeholder="500"
+                            data-testid="input-appraisal-cost"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="estimatedAppraisalCost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Estimated Appraisal Cost ($)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          type="text"
-                          placeholder="500"
-                          data-testid="input-appraisal-cost"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="fees"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Fees (Doc prep) ($)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            type="text"
+                            placeholder="1500"
+                            data-testid="input-fees"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="fees"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Fees (Doc prep, other) ($)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          type="text"
-                          placeholder="1500"
-                          data-testid="input-fees"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="costPerDraw"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Cost per Draw? ($)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          type="text"
-                          placeholder="250"
-                          data-testid="input-cost-per-draw"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="costPerDraw"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Cost per Draw ($)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            type="text"
+                            placeholder="250"
+                            data-testid="input-cost-per-draw"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="flex gap-4 pt-6">
                   <Button
