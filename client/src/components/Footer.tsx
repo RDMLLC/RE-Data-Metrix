@@ -34,7 +34,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-accent" />
-                <span>(Coming Soon)</span>
+                <span>(888) 450-4408</span>
               </div>
             </div>
           </div>

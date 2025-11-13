@@ -51,7 +51,7 @@ export default function Company() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Phone className="h-5 w-5 text-accent" />
-                  <span className="text-primary-foreground/80">(Coming Soon)</span>
+                  <span className="text-primary-foreground/80">(888) 450-4408</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-accent" />
