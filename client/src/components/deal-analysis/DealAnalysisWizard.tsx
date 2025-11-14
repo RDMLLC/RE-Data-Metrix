@@ -23,15 +23,23 @@ const wizardSchema = z.object({
   lastSaleDate: z.string().optional(),
   
   purchasePrice: z.number().optional(),
-  closingCosts: z.number().optional(),
   rehabBudget: z.number().optional(),
-  contingencyPercent: z.number().optional(),
+  arv: z.number().optional(),
+  projectLength: z.number().optional(),
   
-  holdingMonths: z.number().optional(),
-  sellingPrice: z.number().optional(),
-  sellingCosts: z.number().optional(),
-  monthlyRent: z.number().optional(),
-  exitStrategy: z.string().optional(),
+  attorneyFees: z.number().optional(),
+  docPrepFees: z.number().optional(),
+  titleExam: z.number().optional(),
+  titleInsurance: z.number().optional(),
+  
+  hoaFees: z.number().optional(),
+  hoaTransferFee: z.number().optional(),
+  monthlyUtilities: z.number().optional(),
+  annualInsurance: z.number().optional(),
+  
+  sellPrice: z.number().optional(),
+  closingCostsSellPercent: z.number().optional(),
+  realEstateCommissionPercent: z.number().optional(),
   
   needsLoan: z.boolean().default(false),
   desiredLoanAmount: z.number().optional(),
