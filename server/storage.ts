@@ -18,6 +18,7 @@ export interface IStorage {
   
   upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire>;
   getLenderQuestionnaire(lenderId: string): Promise<LenderQuestionnaire | undefined>;
+  searchLenders(criteria: any): Promise<any[]>;
   
   createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct>;
   getLoanProducts(lenderId: string): Promise<LoanProduct[]>;
@@ -129,6 +130,68 @@ export class MemStorage implements IStorage {
     return Array.from(this.questionnaires.values()).find(
       (q) => q.lenderId === lenderId
     );
+  }
+
+  async searchLenders(criteria: any): Promise<any[]> {
+    const questionnaires = Array.from(this.questionnaires.values());
+    
+    const matchingQuestionnaires = questionnaires.filter((q) => {
+      if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && 
+          q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
+        return false;
+      }
+      if (criteria.fastestClosingTime && criteria.fastestClosingTime !== "" && 
+          q.fastestClosingTime !== criteria.fastestClosingTime) {
+        return false;
+      }
+      if (criteria.offerNonTraditionalLending && criteria.offerNonTraditionalLending !== "" && 
+          q.offerNonTraditionalLending !== criteria.offerNonTraditionalLending) {
+        return false;
+      }
+      if (criteria.workWithNewInvestors && criteria.workWithNewInvestors !== "" && 
+          q.workWithNewInvestors !== criteria.workWithNewInvestors) {
+        return false;
+      }
+      if (criteria.minCreditScore && criteria.minCreditScore !== "" && 
+          q.minCreditScore !== criteria.minCreditScore) {
+        return false;
+      }
+      if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && 
+          q.offerDeferredPayment !== criteria.offerDeferredPayment) {
+        return false;
+      }
+      if (criteria.offerRolledPoints && criteria.offerRolledPoints !== "" && 
+          q.offerRolledPoints !== criteria.offerRolledPoints) {
+        return false;
+      }
+      if (criteria.offer100PercentFunding && criteria.offer100PercentFunding !== "" && 
+          q.offer100PercentFunding !== criteria.offer100PercentFunding) {
+        return false;
+      }
+      if (criteria.offerMultiUnitFinancing && criteria.offerMultiUnitFinancing !== "" && 
+          q.offerMultiUnitFinancing !== criteria.offerMultiUnitFinancing) {
+        return false;
+      }
+      return true;
+    });
+
+    const results = await Promise.all(
+      matchingQuestionnaires.slice(0, 3).map(async (q) => {
+        const companyInfo = await this.getLenderCompanyInfo(q.lenderId);
+        return {
+          id: q.lenderId,
+          companyName: companyInfo?.companyName || "",
+          contactName: companyInfo?.contactName || "",
+          phone: companyInfo?.phone || "",
+          email: companyInfo?.email || "",
+          website: companyInfo?.website || "",
+          referralLink: companyInfo?.referralLink || "",
+          companyDescription: companyInfo?.companyDescription || "",
+        };
+      })
+    );
+
+    return results;
   }
 
   async createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct> {
