@@ -4,9 +4,15 @@ import {
   type LenderQuestionnaire,
   type InsertLenderQuestionnaire,
   type LoanProduct,
-  type InsertLoanProduct
+  type InsertLoanProduct,
+  users as usersTable,
+  lenders as lendersTable,
+  lenderQuestionnaires as lenderQuestionnairesTable,
+  loanProducts as loanProductsTable
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -136,39 +142,39 @@ export class MemStorage implements IStorage {
     const questionnaires = Array.from(this.questionnaires.values());
     
     const matchingQuestionnaires = questionnaires.filter((q) => {
-      if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && 
+      if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && criteria.brokerOrDirectLender !== "any" &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
         return false;
       }
-      if (criteria.fastestClosingTime && criteria.fastestClosingTime !== "" && 
+      if (criteria.fastestClosingTime && criteria.fastestClosingTime !== "" && criteria.fastestClosingTime !== "any" &&
           q.fastestClosingTime !== criteria.fastestClosingTime) {
         return false;
       }
-      if (criteria.offerNonTraditionalLending && criteria.offerNonTraditionalLending !== "" && 
+      if (criteria.offerNonTraditionalLending && criteria.offerNonTraditionalLending !== "" && criteria.offerNonTraditionalLending !== "any" &&
           q.offerNonTraditionalLending !== criteria.offerNonTraditionalLending) {
         return false;
       }
-      if (criteria.workWithNewInvestors && criteria.workWithNewInvestors !== "" && 
+      if (criteria.workWithNewInvestors && criteria.workWithNewInvestors !== "" && criteria.workWithNewInvestors !== "any" &&
           q.workWithNewInvestors !== criteria.workWithNewInvestors) {
         return false;
       }
-      if (criteria.minCreditScore && criteria.minCreditScore !== "" && 
+      if (criteria.minCreditScore && criteria.minCreditScore !== "" && criteria.minCreditScore !== "any" &&
           q.minCreditScore !== criteria.minCreditScore) {
         return false;
       }
-      if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && 
+      if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && criteria.offerDeferredPayment !== "any" &&
           q.offerDeferredPayment !== criteria.offerDeferredPayment) {
         return false;
       }
-      if (criteria.offerRolledPoints && criteria.offerRolledPoints !== "" && 
+      if (criteria.offerRolledPoints && criteria.offerRolledPoints !== "" && criteria.offerRolledPoints !== "any" &&
           q.offerRolledPoints !== criteria.offerRolledPoints) {
         return false;
       }
-      if (criteria.offer100PercentFunding && criteria.offer100PercentFunding !== "" && 
+      if (criteria.offer100PercentFunding && criteria.offer100PercentFunding !== "" && criteria.offer100PercentFunding !== "any" &&
           q.offer100PercentFunding !== criteria.offer100PercentFunding) {
         return false;
       }
-      if (criteria.offerMultiUnitFinancing && criteria.offerMultiUnitFinancing !== "" && 
+      if (criteria.offerMultiUnitFinancing && criteria.offerMultiUnitFinancing !== "" && criteria.offerMultiUnitFinancing !== "any" &&
           q.offerMultiUnitFinancing !== criteria.offerMultiUnitFinancing) {
         return false;
       }
@@ -244,4 +250,163 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1);
+    return result[0];
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const result = await db.insert(usersTable).values(insertUser).returning();
+    return result[0];
+  }
+
+  async updateLenderCompanyInfo(data: any): Promise<any> {
+    const lenderId = data.lenderId;
+    const updateData: any = {};
+    
+    if (data.companyName !== undefined) updateData.companyName = data.companyName;
+    if (data.contactName !== undefined) updateData.contactName = data.contactName;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.website !== undefined) updateData.website = data.website;
+    if (data.referralLink !== undefined) updateData.referralLink = data.referralLink;
+    
+    await db.update(lendersTable).set(updateData).where(eq(lendersTable.id, lenderId));
+    
+    const result = await db.select().from(lendersTable).where(eq(lendersTable.id, lenderId)).limit(1);
+    return { ...result[0], companyDescription: data.companyDescription };
+  }
+
+  async getLenderCompanyInfo(lenderId: string): Promise<any> {
+    const result = await db.select().from(lendersTable).where(eq(lendersTable.id, lenderId)).limit(1);
+    if (!result[0]) return null;
+    return { ...result[0], lenderId: result[0].id };
+  }
+
+  async upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire> {
+    const existing = await db.select().from(lenderQuestionnairesTable)
+      .where(eq(lenderQuestionnairesTable.lenderId, data.lenderId)).limit(1);
+
+    if (existing.length > 0) {
+      const updated = await db.update(lenderQuestionnairesTable)
+        .set({
+          brokerOrDirectLender: data.brokerOrDirectLender,
+          fastestClosingTime: data.fastestClosingTime,
+          offerNonTraditionalLending: data.offerNonTraditionalLending,
+          workWithNewInvestors: data.workWithNewInvestors,
+          minCreditScore: data.minCreditScore,
+          offerDeferredPayment: data.offerDeferredPayment,
+          offerRolledPoints: data.offerRolledPoints,
+          offer100PercentFunding: data.offer100PercentFunding,
+          offerMultiUnitFinancing: data.offerMultiUnitFinancing,
+          offerDscrLoans: data.offerDscrLoans,
+          offerLoansAllStates: data.offerLoansAllStates,
+          statesServiced: data.statesServiced,
+          updatedAt: new Date(),
+        })
+        .where(eq(lenderQuestionnairesTable.id, existing[0].id))
+        .returning();
+      return updated[0];
+    } else {
+      const inserted = await db.insert(lenderQuestionnairesTable).values(data).returning();
+      return inserted[0];
+    }
+  }
+
+  async getLenderQuestionnaire(lenderId: string): Promise<LenderQuestionnaire | undefined> {
+    const result = await db.select().from(lenderQuestionnairesTable)
+      .where(eq(lenderQuestionnairesTable.lenderId, lenderId)).limit(1);
+    return result[0];
+  }
+
+  async searchLenders(criteria: any): Promise<any[]> {
+    let query = db.select().from(lenderQuestionnairesTable);
+    
+    const questionnaires = await query;
+    
+    const matchingQuestionnaires = questionnaires.filter((q) => {
+      if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && criteria.brokerOrDirectLender !== "any" &&
+          q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
+        return false;
+      }
+      if (criteria.fastestClosingTime && criteria.fastestClosingTime !== "" && criteria.fastestClosingTime !== "any" &&
+          q.fastestClosingTime !== criteria.fastestClosingTime) {
+        return false;
+      }
+      if (criteria.offerNonTraditionalLending && criteria.offerNonTraditionalLending !== "" && criteria.offerNonTraditionalLending !== "any" &&
+          q.offerNonTraditionalLending !== criteria.offerNonTraditionalLending) {
+        return false;
+      }
+      if (criteria.workWithNewInvestors && criteria.workWithNewInvestors !== "" && criteria.workWithNewInvestors !== "any" &&
+          q.workWithNewInvestors !== criteria.workWithNewInvestors) {
+        return false;
+      }
+      if (criteria.minCreditScore && criteria.minCreditScore !== "" && criteria.minCreditScore !== "any" &&
+          q.minCreditScore !== criteria.minCreditScore) {
+        return false;
+      }
+      if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && criteria.offerDeferredPayment !== "any" &&
+          q.offerDeferredPayment !== criteria.offerDeferredPayment) {
+        return false;
+      }
+      if (criteria.offerRolledPoints && criteria.offerRolledPoints !== "" && criteria.offerRolledPoints !== "any" &&
+          q.offerRolledPoints !== criteria.offerRolledPoints) {
+        return false;
+      }
+      if (criteria.offer100PercentFunding && criteria.offer100PercentFunding !== "" && criteria.offer100PercentFunding !== "any" &&
+          q.offer100PercentFunding !== criteria.offer100PercentFunding) {
+        return false;
+      }
+      if (criteria.offerMultiUnitFinancing && criteria.offerMultiUnitFinancing !== "" && criteria.offerMultiUnitFinancing !== "any" &&
+          q.offerMultiUnitFinancing !== criteria.offerMultiUnitFinancing) {
+        return false;
+      }
+      return true;
+    });
+
+    const results = await Promise.all(
+      matchingQuestionnaires.slice(0, 3).map(async (q) => {
+        const companyInfo = await this.getLenderCompanyInfo(q.lenderId);
+        return {
+          id: q.lenderId,
+          companyName: companyInfo?.companyName || "",
+          contactName: companyInfo?.contactName || "",
+          phone: companyInfo?.phone || "",
+          email: companyInfo?.email || "",
+          website: companyInfo?.website || "",
+          referralLink: companyInfo?.referralLink || "",
+          companyDescription: companyInfo?.companyDescription || "",
+        };
+      })
+    );
+
+    return results;
+  }
+
+  async createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct> {
+    const result = await db.insert(loanProductsTable).values(data).returning();
+    return result[0];
+  }
+
+  async getLoanProducts(lenderId: string): Promise<LoanProduct[]> {
+    return await db.select().from(loanProductsTable).where(eq(loanProductsTable.lenderId, lenderId));
+  }
+
+  async updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined> {
+    const result = await db.update(loanProductsTable).set(data).where(eq(loanProductsTable.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteLoanProduct(id: string): Promise<boolean> {
+    const result = await db.delete(loanProductsTable).where(eq(loanProductsTable.id, id)).returning();
+    return result.length > 0;
+  }
+}
+
+export const storage = new DatabaseStorage();

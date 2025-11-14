@@ -43,15 +43,15 @@ export default function Lenders() {
   const form = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
-      brokerOrDirectLender: "",
-      fastestClosingTime: "",
-      offerNonTraditionalLending: "",
-      workWithNewInvestors: "",
-      minCreditScore: "",
-      offerDeferredPayment: "",
-      offerRolledPoints: "",
-      offer100PercentFunding: "",
-      offerMultiUnitFinancing: "",
+      brokerOrDirectLender: "any",
+      fastestClosingTime: "any",
+      offerNonTraditionalLending: "any",
+      workWithNewInvestors: "any",
+      minCreditScore: "any",
+      offerDeferredPayment: "any",
+      offerRolledPoints: "any",
+      offer100PercentFunding: "any",
+      offerMultiUnitFinancing: "any",
     },
   });
 
@@ -99,7 +99,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Lender">Lender</SelectItem>
                           <SelectItem value="Broker">Broker</SelectItem>
                         </SelectContent>
@@ -123,7 +123,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="1-7 DAYS">1-7 DAYS</SelectItem>
                           <SelectItem value="8-14 DAYS">8-14 DAYS</SelectItem>
                           <SelectItem value="15-21 DAYS">15-21 DAYS</SelectItem>
@@ -150,7 +150,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Yes">Yes</SelectItem>
                           <SelectItem value="No">No</SelectItem>
                         </SelectContent>
@@ -174,7 +174,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Yes">Yes</SelectItem>
                           <SelectItem value="No">No</SelectItem>
                         </SelectContent>
@@ -198,7 +198,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Below 600">Below 600</SelectItem>
                           <SelectItem value="600-649">600-649</SelectItem>
                           <SelectItem value="650-699">650-699</SelectItem>
@@ -224,7 +224,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Yes">Yes</SelectItem>
                           <SelectItem value="No">No</SelectItem>
                         </SelectContent>
@@ -248,7 +248,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Yes">Yes</SelectItem>
                           <SelectItem value="No">No</SelectItem>
                         </SelectContent>
@@ -272,7 +272,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Yes">Yes</SelectItem>
                           <SelectItem value="No">No</SelectItem>
                         </SelectContent>
@@ -296,7 +296,7 @@ export default function Lenders() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Any</SelectItem>
+                          <SelectItem value="any">Any</SelectItem>
                           <SelectItem value="Yes">Yes</SelectItem>
                           <SelectItem value="No">No</SelectItem>
                         </SelectContent>
@@ -325,9 +325,9 @@ export default function Lenders() {
         {/* Search Results */}
         {searchResults.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-primary mb-6">Search Results (Top {searchResults.length})</h2>
+            <h2 className="text-3xl font-bold text-primary mb-6">Search Results (Top {Math.min(searchResults.length, 3)})</h2>
             <div className="space-y-6">
-              {searchResults.map((lender) => (
+              {searchResults.slice(0, 3).map((lender) => (
                 <Card key={lender.id} className="p-6" data-testid={`card-lender-${lender.id}`}>
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1">
