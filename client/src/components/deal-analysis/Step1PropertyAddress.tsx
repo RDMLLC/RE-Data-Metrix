@@ -79,7 +79,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       toast({
         variant: "destructive",
         title: "Invalid URL",
-        description: "Please provide a valid Redfin or Zillow property URL.",
+        description: "Please provide a valid Redfin or Zillow property URL. We currently only support these platforms.",
       });
       return;
     }
