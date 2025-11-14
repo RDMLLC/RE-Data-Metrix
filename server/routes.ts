@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema } from "@shared/schema";
 import { z } from "zod";
+import { propertyAPIService } from "./services/property-api.factory";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -119,6 +120,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       res.status(500).json({ error: "Failed to search lenders" });
+    }
+  });
+
+  // Property Lookup Route
+  const propertyLookupSchema = z.object({
+    address: z.string().min(1, "Address is required"),
+    city: z.string().min(1, "City is required"),
+    state: z.string().min(2, "State is required"),
+    zipCode: z.string().min(5, "ZIP code is required"),
+  });
+
+  app.post("/api/property/lookup", async (req, res) => {
+    try {
+      const { address, city, state, zipCode } = propertyLookupSchema.parse(req.body);
+      const propertyData = await propertyAPIService.getPropertyByAddress(address, city, state, zipCode);
+      
+      if (!propertyData) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+      
+      res.json(propertyData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      console.error("Property lookup error:", error);
+      res.status(500).json({ error: "Failed to fetch property data" });
     }
   });
 
