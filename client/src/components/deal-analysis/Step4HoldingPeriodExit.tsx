@@ -103,8 +103,9 @@ export default function Step4HoldingPeriodExit({
   const propertyTaxTotal = propertyTaxMonthly * projectLength;
   const utilitiesTotal = monthlyUtilities * projectLength;
   const insuranceTotal = (annualInsurance / 12) * projectLength;
+  const hoaFeesTotal = hoaFees * projectLength;
   
-  const estimatedCarryingCosts = hoaFees + hoaTransferFee + propertyTaxTotal + utilitiesTotal + insuranceTotal;
+  const estimatedCarryingCosts = hoaFeesTotal + hoaTransferFee + propertyTaxTotal + utilitiesTotal + insuranceTotal;
   
   const estimatedTotalInvestment = totalProjectCost + estimatedClosingCostsBuy + estimatedCarryingCosts;
   
