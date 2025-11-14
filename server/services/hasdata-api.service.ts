@@ -76,27 +76,23 @@ export class HasDataAPIService implements IPropertyAPIService {
   }
 
   private transformRedfinResponse(data: any): PropertyData {
-    const addressParts = data.address?.split(',') || [];
-    const streetAddress = addressParts[0]?.trim() || '';
-    const city = addressParts[1]?.trim() || '';
-    const stateZip = addressParts[2]?.trim() || '';
-    const [state, zipCode] = stateZip.split(' ');
-
+    const property = data.property || data;
+    
     return {
-      address: streetAddress,
-      city: city,
-      state: state || '',
-      zipCode: zipCode || '',
-      propertyType: data.propertyType || data.homeType,
-      bedrooms: this.parseNumber(data.beds || data.bedrooms),
-      bathrooms: this.parseNumber(data.baths || data.bathrooms),
-      sqft: this.parseNumber(data.sqFt || data.squareFeet),
-      lotSize: this.parseNumber(data.lotSize),
-      yearBuilt: this.parseNumber(data.yearBuilt),
-      taxAssessedValue: this.parseNumber(data.taxAssessedValue),
-      estimatedValue: this.parseNumber(data.price || data.listPrice),
-      lastSalePrice: this.parseNumber(data.lastSoldPrice),
-      lastSaleDate: data.lastSoldDate,
+      address: property.address?.street || '',
+      city: property.address?.city || '',
+      state: property.address?.state || '',
+      zipCode: property.address?.zipcode || '',
+      propertyType: property.propertyType || property.homeType,
+      bedrooms: this.parseNumber(property.beds || property.bedrooms),
+      bathrooms: this.parseNumber(property.baths || property.bathrooms),
+      sqft: this.parseNumber(property.area || property.sqFt || property.squareFeet),
+      lotSize: this.parseNumber(property.lotSize),
+      yearBuilt: this.parseNumber(property.yearBuilt),
+      taxAssessedValue: this.parseNumber(property.taxAssessedValue),
+      estimatedValue: this.parseNumber(property.price || property.listPrice),
+      lastSalePrice: this.parseNumber(property.lastSoldPrice),
+      lastSaleDate: property.lastSoldDate,
     };
   }
 
