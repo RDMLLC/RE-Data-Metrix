@@ -1,0 +1,44 @@
+I'll do my best to answer. Let me know what else you need. 
+
+The entry of the loan criteria in step 5 is only if the user enters Yes to "Do you have a loan you are currently looking at?"
+
+If they select yes, the questions below will show up in a search format
+
+When the user proceeds to step six, the following things happen:
+calculations are performed and numbers presented with no lender selected. I.E. it's a cash sale. That goes in the cash sale column. This happens for every entry. 
+
+If the user selected Yes and they filled out the loan information (the fields match the loan information presented in the Loan Products database entered by the lenders) the calculations based on the user entered data are presented in the Lender 0 column
+
+Regarding "Should I reuse the existing search functionality you already built for the Lenders page, or create something new?"
+The search criteria will cross reference the input with the loan products database. This is a deal analysis and loan product search. The first search is a lender search and it only based on the lender questionnaire. 
+
+The system will then select three loan products to present. The selection criteria will be as follows
+
+Lender must lend in the state of the property
+Lender must accept the user based on their credit score
+Loan amount must be within the lenders criteria
+
+Once these filters are applied, the next criteria are:
+
+Present the loan product that has the highest bottom line profit dollars
+Present the loan product that has the lowest out of pocket expense
+Present the loan product that allows for the fastest close I.E. Make a selection from a lender that can close in 1-7 days.
+Lastly, if there are multiple loan products with the same results (+/- 2%), the system applies the criteria of a field we have to add. 
+Add the field "Referral Amount" to the Company Info form in the lender portal. 
+The input will be either a dollar amount or a percentage. It will have a dropdown selecting $ or %
+The system will calculate the referral fee due to the company
+If a percentage, apply the percentage to the loan amount
+If a dollar amount, that's the referral fee
+Compare the referral fees for the loans that meet the above criteria
+Choose the highest referral fee amount qualifying loan products and present that loan product
+
+Each loan product presented will have a button below that will connect to the referral link in the lender Company Info
+
+Other notes:
+Is it a double close is there simply to calculate costs to the user. It does not impact lender selection. If a double close is selected, there will be an option to select if they are paying for both closes. If they select yes, the attorney fees will be doubled. 
+The search function will cross reference the user entered and automatically calculated information against the loan products database, which is comprised of all loan products entered by all lenders.  
+
+Regarding "If the deal's LTV is 75% but lender only goes to 70% → exclude them?"
+Lenders will still loan above the approved LTV%, but the user will be responsible for the overage. It will therefore increase the total out of pocket amount due by the user. 
+
+Put a radio button asking the user if they wish to save this property in their account. If yes, save it to their account. If no, it goes away when the user is done with the analysis. 
