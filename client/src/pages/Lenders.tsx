@@ -58,7 +58,8 @@ export default function Lenders() {
   const onSubmit = async (data: SearchForm) => {
     setIsSearching(true);
     try {
-      const results = await apiRequest("POST", "/api/search-lenders", data);
+      const response = await apiRequest("POST", "/api/search-lenders", data);
+      const results = await response.json();
       setSearchResults(results);
     } catch (error) {
       console.error("Search failed:", error);

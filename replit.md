@@ -132,7 +132,65 @@ Currently minimal authentication infrastructure. Schema includes user and lender
 
 ## Recent Changes
 
-### Lender Portal - Company Info and Questionnaire Separation (Latest)
+### Database Migration & Lender Search (Latest)
+
+**Date**: November 14, 2025
+
+**Overview**: Migrated from in-memory storage to production-ready PostgreSQL database using Drizzle ORM. Implemented functional lender search tool with 9 criteria fields matching questionnaire structure.
+
+**Database Migration**:
+- Created DatabaseStorage class replacing MemStorage for production deployment
+- Full CRUD operations using Drizzle ORM with type-safe queries
+- Uses existing PostgreSQL database via Neon serverless driver
+- All lender, questionnaire, and loan product data now persisted in database
+- Search functionality queries database directly for real-time results
+
+**Lender Search Feature**:
+- Added search form on Lenders page with 9 criteria fields:
+  1. Broker or Direct Lender (Yes/No/Any dropdown)
+  2. Fastest Closing Time (1-7, 8-14, 15-21, 22-30 DAYS, Any)
+  3. Non-Traditional Lending (Yes/No/Any)
+  4. Work with New Investors (Yes/No/Any)
+  5. Minimum Credit Score (Below 600, 600-649, 650-699, 700+, Any)
+  6. Deferred Payment Loans (Yes/No/Any)
+  7. Rolled Points (Yes/No/Any)
+  8. 100% Funding (Yes/No/Any)
+  9. Multi-Unit Financing (Yes/No/Any)
+- All dropdowns default to "any" for optional filtering
+- Backend filters out "any" values to treat them as optional criteria
+- Displays top 3 matching lenders with company information
+- "Contact the Lender" button links to referralLink for each result
+
+**Referral Link Feature**:
+- Added referralLink field to lenders schema
+- Updated company info form to capture referral link
+- Search results display "Contact the Lender" button linking to referralLink
+- Allows lenders to provide custom referral/contact URLs
+
+**Questionnaire Update**:
+- Changed closing time option from "21-30 DAYS" to "22-30 DAYS"
+- Ensures consistency between questionnaire and search form
+
+**API Endpoints Added**:
+- POST `/api/search-lenders` - Search lenders based on criteria, returns top 3 matches
+
+**Files Modified**:
+- `server/storage.ts` - Added DatabaseStorage class with full database operations
+- `server/routes.ts` - Added search-lenders endpoint
+- `client/src/pages/Lenders.tsx` - Added search form and results display
+- `shared/schema.ts` - Added referralLink field to lenders table
+
+**Architecture Notes**:
+- Storage pattern maintained (IStorage interface)
+- DatabaseStorage uses Drizzle ORM for type-safe queries
+- Search results limited to top 3 on both backend and frontend
+- All form data validated with Zod schemas
+
+**Known Limitations**:
+- Password hashing must be implemented before production (currently plain text)
+- Using placeholder lenderId "temp-lender-id" for pre-launch testing
+
+### Lender Portal - Company Info and Questionnaire Separation
 
 **Date**: November 12, 2025
 
