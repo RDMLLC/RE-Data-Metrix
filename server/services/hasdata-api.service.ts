@@ -101,21 +101,24 @@ export class HasDataAPIService implements IPropertyAPIService {
   }
 
   private transformZillowResponse(data: any): PropertyData {
+    const property = data.property || data;
+    const lastSale = property.priceHistory?.find((h: any) => h.event === 'sold');
+    
     return {
-      address: data.address?.streetAddress || '',
-      city: data.address?.city || '',
-      state: data.address?.state || '',
-      zipCode: data.address?.zipcode || '',
-      propertyType: data.homeType,
-      bedrooms: this.parseNumber(data.bedrooms),
-      bathrooms: this.parseNumber(data.bathrooms),
-      sqft: this.parseNumber(data.livingArea),
-      lotSize: this.parseNumber(data.lotSize),
-      yearBuilt: this.parseNumber(data.yearBuilt),
-      taxAssessedValue: this.parseNumber(data.taxAssessedValue),
-      estimatedValue: this.parseNumber(data.price || data.zestimate),
-      lastSalePrice: this.parseNumber(data.lastSoldPrice),
-      lastSaleDate: data.lastSoldDate,
+      address: property.address?.street || property.addressRaw || '',
+      city: property.address?.city || '',
+      state: property.address?.state || '',
+      zipCode: property.address?.zipcode || '',
+      propertyType: property.homeType,
+      bedrooms: this.parseNumber(property.beds),
+      bathrooms: this.parseNumber(property.baths),
+      sqft: this.parseNumber(property.area),
+      lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
+      yearBuilt: this.parseNumber(property.yearBuilt),
+      taxAssessedValue: this.parseNumber(property.taxAssessedValue),
+      estimatedValue: this.parseNumber(property.price || property.zestimate),
+      lastSalePrice: this.parseNumber(lastSale?.price),
+      lastSaleDate: lastSale?.date,
     };
   }
 }
