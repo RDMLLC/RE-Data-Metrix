@@ -614,7 +614,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                     name="closingTimeline"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>How Fast Can You Close?</FormLabel>
+                        <FormLabel>How fast do you need to close?</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-closing-timeline">
@@ -622,6 +622,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="not-selected">Not Selected</SelectItem>
                             <SelectItem value="1-7">1-7 days</SelectItem>
                             <SelectItem value="8-14">8-14 days</SelectItem>
                             <SelectItem value="15-21">15-21 days</SelectItem>

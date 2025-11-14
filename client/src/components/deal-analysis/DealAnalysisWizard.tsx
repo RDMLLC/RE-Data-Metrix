@@ -22,8 +22,9 @@ const wizardSchema = z.object({
   yearBuilt: z.number().optional(),
   taxAssessedValue: z.number().optional(),
   estimatedValue: z.number().optional(),
-  lastSalePrice: z.number().optional(),
-  lastSaleDate: z.string().optional(),
+  propertyDataSource: z.string().optional(),
+  addingSquareFootage: z.boolean().optional(),
+  newSquareFootage: z.number().optional(),
   
   purchasePrice: z.number().optional(),
   rehabBudget: z.number().optional(),
@@ -79,7 +80,8 @@ export default function DealAnalysisWizard() {
       city: "",
       state: "",
       zipCode: "",
-      needsLoan: false,
+      addingSquareFootage: false,
+      closingTimeline: "not-selected",
     },
   });
 

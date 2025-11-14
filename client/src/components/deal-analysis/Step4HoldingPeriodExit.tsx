@@ -450,33 +450,33 @@ export default function Step4HoldingPeriodExit({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="sellPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Sell Price (ARV)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="1000"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : undefined
-                          )
-                        }
-                        data-testid="input-sell-price"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sellPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estimated Sell Price (ARV)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-sell-price"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="closingCostsSellPercent"

@@ -25,7 +25,14 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       const response = await apiRequest("POST", "/api/property/lookup", { url });
       return await response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: any, url: string) => {
+      let dataSource = 'unknown';
+      if (url.includes('zillow.com')) {
+        dataSource = 'zillow';
+      } else if (url.includes('redfin.com')) {
+        dataSource = 'redfin';
+      }
+      
       form.setValue("address", data.address || "");
       form.setValue("city", data.city || "");
       form.setValue("state", data.state || "");
@@ -38,8 +45,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       form.setValue("yearBuilt", data.yearBuilt);
       form.setValue("taxAssessedValue", data.taxAssessedValue);
       form.setValue("estimatedValue", data.estimatedValue);
-      form.setValue("lastSalePrice", data.lastSalePrice);
-      form.setValue("lastSaleDate", data.lastSaleDate);
+      form.setValue("propertyDataSource", dataSource);
       
       onPropertyDataLoaded(data);
       setIsLookupComplete(true);
@@ -141,6 +147,12 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               id="property-url"
               value={propertyUrl}
               onChange={(e) => setPropertyUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleLookup();
+                }
+              }}
               placeholder="https://www.redfin.com/..."
               className="flex-1"
               data-testid="input-property-url"

@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent } from "@/components/ui/card";
 import { Home } from "lucide-react";
 
 interface Step2PropertyDetailsProps {
@@ -41,6 +42,16 @@ export default function Step2PropertyDetails({
   onNext,
   onBack,
 }: Step2PropertyDetailsProps) {
+  const addingSquareFootage = form.watch("addingSquareFootage");
+  const dataSource = form.watch("propertyDataSource") || "unknown";
+  
+  let estimateLabel = "Estimated Value";
+  if (dataSource === "zillow") {
+    estimateLabel = "Zestimate";
+  } else if (dataSource === "redfin") {
+    estimateLabel = "Redfin Estimate";
+  }
+
   const handleSubmit = form.handleSubmit(() => {
     onNext();
   });
@@ -60,13 +71,7 @@ export default function Step2PropertyDetails({
       <Form {...form}>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Basic Information</CardTitle>
-              <CardDescription>
-                Property characteristics and specifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
               <FormField
                 control={form.control}
                 name="propertyType"
@@ -101,6 +106,145 @@ export default function Step2PropertyDetails({
               />
 
               <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="yearBuilt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year Built</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1800"
+                          max={new Date().getFullYear() + 1}
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-year-built"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="sqft"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Square Footage</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-sqft"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="addingSquareFootage"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Are you adding square footage?</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => field.onChange(value === "yes")}
+                        value={field.value ? "yes" : "no"}
+                        className="flex gap-4"
+                        data-testid="radio-adding-sqft"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="yes" id="adding-sqft-yes" data-testid="radio-adding-sqft-yes" />
+                          <label htmlFor="adding-sqft-yes" className="text-sm font-medium cursor-pointer">
+                            Yes
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="no" id="adding-sqft-no" data-testid="radio-adding-sqft-no" />
+                          <label htmlFor="adding-sqft-no" className="text-sm font-medium cursor-pointer">
+                            No
+                          </label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {addingSquareFootage && (
+                <FormField
+                  control={form.control}
+                  name="newSquareFootage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>What's the new square footage?</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="Enter new square footage"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-new-sqft"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <FormField
+                control={form.control}
+                name="estimatedValue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{estimateLabel}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder={`Enter ${estimateLabel.toLowerCase()}`}
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? parseFloat(e.target.value) : undefined
+                          )
+                        }
+                        data-testid="input-estimated-value"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="bedrooms"
@@ -152,33 +296,6 @@ export default function Step2PropertyDetails({
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="sqft"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Square Footage</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          data-testid="input-sqft"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <FormField
                   control={form.control}
@@ -198,141 +315,6 @@ export default function Step2PropertyDetails({
                             )
                           }
                           data-testid="input-lot-size"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="yearBuilt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Year Built</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1800"
-                        max={new Date().getFullYear() + 1}
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value ? parseInt(e.target.value) : undefined
-                          )
-                        }
-                        data-testid="input-year-built"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Valuation Information</CardTitle>
-              <CardDescription>
-                Current and historical property values
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="estimatedValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Current Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Enter estimated value"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : undefined
-                          )
-                        }
-                        data-testid="input-estimated-value"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="taxAssessedValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tax Assessed Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Enter tax assessed value"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : undefined
-                          )
-                        }
-                        data-testid="input-tax-assessed-value"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="lastSalePrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Sale Price</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="Enter last sale price"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          data-testid="input-last-sale-price"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastSaleDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Sale Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value ?? ""}
-                          data-testid="input-last-sale-date"
                         />
                       </FormControl>
                       <FormMessage />
