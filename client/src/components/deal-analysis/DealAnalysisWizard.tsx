@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import WizardLayout from "./WizardLayout";
 import Step1PropertyAddress from "./Step1PropertyAddress";
+import Step2PropertyDetails from "./Step2PropertyDetails";
 
 const wizardSchema = z.object({
   address: z.string().min(1, "Address is required"),
@@ -83,7 +84,13 @@ export default function DealAnalysisWizard() {
           />
         );
       case 2:
-        return <div>Step 2: Property Details (Coming Soon)</div>;
+        return (
+          <Step2PropertyDetails
+            form={form}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        );
       case 3:
         return <div>Step 3: Purchase & Renovation (Coming Soon)</div>;
       case 4:
