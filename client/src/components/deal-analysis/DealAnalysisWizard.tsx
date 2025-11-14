@@ -7,6 +7,7 @@ import Step1PropertyAddress from "./Step1PropertyAddress";
 import Step2PropertyDetails from "./Step2PropertyDetails";
 import Step3PurchaseRenovation from "./Step3PurchaseRenovation";
 import Step4HoldingPeriodExit from "./Step4HoldingPeriodExit";
+import Step5LoanCriteria from "./Step5LoanCriteria";
 
 const wizardSchema = z.object({
   address: z.string().min(1, "Address is required"),
@@ -133,7 +134,13 @@ export default function DealAnalysisWizard() {
           />
         );
       case 5:
-        return <div>Step 5: Loan Criteria (Coming Soon)</div>;
+        return (
+          <Step5LoanCriteria
+            form={form}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        );
       case 6:
         return <div>Step 6: Results (Coming Soon)</div>;
       default:
