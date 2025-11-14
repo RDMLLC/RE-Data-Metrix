@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,13 @@ const companyInfoSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   website: z.string().url().optional().or(z.literal("")),
   referralLink: z.string().url().optional().or(z.literal("")),
+  referralAmount: z.preprocess(
+    (val) => val === "" || val === null || val === undefined ? undefined : val,
+    z.coerce.number().refine((val) => !isNaN(val) && isFinite(val), {
+      message: "Must be a valid number"
+    }).optional()
+  ),
+  referralType: z.enum(["$", "%"]).optional(),
   companyDescription: z.string().optional(),
 });
 
@@ -52,13 +60,15 @@ export default function LenderCompanyInfo() {
     resolver: zodResolver(companyInfoSchema),
     defaultValues: {
       lenderId: "temp-lender-id",
-      companyName: "",
-      contactName: "",
-      phone: "",
+      companyName: undefined,
+      contactName: undefined,
+      phone: undefined,
       email: "",
       website: "",
       referralLink: "",
-      companyDescription: "",
+      referralAmount: undefined,
+      referralType: "$",
+      companyDescription: undefined,
     },
   });
 
@@ -209,6 +219,54 @@ export default function LenderCompanyInfo() {
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="referralType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Referral Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-referral-type">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="$" data-testid="option-dollar">$ (Dollar Amount)</SelectItem>
+                            <SelectItem value="%" data-testid="option-percent">% (Percentage)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="referralAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground">Referral Amount</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value ?? ""}
+                            type="number"
+                            step="0.01"
+                            placeholder="Enter amount"
+                            data-testid="input-referral-amount"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}

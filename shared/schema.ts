@@ -43,6 +43,8 @@ export const lenders = pgTable("lenders", {
   phone: text("phone"),
   website: text("website"),
   referralLink: text("referral_link"),
+  referralAmount: decimal("referral_amount", { precision: 12, scale: 2 }),
+  referralType: text("referral_type"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

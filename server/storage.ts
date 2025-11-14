@@ -72,6 +72,10 @@ export class MemStorage implements IStorage {
       lenderId,
     };
     
+    if (data.referralAmount !== undefined && (!isFinite(data.referralAmount) || isNaN(data.referralAmount))) {
+      throw new Error("Invalid referral amount");
+    }
+    
     this.companyInfo.set(lenderId, updated);
     
     return updated;
@@ -276,6 +280,14 @@ export class DatabaseStorage implements IStorage {
     if (data.email !== undefined) updateData.email = data.email;
     if (data.website !== undefined) updateData.website = data.website;
     if (data.referralLink !== undefined) updateData.referralLink = data.referralLink;
+    if (data.referralAmount !== undefined) {
+      const amount = typeof data.referralAmount === 'string' ? parseFloat(data.referralAmount) : data.referralAmount;
+      if (!isFinite(amount) || isNaN(amount)) {
+        throw new Error("Invalid referral amount: must be a finite number");
+      }
+      updateData.referralAmount = amount;
+    }
+    if (data.referralType !== undefined) updateData.referralType = data.referralType;
     
     await db.update(lendersTable).set(updateData).where(eq(lendersTable.id, lenderId));
     

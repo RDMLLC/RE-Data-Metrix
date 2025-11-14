@@ -15,6 +15,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     email: z.string().optional(),
     website: z.string().optional(),
     referralLink: z.string().optional(),
+    referralAmount: z.preprocess(
+      (val) => val === null || val === undefined || val === "" ? undefined : val,
+      z.coerce.number().refine((val) => !isNaN(val) && isFinite(val)).optional()
+    ),
+    referralType: z.enum(["$", "%"]).optional(),
     companyDescription: z.string().optional(),
   });
 
