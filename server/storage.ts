@@ -5,14 +5,23 @@ import {
   type InsertLenderQuestionnaire,
   type LoanProduct,
   type InsertLoanProduct,
+  type Property,
+  type InsertProperty,
+  type DealAnalysis,
+  type InsertDealAnalysis,
+  type DealAnalysisAccess,
+  type InsertDealAnalysisAccess,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
-  loanProducts as loanProductsTable
+  loanProducts as loanProductsTable,
+  properties as propertiesTable,
+  dealAnalyses as dealAnalysesTable,
+  dealAnalysisAccess as dealAnalysisAccessTable
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -30,6 +39,19 @@ export interface IStorage {
   getLoanProducts(lenderId: string): Promise<LoanProduct[]>;
   updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined>;
   deleteLoanProduct(id: string): Promise<boolean>;
+  
+  createOrGetProperty(data: InsertProperty): Promise<Property>;
+  getPropertyById(id: string): Promise<Property | undefined>;
+  
+  createDealAnalysis(data: InsertDealAnalysis): Promise<DealAnalysis>;
+  getDealAnalysis(id: string): Promise<DealAnalysis | undefined>;
+  updateDealAnalysis(id: string, data: Partial<Omit<InsertDealAnalysis, 'propertyId' | 'propertySnapshot'>>): Promise<DealAnalysis | undefined>;
+  deleteDealAnalysis(id: string): Promise<boolean>;
+  getDealAnalysesByUser(userId: string): Promise<DealAnalysis[]>;
+  
+  createAccessToken(analysisId: string, expiresAt?: Date): Promise<DealAnalysisAccess>;
+  getDealAnalysisByToken(token: string): Promise<DealAnalysis | undefined>;
+  revokeAccessToken(token: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -417,6 +439,95 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLoanProduct(id: string): Promise<boolean> {
     const result = await db.delete(loanProductsTable).where(eq(loanProductsTable.id, id)).returning();
+    return result.length > 0;
+  }
+
+  private normalizeAddress(address: string, city: string, state: string, zipCode: string): string {
+    const normalize = (str: string) => str.trim().toUpperCase().replace(/\s+/g, ' ');
+    return `${normalize(address)}|${normalize(city)}|${normalize(state)}|${normalize(zipCode)}`;
+  }
+
+  async createOrGetProperty(data: InsertProperty): Promise<Property> {
+    const normalizedKey = this.normalizeAddress(data.address, data.city, data.state, data.zipCode);
+    
+    const existing = await db.select().from(propertiesTable)
+      .where(eq(propertiesTable.normalizedAddress, normalizedKey))
+      .limit(1);
+    
+    if (existing[0]) {
+      return existing[0];
+    }
+    
+    const result = await db.insert(propertiesTable).values({
+      ...data,
+      normalizedAddress: normalizedKey,
+    }).returning();
+    return result[0];
+  }
+
+  async getPropertyById(id: string): Promise<Property | undefined> {
+    const result = await db.select().from(propertiesTable).where(eq(propertiesTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createDealAnalysis(data: InsertDealAnalysis): Promise<DealAnalysis> {
+    const result = await db.insert(dealAnalysesTable).values(data).returning();
+    return result[0];
+  }
+
+  async getDealAnalysis(id: string): Promise<DealAnalysis | undefined> {
+    const result = await db.select().from(dealAnalysesTable).where(eq(dealAnalysesTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async updateDealAnalysis(id: string, data: Partial<Omit<InsertDealAnalysis, 'propertyId' | 'propertySnapshot'>>): Promise<DealAnalysis | undefined> {
+    const updateData = { ...data, updatedAt: new Date() };
+    const result = await db.update(dealAnalysesTable).set(updateData).where(eq(dealAnalysesTable.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteDealAnalysis(id: string): Promise<boolean> {
+    const result = await db.delete(dealAnalysesTable).where(eq(dealAnalysesTable.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getDealAnalysesByUser(userId: string): Promise<DealAnalysis[]> {
+    return await db.select().from(dealAnalysesTable).where(eq(dealAnalysesTable.userId, userId));
+  }
+
+  async createAccessToken(analysisId: string, expiresAt?: Date): Promise<DealAnalysisAccess> {
+    const token = randomBytes(32).toString('base64url');
+    const data: InsertDealAnalysisAccess = {
+      analysisId,
+      token,
+      expiresAt: expiresAt || null,
+    };
+    const result = await db.insert(dealAnalysisAccessTable).values(data).returning();
+    return result[0];
+  }
+
+  async getDealAnalysisByToken(token: string): Promise<DealAnalysis | undefined> {
+    const accessResult = await db.select().from(dealAnalysisAccessTable)
+      .where(eq(dealAnalysisAccessTable.token, token))
+      .limit(1);
+    
+    if (!accessResult[0]) {
+      return undefined;
+    }
+    
+    if (accessResult[0].expiresAt && accessResult[0].expiresAt < new Date()) {
+      return undefined;
+    }
+    
+    const analysisResult = await db.select().from(dealAnalysesTable)
+      .where(eq(dealAnalysesTable.id, accessResult[0].analysisId))
+      .limit(1);
+    
+    return analysisResult[0];
+  }
+
+  async revokeAccessToken(token: string): Promise<boolean> {
+    const result = await db.delete(dealAnalysisAccessTable).where(eq(dealAnalysisAccessTable.token, token)).returning();
     return result.length > 0;
   }
 }

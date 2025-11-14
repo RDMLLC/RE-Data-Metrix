@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, integer, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -111,3 +111,93 @@ export const insertLoanProductSchema = createInsertSchema(loanProducts).omit({
 
 export type InsertLoanProduct = z.infer<typeof insertLoanProductSchema>;
 export type LoanProduct = typeof loanProducts.$inferSelect;
+
+export const properties = pgTable("properties", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code").notNull(),
+  normalizedAddress: text("normalized_address").notNull().unique(),
+  propertyType: text("property_type"),
+  bedrooms: integer("bedrooms"),
+  bathrooms: decimal("bathrooms", { precision: 3, scale: 1 }),
+  sqft: integer("sqft"),
+  lotSize: integer("lot_size"),
+  yearBuilt: integer("year_built"),
+  taxAssessedValue: decimal("tax_assessed_value", { precision: 12, scale: 2 }),
+  estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }),
+  lastSalePrice: decimal("last_sale_price", { precision: 12, scale: 2 }),
+  lastSaleDate: text("last_sale_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPropertySchema = createInsertSchema(properties).omit({
+  id: true,
+  createdAt: true,
+  normalizedAddress: true,
+});
+
+export type InsertProperty = z.infer<typeof insertPropertySchema>;
+export type Property = typeof properties.$inferSelect;
+
+export const dealAnalyses = pgTable("deal_analyses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").notNull().references(() => properties.id),
+  userId: varchar("user_id").references(() => users.id),
+  
+  propertySnapshot: jsonb("property_snapshot").notNull(),
+  
+  purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
+  closingCosts: decimal("closing_costs", { precision: 12, scale: 2 }),
+  rehabBudget: decimal("rehab_budget", { precision: 12, scale: 2 }),
+  contingencyPercent: decimal("contingency_percent", { precision: 5, scale: 2 }),
+  
+  holdingMonths: integer("holding_months"),
+  sellingPrice: decimal("selling_price", { precision: 12, scale: 2 }),
+  sellingCosts: decimal("selling_costs", { precision: 12, scale: 2 }),
+  monthlyRent: decimal("monthly_rent", { precision: 12, scale: 2 }),
+  exitStrategy: text("exit_strategy"),
+  
+  needsLoan: boolean("needs_loan").default(false),
+  desiredLoanAmount: decimal("desired_loan_amount", { precision: 12, scale: 2 }),
+  maxInterestRate: decimal("max_interest_rate", { precision: 5, scale: 2 }),
+  maxPoints: decimal("max_points", { precision: 5, scale: 2 }),
+  preferredLoanTerm: integer("preferred_loan_term"),
+  
+  resultsSnapshot: jsonb("results_snapshot"),
+  
+  stepCompleted: integer("step_completed").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: { name: "user_id_idx", columns: [table.userId] },
+}));
+
+export const insertDealAnalysisSchema = createInsertSchema(dealAnalyses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDealAnalysis = z.infer<typeof insertDealAnalysisSchema>;
+export type DealAnalysis = typeof dealAnalyses.$inferSelect;
+
+export const dealAnalysisAccess = pgTable("deal_analysis_access", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  analysisId: varchar("analysis_id").notNull().references(() => dealAnalyses.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  expiresAtIdx: { name: "expires_at_idx", columns: [table.expiresAt] },
+}));
+
+export const insertDealAnalysisAccessSchema = createInsertSchema(dealAnalysisAccess).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertDealAnalysisAccess = z.infer<typeof insertDealAnalysisAccessSchema>;
+export type DealAnalysisAccess = typeof dealAnalysisAccess.$inferSelect;
