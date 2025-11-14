@@ -4,25 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, ExternalLink } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
@@ -30,29 +15,21 @@ interface Step1Props {
   onPropertyDataLoaded: (data: any) => void;
 }
 
-const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
-];
-
 export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded }: Step1Props) {
   const { toast } = useToast();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
+  const [propertyUrl, setPropertyUrl] = useState("");
 
   const propertyLookupMutation = useMutation({
-    mutationFn: async (data: {
-      address: string;
-      city: string;
-      state: string;
-      zipCode: string;
-    }) => {
-      const response = await apiRequest("POST", "/api/property/lookup", data);
+    mutationFn: async (url: string) => {
+      const response = await apiRequest("POST", "/api/property/lookup", { url });
       return await response.json();
     },
     onSuccess: (data: any) => {
+      form.setValue("address", data.address || "");
+      form.setValue("city", data.city || "");
+      form.setValue("state", data.state || "");
+      form.setValue("zipCode", data.zipCode || "");
       form.setValue("propertyType", data.propertyType || "");
       form.setValue("bedrooms", data.bedrooms);
       form.setValue("bathrooms", data.bathrooms);
@@ -73,45 +50,47 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Unable to find property data. You can still continue and enter details manually.";
+      const errorMessage = error?.message || "Unable to find property data. Please check the URL and try again.";
       toast({
         variant: "destructive",
         title: "Property Not Found",
         description: errorMessage,
       });
-      setIsLookupComplete(true);
     },
   });
 
   const handleLookup = () => {
-    const address = form.getValues("address");
-    const city = form.getValues("city");
-    const state = form.getValues("state");
-    const zipCode = form.getValues("zipCode");
-
-    if (!address || !city || !state || !zipCode) {
+    if (!propertyUrl.trim()) {
       toast({
         variant: "destructive",
-        title: "Missing Information",
-        description: "Please fill in address, city, state, and ZIP code.",
+        title: "Missing URL",
+        description: "Please enter a Redfin or Zillow property URL.",
       });
       return;
     }
 
-    propertyLookupMutation.mutate({ address, city, state, zipCode });
+    if (!propertyUrl.includes('redfin.com') && !propertyUrl.includes('zillow.com')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid URL",
+        description: "Please provide a valid Redfin or Zillow property URL.",
+      });
+      return;
+    }
+
+    propertyLookupMutation.mutate(propertyUrl);
   };
 
   const handleNext = () => {
     const address = form.getValues("address");
     const city = form.getValues("city");
     const state = form.getValues("state");
-    const zipCode = form.getValues("zipCode");
 
-    if (!address || !city || !state || !zipCode) {
+    if (!address || !city || !state) {
       toast({
         variant: "destructive",
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please lookup a property first or wait for the data to load.",
       });
       return;
     }
@@ -121,132 +100,93 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
   return (
     <div className="space-y-6">
-      <p className="text-muted-foreground">
-        Enter the property address to get started. We'll automatically fetch property details to help you analyze the deal.
-      </p>
+      <div>
+        <p className="text-muted-foreground">
+          Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
+        </p>
+        
+        <Alert className="mt-4">
+          <ExternalLink className="h-4 w-4" />
+          <AlertDescription>
+            Find your property on{" "}
+            <a
+              href="https://www.redfin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline underline-offset-4 hover:text-primary"
+            >
+              Redfin
+            </a>
+            {" "}or{" "}
+            <a
+              href="https://www.zillow.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline underline-offset-4 hover:text-primary"
+            >
+              Zillow
+            </a>
+            , then copy and paste the full URL here.
+          </AlertDescription>
+        </Alert>
+      </div>
 
-      <Form {...form}>
-        <div className="grid gap-6">
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Street Address *</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="123 Main St"
-                    data-testid="input-address"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="San Francisco"
-                      data-testid="input-city"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <div className="grid gap-6">
+        <div className="space-y-2">
+          <label htmlFor="property-url" className="text-sm font-medium">
+            Property URL *
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id="property-url"
+              value={propertyUrl}
+              onChange={(e) => setPropertyUrl(e.target.value)}
+              placeholder="https://www.redfin.com/..."
+              className="flex-1"
+              data-testid="input-property-url"
             />
-
-            <FormField
-              control={form.control}
-              name="state"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger data-testid="select-state">
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {US_STATES.map((state) => (
-                        <SelectItem key={state} value={state}>
-                          {state}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="zipCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ZIP Code *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="94102"
-                      data-testid="input-zipcode"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div>
             <Button
               type="button"
               onClick={handleLookup}
               disabled={propertyLookupMutation.isPending}
-              className="w-full md:w-auto"
               data-testid="button-lookup-property"
             >
               {propertyLookupMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Looking up property...
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </>
               ) : (
                 <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Lookup Property
+                  <Search className="h-4 w-4" />
                 </>
               )}
             </Button>
           </div>
-
-          {isLookupComplete && (
-            <div className="pt-4 border-t">
-              <Button
-                type="button"
-                onClick={handleNext}
-                className="w-full md:w-auto"
-                data-testid="button-next-step"
-              >
-                Continue to Property Details
-              </Button>
-            </div>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Example: https://www.redfin.com/CA/San-Francisco/123-Main-St-94102/home/12345678
+          </p>
         </div>
-      </Form>
+
+        {isLookupComplete && (
+          <div className="pt-4 border-t space-y-4">
+            <div className="rounded-lg bg-muted p-4">
+              <h3 className="font-semibold mb-2">Property Found</h3>
+              <p className="text-sm text-muted-foreground">
+                {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
+              </p>
+            </div>
+            
+            <Button
+              type="button"
+              onClick={handleNext}
+              className="w-full md:w-auto"
+              data-testid="button-next-step"
+            >
+              Continue to Property Details
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -22,4 +22,6 @@ export interface IPropertyAPIService {
     state: string,
     zipCode: string
   ): Promise<PropertyData | null>;
+  
+  getPropertyByUrl(url: string): Promise<PropertyData | null>;
 }

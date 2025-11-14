@@ -125,16 +125,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Property Lookup Route
   const propertyLookupSchema = z.object({
-    address: z.string().min(1, "Address is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().min(2, "State is required"),
-    zipCode: z.string().min(5, "ZIP code is required"),
+    url: z.string().url("Valid property URL is required").refine(
+      (url) => url.includes('redfin.com') || url.includes('zillow.com'),
+      { message: "URL must be from Redfin or Zillow" }
+    ),
   });
 
   app.post("/api/property/lookup", async (req, res) => {
     try {
-      const { address, city, state, zipCode } = propertyLookupSchema.parse(req.body);
-      const propertyData = await propertyAPIService.getPropertyByAddress(address, city, state, zipCode);
+      const { url } = propertyLookupSchema.parse(req.body);
+      const propertyData = await propertyAPIService.getPropertyByUrl(url);
       
       if (!propertyData) {
         return res.status(404).json({ error: "Property not found" });
