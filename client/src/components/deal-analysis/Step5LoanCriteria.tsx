@@ -19,6 +19,13 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
   const isDoubleClose = form.watch("isDoubleClose");
   const hasExistingLoan = form.watch("hasExistingLoan");
   const appraisalRequired = form.watch("appraisalRequired");
+  
+  const address = form.watch("address");
+  const city = form.watch("city");
+  const state = form.watch("state");
+  const zipCode = form.watch("zipCode");
+  
+  const hasAddressData = !!(address && city && state && zipCode);
 
   const handleSubmit = form.handleSubmit(() => {
     onNext();
@@ -236,20 +243,26 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Do you have a loan you are currently looking at?</FormLabel>
+                    {!hasAddressData && (
+                      <FormDescription className="text-xs text-amber-600">
+                        This field will be enabled once you complete the property address information in earlier steps.
+                      </FormDescription>
+                    )}
                     <FormControl>
                       <RadioGroup
+                        disabled={!hasAddressData}
                         onValueChange={(value) => field.onChange(value === "true")}
                         value={field.value === undefined ? undefined : field.value.toString()}
                         className="flex gap-4"
                         data-testid="radio-has-loan"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="true" id="loan-yes" data-testid="radio-has-loan-yes" />
-                          <label htmlFor="loan-yes" className="cursor-pointer">Yes</label>
+                          <RadioGroupItem value="true" id="loan-yes" data-testid="radio-has-loan-yes" disabled={!hasAddressData} />
+                          <label htmlFor="loan-yes" className={hasAddressData ? "cursor-pointer" : "cursor-not-allowed opacity-50"}>Yes</label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="false" id="loan-no" data-testid="radio-has-loan-no" />
-                          <label htmlFor="loan-no" className="cursor-pointer">No</label>
+                          <RadioGroupItem value="false" id="loan-no" data-testid="radio-has-loan-no" disabled={!hasAddressData} />
+                          <label htmlFor="loan-no" className={hasAddressData ? "cursor-pointer" : "cursor-not-allowed opacity-50"}>No</label>
                         </div>
                       </RadioGroup>
                     </FormControl>
