@@ -157,7 +157,7 @@ export default function LenderQuestionnaire() {
                           <SelectItem value="1-7 DAYS">1-7 DAYS</SelectItem>
                           <SelectItem value="8-14 DAYS">8-14 DAYS</SelectItem>
                           <SelectItem value="15-21 DAYS">15-21 DAYS</SelectItem>
-                          <SelectItem value="21-30 DAYS">21-30 DAYS</SelectItem>
+                          <SelectItem value="22-30 DAYS">22-30 DAYS</SelectItem>
                           <SelectItem value="More than 30 days">More than 30 days</SelectItem>
                         </SelectContent>
                       </Select>

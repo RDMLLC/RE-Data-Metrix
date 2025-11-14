@@ -42,6 +42,7 @@ export const lenders = pgTable("lenders", {
   contactName: text("contact_name").notNull(),
   phone: text("phone"),
   website: text("website"),
+  referralLink: text("referral_link"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
