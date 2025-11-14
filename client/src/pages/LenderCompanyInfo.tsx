@@ -19,6 +19,7 @@ const companyInfoSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   website: z.string().url().optional().or(z.literal("")),
+  referralLink: z.string().url().optional().or(z.literal("")),
   companyDescription: z.string().optional(),
 });
 
@@ -56,6 +57,7 @@ export default function LenderCompanyInfo() {
       phone: "",
       email: "",
       website: "",
+      referralLink: "",
       companyDescription: "",
     },
   });
@@ -181,6 +183,26 @@ export default function LenderCompanyInfo() {
                           type="url"
                           placeholder="https://www.company.com"
                           data-testid="input-website"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referralLink"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Referral Link</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          type="url"
+                          placeholder="https://www.company.com/apply"
+                          data-testid="input-referral-link"
                         />
                       </FormControl>
                       <FormMessage />

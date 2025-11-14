@@ -14,6 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     phone: z.string().optional(),
     email: z.string().optional(),
     website: z.string().optional(),
+    referralLink: z.string().optional(),
     companyDescription: z.string().optional(),
   });
 
