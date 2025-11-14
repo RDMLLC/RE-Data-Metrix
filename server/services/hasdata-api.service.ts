@@ -53,6 +53,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       }
 
       const data = await response.json();
+      
+      console.log("HasData API raw response:", JSON.stringify(data, null, 2));
 
       if (isRedfin) {
         return this.transformRedfinResponse(data);
