@@ -100,6 +100,7 @@ export const loanProducts = pgTable("loan_products", {
   estimatedAppraisalCost: decimal("estimated_appraisal_cost", { precision: 12, scale: 2 }),
   fees: decimal("fees", { precision: 12, scale: 2 }),
   costPerDraw: decimal("cost_per_draw", { precision: 12, scale: 2 }),
+  timeToClose: integer("time_to_close"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -201,3 +202,92 @@ export const insertDealAnalysisAccessSchema = createInsertSchema(dealAnalysisAcc
 
 export type InsertDealAnalysisAccess = z.infer<typeof insertDealAnalysisAccessSchema>;
 export type DealAnalysisAccess = typeof dealAnalysisAccess.$inferSelect;
+
+export interface DrawSchedule {
+  drawNumber: number;
+  timingInDays: number;
+  amount: number;
+}
+
+export interface LoanCalculation {
+  buyLoanAmount: number;
+  rehabLoanAmount: number;
+  totalLoanAmount: number;
+  arvCapAdjustment: number;
+  finalLoanAmount: number;
+  additionalDownPayment: number;
+  
+  buyInterest: number;
+  rehabInterest: number;
+  totalInterest: number;
+  
+  points: number;
+  pointsDeferred: boolean;
+  
+  fees: number;
+  appraisalCost: number;
+  drawFees: number;
+  
+  monthlyPayment: number;
+  monthlyCarryingCosts: number;
+  
+  rolledCosts: number;
+  outOfPocketCost: number;
+  
+  profit: number;
+  roi: number;
+  cashOnCashRoi: number;
+  annualizedRoi: number;
+}
+
+export interface LoanComparisonColumn {
+  type: 'cash' | 'user-loan' | 'lender';
+  lenderId?: string;
+  lenderName?: string;
+  productId?: string;
+  productName?: string;
+  timeToClose?: number;
+  maxLoanArv?: number;
+  
+  purchasePrice: number;
+  rehabBudget: number;
+  totalProjectCost: number;
+  
+  closingCostsBuy: number;
+  carryingCosts: number;
+  totalInvestment: number;
+  
+  sellPrice: number;
+  closingCostsSell: number;
+  commission: number;
+  
+  rolledCosts?: number;
+  lenderDrawFees?: number;
+  
+  profit: number;
+  outOfPocketCost: number;
+  
+  cashOnCashRoi: number;
+  annualizedRoi: number;
+  roi: number;
+  
+  percentageArv: number;
+  percentageArvLender?: number;
+  
+  loanCalculation?: LoanCalculation;
+}
+
+export type LoanCriteria = 'profit' | 'out-of-pocket' | 'fastest';
+
+export interface CriteriaSelection {
+  primary?: LoanCriteria;
+  secondary?: LoanCriteria;
+}
+
+export const criteriaSelectionSchema = z.object({
+  useDefaultCriteria: z.boolean(),
+  primary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
+  secondary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
+});
+
+export type CriteriaSelectionData = z.infer<typeof criteriaSelectionSchema>;

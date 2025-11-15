@@ -150,6 +150,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Step 6 Results API
+  const step6RequestSchema = z.object({
+    dealInputs: z.object({
+      purchasePrice: z.number(),
+      rehabBudget: z.number(),
+      arv: z.number(),
+      projectLength: z.number(),
+      closingCostsBuy: z.number(),
+      carryingCosts: z.number(),
+      sellPrice: z.number(),
+      closingCostsSell: z.number(),
+      commission: z.number(),
+      monthlyInsurance: z.number(),
+      monthlyUtilities: z.number(),
+      monthlyPropertyTax: z.number(),
+      monthlyHoa: z.number(),
+    }),
+    criteriaSelection: z.object({
+      useDefaultCriteria: z.boolean(),
+      primary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
+      secondary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
+    }),
+    userLoan: z.object({
+      desiredLoanAmount: z.number().optional(),
+      interestRate: z.number(),
+      interestDeferred: z.boolean(),
+      points: z.number(),
+      pointsDeferred: z.boolean(),
+      maxLoanToArv: z.number().optional(),
+      appraisalRequired: z.boolean(),
+      appraisalFee: z.number().optional(),
+      drawFees: z.number().optional(),
+      loanDocPrepFees: z.number().optional(),
+    }).optional(),
+    numberOfDraws: z.number().default(3),
+    excludeProductIds: z.array(z.string()).default([]),
+  });
+
+  app.post("/api/deal-analysis/results", async (req, res) => {
+    try {
+      const validatedData = step6RequestSchema.parse(req.body);
+      
+      const { rankLoanProducts } = await import("./services/lender-ranking.service");
+      const { calculateCashSaleMetrics } = await import("./services/loan-calculation.service");
+      
+      const loanProducts = await storage.getAllActiveLoanProducts();
+      const lenders = await storage.getAllLenders();
+      
+      const filteredProducts = validatedData.excludeProductIds.length > 0
+        ? loanProducts.filter(p => !validatedData.excludeProductIds.includes(p.id))
+        : loanProducts;
+      
+      const rankedProducts = rankLoanProducts({
+        dealInputs: validatedData.dealInputs,
+        loanProducts: filteredProducts,
+        lenders,
+        useDefaultCriteria: validatedData.criteriaSelection.useDefaultCriteria,
+        primaryCriteria: validatedData.criteriaSelection.primary,
+        secondaryCriteria: validatedData.criteriaSelection.secondary,
+        numberOfDraws: validatedData.numberOfDraws,
+      });
+      
+      const cashSale = calculateCashSaleMetrics(validatedData.dealInputs);
+      
+      res.json({
+        cashSale,
+        userLoan: validatedData.userLoan,
+        matchedLenders: rankedProducts.map(rp => ({
+          loanProduct: rp.loanProduct,
+          lender: rp.lender,
+          metrics: {
+            profit: rp.profit,
+            outOfPocket: rp.outOfPocket,
+            timeToClose: rp.timeToClose,
+          },
+        })),
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      console.error("Step 6 results error:", error);
+      res.status(500).json({ error: "Failed to calculate loan results" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

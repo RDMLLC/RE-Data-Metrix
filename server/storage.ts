@@ -37,6 +37,8 @@ export interface IStorage {
   
   createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct>;
   getLoanProducts(lenderId: string): Promise<LoanProduct[]>;
+  getAllActiveLoanProducts(): Promise<LoanProduct[]>;
+  getAllLenders(): Promise<any[]>;
   updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined>;
   deleteLoanProduct(id: string): Promise<boolean>;
   
@@ -246,6 +248,7 @@ export class MemStorage implements IStorage {
       estimatedAppraisalCost: data.estimatedAppraisalCost ?? null,
       fees: data.fees ?? null,
       costPerDraw: data.costPerDraw ?? null,
+      timeToClose: data.timeToClose ?? null,
       isActive: data.isActive ?? true,
       createdAt: new Date(),
     };
@@ -257,6 +260,16 @@ export class MemStorage implements IStorage {
     return Array.from(this.loanProducts.values()).filter(
       (p) => p.lenderId === lenderId
     );
+  }
+
+  async getAllActiveLoanProducts(): Promise<LoanProduct[]> {
+    return Array.from(this.loanProducts.values()).filter(
+      (p) => p.isActive
+    );
+  }
+
+  async getAllLenders(): Promise<any[]> {
+    return Array.from(this.companyInfo.values());
   }
 
   async updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined> {
@@ -430,6 +443,14 @@ export class DatabaseStorage implements IStorage {
 
   async getLoanProducts(lenderId: string): Promise<LoanProduct[]> {
     return await db.select().from(loanProductsTable).where(eq(loanProductsTable.lenderId, lenderId));
+  }
+
+  async getAllActiveLoanProducts(): Promise<LoanProduct[]> {
+    return await db.select().from(loanProductsTable).where(eq(loanProductsTable.isActive, true));
+  }
+
+  async getAllLenders(): Promise<any[]> {
+    return await db.select().from(lendersTable);
   }
 
   async updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined> {
