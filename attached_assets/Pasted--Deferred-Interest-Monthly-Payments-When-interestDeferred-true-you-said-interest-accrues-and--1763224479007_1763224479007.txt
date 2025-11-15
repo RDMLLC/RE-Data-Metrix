@@ -1,0 +1,53 @@
+. Deferred Interest & Monthly Payments
+When interestDeferred = true, you said interest accrues and is paid at exit. But for the monthly carrying costs calculation, should monthly loan payments be:
+$0 (since nothing is paid monthly when deferred)
+The deferred acrued interest and points will be added to the calculations upon the sale of the property under the line "Rolled Costs"
+
+2. Deferred Interest & Out of Pocket
+In the out of pocket formula, you have: + monthly loan payments (if not deferred).
+So to confirm:
+If interest is NOT deferred → include monthly payments in out of pocket
+If interest IS deferred → exclude monthly payments from out of pocket (since paid at exit)
+Correct
+
+3. Drawn Funds Only Interest Calculation
+When drawnFundsOnly = true with a linear draw schedule:
+Should interest only accrue on the drawn portion of the rehab funds?
+Example: $60K rehab over 6 months = $10K drawn per month. Month 1 interest on $10K, Month 2 on $20K, etc.?
+To allow time to sell we need to exclue the last two months from the calculation. Therefore, calculate it over 4 months if it's a 6 month project
+If a project is 5 months, the calculation will be over 3 months
+Start the calculation two weeks into the project length
+Assume 3 draws
+Let's call the time remaining after excluding the first two weeks and the last two months the Active Period
+divide the draws equally over the Active Period
+
+4. Profit & ROI Recalculation
+
+New calculation:
+Len
+For each lender column, should I recalculate:
+
+New Profit = Sell Price - Total Investment - Closing Costs (Sell) - Commission - Total Interest Paid - Points (if not deferred)?
+
+(Monthly loan payments) are included in (Monthly carrying costs)
+(Monthly carrying costs) are included in (Total Investment)
+
+Therefore, Total interest paid has already been included
+Profit = (Total Investment)- (Rolled Costs) - (Lender Draw Fees) - (Closing Costs Sell) - (Commission Sell) 
+
+We are concerned with three numbers here. 
+
+1. ROI
+The net profit/the total cost of the project, all in.
+2. Cash-on-Cash Return
+The net profit / The out of pocket
+3. Annualized CoC ROI
+The CoC Return * (12/project length)
+
+Example:
+$50,000 profit / $60,000 out of pocket = 83.3% cash on cash return
+Annualized ROI is cash on cash ROI x (12/project length)
+Example: 83.3% x (12/project length6) = 166.6%
+Same example with a 4 month project is 249.9% annualized ROI
+
+

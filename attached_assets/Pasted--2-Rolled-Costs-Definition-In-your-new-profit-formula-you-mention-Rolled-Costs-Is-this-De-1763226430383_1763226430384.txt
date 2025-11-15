@@ -1,0 +1,59 @@
+
+2. "Rolled Costs" Definition
+In your new profit formula, you mention "Rolled Costs". Is this:
+Deferred Interest + Deferred Points? (the costs rolled into the loan and paid at exit)
+Or does it include other costs too?
+It is currently just those two items
+
+6-month project, $60K rehab, 10% interest:
+Active Period = 6 months - 0.5 months (2 weeks) - 2 months = 3.5 months
+3 draws spread over 3.5 months = draws at week 2, month 2, month 3.75
+Draw amounts: $20K each
+Interest accrues on drawn amounts...
+Wait, you said "divide the draws equally over the Active Period" - does this mean:
+Draw 1: $20K at 2 weeks (3.5 months of interest)
+Draw 2: $20K at ~1.75 months (1.75 months of interest)
+Draw 3: $20K at ~3.5 months (0 months of interest)
+Or should I calculate it differently?
+
+The Active Period applies to the scheduling of the draw payments
+The loan is still a 6 month loan. So, in your example above:
+Draw 1 will have 5.5 months of interest. 
+Draw 2 will have 3.75 months of interest
+Draw 3 will have two months of interest 
+
+3. "Lender Draw Fees"
+Is this:
+costPerDraw × number of draws (3 draws, so multiply by 3)?
+Or is it calculated differently?
+This is correct. 
+We should put a field that will show the user Number of Draws that autofilled with 3. It should be editable by the user. Additionally, we should show the draw schedule we have calculated and allow them to manually override it
+Example:
+They change the number of draws to 4
+The system automatically recalculates the draw schedule based upon the Active Period.
+The system shows four fields with the timeline of the draws: EG
+
+Draw 1 Week 2
+Draw 2 Week 7
+Etc. It should be in weeks or days, not 1.75 months.
+
+To further clarify how interest is calculated, treat the Buy loan and the Rehab loan as separate loans for the purposes of calculating interest. 
+Example:
+Buy price $360,000 x Max Lend Buy 90% = Loan $324,000
+Rehab cost $60,000 x Max Lend Rehab 100% = Loan $60,000
+Interest rate 12%
+Monthly interest rate 1%
+Buy Loan $324,000
+Monthly interest $3240
+Project length 6
+Total interest $19,440
+($3240x6)
+Rehab Interest Calculation is done as outlined above. 
+We then add both the total interest Buy Loan and the total interest Rehab loan, and that becomes our total interest figure. 
+
+Adjustment of the monthly payment based on drawn funds. 
+The monthly payment will increase with each draw based on the new balance drawn (buy loan + drawn funds) x monthly interest rate
+
+4. Cash Sale Column
+Should the "Cash Sale" column simply show the Step 4 calculations as-is (no loan, so no monthly loan payments, no rolled costs, etc.)?
+Yes. The Cash Sale column shows the numbers without any loan or lender costs. All non-lender associated costs are included. 

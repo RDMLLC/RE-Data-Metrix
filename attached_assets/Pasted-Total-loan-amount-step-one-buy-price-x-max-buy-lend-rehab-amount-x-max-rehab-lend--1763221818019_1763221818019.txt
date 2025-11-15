@@ -1,0 +1,70 @@
+Total loan amount step one
+
+ = (buy price x max buy lend %) + (rehab amount x max rehab lend %) = total loan amount
+
+Example ((buy price) $300,000 x (max buy lend %) 90% = $270,000) + ((rehab amount) $60,000 x (max rehab lend %) 100% = $60,000) = (Loan Amount) $330,000 ($270,000 + $60,000)
+
+Total loan amount step two
+Apply Max loan ARV% calculation
+
+Example 1
+ARV $480,000
+Total loan amount $330,000
+Total loan amount / ARV
+$330,000 / $480,000 = 68.75%
+Max loan ARV % = 70% = no adjustment
+
+Example 2
+ARV $440,000
+Total loan amount $330,000
+Total loan amount / ARV
+$330,000 / $440,000 = 75%
+Max loan ARV % = 70% = adjustment
+
+Adjustment example
+Total loan amount $330,000
+Max loan amount ARV% = 70%
+ARV $440,000 x 70% = $308,000
+Therefore the borrower must put an additional $22,000 down
+Total loan amount - Max loan ARV%
+Total down payment = (buy price x max buy lend %) + Max loan ARV % overage
+
+=========================================================
+
+New calculation
+Add Monthly loan payment calculation
+Total loan amount x (loan interest% / 12)
+Example 10% interest / 12 = .00833% 
+Monthly payment calculation
+Total loan $330,000 x .0833% = monthly payment $2,748.90
+
+==========================================================
+
+New calculation
+Monthly Carrying costs
+(monthly loan payments) + (monthly insurance payment) + (monthly hoa payments) + (property tax / 12)
+
+===========================================================
+estimated out of pocket
+
+=down payment + points (if not deferred) + buy closing costs + (monthly carrying costs x project length) + monthly loan payments (if not deferred)
+
+Deferred interest: If interestDeferred = true, does interest accrue and get paid at exit?
+Yes
+
+6. Email Notifications
+The CSV mentions automated emails to lenders. 
+Option C: Skip entirely for now?
+
+Freemium Model Implementation
+For the freemium model where anonymous users see calculations but not lender names:
+Option C: Skip freemium for MVP and show everything?
+We will add later
+
+
+Drawn funds only: If drawnFundsOnly = true, should I assume a linear draw schedule (spreading rehab over project length)?
+Yes. We will add more detailed calculations later. I look forward to seeing how your plan works. 
+
+User's Loan Product (Lender 0)
+When a user enters their own loan details in Step 5 (hasExistingLoan = true), should that appear as a separate "Your Loan" column in the comparison table? Yes. Change Lender 0 to Your Loan
+
