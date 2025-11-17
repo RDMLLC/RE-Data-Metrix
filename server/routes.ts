@@ -193,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = step6RequestSchema.parse(req.body);
       
       const { rankLoanProducts } = await import("./services/lender-ranking.service");
-      const { calculateCashSaleMetrics } = await import("./services/loan-calculation.service");
+      const { createCashSaleColumn, createLoanComparisonColumn } = await import("./services/loan-calculation.service");
       
       const loanProducts = await storage.getAllActiveLoanProducts();
       const lenders = await storage.getAllLenders();
@@ -212,20 +212,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         numberOfDraws: validatedData.numberOfDraws,
       });
       
-      const cashSale = calculateCashSaleMetrics(validatedData.dealInputs);
+      const cashSaleColumn = createCashSaleColumn(validatedData.dealInputs);
+      
+      let userLoanColumn = null;
+      if (validatedData.userLoan) {
+        const loanInputs = {
+          maxLtvBuy: 80,
+          maxLendRehab: 100,
+          maxLoanArv: validatedData.userLoan.maxLoanToArv || 70,
+          interestRate: validatedData.userLoan.interestRate,
+          interestDeferred: validatedData.userLoan.interestDeferred,
+          drawnFundsOnly: false,
+          points: validatedData.userLoan.points,
+          pointsDeferred: validatedData.userLoan.pointsDeferred,
+          fees: validatedData.userLoan.loanDocPrepFees || 0,
+          appraisalCost: validatedData.userLoan.appraisalRequired ? 
+                        (validatedData.userLoan.appraisalFee || 500) : 0,
+          costPerDraw: validatedData.userLoan.drawFees || 0,
+        };
+        
+        userLoanColumn = createLoanComparisonColumn(
+          'user-loan',
+          validatedData.dealInputs,
+          loanInputs,
+          validatedData.numberOfDraws
+        );
+      }
+      
+      const lenderColumns = rankedProducts.slice(0, 3).map(rp => {
+        const loanInputs = {
+          maxLtvBuy: parseFloat(rp.loanProduct.maxLtvBuy || '80'),
+          maxLendRehab: parseFloat(rp.loanProduct.maxLendRehab || '100'),
+          maxLoanArv: parseFloat(rp.loanProduct.maxLoanArv || '70'),
+          interestRate: parseFloat(rp.loanProduct.interestRate || '12'),
+          interestDeferred: rp.loanProduct.interestDeferred || false,
+          drawnFundsOnly: rp.loanProduct.drawnFundsOnly || false,
+          points: parseFloat(rp.loanProduct.points || '0'),
+          pointsDeferred: rp.loanProduct.pointsDeferred || false,
+          fees: parseFloat(rp.loanProduct.fees || '0'),
+          appraisalCost: rp.loanProduct.appraisalRequired ? 
+                        parseFloat(rp.loanProduct.estimatedAppraisalCost || '500') : 0,
+          costPerDraw: parseFloat(rp.loanProduct.costPerDraw || '0'),
+        };
+        
+        return createLoanComparisonColumn(
+          'lender',
+          validatedData.dealInputs,
+          loanInputs,
+          validatedData.numberOfDraws,
+          undefined,
+          {
+            lenderId: rp.lender.id,
+            lenderName: rp.lender.companyName,
+            productId: rp.loanProduct.id,
+            productName: rp.loanProduct.productName,
+            timeToClose: rp.loanProduct.timeToClose || undefined,
+          }
+        );
+      });
       
       res.json({
-        cashSale,
-        userLoan: validatedData.userLoan,
-        matchedLenders: rankedProducts.map(rp => ({
-          loanProduct: rp.loanProduct,
-          lender: rp.lender,
-          metrics: {
-            profit: rp.profit,
-            outOfPocket: rp.outOfPocket,
-            timeToClose: rp.timeToClose,
-          },
-        })),
+        cashSaleColumn,
+        userLoanColumn,
+        lenderColumns,
+        criteriaUsed: {
+          useDefaultCriteria: validatedData.criteriaSelection.useDefaultCriteria,
+          primary: validatedData.criteriaSelection.primary,
+          secondary: validatedData.criteriaSelection.secondary,
+        },
+        numberOfDraws: validatedData.numberOfDraws,
+        allRankedProducts: rankedProducts.length,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
