@@ -4,9 +4,29 @@
 
 RE Data Metrix is a real estate investment analytics and financing platform designed to connect investors with lenders. Its core purpose is to offer advanced profitability metric analysis, compare diverse financing options, and facilitate direct lender engagement through a streamlined application process. The platform aims to provide sophisticated deal analysis tools and simplify the lending application workflow.
 
+## Recent Changes (November 2025)
+
+### UX Improvements
+- **Manual Address Entry**: Added optional manual entry flow in Step 1 with conditional validation using Zod .superRefine() - allows users to skip property lookup and enter address details manually in Step 2
+- **HOA Fields**: Added HOA Monthly and HOA Transfer Fee fields to Step 2 Property Details with instruction text
+- **Footer Icons**: Changed social media icons from gold to white for better contrast on navy background
+- **Contact Form**: Made Company Name field optional
+- **Navigation**: Renamed "Resources" to "Toolbox" throughout navigation and routes
+
+### Deal Analysis API & Calculations
+- **Loan Calculation Service**: Created comprehensive `createCashSaleColumn()` and `createLoanComparisonColumn()` functions that return complete LoanComparisonColumn structures with all metrics (purchase price, rehab budget, total project cost, all costs, profit, ROI variants, percentage ARV)
+- **Results Endpoint**: Updated POST /api/deal-analysis/results to return complete comparison data:
+  - cashSaleColumn: Complete cash sale metrics
+  - userLoanColumn: User's custom loan comparison (if provided)
+  - lenderColumns: Top 3 matched lender products with full metrics
+  - criteriaUsed: Echo of ranking criteria selection
+  - numberOfDraws: Number of rehab draws
+  - allRankedProducts: Total count of matched products
+
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+Preferred communication style: Simple, everyday language
+Spelling: American English (analyze, not analyse)
 
 ## System Architecture
 
