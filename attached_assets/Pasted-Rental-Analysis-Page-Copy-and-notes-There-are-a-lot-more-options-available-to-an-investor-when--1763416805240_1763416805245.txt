@@ -1,0 +1,110 @@
+Rental Analysis Page Copy and notes. 
+
+There are a lot more options available to an investor when purchasing a buy and hold property. On this page, we’ll help you do a basic profitability analysis of the property when looking at a 30-year fixed loan. It’s a good starting point! 
+
+Scroll down to learn more about the various options available and help in selecting a lender or broker. 
+Place the new wizard here. 
+
+Place the text below on the page underneath the wizard. Under or next to each category place a button that says “Find Lenders”.
+
+Apply the following filters, then present three lenders
+Filters:
+State of the property is in a state where the lender works
+Credit score is within the range the lender works with
+The lender offers the type of loan(s) described.
+Highest referral fee paid to RE Data Metrix.
+
+Here is a comprehensive overview of rental property loan types, including traditional loans and financing structures like 5/1 ARM, balloon loans, and interest-only loans, with typical down payment and credit requirements and overlaps explained:
+Types of Loans for Rental Property Investors
+Conventional Loans
+Down Payment: 15–25%
+Credit Score: 620–700+
+Standard fixed-rate or adjustable-rate options for investment properties.
+Button: Find Conventional Lender
+DSCR (Debt Service Coverage Ratio) Loans
+Down Payment: 20–35%
+Credit Score: 620–680+
+Qualification based on property cash flow rather than personal income.
+Overlaps with conventional loans on down payment and credit requirements.
+Shares property-based underwriting with hard money loans but offers longer terms and lower rates.
+	Button: Find DSCR Lender
+Hard Money Loans
+Down Payment: 10–40%
+Credit Score: Flexible, often no strict minimum (550+ preferred)
+Short-term, asset-focused loans for fix-and-flip or quick financing.
+Buy a distressed property with a hard money (bridge) loan, fix it up, refi out of it with a DSCR loan.
+
+Button: Find Bridge Lenders
+
+FHA and VA Loans
+FHA Down Payment: 3.5–10% (owner-occupied multi-family)
+VA Down Payment: 0% (for veterans, owner-occupied)
+Credit Scores: 500–620+ depending on loan type.
+Typically require owner occupancy; not standard for pure investment.
+
+Button: Find FHA/VA Lenders
+
+
+Portfolio and Blanket Loans
+Down Payment: 20–30%
+Credit Score: Varies, typically 680+
+Used for multiple properties under one loan.
+		Button: Find Portfolio / Blanket Lenders
+Private and Seller Financing
+Terms negotiable, down payments typically 10–30%
+Flexible credit requirements based on agreement.
+
+Button: Learn More
+When clicked, to to About Private Lenders page. 
+Make private lenders page. Use text below. 
+Many private lender/investor relationships can be truly personal. 
+
+Investors seeking private lenders for real estate projects have more options than ever thanks to technology and growing networks within the real estate community. Private lenders—individuals or entities offering loans outside the traditional banking system—are often used for quick closings, flexible terms, and creative financing where banks may hesitate.​
+Here is an expanded and richly detailed list of places where investors can find private lenders for real estate deals, modeled after the style and completeness of the original list:
+Local real estate investor meetings, seminars, and conferences are excellent for face-to-face networking with private lenders and other experienced investors.
+Self-directed retirement account classes and seminars often attract investors eager to lend out of IRAs or 401(k)s, providing a unique source of private capital.
+Real Estate Investment Associations (REIAs), both local and regional, regularly facilitate introductions to active private lenders and provide a platform for sharing recommendations.
+Referrals from real estate professionals such as agents, mortgage brokers, closing attorneys, or title company representatives, who often have insight into recent deals funded by private lenders.
+Word-of-mouth and direct networking at property tours, open houses, and local investor gatherings.
+Online private lender directories and search platforms, including 
+Private Lender Link
+PeerStreet
+Sharestates
+BiggerPockets
+Social media groups and pages focused on real estate investing—especially on LinkedIn and Facebook—where private lenders frequently market their services and post testimonials.
+Local classifieds, community boards, and online marketplaces may include advertising for individual private lenders looking to fund deals.
+Direct research using public property records and recent transaction data to find private lenders who have funded local projects.
+Online educational events or webinars specific to private real estate lending, portfolio lending, or hard money loans, which often include networking segments or sponsor introductions.
+Exploring and engaging through these channels can help investors secure funding, compare lender options, and build lasting professional relationships for future deals. Always vet any lender’s reputation, terms, and testimonials before proceeding.
+The four links under Online private lender directories and search platforms, including: will be referral links. All four of these platforms offer referral fees. 
+5/1 ARM Loans (Adjustable-Rate Mortgage)
+Fixed interest rate for the first 5 years, then annual adjustments.
+Down Payment: Usually around 5% minimum.
+Credit Score: Typically 620+ required.
+Good for investors planning to hold property ≤5 years to benefit from lower initial rates.
+Requires ability to handle potential payment increases after adjustment period.
+
+Button: Find 5/1 ARM Lenders
+
+
+Balloon Loans
+Feature smaller periodic payments with a large lump sum due at loan end (commonly after 5–7 years).
+Down Payment and Credit: Similar to conventional loans (20%+; good credit 620+).
+Often used when investors plan to refinance or sell before balloon payment is due.
+
+Button: Find Balloon Loan Lenders
+
+Interest-Only Loans
+Borrower pays only interest for the initial period (e.g., 5–10 years), then principal plus interest after.
+Down Payment: Often 20% or higher.
+Credit: Usually requires solid credit (680+).
+Useful for maximizing cash flow early in ownership with expectation of property appreciation or refinance.
+
+Button: Find Interest-Only Lenders
+Overlaps and Considerations
+DSCR loans overlap most with conventional loans in down payment and credit criteria but differ by focusing on rental income for approval.
+5/1 ARM loans and balloon loans are often structured as conventional loans but offer flexible payment schedules suited to shorter-term investment strategies.
+Interest-only loans can be conventional or specialized loans with cash flow and payment flexibility.
+Hard money loans and DSCR loans share leniency on income documentation but differ markedly in term length and cost.
+Choosing among these depends on investment goals (short vs. long term), credit profile, and tolerance for payment variability.
+This comprehensive view gives investors options tailored to investment timelines, credit standing, and financial strategies for rental property acquisition or refinancing.
