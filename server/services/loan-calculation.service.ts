@@ -1,4 +1,4 @@
-import type { LoanProduct } from "@shared/schema";
+import type { LoanProduct, LoanComparisonColumn } from "@shared/schema";
 import type { DrawSchedule, LoanCalculation } from "@shared/schema";
 
 export interface DealInputs {
@@ -404,5 +404,82 @@ export function calculateLoanMetrics(
     annualizedRoi,
     totalInvestment,
     totalProjectCost,
+  };
+}
+
+export function createCashSaleColumn(dealInputs: DealInputs): LoanComparisonColumn {
+  const cashMetrics = calculateCashSaleMetrics(dealInputs);
+  
+  return {
+    type: 'cash',
+    purchasePrice: dealInputs.purchasePrice,
+    rehabBudget: dealInputs.rehabBudget,
+    totalProjectCost: cashMetrics.totalProjectCost,
+    closingCostsBuy: dealInputs.closingCostsBuy,
+    carryingCosts: dealInputs.carryingCosts,
+    totalInvestment: cashMetrics.totalInvestment,
+    sellPrice: dealInputs.sellPrice,
+    closingCostsSell: dealInputs.closingCostsSell,
+    commission: dealInputs.commission,
+    rolledCosts: 0,
+    lenderDrawFees: 0,
+    profit: cashMetrics.profit,
+    outOfPocketCost: cashMetrics.outOfPocketCost,
+    cashOnCashRoi: cashMetrics.cashOnCashRoi,
+    annualizedRoi: cashMetrics.annualizedRoi,
+    roi: cashMetrics.roi,
+    percentageArv: cashMetrics.percentageArv,
+  };
+}
+
+export function createLoanComparisonColumn(
+  type: 'user-loan' | 'lender',
+  dealInputs: DealInputs,
+  loanInputs: LoanInputs,
+  numberOfDraws: number = 3,
+  customDrawSchedule?: DrawSchedule[],
+  lenderInfo?: {
+    lenderId: string;
+    lenderName: string;
+    productId: string;
+    productName: string;
+    timeToClose?: number;
+  }
+): LoanComparisonColumn {
+  const loanCalculation = calculateLoanMetrics(dealInputs, loanInputs, numberOfDraws, customDrawSchedule);
+  
+  const percentageArv = dealInputs.arv > 0 
+    ? (loanCalculation.totalProjectCost / dealInputs.arv) * 100 
+    : 0;
+    
+  const percentageArvLender = loanInputs.maxLoanArv;
+  
+  return {
+    type,
+    lenderId: lenderInfo?.lenderId,
+    lenderName: lenderInfo?.lenderName,
+    productId: lenderInfo?.productId,
+    productName: lenderInfo?.productName,
+    timeToClose: lenderInfo?.timeToClose,
+    maxLoanArv: loanInputs.maxLoanArv,
+    purchasePrice: dealInputs.purchasePrice,
+    rehabBudget: dealInputs.rehabBudget,
+    totalProjectCost: loanCalculation.totalProjectCost,
+    closingCostsBuy: dealInputs.closingCostsBuy,
+    carryingCosts: loanCalculation.monthlyCarryingCosts * dealInputs.projectLength,
+    totalInvestment: loanCalculation.totalInvestment,
+    sellPrice: dealInputs.sellPrice,
+    closingCostsSell: dealInputs.closingCostsSell,
+    commission: dealInputs.commission,
+    rolledCosts: loanCalculation.rolledCosts,
+    lenderDrawFees: loanCalculation.drawFees,
+    profit: loanCalculation.profit,
+    outOfPocketCost: loanCalculation.outOfPocketCost,
+    cashOnCashRoi: loanCalculation.cashOnCashRoi,
+    annualizedRoi: loanCalculation.annualizedRoi,
+    roi: loanCalculation.roi,
+    percentageArv,
+    percentageArvLender,
+    loanCalculation,
   };
 }

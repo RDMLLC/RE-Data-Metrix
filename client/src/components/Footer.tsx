@@ -44,7 +44,7 @@ export default function Footer() {
                 href="https://www.facebook.com/profile.php?id=61582008407624"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white/10 backdrop-blur-sm p-2 rounded-lg hover-elevate active-elevate-2 transition-colors text-accent"
+                className="bg-white/10 backdrop-blur-sm p-2 rounded-lg hover-elevate active-elevate-2 transition-colors text-white"
                 aria-label="Visit our Facebook page"
                 data-testid="link-facebook"
               >
@@ -54,7 +54,7 @@ export default function Footer() {
                 href="https://linkedin.com/company/re-data-metrix-llc"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white/10 backdrop-blur-sm p-2 rounded-lg hover-elevate active-elevate-2 transition-colors text-accent"
+                className="bg-white/10 backdrop-blur-sm p-2 rounded-lg hover-elevate active-elevate-2 transition-colors text-white"
                 aria-label="Visit our LinkedIn page"
                 data-testid="link-linkedin"
               >
@@ -88,8 +88,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/resources" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-resources">
-                  Additional Resources
+                <Link href="/toolbox" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-toolbox">
+                  Toolbox
                 </Link>
               </li>
             </ul>

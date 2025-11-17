@@ -6,10 +6,10 @@ export default function Resources() {
   return (
     <Layout>
       <ComingSoon
-        title="Additional Resources"
+        title="Toolbox"
         description="Tools are important in your business. Watch this space for solutions ranging from property management, to lead generation, legal, networking, and more."
         imageSrc={resourcesImg}
-        imageAlt="Learning Resources and Materials"
+        imageAlt="Toolbox and Materials"
       />
     </Layout>
   );

@@ -19,6 +19,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const { toast } = useToast();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
+  const [manualEntryPreference, setManualEntryPreference] = useState<boolean | null>(null);
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -106,99 +107,186 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-muted-foreground">
-          Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
-        </p>
-        
-        <Alert className="mt-4">
-          <ExternalLink className="h-4 w-4" />
-          <AlertDescription>
-            Find your property on{" "}
-            <a
-              href="https://www.redfin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium underline underline-offset-4 hover:text-primary"
-            >
-              Redfin
-            </a>
-            {" "}or{" "}
-            <a
-              href="https://www.zillow.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium underline underline-offset-4 hover:text-primary"
-            >
-              Zillow
-            </a>
-            , then copy and paste the full URL here.
-          </AlertDescription>
-        </Alert>
-      </div>
-
-      <div className="grid gap-6">
-        <div className="space-y-2">
-          <label htmlFor="property-url" className="text-sm font-medium">
-            Property URL *
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id="property-url"
-              value={propertyUrl}
-              onChange={(e) => setPropertyUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleLookup();
-                }
-              }}
-              placeholder="https://www.redfin.com/..."
-              className="flex-1"
-              data-testid="input-property-url"
-            />
+      {manualEntryPreference === null && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">How would you like to enter the property information?</h2>
+            <p className="text-muted-foreground">
+              Choose whether to automatically fetch property details or enter them manually.
+            </p>
+          </div>
+          
+          <div className="flex gap-4">
             <Button
               type="button"
-              onClick={handleLookup}
-              disabled={propertyLookupMutation.isPending}
-              data-testid="button-lookup-property"
+              variant="outline"
+              onClick={() => setManualEntryPreference(false)}
+              className="flex-1"
+              data-testid="button-auto-lookup"
             >
-              {propertyLookupMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4" />
-                </>
-              )}
+              Automatic Lookup (Redfin/Zillow)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setManualEntryPreference(true)}
+              className="flex-1"
+              data-testid="button-manual-entry"
+            >
+              Manual Entry
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Example: https://www.redfin.com/CA/San-Francisco/123-Main-St-94102/home/12345678
-          </p>
         </div>
+      )}
 
-        {isLookupComplete && (
-          <div className="pt-4 border-t space-y-4">
-            <div className="rounded-lg bg-muted p-4">
-              <h3 className="font-semibold mb-2">Property Found</h3>
-              <p className="text-sm text-muted-foreground">
-                {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
+      {manualEntryPreference === false && (
+        <>
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setManualEntryPreference(null)}
+              data-testid="button-change-entry-method"
+            >
+              ← Change Entry Method
+            </Button>
+          </div>
+          
+          <div>
+            <p className="text-muted-foreground">
+              Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
+            </p>
+            
+            <Alert className="mt-4">
+              <ExternalLink className="h-4 w-4" />
+              <AlertDescription>
+                Find your property on{" "}
+                <a
+                  href="https://www.redfin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-4 hover:text-primary"
+                >
+                  Redfin
+                </a>
+                {" "}or{" "}
+                <a
+                  href="https://www.zillow.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-4 hover:text-primary"
+                >
+                  Zillow
+                </a>
+                , then copy and paste the full URL here.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div className="grid gap-6">
+            <div className="space-y-2">
+              <label htmlFor="property-url" className="text-sm font-medium">
+                Property URL *
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  id="property-url"
+                  value={propertyUrl}
+                  onChange={(e) => setPropertyUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleLookup();
+                    }
+                  }}
+                  placeholder="https://www.redfin.com/..."
+                  className="flex-1"
+                  data-testid="input-property-url"
+                />
+                <Button
+                  type="button"
+                  onClick={handleLookup}
+                  disabled={propertyLookupMutation.isPending}
+                  data-testid="button-lookup-property"
+                >
+                  {propertyLookupMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Example: https://www.redfin.com/CA/San-Francisco/123-Main-St-94102/home/12345678
               </p>
             </div>
-            
+
+            {isLookupComplete && (
+              <div className="pt-4 border-t space-y-4">
+                <div className="rounded-lg bg-muted p-4">
+                  <h3 className="font-semibold mb-2">Property Found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
+                  </p>
+                </div>
+                
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  className="w-full md:w-auto"
+                  data-testid="button-next-step"
+                >
+                  Continue to Property Details
+                </Button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {manualEntryPreference === true && (
+        <div className="space-y-4">
+          <div>
             <Button
               type="button"
-              onClick={handleNext}
-              className="w-full md:w-auto"
-              data-testid="button-next-step"
+              variant="ghost"
+              size="sm"
+              onClick={() => setManualEntryPreference(null)}
+              data-testid="button-change-entry-method"
             >
-              Continue to Property Details
+              ← Change Entry Method
             </Button>
           </div>
-        )}
-      </div>
+          
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Manual Property Entry</h2>
+            <p className="text-muted-foreground">
+              You'll enter all property details manually in the next step.
+            </p>
+          </div>
+          
+          <Button
+            type="button"
+            onClick={() => {
+              form.setValue("propertyDataSource", "manual");
+              form.setValue("address", "");
+              form.setValue("city", "");
+              form.setValue("state", "");
+              form.setValue("zipCode", "");
+              onNext();
+            }}
+            className="w-full md:w-auto"
+            data-testid="button-manual-next"
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

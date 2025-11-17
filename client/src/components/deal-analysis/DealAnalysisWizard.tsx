@@ -11,10 +11,10 @@ import Step5LoanCriteria from "./Step5LoanCriteria";
 import Step6Results from "./Step6Results";
 
 const wizardSchema = z.object({
-  address: z.string().min(1, "Address is required"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(2, "State is required"),
-  zipCode: z.string().min(5, "ZIP code is required"),
+  address: z.string(),
+  city: z.string(),
+  state: z.string(),
+  zipCode: z.string(),
   propertyType: z.string().optional(),
   bedrooms: z.number().optional(),
   bathrooms: z.number().optional(),
@@ -66,6 +66,40 @@ const wizardSchema = z.object({
   drawFees: z.number().optional(),
   loanDocPrepFees: z.number().optional(),
   closingTimeline: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.propertyDataSource === "manual") {
+    if (!data.address || data.address.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Address is required for manual entry",
+        path: ["address"],
+      });
+    }
+    
+    if (!data.city || data.city.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "City is required for manual entry",
+        path: ["city"],
+      });
+    }
+    
+    if (!data.state || data.state.trim().length !== 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "State must be a 2-letter code (e.g., FL)",
+        path: ["state"],
+      });
+    }
+    
+    if (!data.zipCode || !/^\d{5}$/.test(data.zipCode.trim())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ZIP code must be 5 digits",
+        path: ["zipCode"],
+      });
+    }
+  }
 });
 
 export type WizardFormData = z.infer<typeof wizardSchema>;

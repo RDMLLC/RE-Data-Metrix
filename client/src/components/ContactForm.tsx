@@ -10,7 +10,7 @@ import { CheckCircle2 } from "lucide-react";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  company: z.string().min(2, "Company name must be at least 2 characters"),
+  company: z.string().optional(),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   comments: z.string().min(10, "Please provide at least 10 characters"),
@@ -82,7 +82,7 @@ export default function ContactForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-foreground font-medium">
-                Company Name <span className="text-accent">*</span>
+                Company Name
               </FormLabel>
               <FormControl>
                 <Input
