@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, ExternalLink } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useWizardData } from "@/contexts/WizardDataContext";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
@@ -17,6 +18,7 @@ interface Step1Props {
 
 export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded }: Step1Props) {
   const { toast } = useToast();
+  const { updatePropertyData } = useWizardData();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
@@ -52,6 +54,13 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       // Store property image
       if (data.imageUrl) {
         setPropertyImage(data.imageUrl);
+      }
+      
+      // Save estimated rent to WizardDataContext if available
+      if (data.estimatedRent) {
+        updatePropertyData({
+          estimatedRent: data.estimatedRent,
+        });
       }
       
       onPropertyDataLoaded(data);
