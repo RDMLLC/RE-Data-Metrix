@@ -198,7 +198,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       <img 
                         src={propertyImage} 
                         alt="Property"
-                        className="w-full h-48 object-cover"
+                        className="w-full object-contain"
                         data-testid="img-property"
                       />
                     </div>
