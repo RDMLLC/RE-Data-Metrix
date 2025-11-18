@@ -5,6 +5,7 @@ export const utilityCoststByState: Record<string, number> = {
   "CA": 0.29,
   "CO": 0.23,
   "CT": 0.26,
+  "DC": 0.26,
   "DE": 0.27,
   "FL": 0.26,
   "GA": 0.28,
