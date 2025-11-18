@@ -6,8 +6,18 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 
 ## Recent Changes (November 2025)
 
-### Bug Fixes (Latest)
+### New Features (Latest)
+- **Zillow RentZestimate Integration**: Automatically captures and displays estimated monthly rent from Zillow property lookups
+  - rentZestimate extracted from Zillow API response during property lookup in Step 1
+  - Stored in WizardDataContext and persisted to localStorage
+  - Pre-fills monthly rent input in Rental Analysis wizard with editable Zillow estimate
+  - Displays "Zillow RentZestimate: $X,XXX (editable)" with green CheckCircle icon when available
+  - Shows amber AlertCircle with "No estimated rent available" message when rentZestimate is unavailable
+  - Automatically clears stale rent data when looking up new properties
+
+### Bug Fixes
 - **Rental Analysis Data Flow**: Fixed issue where clicking "Analyze as Rental Property" from Deal Analysis Step 3 or Step 6 would navigate to Rental Analysis without saving the deal data first, causing "Please complete the Deal Analysis wizard first" error. Both buttons now properly save all form data to WizardDataContext before navigation.
+- **Step 3 BRRRR Banner**: Fixed premature display of "Analyze as Rental Property" button - now only appears after user enters both purchase price AND ARV to ensure required data is available for Rental Analysis validation
 
 ### Educational Content Features
 - **Loan Types Education Page** (`/loan-types`): Comprehensive guide covering all 8 loan types (Conventional, DSCR, Hard Money, FHA/VA, Portfolio, ARM, Balloon, Interest-Only) with detailed descriptions, pros/cons, use cases, and typical terms
