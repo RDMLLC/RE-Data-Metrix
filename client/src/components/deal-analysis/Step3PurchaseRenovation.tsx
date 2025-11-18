@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign } from "lucide-react";
+import { DollarSign, TrendingUp } from "lucide-react";
 import { useEffect } from "react";
+import { useLocation } from "wouter";
 
 interface Step3PurchaseRenovationProps {
   form: UseFormReturn<WizardFormData>;
@@ -25,6 +26,7 @@ export default function Step3PurchaseRenovation({
   onNext,
   onBack,
 }: Step3PurchaseRenovationProps) {
+  const [, setLocation] = useLocation();
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
   const arv = form.watch("arv") || 0;
@@ -227,18 +229,48 @@ export default function Step3PurchaseRenovation({
             </CardContent>
           </Card>
 
-          <div className="flex gap-3 justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-              data-testid="button-back"
-            >
-              Back
-            </Button>
-            <Button type="submit" data-testid="button-continue">
-              Continue to Holding Period & Exit
-            </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-3 justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+                data-testid="button-back"
+              >
+                Back
+              </Button>
+              <Button type="submit" data-testid="button-continue">
+                Continue to Holding Period & Exit
+              </Button>
+            </div>
+            
+            {arv > 0 && (
+              <Card className="bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
+                        Planning to Keep as Rental?
+                      </h3>
+                      <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-3">
+                        Analyze this property's rental income potential, calculate DSCR (Debt Service Coverage Ratio), and find DSCR lenders.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="default"
+                        onClick={() => setLocation("/rental-analysis")}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        data-testid="button-rental-analysis"
+                      >
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        Analyze as Rental Property
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </form>
       </Form>

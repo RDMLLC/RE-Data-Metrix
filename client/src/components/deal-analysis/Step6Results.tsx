@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import Step6CriteriaSelection from "./Step6CriteriaSelection";
 import type { LoanCriteria } from "@shared/schema";
 
@@ -61,6 +62,7 @@ interface ResultsResponse {
 
 export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [showCriteriaSelection, setShowCriteriaSelection] = useState(true);
   const [criteriaSelected, setCriteriaSelected] = useState(false);
   const [useDefaultCriteria, setUseDefaultCriteria] = useState(true);
@@ -492,6 +494,32 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
+                Considering the BRRRR Strategy?
+              </h3>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-3">
+                Analyze this property as a rental! Calculate your DSCR (Debt Service Coverage Ratio), evaluate long-term cash flow, and find specialized DSCR lenders who offer financing based on rental income.
+              </p>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => setLocation("/rental-analysis")}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                data-testid="button-rental-analysis-step6"
+              >
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Analyze as Rental Property
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
