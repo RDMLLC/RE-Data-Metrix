@@ -20,6 +20,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
+  const [propertyImage, setPropertyImage] = useState<string | null>(null);
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -47,6 +48,11 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       form.setValue("taxAssessedValue", data.taxAssessedValue);
       form.setValue("estimatedValue", data.estimatedValue);
       form.setValue("propertyDataSource", dataSource);
+      
+      // Store property image
+      if (data.imageUrl) {
+        setPropertyImage(data.imageUrl);
+      }
       
       onPropertyDataLoaded(data);
       setIsLookupComplete(true);
@@ -187,6 +193,16 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               <div className="pt-4 border-t space-y-4">
                 <div className="rounded-lg bg-muted p-4">
                   <h3 className="font-semibold mb-2">Property Found</h3>
+                  {propertyImage && (
+                    <div className="mb-3 rounded-md overflow-hidden">
+                      <img 
+                        src={propertyImage} 
+                        alt="Property"
+                        className="w-full h-48 object-cover"
+                        data-testid="img-property"
+                      />
+                    </div>
+                  )}
                   <p className="text-sm text-muted-foreground">
                     {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
                   </p>

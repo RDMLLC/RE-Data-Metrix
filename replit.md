@@ -18,6 +18,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 - **Footer Navigation**: Added links to new educational pages in footer Resources section
 
 ### UX Improvements
+- **Property Image Display**: Added property photo to "Property Found" box in Step 1 after successful Zillow/Redfin lookup - extracts first image from API response and displays with proper sizing
 - **Manual Address Entry**: Added optional manual entry flow in Step 1 with conditional validation using Zod .superRefine() - allows users to skip property lookup and enter address details manually in Step 2
 - **HOA Fields**: Added HOA Monthly and HOA Transfer Fee fields to Step 2 Property Details with instruction text
 - **Footer Icons**: Changed social media icons from gold to white for better contrast on navy background

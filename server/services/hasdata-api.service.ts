@@ -78,6 +78,16 @@ export class HasDataAPIService implements IPropertyAPIService {
   private transformRedfinResponse(data: any): PropertyData {
     const property = data.property || data;
     
+    // Extract first photo URL from Redfin data
+    let imageUrl: string | undefined;
+    if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
+      imageUrl = property.photos[0];
+    } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
+      imageUrl = property.images[0];
+    } else if (property.photoUrl) {
+      imageUrl = property.photoUrl;
+    }
+    
     return {
       address: property.address?.street || '',
       city: property.address?.city || '',
@@ -93,12 +103,25 @@ export class HasDataAPIService implements IPropertyAPIService {
       estimatedValue: this.parseNumber(property.price || property.listPrice),
       lastSalePrice: this.parseNumber(property.lastSoldPrice),
       lastSaleDate: property.lastSoldDate,
+      imageUrl,
     };
   }
 
   private transformZillowResponse(data: any): PropertyData {
     const property = data.property || data;
     const lastSale = property.priceHistory?.find((h: any) => h.event === 'sold');
+    
+    // Extract first photo URL from Zillow data
+    let imageUrl: string | undefined;
+    if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
+      imageUrl = property.photos[0];
+    } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
+      imageUrl = property.images[0];
+    } else if (property.hiResImageLink) {
+      imageUrl = property.hiResImageLink;
+    } else if (property.photoUrl) {
+      imageUrl = property.photoUrl;
+    }
     
     return {
       address: property.address?.street || property.addressRaw || '',
@@ -115,6 +138,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       estimatedValue: this.parseNumber(property.price || property.zestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
+      imageUrl,
     };
   }
 }

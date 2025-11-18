@@ -13,6 +13,7 @@ export interface PropertyData {
   estimatedValue?: number;
   lastSalePrice?: number;
   lastSaleDate?: string;
+  imageUrl?: string;
 }
 
 export interface IPropertyAPIService {
