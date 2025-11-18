@@ -136,6 +136,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue: this.parseNumber(property.taxAssessedValue),
       estimatedValue: this.parseNumber(property.price || property.zestimate),
+      estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
       imageUrl,

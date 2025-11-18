@@ -11,6 +11,7 @@ export interface PropertyData {
   yearBuilt?: number;
   taxAssessedValue?: number;
   estimatedValue?: number;
+  estimatedRent?: number;
   lastSalePrice?: number;
   lastSaleDate?: string;
   imageUrl?: string;

@@ -24,6 +24,7 @@ export interface WizardPropertyData {
   docPrepFees?: number;
   titleExam?: number;
   titleInsurance?: number;
+  estimatedRent?: number;
 }
 
 export interface WizardInvestorData {
