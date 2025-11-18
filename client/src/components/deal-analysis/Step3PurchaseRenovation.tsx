@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DollarSign, TrendingUp } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
+import { useWizardData } from "@/contexts/WizardDataContext";
 
 interface Step3PurchaseRenovationProps {
   form: UseFormReturn<WizardFormData>;
@@ -27,6 +28,7 @@ export default function Step3PurchaseRenovation({
   onBack,
 }: Step3PurchaseRenovationProps) {
   const [, setLocation] = useLocation();
+  const { updatePropertyData, updateInvestorData } = useWizardData();
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
   const arv = form.watch("arv") || 0;
@@ -44,6 +46,46 @@ export default function Step3PurchaseRenovation({
   const handleSubmit = form.handleSubmit(() => {
     onNext();
   });
+
+  const handleNavigateToRentalAnalysis = () => {
+    // Save current form data to WizardDataContext before navigating
+    const formData = form.getValues();
+    
+    updatePropertyData({
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zipCode,
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      squareFootage: formData.sqft,
+      purchasePrice: formData.purchasePrice,
+      arv: formData.arv,
+      rehabBudget: formData.rehabBudget,
+      taxAssessedValue: formData.taxAssessedValue,
+      annualInsurance: formData.annualInsurance,
+      monthlyUtilities: formData.monthlyUtilities,
+      hoaFees: formData.hoaFees,
+      hoaTransferFee: formData.hoaTransferFee,
+      projectLength: formData.projectLength,
+      sellPrice: formData.sellPrice,
+      closingCostsSellPercent: formData.closingCostsSellPercent,
+      realEstateCommissionPercent: formData.realEstateCommissionPercent,
+      attorneyFees: formData.attorneyFees,
+      docPrepFees: formData.docPrepFees,
+      titleExam: formData.titleExam,
+      titleInsurance: formData.titleInsurance,
+    });
+
+    if (formData.creditScore) {
+      updateInvestorData({
+        creditScore: parseInt(formData.creditScore),
+        experienceLevel: formData.isNewInvestor ? "new" : "experienced",
+      });
+    }
+
+    setLocation("/rental-analysis");
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -259,7 +301,7 @@ export default function Step3PurchaseRenovation({
                       <Button
                         type="button"
                         variant="default"
-                        onClick={() => setLocation("/rental-analysis")}
+                        onClick={handleNavigateToRentalAnalysis}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         data-testid="button-rental-analysis"
                       >

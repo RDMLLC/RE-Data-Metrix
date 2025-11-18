@@ -6,7 +6,10 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 
 ## Recent Changes (November 2025)
 
-### Educational Content Features (Latest)
+### Bug Fixes (Latest)
+- **Rental Analysis Data Flow**: Fixed issue where clicking "Analyze as Rental Property" from Deal Analysis Step 3 or Step 6 would navigate to Rental Analysis without saving the deal data first, causing "Please complete the Deal Analysis wizard first" error. Both buttons now properly save all form data to WizardDataContext before navigation.
+
+### Educational Content Features
 - **Loan Types Education Page** (`/loan-types`): Comprehensive guide covering all 8 loan types (Conventional, DSCR, Hard Money, FHA/VA, Portfolio, ARM, Balloon, Interest-Only) with detailed descriptions, pros/cons, use cases, and typical terms
 - **Private Lenders Education Page** (`/about-private-lenders`): Educational content explaining private lending, benefits for real estate investors, how it works, and CTAs linking to lender search
 - **Deal Analysis Step 5 Educational Banner**: Added prominent educational banner in Loan Criteria step with links to loan types and private lenders pages, plus enhanced field descriptions for Points and ARV
@@ -18,7 +21,8 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 - **Footer Navigation**: Added links to new educational pages in footer Resources section
 
 ### UX Improvements
-- **Property Image Display**: Added property photo to "Property Found" box in Step 1 after successful Zillow/Redfin lookup - extracts first image from API response and displays with proper sizing
+- **Property Image Display**: Added property photo to "Property Found" box in Step 1 after successful Zillow/Redfin lookup - displays full-size image with object-contain styling
+- **DC Utility Costs**: Added Washington DC to utility costs database with $0.26/sq ft rate (matching MD and VA)
 - **Manual Address Entry**: Added optional manual entry flow in Step 1 with conditional validation using Zod .superRefine() - allows users to skip property lookup and enter address details manually in Step 2
 - **HOA Fields**: Added HOA Monthly and HOA Transfer Fee fields to Step 2 Property Details with instruction text
 - **Footer Icons**: Changed social media icons from gold to white for better contrast on navy background

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import Step6CriteriaSelection from "./Step6CriteriaSelection";
 import type { LoanCriteria } from "@shared/schema";
+import { useWizardData } from "@/contexts/WizardDataContext";
 
 interface Step6ResultsProps {
   form: UseFormReturn<WizardFormData>;
@@ -63,6 +64,7 @@ interface ResultsResponse {
 export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { updatePropertyData, updateInvestorData } = useWizardData();
   const [showCriteriaSelection, setShowCriteriaSelection] = useState(true);
   const [criteriaSelected, setCriteriaSelected] = useState(false);
   const [useDefaultCriteria, setUseDefaultCriteria] = useState(true);
@@ -168,6 +170,46 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
     if (results && visibleLenderCount < results.lenderColumns.length) {
       setVisibleLenderCount(prev => Math.min(prev + 3, results.lenderColumns.length));
     }
+  };
+
+  const handleNavigateToRentalAnalysis = () => {
+    // Save current form data to WizardDataContext before navigating
+    const formData = form.getValues();
+    
+    updatePropertyData({
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zipCode,
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      squareFootage: formData.sqft,
+      purchasePrice: formData.purchasePrice,
+      arv: formData.arv,
+      rehabBudget: formData.rehabBudget,
+      taxAssessedValue: formData.taxAssessedValue,
+      annualInsurance: formData.annualInsurance,
+      monthlyUtilities: formData.monthlyUtilities,
+      hoaFees: formData.hoaFees,
+      hoaTransferFee: formData.hoaTransferFee,
+      projectLength: formData.projectLength,
+      sellPrice: formData.sellPrice,
+      closingCostsSellPercent: formData.closingCostsSellPercent,
+      realEstateCommissionPercent: formData.realEstateCommissionPercent,
+      attorneyFees: formData.attorneyFees,
+      docPrepFees: formData.docPrepFees,
+      titleExam: formData.titleExam,
+      titleInsurance: formData.titleInsurance,
+    });
+
+    if (formData.creditScore) {
+      updateInvestorData({
+        creditScore: parseInt(formData.creditScore),
+        experienceLevel: formData.isNewInvestor ? "new" : "experienced",
+      });
+    }
+
+    setLocation("/rental-analysis");
   };
 
   if (showCriteriaSelection) {
@@ -511,7 +553,7 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
               <Button
                 type="button"
                 variant="default"
-                onClick={() => setLocation("/rental-analysis")}
+                onClick={handleNavigateToRentalAnalysis}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 data-testid="button-rental-analysis-step6"
               >
