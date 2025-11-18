@@ -11,7 +11,7 @@ export default function RentalAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const { wizardData, hasPropertyData } = useWizardData();
   const [, setLocation] = useLocation();
-  const [monthlyRent, setMonthlyRent] = useState<number>(0);
+  const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
   const [interestRate, setInterestRate] = useState<number>(6.5);
 
   if (!hasPropertyData()) {
@@ -103,6 +103,18 @@ export default function RentalAnalysisWizard() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Expected Monthly Rent</label>
+                  {property.estimatedRent && property.estimatedRent > 0 && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <CheckCircle className="inline h-4 w-4 mr-1 text-emerald-600" />
+                      Zillow RentZestimate: ${property.estimatedRent.toLocaleString()} (editable)
+                    </p>
+                  )}
+                  {(!property.estimatedRent || property.estimatedRent === 0) && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <AlertCircle className="inline h-4 w-4 mr-1 text-amber-600" />
+                      No estimated rent available from property data - please enter manually
+                    </p>
+                  )}
                   <input
                     type="number"
                     value={monthlyRent || ""}
