@@ -23,6 +23,17 @@ const US_STATES = [
   "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
 ];
 
+const LOAN_TYPES = [
+  { value: "conventional", label: "Conventional" },
+  { value: "dscr", label: "DSCR" },
+  { value: "hard-money", label: "Hard Money" },
+  { value: "fha-va", label: "FHA/VA" },
+  { value: "portfolio", label: "Portfolio" },
+  { value: "arm", label: "ARM (Adjustable Rate)" },
+  { value: "balloon", label: "Balloon" },
+  { value: "interest-only", label: "Interest-Only" },
+];
+
 const questionnaireSchema = z.object({
   lenderId: z.string(),
   brokerOrDirectLender: z.string().optional(),
@@ -30,6 +41,7 @@ const questionnaireSchema = z.object({
   offerNonTraditionalLending: z.string().optional(),
   workWithNewInvestors: z.string().optional(),
   minCreditScore: z.string().optional(),
+  creditScoreMin: z.number().min(300).max(850).optional(),
   offerDeferredPayment: z.string().optional(),
   offerRolledPoints: z.string().optional(),
   offer100PercentFunding: z.string().optional(),
@@ -37,6 +49,7 @@ const questionnaireSchema = z.object({
   offerDscrLoans: z.string().optional(),
   offerLoansAllStates: z.string().optional(),
   statesServiced: z.array(z.string()).optional(),
+  loanTypes: z.array(z.string()).optional(),
 });
 
 type QuestionnaireForm = z.infer<typeof questionnaireSchema>;
@@ -74,6 +87,7 @@ export default function LenderQuestionnaire() {
       offerNonTraditionalLending: "",
       workWithNewInvestors: "",
       minCreditScore: "",
+      creditScoreMin: undefined,
       offerDeferredPayment: "",
       offerRolledPoints: "",
       offer100PercentFunding: "",
@@ -81,6 +95,7 @@ export default function LenderQuestionnaire() {
       offerDscrLoans: "",
       offerLoansAllStates: "",
       statesServiced: [],
+      loanTypes: [],
     },
   });
 
@@ -232,6 +247,82 @@ export default function LenderQuestionnaire() {
                           <SelectItem value="700+">700+</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Minimum Credit Score (Numeric) */}
+                <FormField
+                  control={form.control}
+                  name="creditScoreMin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Minimum Credit Score (Specific Number)</FormLabel>
+                      <FormControl>
+                        <input
+                          type="number"
+                          min={300}
+                          max={850}
+                          placeholder="e.g., 620"
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          value={field.value || ""}
+                          data-testid="input-credit-score-min"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Loan Types Offered */}
+                <FormField
+                  control={form.control}
+                  name="loanTypes"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel className="text-foreground text-base">Loan Types Offered</FormLabel>
+                        <p className="text-sm text-muted-foreground">Select all loan types you offer</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {LOAN_TYPES.map((loanType) => (
+                          <FormField
+                            key={loanType.value}
+                            control={form.control}
+                            name="loanTypes"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={loanType.value}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(loanType.value)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), loanType.value])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== loanType.value
+                                              )
+                                            )
+                                      }}
+                                      data-testid={`checkbox-loan-type-${loanType.value}`}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal cursor-pointer">
+                                    {loanType.label}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

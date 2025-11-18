@@ -64,6 +64,7 @@ export const lenderQuestionnaires = pgTable("lender_questionnaires", {
   offerNonTraditionalLending: text("offer_non_traditional_lending"),
   workWithNewInvestors: text("work_with_new_investors"),
   minCreditScore: text("min_credit_score"),
+  creditScoreMin: integer("credit_score_min"),
   offerDeferredPayment: text("offer_deferred_payment"),
   offerRolledPoints: text("offer_rolled_points"),
   offer100PercentFunding: text("offer_100_percent_funding"),
@@ -71,6 +72,7 @@ export const lenderQuestionnaires = pgTable("lender_questionnaires", {
   offerDscrLoans: text("offer_dscr_loans"),
   offerLoansAllStates: text("offer_loans_all_states"),
   statesServiced: text("states_serviced").array(),
+  loanTypes: text("loan_types").array(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

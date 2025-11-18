@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useWizardData } from "@/contexts/WizardDataContext";
 import WizardLayout from "./WizardLayout";
 import Step1PropertyAddress from "./Step1PropertyAddress";
 import Step2PropertyDetails from "./Step2PropertyDetails";
@@ -107,6 +108,7 @@ export type WizardFormData = z.infer<typeof wizardSchema>;
 export default function DealAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
+  const { updatePropertyData, updateInvestorData } = useWizardData();
 
   const form = useForm<WizardFormData>({
     resolver: zodResolver(wizardSchema),
@@ -120,7 +122,45 @@ export default function DealAnalysisWizard() {
     },
   });
 
+  const saveCurrentStepData = () => {
+    const formData = form.getValues();
+    
+    updatePropertyData({
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zipCode,
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      squareFootage: formData.sqft,
+      purchasePrice: formData.purchasePrice,
+      arv: formData.arv,
+      rehabBudget: formData.rehabBudget,
+      taxAssessedValue: formData.taxAssessedValue,
+      annualInsurance: formData.annualInsurance,
+      monthlyUtilities: formData.monthlyUtilities,
+      hoaFees: formData.hoaFees,
+      hoaTransferFee: formData.hoaTransferFee,
+      projectLength: formData.projectLength,
+      sellPrice: formData.sellPrice,
+      closingCostsSellPercent: formData.closingCostsSellPercent,
+      realEstateCommissionPercent: formData.realEstateCommissionPercent,
+      attorneyFees: formData.attorneyFees,
+      docPrepFees: formData.docPrepFees,
+      titleExam: formData.titleExam,
+      titleInsurance: formData.titleInsurance,
+    });
+
+    if (formData.creditScore) {
+      updateInvestorData({
+        creditScore: parseInt(formData.creditScore),
+        experienceLevel: formData.isNewInvestor ? "new" : "experienced",
+      });
+    }
+  };
+
   const handleNext = () => {
+    saveCurrentStepData();
     if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     }

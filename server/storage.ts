@@ -33,6 +33,7 @@ export interface IStorage {
   
   upsertLenderQuestionnaire(data: InsertLenderQuestionnaire): Promise<LenderQuestionnaire>;
   getLenderQuestionnaire(lenderId: string): Promise<LenderQuestionnaire | undefined>;
+  getAllLenderQuestionnaires(): Promise<LenderQuestionnaire[]>;
   searchLenders(criteria: any): Promise<any[]>;
   
   createLoanProduct(data: InsertLoanProduct): Promise<LoanProduct>;
@@ -125,6 +126,7 @@ export class MemStorage implements IStorage {
         offerNonTraditionalLending: data.offerNonTraditionalLending ?? existing.offerNonTraditionalLending ?? null,
         workWithNewInvestors: data.workWithNewInvestors ?? existing.workWithNewInvestors ?? null,
         minCreditScore: data.minCreditScore ?? existing.minCreditScore ?? null,
+        creditScoreMin: data.creditScoreMin ?? existing.creditScoreMin ?? null,
         offerDeferredPayment: data.offerDeferredPayment ?? existing.offerDeferredPayment ?? null,
         offerRolledPoints: data.offerRolledPoints ?? existing.offerRolledPoints ?? null,
         offer100PercentFunding: data.offer100PercentFunding ?? existing.offer100PercentFunding ?? null,
@@ -132,6 +134,7 @@ export class MemStorage implements IStorage {
         offerDscrLoans: data.offerDscrLoans ?? existing.offerDscrLoans ?? null,
         offerLoansAllStates: data.offerLoansAllStates ?? existing.offerLoansAllStates ?? null,
         statesServiced: data.statesServiced ?? existing.statesServiced ?? null,
+        loanTypes: data.loanTypes ?? existing.loanTypes ?? null,
         updatedAt: new Date(),
       };
       this.questionnaires.set(existing.id, updated);
@@ -146,6 +149,7 @@ export class MemStorage implements IStorage {
         offerNonTraditionalLending: data.offerNonTraditionalLending ?? null,
         workWithNewInvestors: data.workWithNewInvestors ?? null,
         minCreditScore: data.minCreditScore ?? null,
+        creditScoreMin: data.creditScoreMin ?? null,
         offerDeferredPayment: data.offerDeferredPayment ?? null,
         offerRolledPoints: data.offerRolledPoints ?? null,
         offer100PercentFunding: data.offer100PercentFunding ?? null,
@@ -153,6 +157,7 @@ export class MemStorage implements IStorage {
         offerDscrLoans: data.offerDscrLoans ?? null,
         offerLoansAllStates: data.offerLoansAllStates ?? null,
         statesServiced: data.statesServiced ?? null,
+        loanTypes: data.loanTypes ?? null,
         updatedAt: new Date(),
       };
       this.questionnaires.set(id, questionnaire);
@@ -164,6 +169,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.questionnaires.values()).find(
       (q) => q.lenderId === lenderId
     );
+  }
+
+  async getAllLenderQuestionnaires(): Promise<LenderQuestionnaire[]> {
+    return Array.from(this.questionnaires.values());
   }
 
   async searchLenders(criteria: any): Promise<any[]> {
@@ -348,6 +357,7 @@ export class DatabaseStorage implements IStorage {
           offerNonTraditionalLending: data.offerNonTraditionalLending,
           workWithNewInvestors: data.workWithNewInvestors,
           minCreditScore: data.minCreditScore,
+          creditScoreMin: data.creditScoreMin,
           offerDeferredPayment: data.offerDeferredPayment,
           offerRolledPoints: data.offerRolledPoints,
           offer100PercentFunding: data.offer100PercentFunding,
@@ -355,6 +365,7 @@ export class DatabaseStorage implements IStorage {
           offerDscrLoans: data.offerDscrLoans,
           offerLoansAllStates: data.offerLoansAllStates,
           statesServiced: data.statesServiced,
+          loanTypes: data.loanTypes,
           updatedAt: new Date(),
         })
         .where(eq(lenderQuestionnairesTable.id, existing[0].id))
@@ -370,6 +381,10 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select().from(lenderQuestionnairesTable)
       .where(eq(lenderQuestionnairesTable.lenderId, lenderId)).limit(1);
     return result[0];
+  }
+
+  async getAllLenderQuestionnaires(): Promise<LenderQuestionnaire[]> {
+    return await db.select().from(lenderQuestionnairesTable);
   }
 
   async searchLenders(criteria: any): Promise<any[]> {

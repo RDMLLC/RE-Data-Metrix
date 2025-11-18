@@ -1,0 +1,135 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+export interface WizardPropertyData {
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  purchasePrice?: number;
+  arv?: number;
+  rehabBudget?: number;
+  taxAssessedValue?: number;
+  annualInsurance?: number;
+  monthlyUtilities?: number;
+  hoaFees?: number;
+  hoaTransferFee?: number;
+  projectLength?: number;
+  sellPrice?: number;
+  closingCostsSellPercent?: number;
+  realEstateCommissionPercent?: number;
+  attorneyFees?: number;
+  docPrepFees?: number;
+  titleExam?: number;
+  titleInsurance?: number;
+}
+
+export interface WizardInvestorData {
+  creditScore?: number;
+  experienceLevel?: string;
+}
+
+export interface WizardData {
+  property?: WizardPropertyData;
+  investor?: WizardInvestorData;
+  timestamp?: number;
+}
+
+interface WizardDataContextType {
+  wizardData: WizardData;
+  setWizardData: (data: WizardData) => void;
+  updatePropertyData: (data: Partial<WizardPropertyData>) => void;
+  updateInvestorData: (data: Partial<WizardInvestorData>) => void;
+  clearWizardData: () => void;
+  hasPropertyData: () => boolean;
+}
+
+const WizardDataContext = createContext<WizardDataContextType | undefined>(undefined);
+
+const STORAGE_KEY = 'redatametrix_wizard_data';
+
+export function WizardDataProvider({ children }: { children: ReactNode }) {
+  const [wizardData, setWizardDataState] = useState<WizardData>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Failed to load wizard data from localStorage:', error);
+    }
+    return {};
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(wizardData));
+    } catch (error) {
+      console.error('Failed to save wizard data to localStorage:', error);
+    }
+  }, [wizardData]);
+
+  const setWizardData = (data: WizardData) => {
+    setWizardDataState({
+      ...data,
+      timestamp: Date.now(),
+    });
+  };
+
+  const updatePropertyData = (data: Partial<WizardPropertyData>) => {
+    setWizardDataState((prev) => ({
+      ...prev,
+      property: {
+        ...prev.property,
+        ...data,
+      },
+      timestamp: Date.now(),
+    }));
+  };
+
+  const updateInvestorData = (data: Partial<WizardInvestorData>) => {
+    setWizardDataState((prev) => ({
+      ...prev,
+      investor: {
+        ...prev.investor,
+        ...data,
+      },
+      timestamp: Date.now(),
+    }));
+  };
+
+  const clearWizardData = () => {
+    setWizardDataState({});
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const hasPropertyData = () => {
+    return !!(wizardData.property?.purchasePrice && wizardData.property?.arv);
+  };
+
+  return (
+    <WizardDataContext.Provider
+      value={{
+        wizardData,
+        setWizardData,
+        updatePropertyData,
+        updateInvestorData,
+        clearWizardData,
+        hasPropertyData,
+      }}
+    >
+      {children}
+    </WizardDataContext.Provider>
+  );
+}
+
+export function useWizardData() {
+  const context = useContext(WizardDataContext);
+  if (context === undefined) {
+    throw new Error('useWizardData must be used within a WizardDataProvider');
+  }
+  return context;
+}

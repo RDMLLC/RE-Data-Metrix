@@ -69,6 +69,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lender Matching Routes
+  const lenderMatchQuerySchema = z.object({
+    loanType: z.string(),
+    state: z.string().length(2),
+    creditScore: z.coerce.number().min(300).max(850),
+  });
+
+  app.get("/api/lenders/match", async (req, res) => {
+    try {
+      const validatedQuery = lenderMatchQuerySchema.parse(req.query);
+      const { matchLendersByLoanType } = await import("./services/lender-matching.service");
+      
+      const matchedLenders = await matchLendersByLoanType({
+        loanType: validatedQuery.loanType,
+        state: validatedQuery.state,
+        creditScore: validatedQuery.creditScore,
+        storage,
+      });
+      
+      res.json(matchedLenders);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid query parameters", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to match lenders" });
+    }
+  });
+
   // Loan Product Routes
   app.post("/api/loan-products", async (req, res) => {
     try {
