@@ -20,6 +20,8 @@ import LenderDashboard from "@/pages/LenderDashboard";
 import LenderQuestionnaire from "@/pages/LenderQuestionnaire";
 import LenderLoanProducts from "@/pages/LenderLoanProducts";
 import LenderCompanyInfo from "@/pages/LenderCompanyInfo";
+import LoanTypes from "@/pages/LoanTypes";
+import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
 
 function Router() {
   return (
@@ -30,6 +32,8 @@ function Router() {
       <Route path="/deal-analysis" component={DealAnalysis} />
       <Route path="/rental-analysis" component={RentalAnalysis} />
       <Route path="/lenders" component={Lenders} />
+      <Route path="/loan-types" component={LoanTypes} />
+      <Route path="/about-private-lenders" component={AboutPrivateLenders} />
       <Route path="/toolbox" component={Resources} />
       <Route path="/login" component={Login} />
       <Route path="/contact" component={Contact} />
