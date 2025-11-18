@@ -19,7 +19,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const { toast } = useToast();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
-  const [manualEntryPreference, setManualEntryPreference] = useState<boolean | null>(null);
+  const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -107,53 +107,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
   return (
     <div className="space-y-6">
-      {manualEntryPreference === null && (
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-xl font-semibold mb-2">How would you like to enter the property information?</h2>
-            <p className="text-muted-foreground">
-              Choose whether to automatically fetch property details or enter them manually.
-            </p>
-          </div>
-          
-          <div className="flex gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setManualEntryPreference(false)}
-              className="flex-1"
-              data-testid="button-auto-lookup"
-            >
-              Automatic Lookup (Redfin/Zillow)
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setManualEntryPreference(true)}
-              className="flex-1"
-              data-testid="button-manual-entry"
-            >
-              Manual Entry
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {manualEntryPreference === false && (
+      {!manualEntryPreference && (
         <>
           <div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setManualEntryPreference(null)}
-              data-testid="button-change-entry-method"
-            >
-              ← Change Entry Method
-            </Button>
-          </div>
-          
-          <div>
+            <h2 className="text-xl font-semibold mb-2">Property Lookup</h2>
             <p className="text-muted-foreground">
               Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
             </p>
@@ -246,23 +203,25 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               </div>
             )}
           </div>
+
+          <div className="pt-4 border-t">
+            <p className="text-sm text-muted-foreground mb-3">
+              Don't have a property URL? You can enter property details manually instead.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setManualEntryPreference(true)}
+              data-testid="button-switch-manual-entry"
+            >
+              Switch to Manual Entry
+            </Button>
+          </div>
         </>
       )}
 
-      {manualEntryPreference === true && (
+      {manualEntryPreference && (
         <div className="space-y-4">
-          <div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setManualEntryPreference(null)}
-              data-testid="button-change-entry-method"
-            >
-              ← Change Entry Method
-            </Button>
-          </div>
-          
           <div>
             <h2 className="text-xl font-semibold mb-2">Manual Property Entry</h2>
             <p className="text-muted-foreground">
@@ -270,21 +229,30 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             </p>
           </div>
           
-          <Button
-            type="button"
-            onClick={() => {
-              form.setValue("propertyDataSource", "manual");
-              form.setValue("address", "");
-              form.setValue("city", "");
-              form.setValue("state", "");
-              form.setValue("zipCode", "");
-              onNext();
-            }}
-            className="w-full md:w-auto"
-            data-testid="button-manual-next"
-          >
-            Next
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setManualEntryPreference(false)}
+              data-testid="button-back-to-lookup"
+            >
+              Back to Property Lookup
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                form.setValue("propertyDataSource", "manual");
+                form.setValue("address", "");
+                form.setValue("city", "");
+                form.setValue("state", "");
+                form.setValue("zipCode", "");
+                onNext();
+              }}
+              data-testid="button-manual-next"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>
