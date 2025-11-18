@@ -28,7 +28,7 @@ export default function Step3PurchaseRenovation({
   onBack,
 }: Step3PurchaseRenovationProps) {
   const [, setLocation] = useLocation();
-  const { updatePropertyData, updateInvestorData } = useWizardData();
+  const { updatePropertyData, updateInvestorData, wizardData } = useWizardData();
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
   const arv = form.watch("arv") || 0;
@@ -75,6 +75,7 @@ export default function Step3PurchaseRenovation({
       docPrepFees: formData.docPrepFees,
       titleExam: formData.titleExam,
       titleInsurance: formData.titleInsurance,
+      estimatedRent: wizardData.property?.estimatedRent,
     });
 
     if (formData.creditScore) {

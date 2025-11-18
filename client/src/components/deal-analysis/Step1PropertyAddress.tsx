@@ -56,12 +56,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         setPropertyImage(data.imageUrl);
       }
       
-      // Save estimated rent to WizardDataContext if available
-      if (data.estimatedRent) {
-        updatePropertyData({
-          estimatedRent: data.estimatedRent,
-        });
-      }
+      // Always save estimated rent to WizardDataContext (even if undefined) to clear stale data
+      updatePropertyData({
+        estimatedRent: data.estimatedRent,
+      });
       
       onPropertyDataLoaded(data);
       setIsLookupComplete(true);

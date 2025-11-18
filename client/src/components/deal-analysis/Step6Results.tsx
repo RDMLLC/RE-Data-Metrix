@@ -64,7 +64,7 @@ interface ResultsResponse {
 export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { updatePropertyData, updateInvestorData } = useWizardData();
+  const { updatePropertyData, updateInvestorData, wizardData } = useWizardData();
   const [showCriteriaSelection, setShowCriteriaSelection] = useState(true);
   const [criteriaSelected, setCriteriaSelected] = useState(false);
   const [useDefaultCriteria, setUseDefaultCriteria] = useState(true);
@@ -200,6 +200,7 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
       docPrepFees: formData.docPrepFees,
       titleExam: formData.titleExam,
       titleInsurance: formData.titleInsurance,
+      estimatedRent: wizardData.property?.estimatedRent,
     });
 
     if (formData.creditScore) {
