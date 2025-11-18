@@ -6,7 +6,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, DollarSign } from "lucide-react";
+import { ArrowLeft, DollarSign, BookOpen, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 
 interface Step5LoanCriteriaProps {
   form: UseFormReturn<WizardFormData>;
@@ -42,6 +43,35 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
           Tell us about your experience and financing needs
         </p>
       </div>
+
+      {/* Educational Banner */}
+      <Card className="bg-accent/5 border-accent/20">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <BookOpen className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-foreground mb-2">
+                <strong>New to real estate financing?</strong> Learn about different loan types and find the right financing for your investment strategy.
+              </p>
+              <div className="flex gap-3 flex-wrap">
+                <Link href="/loan-types">
+                  <Button variant="outline" size="sm" className="h-8" data-testid="link-loan-types">
+                    <BookOpen className="h-3 w-3 mr-1.5" />
+                    View Loan Types
+                    <ExternalLink className="h-3 w-3 ml-1.5" />
+                  </Button>
+                </Link>
+                <Link href="/about-private-lenders">
+                  <Button variant="outline" size="sm" className="h-8" data-testid="link-private-lenders">
+                    About Private Lenders
+                    <ExternalLink className="h-3 w-3 ml-1.5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Form {...form}>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -360,6 +390,9 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Points</FormLabel>
+                          <FormDescription className="text-xs">
+                            Upfront fee (1 point = 1% of loan)
+                          </FormDescription>
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -386,6 +419,9 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Max % Loan to ARV</FormLabel>
+                          <FormDescription className="text-xs">
+                            After Repair Value (ARV) ratio
+                          </FormDescription>
                           <FormControl>
                             <div className="relative">
                               <Input
