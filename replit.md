@@ -6,6 +6,17 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 
 ## Recent Changes (November 2025)
 
+### Educational Content Features (Latest)
+- **Loan Types Education Page** (`/loan-types`): Comprehensive guide covering all 8 loan types (Conventional, DSCR, Hard Money, FHA/VA, Portfolio, ARM, Balloon, Interest-Only) with detailed descriptions, pros/cons, use cases, and typical terms
+- **Private Lenders Education Page** (`/about-private-lenders`): Educational content explaining private lending, benefits for real estate investors, how it works, and CTAs linking to lender search
+- **Deal Analysis Step 5 Educational Banner**: Added prominent educational banner in Loan Criteria step with links to loan types and private lenders pages, plus enhanced field descriptions for Points and ARV
+- **Rental Analysis DSCR Enhancements**:
+  - Editable interest rate field (defaults to 6.5%) with live DSCR recalculation
+  - Enhanced DSCR status indicators using Lucide React icons (CheckCircle, AlertTriangle, XCircle) with color-coded feedback (emerald/yellow/red)
+  - Improved UI layout with detailed PITIA breakdown and loan details
+  - Educational context about typical DSCR rates (7.5%-9.5%)
+- **Footer Navigation**: Added links to new educational pages in footer Resources section
+
 ### UX Improvements
 - **Manual Address Entry**: Added optional manual entry flow in Step 1 with conditional validation using Zod .superRefine() - allows users to skip property lookup and enter address details manually in Step 2
 - **HOA Fields**: Added HOA Monthly and HOA Transfer Fee fields to Step 2 Property Details with instruction text
