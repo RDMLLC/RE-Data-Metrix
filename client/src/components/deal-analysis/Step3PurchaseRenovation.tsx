@@ -286,7 +286,7 @@ export default function Step3PurchaseRenovation({
               </Button>
             </div>
             
-            {arv > 0 && (
+            {purchasePrice > 0 && arv > 0 && (
               <Card className="bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
