@@ -36,8 +36,10 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
   - Automatically clears stale rent data when looking up new properties
 
 ### Bug Fixes
+- **Insurance Calculation in Rental Analysis**: Fixed issue where insurance costs were not included in DSCR calculations. Rental Analysis now automatically calculates annual insurance using the insurance costs table (state-specific rates per square foot) if not already set in Deal Analysis. Insurance is properly included in monthly PITIA breakdown and DSCR calculations.
+- **Step 6 Navigation Race Condition**: Fixed bug where "Analyze as Rental Property" button in Step 6 Results would navigate before saving data to localStorage, causing "Please complete wizard first" error. Now saves to localStorage synchronously before navigation to ensure data persists.
 - **Optional Loan Field Rendering**: Fixed bug where missing loan product data (interestRate, maxLtvBuy, points, timeToClose) would render stray symbols like "%" or "days". Now displays "N/A" for all missing data with proper null/undefined guards.
-- **Rental Analysis Data Flow**: Fixed issue where clicking "Analyze as Rental Property" from Deal Analysis Step 3 or Step 6 would navigate to Rental Analysis without saving the deal data first, causing "Please complete the Deal Analysis wizard first" error. Both buttons now properly save all form data to WizardDataContext before navigation.
+- **Rental Analysis Data Flow**: Fixed issue where clicking "Analyze as Rental Property" from Deal Analysis Step 3 would navigate to Rental Analysis without saving the deal data first, causing "Please complete the Deal Analysis wizard first" error. Button now properly saves all form data to WizardDataContext before navigation.
 - **Step 3 BRRRR Banner**: Fixed premature display of "Analyze as Rental Property" button - now only appears after user enters both purchase price AND ARV to ensure required data is available for Rental Analysis validation
 
 ### Educational Content Features
