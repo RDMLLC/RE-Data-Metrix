@@ -1,8 +1,42 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { pool } from "./db";
+import passport from "./auth";
 
 const app = express();
+
+const PgSession = connectPgSimple(session);
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error(
+    "SESSION_SECRET must be set. Did you forget to add it to your environment?"
+  );
+}
+
+app.use(
+  session({
+    store: new PgSession({
+      pool,
+      tableName: 'session',
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 declare module 'http' {
   interface IncomingMessage {

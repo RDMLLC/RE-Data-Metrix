@@ -6,16 +6,119 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default('user'),
+  subscriptionStatus: text("subscription_status").notNull().default('inactive'),
+  referredBy: varchar("referred_by"),
+  referralCode: varchar("referral_code").unique(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  referralCode: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const userProfiles = pgTable("user_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  fullName: text("full_name").notNull(),
+  street: text("street"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  phone: text("phone"),
+  creditScoreRange: text("credit_score_range"),
+  autoPopulateDefaults: boolean("auto_populate_defaults").default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+export type UserProfile = typeof userProfiles.$inferSelect;
+
+export const investmentPreferences = pgTable("investment_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  displayOrder: integer("display_order").notNull(),
+});
+
+export const insertInvestmentPreferenceSchema = createInsertSchema(investmentPreferences).omit({
+  id: true,
+});
+
+export type InsertInvestmentPreference = z.infer<typeof insertInvestmentPreferenceSchema>;
+export type InvestmentPreference = typeof investmentPreferences.$inferSelect;
+
+export const userInvestmentPreferences = pgTable("user_investment_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  preferenceId: varchar("preference_id").notNull().references(() => investmentPreferences.id),
+});
+
+export const insertUserInvestmentPreferenceSchema = createInsertSchema(userInvestmentPreferences).omit({
+  id: true,
+});
+
+export type InsertUserInvestmentPreference = z.infer<typeof insertUserInvestmentPreferenceSchema>;
+export type UserInvestmentPreference = typeof userInvestmentPreferences.$inferSelect;
+
+export const savedDeals = pgTable("saved_deals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  dealSnapshot: jsonb("deal_snapshot").notNull(),
+  resultsSnapshot: jsonb("results_snapshot"),
+  propertyAddress: text("property_address"),
+  arv: decimal("arv", { precision: 12, scale: 2 }),
+  roi: decimal("roi", { precision: 5, scale: 2 }),
+  profit: decimal("profit", { precision: 12, scale: 2 }),
+  dscr: decimal("dscr", { precision: 5, scale: 2 }),
+  status: text("status").notNull().default('draft'),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: { name: "saved_deals_user_id_idx", columns: [table.userId] },
+}));
+
+export const insertSavedDealSchema = createInsertSchema(savedDeals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSavedDeal = z.infer<typeof insertSavedDealSchema>;
+export type SavedDeal = typeof savedDeals.$inferSelect;
+
+export const lenderReferrals = pgTable("lender_referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  lenderId: varchar("lender_id").notNull().references(() => lenders.id),
+  loanProductId: varchar("loan_product_id").references(() => loanProducts.id),
+  savedDealId: varchar("saved_deal_id").references(() => savedDeals.id),
+  referralType: text("referral_type").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: { name: "lender_referrals_user_id_idx", columns: [table.userId] },
+  lenderIdIdx: { name: "lender_referrals_lender_id_idx", columns: [table.lenderId] },
+}));
+
+export const insertLenderReferralSchema = createInsertSchema(lenderReferrals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertLenderReferral = z.infer<typeof insertLenderReferralSchema>;
+export type LenderReferral = typeof lenderReferrals.$inferSelect;
 
 export const prelaunchSignups = pgTable("prelaunch_signups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
