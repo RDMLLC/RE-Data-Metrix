@@ -1,8 +1,61 @@
 import Layout from "@/components/Layout";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, TrendingUp, Clock, DollarSign, Users, Shield, Zap } from "lucide-react";
+import { ExternalLink, Users, TrendingUp, Clock, Shield, Zap, DollarSign, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
+
+const referralPlatforms = [
+  {
+    name: "Private Lender Link",
+    url: "https://placeholder-link.com/private-lender-link",
+    description: "Connect with verified private lenders nationwide",
+  },
+  {
+    name: "PeerStreet",
+    url: "https://placeholder-link.com/peerstreet",
+    description: "Real estate debt investing platform",
+  },
+  {
+    name: "Sharestates",
+    url: "https://placeholder-link.com/sharestates",
+    description: "Institutional-grade private lending marketplace",
+  },
+  {
+    name: "BiggerPockets",
+    url: "https://placeholder-link.com/biggerpockets",
+    description: "Real estate investing community and resources",
+  },
+];
+
+const lenderSources = [
+  {
+    icon: Users,
+    title: "Local Real Estate Networks",
+    items: [
+      "Local real estate investor meetings, seminars, and conferences are excellent for face-to-face networking with private lenders and other experienced investors.",
+      "Self-directed retirement account classes and seminars often attract investors eager to lend out of IRAs or 401(k)s, providing a unique source of private capital.",
+      "Real Estate Investment Associations (REIAs), both local and regional, regularly facilitate introductions to active private lenders and provide a platform for sharing recommendations.",
+    ],
+  },
+  {
+    icon: TrendingUp,
+    title: "Professional Referrals & Direct Research",
+    items: [
+      "Referrals from real estate professionals such as agents, mortgage brokers, closing attorneys, or title company representatives, who often have insight into recent deals funded by private lenders.",
+      "Word-of-mouth and direct networking at property tours, open houses, and local investor gatherings.",
+      "Direct research using public property records and recent transaction data to find private lenders who have funded local projects.",
+    ],
+  },
+  {
+    icon: Clock,
+    title: "Online Platforms & Communities",
+    items: [
+      "Social media groups and pages focused on real estate investing—especially on LinkedIn and Facebook—where private lenders frequently market their services and post testimonials.",
+      "Local classifieds, community boards, and online marketplaces may include advertising for individual private lenders looking to fund deals.",
+      "Online educational events or webinars specific to private real estate lending, portfolio lending, or hard money loans, which often include networking segments or sponsor introductions.",
+    ],
+  },
+];
 
 export default function AboutPrivateLenders() {
   return (
@@ -12,13 +65,11 @@ export default function AboutPrivateLenders() {
           {/* Header */}
           <div className="mb-12">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4">
-              About Private Real Estate Lenders
+              About Private Lenders
             </h1>
             <div className="h-1 w-24 bg-accent mb-6"></div>
             <p className="text-lg text-muted-foreground max-w-3xl">
-              Private lenders are individuals or companies that provide real estate financing outside 
-              of traditional banks. They offer flexible, fast funding solutions for investors who need 
-              quick closings or don't qualify for conventional loans.
+              Many private lender/investor relationships can be truly personal. Investors seeking private lenders for real estate projects have more options than ever thanks to technology and growing networks within the real estate community.
             </p>
           </div>
 
@@ -181,6 +232,90 @@ export default function AboutPrivateLenders() {
                 </div>
               </Card>
             </div>
+          </div>
+
+          {/* Online Private Lender Directories */}
+          <div className="mb-16">
+            <h2 className="text-3xl font-bold text-primary mb-8">
+              Online Private Lender Directories and Search Platforms
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {referralPlatforms.map((platform, index) => (
+                <Card key={index} className="flex flex-col">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{platform.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col gap-4">
+                    <p className="text-sm text-muted-foreground flex-1">
+                      {platform.description}
+                    </p>
+                    <a 
+                      href={platform.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        data-testid={`button-platform-${platform.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        Visit {platform.name}
+                        <ExternalLink className="h-3 w-3 ml-2" />
+                      </Button>
+                    </a>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Where to Find Private Lenders */}
+          <div className="mb-16">
+            <h2 className="text-3xl font-bold text-primary mb-8">
+              Where to Find Private Lenders
+            </h2>
+            <div className="space-y-6">
+              {lenderSources.map((source, index) => (
+                <Card key={index}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <source.icon className="h-5 w-5 text-primary" />
+                      {source.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      {source.items.map((item, itemIndex) => (
+                        <li key={itemIndex} className="flex gap-3">
+                          <span className="text-primary mt-1 flex-shrink-0">•</span>
+                          <span className="text-sm text-muted-foreground">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Best Practices Section */}
+          <div className="mb-16">
+            <Card className="bg-accent/5 border-accent/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-accent" />
+                  Best Practices
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Exploring and engaging through these channels can help investors secure funding, compare lender options, and build lasting professional relationships for future deals.
+                </p>
+                <p className="font-medium text-foreground">
+                  Always vet any lender's reputation, terms, and testimonials before proceeding.
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Types of Private Lenders */}

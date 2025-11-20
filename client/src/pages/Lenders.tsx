@@ -8,10 +8,14 @@ import lendersImg from "@assets/generated_images/Lenders_partnership_concept_ima
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 const searchSchema = z.object({
+  state: z.string().optional(),
+  creditScore: z.string().optional(),
+  loanType: z.string().optional(),
   brokerOrDirectLender: z.string().optional(),
   fastestClosingTime: z.string().optional(),
   offerNonTraditionalLending: z.string().optional(),
@@ -39,10 +43,15 @@ interface SearchResult {
 export default function Lenders() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [location] = useLocation();
+  const lastHandledQueryRef = useRef<string>('');
 
   const form = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
+      state: "any",
+      creditScore: "any",
+      loanType: "any",
       brokerOrDirectLender: "any",
       fastestClosingTime: "any",
       offerNonTraditionalLending: "any",
@@ -55,7 +64,7 @@ export default function Lenders() {
     },
   });
 
-  const onSubmit = async (data: SearchForm) => {
+  const onSubmit = useCallback(async (data: SearchForm) => {
     setIsSearching(true);
     try {
       const response = await apiRequest("POST", "/api/search-lenders", data);
@@ -67,7 +76,55 @@ export default function Lenders() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
+
+  // Set form values from URL parameters and auto-submit when location changes
+  useEffect(() => {
+    const queryString = location.split('?')[1] || '';
+    
+    // Reset ref when query is empty to allow same deep links to work again
+    if (!queryString) {
+      lastHandledQueryRef.current = '';
+      return;
+    }
+    
+    // Only handle if query string has changed
+    if (queryString === lastHandledQueryRef.current) {
+      return;
+    }
+    
+    lastHandledQueryRef.current = queryString;
+    
+    const params = new URLSearchParams(queryString);
+    const state = params.get('state');
+    const creditScore = params.get('creditScore');
+    const loanType = params.get('loanType');
+
+    const hasParams = state || creditScore || loanType;
+    
+    if (hasParams) {
+      // Reset form with all values at once to avoid race conditions
+      form.reset({
+        state: state || 'any',
+        creditScore: creditScore || 'any',
+        loanType: loanType || 'any',
+        brokerOrDirectLender: 'any',
+        fastestClosingTime: 'any',
+        offerNonTraditionalLending: 'any',
+        workWithNewInvestors: 'any',
+        minCreditScore: 'any',
+        offerDeferredPayment: 'any',
+        offerRolledPoints: 'any',
+        offer100PercentFunding: 'any',
+        offerMultiUnitFinancing: 'any',
+      });
+
+      // Submit search after form state has settled
+      queueMicrotask(() => {
+        void form.handleSubmit(onSubmit)();
+      });
+    }
+  }, [location, form, onSubmit]);
 
   return (
     <Layout>
@@ -86,6 +143,135 @@ export default function Lenders() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Property State */}
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Property State</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-search-state">
+                            <SelectValue placeholder="Any" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="AL">Alabama</SelectItem>
+                          <SelectItem value="AK">Alaska</SelectItem>
+                          <SelectItem value="AZ">Arizona</SelectItem>
+                          <SelectItem value="AR">Arkansas</SelectItem>
+                          <SelectItem value="CA">California</SelectItem>
+                          <SelectItem value="CO">Colorado</SelectItem>
+                          <SelectItem value="CT">Connecticut</SelectItem>
+                          <SelectItem value="DE">Delaware</SelectItem>
+                          <SelectItem value="FL">Florida</SelectItem>
+                          <SelectItem value="GA">Georgia</SelectItem>
+                          <SelectItem value="HI">Hawaii</SelectItem>
+                          <SelectItem value="ID">Idaho</SelectItem>
+                          <SelectItem value="IL">Illinois</SelectItem>
+                          <SelectItem value="IN">Indiana</SelectItem>
+                          <SelectItem value="IA">Iowa</SelectItem>
+                          <SelectItem value="KS">Kansas</SelectItem>
+                          <SelectItem value="KY">Kentucky</SelectItem>
+                          <SelectItem value="LA">Louisiana</SelectItem>
+                          <SelectItem value="ME">Maine</SelectItem>
+                          <SelectItem value="MD">Maryland</SelectItem>
+                          <SelectItem value="MA">Massachusetts</SelectItem>
+                          <SelectItem value="MI">Michigan</SelectItem>
+                          <SelectItem value="MN">Minnesota</SelectItem>
+                          <SelectItem value="MS">Mississippi</SelectItem>
+                          <SelectItem value="MO">Missouri</SelectItem>
+                          <SelectItem value="MT">Montana</SelectItem>
+                          <SelectItem value="NE">Nebraska</SelectItem>
+                          <SelectItem value="NV">Nevada</SelectItem>
+                          <SelectItem value="NH">New Hampshire</SelectItem>
+                          <SelectItem value="NJ">New Jersey</SelectItem>
+                          <SelectItem value="NM">New Mexico</SelectItem>
+                          <SelectItem value="NY">New York</SelectItem>
+                          <SelectItem value="NC">North Carolina</SelectItem>
+                          <SelectItem value="ND">North Dakota</SelectItem>
+                          <SelectItem value="OH">Ohio</SelectItem>
+                          <SelectItem value="OK">Oklahoma</SelectItem>
+                          <SelectItem value="OR">Oregon</SelectItem>
+                          <SelectItem value="PA">Pennsylvania</SelectItem>
+                          <SelectItem value="RI">Rhode Island</SelectItem>
+                          <SelectItem value="SC">South Carolina</SelectItem>
+                          <SelectItem value="SD">South Dakota</SelectItem>
+                          <SelectItem value="TN">Tennessee</SelectItem>
+                          <SelectItem value="TX">Texas</SelectItem>
+                          <SelectItem value="UT">Utah</SelectItem>
+                          <SelectItem value="VT">Vermont</SelectItem>
+                          <SelectItem value="VA">Virginia</SelectItem>
+                          <SelectItem value="WA">Washington</SelectItem>
+                          <SelectItem value="WV">West Virginia</SelectItem>
+                          <SelectItem value="WI">Wisconsin</SelectItem>
+                          <SelectItem value="WY">Wyoming</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Credit Score */}
+                <FormField
+                  control={form.control}
+                  name="creditScore"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Your Credit Score</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-search-credit-score">
+                            <SelectValue placeholder="Any" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="below-600">Below 600</SelectItem>
+                          <SelectItem value="600-649">600-649</SelectItem>
+                          <SelectItem value="650-699">650-699</SelectItem>
+                          <SelectItem value="700-749">700-749</SelectItem>
+                          <SelectItem value="750+">750+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Loan Type */}
+                <FormField
+                  control={form.control}
+                  name="loanType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Loan Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-search-loan-type">
+                            <SelectValue placeholder="Any" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="any">Any</SelectItem>
+                          <SelectItem value="conventional">Conventional</SelectItem>
+                          <SelectItem value="dscr">DSCR</SelectItem>
+                          <SelectItem value="hard_money">Hard Money / Bridge</SelectItem>
+                          <SelectItem value="fha_va">FHA/VA</SelectItem>
+                          <SelectItem value="portfolio">Portfolio / Blanket</SelectItem>
+                          <SelectItem value="arm">5/1 ARM</SelectItem>
+                          <SelectItem value="balloon">Balloon</SelectItem>
+                          <SelectItem value="interest_only">Interest-Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Are you a direct lender or broker? */}
                 <FormField
                   control={form.control}

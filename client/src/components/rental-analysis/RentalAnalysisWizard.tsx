@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
+import LoanTypeEducation from "./LoanTypeEducation";
 
 export default function RentalAnalysisWizard() {
   const { wizardData, hasPropertyData } = useWizardData();
@@ -89,9 +90,17 @@ export default function RentalAnalysisWizard() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-primary mb-2">Rental Analysis</h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground mb-4">
             Analyze rental property cash flow and DSCR
           </p>
+          <div className="bg-accent/5 border border-accent/20 rounded-lg p-6 space-y-3">
+            <p className="text-foreground">
+              There are a lot more options available to an investor when purchasing a buy and hold property. On this page, we'll help you do a basic profitability analysis of the property when looking at a 30-year fixed loan. It's a good starting point!
+            </p>
+            <p className="text-muted-foreground">
+              Scroll down to learn more about the various options available and help in selecting a lender or broker.
+            </p>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -299,6 +308,14 @@ export default function RentalAnalysisWizard() {
               </CardContent>
             </Card>
           )}
+
+          {/* Loan Type Education Section */}
+          <div className="mt-12">
+            <LoanTypeEducation 
+              propertyState={property.state} 
+              creditScore={wizardData.investor?.creditScore?.toString()}
+            />
+          </div>
         </div>
       </div>
     </div>
