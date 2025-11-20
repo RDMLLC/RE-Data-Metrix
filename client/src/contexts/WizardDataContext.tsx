@@ -53,6 +53,7 @@ const STORAGE_KEY = 'redatametrix_wizard_data';
 
 export function WizardDataProvider({ children }: { children: ReactNode }) {
   const [wizardData, setWizardDataState] = useState<WizardData>(() => {
+    if (typeof window === 'undefined') return {};
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -66,6 +67,7 @@ export function WizardDataProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(wizardData));
     } catch (error) {
@@ -104,7 +106,13 @@ export function WizardDataProvider({ children }: { children: ReactNode }) {
 
   const clearWizardData = () => {
     setWizardDataState({});
-    sessionStorage.removeItem(STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.error('Failed to clear wizard data from sessionStorage:', error);
+      }
+    }
   };
 
   const hasPropertyData = () => {

@@ -11,7 +11,7 @@ import LoanTypeEducation from "./LoanTypeEducation";
 import { useToast } from "@/hooks/use-toast";
 
 export default function RentalAnalysisWizard() {
-  const { wizardData, hasPropertyData } = useWizardData();
+  const { wizardData, hasPropertyData, clearWizardData } = useWizardData();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
@@ -19,7 +19,7 @@ export default function RentalAnalysisWizard() {
   const [showLenders, setShowLenders] = useState(false);
 
   const handleStartNewAnalysis = () => {
-    localStorage.removeItem('wizardInvestorData');
+    clearWizardData();
     toast({
       title: "Starting new analysis...",
       description: "Your previous data has been cleared.",
