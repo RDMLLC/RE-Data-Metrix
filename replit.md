@@ -7,6 +7,19 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 ## Recent Changes (November 2025)
 
 ### New Features (Latest)
+- **Functional Lender Referrals**: "Click Here to Apply" buttons in Step 6 Results now open lender referral links in new tabs
+  - Opens referralLink in new tab with proper security flags (noopener, noreferrer)
+  - Buttons disabled with toast notification when referralLink unavailable
+  - Error handling for missing or invalid lender data
+- **Expanded Loan Product Details**: Step 6 Results comparison table now displays comprehensive loan product information
+  - Added 5 new rows: Loan Product Name, Interest Rate, Max LTV (Buy), Points, Time to Close
+  - Proper N/A handling for missing/optional data (prevents stray symbols)
+  - Applied to both user custom loan and matched lender products
+  - LoanComparisonColumn interface extended with referralLink, interestRate, maxLtvBuy, points, timeToClose fields
+- **Enhanced Loan Types Page**: Educational content with direct lender search integration
+  - "Find {Loan Type} Lenders" buttons on each loan type card linking to /lenders
+  - New "Private Lenders & Creative Financing" section with educational content
+  - "Learn More About Private Lending" button linking to /about-private-lenders
 - **Zillow RentZestimate Integration**: Automatically captures and displays estimated monthly rent from Zillow property lookups
   - rentZestimate extracted from Zillow API response during property lookup in Step 1
   - Stored in WizardDataContext and persisted to localStorage
@@ -16,6 +29,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
   - Automatically clears stale rent data when looking up new properties
 
 ### Bug Fixes
+- **Optional Loan Field Rendering**: Fixed bug where missing loan product data (interestRate, maxLtvBuy, points, timeToClose) would render stray symbols like "%" or "days". Now displays "N/A" for all missing data with proper null/undefined guards.
 - **Rental Analysis Data Flow**: Fixed issue where clicking "Analyze as Rental Property" from Deal Analysis Step 3 or Step 6 would navigate to Rental Analysis without saving the deal data first, causing "Please complete the Deal Analysis wizard first" error. Both buttons now properly save all form data to WizardDataContext before navigation.
 - **Step 3 BRRRR Banner**: Fixed premature display of "Analyze as Rental Property" button - now only appears after user enters both purchase price AND ARV to ensure required data is available for Rental Analysis validation
 
@@ -24,10 +38,12 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 - **Private Lenders Education Page** (`/about-private-lenders`): Educational content explaining private lending, benefits for real estate investors, how it works, and CTAs linking to lender search
 - **Deal Analysis Step 5 Educational Banner**: Added prominent educational banner in Loan Criteria step with links to loan types and private lenders pages, plus enhanced field descriptions for Points and ARV
 - **Rental Analysis DSCR Enhancements**:
-  - Editable interest rate field (defaults to 6.5%) with live DSCR recalculation
+  - Editable interest rate field (defaults to 7.5%) with live DSCR recalculation
   - Enhanced DSCR status indicators using Lucide React icons (CheckCircle, AlertTriangle, XCircle) with color-coded feedback (emerald/yellow/red)
-  - Improved UI layout with detailed PITIA breakdown and loan details
+  - Improved UI layout with detailed PITIA breakdown and loan details showing Expected Monthly Rent
   - Educational context about typical DSCR rates (7.5%-9.5%)
+  - Loan assumptions clearly stated: 30-year fixed mortgage, 75% financed, 25% down payment
+  - Annual insurance amount displayed alongside monthly breakdown
 - **Footer Navigation**: Added links to new educational pages in footer Resources section
 
 ### UX Improvements
