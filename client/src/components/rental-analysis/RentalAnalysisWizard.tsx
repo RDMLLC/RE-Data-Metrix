@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
+import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
 
 export default function RentalAnalysisWizard() {
@@ -44,8 +45,14 @@ export default function RentalAnalysisWizard() {
 
   const property = wizardData.property!;
 
+  // Calculate annual insurance using the insurance costs table if not already set
+  const annualInsurance = property.annualInsurance || 
+    (property.state && property.squareFootage 
+      ? Math.round(property.squareFootage * getInsuranceCostPerSqFt(property.state))
+      : 0);
+
   const monthlyPropertyTax = ((property.taxAssessedValue || property.purchasePrice || 0) * 0.012) / 12;
-  const monthlyInsurance = (property.annualInsurance || 0) / 12;
+  const monthlyInsurance = annualInsurance / 12;
   const monthlyHoa = property.hoaFees || 0;
 
   const dscrResults = monthlyRent > 0 && property.arv
@@ -270,7 +277,7 @@ export default function RentalAnalysisWizard() {
                       <p className="text-sm text-muted-foreground">Insurance (Monthly)</p>
                       <p className="font-medium">${dscrResults.monthlyInsurance.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Annual: ${((property.annualInsurance || 0)).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                        Annual: ${annualInsurance.toLocaleString(undefined, {maximumFractionDigits: 0})}
                       </p>
                     </div>
                     <div>

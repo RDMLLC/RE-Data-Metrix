@@ -177,8 +177,76 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   };
 
   const handleNavigateToRentalAnalysis = () => {
-    // Data should already be saved in wizardData from earlier steps
-    // Just navigate - the context should have all the necessary data
+    // Save current form data to WizardDataContext and localStorage before navigating
+    const formData = form.getValues();
+    
+    const updatedWizardData = {
+      ...wizardData,
+      property: {
+        ...wizardData.property,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zipCode,
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        squareFootage: formData.sqft,
+        purchasePrice: formData.purchasePrice,
+        arv: formData.arv,
+        rehabBudget: formData.rehabBudget,
+        taxAssessedValue: formData.taxAssessedValue,
+        annualInsurance: formData.annualInsurance,
+        monthlyUtilities: formData.monthlyUtilities,
+        hoaFees: formData.hoaFees,
+        hoaTransferFee: formData.hoaTransferFee,
+        projectLength: formData.projectLength,
+        sellPrice: formData.sellPrice,
+        closingCostsSellPercent: formData.closingCostsSellPercent,
+        realEstateCommissionPercent: formData.realEstateCommissionPercent,
+        attorneyFees: formData.attorneyFees,
+        docPrepFees: formData.docPrepFees,
+        titleExam: formData.titleExam,
+        titleInsurance: formData.titleInsurance,
+        estimatedRent: wizardData.property?.estimatedRent,
+      },
+      timestamp: Date.now(),
+    };
+    
+    // Save to localStorage synchronously before navigation
+    try {
+      localStorage.setItem('redatametrix_wizard_data', JSON.stringify(updatedWizardData));
+    } catch (error) {
+      console.error('Failed to save wizard data to localStorage:', error);
+    }
+    
+    // Update context (this will also trigger the useEffect to save again, but that's ok)
+    updatePropertyData({
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zipCode,
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      squareFootage: formData.sqft,
+      purchasePrice: formData.purchasePrice,
+      arv: formData.arv,
+      rehabBudget: formData.rehabBudget,
+      taxAssessedValue: formData.taxAssessedValue,
+      annualInsurance: formData.annualInsurance,
+      monthlyUtilities: formData.monthlyUtilities,
+      hoaFees: formData.hoaFees,
+      hoaTransferFee: formData.hoaTransferFee,
+      projectLength: formData.projectLength,
+      sellPrice: formData.sellPrice,
+      closingCostsSellPercent: formData.closingCostsSellPercent,
+      realEstateCommissionPercent: formData.realEstateCommissionPercent,
+      attorneyFees: formData.attorneyFees,
+      docPrepFees: formData.docPrepFees,
+      titleExam: formData.titleExam,
+      titleInsurance: formData.titleInsurance,
+      estimatedRent: wizardData.property?.estimatedRent,
+    });
+    
     setLocation("/rental-analysis");
   };
 
