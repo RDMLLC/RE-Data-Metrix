@@ -7,6 +7,13 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 ## Recent Changes (November 2025)
 
 ### New Features (Latest)
+- **Consolidated Rental Analysis**: Transformed 3-step wizard into single-page experience for faster user workflow
+  - Removed separate rental income page (old Step 2)
+  - Now displays: Property Overview card → Expected Monthly Rent card → DSCR Results card (all on one page)
+  - DSCR results appear immediately when rent is entered (no "Calculate" button needed)
+  - Added state reset on component mount to prevent users getting stuck in lender view
+  - All previous features preserved: editable interest rate with live recalculation, loan assumptions, PITIA breakdown, Expected Monthly Rent display
+- **Enhanced Main Navigation**: Added "Loan Types" link to header between "Rental Analysis" and "Lenders" for improved educational content discoverability
 - **Functional Lender Referrals**: "Click Here to Apply" buttons in Step 6 Results now open lender referral links in new tabs
   - Opens referralLink in new tab with proper security flags (noopener, noreferrer)
   - Buttons disabled with toast notification when referralLink unavailable
