@@ -64,6 +64,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 - **Footer Navigation**: Added links to new educational pages in footer Resources section
 
 ### UX Improvements
+- **Start New Analysis Button** (November 20, 2025): Added "Start New Analysis" button to Rental Analysis page header that clears saved wizard data and automatically navigates users to a fresh Deal Analysis, eliminating confusion from stale property information
 - **Property Image Display**: Added property photo to "Property Found" box in Step 1 after successful Zillow/Redfin lookup - displays full-size image with object-contain styling
 - **DC Utility Costs**: Added Washington DC to utility costs database with $0.26/sq ft rate (matching MD and VA)
 - **Manual Address Entry**: Added optional manual entry flow in Step 1 with conditional validation using Zod .superRefine() - allows users to skip property lookup and enter address details manually in Step 2
