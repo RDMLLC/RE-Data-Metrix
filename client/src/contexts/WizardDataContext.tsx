@@ -54,22 +54,22 @@ const STORAGE_KEY = 'redatametrix_wizard_data';
 export function WizardDataProvider({ children }: { children: ReactNode }) {
   const [wizardData, setWizardDataState] = useState<WizardData>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         return parsed;
       }
     } catch (error) {
-      console.error('Failed to load wizard data from localStorage:', error);
+      console.error('Failed to load wizard data from sessionStorage:', error);
     }
     return {};
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(wizardData));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(wizardData));
     } catch (error) {
-      console.error('Failed to save wizard data to localStorage:', error);
+      console.error('Failed to save wizard data to sessionStorage:', error);
     }
   }, [wizardData]);
 
@@ -104,7 +104,7 @@ export function WizardDataProvider({ children }: { children: ReactNode }) {
 
   const clearWizardData = () => {
     setWizardDataState({});
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
   };
 
   const hasPropertyData = () => {
