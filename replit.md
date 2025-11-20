@@ -14,7 +14,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
   - **WizardDataContext Type Fix**: Changed creditScore from number to string to properly store range values ("700-749") and enable seamless data flow from Deal Analysis → Rental Analysis → Lender Search
   - **Enhanced About Private Lenders Page**: Educational content about private lending with 4 referral platforms (Private Lender Link, PeerStreet, Sharestates, BiggerPockets) and "Browse Our Lender Directory" CTA
   - **Deep Link URL Parameter Handling**: Implemented robust query string extraction using window.location.search (wouter's useLocation only returns pathname), form.reset() with atomic value updates, queueMicrotask for stable form state, useCallback for stable submission handler, and useRef tracking to prevent duplicate submissions while allowing repeat deep links
-  - **Complete Data Persistence**: DealAnalysisWizard.saveCurrentStepData() called at each step progression ensures purchasePrice, arv, state, and creditScore persist to localStorage for Rental Analysis access
+  - **Complete Data Persistence**: DealAnalysisWizard.saveCurrentStepData() called at each step progression ensures purchasePrice, arv, state, and creditScore persist to sessionStorage for Rental Analysis access
 - **Consolidated Rental Analysis**: Transformed 3-step wizard into single-page experience for faster user workflow
   - Removed separate rental income page (old Step 2)
   - Now displays: Property Overview card → Expected Monthly Rent card → DSCR Results card (all on one page)
@@ -37,7 +37,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
   - "Learn More About Private Lending" button linking to /about-private-lenders
 - **Zillow RentZestimate Integration**: Automatically captures and displays estimated monthly rent from Zillow property lookups
   - rentZestimate extracted from Zillow API response during property lookup in Step 1
-  - Stored in WizardDataContext and persisted to localStorage
+  - Stored in WizardDataContext and persisted to sessionStorage
   - Pre-fills monthly rent input in Rental Analysis wizard with editable Zillow estimate
   - Displays "Zillow RentZestimate: $X,XXX (editable)" with green CheckCircle icon when available
   - Shows amber AlertCircle with "No estimated rent available" message when rentZestimate is unavailable
@@ -45,7 +45,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 
 ### Bug Fixes
 - **Insurance Calculation in Rental Analysis**: Fixed issue where insurance costs were not included in DSCR calculations. Rental Analysis now automatically calculates annual insurance using the insurance costs table (state-specific rates per square foot) if not already set in Deal Analysis. Insurance is properly included in monthly PITIA breakdown and DSCR calculations.
-- **Step 6 Navigation Race Condition**: Fixed bug where "Analyze as Rental Property" button in Step 6 Results would navigate before saving data to localStorage, causing "Please complete wizard first" error. Now saves to localStorage synchronously before navigation to ensure data persists.
+- **Step 6 Navigation Race Condition**: Fixed bug where "Analyze as Rental Property" button in Step 6 Results would navigate before saving data to sessionStorage, causing "Please complete wizard first" error. Now saves to sessionStorage synchronously before navigation to ensure data persists.
 - **Optional Loan Field Rendering**: Fixed bug where missing loan product data (interestRate, maxLtvBuy, points, timeToClose) would render stray symbols like "%" or "days". Now displays "N/A" for all missing data with proper null/undefined guards.
 - **Rental Analysis Data Flow**: Fixed issue where clicking "Analyze as Rental Property" from Deal Analysis Step 3 would navigate to Rental Analysis without saving the deal data first, causing "Please complete the Deal Analysis wizard first" error. Button now properly saves all form data to WizardDataContext before navigation.
 - **Step 3 BRRRR Banner**: Fixed premature display of "Analyze as Rental Property" button - now only appears after user enters both purchase price AND ARV to ensure required data is available for Rental Analysis validation
@@ -64,6 +64,12 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 - **Footer Navigation**: Added links to new educational pages in footer Resources section
 
 ### UX Improvements
+- **SessionStorage Migration** (November 20, 2025): Migrated wizard data persistence from localStorage to sessionStorage to provide better user experience
+  - Data now only persists within the same browser session (clears when browser closes)
+  - Provides fresh start with blank fields when users return after closing browser
+  - Added SSR-safe guards with `typeof window !== 'undefined'` checks for future test compatibility
+  - "Start New Analysis" button uses context's clearWizardData() to synchronize both React state and sessionStorage
+  - Fixed bug where manual storage clearing left stale data in React component state
 - **Start New Analysis Button** (November 20, 2025): Added "Start New Analysis" button to Rental Analysis page header that clears saved wizard data and automatically navigates users to a fresh Deal Analysis, eliminating confusion from stale property information
 - **Property Image Display**: Added property photo to "Property Found" box in Step 1 after successful Zillow/Redfin lookup - displays full-size image with object-contain styling
 - **DC Utility Costs**: Added Washington DC to utility costs database with $0.26/sq ft rate (matching MD and VA)
