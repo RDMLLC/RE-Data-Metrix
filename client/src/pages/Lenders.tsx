@@ -80,7 +80,8 @@ export default function Lenders() {
 
   // Set form values from URL parameters and auto-submit when location changes
   useEffect(() => {
-    const queryString = location.split('?')[1] || '';
+    // wouter's location hook only returns pathname, so use window.location.search for query params
+    const queryString = window.location.search.substring(1); // Remove leading '?'
     
     // Reset ref when query is empty to allow same deep links to work again
     if (!queryString) {

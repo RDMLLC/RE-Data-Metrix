@@ -7,6 +7,14 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 ## Recent Changes (November 2025)
 
 ### New Features (Latest)
+- **Rental Analysis Loan Education & Lender Deep Links** (November 20, 2025): Complete loan type education and intelligent lender filtering system
+  - **LoanTypeEducation Component**: 9 comprehensive loan types (Conventional, DSCR, Hard Money/Bridge, FHA/VA, Portfolio/Blanket, Private/Seller, 5/1 ARM, Balloon, Interest-Only) with detailed descriptions, down payment ranges, credit requirements, and use cases
+  - **Individual "Find Lenders" Buttons**: Each loan type has dedicated button that builds deep link URL with property state + credit score range + loan type
+  - **Lenders Page Deep Link Auto-Population**: URLs like `/lenders?state=FL&creditScore=700-749&loanType=dscr` automatically populate search form and execute filtered search
+  - **WizardDataContext Type Fix**: Changed creditScore from number to string to properly store range values ("700-749") and enable seamless data flow from Deal Analysis → Rental Analysis → Lender Search
+  - **Enhanced About Private Lenders Page**: Educational content about private lending with 4 referral platforms (Private Lender Link, PeerStreet, Sharestates, BiggerPockets) and "Browse Our Lender Directory" CTA
+  - **Deep Link URL Parameter Handling**: Implemented robust query string extraction using window.location.search (wouter's useLocation only returns pathname), form.reset() with atomic value updates, queueMicrotask for stable form state, useCallback for stable submission handler, and useRef tracking to prevent duplicate submissions while allowing repeat deep links
+  - **Complete Data Persistence**: DealAnalysisWizard.saveCurrentStepData() called at each step progression ensures purchasePrice, arv, state, and creditScore persist to localStorage for Rental Analysis access
 - **Consolidated Rental Analysis**: Transformed 3-step wizard into single-page experience for faster user workflow
   - Removed separate rental income page (old Step 2)
   - Now displays: Property Overview card → Expected Monthly Rent card → DSCR Results card (all on one page)

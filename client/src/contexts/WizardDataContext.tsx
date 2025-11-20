@@ -28,7 +28,7 @@ export interface WizardPropertyData {
 }
 
 export interface WizardInvestorData {
-  creditScore?: number;
+  creditScore?: string;
   experienceLevel?: string;
 }
 

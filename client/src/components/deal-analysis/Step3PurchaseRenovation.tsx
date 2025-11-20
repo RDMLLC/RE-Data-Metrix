@@ -80,7 +80,7 @@ export default function Step3PurchaseRenovation({
 
     if (formData.creditScore) {
       updateInvestorData({
-        creditScore: parseInt(formData.creditScore),
+        creditScore: formData.creditScore,
         experienceLevel: formData.isNewInvestor ? "new" : "experienced",
       });
     }

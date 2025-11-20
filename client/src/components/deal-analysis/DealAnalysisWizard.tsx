@@ -153,7 +153,7 @@ export default function DealAnalysisWizard() {
 
     if (formData.creditScore) {
       updateInvestorData({
-        creditScore: parseInt(formData.creditScore),
+        creditScore: formData.creditScore,
         experienceLevel: formData.isNewInvestor ? "new" : "experienced",
       });
     }

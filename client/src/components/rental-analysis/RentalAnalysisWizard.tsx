@@ -313,7 +313,7 @@ export default function RentalAnalysisWizard() {
           <div className="mt-12">
             <LoanTypeEducation 
               propertyState={property.state} 
-              creditScore={wizardData.investor?.creditScore?.toString()}
+              creditScore={wizardData.investor?.creditScore}
             />
           </div>
         </div>
