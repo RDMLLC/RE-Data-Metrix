@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WizardDataProvider } from "@/contexts/WizardDataContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
@@ -13,6 +15,8 @@ import RentalAnalysis from "@/pages/RentalAnalysis";
 import Lenders from "@/pages/Lenders";
 import Resources from "@/pages/Resources";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Profile from "@/pages/portal/Profile";
 import Contact from "@/pages/Contact";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
@@ -36,6 +40,14 @@ function Router() {
       <Route path="/about-private-lenders" component={AboutPrivateLenders} />
       <Route path="/toolbox" component={Resources} />
       <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/portal/profile">
+        {() => (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/contact" component={Contact} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
@@ -52,12 +64,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <WizardDataProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </WizardDataProvider>
+      <AuthProvider>
+        <WizardDataProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </WizardDataProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

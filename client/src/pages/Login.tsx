@@ -1,57 +1,117 @@
+import { useState } from "react";
+import { useLocation, Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
-import PrelaunchForm from "@/components/PrelaunchForm";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2 } from "lucide-react";
-import { Link } from "wouter";
+import { Input } from "@/components/ui/input";
+import { CheckCircle, Building2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const { login } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    try {
+      await login(data);
+      toast({
+        title: "Welcome back!",
+        description: "You've successfully logged in.",
+      });
+      setLocation("/portal/profile");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
         <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-            {/* Left Side - Value Prop & Lender Login */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Investor Welcome Box */}
-              <div className="bg-primary text-primary-foreground rounded-lg p-12">
-                <h2 className="text-4xl font-bold mb-6">Welcome to RE Data Metrix</h2>
+            {/* Left Side - Navy Value Prop Panel */}
+            <div className="lg:col-span-2 bg-primary text-primary-foreground rounded-lg p-12 space-y-8">
+              <div>
+                <h2 className="text-4xl font-bold mb-6">Welcome Back</h2>
                 <div className="h-1 w-24 bg-accent mb-8"></div>
                 <div className="space-y-4 text-lg">
                   <p className="flex items-start gap-3">
-                    <span className="text-accent mt-1">✓</span>
-                    <span>Advanced deal analysis tools</span>
+                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <span>Access your saved deal analyses</span>
                   </p>
                   <p className="flex items-start gap-3">
-                    <span className="text-accent mt-1">✓</span>
-                    <span>Direct lender connections</span>
+                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <span>Compare financing options</span>
                   </p>
                   <p className="flex items-start gap-3">
-                    <span className="text-accent mt-1">✓</span>
-                    <span>One-click application flow</span>
+                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <span>Connect with top lenders</span>
                   </p>
                   <p className="flex items-start gap-3">
-                    <span className="text-accent mt-1">✓</span>
-                    <span>Comprehensive profitability analysis</span>
+                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <span>Track your investment portfolio</span>
                   </p>
                 </div>
               </div>
 
-              {/* Lender Login Section */}
-              <Card className="p-8 bg-card">
+              {/* Lender CTA - Integrated */}
+              <div className="border-t border-primary-foreground/20 pt-8">
                 <div className="text-center">
                   <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Building2 className="h-8 w-8 text-primary" />
+                    <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center">
+                      <Building2 className="h-8 w-8 text-accent" />
                     </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-primary mb-3">Are you a lender?</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Access your lender portal to manage your loan products and connect with investors
+                  <h3 className="text-2xl font-bold mb-3">Are you a lender?</h3>
+                  <p className="mb-6 text-primary-foreground/90">
+                    Access your lender portal to manage loan products and connect with investors
                   </p>
                   <Link href="/lender-portal">
                     <Button
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                       size="lg"
                       data-testid="button-lender-portal"
                     >
@@ -59,19 +119,78 @@ export default function Login() {
                     </Button>
                   </Link>
                 </div>
-              </Card>
+              </div>
             </div>
 
-            {/* Right Side - Form */}
+            {/* Right Side - Login Form */}
             <div className="lg:col-span-3">
-              <Card className="p-8 shadow-xl bg-primary text-primary-foreground">
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold mb-2">Join the Waitlist</h1>
-                  <p className="text-primary-foreground/80">
-                    We're launching soon! Sign up to get early access and be among the first to experience our platform.
-                  </p>
-                </div>
-                <PrelaunchForm source="login_prelaunch" />
+              <Card className="p-8 shadow-xl bg-card" data-testid="card-login">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Login to Your Account</CardTitle>
+                  <CardDescription>
+                    Enter your credentials to access the platform
+                  </CardDescription>
+                </CardHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="email"
+                        placeholder="you@example.com"
+                        data-testid="input-email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        placeholder="••••••••"
+                        data-testid="input-password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+                data-testid="button-login"
+              >
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+              <p className="text-sm text-muted-foreground text-center">
+                Don't have an account?{" "}
+                <Link href="/register">
+                  <a className="text-primary hover:underline" data-testid="link-register">
+                    Sign up
+                  </a>
+                </Link>
+              </p>
+                    </CardFooter>
+                  </form>
+                </Form>
               </Card>
             </div>
           </div>

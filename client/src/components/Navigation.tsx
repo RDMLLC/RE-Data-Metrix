@@ -1,12 +1,22 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 
 export default function Navigation() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -43,11 +53,66 @@ export default function Navigation() {
                 </Button>
               </Link>
             ))}
-            <Link href="/login" data-testid="link-login">
-              <Button variant="default" className="ml-4 bg-accent text-accent-foreground hover:bg-accent">
-                Login
-              </Button>
-            </Link>
+            
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="default" 
+                    className="ml-4 bg-accent text-accent-foreground hover:bg-accent"
+                    data-testid="button-user-menu"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    {user?.username}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span>{user?.profile?.fullName || user?.username}</span>
+                      <span className="text-xs text-muted-foreground font-normal">
+                        {user?.email}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setLocation("/portal/profile")} data-testid="menu-item-portal">
+                    <User className="h-4 w-4 mr-2" />
+                    My Portal
+                  </DropdownMenuItem>
+                  {user?.role === "admin" && (
+                    <DropdownMenuItem onClick={() => setLocation("/admin/users")} data-testid="menu-item-admin">
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      await logout();
+                      setLocation("/");
+                    }}
+                    data-testid="menu-item-logout"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link href="/login" data-testid="link-login">
+                  <Button variant="ghost" className="ml-4">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register" data-testid="link-register">
+                  <Button variant="default" className="bg-accent text-accent-foreground hover:bg-accent">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -77,11 +142,50 @@ export default function Navigation() {
                 </Button>
               </Link>
             ))}
-            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="default" className="w-full bg-accent text-accent-foreground hover:bg-accent">
-                Login
-              </Button>
-            </Link>
+            
+            {isAuthenticated ? (
+              <>
+                <Link href="/portal/profile" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <User className="h-4 w-4 mr-2" />
+                    My Portal
+                  </Button>
+                </Link>
+                {user?.role === "admin" && (
+                  <Link href="/admin/users" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={async () => {
+                    await logout();
+                    setMobileMenuOpen(false);
+                    setLocation("/");
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="default" className="w-full bg-accent text-accent-foreground hover:bg-accent">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>
