@@ -14,6 +14,7 @@ export default function Navigation() {
     { href: "/company", label: "The Company" },
     { href: "/deal-analysis", label: "Deal Analysis" },
     { href: "/rental-analysis", label: "Rental Analysis" },
+    { href: "/loan-types", label: "Loan Types" },
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
     { href: "/contact", label: "Contact" },

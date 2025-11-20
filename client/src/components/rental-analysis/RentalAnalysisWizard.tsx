@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWizardData } from "@/contexts/WizardDataContext";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
@@ -8,11 +8,16 @@ import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { useLocation } from "wouter";
 
 export default function RentalAnalysisWizard() {
-  const [currentStep, setCurrentStep] = useState(1);
   const { wizardData, hasPropertyData } = useWizardData();
   const [, setLocation] = useLocation();
   const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
   const [interestRate, setInterestRate] = useState<number>(7.5);
+  const [showLenders, setShowLenders] = useState(false);
+
+  // Reset showLenders when component mounts to prevent getting stuck in lender view
+  useEffect(() => {
+    setShowLenders(false);
+  }, []);
 
   if (!hasPropertyData()) {
     return (
@@ -38,7 +43,6 @@ export default function RentalAnalysisWizard() {
   }
 
   const property = wizardData.property!;
-  const investor = wizardData.investor;
 
   const monthlyPropertyTax = ((property.taxAssessedValue || property.purchasePrice || 0) * 0.012) / 12;
   const monthlyInsurance = (property.annualInsurance || 0) / 12;
@@ -55,6 +59,24 @@ export default function RentalAnalysisWizard() {
       })
     : null;
 
+  if (showLenders) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card className="p-8">
+            <h2 className="text-2xl font-bold mb-6">DSCR Lenders</h2>
+            <p className="text-muted-foreground mb-4">
+              Lender matching will be available soon. This section will display matched DSCR lenders based on your property and credit profile.
+            </p>
+            <Button variant="outline" onClick={() => setShowLenders(false)} data-testid="button-back-to-results">
+              Back to Results
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,81 +87,75 @@ export default function RentalAnalysisWizard() {
           </p>
         </div>
 
-        <Card className="p-8">
-          {currentStep === 1 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Property Review</h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Address</p>
-                    <p className="font-medium">{property.address}, {property.city}, {property.state} {property.zip}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">ARV</p>
-                    <p className="font-medium">${property.arv?.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bedrooms</p>
-                    <p className="font-medium">{property.bedrooms || "N/A"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bathrooms</p>
-                    <p className="font-medium">{property.bathrooms || "N/A"}</p>
-                  </div>
+        <div className="space-y-6">
+          {/* Property Review Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Property Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Address</p>
+                  <p className="font-medium">{property.address}, {property.city}, {property.state} {property.zip}</p>
                 </div>
-                <div className="mt-6">
-                  <Button onClick={() => setCurrentStep(2)} data-testid="button-next-step">
-                    Next: Enter Rental Income
-                  </Button>
+                <div>
+                  <p className="text-sm text-muted-foreground">ARV</p>
+                  <p className="font-medium">${property.arv?.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Bedrooms</p>
+                  <p className="font-medium">{property.bedrooms || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Bathrooms</p>
+                  <p className="font-medium">{property.bathrooms || "N/A"}</p>
                 </div>
               </div>
-            </div>
-          )}
+            </CardContent>
+          </Card>
 
-          {currentStep === 2 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Rental Income</h2>
+          {/* Rental Income Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Expected Monthly Rent</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Expected Monthly Rent</label>
-                  {property.estimatedRent && property.estimatedRent > 0 && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      <CheckCircle className="inline h-4 w-4 mr-1 text-emerald-600" />
-                      Zillow RentZestimate: ${property.estimatedRent.toLocaleString()} (editable)
-                    </p>
-                  )}
-                  {(!property.estimatedRent || property.estimatedRent === 0) && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      <AlertCircle className="inline h-4 w-4 mr-1 text-amber-600" />
-                      No estimated rent available from property data - please enter manually
-                    </p>
-                  )}
+                {property.estimatedRent && property.estimatedRent > 0 && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    Zillow RentZestimate: ${property.estimatedRent.toLocaleString()} (editable)
+                  </p>
+                )}
+                {(!property.estimatedRent || property.estimatedRent === 0) && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    No estimated rent available from property data - please enter manually
+                  </p>
+                )}
+                <div className="relative max-w-xs">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                   <input
                     type="number"
                     value={monthlyRent || ""}
                     onChange={(e) => setMonthlyRent(parseFloat(e.target.value) || 0)}
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-                    placeholder="e.g., 2500"
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm pl-6"
+                    placeholder="2500"
                     data-testid="input-monthly-rent"
                   />
                 </div>
-                <div className="flex gap-4 mt-6">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)} data-testid="button-back">
-                    Back
-                  </Button>
-                  <Button onClick={() => setCurrentStep(3)} data-testid="button-calculate-dscr">
-                    Calculate DSCR
-                  </Button>
-                </div>
               </div>
-            </div>
-          )}
+            </CardContent>
+          </Card>
 
-          {currentStep === 3 && dscrResults && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">DSCR Results</h2>
-              <div className="space-y-6">
+          {/* DSCR Results Card - Only show if monthly rent is entered */}
+          {dscrResults && (
+            <Card>
+              <CardHeader>
+                <CardTitle>DSCR Results</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 {/* DSCR Score Display */}
                 <div className={`p-6 rounded-lg ${
                   dscrResults.dscrStatus === 'good' ? 'bg-emerald-500/10 border-2 border-emerald-500' :
@@ -268,30 +284,15 @@ export default function RentalAnalysisWizard() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 mt-6">
-                  <Button variant="outline" onClick={() => setCurrentStep(2)} data-testid="button-back-to-rent">
-                    Back
-                  </Button>
-                  <Button onClick={() => setCurrentStep(4)} data-testid="button-find-lenders">
+                <div className="mt-6">
+                  <Button onClick={() => setShowLenders(true)} data-testid="button-find-lenders">
                     Find DSCR Lenders
                   </Button>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
-
-          {currentStep === 4 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">DSCR Lenders</h2>
-              <p className="text-muted-foreground mb-4">
-                Lender matching will be available soon. This section will display matched DSCR lenders based on your property and credit profile.
-              </p>
-              <Button variant="outline" onClick={() => setCurrentStep(3)} data-testid="button-back-to-results">
-                Back to Results
-              </Button>
-            </div>
-          )}
-        </Card>
+        </div>
       </div>
     </div>
   );
