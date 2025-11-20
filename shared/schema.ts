@@ -250,6 +250,10 @@ export interface LoanComparisonColumn {
   productName?: string;
   timeToClose?: number;
   maxLoanArv?: number;
+  referralLink?: string;
+  interestRate?: number;
+  maxLtvBuy?: number;
+  points?: number;
   
   purchasePrice: number;
   rehabBudget: number;

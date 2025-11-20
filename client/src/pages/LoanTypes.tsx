@@ -423,8 +423,104 @@ export default function LoanTypes() {
                     </ul>
                   </div>
                 </div>
+                
+                {/* Find Lenders Button */}
+                <div className="mt-6 pt-6 border-t">
+                  <Link href="/lenders">
+                    <Button 
+                      size="lg" 
+                      className="w-full md:w-auto"
+                      data-testid={`button-find-lenders-${loanType.id}`}
+                    >
+                      Find {loanType.name} Lenders
+                    </Button>
+                  </Link>
+                </div>
               </Card>
             ))}
+            
+            {/* Private Lenders Section */}
+            <Card className="p-8 bg-gradient-to-br from-primary/5 to-accent/5" data-testid="card-private-lenders">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Users className="h-8 w-8 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-primary mb-2">Private Lenders & Creative Financing</h2>
+                  <p className="text-muted-foreground">
+                    Private money lending comes from individuals or private companies rather than traditional financial institutions. These relationships can offer flexible terms, faster approvals, and creative deal structures that banks simply can't match.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                {/* What is Private Lending */}
+                <div>
+                  <h3 className="font-semibold text-primary mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-accent" />
+                    What is Private Lending?
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Funding from individuals, family offices, or private companies</span>
+                    </li>
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Relationship-based lending with flexible underwriting</span>
+                    </li>
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Ideal for deals that don't fit conventional boxes</span>
+                    </li>
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-accent mt-1">•</span>
+                      <span>Often includes mentorship and partnership opportunities</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Key Benefits */}
+                <div>
+                  <h3 className="font-semibold text-primary mb-3 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    Key Benefits
+                  </h3>
+                  <ul className="space-y-2">
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span>Fast approval and funding (days, not weeks)</span>
+                    </li>
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span>Customizable terms based on the deal</span>
+                    </li>
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span>Credit score may be less important</span>
+                    </li>
+                    <li className="text-sm text-muted-foreground flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <span>Creative structures like profit-sharing or equity splits</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              {/* Learn More Button */}
+              <div className="mt-6 pt-6 border-t">
+                <Link href="/about-private-lenders">
+                  <Button 
+                    size="lg" 
+                    variant="default"
+                    className="w-full md:w-auto"
+                    data-testid="button-learn-more-private-lenders"
+                  >
+                    Learn More About Private Lending
+                  </Button>
+                </Link>
+              </div>
+            </Card>
           </div>
 
           {/* Bottom CTA */}

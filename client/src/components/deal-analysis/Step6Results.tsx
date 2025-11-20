@@ -28,6 +28,10 @@ interface LoanComparisonColumn {
   productName?: string;
   timeToClose?: number;
   maxLoanArv?: number;
+  referralLink?: string;
+  interestRate?: number;
+  maxLtvBuy?: number;
+  points?: number;
   purchasePrice: number;
   rehabBudget: number;
   totalProjectCost: number;
@@ -300,6 +304,96 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* Loan Product Information Rows */}
+                <TableRow className="bg-accent/10">
+                  <TableCell className="font-medium">Loan Product</TableCell>
+                  <TableCell className="text-center text-muted-foreground">-</TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell className="text-center text-sm">Custom Loan</TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center text-sm font-medium" data-testid={`lender${index + 1}-product-name`}>
+                      {lender.productName || 'N/A'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                
+                <TableRow className="bg-accent/10">
+                  <TableCell className="font-medium">Interest Rate</TableCell>
+                  <TableCell className="text-center text-muted-foreground">-</TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell className="text-center">
+                      {results.userLoanColumn.interestRate !== undefined && results.userLoanColumn.interestRate !== null
+                        ? `${results.userLoanColumn.interestRate.toFixed(2)}%`
+                        : 'N/A'}
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-interest-rate`}>
+                      {lender.interestRate !== undefined && lender.interestRate !== null
+                        ? `${lender.interestRate.toFixed(2)}%`
+                        : 'N/A'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                
+                <TableRow className="bg-accent/10">
+                  <TableCell className="font-medium">Max LTV (Buy)</TableCell>
+                  <TableCell className="text-center text-muted-foreground">-</TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell className="text-center">
+                      {results.userLoanColumn.maxLtvBuy !== undefined && results.userLoanColumn.maxLtvBuy !== null
+                        ? `${results.userLoanColumn.maxLtvBuy.toFixed(0)}%`
+                        : 'N/A'}
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-ltv`}>
+                      {lender.maxLtvBuy !== undefined && lender.maxLtvBuy !== null
+                        ? `${lender.maxLtvBuy.toFixed(0)}%`
+                        : 'N/A'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                
+                <TableRow className="bg-accent/10">
+                  <TableCell className="font-medium">Points</TableCell>
+                  <TableCell className="text-center text-muted-foreground">-</TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell className="text-center">
+                      {results.userLoanColumn.points !== undefined && results.userLoanColumn.points !== null
+                        ? `${results.userLoanColumn.points.toFixed(2)}%`
+                        : 'N/A'}
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-points`}>
+                      {lender.points !== undefined && lender.points !== null
+                        ? `${lender.points.toFixed(2)}%`
+                        : 'N/A'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                
+                <TableRow className="bg-accent/10">
+                  <TableCell className="font-medium">Time to Close</TableCell>
+                  <TableCell className="text-center text-muted-foreground">-</TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell className="text-center">
+                      {results.userLoanColumn.timeToClose !== undefined && results.userLoanColumn.timeToClose !== null
+                        ? `${results.userLoanColumn.timeToClose} days`
+                        : 'N/A'}
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-time-to-close`}>
+                      {lender.timeToClose !== undefined && lender.timeToClose !== null
+                        ? `${lender.timeToClose} days`
+                        : 'N/A'}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                
                 <TableRow>
                   <TableCell className="font-medium">Purchase Price</TableCell>
                   <TableCell className="text-center" data-testid="cash-purchase-price">
@@ -516,7 +610,22 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">
-                      <Button size="sm" data-testid={`button-apply-lender${index + 1}`}>
+                      <Button 
+                        size="sm" 
+                        data-testid={`button-apply-lender${index + 1}`}
+                        onClick={() => {
+                          if (lender.referralLink) {
+                            window.open(lender.referralLink, '_blank', 'noopener,noreferrer');
+                          } else {
+                            toast({
+                              title: "Referral Link Unavailable",
+                              description: "This lender has not provided a referral link yet.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        disabled={!lender.referralLink}
+                      >
                         Click Here to Apply
                       </Button>
                     </TableCell>

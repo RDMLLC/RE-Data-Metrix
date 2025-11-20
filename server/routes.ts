@@ -295,6 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             productId: rp.loanProduct.id,
             productName: rp.loanProduct.productName,
             timeToClose: rp.loanProduct.timeToClose || undefined,
+            referralLink: rp.lender.referralLink || undefined,
           }
         );
       });

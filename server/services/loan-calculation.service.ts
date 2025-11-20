@@ -444,6 +444,7 @@ export function createLoanComparisonColumn(
     productId: string;
     productName: string;
     timeToClose?: number;
+    referralLink?: string;
   }
 ): LoanComparisonColumn {
   const loanCalculation = calculateLoanMetrics(dealInputs, loanInputs, numberOfDraws, customDrawSchedule);
@@ -462,6 +463,10 @@ export function createLoanComparisonColumn(
     productName: lenderInfo?.productName,
     timeToClose: lenderInfo?.timeToClose,
     maxLoanArv: loanInputs.maxLoanArv,
+    referralLink: lenderInfo?.referralLink,
+    interestRate: loanInputs.interestRate,
+    maxLtvBuy: loanInputs.maxLtvBuy,
+    points: loanInputs.points,
     purchasePrice: dealInputs.purchasePrice,
     rehabBudget: dealInputs.rehabBudget,
     totalProjectCost: loanCalculation.totalProjectCost,

@@ -12,7 +12,7 @@ export default function RentalAnalysisWizard() {
   const { wizardData, hasPropertyData } = useWizardData();
   const [, setLocation] = useLocation();
   const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
-  const [interestRate, setInterestRate] = useState<number>(6.5);
+  const [interestRate, setInterestRate] = useState<number>(7.5);
 
   if (!hasPropertyData()) {
     return (
@@ -178,7 +178,7 @@ export default function RentalAnalysisWizard() {
 
                 {/* Editable Interest Rate */}
                 <Card className="p-4 bg-accent/5">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col lg:flex-row items-start gap-4">
                     <div className="flex-1">
                       <label className="block text-sm font-medium mb-2">
                         Interest Rate (Annual)
@@ -200,8 +200,14 @@ export default function RentalAnalysisWizard() {
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      <p className="mb-1">Typical DSCR Rates:</p>
+                    <div className="text-sm text-muted-foreground border-l pl-4">
+                      <p className="font-medium mb-2">Assumptions:</p>
+                      <p className="text-xs">• 30-year fixed mortgage</p>
+                      <p className="text-xs">• 75% financed</p>
+                      <p className="text-xs">• 25% down payment (or equity contribution)</p>
+                    </div>
+                    <div className="text-sm text-muted-foreground border-l pl-4">
+                      <p className="font-medium mb-2">Typical DSCR Rates:</p>
                       <p className="text-xs">• 7.5% - 9.5% (current market)</p>
                       <p className="text-xs">• Varies by credit score</p>
                       <p className="text-xs">• Higher rates = lower DSCR</p>
@@ -211,7 +217,7 @@ export default function RentalAnalysisWizard() {
 
                 {/* Loan Details Breakdown */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Loan Details (80% LTV on ARV)</h3>
+                  <h3 className="text-lg font-semibold mb-3">Loan Details (75% LTV on ARV)</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Loan Amount</p>
@@ -226,7 +232,7 @@ export default function RentalAnalysisWizard() {
                       <p className="font-medium">${dscrResults.monthlyPrincipalInterest.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Monthly Rent</p>
+                      <p className="text-sm text-muted-foreground">Expected Monthly Rent</p>
                       <p className="font-medium">${monthlyRent.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
                     </div>
                   </div>
@@ -245,8 +251,11 @@ export default function RentalAnalysisWizard() {
                       <p className="font-medium">${dscrResults.monthlyPropertyTax.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Insurance</p>
+                      <p className="text-sm text-muted-foreground">Insurance (Monthly)</p>
                       <p className="font-medium">${dscrResults.monthlyInsurance.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Annual: ${((property.annualInsurance || 0)).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">HOA Fees</p>

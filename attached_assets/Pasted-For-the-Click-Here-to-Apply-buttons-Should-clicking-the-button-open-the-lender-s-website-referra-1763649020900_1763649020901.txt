@@ -1,0 +1,28 @@
+For the "Click Here to Apply" buttons:
+Should clicking the button open the lender's website/referral link in a new tab? Yes
+Should it open a modal with lender contact information? It should take it to the lender’s website via the referral link
+Should it navigate to an application form page? Yes, or whatever page the lender indicates. 
+Should it pre-fill any data from the deal analysis? No, it will likely be difficult because every lenders format will be different. 
+For loan type information in the results table:
+
+In the rental analysis, we are not analyzing specific loan types. We are only analyzing a 30-year fixed, 75% funded.  Standard DSCR loan interest rate. 
+Other loan types are presented in the text previously sent to you.  Please confirm receipt and ask any clarifying questions. 
+Each loan type will have a button to find lenders, as previously indicated, except the Private Lenders section, which has a button that says Learn More. This button links to the private lender page, which explains it and gives suggestions where the user might find private lenders. There are a couple of links to organizations that provide referral fees to RE Data Metrix. 
+Should we display the loan product name (e.g., "DSCR 30-Year Fixed")? Please clarify this question. 
+Should we show loan details like interest rate, LTV, points in the table?
+Should there be a tooltip or expandable section with full loan product details?
+For lender access:
+Should we show lender contact information in the results? No. We want to encourage the user to click on the referral link. 
+Should there be a way to save/favorite specific lenders? I like this idea. Let’s talk about it. 
+Should users be able to apply to multiple lenders at once? The user can apply to multiple lenders, but only one at a time. 
+Could you help me understand what functionality you'd like to see for these features? I want to make sure I implement exactly what you need!
+
+Add the Rental Income (Expected Monthly Rent) to the previous page. 
+To the left of the notes :Typical DSCR Rates:”, add the following text:
+Assumptions:
+30-year fixed mortgage
+75% financed
+25% down payment (or equity contribution)
+
+Change default interest rate to reflect the lower rate stated under “Typical DSCR Rates:”
+Add the insurance calculation. 
