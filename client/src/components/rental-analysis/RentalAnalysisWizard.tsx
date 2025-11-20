@@ -8,13 +8,24 @@ import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
 import LoanTypeEducation from "./LoanTypeEducation";
+import { useToast } from "@/hooks/use-toast";
 
 export default function RentalAnalysisWizard() {
   const { wizardData, hasPropertyData } = useWizardData();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
   const [interestRate, setInterestRate] = useState<number>(7.5);
   const [showLenders, setShowLenders] = useState(false);
+
+  const handleStartNewAnalysis = () => {
+    localStorage.removeItem('wizardInvestorData');
+    toast({
+      title: "Starting new analysis...",
+      description: "Your previous data has been cleared.",
+    });
+    setLocation('/deal-analysis');
+  };
 
   // Reset showLenders when component mounts to prevent getting stuck in lender view
   useEffect(() => {
@@ -89,7 +100,16 @@ export default function RentalAnalysisWizard() {
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">Rental Analysis</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-4xl font-bold text-primary">Rental Analysis</h1>
+            <Button
+              variant="outline"
+              onClick={handleStartNewAnalysis}
+              data-testid="button-start-new-analysis"
+            >
+              Start New Analysis
+            </Button>
+          </div>
           <p className="text-lg text-muted-foreground mb-4">
             Analyze rental property cash flow and DSCR
           </p>
