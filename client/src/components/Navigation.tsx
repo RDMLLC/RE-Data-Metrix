@@ -33,26 +33,32 @@ export default function Navigation() {
   return (
     <nav className="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-24">
-          <Link href="/" className="flex items-center gap-4 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">
-            <img src={logoImg} alt="RE Data Metrix" className="h-20 w-20" />
-            <span className="font-bold text-3xl text-primary">RE Data Metrix</span>
-          </Link>
+        {/* Two-row layout for desktop */}
+        <div className="hidden md:block">
+          {/* Top row: Logo and branding */}
+          <div className="flex items-center justify-center py-3 border-b border-border">
+            <Link href="/" className="flex items-center gap-4 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">
+              <img src={logoImg} alt="RE Data Metrix" className="h-28 w-28" />
+              <span className="font-bold text-4xl text-primary">RE Data Metrix</span>
+            </Link>
+          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                <Button
-                  variant="ghost"
-                  className={`text-foreground hover:text-primary ${
-                    location === link.href ? "text-primary font-semibold" : ""
-                  }`}
-                >
-                  {link.label}
-                </Button>
-              </Link>
-            ))}
+          {/* Bottom row: Navigation links */}
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              {navLinks.map((link) => (
+                <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <Button
+                    variant="ghost"
+                    className={`text-foreground hover:text-primary ${
+                      location === link.href ? "text-primary font-semibold" : ""
+                    }`}
+                  >
+                    {link.label}
+                  </Button>
+                </Link>
+              ))}
+            </div>
             
             {isAuthenticated ? (
               <DropdownMenu>
@@ -114,12 +120,19 @@ export default function Navigation() {
               </>
             )}
           </div>
+        </div>
 
-          {/* Mobile Menu Button */}
+        {/* Mobile layout: Single row with logo, text, and hamburger menu */}
+        <div className="md:hidden flex items-center justify-between h-24">
+          <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home-mobile">
+            <img src={logoImg} alt="RE Data Metrix" className="h-16 w-16" />
+            <span className="font-bold text-2xl text-primary">RE Data Metrix</span>
+          </Link>
+
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-foreground"
+            className="text-foreground"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             data-testid="button-mobile-menu"
           >
@@ -127,7 +140,7 @@ export default function Navigation() {
           </Button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 space-y-2">
             {navLinks.map((link) => (
