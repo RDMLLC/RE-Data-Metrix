@@ -24,14 +24,15 @@ const US_STATES = [
 ];
 
 const LOAN_TYPES = [
-  { value: "conventional", label: "Conventional" },
+  { value: "hard-money", label: "Hard Money / Bridge" },
   { value: "dscr", label: "DSCR" },
-  { value: "hard-money", label: "Hard Money" },
-  { value: "fha-va", label: "FHA/VA" },
-  { value: "portfolio", label: "Portfolio" },
-  { value: "arm", label: "ARM (Adjustable Rate)" },
-  { value: "balloon", label: "Balloon" },
+  { value: "transactional", label: "Transactional Funding" },
+  { value: "portfolio", label: "Portfolio / Blanket" },
   { value: "interest-only", label: "Interest-Only" },
+  { value: "balloon", label: "Balloon" },
+  { value: "arm", label: "5/1 ARM (Adjustable Rate)" },
+  { value: "conventional", label: "Conventional" },
+  { value: "fha-va", label: "FHA/VA" },
 ];
 
 const questionnaireSchema = z.object({
