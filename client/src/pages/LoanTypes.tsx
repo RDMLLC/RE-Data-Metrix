@@ -1,7 +1,7 @@
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, TrendingUp, DollarSign, Clock, Users } from "lucide-react";
+import { CheckCircle, XCircle, TrendingUp, DollarSign, Clock, Users, Zap } from "lucide-react";
 import { Link } from "wouter";
 
 interface LoanType {
@@ -89,7 +89,7 @@ const loanTypes: LoanType[] = [
   {
     id: "transactional",
     name: "Transactional Funding",
-    icon: <Clock className="h-8 w-8 text-accent" />,
+    icon: <Zap className="h-8 w-8 text-accent" />,
     description: "Ultra-short-term financing for same-day or back-to-back closings. Provides 100% financing for wholesale deals where you buy and immediately resell a property. Note: Transactional Funding is almost exclusively for wholesale deals, although some lenders can help if your loan will take just one or two days longer than needed.",
     bestFor: [
       "Wholesale real estate transactions",

@@ -170,7 +170,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       handleLookup();
                     }
                   }}
-                  placeholder="https://www.zillow.com/..."
+                  placeholder="https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/"
                   className="flex-1"
                   data-testid="input-property-url"
                 />

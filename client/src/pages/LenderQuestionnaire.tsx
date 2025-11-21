@@ -27,6 +27,7 @@ const LOAN_TYPES = [
   { value: "hard-money", label: "Hard Money / Bridge" },
   { value: "dscr", label: "DSCR" },
   { value: "transactional", label: "Transactional Funding" },
+  { value: "private-seller", label: "Private/Seller Financing" },
   { value: "portfolio", label: "Portfolio / Blanket" },
   { value: "interest-only", label: "Interest-Only" },
   { value: "balloon", label: "Balloon" },
