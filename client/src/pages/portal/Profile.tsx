@@ -105,14 +105,6 @@ export default function Profile() {
                 >
                   Start New Deal Analysis
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setLocation("/rental-analysis")}
-                  data-testid="button-rental-analysis"
-                >
-                  Rental Property Analysis
-                </Button>
               </CardContent>
             </Card>
           </div>

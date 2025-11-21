@@ -26,6 +26,8 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const registerSchema = z
   .object({
@@ -48,6 +50,7 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [hasReferralCode, setHasReferralCode] = useState<string>("no");
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -65,7 +68,14 @@ export default function Register() {
     setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = data;
-      await register(registerData);
+      // Only include referralCode if user selected "yes" and provided a code
+      const finalData = {
+        ...registerData,
+        referralCode: hasReferralCode === "yes" && registerData.referralCode 
+          ? registerData.referralCode 
+          : undefined,
+      };
+      await register(finalData);
       toast({
         title: "Welcome to RE Data Metrix!",
         description: "Your account has been created successfully.",
@@ -231,26 +241,56 @@ export default function Register() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="referralCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Referral Code (Optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="ABC12345"
-                        data-testid="input-referral-code"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Get 1 month free trial with a referral code
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-3">
+                <Label>Do you have a referral code?</Label>
+                <RadioGroup
+                  value={hasReferralCode}
+                  onValueChange={(value) => {
+                    setHasReferralCode(value);
+                    if (value === "no") {
+                      form.setValue("referralCode", "");
+                    }
+                  }}
+                  className="flex gap-4"
+                  data-testid="radio-has-referral-code"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="no" id="no-referral" data-testid="radio-no-referral" />
+                    <Label htmlFor="no-referral" className="font-normal cursor-pointer">
+                      No
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="yes" id="yes-referral" data-testid="radio-yes-referral" />
+                    <Label htmlFor="yes-referral" className="font-normal cursor-pointer">
+                      Yes
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {hasReferralCode === "yes" && (
+                <FormField
+                  control={form.control}
+                  name="referralCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enter Referral Code</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="ABC12345"
+                          data-testid="input-referral-code"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Get 1 month free trial with a referral code
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
