@@ -1,0 +1,29 @@
+Change the example link in the property lookup field to a Zillow link. 
+To the right of the button Continue to Property Details, add the button View Listing. 
+When clicked, open a new tab and open the Zillow listing page (or Redfin)
+When I arrive on the next page, I have to scroll up to see all of the information. Can we make the top of the page showing the default view? 
+
+On the Real Estate Loan Types Explained page, make the following changes:
+
+Remove the word “loans” from the “find” buttons. I.E. Fine Hard Money Lenders instead of Find Hard Money Loans Lenders. Make this change for all buttons. 
+
+Add “Transactional Funding” to the list of loan types. 
+Transactional Funding offers several distinct features and benefits:
+Facilitates seamless back-to-back or double closings, allowing quick property acquisition and resale in wholesale or similar strategies.
+Provides 100% financing for the purchase price and closing costs, eliminating the need for upfront capital.
+Enables extremely rapid deal closings, often within the same day or just a few days, by streamlining requirements such as appraisals, insurance, and full title reports.
+Requires no credit checks or income verification since the funding is based on the end buyer’s ability to close, reducing personal financial risk.
+Minimizes financial exposure by limiting loan duration to the shortest possible time, avoiding long-term debt.
+Boosts seller confidence by providing immediate proof of funds, increasing the likelihood of deal acceptance.
+Helps investors capitalize quickly on fleeting real estate opportunities and maintain high profit margins due to lower transactional costs.
+These features collectively empower real estate investors to move swiftly and efficiently on deals with minimized risk and maximum leverage.
+
+Add button Find Transactional Funding Lenders
+Add Transactional Funding as a selection on the lender questionnaire.  E.G. FHA/VA at or towards the bottom, Hard money at the top. 
+
+Reorder the list of loan types to make the types suitable for investors higher on the list and the loans that are more suitable for consumers further down the list. 
+
+Add Transactional Funding to the Types of Loans… section of the Rental Analysis page. 
+Reorder the list to match the reorder requested above. 
+
+
