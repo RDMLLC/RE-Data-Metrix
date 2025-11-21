@@ -22,69 +22,8 @@ interface LoanType {
 
 const loanTypes: LoanType[] = [
   {
-    id: "conventional",
-    name: "Conventional Loans",
-    icon: <DollarSign className="h-8 w-8 text-accent" />,
-    description: "Traditional mortgages offered by banks and credit unions that follow Fannie Mae and Freddie Mac guidelines. These loans typically require good credit and stable income verification.",
-    bestFor: [
-      "Borrowers with strong credit (680+ score)",
-      "Traditional W-2 income earners",
-      "Long-term buy-and-hold investors",
-      "Owner-occupied or rental properties"
-    ],
-    pros: [
-      "Lower interest rates compared to alternative financing",
-      "Longer repayment terms (15-30 years)",
-      "Predictable monthly payments with fixed rates",
-      "Can be used for primary residence or investment properties"
-    ],
-    cons: [
-      "Strict income and credit requirements",
-      "Extensive documentation needed",
-      "Longer approval and closing process (30-45 days)",
-      "May require 20% down payment to avoid PMI on investment properties"
-    ],
-    typicalTerms: {
-      interestRate: "6.0% - 8.0%",
-      loanTerm: "15-30 years",
-      downPayment: "15% - 25%",
-      closingTime: "30-45 days"
-    }
-  },
-  {
-    id: "dscr",
-    name: "DSCR Loans (Debt Service Coverage Ratio)",
-    icon: <TrendingUp className="h-8 w-8 text-accent" />,
-    description: "Investment property loans that qualify based on the property's rental income rather than the borrower's personal income. DSCR measures whether the property generates enough income to cover the debt payments.",
-    bestFor: [
-      "Self-employed investors with complex tax returns",
-      "Investors with multiple properties",
-      "Properties with strong rental income potential",
-      "Borrowers who don't want to verify personal income"
-    ],
-    pros: [
-      "No personal income verification required",
-      "Qualify based on property cash flow",
-      "Can close in your business entity (LLC)",
-      "Great for building a rental portfolio",
-      "Faster approval than conventional loans"
-    ],
-    cons: [
-      "Higher interest rates (typically 1-2% above conventional)",
-      "Larger down payment required (20-25%)",
-      "Property must generate sufficient rental income",
-      "Not available for primary residences"
-    ],
-    typicalTerms: {
-      interestRate: "7.5% - 10.0%",
-      loanTerm: "30 years (fixed or ARM)",
-      downPayment: "20% - 25%",
-      closingTime: "21-30 days"
-    }
-  },
-  {
     id: "hard-money",
-    name: "Hard Money Loans",
+    name: "Hard Money / Bridge",
     icon: <Clock className="h-8 w-8 text-accent" />,
     description: "Short-term loans from private lenders secured by real estate. These are asset-based loans focused on the property's value (ARV) rather than the borrower's creditworthiness. Ideal for fix-and-flip projects.",
     bestFor: [
@@ -117,43 +56,111 @@ const loanTypes: LoanType[] = [
     }
   },
   {
-    id: "fha-va",
-    name: "FHA/VA Loans",
-    icon: <Users className="h-8 w-8 text-accent" />,
-    description: "Government-backed loans designed to help first-time homebuyers and veterans. FHA loans require lower down payments and credit scores, while VA loans offer zero down payment options for qualified veterans.",
+    id: "dscr",
+    name: "DSCR (Debt Service Coverage Ratio)",
+    icon: <TrendingUp className="h-8 w-8 text-accent" />,
+    description: "Investment property loans that qualify based on the property's rental income rather than the borrower's personal income. DSCR measures whether the property generates enough income to cover the debt payments.",
     bestFor: [
-      "First-time homebuyers",
-      "Veterans and active military (VA)",
-      "Buyers with limited down payment funds",
-      "Borrowers with credit scores in the 580-680 range",
-      "Owner-occupied properties only"
+      "Self-employed investors with complex tax returns",
+      "Investors with multiple properties",
+      "Properties with strong rental income potential",
+      "Borrowers who don't want to verify personal income"
     ],
     pros: [
-      "Low down payment requirements (3.5% FHA, 0% VA)",
-      "More lenient credit requirements",
-      "Competitive interest rates",
-      "VA loans have no monthly mortgage insurance",
-      "Can be assumed by future buyers"
+      "No personal income verification required",
+      "Qualify based on property cash flow",
+      "Can close in your business entity (LLC)",
+      "Great for building a rental portfolio",
+      "Faster approval than conventional loans"
     ],
     cons: [
-      "Only for owner-occupied properties (not investment)",
-      "FHA requires mortgage insurance (MIP)",
-      "Property must meet strict condition standards",
-      "Loan limits vary by county",
-      "VA loans require funding fee (unless disabled)"
+      "Higher interest rates (typically 1-2% above conventional)",
+      "Larger down payment required (20-25%)",
+      "Property must generate sufficient rental income",
+      "Not available for primary residences"
     ],
     typicalTerms: {
-      interestRate: "6.0% - 7.5%",
-      loanTerm: "15-30 years",
-      downPayment: "0% - 3.5%",
-      closingTime: "30-45 days"
+      interestRate: "7.5% - 10.0%",
+      loanTerm: "30 years (fixed or ARM)",
+      downPayment: "20% - 25%",
+      closingTime: "21-30 days"
+    }
+  },
+  {
+    id: "transactional",
+    name: "Transactional Funding",
+    icon: <Clock className="h-8 w-8 text-accent" />,
+    description: "Ultra-short-term financing for same-day or back-to-back closings. Provides 100% financing for wholesale deals where you buy and immediately resell a property. Note: Transactional Funding is almost exclusively for wholesale deals, although some lenders can help if your loan will take just one or two days longer than needed.",
+    bestFor: [
+      "Wholesale real estate transactions",
+      "Back-to-back (double) closings",
+      "Investors without capital for traditional purchases",
+      "Quick-turn deals with immediate buyers",
+      "Wholesalers who need proof of funds"
+    ],
+    pros: [
+      "100% financing for purchase price and closing costs",
+      "Extremely fast closings (same day to a few days)",
+      "No credit checks or income verification required",
+      "Minimal financial exposure (short loan duration)",
+      "Provides proof of funds to secure deals",
+      "No appraisals, insurance, or full title reports needed"
+    ],
+    cons: [
+      "Only suitable for wholesale/double closing strategies",
+      "Requires confirmed end buyer before funding",
+      "High fees (typically 1-2% of loan amount per day or flat fee)",
+      "Very short-term only (usually 24-72 hours)",
+      "Limited to experienced wholesalers",
+      "Not available for traditional buy-and-hold strategies"
+    ],
+    typicalTerms: {
+      interestRate: "Flat fees typically $1,500-$3,000 or 1-2% per day",
+      loanTerm: "1-3 days (sometimes up to 7 days)",
+      downPayment: "0% (100% financing)",
+      closingTime: "Same day to 3 days"
+    }
+  },
+  {
+    id: "private-seller",
+    name: "Private/Seller Financing",
+    icon: <Users className="h-8 w-8 text-accent" />,
+    description: "Financing directly from the property seller or a private individual investor, bypassing traditional financial institutions. These creative arrangements offer flexible terms customized to both parties' needs.",
+    bestFor: [
+      "Buyers who can't qualify for traditional financing",
+      "Properties that don't meet conventional lending standards",
+      "Sellers wanting to generate ongoing income",
+      "Creative deal structures and negotiations",
+      "Building relationships with private capital sources"
+    ],
+    pros: [
+      "Extremely flexible terms and structures",
+      "Faster closings with less paperwork",
+      "Can work around credit issues",
+      "Negotiable interest rates and down payments",
+      "Often includes mentorship opportunities",
+      "Can structure profit-sharing or equity partnerships"
+    ],
+    cons: [
+      "Requires finding willing sellers or private lenders",
+      "Terms vary widely by individual",
+      "May require larger down payment than expected",
+      "Interest rates can be higher than conventional",
+      "Due diligence is critical for both parties",
+      "Limited legal protections compared to institutional lending"
+    ],
+    typicalTerms: {
+      interestRate: "6.0% - 12.0% (negotiable)",
+      loanTerm: "5-30 years (negotiable)",
+      downPayment: "10% - 30% (negotiable)",
+      closingTime: "7-30 days"
     }
   },
   {
     id: "portfolio",
-    name: "Portfolio Loans",
+    name: "Portfolio / Blanket",
     icon: <DollarSign className="h-8 w-8 text-accent" />,
-    description: "Loans kept by the originating lender rather than sold on the secondary market. This allows lenders to create flexible terms outside of conventional guidelines, making them ideal for unique properties or situations.",
+    description: "Loans kept by the originating lender rather than sold on the secondary market. This allows lenders to create flexible terms outside of conventional guidelines. Blanket loans cover multiple properties under one loan, ideal for portfolio investors.",
     bestFor: [
       "Unique or non-conforming properties",
       "Borrowers who don't meet conventional guidelines",
@@ -183,40 +190,41 @@ const loanTypes: LoanType[] = [
     }
   },
   {
-    id: "arm",
-    name: "ARM Loans (Adjustable Rate Mortgage)",
-    icon: <TrendingUp className="h-8 w-8 text-accent" />,
-    description: "Mortgages with interest rates that adjust periodically based on market conditions. ARMs typically start with a lower fixed rate for an initial period (3, 5, 7, or 10 years) before adjusting annually.",
+    id: "interest-only",
+    name: "Interest-Only",
+    icon: <DollarSign className="h-8 w-8 text-accent" />,
+    description: "Loans where you only pay interest for an initial period (typically 5-10 years), with no principal reduction. After the interest-only period ends, payments increase significantly to pay off principal over the remaining term.",
     bestFor: [
-      "Borrowers planning to sell before adjustment period",
-      "Investors expecting income to increase",
-      "Properties to be refinanced or sold within 5-7 years",
-      "Borrowers comfortable with rate fluctuation risk"
+      "Fix-and-flip investors during rehab",
+      "Borrowers with irregular income",
+      "Properties expected to appreciate significantly",
+      "Investors maximizing cash flow during holding period",
+      "Borrowers planning to sell before principal payments begin"
     ],
     pros: [
-      "Lower initial interest rates",
-      "Lower initial monthly payments",
-      "Can qualify for larger loan amounts",
-      "Rate caps limit how much rates can increase",
-      "Good for short-term ownership strategies"
+      "Much lower initial monthly payments",
+      "Maximizes cash flow during interest-only period",
+      "Frees up capital for other investments",
+      "Useful for short-term holds",
+      "Can improve debt-to-income ratios for qualification"
     ],
     cons: [
-      "Payment uncertainty after initial period",
-      "Rates and payments can increase significantly",
-      "More complex to understand",
-      "Harder to budget for long-term",
-      "Risk if unable to refinance when rates adjust"
+      "No equity build-up during interest-only period",
+      "Payment shock when principal payments begin",
+      "Higher total interest paid over life of loan",
+      "Must have solid exit strategy",
+      "Risk if property doesn't appreciate as expected"
     ],
     typicalTerms: {
-      interestRate: "5.5% - 7.5% (initial)",
-      loanTerm: "30 years (5/1, 7/1, 10/1 ARM)",
-      downPayment: "15% - 25%",
-      closingTime: "30-45 days"
+      interestRate: "7.0% - 11.0%",
+      loanTerm: "10-30 years (5-10 year I/O period)",
+      downPayment: "20% - 30%",
+      closingTime: "14-30 days"
     }
   },
   {
     id: "balloon",
-    name: "Balloon Loans",
+    name: "Balloon",
     icon: <Clock className="h-8 w-8 text-accent" />,
     description: "Loans with regular monthly payments based on a long amortization schedule, but the entire remaining balance becomes due at a specified date (typically 5-7 years). Popular with commercial properties and seller financing.",
     bestFor: [
@@ -248,36 +256,98 @@ const loanTypes: LoanType[] = [
     }
   },
   {
-    id: "interest-only",
-    name: "Interest-Only Loans",
-    icon: <DollarSign className="h-8 w-8 text-accent" />,
-    description: "Loans where you only pay interest for an initial period (typically 5-10 years), with no principal reduction. After the interest-only period ends, payments increase significantly to pay off principal over the remaining term.",
+    id: "arm",
+    name: "5/1 ARM (Adjustable Rate Mortgage)",
+    icon: <TrendingUp className="h-8 w-8 text-accent" />,
+    description: "Mortgages with interest rates that adjust periodically based on market conditions. ARMs typically start with a lower fixed rate for an initial period (3, 5, 7, or 10 years) before adjusting annually.",
     bestFor: [
-      "Fix-and-flip investors during rehab",
-      "Borrowers with irregular income",
-      "Properties expected to appreciate significantly",
-      "Investors maximizing cash flow during holding period",
-      "Borrowers planning to sell before principal payments begin"
+      "Borrowers planning to sell before adjustment period",
+      "Investors expecting income to increase",
+      "Properties to be refinanced or sold within 5-7 years",
+      "Borrowers comfortable with rate fluctuation risk"
     ],
     pros: [
-      "Much lower initial monthly payments",
-      "Maximizes cash flow during interest-only period",
-      "Frees up capital for other investments",
-      "Useful for short-term holds",
-      "Can improve debt-to-income ratios for qualification"
+      "Lower initial interest rates",
+      "Lower initial monthly payments",
+      "Can qualify for larger loan amounts",
+      "Rate caps limit how much rates can increase",
+      "Good for short-term ownership strategies"
     ],
     cons: [
-      "No equity build-up during interest-only period",
-      "Payment shock when principal payments begin",
-      "Higher total interest paid over life of loan",
-      "Must have solid exit strategy",
-      "Risk if property doesn't appreciate as expected"
+      "Payment uncertainty after initial period",
+      "Rates and payments can increase significantly",
+      "More complex to understand",
+      "Harder to budget for long-term",
+      "Risk if unable to refinance when rates adjust"
     ],
     typicalTerms: {
-      interestRate: "7.0% - 11.0%",
-      loanTerm: "10-30 years (5-10 year I/O period)",
-      downPayment: "20% - 30%",
-      closingTime: "14-30 days"
+      interestRate: "5.5% - 7.5% (initial)",
+      loanTerm: "30 years (5/1, 7/1, 10/1 ARM)",
+      downPayment: "15% - 25%",
+      closingTime: "30-45 days"
+    }
+  },
+  {
+    id: "conventional",
+    name: "Conventional",
+    icon: <DollarSign className="h-8 w-8 text-accent" />,
+    description: "Traditional mortgages offered by banks and credit unions that follow Fannie Mae and Freddie Mac guidelines. These loans typically require good credit and stable income verification.",
+    bestFor: [
+      "Borrowers with strong credit (680+ score)",
+      "Traditional W-2 income earners",
+      "Long-term buy-and-hold investors",
+      "Owner-occupied or rental properties"
+    ],
+    pros: [
+      "Lower interest rates compared to alternative financing",
+      "Longer repayment terms (15-30 years)",
+      "Predictable monthly payments with fixed rates",
+      "Can be used for primary residence or investment properties"
+    ],
+    cons: [
+      "Strict income and credit requirements",
+      "Extensive documentation needed",
+      "Longer approval and closing process (30-45 days)",
+      "May require 20% down payment to avoid PMI on investment properties"
+    ],
+    typicalTerms: {
+      interestRate: "6.0% - 8.0%",
+      loanTerm: "15-30 years",
+      downPayment: "15% - 25%",
+      closingTime: "30-45 days"
+    }
+  },
+  {
+    id: "fha-va",
+    name: "FHA/VA",
+    icon: <Users className="h-8 w-8 text-accent" />,
+    description: "Government-backed loans designed to help first-time homebuyers and veterans. FHA loans require lower down payments and credit scores, while VA loans offer zero down payment options for qualified veterans.",
+    bestFor: [
+      "First-time homebuyers",
+      "Veterans and active military (VA)",
+      "Buyers with limited down payment funds",
+      "Borrowers with credit scores in the 580-680 range",
+      "Owner-occupied properties only"
+    ],
+    pros: [
+      "Low down payment requirements (3.5% FHA, 0% VA)",
+      "More lenient credit requirements",
+      "Competitive interest rates",
+      "VA loans have no monthly mortgage insurance",
+      "Can be assumed by future buyers"
+    ],
+    cons: [
+      "Only for owner-occupied properties (not investment)",
+      "FHA requires mortgage insurance (MIP)",
+      "Property must meet strict condition standards",
+      "Loan limits vary by county",
+      "VA loans require funding fee (unless disabled)"
+    ],
+    typicalTerms: {
+      interestRate: "6.0% - 7.5%",
+      loanTerm: "15-30 years",
+      downPayment: "0% - 3.5%",
+      closingTime: "30-45 days"
     }
   }
 ];
