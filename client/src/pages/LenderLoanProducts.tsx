@@ -8,15 +8,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLoanProductSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Download, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { LoanProduct } from "@shared/schema";
+import { useState, useRef } from "react";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
   const lenderId = "temp-lender-id";
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
     queryKey: ["/api/loan-products", lenderId],
@@ -87,6 +89,78 @@ export default function LenderLoanProducts() {
     createProductMutation.mutate(data);
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch('/api/loan-products-csv/template', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) throw new Error('Failed to download template');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'loan_products_template.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Template Downloaded",
+        description: "CSV template has been downloaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const csvData = await file.text();
+      
+      const response = await apiRequest("POST", "/api/loan-products-csv/upload", {
+        lenderId,
+        csvData,
+      });
+      
+      const results = response as unknown as { success: any[], errors: any[] };
+      
+      if (results.errors.length > 0) {
+        toast({
+          title: "Partial Upload",
+          description: `Successfully uploaded ${results.success.length} products. ${results.errors.length} rows had errors.`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Upload Complete",
+          description: `Successfully uploaded ${results.success.length} loan products.`,
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-products", lenderId] });
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload CSV. Please check the format and try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
@@ -109,6 +183,41 @@ export default function LenderLoanProducts() {
               Add and manage your loan products to make them available to investors
             </p>
           </div>
+
+          <Card className="p-6 mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-1">Bulk Import</h2>
+                <p className="text-sm text-muted-foreground">Upload multiple loan products at once using CSV</p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadTemplate}
+                  data-testid="button-download-template"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Template
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-upload-csv"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload CSV
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  data-testid="input-csv-file"
+                />
+              </div>
+            </div>
+          </Card>
 
           <Card className="p-8 mb-8">
             <div className="mb-6">

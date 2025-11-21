@@ -711,6 +711,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CSV Download - Blank Template
+  app.get("/api/loan-products-csv/template", async (req, res) => {
+    try {
+      const headers = [
+        "productName",
+        "newInvestorOk",
+        "minCreditScore",
+        "maxLtvBuy",
+        "maxLendRehab",
+        "interestRate",
+        "interestDeferred",
+        "drawnFundsOnly",
+        "points",
+        "pointsDeferred",
+        "maxLoanArv",
+        "appraisalRequired",
+        "estimatedAppraisalCost",
+        "fees",
+        "costPerDraw",
+        "timeToClose",
+        "isActive"
+      ];
+      
+      const csv = headers.join(",") + "\n";
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="loan_products_template.csv"');
+      res.send(csv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate CSV template" });
+    }
+  });
+
+  // CSV Upload - Bulk Import
+  app.post("/api/loan-products-csv/upload", async (req, res) => {
+    try {
+      const { lenderId, csvData } = req.body;
+      
+      if (!lenderId || !csvData) {
+        return res.status(400).json({ error: "Missing lenderId or csvData" });
+      }
+      
+      const lines = csvData.trim().split("\n");
+      if (lines.length < 2) {
+        return res.status(400).json({ error: "CSV must contain header and at least one data row" });
+      }
+      
+      const headers = lines[0].split(",").map((h: string) => h.trim());
+      const results = {
+        success: [] as any[],
+        errors: [] as any[],
+      };
+      
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const values = lines[i].split(",").map((v: string) => v.trim());
+          const row: any = { lenderId };
+          
+          headers.forEach((header: string, index: number) => {
+            const value = values[index];
+            
+            if (header === "newInvestorOk" || header === "interestDeferred" || 
+                header === "drawnFundsOnly" || header === "pointsDeferred" || 
+                header === "appraisalRequired" || header === "isActive") {
+              row[header] = value.toLowerCase() === "true" || value === "1";
+            } else if (header === "minCreditScore" || header === "timeToClose") {
+              row[header] = value ? parseInt(value) : undefined;
+            } else if (header === "maxLtvBuy" || header === "maxLendRehab" || 
+                       header === "interestRate" || header === "points" || 
+                       header === "maxLoanArv" || header === "estimatedAppraisalCost" || 
+                       header === "fees" || header === "costPerDraw") {
+              row[header] = value ? value : undefined;
+            } else {
+              row[header] = value || undefined;
+            }
+          });
+          
+          const validatedData = insertLoanProductSchema.parse(row);
+          const product = await storage.createLoanProduct(validatedData);
+          results.success.push({ row: i, product });
+        } catch (error) {
+          results.errors.push({ 
+            row: i, 
+            error: error instanceof Error ? error.message : "Unknown error" 
+          });
+        }
+      }
+      
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to process CSV upload" });
+    }
+  });
+
   // Search Lenders Route
   app.post("/api/search-lenders", async (req, res) => {
     try {
