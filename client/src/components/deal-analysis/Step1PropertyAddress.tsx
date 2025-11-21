@@ -170,7 +170,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       handleLookup();
                     }
                   }}
-                  placeholder="https://www.redfin.com/..."
+                  placeholder="https://www.zillow.com/..."
                   className="flex-1"
                   data-testid="input-property-url"
                 />
@@ -192,7 +192,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Example: https://www.redfin.com/CA/San-Francisco/123-Main-St-94102/home/12345678
+                Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
               </p>
             </div>
 
@@ -215,14 +215,27 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   </p>
                 </div>
                 
-                <Button
-                  type="button"
-                  onClick={handleNext}
-                  className="w-full md:w-auto"
-                  data-testid="button-next-step"
-                >
-                  Continue to Property Details
-                </Button>
+                <div className="flex gap-3 flex-wrap">
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    className="flex-1 md:flex-initial"
+                    data-testid="button-next-step"
+                  >
+                    Continue to Property Details
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
+                    disabled={!propertyUrl}
+                    className="flex-1 md:flex-initial"
+                    data-testid="button-view-listing"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View Listing
+                  </Button>
+                </div>
               </div>
             )}
           </div>
