@@ -600,7 +600,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updated = await storage.updateLenderCompanyInfo(validatedData);
       res.json(updated);
     } catch (error) {
-      res.status(400).json({ error: "Invalid company info data" });
+      console.error("Company info validation error:", error);
+      res.status(400).json({ error: "Invalid company info data", details: error instanceof Error ? error.message : String(error) });
     }
   });
 

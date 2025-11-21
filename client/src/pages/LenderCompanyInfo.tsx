@@ -38,7 +38,8 @@ export default function LenderCompanyInfo() {
 
   const saveCompanyInfoMutation = useMutation({
     mutationFn: async (data: CompanyInfoForm) => {
-      return await apiRequest("POST", "/api/lender-company-info", data);
+      const res = await apiRequest("POST", "/api/lender-company-info", data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lender-company-info"] });
@@ -59,7 +60,7 @@ export default function LenderCompanyInfo() {
   const form = useForm<CompanyInfoForm>({
     resolver: zodResolver(companyInfoSchema),
     defaultValues: {
-      lenderId: "temp-lender-id",
+      lenderId: "d775835d-9fa7-4709-b96d-3887f7f417ca", // TODO: Get from auth context when lender auth is implemented
       companyName: undefined,
       contactName: undefined,
       phone: undefined,

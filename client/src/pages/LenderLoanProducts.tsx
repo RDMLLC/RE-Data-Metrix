@@ -16,7 +16,7 @@ import type { LoanProduct } from "@shared/schema";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
-  const lenderId = "temp-lender-id";
+  const lenderId = "d775835d-9fa7-4709-b96d-3887f7f417ca"; // TODO: Get from auth context when lender auth is implemented
 
   const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
     queryKey: ["/api/loan-products", lenderId],
@@ -31,7 +31,8 @@ export default function LenderLoanProducts() {
 
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/loan-products", data);
+      const res = await apiRequest("POST", "/api/loan-products", data);
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/loan-products", lenderId] });
