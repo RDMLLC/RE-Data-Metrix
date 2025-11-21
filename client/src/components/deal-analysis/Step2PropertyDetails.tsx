@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { WizardFormData } from "./DealAnalysisWizard";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,10 @@ export default function Step2PropertyDetails({
   onNext,
   onBack,
 }: Step2PropertyDetailsProps) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const addingSquareFootage = form.watch("addingSquareFootage");
   const dataSource = form.watch("propertyDataSource") || "unknown";
   
