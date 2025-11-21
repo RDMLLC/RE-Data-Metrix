@@ -174,9 +174,6 @@ export default function LenderProfile() {
                 <p className="text-muted-foreground">Lending criteria information not available</p>
               </div>
             ) : (
-              <div>
-
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Loan Types */}
                 {questionnaire.loanTypes && questionnaire.loanTypes.length > 0 && (
@@ -264,7 +261,6 @@ export default function LenderProfile() {
                   </div>
                 </div>
               </div>
-            </div>
             )}
           </Card>
 
