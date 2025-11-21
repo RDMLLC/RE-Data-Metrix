@@ -303,10 +303,8 @@ export default function Register() {
               </Button>
               <p className="text-sm text-muted-foreground text-center">
                 Already have an account?{" "}
-                <Link href="/login">
-                  <a className="text-primary hover:underline" data-testid="link-login">
-                    Login
-                  </a>
+                <Link href="/login" className="text-primary hover:underline" data-testid="link-login">
+                  Login
                 </Link>
               </p>
                     </CardFooter>
