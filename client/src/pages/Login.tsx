@@ -57,9 +57,12 @@ export default function Login() {
       });
       setLocation("/portal/profile");
     } catch (error: any) {
+      const errorMessage = error.message || "Invalid email or password";
+      const isVerificationError = errorMessage.includes("verify") || errorMessage.includes("Email not verified");
+      
       toast({
-        title: "Login failed",
-        description: error.message || "Invalid email or password",
+        title: isVerificationError ? "Email Verification Required" : "Login failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -180,14 +183,23 @@ export default function Login() {
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                Don't have an account?{" "}
-                <Link href="/register">
-                  <a className="text-primary hover:underline" data-testid="link-register">
-                    Sign up
-                  </a>
-                </Link>
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  <Link href="/request-password-reset">
+                    <a className="text-accent hover:underline" data-testid="link-forgot-password">
+                      Forgot your password?
+                    </a>
+                  </Link>
+                </p>
+                <p className="text-sm text-muted-foreground text-center">
+                  Don't have an account?{" "}
+                  <Link href="/register">
+                    <a className="text-primary hover:underline" data-testid="link-register">
+                      Sign up
+                    </a>
+                  </Link>
+                </p>
+              </div>
                     </CardFooter>
                   </form>
                 </Form>

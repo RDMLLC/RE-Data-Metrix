@@ -68,19 +68,27 @@ export default function Register() {
     setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = data;
-      // Only include referralCode if user selected "yes" and provided a code
       const finalData = {
         ...registerData,
         referralCode: hasReferralCode === "yes" && registerData.referralCode 
           ? registerData.referralCode 
           : undefined,
       };
-      await register(finalData);
-      toast({
-        title: "Welcome to RE Data Metrix!",
-        description: "Your account has been created successfully.",
-      });
-      setLocation("/portal/profile");
+      const result = await register(finalData);
+      
+      if ((result as any)?.requiresVerification) {
+        toast({
+          title: "Check your email!",
+          description: (result as any).message || "We've sent you a verification link. Please check your inbox.",
+        });
+        setLocation("/login");
+      } else {
+        toast({
+          title: "Welcome to RE Data Metrix!",
+          description: "Your account has been created successfully.",
+        });
+        setLocation("/portal/profile");
+      }
     } catch (error: any) {
       toast({
         title: "Registration failed",

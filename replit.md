@@ -21,11 +21,25 @@ The backend is developed with Node.js and Express.js, providing a RESTful API. I
 
 ### Database
 
-PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users`, `prelaunch_signups`, `lenders`, `lender_questionnaires`, and `loan_products`. Drizzle Kit handles schema migrations.
+PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users` (with email verification fields), `prelaunch_signups`, `lenders`, `lender_questionnaires`, and `loan_products`. Drizzle Kit handles schema migrations.
+
+### Email Integration (Zoho Mail)
+
+Transactional email system using Zoho Mail SMTP (smtppro.zoho.com:587):
+- **Email Verification**: Sent automatically on registration with 24-hour token expiry
+- **Welcome Email**: Sent after successful email verification
+- **Password Reset**: Secure token-based reset flow with 1-hour expiry
+- **Contact Form Confirmation**: Instant auto-reply to contact form submissions
+- **CRM Integration** (Future): Marketing/relationship emails handled by CRM
+- **Security**: All credentials stored as encrypted Replit secrets
 
 ### Authentication & Authorization
 
-Basic authentication infrastructure is implemented with user and lender tables. Full session management and authorization middleware are planned for future development.
+Complete authentication infrastructure implemented with user and lender tables, session management, and email verification:
+- **Email Verification**: Required for all new user registrations via Zoho Mail SMTP
+- **Password Reset**: Secure token-based password recovery workflow
+- **Session Management**: Express sessions with PostgreSQL store
+- **Protected Routes**: Middleware-based authorization for user and admin access
 
 ### Form Handling & Validation
 

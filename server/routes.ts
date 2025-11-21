@@ -9,6 +9,8 @@ import { eq, inArray, desc, and } from "drizzle-orm";
 import { hashPassword } from "./auth";
 import passport from "./auth";
 import { ensureAuthenticated, requireRole } from "./auth";
+import { emailService } from "./services/email.service";
+import crypto from "crypto";
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -17,6 +19,10 @@ function generateReferralCode(): string {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
+}
+
+function generateVerificationToken(): string {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -46,6 +52,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const hashedPassword = await hashPassword(validatedData.password);
       const userReferralCode = generateReferralCode();
+      const verificationToken = generateVerificationToken();
+      const verificationExpiry = new Date();
+      verificationExpiry.setHours(verificationExpiry.getHours() + 24);
       
       let referredByUserId = null;
       let subscriptionStatus = 'inactive';
@@ -73,6 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionStatus,
           referralCode: userReferralCode,
           referredBy: referredByUserId,
+          isEmailVerified: false,
+          verificationToken,
+          verificationExpiry,
         })
         .returning();
 
@@ -81,17 +93,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: validatedData.fullName,
       });
 
-      req.login(newUser, (err) => {
-        if (err) {
-          return res.status(500).json({ error: "Failed to log in after registration" });
-        }
-        res.json({
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email,
-          role: newUser.role,
-          referralCode: newUser.referralCode,
-        });
+      const emailSent = await emailService.sendVerificationEmail(
+        newUser.email,
+        newUser.username,
+        verificationToken
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send verification email to:', newUser.email);
+      }
+
+      res.json({
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        message: emailSent 
+          ? "Registration successful! Please check your email to verify your account before logging in." 
+          : "Registration successful! Please contact support to verify your account.",
+        requiresVerification: true,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -109,6 +128,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
+      
+      if (!user.isEmailVerified) {
+        return res.status(403).json({ 
+          error: "Email not verified",
+          message: "Please verify your email address before logging in. Check your inbox for the verification link.",
+          requiresVerification: true,
+        });
+      }
+      
       req.login(user, (err) => {
         if (err) {
           return res.status(500).json({ error: "Login failed" });
@@ -133,6 +161,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  app.get("/api/auth/verify-email/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.verificationToken, token))
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ error: "Invalid verification token" });
+      }
+
+      if (user.verificationExpiry && new Date() > user.verificationExpiry) {
+        return res.status(400).json({ error: "Verification token has expired" });
+      }
+
+      if (user.isEmailVerified) {
+        return res.json({ message: "Email already verified" });
+      }
+
+      await db
+        .update(users)
+        .set({
+          isEmailVerified: true,
+          verificationToken: null,
+          verificationExpiry: null,
+        })
+        .where(eq(users.id, user.id));
+
+      const emailSent = await emailService.sendWelcomeEmail(user.email, user.username);
+      
+      if (!emailSent) {
+        console.error('Failed to send welcome email to:', user.email);
+      }
+
+      res.json({ 
+        message: "Email verified successfully! Welcome to RE Data Metrix.",
+        username: user.username,
+      });
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({ error: "Email verification failed" });
+    }
+  });
+
+  app.post("/api/auth/request-password-reset", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (!user) {
+        return res.json({ 
+          message: "If an account exists with this email, a password reset link will be sent." 
+        });
+      }
+
+      const resetToken = generateVerificationToken();
+      const resetExpiry = new Date();
+      resetExpiry.setHours(resetExpiry.getHours() + 1);
+
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiry: resetExpiry,
+        })
+        .where(eq(users.id, user.id));
+
+      const emailSent = await emailService.sendPasswordResetEmail(
+        user.email,
+        user.username,
+        resetToken
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send password reset email to:', user.email);
+      }
+
+      res.json({ 
+        message: "If an account exists with this email, a password reset link will be sent." 
+      });
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).json({ error: "Password reset request failed" });
+    }
+  });
+
+  const resetPasswordSchema = z.object({
+    token: z.string(),
+    newPassword: z.string().min(8),
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const validatedData = resetPasswordSchema.parse(req.body);
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.passwordResetToken, validatedData.token))
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
+      }
+
+      if (user.passwordResetExpiry && new Date() > user.passwordResetExpiry) {
+        return res.status(400).json({ error: "Reset token has expired" });
+      }
+
+      const hashedPassword = await hashPassword(validatedData.newPassword);
+
+      await db
+        .update(users)
+        .set({
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+        })
+        .where(eq(users.id, user.id));
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      console.error('Password reset error:', error);
+      res.status(500).json({ error: "Password reset failed" });
+    }
+  });
+
   app.get("/api/auth/me", ensureAuthenticated, async (req, res) => {
     const user = req.user as User;
     
@@ -151,6 +321,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       subscriptionStatus: user.subscriptionStatus,
       profile: profile || null,
     });
+  });
+
+  const contactFormSchema = z.object({
+    name: z.string().min(2),
+    company: z.string().optional(),
+    email: z.string().email(),
+    phone: z.string().optional(),
+    comments: z.string().min(10),
+  });
+
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const validatedData = contactFormSchema.parse(req.body);
+
+      const emailSent = await emailService.sendContactConfirmation(
+        validatedData.email,
+        validatedData.name
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send contact confirmation email to:', validatedData.email);
+      }
+
+      console.log('Contact form submission:', {
+        ...validatedData,
+        source: 'contact_us',
+        emailSent,
+      });
+
+      res.json({ 
+        message: "Thank you for contacting us! We'll respond within 24 hours.",
+        emailSent,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid contact data", details: error.errors });
+      }
+      console.error('Contact form error:', error);
+      res.status(500).json({ error: "Failed to process contact form" });
+    }
   });
 
   // Lender Invite Routes

@@ -74,11 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(credentials),
         credentials: "include",
       });
+      const responseData = await response.json();
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Login failed");
+        const error: any = new Error(responseData.message || responseData.error || "Login failed");
+        error.requiresVerification = responseData.requiresVerification;
+        throw error;
       }
-      return response.json();
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -93,14 +95,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(data),
         credentials: "include",
       });
+      const responseData = await response.json();
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Registration failed");
+        throw new Error(responseData.error || "Registration failed");
       }
-      return response.json();
+      return responseData;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    onSuccess: (data) => {
+      if (!data.requiresVerification) {
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      }
     },
   });
 
@@ -125,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (data: RegisterData) => {
-    await registerMutation.mutateAsync(data);
+    return await registerMutation.mutateAsync(data);
   };
 
   const logout = async () => {

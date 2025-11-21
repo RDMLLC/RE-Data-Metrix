@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CheckCircle2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -32,10 +34,20 @@ export default function ContactForm() {
     },
   });
 
+  const contactMutation = useMutation({
+    mutationFn: async (data: ContactFormData) => {
+      return apiRequest('POST', '/api/contact', data);
+    },
+    onSuccess: () => {
+      setSubmitted(true);
+    },
+    onError: (error) => {
+      console.error('Failed to submit contact form:', error);
+    },
+  });
+
   const onSubmit = (data: ContactFormData) => {
-    console.log('Contact form submitted:', { ...data, source: 'contact_us' });
-    // TODO: Connect to Zoho CRM API
-    setSubmitted(true);
+    contactMutation.mutate(data);
   };
 
   if (submitted) {
@@ -167,9 +179,10 @@ export default function ContactForm() {
           type="submit"
           className="w-full bg-primary text-primary-foreground hover:bg-primary"
           size="lg"
+          disabled={contactMutation.isPending}
           data-testid="button-submit"
         >
-          Send Message
+          {contactMutation.isPending ? 'Sending...' : 'Send Message'}
         </Button>
       </form>
     </Form>

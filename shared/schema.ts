@@ -12,6 +12,11 @@ export const users = pgTable("users", {
   subscriptionStatus: text("subscription_status").notNull().default('inactive'),
   referredBy: varchar("referred_by"),
   referralCode: varchar("referral_code").unique(),
+  isEmailVerified: boolean("is_email_verified").notNull().default(false),
+  verificationToken: varchar("verification_token").unique(),
+  verificationExpiry: timestamp("verification_expiry"),
+  passwordResetToken: varchar("password_reset_token").unique(),
+  passwordResetExpiry: timestamp("password_reset_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -19,6 +24,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   referralCode: true,
+  isEmailVerified: true,
+  verificationToken: true,
+  verificationExpiry: true,
+  passwordResetToken: true,
+  passwordResetExpiry: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

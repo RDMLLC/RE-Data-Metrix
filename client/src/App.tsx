@@ -29,6 +29,9 @@ import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
 import LenderSignup from "@/pages/LenderSignup";
 import LenderInvite from "@/pages/admin/LenderInvite";
 import LenderProfile from "@/pages/LenderProfile";
+import VerifyEmail from "@/pages/VerifyEmail";
+import RequestPasswordReset from "@/pages/RequestPasswordReset";
+import ResetPassword from "@/pages/ResetPassword";
 
 function Router() {
   return (
@@ -45,6 +48,9 @@ function Router() {
       <Route path="/toolbox" component={Resources} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/verify-email/:token" component={VerifyEmail} />
+      <Route path="/request-password-reset" component={RequestPasswordReset} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/portal/profile">
         {() => (
           <ProtectedRoute>
