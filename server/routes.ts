@@ -153,6 +153,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Lender Invite Routes
+  const createLenderInviteSchema = z.object({
+    email: z.string().email(),
+    companyName: z.string().min(1),
+  });
+
+  app.post("/api/admin/lender-invite", requireRole('admin'), async (req, res) => {
+    try {
+      const validatedData = createLenderInviteSchema.parse(req.body);
+      
+      const existing = await storage.getLenderByEmail(validatedData.email);
+      if (existing) {
+        return res.status(400).json({ error: "A lender with this email already exists" });
+      }
+      
+      const { token, lender } = await storage.createLenderInvite(validatedData.email, validatedData.companyName);
+      
+      const inviteLink = `${req.protocol}://${req.get('host')}/lender-signup/${token}`;
+      
+      res.json({
+        success: true,
+        lenderId: lender.id,
+        token,
+        inviteLink,
+        email: lender.email,
+        companyName: lender.companyName,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid invite data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create lender invite" });
+    }
+  });
+
+  const validateLenderInviteSchema = z.object({
+    token: z.string(),
+  });
+
+  app.post("/api/lender/validate-invite", async (req, res) => {
+    try {
+      const { token } = validateLenderInviteSchema.parse(req.body);
+      
+      const lender = await storage.validateLenderInvite(token);
+      
+      if (!lender) {
+        return res.status(400).json({ error: "Invalid or expired invite token" });
+      }
+      
+      res.json({
+        valid: true,
+        lenderId: lender.id,
+        email: lender.email,
+        companyName: lender.companyName,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to validate invite" });
+    }
+  });
+
+  const completeLenderSignupSchema = z.object({
+    token: z.string(),
+    password: z.string().min(8),
+    contactName: z.string().min(1),
+    phone: z.string().optional(),
+  });
+
+  app.post("/api/lender/complete-signup", async (req, res) => {
+    try {
+      const validatedData = completeLenderSignupSchema.parse(req.body);
+      
+      const lender = await storage.validateLenderInvite(validatedData.token);
+      
+      if (!lender) {
+        return res.status(400).json({ error: "Invalid or expired invite token" });
+      }
+      
+      const hashedPassword = await hashPassword(validatedData.password);
+      
+      const completedLender = await storage.completeLenderSignup(
+        lender.id,
+        hashedPassword,
+        validatedData.contactName,
+        validatedData.phone
+      );
+      
+      res.json({
+        success: true,
+        lenderId: completedLender.id,
+        email: completedLender.email,
+        companyName: completedLender.companyName,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid signup data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to complete signup" });
+    }
+  });
+
   // User Profile Routes
   const updateProfileSchema = z.object({
     fullName: z.string().min(1).optional(),

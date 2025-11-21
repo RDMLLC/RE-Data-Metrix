@@ -1,6 +1,8 @@
 import { 
   type User, 
   type InsertUser,
+  type Lender,
+  type InsertLender,
   type LenderQuestionnaire,
   type InsertLenderQuestionnaire,
   type LoanProduct,
@@ -11,22 +13,31 @@ import {
   type InsertDealAnalysis,
   type DealAnalysisAccess,
   type InsertDealAnalysisAccess,
+  type LenderReferral,
+  type InsertLenderReferral,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
   loanProducts as loanProductsTable,
   properties as propertiesTable,
   dealAnalyses as dealAnalysesTable,
-  dealAnalysisAccess as dealAnalysisAccessTable
+  dealAnalysisAccess as dealAnalysisAccessTable,
+  lenderReferrals as lenderReferralsTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  getLender(id: string): Promise<Lender | undefined>;
+  getLenderByEmail(email: string): Promise<Lender | undefined>;
+  createLenderInvite(email: string, companyName: string): Promise<{token: string, lender: Lender}>;
+  validateLenderInvite(token: string): Promise<Lender | undefined>;
+  completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender>;
   
   updateLenderCompanyInfo(data: any): Promise<any>;
   getLenderCompanyInfo(lenderId: string): Promise<any>;
@@ -42,6 +53,7 @@ export interface IStorage {
   getAllLenders(): Promise<any[]>;
   updateLoanProduct(id: string, data: Partial<InsertLoanProduct>): Promise<LoanProduct | undefined>;
   deleteLoanProduct(id: string): Promise<boolean>;
+  bulkCreateLoanProducts(lenderId: string, products: Omit<InsertLoanProduct, 'lenderId'>[]): Promise<LoanProduct[]>;
   
   createOrGetProperty(data: InsertProperty): Promise<Property>;
   getPropertyById(id: string): Promise<Property | undefined>;
@@ -55,6 +67,9 @@ export interface IStorage {
   createAccessToken(analysisId: string, expiresAt?: Date): Promise<DealAnalysisAccess>;
   getDealAnalysisByToken(token: string): Promise<DealAnalysis | undefined>;
   revokeAccessToken(token: string): Promise<boolean>;
+  
+  createLenderReferral(data: InsertLenderReferral): Promise<LenderReferral>;
+  getLenderReferrals(lenderId: string): Promise<Array<LenderReferral & {investorName?: string, propertyAddress?: string}>>;
 }
 
 export class MemStorage implements IStorage {
@@ -82,7 +97,15 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser,
+      role: insertUser.role || 'user',
+      subscriptionStatus: insertUser.subscriptionStatus || 'inactive',
+      referredBy: insertUser.referredBy || null,
+      id,
+      referralCode: null,
+      createdAt: new Date(),
+    };
     this.users.set(id, user);
     return user;
   }
@@ -123,15 +146,12 @@ export class MemStorage implements IStorage {
         ...data,
         brokerOrDirectLender: data.brokerOrDirectLender ?? existing.brokerOrDirectLender ?? null,
         fastestClosingTime: data.fastestClosingTime ?? existing.fastestClosingTime ?? null,
-        offerNonTraditionalLending: data.offerNonTraditionalLending ?? existing.offerNonTraditionalLending ?? null,
-        workWithNewInvestors: data.workWithNewInvestors ?? existing.workWithNewInvestors ?? null,
+        offerNonTraditionalLending: data.offerNonTraditionalLending ?? existing.offerNonTraditionalLending ?? false,
+        workWithNewInvestors: data.workWithNewInvestors ?? existing.workWithNewInvestors ?? false,
         minCreditScore: data.minCreditScore ?? existing.minCreditScore ?? null,
-        creditScoreMin: data.creditScoreMin ?? existing.creditScoreMin ?? null,
-        offerDeferredPayment: data.offerDeferredPayment ?? existing.offerDeferredPayment ?? null,
-        offerRolledPoints: data.offerRolledPoints ?? existing.offerRolledPoints ?? null,
-        offer100PercentFunding: data.offer100PercentFunding ?? existing.offer100PercentFunding ?? null,
-        offerMultiUnitFinancing: data.offerMultiUnitFinancing ?? existing.offerMultiUnitFinancing ?? null,
-        offerDscrLoans: data.offerDscrLoans ?? existing.offerDscrLoans ?? null,
+        offerDeferredPayment: data.offerDeferredPayment ?? existing.offerDeferredPayment ?? false,
+        offerRolledPoints: data.offerRolledPoints ?? existing.offerRolledPoints ?? false,
+        offer100PercentFunding: data.offer100PercentFunding ?? existing.offer100PercentFunding ?? false,
         offerLoansAllStates: data.offerLoansAllStates ?? existing.offerLoansAllStates ?? null,
         statesServiced: data.statesServiced ?? existing.statesServiced ?? null,
         loanTypes: data.loanTypes ?? existing.loanTypes ?? null,
@@ -146,15 +166,12 @@ export class MemStorage implements IStorage {
         lenderId: data.lenderId,
         brokerOrDirectLender: data.brokerOrDirectLender ?? null,
         fastestClosingTime: data.fastestClosingTime ?? null,
-        offerNonTraditionalLending: data.offerNonTraditionalLending ?? null,
-        workWithNewInvestors: data.workWithNewInvestors ?? null,
+        offerNonTraditionalLending: data.offerNonTraditionalLending ?? false,
+        workWithNewInvestors: data.workWithNewInvestors ?? false,
         minCreditScore: data.minCreditScore ?? null,
-        creditScoreMin: data.creditScoreMin ?? null,
-        offerDeferredPayment: data.offerDeferredPayment ?? null,
-        offerRolledPoints: data.offerRolledPoints ?? null,
-        offer100PercentFunding: data.offer100PercentFunding ?? null,
-        offerMultiUnitFinancing: data.offerMultiUnitFinancing ?? null,
-        offerDscrLoans: data.offerDscrLoans ?? null,
+        offerDeferredPayment: data.offerDeferredPayment ?? false,
+        offerRolledPoints: data.offerRolledPoints ?? false,
+        offer100PercentFunding: data.offer100PercentFunding ?? false,
         offerLoansAllStates: data.offerLoansAllStates ?? null,
         statesServiced: data.statesServiced ?? null,
         loanTypes: data.loanTypes ?? null,
@@ -211,10 +228,7 @@ export class MemStorage implements IStorage {
           q.offer100PercentFunding !== criteria.offer100PercentFunding) {
         return false;
       }
-      if (criteria.offerMultiUnitFinancing && criteria.offerMultiUnitFinancing !== "" && criteria.offerMultiUnitFinancing !== "any" &&
-          q.offerMultiUnitFinancing !== criteria.offerMultiUnitFinancing) {
-        return false;
-      }
+
       return true;
     });
 
@@ -296,6 +310,78 @@ export class MemStorage implements IStorage {
   async deleteLoanProduct(id: string): Promise<boolean> {
     return this.loanProducts.delete(id);
   }
+
+  async getLender(id: string): Promise<Lender | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getLenderByEmail(email: string): Promise<Lender | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createLenderInvite(email: string, companyName: string): Promise<{token: string, lender: Lender}> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async validateLenderInvite(token: string): Promise<Lender | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async bulkCreateLoanProducts(lenderId: string, products: Omit<InsertLoanProduct, 'lenderId'>[]): Promise<LoanProduct[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createLenderReferral(data: InsertLenderReferral): Promise<LenderReferral> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getLenderReferrals(lenderId: string): Promise<Array<LenderReferral & {investorName?: string, propertyAddress?: string}>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createOrGetProperty(data: InsertProperty): Promise<Property> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getPropertyById(id: string): Promise<Property | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createDealAnalysis(data: InsertDealAnalysis): Promise<DealAnalysis> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getDealAnalysis(id: string): Promise<DealAnalysis | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async updateDealAnalysis(id: string, data: Partial<Omit<InsertDealAnalysis, 'propertyId' | 'propertySnapshot'>>): Promise<DealAnalysis | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async deleteDealAnalysis(id: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getDealAnalysesByUser(userId: string): Promise<DealAnalysis[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createAccessToken(analysisId: string, expiresAt?: Date): Promise<DealAnalysisAccess> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getDealAnalysisByToken(token: string): Promise<DealAnalysis | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async revokeAccessToken(token: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -357,12 +443,9 @@ export class DatabaseStorage implements IStorage {
           offerNonTraditionalLending: data.offerNonTraditionalLending,
           workWithNewInvestors: data.workWithNewInvestors,
           minCreditScore: data.minCreditScore,
-          creditScoreMin: data.creditScoreMin,
           offerDeferredPayment: data.offerDeferredPayment,
           offerRolledPoints: data.offerRolledPoints,
           offer100PercentFunding: data.offer100PercentFunding,
-          offerMultiUnitFinancing: data.offerMultiUnitFinancing,
-          offerDscrLoans: data.offerDscrLoans,
           offerLoansAllStates: data.offerLoansAllStates,
           statesServiced: data.statesServiced,
           loanTypes: data.loanTypes,
@@ -425,10 +508,7 @@ export class DatabaseStorage implements IStorage {
           q.offer100PercentFunding !== criteria.offer100PercentFunding) {
         return false;
       }
-      if (criteria.offerMultiUnitFinancing && criteria.offerMultiUnitFinancing !== "" && criteria.offerMultiUnitFinancing !== "any" &&
-          q.offerMultiUnitFinancing !== criteria.offerMultiUnitFinancing) {
-        return false;
-      }
+
       return true;
     });
 
@@ -565,6 +645,107 @@ export class DatabaseStorage implements IStorage {
   async revokeAccessToken(token: string): Promise<boolean> {
     const result = await db.delete(dealAnalysisAccessTable).where(eq(dealAnalysisAccessTable.token, token)).returning();
     return result.length > 0;
+  }
+
+  async getLender(id: string): Promise<Lender | undefined> {
+    const result = await db.select().from(lendersTable).where(eq(lendersTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getLenderByEmail(email: string): Promise<Lender | undefined> {
+    const result = await db.select().from(lendersTable).where(eq(lendersTable.email, email)).limit(1);
+    return result[0];
+  }
+
+  async createLenderInvite(email: string, companyName: string): Promise<{token: string, lender: Lender}> {
+    const token = randomBytes(32).toString('base64url');
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 7);
+    
+    const result = await db.insert(lendersTable).values({
+      email,
+      companyName,
+      password: '',
+      contactName: '',
+      inviteToken: token,
+      inviteExpiry: expiry,
+      inviteAccepted: false,
+    }).returning();
+    
+    return { token, lender: result[0] };
+  }
+
+  async validateLenderInvite(token: string): Promise<Lender | undefined> {
+    const result = await db.select().from(lendersTable)
+      .where(and(
+        eq(lendersTable.inviteToken, token),
+        gt(lendersTable.inviteExpiry, new Date()),
+        eq(lendersTable.inviteAccepted, false)
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender> {
+    const updateData: any = {
+      password,
+      contactName,
+      inviteAccepted: true,
+    };
+    if (phone) updateData.phone = phone;
+    
+    const result = await db.update(lendersTable)
+      .set(updateData)
+      .where(eq(lendersTable.id, lenderId))
+      .returning();
+    return result[0];
+  }
+
+  async bulkCreateLoanProducts(lenderId: string, products: Omit<InsertLoanProduct, 'lenderId'>[]): Promise<LoanProduct[]> {
+    const productsWithLender = products.map(p => ({ ...p, lenderId }));
+    const result = await db.insert(loanProductsTable).values(productsWithLender).returning();
+    return result;
+  }
+
+  async createLenderReferral(data: InsertLenderReferral): Promise<LenderReferral> {
+    const result = await db.insert(lenderReferralsTable).values(data).returning();
+    return result[0];
+  }
+
+  async getLenderReferrals(lenderId: string): Promise<Array<LenderReferral & {investorName?: string, propertyAddress?: string}>> {
+    const referrals = await db.select().from(lenderReferralsTable)
+      .where(eq(lenderReferralsTable.lenderId, lenderId))
+      .orderBy(desc(lenderReferralsTable.createdAt));
+
+    const enrichedReferrals = await Promise.all(referrals.map(async (ref) => {
+      let investorName: string | undefined;
+      let propertyAddress: string | undefined;
+
+      if (ref.userId) {
+        const user = await this.getUser(ref.userId);
+        if (user) {
+          const profile = await db.select().from(usersTable).where(eq(usersTable.id, ref.userId)).limit(1);
+          investorName = user.username;
+        }
+      }
+
+      if (ref.savedDealId) {
+        const deal = await this.getDealAnalysis(ref.savedDealId);
+        if (deal) {
+          propertyAddress = deal.propertySnapshot && typeof deal.propertySnapshot === 'object' && 'address' in deal.propertySnapshot
+            ? String(deal.propertySnapshot.address)
+            : undefined;
+        }
+      }
+
+      return {
+        ...ref,
+        investorName,
+        propertyAddress,
+      };
+    }));
+
+    return enrichedReferrals;
   }
 }
 

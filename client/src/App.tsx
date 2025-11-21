@@ -26,6 +26,8 @@ import LenderLoanProducts from "@/pages/LenderLoanProducts";
 import LenderCompanyInfo from "@/pages/LenderCompanyInfo";
 import LoanTypes from "@/pages/LoanTypes";
 import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
+import LenderSignup from "@/pages/LenderSignup";
+import LenderInvite from "@/pages/admin/LenderInvite";
 
 function Router() {
   return (
@@ -56,6 +58,8 @@ function Router() {
       <Route path="/lender-company-info" component={LenderCompanyInfo} />
       <Route path="/lender-questionnaire" component={LenderQuestionnaire} />
       <Route path="/lender-loan-products" component={LenderLoanProducts} />
+      <Route path="/lender-signup/:token" component={LenderSignup} />
+      <Route path="/admin/lender-invite" component={LenderInvite} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -34,21 +34,19 @@ const LOAN_TYPES = [
   { value: "arm", label: "5/1 ARM (Adjustable Rate)" },
   { value: "conventional", label: "Conventional" },
   { value: "fha-va", label: "FHA/VA" },
+  { value: "multi-unit", label: "Multi-Unit (5+ units)" },
 ];
 
 const questionnaireSchema = z.object({
   lenderId: z.string(),
   brokerOrDirectLender: z.string().optional(),
   fastestClosingTime: z.string().optional(),
-  offerNonTraditionalLending: z.string().optional(),
-  workWithNewInvestors: z.string().optional(),
+  offerNonTraditionalLending: z.boolean().optional(),
+  workWithNewInvestors: z.boolean().optional(),
   minCreditScore: z.string().optional(),
-  creditScoreMin: z.number().min(300).max(850).optional(),
-  offerDeferredPayment: z.string().optional(),
-  offerRolledPoints: z.string().optional(),
-  offer100PercentFunding: z.string().optional(),
-  offerMultiUnitFinancing: z.string().optional(),
-  offerDscrLoans: z.string().optional(),
+  offerDeferredPayment: z.boolean().optional(),
+  offerRolledPoints: z.boolean().optional(),
+  offer100PercentFunding: z.boolean().optional(),
   offerLoansAllStates: z.string().optional(),
   statesServiced: z.array(z.string()).optional(),
   loanTypes: z.array(z.string()).optional(),
@@ -86,15 +84,12 @@ export default function LenderQuestionnaire() {
       lenderId: "temp-lender-id",
       brokerOrDirectLender: "",
       fastestClosingTime: "",
-      offerNonTraditionalLending: "",
-      workWithNewInvestors: "",
+      offerNonTraditionalLending: false,
+      workWithNewInvestors: false,
       minCreditScore: "",
-      creditScoreMin: undefined,
-      offerDeferredPayment: "",
-      offerRolledPoints: "",
-      offer100PercentFunding: "",
-      offerMultiUnitFinancing: "",
-      offerDscrLoans: "",
+      offerDeferredPayment: false,
+      offerRolledPoints: false,
+      offer100PercentFunding: false,
       offerLoansAllStates: "",
       statesServiced: [],
       loanTypes: [],
@@ -183,47 +178,43 @@ export default function LenderQuestionnaire() {
                   )}
                 />
 
-                {/* Do you offer non-traditional / creative lending? */}
+                {/* Offer Non-Traditional Lending (Checkbox) */}
                 <FormField
                   control={form.control}
                   name="offerNonTraditionalLending"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you offer non-traditional / creative lending?</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-non-traditional">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-non-traditional"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-foreground font-normal cursor-pointer">
+                        Offer non-traditional / creative lending
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Do you work with new investors? */}
+                {/* Work with New Investors (Checkbox) */}
                 <FormField
                   control={form.control}
                   name="workWithNewInvestors"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you work with new investors?</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-new-investors">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-new-investors"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-foreground font-normal cursor-pointer">
+                        Work with new investors
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -254,30 +245,6 @@ export default function LenderQuestionnaire() {
                   )}
                 />
 
-                {/* Minimum Credit Score (Numeric) */}
-                <FormField
-                  control={form.control}
-                  name="creditScoreMin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Minimum Credit Score (Specific Number)</FormLabel>
-                      <FormControl>
-                        <input
-                          type="number"
-                          min={300}
-                          max={850}
-                          placeholder="e.g., 620"
-                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                          value={field.value || ""}
-                          data-testid="input-credit-score-min"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {/* Loan Types Offered */}
                 <FormField
@@ -330,120 +297,69 @@ export default function LenderQuestionnaire() {
                   )}
                 />
 
-                {/* Do you offer deferred payment loans? */}
+                {/* Offer Deferred Payment Loans (Checkbox) */}
                 <FormField
                   control={form.control}
                   name="offerDeferredPayment"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you offer deferred payment loans?</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-deferred-payment">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-deferred-payment"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-foreground font-normal cursor-pointer">
+                        Offer deferred payment loans
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Do you offer rolled / points on the back? */}
+                {/* Offer Rolled Points (Checkbox) */}
                 <FormField
                   control={form.control}
                   name="offerRolledPoints"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you offer rolled / points on the back?</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-rolled-points">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-rolled-points"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-foreground font-normal cursor-pointer">
+                        Offer rolled / points on the back
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Do you offer 100% funding of both the purchase and the rehab? */}
+                {/* Offer 100% Funding (Checkbox) */}
                 <FormField
                   control={form.control}
                   name="offer100PercentFunding"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you offer 100% funding of both the purchase and the rehab?</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-100-percent-funding">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-100-percent-funding"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-foreground font-normal cursor-pointer">
+                        Offer 100% funding of both the purchase and the rehab
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Do you offer financing on multi-unit properties? (5+ units) */}
-                <FormField
-                  control={form.control}
-                  name="offerMultiUnitFinancing"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you offer financing on multi-unit properties? (5+ units)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-multi-unit">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Do you offer DSCR loans? */}
-                <FormField
-                  control={form.control}
-                  name="offerDscrLoans"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Do you offer DSCR loans?</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-dscr-loans">
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Yes">Yes</SelectItem>
-                          <SelectItem value="No">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {/* Do you offer loans in all 50 States? Y/N */}
                 <FormField
