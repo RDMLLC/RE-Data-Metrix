@@ -34,7 +34,7 @@ export default function LenderSignup() {
     queryKey: ['/api/lender/validate-invite', token],
     queryFn: async () => {
       const response = await apiRequest("POST", "/api/lender/validate-invite", { token });
-      return response as unknown as {valid: boolean, lenderId: string, email: string, companyName: string};
+      return await response.json();
     },
     retry: false,
   });
@@ -51,12 +51,13 @@ export default function LenderSignup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      return await apiRequest("POST", "/api/lender/complete-signup", {
+      const res = await apiRequest("POST", "/api/lender/complete-signup", {
         token,
         password: data.password,
         contactName: data.contactName,
         phone: data.phone,
       });
+      return await res.json();
     },
     onSuccess: () => {
       toast({

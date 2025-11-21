@@ -405,6 +405,7 @@ export class DatabaseStorage implements IStorage {
     const updateData: any = {};
     
     if (data.companyName !== undefined) updateData.companyName = data.companyName;
+    if (data.companyDescription !== undefined) updateData.companyDescription = data.companyDescription;
     if (data.contactName !== undefined) updateData.contactName = data.contactName;
     if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.email !== undefined) updateData.email = data.email;
@@ -422,7 +423,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(lendersTable).set(updateData).where(eq(lendersTable.id, lenderId));
     
     const result = await db.select().from(lendersTable).where(eq(lendersTable.id, lenderId)).limit(1);
-    return { ...result[0], companyDescription: data.companyDescription };
+    return { ...result[0], lenderId: result[0].id };
   }
 
   async getLenderCompanyInfo(lenderId: string): Promise<any> {

@@ -140,6 +140,7 @@ export type PrelaunchSignup = typeof prelaunchSignups.$inferSelect;
 export const lenders = pgTable("lenders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   companyName: text("company_name").notNull(),
+  companyDescription: text("company_description"),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   contactName: text("contact_name").notNull(),
