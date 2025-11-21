@@ -1,16 +1,198 @@
 import Layout from "@/components/Layout";
-import ComingSoon from "@/components/ComingSoon";
-import resourcesImg from "@assets/generated_images/Resources_and_learning_materials_43051e8c.png";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AffiliateCard } from "@/components/AffiliateCard";
+import { GlossarySection } from "@/components/GlossarySection";
+import { affiliatePrograms, categoryInfo } from "@/data/affiliatePrograms";
+import { Wrench, CheckCircle } from "lucide-react";
 
 export default function Resources() {
+  const getAffiliateProgramsByCategory = (category: string) => {
+    return affiliatePrograms.filter(program => 
+      program.categories.includes(category)
+    );
+  };
+
   return (
     <Layout>
-      <ComingSoon
-        title="Toolbox"
-        description="Tools are important in your business. Watch this space for solutions ranging from property management, to lead generation, legal, networking, and more."
-        imageSrc={resourcesImg}
-        imageAlt="Toolbox and Materials"
-      />
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <Wrench className="h-8 w-8 text-accent" />
+            <h1 className="text-3xl font-bold">Toolbox & Resources</h1>
+          </div>
+          <p className="text-lg text-muted-foreground">
+            Your comprehensive toolkit for real estate investment success
+          </p>
+        </div>
+
+        <Tabs defaultValue="about" className="space-y-6">
+          <TabsList className="flex flex-wrap h-auto gap-2 bg-muted/50 p-2" data-testid="tabs-toolbox">
+            <TabsTrigger value="about" data-testid="tab-about">About</TabsTrigger>
+            <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
+            <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>
+            <TabsTrigger value="project-management" data-testid="tab-project-management">Project Management</TabsTrigger>
+            <TabsTrigger value="lead-generation" data-testid="tab-lead-generation">Lead Generation</TabsTrigger>
+            <TabsTrigger value="comps" data-testid="tab-comps">Comps & Data</TabsTrigger>
+            <TabsTrigger value="glossary" data-testid="tab-glossary">Glossary</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="about" className="space-y-6">
+            <div className="prose prose-lg max-w-none dark:prose-invert">
+              <h2 className="text-2xl font-semibold mb-4">Your Investor Toolbox</h2>
+              
+              <p className="text-muted-foreground leading-relaxed">
+                Success in real estate investment requires more than just capital and ambition—it demands 
+                the right tools, partnerships, and knowledge. We've curated a comprehensive selection of 
+                trusted platforms and services that our community of investors relies on every day.
+              </p>
+
+              <h3 className="text-xl font-semibold mt-6 mb-3">What You'll Find Here</h3>
+              
+              <div className="grid gap-4 md:grid-cols-2 not-prose">
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Vetted Partners</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Every platform in our toolbox has been carefully evaluated for quality, 
+                      reliability, and value to real estate investors.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Time-Saving Solutions</h4>
+                    <p className="text-sm text-muted-foreground">
+                      From property management to deal analysis, these tools streamline your 
+                      workflow and help you scale your business efficiently.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Competitive Advantage</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Access the same professional-grade tools and data that top investors use 
+                      to find deals, analyze markets, and make informed decisions.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Educational Resources</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Our glossary provides clear definitions of essential investing terms, 
+                      helping you speak the language of real estate like a pro.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <h3 className="text-xl font-semibold mt-6 mb-3">How to Use This Toolbox</h3>
+              
+              <p className="text-muted-foreground leading-relaxed">
+                Browse the categories above to explore platforms organized by function. Whether you're 
+                looking for property management software, lead generation tools, market data, or networking 
+                opportunities, we've organized everything to help you find exactly what you need.
+              </p>
+
+              <p className="text-muted-foreground leading-relaxed">
+                Each tool includes a detailed description, key benefits, and a direct link to get started. 
+                Many of these platforms offer free trials or introductory pricing, making it easy to test 
+                what works best for your investment strategy.
+              </p>
+
+              <div className="mt-8 p-6 bg-accent/10 border-l-4 border-accent rounded-r-lg">
+                <p className="font-semibold mb-2">Ready to Explore?</p>
+                <p className="text-sm text-muted-foreground">
+                  Click any category tab above to browse our curated selection of investment tools, 
+                  or visit the Glossary to master essential real estate terminology.
+                </p>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="marketplace">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{categoryInfo.marketplace.name}</h2>
+                <p className="text-muted-foreground">{categoryInfo.marketplace.description}</p>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getAffiliateProgramsByCategory("marketplace").map((program) => (
+                  <AffiliateCard key={program.id} program={program} />
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="property-management">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{categoryInfo["property-management"].name}</h2>
+                <p className="text-muted-foreground">{categoryInfo["property-management"].description}</p>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getAffiliateProgramsByCategory("property-management").map((program) => (
+                  <AffiliateCard key={program.id} program={program} />
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="project-management">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{categoryInfo["project-management"].name}</h2>
+                <p className="text-muted-foreground">{categoryInfo["project-management"].description}</p>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getAffiliateProgramsByCategory("project-management").map((program) => (
+                  <AffiliateCard key={program.id} program={program} />
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="lead-generation">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{categoryInfo["lead-generation"].name}</h2>
+                <p className="text-muted-foreground">{categoryInfo["lead-generation"].description}</p>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getAffiliateProgramsByCategory("lead-generation").map((program) => (
+                  <AffiliateCard key={program.id} program={program} />
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="comps">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">{categoryInfo.comps.name}</h2>
+                <p className="text-muted-foreground">{categoryInfo.comps.description}</p>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getAffiliateProgramsByCategory("comps").map((program) => (
+                  <AffiliateCard key={program.id} program={program} />
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="glossary">
+            <GlossarySection />
+          </TabsContent>
+        </Tabs>
+      </div>
     </Layout>
   );
 }
