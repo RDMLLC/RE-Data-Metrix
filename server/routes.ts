@@ -267,6 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/reset-password", async (req, res) => {
     try {
       const validatedData = resetPasswordSchema.parse(req.body);
+      console.log('[Password Reset] Attempting reset with token:', validatedData.token);
 
       const [user] = await db
         .select()
@@ -275,14 +276,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(1);
 
       if (!user) {
+        console.log('[Password Reset] No user found with token:', validatedData.token);
         return res.status(400).json({ error: "Invalid or expired reset token" });
       }
 
       if (user.passwordResetExpiry && new Date() > user.passwordResetExpiry) {
+        console.log('[Password Reset] Token expired for user:', user.email);
         return res.status(400).json({ error: "Reset token has expired" });
       }
 
+      console.log('[Password Reset] Hashing new password for user:', user.email);
       const hashedPassword = await hashPassword(validatedData.newPassword);
+      console.log('[Password Reset] New hashed password:', hashedPassword.substring(0, 20) + '...');
 
       await db
         .update(users)
@@ -292,6 +297,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           passwordResetExpiry: null,
         })
         .where(eq(users.id, user.id));
+
+      console.log('[Password Reset] Password updated successfully for user:', user.email);
+
+      const [updatedUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, user.id))
+        .limit(1);
+      console.log('[Password Reset] Verification - new password hash:', updatedUser?.password.substring(0, 20) + '...');
 
       res.json({ message: "Password reset successfully" });
     } catch (error) {
