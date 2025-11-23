@@ -355,8 +355,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await storage.createLenderInvite(username, tempPassword);
       
-      // Send email with credentials
-      const inviteUrl = `${process.env.APP_URL || "http://localhost:5000"}/lender-signup/${result.token}`;
+      // Send email with credentials - use request origin to generate correct URL
+      const protocol = req.protocol || "https";
+      const host = req.get("host") || "localhost:5000";
+      const inviteUrl = `${protocol}://${host}/lender-signup/${result.token}`;
       await emailService.sendLenderCredentials(username, username, tempPassword, inviteUrl);
 
       res.json({

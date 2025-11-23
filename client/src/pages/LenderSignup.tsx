@@ -31,9 +31,9 @@ export default function LenderSignup() {
   const { toast } = useToast();
 
   const { data: inviteData, isLoading: validating, error: validateError } = useQuery<{valid: boolean, lenderId: string, email: string, companyName: string}>({
-    queryKey: ['/api/lender/validate-invite', token],
+    queryKey: ['/api/lenders/validate-invite', token],
     queryFn: async () => {
-      const response = await apiRequest("POST", "/api/lender/validate-invite", { token });
+      const response = await apiRequest("GET", `/api/lenders/validate-invite/${token}`);
       return await response.json();
     },
     retry: false,
@@ -51,11 +51,11 @@ export default function LenderSignup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      const res = await apiRequest("POST", "/api/lender/complete-signup", {
-        token,
+      const res = await apiRequest("POST", `/api/lenders/accept-invite/${token}`, {
         password: data.password,
         contactName: data.contactName,
         phone: data.phone,
+        companyName: inviteData?.companyName || "",
       });
       return await res.json();
     },
