@@ -162,6 +162,7 @@ export const lenders = pgTable("lenders", {
   inviteToken: varchar("invite_token").unique(),
   inviteExpiry: timestamp("invite_expiry"),
   inviteAccepted: boolean("invite_accepted").default(false),
+  archived: boolean("archived").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

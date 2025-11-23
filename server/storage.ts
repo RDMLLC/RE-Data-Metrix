@@ -26,7 +26,7 @@ import {
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, gt, desc } from "drizzle-orm";
+import { eq, and, gt, desc, sql as sqlCount, count } from "drizzle-orm";
 import { hashPassword } from "./auth";
 
 export interface IStorage {
@@ -72,6 +72,11 @@ export interface IStorage {
   
   createLenderReferral(data: InsertLenderReferral): Promise<LenderReferral>;
   getLenderReferrals(lenderId: string): Promise<Array<LenderReferral & {investorName?: string, propertyAddress?: string}>>;
+  
+  getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number}>>;
+  deleteLender(id: string): Promise<boolean>;
+  archiveLender(id: string): Promise<Lender | undefined>;
+  getLenderReferralCount(lenderId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -391,6 +396,22 @@ export class MemStorage implements IStorage {
   }
 
   async revokeAccessToken(token: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number}>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getLenderReferralCount(lenderId: string): Promise<number> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async deleteLender(id: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async archiveLender(id: string): Promise<Lender | undefined> {
     throw new Error("Not implemented in MemStorage");
   }
 }
@@ -807,6 +828,55 @@ export class DatabaseStorage implements IStorage {
     }));
 
     return enrichedReferrals;
+  }
+
+  async getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number}>> {
+    const lenders = await db.select().from(lendersTable).orderBy(desc(lendersTable.createdAt));
+    
+    const lendersWithCounts = await Promise.all(
+      lenders.map(async (lender) => {
+        const referralCount = await this.getLenderReferralCount(lender.id);
+        return {
+          ...lender,
+          referralCount,
+        };
+      })
+    );
+    
+    return lendersWithCounts;
+  }
+
+  async getLenderReferralCount(lenderId: string): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(lenderReferralsTable)
+      .where(eq(lenderReferralsTable.lenderId, lenderId));
+    
+    return result[0]?.count || 0;
+  }
+
+  async deleteLender(id: string): Promise<boolean> {
+    const referralCount = await this.getLenderReferralCount(id);
+    
+    if (referralCount > 0) {
+      throw new Error("Cannot delete lender with existing referrals");
+    }
+    
+    await db.delete(loanProductsTable).where(eq(loanProductsTable.lenderId, id));
+    await db.delete(lenderQuestionnairesTable).where(eq(lenderQuestionnairesTable.lenderId, id));
+    await db.delete(lendersTable).where(eq(lendersTable.id, id));
+    
+    return true;
+  }
+
+  async archiveLender(id: string): Promise<Lender | undefined> {
+    const result = await db
+      .update(lendersTable)
+      .set({ archived: true })
+      .where(eq(lendersTable.id, id))
+      .returning();
+    
+    return result[0];
   }
 }
 
