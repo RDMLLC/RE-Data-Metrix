@@ -4,13 +4,15 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key } from "lucide-react";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -21,6 +23,7 @@ export default function AdminDashboard() {
         if (response.ok) {
           const data = await response.json();
           setAdminName(data.email?.split("@")[0] || "Admin");
+          setAdminEmail(data.email || "");
         }
       } catch (error) {
         console.error("Failed to fetch admin info");
@@ -52,6 +55,53 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!adminEmail) {
+      toast({
+        title: "Error",
+        description: "Unable to determine admin email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const response = await fetch("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: adminEmail }),
+        credentials: "include",
+      });
+
+      console.log('Password reset response:', response.status, response.ok);
+      if (response.ok) {
+        console.log('Showing toast for email:', adminEmail);
+        toast({
+          title: "Password Reset Email Sent",
+          description: `A password reset link has been sent to ${adminEmail}`,
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.error || "Failed to send password reset email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send password reset email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-12">
@@ -61,15 +111,26 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
               <p className="text-muted-foreground mt-2">Welcome, {adminName}</p>
             </div>
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              disabled={isLoading}
-              data-testid="button-admin-logout"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {isLoading ? "Logging out..." : "Logout"}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handleChangePassword}
+                disabled={isChangingPassword}
+                data-testid="button-change-password"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                {isChangingPassword ? "Sending..." : "Change Password"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                disabled={isLoading}
+                data-testid="button-admin-logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {isLoading ? "Logging out..." : "Logout"}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
