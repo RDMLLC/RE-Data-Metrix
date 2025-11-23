@@ -25,6 +25,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -38,6 +45,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [loginType, setLoginType] = useState<"user" | "lender" | "admin">("user");
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -50,6 +58,14 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
+      if (loginType === "admin") {
+        setLocation("/admin/login");
+        return;
+      } else if (loginType === "lender") {
+        setLocation("/lender-portal");
+        return;
+      }
+      
       await login(data);
       toast({
         title: "Welcome back!",
@@ -99,107 +115,103 @@ export default function Login() {
                   </p>
                 </div>
               </div>
-
-              {/* Lender CTA - Integrated */}
-              <div className="border-t border-primary-foreground/20 pt-8">
-                <div className="text-center">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center">
-                      <Building2 className="h-8 w-8 text-accent" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3">Are you a lender?</h3>
-                  <p className="mb-6 text-primary-foreground/90">
-                    Access your lender portal to manage loan products and connect with investors
-                  </p>
-                  <Link href="/lender-portal">
-                    <Button
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                      size="lg"
-                      data-testid="button-lender-portal"
-                    >
-                      Lender Portal Login
-                    </Button>
-                  </Link>
-                </div>
-              </div>
             </div>
 
-            {/* Right Side - Login Form and Admin */}
-            <div className="lg:col-span-3 flex flex-col justify-between" style={{ height: '100%' }}>
+            {/* Right Side - Login Form */}
+            <div className="lg:col-span-3">
               <Card className="p-8 shadow-xl bg-card" data-testid="card-login">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Login to Your Account</CardTitle>
+                  <CardTitle className="text-2xl">Login</CardTitle>
                   <CardDescription>
-                    Enter your credentials to access the platform
+                    Select your account type to continue
                   </CardDescription>
                 </CardHeader>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)}>
                     <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="email"
-                        placeholder="you@example.com"
-                        data-testid="input-email"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="••••••••"
-                        data-testid="input-password"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-                data-testid="button-login"
-              >
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground text-center">
-                  <Link href="/request-password-reset">
-                    <a className="text-accent hover:underline" data-testid="link-forgot-password">
-                      Forgot your password?
-                    </a>
-                  </Link>
-                </p>
-                <p className="text-sm text-muted-foreground text-center">
-                  Don't have an account?{" "}
-                  <Link href="/register">
-                    <a className="text-primary hover:underline" data-testid="link-register">
-                      Sign up
-                    </a>
-                  </Link>
-                </p>
-              </div>
+                      <div>
+                        <label className="text-sm font-medium">Account Type</label>
+                        <Select value={loginType} onValueChange={(value: any) => setLoginType(value)}>
+                          <SelectTrigger className="w-full" data-testid="select-login-type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="lender">Lender</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {loginType === "user" && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    data-testid="input-email"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="password"
+                                    placeholder="••••••••"
+                                    data-testid="input-password"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isLoading}
+                        data-testid="button-login"
+                      >
+                        {isLoading ? "Continuing..." : loginType === "user" ? "Login" : `Go to ${loginType === "lender" ? "Lender" : "Admin"} Portal`}
+                      </Button>
+                      {loginType === "user" && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground text-center">
+                            <Link href="/request-password-reset">
+                              <a className="text-accent hover:underline" data-testid="link-forgot-password">
+                                Forgot your password?
+                              </a>
+                            </Link>
+                          </p>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Don't have an account?{" "}
+                            <Link href="/register">
+                              <a className="text-primary hover:underline" data-testid="link-register">
+                                Sign up
+                              </a>
+                            </Link>
+                          </p>
+                        </div>
+                      )}
                     </CardFooter>
                   </form>
                 </Form>
