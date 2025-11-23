@@ -365,30 +365,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Lender Invite Routes
   const createLenderInviteSchema = z.object({
-    email: z.string().email(),
-    companyName: z.string().min(1),
+    username: z.string().min(1),
+    password: z.string().min(8),
   });
 
   app.post("/api/admin/lender-invite", ensureAuthenticated, requireRole('admin'), async (req, res) => {
     try {
       const validatedData = createLenderInviteSchema.parse(req.body);
       
-      const existing = await storage.getLenderByEmail(validatedData.email);
+      const existing = await storage.getLenderByUsername(validatedData.username);
       if (existing) {
-        return res.status(400).json({ error: "A lender with this email already exists" });
+        return res.status(400).json({ error: "A lender with this username already exists" });
       }
       
-      const { token, lender } = await storage.createLenderInvite(validatedData.email, validatedData.companyName);
+      const { token, lender } = await storage.createLenderInvite(validatedData.username, validatedData.password);
       
       const inviteLink = `${req.protocol}://${req.get('host')}/lender-signup/${token}`;
+      
+      // Send lender credentials email
+      const emailSent = await emailService.sendLenderCredentials(
+        'info@redatametrix.com',
+        validatedData.username,
+        validatedData.password,
+        inviteLink
+      );
       
       res.json({
         success: true,
         lenderId: lender.id,
         token,
         inviteLink,
-        email: lender.email,
-        companyName: lender.companyName,
+        username: lender.email,
+        emailSent,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

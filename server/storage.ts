@@ -35,7 +35,8 @@ export interface IStorage {
   
   getLender(id: string): Promise<Lender | undefined>;
   getLenderByEmail(email: string): Promise<Lender | undefined>;
-  createLenderInvite(email: string, companyName: string): Promise<{token: string, lender: Lender}>;
+  getLenderByUsername(username: string): Promise<Lender | undefined>;
+  createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender}>;
   validateLenderInvite(token: string): Promise<Lender | undefined>;
   completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender>;
   
@@ -319,7 +320,11 @@ export class MemStorage implements IStorage {
     throw new Error("Not implemented in MemStorage");
   }
 
-  async createLenderInvite(email: string, companyName: string): Promise<{token: string, lender: Lender}> {
+  async getLenderByUsername(username: string): Promise<Lender | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender}> {
     throw new Error("Not implemented in MemStorage");
   }
 
