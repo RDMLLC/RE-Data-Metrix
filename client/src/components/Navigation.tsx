@@ -60,7 +60,7 @@ export default function Navigation() {
               ))}
             </div>
             
-            {isAuthenticated ? (
+            {isAuthenticated && user?.role !== "admin" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -143,7 +143,7 @@ export default function Navigation() {
               </Link>
             ))}
             
-            {isAuthenticated ? (
+            {isAuthenticated && user?.role !== "admin" ? (
               <>
                 <Link href="/portal/profile" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start">
