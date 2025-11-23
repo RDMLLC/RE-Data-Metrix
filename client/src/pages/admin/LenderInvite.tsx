@@ -9,12 +9,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
-import { Copy, CheckCircle2 } from "lucide-react";
+import { Copy, CheckCircle2, DollarSign } from "lucide-react";
 import { useState } from "react";
 
 const inviteSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
   username: z.string().min(1, "Email is required"),
+  referralAmount: z.preprocess(
+    (val) => val === "" || val === null || val === undefined ? undefined : val,
+    z.coerce.number().positive("Must be a positive number").optional()
+  ),
+  referralType: z.enum(["$", "%"]).optional(),
 });
 
 type InviteForm = z.infer<typeof inviteSchema>;
@@ -29,6 +34,8 @@ export default function LenderInvite() {
     defaultValues: {
       companyName: "",
       username: "",
+      referralAmount: undefined,
+      referralType: "$",
     },
   });
 
@@ -132,6 +139,60 @@ export default function LenderInvite() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Referral Fee Configuration
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Set the referral fee for this lender. This will be visible to investors but not editable by the lender.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="referralAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Referral Fee Amount (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="e.g., 500 or 2.5"
+                                {...field}
+                                value={field.value || ""}
+                                data-testid="input-referral-amount"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="referralType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fee Type</FormLabel>
+                            <FormControl>
+                              <select
+                                {...field}
+                                className="w-full px-3 py-2 border border-input bg-background rounded-md text-foreground"
+                                data-testid="select-referral-type"
+                              >
+                                <option value="$">Dollars ($)</option>
+                                <option value="%">Percentage (%)</option>
+                              </select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
 
                   <p className="text-sm text-muted-foreground">
                     A temporary password will be automatically generated and sent to the lender's email. For new lenders, they will be required to change it upon signup. For existing lenders, this will send a password reset link.

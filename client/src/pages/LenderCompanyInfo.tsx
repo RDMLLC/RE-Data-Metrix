@@ -21,14 +21,11 @@ const companyInfoSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   website: z.string().url().optional().or(z.literal("")),
   referralLink: z.string().url().optional().or(z.literal("")),
-  referralAmount: z.preprocess(
-    (val) => val === "" || val === null || val === undefined ? undefined : val,
-    z.coerce.number().refine((val) => !isNaN(val) && isFinite(val), {
-      message: "Must be a valid number"
-    }).optional()
-  ),
-  referralType: z.enum(["$", "%"]).optional(),
+  referralAmount: z.any().optional(),
+  referralType: z.any().optional(),
   companyDescription: z.string().optional(),
+  adminReferralAmount: z.any().optional(),
+  adminReferralType: z.any().optional(),
 });
 
 type CompanyInfoForm = z.infer<typeof companyInfoSchema>;

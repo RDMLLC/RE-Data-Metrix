@@ -17,7 +17,7 @@ const signupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
   contactName: z.string().min(1, "Contact name is required"),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Phone number is required"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -165,7 +165,7 @@ export default function LenderSignup() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone (Optional)</FormLabel>
+                        <FormLabel>Phone</FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
