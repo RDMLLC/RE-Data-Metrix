@@ -34,14 +34,14 @@ export default function LenderInvite() {
 
   const createInviteMutation = useMutation({
     mutationFn: async (data: InviteForm) => {
-      const res = await apiRequest("POST", "/api/admin/lender-invite", data);
+      const res = await apiRequest("POST", "/api/lenders/invite", data);
       return await res.json();
     },
     onSuccess: (data: any) => {
-      setInviteLink(data.inviteLink);
+      setInviteLink(data.inviteUrl);
       toast({
         title: "Invite Created",
-        description: `Lender invite sent to ${data.email}`,
+        description: `Lender invite created successfully`,
       });
       form.reset();
     },
