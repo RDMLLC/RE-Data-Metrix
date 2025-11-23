@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,6 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 
 const companyInfoSchema = z.object({
-  lenderId: z.string(),
   companyName: z.string().optional(),
   contactName: z.string().optional(),
   phone: z.string().optional(),
@@ -25,8 +25,6 @@ const companyInfoSchema = z.object({
   referralAmount: z.any().optional(),
   referralType: z.any().optional(),
   companyDescription: z.string().optional(),
-  adminReferralAmount: z.any().optional(),
-  adminReferralType: z.any().optional(),
 });
 
 type CompanyInfoForm = z.infer<typeof companyInfoSchema>;
@@ -66,18 +64,34 @@ export default function LenderCompanyInfo() {
   const form = useForm<CompanyInfoForm>({
     resolver: zodResolver(companyInfoSchema),
     defaultValues: {
-      lenderId: lenderData?.id || "",
-      companyName: lenderData?.companyName || "",
-      contactName: lenderData?.contactName || "",
-      phone: lenderData?.phone || "",
-      email: lenderData?.email || "",
-      website: lenderData?.website || "",
-      referralLink: lenderData?.referralLink || "",
-      referralAmount: lenderData?.referralAmount,
-      referralType: lenderData?.referralType || "$",
-      companyDescription: lenderData?.companyDescription || "",
+      companyName: "",
+      contactName: "",
+      phone: "",
+      email: "",
+      website: "",
+      referralLink: "",
+      referralAmount: "",
+      referralType: "$",
+      companyDescription: "",
     },
   });
+
+  // Reset form when lender data loads
+  useEffect(() => {
+    if (lenderData) {
+      form.reset({
+        companyName: lenderData.companyName || "",
+        contactName: lenderData.contactName || "",
+        phone: lenderData.phone || "",
+        email: lenderData.email || "",
+        website: lenderData.website || "",
+        referralLink: lenderData.referralLink || "",
+        referralAmount: lenderData.referralAmount,
+        referralType: lenderData.referralType || "$",
+        companyDescription: lenderData.companyDescription || "",
+      });
+    }
+  }, [lenderData, form]);
 
   const onSubmit = async (data: CompanyInfoForm) => {
     saveCompanyInfoMutation.mutate(data);

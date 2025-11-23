@@ -38,8 +38,17 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLenderLoading, setIsLenderLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const lenderForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -67,6 +76,37 @@ export default function Login() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const onLenderSubmit = async (data: LoginFormData) => {
+    setIsLenderLoading(true);
+    try {
+      const response = await fetch("/api/lenders/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Invalid email or password");
+      }
+
+      toast({
+        title: "Welcome back!",
+        description: "You've successfully logged in to the Lender Portal.",
+      });
+      setLocation("/lender-dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLenderLoading(false);
     }
   };
 
@@ -184,26 +224,72 @@ export default function Login() {
 
               {/* Lender Login Card */}
               <Card className="border border-accent/20" data-testid="card-lender-login">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-3">
+                <CardHeader className="p-4 pb-0">
+                  <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
                       <Building2 className="h-5 w-5 text-accent" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-foreground">Lender Portal</h3>
-                      <p className="text-xs text-muted-foreground">Manage loan products</p>
+                      <CardTitle className="text-base">Lender Portal</CardTitle>
+                      <CardDescription className="text-xs">Manage loan products</CardDescription>
                     </div>
                   </div>
-                  <Link href="/lender-portal">
-                    <Button
-                      className="w-full"
-                      size="sm"
-                      data-testid="button-lender-portal"
-                    >
-                      Lender Login
-                    </Button>
-                  </Link>
-                </CardContent>
+                </CardHeader>
+                <Form {...lenderForm}>
+                  <form onSubmit={lenderForm.handleSubmit(onLenderSubmit)}>
+                    <CardContent className="p-4 space-y-3">
+                      <FormField
+                        control={lenderForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Email</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="email"
+                                placeholder="lender@example.com"
+                                data-testid="input-lender-email"
+                                className="h-8 text-sm"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={lenderForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="password"
+                                placeholder="••••••••"
+                                data-testid="input-lender-password"
+                                className="h-8 text-sm"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        size="sm"
+                        disabled={isLenderLoading}
+                        data-testid="button-lender-login"
+                      >
+                        {isLenderLoading ? "Logging in..." : "Login as Lender"}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Form>
               </Card>
 
               {/* Admin Login Card */}

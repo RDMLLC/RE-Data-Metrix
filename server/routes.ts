@@ -8,7 +8,7 @@ import { db } from "./db";
 import { eq, inArray, desc, and } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport from "./auth";
-import { ensureAuthenticated, requireRole } from "./auth";
+import { ensureAuthenticated, requireRole, ensureLenderAuthenticated } from "./auth";
 import { emailService } from "./services/email.service";
 import crypto from "crypto";
 
@@ -121,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: User | false, info: { message: string }) => {
+    passport.authenticate("user-local", (err: any, user: User | false, info: { message: string }) => {
       if (err) {
         return res.status(500).json({ error: "Authentication failed" });
       }
@@ -442,11 +442,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/lenders/me", async (req, res) => {
+  app.get("/api/lenders/me", ensureLenderAuthenticated, async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
       const lender = req.user as any;
       res.json({
         id: lender.id,
@@ -466,7 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/lenders/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: any | false, info: { message: string }) => {
+    passport.authenticate("lender-local", (err: any, user: any | false, info: { message: string }) => {
       if (err) {
         return res.status(500).json({ error: "Authentication failed" });
       }
@@ -488,9 +485,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lender Questionnaire Routes
-  app.get("/api/lender-questionnaires/:lenderId", async (req, res) => {
+  app.get("/api/lender-questionnaires", ensureLenderAuthenticated, async (req, res) => {
     try {
-      const { lenderId } = req.params;
+      const lenderId = (req.user as any).id;
       const questionnaire = await storage.getLenderQuestionnaire(lenderId);
       res.json(questionnaire || {});
     } catch (error) {
@@ -498,9 +495,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/lender-questionnaires/:lenderId", async (req, res) => {
+  app.post("/api/lender-questionnaires", ensureLenderAuthenticated, async (req, res) => {
     try {
-      const { lenderId } = req.params;
+      const lenderId = (req.user as any).id;
       const validatedData = insertLenderQuestionnaireSchema.parse({
         ...req.body,
         lenderId,
@@ -517,9 +514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Loan Products Routes
-  app.get("/api/loan-products/:lenderId", async (req, res) => {
+  app.get("/api/loan-products", ensureLenderAuthenticated, async (req, res) => {
     try {
-      const { lenderId } = req.params;
+      const lenderId = (req.user as any).id;
       const products = await storage.getLoanProducts(lenderId);
       res.json(products);
     } catch (error) {
@@ -527,9 +524,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/loan-products", async (req, res) => {
+  app.post("/api/loan-products", ensureLenderAuthenticated, async (req, res) => {
     try {
-      const validatedData = insertLoanProductSchema.parse(req.body);
+      const lenderId = (req.user as any).id;
+      const validatedData = insertLoanProductSchema.parse({
+        ...req.body,
+        lenderId,
+      });
       const product = await storage.createLoanProduct(validatedData);
       res.json(product);
     } catch (error) {
@@ -540,10 +541,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/loan-products/:productId", async (req, res) => {
+  app.patch("/api/loan-products/:productId", ensureLenderAuthenticated, async (req, res) => {
     try {
       const { productId } = req.params;
-      const validatedData = insertLoanProductSchema.parse(req.body);
+      const lenderId = (req.user as any).id;
+      
+      const existingProduct = await storage.getLoanProducts(lenderId);
+      const productBelongsToLender = existingProduct.some(p => p.id === productId);
+      
+      if (!productBelongsToLender) {
+        return res.status(403).json({ error: "Forbidden: Cannot modify another lender's product" });
+      }
+      
+      const validatedData = insertLoanProductSchema.parse({
+        ...req.body,
+        lenderId,
+      });
       const product = await storage.updateLoanProduct(productId, validatedData);
       res.json(product);
     } catch (error) {
@@ -551,13 +564,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/loan-products/:productId", async (req, res) => {
+  app.delete("/api/loan-products/:productId", ensureLenderAuthenticated, async (req, res) => {
     try {
       const { productId } = req.params;
+      const lenderId = (req.user as any).id;
+      
+      const existingProducts = await storage.getLoanProducts(lenderId);
+      const productBelongsToLender = existingProducts.some(p => p.id === productId);
+      
+      if (!productBelongsToLender) {
+        return res.status(403).json({ error: "Forbidden: Cannot delete another lender's product" });
+      }
+      
       await storage.deleteLoanProduct(productId);
       res.json({ message: "Product deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete loan product" });
+    }
+  });
+
+  // Lender Company Info Routes
+  app.post("/api/lender-company-info", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const lenderId = (req.user as any).id;
+      const data = {
+        ...req.body,
+        lenderId,
+      };
+      const updatedInfo = await storage.updateLenderCompanyInfo(data);
+      res.json(updatedInfo);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update company info" });
     }
   });
 

@@ -330,7 +330,7 @@ export class MemStorage implements IStorage {
     throw new Error("Not implemented in MemStorage");
   }
 
-  async createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender}> {
+  async createLenderInvite(username: string, password: string, companyName: string, referralAmount?: number, referralType?: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
     throw new Error("Not implemented in MemStorage");
   }
 
@@ -338,7 +338,7 @@ export class MemStorage implements IStorage {
     throw new Error("Not implemented in MemStorage");
   }
 
-  async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender> {
+  async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string, companyName?: string): Promise<Lender> {
     throw new Error("Not implemented in MemStorage");
   }
 

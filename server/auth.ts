@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
 import { db } from './db';
-import { users, type User } from '@shared/schema';
+import { users, type User, lenders } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -19,7 +19,8 @@ export async function comparePassword(
   return bcrypt.compare(password, hash);
 }
 
-passport.use(
+// User authentication strategy
+passport.use('user-local',
   new LocalStrategy(
     {
       usernameField: 'email',
@@ -43,7 +44,40 @@ passport.use(
           return done(null, false, { message: 'Invalid email or password' });
         }
 
-        return done(null, user);
+        return done(null, { ...user, userType: 'user' });
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
+
+// Lender authentication strategy
+passport.use('lender-local',
+  new LocalStrategy(
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+    },
+    async (email, password, done) => {
+      try {
+        const [lender] = await db
+          .select()
+          .from(lenders)
+          .where(eq(lenders.email, email))
+          .limit(1);
+
+        if (!lender) {
+          return done(null, false, { message: 'Invalid email or password' });
+        }
+
+        const isPasswordValid = await comparePassword(password, lender.password);
+
+        if (!isPasswordValid) {
+          return done(null, false, { message: 'Invalid email or password' });
+        }
+
+        return done(null, { ...lender, userType: 'lender' });
       } catch (error) {
         return done(error);
       }
@@ -52,22 +86,39 @@ passport.use(
 );
 
 passport.serializeUser((user: Express.User, done) => {
-  done(null, (user as User).id);
+  const userData = user as any;
+  done(null, { id: userData.id, userType: userData.userType });
 });
 
-passport.deserializeUser(async (id: string, done) => {
+passport.deserializeUser(async (sessionData: any, done) => {
   try {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
+    const { id, userType } = sessionData;
+    
+    if (userType === 'lender') {
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.id, id))
+        .limit(1);
 
-    if (!user) {
-      return done(null, false);
+      if (!lender) {
+        return done(null, false);
+      }
+
+      done(null, { ...lender, userType: 'lender' });
+    } else {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+
+      if (!user) {
+        return done(null, false);
+      }
+
+      done(null, { ...user, userType: 'user' });
     }
-
-    done(null, user);
   } catch (error) {
     done(error);
   }
@@ -98,6 +149,24 @@ export function requireRole(...roles: string[]) {
 
     next();
   };
+}
+
+export function ensureLenderAuthenticated(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Lender authentication required' });
+  }
+
+  const user = req.user as any;
+  
+  if (user.userType !== 'lender') {
+    return res.status(403).json({ error: 'Access denied: Lender authentication required' });
+  }
+
+  next();
 }
 
 export default passport;

@@ -60,11 +60,11 @@ export default function LenderQuestionnaire() {
 
   const saveQuestionnaireMutation = useMutation({
     mutationFn: async (data: QuestionnaireForm) => {
-      const res = await apiRequest("POST", "/api/lender-questionnaire", data);
+      const res = await apiRequest("POST", "/api/lender-questionnaires", data);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lender-questionnaire"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lender-questionnaires"] });
       toast({
         title: "Questionnaire Saved",
         description: "Your lender questionnaire has been saved successfully.",
@@ -80,9 +80,8 @@ export default function LenderQuestionnaire() {
   });
 
   const form = useForm<QuestionnaireForm>({
-    resolver: zodResolver(questionnaireSchema),
+    resolver: zodResolver(questionnaireSchema.omit({ lenderId: true })),
     defaultValues: {
-      lenderId: "d775835d-9fa7-4709-b96d-3887f7f417ca", // TODO: Get from auth context when lender auth is implemented
       brokerOrDirectLender: "",
       fastestClosingTime: "",
       offerNonTraditionalLending: false,

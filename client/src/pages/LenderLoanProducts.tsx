@@ -16,12 +16,11 @@ import type { LoanProduct } from "@shared/schema";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
-  const lenderId = "d775835d-9fa7-4709-b96d-3887f7f417ca"; // TODO: Get from auth context when lender auth is implemented
 
   const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
-    queryKey: ["/api/loan-products", lenderId],
+    queryKey: ["/api/loan-products"],
     queryFn: async () => {
-      const res = await fetch(`/api/loan-products/${lenderId}`, {
+      const res = await fetch("/api/loan-products", {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch loan products");
@@ -35,7 +34,7 @@ export default function LenderLoanProducts() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-products", lenderId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
       toast({
         title: "Product Added",
         description: "Your loan product has been added successfully.",
@@ -52,7 +51,7 @@ export default function LenderLoanProducts() {
   });
 
   const form = useForm<any>({
-    resolver: zodResolver(insertLoanProductSchema.extend({
+    resolver: zodResolver(insertLoanProductSchema.omit({ lenderId: true }).extend({
       minCreditScore: insertLoanProductSchema.shape.minCreditScore.nullable().optional(),
       maxLtvBuy: insertLoanProductSchema.shape.maxLtvBuy.nullable().optional(),
       maxLendRehab: insertLoanProductSchema.shape.maxLendRehab.nullable().optional(),
@@ -64,7 +63,6 @@ export default function LenderLoanProducts() {
       costPerDraw: insertLoanProductSchema.shape.costPerDraw.nullable().optional(),
     })),
     defaultValues: {
-      lenderId,
       productName: "",
       newInvestorOk: false,
       minCreditScore: null,
