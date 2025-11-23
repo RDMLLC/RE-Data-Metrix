@@ -204,24 +204,6 @@ export default function Login() {
                   </form>
                 </Form>
               </Card>
-
-              {/* Admin Portal Section - Minimal */}
-              <Card className="border border-primary">
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <h3 className="text-sm font-semibold mb-2 text-foreground">Platform Administrator</h3>
-                    <Link href="/admin/login">
-                      <Button
-                        className="w-full"
-                        size="sm"
-                        data-testid="button-admin-portal"
-                      >
-                        Admin Login
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
