@@ -599,6 +599,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteLender(id);
       res.json({ message: "Lender deleted successfully" });
     } catch (error: any) {
+      if (error.message === "Lender not found") {
+        return res.status(404).json({ error: error.message });
+      }
       if (error.message === "Cannot delete lender with existing referrals") {
         return res.status(400).json({ error: error.message });
       }
@@ -611,11 +614,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const lender = await storage.archiveLender(id);
-      if (!lender) {
-        return res.status(404).json({ error: "Lender not found" });
-      }
       res.json(lender);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === "Lender not found") {
+        return res.status(404).json({ error: error.message });
+      }
       console.error('Archive lender error:', error);
       res.status(500).json({ error: "Failed to archive lender" });
     }

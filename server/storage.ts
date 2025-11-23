@@ -856,6 +856,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLender(id: string): Promise<boolean> {
+    const lender = await db.select().from(lendersTable).where(eq(lendersTable.id, id)).limit(1);
+    
+    if (!lender[0]) {
+      throw new Error("Lender not found");
+    }
+    
     const referralCount = await this.getLenderReferralCount(id);
     
     if (referralCount > 0) {
@@ -870,6 +876,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async archiveLender(id: string): Promise<Lender | undefined> {
+    const lender = await db.select().from(lendersTable).where(eq(lendersTable.id, id)).limit(1);
+    
+    if (!lender[0]) {
+      throw new Error("Lender not found");
+    }
+    
     const result = await db
       .update(lendersTable)
       .set({ archived: true })

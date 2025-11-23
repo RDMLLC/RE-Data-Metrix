@@ -117,7 +117,7 @@ export default function LenderManagement() {
           <div className="flex items-center gap-4 mb-8">
             <Button
               variant="outline"
-              onClick={() => setLocation("/admin-dashboard")}
+              onClick={() => setLocation("/admin/dashboard")}
               data-testid="button-back-to-dashboard"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
