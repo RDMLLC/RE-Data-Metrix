@@ -40,6 +40,7 @@ Complete authentication infrastructure implemented with user and lender tables, 
 - **Password Reset**: Secure token-based password recovery workflow
 - **Session Management**: Express sessions with PostgreSQL store
 - **Protected Routes**: Middleware-based authorization for user and admin access
+- **Login Page**: Features three entry points - main user login (center), Lender Portal (left panel), and Admin Portal (card below main login) with navy/gold design scheme
 
 ### Form Handling & Validation
 
