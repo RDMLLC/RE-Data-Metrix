@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Building2, ShieldCheck } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -101,8 +101,9 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Right Side - Login Form */}
-            <div className="lg:col-span-3">
+            {/* Right Side - Three Login Options */}
+            <div className="lg:col-span-3 flex flex-col gap-6">
+              {/* User Login Card */}
               <Card className="p-8 shadow-xl bg-card" data-testid="card-login">
                 <CardHeader>
                   <CardTitle className="text-2xl">Login to Your Account</CardTitle>
@@ -179,6 +180,54 @@ export default function Login() {
                     </CardFooter>
                   </form>
                 </Form>
+              </Card>
+
+              {/* Lender Login Card */}
+              <Card className="border border-accent/20" data-testid="card-lender-login">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-accent" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Lender Portal</h3>
+                      <p className="text-xs text-muted-foreground">Manage loan products</p>
+                    </div>
+                  </div>
+                  <Link href="/lender-portal">
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      data-testid="button-lender-portal"
+                    >
+                      Lender Login
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              {/* Admin Login Card */}
+              <Card className="border border-primary/20" data-testid="card-admin-login">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Admin Panel</h3>
+                      <p className="text-xs text-muted-foreground">Platform management</p>
+                    </div>
+                  </div>
+                  <Link href="/admin/login">
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      data-testid="button-admin-portal"
+                    >
+                      Admin Login
+                    </Button>
+                  </Link>
+                </CardContent>
               </Card>
             </div>
           </div>
