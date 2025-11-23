@@ -86,12 +86,6 @@ export default function Navigation() {
                     <User className="h-4 w-4 mr-2" />
                     My Portal
                   </DropdownMenuItem>
-                  {user?.role === "admin" && (
-                    <DropdownMenuItem onClick={() => setLocation("/admin/users")} data-testid="menu-item-admin">
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Admin Panel
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={async () => {
@@ -157,14 +151,6 @@ export default function Navigation() {
                     My Portal
                   </Button>
                 </Link>
-                {user?.role === "admin" && (
-                  <Link href="/admin/users" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Admin Panel
-                    </Button>
-                  </Link>
-                )}
                 <Button
                   variant="ghost"
                   className="w-full justify-start"
