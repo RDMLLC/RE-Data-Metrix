@@ -674,7 +674,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createLenderInvite(username: string, password: string, companyName: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
+  async createLenderInvite(username: string, password: string, companyName: string, referralAmount?: number, referralType?: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
     const token = randomBytes(32).toString('base64url');
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 7);
@@ -698,15 +698,19 @@ export class DatabaseStorage implements IStorage {
           .returning();
         return { token, lender: result[0], isNewInvite: false };
       } else {
-        // Not yet accepted, re-invite them with updated company name
+        // Not yet accepted, re-invite them with updated company name and referral info
+        const updateData: any = {
+          password: hashedPassword,
+          companyName: companyName,
+          inviteToken: token,
+          inviteExpiry: expiry,
+          inviteAccepted: false,
+        };
+        if (referralAmount !== undefined) updateData.referralAmount = referralAmount;
+        if (referralType !== undefined) updateData.referralType = referralType;
+        
         const result = await db.update(lendersTable)
-          .set({
-            password: hashedPassword,
-            companyName: companyName,
-            inviteToken: token,
-            inviteExpiry: expiry,
-            inviteAccepted: false,
-          })
+          .set(updateData)
           .where(eq(lendersTable.email, username))
           .returning();
         return { token, lender: result[0], isNewInvite: true };
@@ -714,7 +718,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Create new lender
-    const result = await db.insert(lendersTable).values({
+    const createData: any = {
       email: username,
       companyName: companyName,
       password: hashedPassword,
@@ -722,7 +726,11 @@ export class DatabaseStorage implements IStorage {
       inviteToken: token,
       inviteExpiry: expiry,
       inviteAccepted: false,
-    }).returning();
+    };
+    if (referralAmount !== undefined) createData.referralAmount = referralAmount;
+    if (referralType !== undefined) createData.referralType = referralType;
+    
+    const result = await db.insert(lendersTable).values(createData).returning();
     
     return { token, lender: result[0], isNewInvite: true };
   }
@@ -738,13 +746,14 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender> {
+  async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string, companyName?: string): Promise<Lender> {
     const updateData: any = {
       password,
       contactName,
       inviteAccepted: true,
     };
     if (phone) updateData.phone = phone;
+    if (companyName) updateData.companyName = companyName;
     
     const result = await db.update(lendersTable)
       .set(updateData)

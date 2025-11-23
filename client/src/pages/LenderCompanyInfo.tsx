@@ -9,9 +9,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 
 const companyInfoSchema = z.object({
   lenderId: z.string(),
@@ -32,6 +33,14 @@ type CompanyInfoForm = z.infer<typeof companyInfoSchema>;
 
 export default function LenderCompanyInfo() {
   const { toast } = useToast();
+
+  const { data: lenderData, isLoading: isLoadingLender } = useQuery({
+    queryKey: ['/api/lenders/me'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/lenders/me");
+      return await res.json();
+    },
+  });
 
   const saveCompanyInfoMutation = useMutation({
     mutationFn: async (data: CompanyInfoForm) => {
@@ -57,22 +66,35 @@ export default function LenderCompanyInfo() {
   const form = useForm<CompanyInfoForm>({
     resolver: zodResolver(companyInfoSchema),
     defaultValues: {
-      lenderId: "d775835d-9fa7-4709-b96d-3887f7f417ca", // TODO: Get from auth context when lender auth is implemented
-      companyName: undefined,
-      contactName: undefined,
-      phone: undefined,
-      email: "",
-      website: "",
-      referralLink: "",
-      referralAmount: undefined,
-      referralType: "$",
-      companyDescription: undefined,
+      lenderId: lenderData?.id || "",
+      companyName: lenderData?.companyName || "",
+      contactName: lenderData?.contactName || "",
+      phone: lenderData?.phone || "",
+      email: lenderData?.email || "",
+      website: lenderData?.website || "",
+      referralLink: lenderData?.referralLink || "",
+      referralAmount: lenderData?.referralAmount,
+      referralType: lenderData?.referralType || "$",
+      companyDescription: lenderData?.companyDescription || "",
     },
   });
 
   const onSubmit = async (data: CompanyInfoForm) => {
     saveCompanyInfoMutation.mutate(data);
   };
+
+  if (isLoadingLender) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-16rem)] py-16 bg-background flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary mb-4" />
+            <p className="text-lg text-muted-foreground">Loading your information...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -224,10 +246,14 @@ export default function LenderCompanyInfo() {
                     name="referralType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-foreground">Referral Type</FormLabel>
+                        <FormLabel className="text-foreground">
+                          Referral Type
+                          {lenderData?.referralType && <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>}
+                        </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value || ""}
+                          disabled={!!lenderData?.referralType}
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-referral-type">
@@ -249,7 +275,10 @@ export default function LenderCompanyInfo() {
                     name="referralAmount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-foreground">Referral Amount</FormLabel>
+                        <FormLabel className="text-foreground">
+                          Referral Amount
+                          {lenderData?.referralAmount && <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -257,6 +286,7 @@ export default function LenderCompanyInfo() {
                             type="number"
                             step="0.01"
                             placeholder="Enter amount"
+                            disabled={!!lenderData?.referralAmount}
                             data-testid="input-referral-amount"
                           />
                         </FormControl>
