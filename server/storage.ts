@@ -681,6 +681,24 @@ export class DatabaseStorage implements IStorage {
     
     const hashedPassword = await hashPassword(password);
     
+    // Check if lender already exists with this email
+    const existing = await db.select().from(lendersTable).where(eq(lendersTable.email, username)).limit(1);
+    
+    if (existing.length > 0) {
+      // Update existing lender with new invite token and password
+      const result = await db.update(lendersTable)
+        .set({
+          password: hashedPassword,
+          inviteToken: token,
+          inviteExpiry: expiry,
+          inviteAccepted: false,
+        })
+        .where(eq(lendersTable.email, username))
+        .returning();
+      return { token, lender: result[0] };
+    }
+    
+    // Create new lender
     const result = await db.insert(lendersTable).values({
       email: username,
       companyName: 'Pending',
