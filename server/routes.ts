@@ -399,8 +399,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
+        valid: true,
+        lenderId: lender.id,
         email: lender.email,
-        isValid: true,
+        companyName: lender.companyName,
       });
     } catch (error) {
       res.status(500).json({ error: "Validation failed" });
