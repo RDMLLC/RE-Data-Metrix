@@ -344,18 +344,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lender Authentication Routes
   app.post("/api/lenders/invite", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username } = req.body;
 
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password are required" });
+      if (!username) {
+        return res.status(400).json({ error: "Username is required" });
       }
 
-      const result = await storage.createLenderInvite(username, password);
+      // Generate random temporary password
+      const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
+
+      const result = await storage.createLenderInvite(username, tempPassword);
+      
+      // Send email with credentials
+      const inviteUrl = `${process.env.APP_URL || "http://localhost:5000"}/lender-signup/${result.token}`;
+      await emailService.sendLenderCredentials(username, username, tempPassword, inviteUrl);
 
       res.json({
         message: "Lender invite created successfully",
         token: result.token,
-        inviteUrl: `${process.env.APP_URL || "http://localhost:5000"}/lender-signup/${result.token}`,
+        inviteUrl: inviteUrl,
       });
     } catch (error) {
       console.error('Lender invite error:', error);

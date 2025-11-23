@@ -14,7 +14,6 @@ import { useState } from "react";
 
 const inviteSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type InviteForm = z.infer<typeof inviteSchema>;
@@ -28,7 +27,6 @@ export default function LenderInvite() {
     resolver: zodResolver(inviteSchema),
     defaultValues: {
       username: "lender_user",
-      password: "SecurePass123",
     },
   });
 
@@ -41,7 +39,7 @@ export default function LenderInvite() {
       setInviteLink(data.inviteUrl);
       toast({
         title: "Invite Created",
-        description: `Lender invite created successfully`,
+        description: `Lender invite created successfully. Password has been sent to their email.`,
       });
       form.reset();
     },
@@ -94,10 +92,10 @@ export default function LenderInvite() {
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>Username (Email)</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="lender_user"
+                            placeholder="lender@company.com"
                             {...field}
                             data-testid="input-username"
                           />
@@ -107,24 +105,9 @@ export default function LenderInvite() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="SecurePass123"
-                            {...field}
-                            data-testid="input-password"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <p className="text-sm text-muted-foreground">
+                    A temporary password will be automatically generated and sent to the lender's email. They will be required to change it upon login.
+                  </p>
 
                   <Button
                     type="submit"
