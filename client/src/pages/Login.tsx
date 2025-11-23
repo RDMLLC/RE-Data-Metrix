@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Building2 } from "lucide-react";
+import { CheckCircle, Building2, ShieldCheck } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -203,6 +203,32 @@ export default function Login() {
                     </CardFooter>
                   </form>
                 </Form>
+              </Card>
+
+              {/* Admin Portal Section - Below Main Login */}
+              <Card className="mt-8 border-2 border-primary">
+                <CardContent className="p-8">
+                  <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center">
+                        <ShieldCheck className="h-8 w-8 text-accent" />
+                      </div>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-3 text-foreground">Platform Administrator</h3>
+                    <p className="mb-6 text-muted-foreground">
+                      Access admin dashboard to manage lenders and platform settings
+                    </p>
+                    <Link href="/admin/lender-invite">
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        data-testid="button-admin-portal"
+                      >
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
               </Card>
             </div>
           </div>
