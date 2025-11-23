@@ -13,8 +13,8 @@ import { Copy, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 const inviteSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  companyName: z.string().min(1, "Company name is required"),
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type InviteForm = z.infer<typeof inviteSchema>;
@@ -27,8 +27,8 @@ export default function LenderInvite() {
   const form = useForm<InviteForm>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
-      email: "",
-      companyName: "",
+      username: "lender_user",
+      password: "SecurePass123",
     },
   });
 
@@ -91,16 +91,15 @@ export default function LenderInvite() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Lender Email</FormLabel>
+                        <FormLabel>Username</FormLabel>
                         <FormControl>
                           <Input
-                            type="email"
-                            placeholder="lender@example.com"
+                            placeholder="lender_user"
                             {...field}
-                            data-testid="input-lender-email"
+                            data-testid="input-username"
                           />
                         </FormControl>
                         <FormMessage />
@@ -110,15 +109,16 @@ export default function LenderInvite() {
 
                   <FormField
                     control={form.control}
-                    name="companyName"
+                    name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company Name</FormLabel>
+                        <FormLabel>Password</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="ABC Lending Corp"
+                            type="password"
+                            placeholder="SecurePass123"
                             {...field}
-                            data-testid="input-company-name"
+                            data-testid="input-password"
                           />
                         </FormControl>
                         <FormMessage />
