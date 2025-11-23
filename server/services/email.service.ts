@@ -347,6 +347,13 @@ class EmailService {
         to: options.to,
         subject: options.subject,
         html: options.html,
+        headers: {
+          'X-Mailer': 'RE Data Metrix',
+          'X-Priority': '3',
+          'Importance': 'normal',
+          'X-MSMail-Priority': 'normal',
+        },
+        messageId: `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@redatametrix.com>`,
       });
 
       console.log(`✓ Email sent successfully to ${options.to} (Message ID: ${info.messageId})`);
