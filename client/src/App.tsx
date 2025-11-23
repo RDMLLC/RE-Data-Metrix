@@ -30,6 +30,7 @@ import LenderSignup from "@/pages/LenderSignup";
 import LenderInvite from "@/pages/admin/LenderInvite";
 import AdminLogin from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
+import LenderManagement from "@/pages/admin/LenderManagement";
 import LenderProfile from "@/pages/LenderProfile";
 import VerifyEmail from "@/pages/VerifyEmail";
 import RequestPasswordReset from "@/pages/RequestPasswordReset";
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/lender-signup/:token" component={LenderSignup} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/lenders" component={LenderManagement} />
       <Route path="/admin/lender-invite" component={LenderInvite} />
       <Route component={NotFound} />
     </Switch>

@@ -148,7 +148,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate cursor-pointer" data-testid="card-lender-management">
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/admin/lenders")}
+              data-testid="card-lender-management"
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">

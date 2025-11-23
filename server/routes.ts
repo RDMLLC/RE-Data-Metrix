@@ -7,8 +7,7 @@ import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
 import { eq, inArray, desc, and } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
-import passport from "./auth";
-import { ensureAuthenticated, requireRole, ensureLenderAuthenticated } from "./auth";
+import passport, { ensureAdmin, ensureLenderAuthenticated, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
 import crypto from "crypto";
 
@@ -580,6 +579,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Product deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete loan product" });
+    }
+  });
+
+  // Admin Lender Management Routes
+  app.get("/api/admin/lenders", ensureAdmin, async (req, res) => {
+    try {
+      const lenders = await storage.getAllLendersWithReferralCounts();
+      res.json(lenders);
+    } catch (error) {
+      console.error('Get lenders error:', error);
+      res.status(500).json({ error: "Failed to fetch lenders" });
+    }
+  });
+
+  app.delete("/api/admin/lenders/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteLender(id);
+      res.json({ message: "Lender deleted successfully" });
+    } catch (error: any) {
+      if (error.message === "Cannot delete lender with existing referrals") {
+        return res.status(400).json({ error: error.message });
+      }
+      console.error('Delete lender error:', error);
+      res.status(500).json({ error: "Failed to delete lender" });
+    }
+  });
+
+  app.patch("/api/admin/lenders/:id/archive", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const lender = await storage.archiveLender(id);
+      if (!lender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      res.json(lender);
+    } catch (error) {
+      console.error('Archive lender error:', error);
+      res.status(500).json({ error: "Failed to archive lender" });
     }
   });
 
