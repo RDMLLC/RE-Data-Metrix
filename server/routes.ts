@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/admin-login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: User | false, info: { message: string }) => {
+    passport.authenticate("user-local", (err: any, user: User | false, info: { message: string }) => {
       if (err) {
         return res.status(500).json({ error: "Authentication failed" });
       }
