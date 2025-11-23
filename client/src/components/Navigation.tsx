@@ -106,18 +106,11 @@ export default function Navigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Link href="/login" data-testid="link-login">
-                  <Button variant="ghost" className="ml-4">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" data-testid="link-register">
-                  <Button variant="default" className="bg-accent text-accent-foreground hover:bg-accent">
-                    Sign Up
-                  </Button>
-                </Link>
-              </>
+              <Link href="/login" data-testid="link-login">
+                <Button variant="ghost" className="ml-4">
+                  Login
+                </Button>
+              </Link>
             )}
           </div>
         </div>
@@ -186,18 +179,11 @@ export default function Navigation() {
                 </Button>
               </>
             ) : (
-              <>
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="default" className="w-full bg-accent text-accent-foreground hover:bg-accent">
-                    Sign Up
-                  </Button>
-                </Link>
-              </>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  Login
+                </Button>
+              </Link>
             )}
           </div>
         )}
