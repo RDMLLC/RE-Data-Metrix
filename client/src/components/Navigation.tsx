@@ -45,7 +45,7 @@ export default function Navigation() {
 
           {/* Bottom row: Navigation links */}
           <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-1 flex-1 justify-center">
+            <div className="flex items-center gap-4 flex-1 justify-around">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <Button
