@@ -689,11 +689,10 @@ export class DatabaseStorage implements IStorage {
       // If already registered, only allow password reset for registered lenders
       if (lender.inviteAccepted) {
         // This is a password reset for an already-registered lender
+        // Just update password, no token needed since they can login with temp password
         const result = await db.update(lendersTable)
           .set({
             password: hashedPassword,
-            passwordResetToken: token,
-            passwordResetExpiry: expiry,
           })
           .where(eq(lendersTable.email, username))
           .returning();

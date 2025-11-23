@@ -371,12 +371,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "invite"
         });
       } else {
-        // Password reset for existing lender - send password reset email
-        const resetUrl = `${protocol}://${host}/lender-password-reset/${result.token}`;
-        await emailService.sendLenderCredentials(username, username, tempPassword, resetUrl);
+        // Password reset for existing lender - send password reset email with temp password
+        await emailService.sendLenderCredentials(username, username, tempPassword, `${protocol}://${host}/lender-login`);
         res.json({
           message: "Password reset email sent to lender",
-          token: result.token,
           isNewInvite: false,
           type: "password_reset"
         });
