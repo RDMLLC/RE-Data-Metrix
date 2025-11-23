@@ -126,7 +126,7 @@ export default function Login() {
             </div>
 
             {/* Right Side - Login Form and Admin */}
-            <div className="lg:col-span-3 flex flex-col gap-8">
+            <div className="lg:col-span-3 flex flex-col justify-between" style={{ height: '100%' }}>
               <Card className="p-8 shadow-xl bg-card" data-testid="card-login">
                 <CardHeader>
                   <CardTitle className="text-2xl">Login to Your Account</CardTitle>
@@ -205,23 +205,15 @@ export default function Login() {
                 </Form>
               </Card>
 
-              {/* Admin Portal Section - Compact */}
-              <Card className="border-2 border-primary">
-                <CardContent className="p-6">
+              {/* Admin Portal Section - Minimal */}
+              <Card className="border border-primary">
+                <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="flex justify-center mb-3">
-                      <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
-                        <ShieldCheck className="h-6 w-6 text-accent" />
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-bold mb-2 text-foreground">Platform Administrator</h3>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                      Access admin dashboard to manage lenders and platform settings
-                    </p>
+                    <h3 className="text-sm font-semibold mb-2 text-foreground">Platform Administrator</h3>
                     <Link href="/admin/lender-invite">
                       <Button
                         className="w-full"
-                        size="default"
+                        size="sm"
                         data-testid="button-admin-portal"
                       >
                         Admin Dashboard
