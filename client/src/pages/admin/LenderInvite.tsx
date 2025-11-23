@@ -36,12 +36,20 @@ export default function LenderInvite() {
       return await res.json();
     },
     onSuccess: (data: any) => {
-      setInviteLink(data.inviteUrl);
-      toast({
-        title: "Invite Created",
-        description: `Lender invite created successfully. Password has been sent to their email.`,
-      });
+      if (data.type === "invite") {
+        setInviteLink(data.inviteUrl);
+        toast({
+          title: "Invite Created",
+          description: `Lender invite created successfully. Password has been sent to their email.`,
+        });
+      } else if (data.type === "password_reset") {
+        toast({
+          title: "Password Reset Email Sent",
+          description: `Password reset link has been sent to ${form.getValues("username")}. The lender can use the new temporary password or click the reset link.`,
+        });
+      }
       form.reset();
+      setInviteLink(null);
     },
     onError: (error: any) => {
       toast({
@@ -106,7 +114,7 @@ export default function LenderInvite() {
                   />
 
                   <p className="text-sm text-muted-foreground">
-                    A temporary password will be automatically generated and sent to the lender's email. They will be required to change it upon login.
+                    A temporary password will be automatically generated and sent to the lender's email. For new lenders, they will be required to change it upon signup. For existing lenders, this will send a password reset link.
                   </p>
 
                   <Button

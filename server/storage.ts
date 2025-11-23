@@ -674,7 +674,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender}> {
+  async createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
     const token = randomBytes(32).toString('base64url');
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 7);
@@ -685,17 +685,32 @@ export class DatabaseStorage implements IStorage {
     const existing = await db.select().from(lendersTable).where(eq(lendersTable.email, username)).limit(1);
     
     if (existing.length > 0) {
-      // Update existing lender with new invite token and password
-      const result = await db.update(lendersTable)
-        .set({
-          password: hashedPassword,
-          inviteToken: token,
-          inviteExpiry: expiry,
-          inviteAccepted: false,
-        })
-        .where(eq(lendersTable.email, username))
-        .returning();
-      return { token, lender: result[0] };
+      const lender = existing[0];
+      // If already registered, only allow password reset for registered lenders
+      if (lender.inviteAccepted) {
+        // This is a password reset for an already-registered lender
+        const result = await db.update(lendersTable)
+          .set({
+            password: hashedPassword,
+            passwordResetToken: token,
+            passwordResetExpiry: expiry,
+          })
+          .where(eq(lendersTable.email, username))
+          .returning();
+        return { token, lender: result[0], isNewInvite: false };
+      } else {
+        // Not yet accepted, re-invite them
+        const result = await db.update(lendersTable)
+          .set({
+            password: hashedPassword,
+            inviteToken: token,
+            inviteExpiry: expiry,
+            inviteAccepted: false,
+          })
+          .where(eq(lendersTable.email, username))
+          .returning();
+        return { token, lender: result[0], isNewInvite: true };
+      }
     }
     
     // Create new lender
@@ -709,7 +724,7 @@ export class DatabaseStorage implements IStorage {
       inviteAccepted: false,
     }).returning();
     
-    return { token, lender: result[0] };
+    return { token, lender: result[0], isNewInvite: true };
   }
 
   async validateLenderInvite(token: string): Promise<Lender | undefined> {

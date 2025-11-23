@@ -358,14 +358,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email with credentials - use request origin to generate correct URL
       const protocol = req.protocol || "https";
       const host = req.get("host") || "localhost:5000";
-      const inviteUrl = `${protocol}://${host}/lender-signup/${result.token}`;
-      await emailService.sendLenderCredentials(username, username, tempPassword, inviteUrl);
-
-      res.json({
-        message: "Lender invite created successfully",
-        token: result.token,
-        inviteUrl: inviteUrl,
-      });
+      
+      if (result.isNewInvite) {
+        // New invite - send signup link
+        const inviteUrl = `${protocol}://${host}/lender-signup/${result.token}`;
+        await emailService.sendLenderCredentials(username, username, tempPassword, inviteUrl);
+        res.json({
+          message: "Lender invite created successfully",
+          token: result.token,
+          inviteUrl: inviteUrl,
+          isNewInvite: true,
+          type: "invite"
+        });
+      } else {
+        // Password reset for existing lender - send password reset email
+        const resetUrl = `${protocol}://${host}/lender-password-reset/${result.token}`;
+        await emailService.sendLenderCredentials(username, username, tempPassword, resetUrl);
+        res.json({
+          message: "Password reset email sent to lender",
+          token: result.token,
+          isNewInvite: false,
+          type: "password_reset"
+        });
+      }
     } catch (error) {
       console.error('Lender invite error:', error);
       res.status(500).json({ error: "Failed to create lender invite" });
