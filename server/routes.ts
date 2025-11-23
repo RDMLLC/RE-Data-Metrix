@@ -602,6 +602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error.message === "Lender not found") {
         return res.status(404).json({ error: error.message });
       }
+      if (error.message === "Cannot delete archived lender") {
+        return res.status(409).json({ error: error.message });
+      }
       if (error.message === "Cannot delete lender with existing referrals") {
         return res.status(400).json({ error: error.message });
       }
@@ -618,6 +621,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       if (error.message === "Lender not found") {
         return res.status(404).json({ error: error.message });
+      }
+      if (error.message === "Lender is already archived") {
+        return res.status(400).json({ error: error.message });
       }
       console.error('Archive lender error:', error);
       res.status(500).json({ error: "Failed to archive lender" });

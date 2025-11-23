@@ -21,7 +21,7 @@ The backend is developed with Node.js and Express.js, providing a RESTful API. I
 
 ### Database
 
-PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users` (with email verification fields), `prelaunch_signups`, `lenders`, `lender_questionnaires`, and `loan_products`. Drizzle Kit handles schema migrations.
+PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users` (with email verification fields), `prelaunch_signups`, `lenders` (with archived boolean field), `lender_questionnaires`, `loan_products`, and `lender_referrals` for tracking investor referrals to lenders. Drizzle Kit handles schema migrations.
 
 ### Email Integration (Zoho Mail)
 
@@ -39,8 +39,14 @@ Complete authentication infrastructure implemented with user and lender tables, 
 - **Email Verification**: Required for all new user registrations via Zoho Mail SMTP
 - **Password Reset**: Secure token-based password recovery workflow
 - **Session Management**: Express sessions with PostgreSQL store
-- **Protected Routes**: Middleware-based authorization for user and admin access
+- **Protected Routes**: Middleware-based authorization for user, lender, and admin access
 - **Login Page**: Features three entry points - main user login (center), Lender Portal (left panel), and Admin Portal (card below main login) with navy/gold design scheme
+- **Admin Portal**: Comprehensive dashboard at /admin/dashboard with Lender Management at /admin/lenders featuring:
+  - List all lenders with referral counts and status (Active/Pending/Archived)
+  - Delete lenders with zero referrals (transaction-wrapped cascade delete of loan products and questionnaires)
+  - Archive lenders with referrals (permanent preservation, cannot be deleted)
+  - Business rule enforcement: archived lenders cannot be deleted, only zero-referral lenders can be permanently removed
+  - All admin endpoints secured with ensureAdmin middleware checking user.role === 'admin'
 
 ### Form Handling & Validation
 

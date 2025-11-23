@@ -862,15 +862,21 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Lender not found");
     }
     
+    if (lender[0].archived) {
+      throw new Error("Cannot delete archived lender");
+    }
+    
     const referralCount = await this.getLenderReferralCount(id);
     
     if (referralCount > 0) {
       throw new Error("Cannot delete lender with existing referrals");
     }
     
-    await db.delete(loanProductsTable).where(eq(loanProductsTable.lenderId, id));
-    await db.delete(lenderQuestionnairesTable).where(eq(lenderQuestionnairesTable.lenderId, id));
-    await db.delete(lendersTable).where(eq(lendersTable.id, id));
+    await db.transaction(async (tx) => {
+      await tx.delete(loanProductsTable).where(eq(loanProductsTable.lenderId, id));
+      await tx.delete(lenderQuestionnairesTable).where(eq(lenderQuestionnairesTable.lenderId, id));
+      await tx.delete(lendersTable).where(eq(lendersTable.id, id));
+    });
     
     return true;
   }
@@ -880,6 +886,10 @@ export class DatabaseStorage implements IStorage {
     
     if (!lender[0]) {
       throw new Error("Lender not found");
+    }
+    
+    if (lender[0].archived) {
+      throw new Error("Lender is already archived");
     }
     
     const result = await db
