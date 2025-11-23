@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, User, LogOut, LayoutDashboard, Building2 } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -106,27 +106,11 @@ export default function Navigation() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="default" className="ml-4" data-testid="button-login-menu">
-                    Login
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => setLocation("/login")} data-testid="menu-item-user-login">
-                    <User className="h-4 w-4 mr-2" />
-                    User Login
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/lender-portal")} data-testid="menu-item-lender-login">
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Lender Portal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/admin/login")} data-testid="menu-item-admin-login">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Admin Login
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link href="/login" data-testid="link-login">
+                <Button variant="ghost" className="ml-4">
+                  Login
+                </Button>
+              </Link>
             )}
           </div>
         </div>
@@ -195,45 +179,11 @@ export default function Navigation() {
                 </Button>
               </>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-start" data-testid="button-mobile-login-menu">
-                    Login
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48">
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setLocation("/login");
-                    }} 
-                    data-testid="menu-item-mobile-user-login"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    User Login
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setLocation("/lender-portal");
-                    }} 
-                    data-testid="menu-item-mobile-lender-login"
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Lender Portal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setLocation("/admin/login");
-                    }} 
-                    data-testid="menu-item-mobile-admin-login"
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Admin Login
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start">
+                  Login
+                </Button>
+              </Link>
             )}
           </div>
         )}
