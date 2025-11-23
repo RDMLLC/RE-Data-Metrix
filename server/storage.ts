@@ -27,6 +27,7 @@ import {
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
 import { eq, and, gt, desc } from "drizzle-orm";
+import { hashPassword } from "./auth";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -105,6 +106,11 @@ export class MemStorage implements IStorage {
       referredBy: insertUser.referredBy || null,
       id,
       referralCode: null,
+      isEmailVerified: false,
+      verificationToken: null,
+      verificationExpiry: null,
+      passwordResetToken: null,
+      passwordResetExpiry: null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -663,16 +669,23 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createLenderInvite(email: string, companyName: string): Promise<{token: string, lender: Lender}> {
+  async getLenderByUsername(username: string): Promise<Lender | undefined> {
+    const result = await db.select().from(lendersTable).where(eq(lendersTable.email, username)).limit(1);
+    return result[0];
+  }
+
+  async createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender}> {
     const token = randomBytes(32).toString('base64url');
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 7);
     
+    const hashedPassword = await hashPassword(password);
+    
     const result = await db.insert(lendersTable).values({
-      email,
-      companyName,
-      password: '',
-      contactName: '',
+      email: username,
+      companyName: 'Pending',
+      password: hashedPassword,
+      contactName: 'Pending',
       inviteToken: token,
       inviteExpiry: expiry,
       inviteAccepted: false,

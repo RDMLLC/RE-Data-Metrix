@@ -277,6 +277,60 @@ class EmailService {
     });
   }
 
+  async sendLenderCredentials(to: string, username: string, password: string, inviteLink: string): Promise<boolean> {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .credentials-box { background: #F9FAFB; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #D4AF37; }
+          .button { display: inline-block; padding: 12px 24px; background: #1E3A8A; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">New Lender Account Created</h1>
+          </div>
+          <div class="content">
+            <p>A new lender account has been created on RE Data Metrix.</p>
+            
+            <div class="credentials-box">
+              <h3 style="margin-top: 0; color: #1E3A8A;">Lender Credentials</h3>
+              <p><strong>Username:</strong> ${username}</p>
+              <p><strong>Temporary Password:</strong> ${password}</p>
+            </div>
+            
+            <p><strong>Invite Link:</strong></p>
+            <div style="text-align: center;">
+              <a href="${inviteLink}" class="button">Complete Lender Setup</a>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${inviteLink}</p>
+            
+            <p style="margin-top: 30px; font-weight: 500;">This invite link will expire in 7 days.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'New Lender Account Created - RE Data Metrix',
+      html: htmlContent,
+    });
+  }
+
   private async sendEmail(options: {
     to: string;
     subject: string;

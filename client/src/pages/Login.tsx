@@ -210,13 +210,13 @@ export default function Login() {
                 <CardContent className="p-4">
                   <div className="text-center">
                     <h3 className="text-sm font-semibold mb-2 text-foreground">Platform Administrator</h3>
-                    <Link href="/admin/lender-invite">
+                    <Link href="/admin/login">
                       <Button
                         className="w-full"
                         size="sm"
                         data-testid="button-admin-portal"
                       >
-                        Admin Dashboard
+                        Admin Login
                       </Button>
                     </Link>
                   </div>
