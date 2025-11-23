@@ -13,7 +13,8 @@ import { Copy, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 const inviteSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  companyName: z.string().min(1, "Company name is required"),
+  username: z.string().min(1, "Email is required"),
 });
 
 type InviteForm = z.infer<typeof inviteSchema>;
@@ -26,7 +27,8 @@ export default function LenderInvite() {
   const form = useForm<InviteForm>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
-      username: "lender_user",
+      companyName: "",
+      username: "",
     },
   });
 
@@ -97,10 +99,28 @@ export default function LenderInvite() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
                     control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="ABC Lending Inc."
+                            {...field}
+                            data-testid="input-company-name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username (Email)</FormLabel>
+                        <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="lender@company.com"

@@ -344,16 +344,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lender Authentication Routes
   app.post("/api/lenders/invite", async (req, res) => {
     try {
-      const { username } = req.body;
+      const { username, companyName } = req.body;
 
       if (!username) {
-        return res.status(400).json({ error: "Username is required" });
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      if (!companyName) {
+        return res.status(400).json({ error: "Company name is required" });
       }
 
       // Generate random temporary password
       const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
 
-      const result = await storage.createLenderInvite(username, tempPassword);
+      const result = await storage.createLenderInvite(username, tempPassword, companyName);
       
       // Send email with credentials - use request origin to generate correct URL
       const protocol = req.protocol || "https";

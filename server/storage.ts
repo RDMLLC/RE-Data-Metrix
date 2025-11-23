@@ -674,7 +674,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
+  async createLenderInvite(username: string, password: string, companyName: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
     const token = randomBytes(32).toString('base64url');
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 7);
@@ -698,10 +698,11 @@ export class DatabaseStorage implements IStorage {
           .returning();
         return { token, lender: result[0], isNewInvite: false };
       } else {
-        // Not yet accepted, re-invite them
+        // Not yet accepted, re-invite them with updated company name
         const result = await db.update(lendersTable)
           .set({
             password: hashedPassword,
+            companyName: companyName,
             inviteToken: token,
             inviteExpiry: expiry,
             inviteAccepted: false,
@@ -715,7 +716,7 @@ export class DatabaseStorage implements IStorage {
     // Create new lender
     const result = await db.insert(lendersTable).values({
       email: username,
-      companyName: 'Pending',
+      companyName: companyName,
       password: hashedPassword,
       contactName: 'Pending',
       inviteToken: token,
