@@ -352,15 +352,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await storage.createLenderInvite(username, password);
 
-      const emailSent = await emailService.sendLenderCredentials(
-        username,
-        result.token
-      );
-
-      if (!emailSent) {
-        console.error('Failed to send lender credentials email to:', username);
-      }
-
       res.json({
         message: "Lender invite created successfully",
         token: result.token,
@@ -515,9 +506,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/deal-analyses", ensureAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as User).id;
-      const data = insertPropertySchema.parse(req.body);
+      const data = insertPropertySchema.parse({...req.body, userId});
 
-      const dealAnalysis = await storage.createDealAnalysis(userId, data);
+      const dealAnalysis = await storage.createDealAnalysis(data);
       res.json(dealAnalysis);
     } catch (error) {
       if (error instanceof z.ZodError) {
