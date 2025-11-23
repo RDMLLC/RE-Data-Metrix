@@ -6,7 +6,7 @@ import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
 import { eq, inArray, desc, and } from "drizzle-orm";
-import { hashPassword } from "./auth";
+import { hashPassword, comparePassword } from "./auth";
 import passport from "./auth";
 import { ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
@@ -152,6 +152,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })(req, res, next);
   });
 
+  app.post("/api/auth/admin-login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: User | false, info: { message: string }) => {
+      if (err) {
+        return res.status(500).json({ error: "Authentication failed" });
+      }
+      if (!user) {
+        return res.status(401).json({ error: info.message || "Invalid credentials" });
+      }
+      
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: "Access denied. Admin privileges required." });
+      }
+      
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login failed" });
+        }
+        res.json({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+        });
+      });
+    })(req, res, next);
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = req.user as User;
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    });
+  });
+
   app.post("/api/auth/logout", (req, res) => {
     req.logout((err) => {
       if (err) {
@@ -259,30 +300,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const resetPasswordSchema = z.object({
-    token: z.string(),
-    newPassword: z.string().min(8),
-  });
-
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password/:token", async (req, res) => {
     try {
-      const validatedData = resetPasswordSchema.parse(req.body);
+      const { token } = req.params;
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({ error: "Password is required" });
+      }
 
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.passwordResetToken, validatedData.token))
+        .where(eq(users.passwordResetToken, token))
         .limit(1);
 
       if (!user) {
-        return res.status(400).json({ error: "Invalid or expired reset token" });
+        return res.status(400).json({ error: "Invalid reset token" });
       }
 
       if (user.passwordResetExpiry && new Date() > user.passwordResetExpiry) {
         return res.status(400).json({ error: "Reset token has expired" });
       }
 
-      const hashedPassword = await hashPassword(validatedData.newPassword);
+      const hashedPassword = await hashPassword(password);
 
       await db
         .update(users)
@@ -295,834 +336,407 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ message: "Password reset successfully" });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
       console.error('Password reset error:', error);
       res.status(500).json({ error: "Password reset failed" });
     }
   });
 
-  app.get("/api/auth/me", ensureAuthenticated, async (req, res) => {
-    const user = req.user as User;
-    
-    const [profile] = await db
-      .select()
-      .from(userProfiles)
-      .where(eq(userProfiles.userId, user.id))
-      .limit(1);
-
-    res.json({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      referralCode: user.referralCode,
-      subscriptionStatus: user.subscriptionStatus,
-      profile: profile || null,
-    });
-  });
-
-  const contactFormSchema = z.object({
-    name: z.string().min(2),
-    company: z.string().optional(),
-    email: z.string().email(),
-    phone: z.string().optional(),
-    comments: z.string().min(10),
-  });
-
-  app.post("/api/contact", async (req, res) => {
+  // Lender Authentication Routes
+  app.post("/api/lenders/invite", async (req, res) => {
     try {
-      const validatedData = contactFormSchema.parse(req.body);
+      const { username, password } = req.body;
 
-      const emailSent = await emailService.sendContactConfirmation(
-        validatedData.email,
-        validatedData.name
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+
+      const result = await storage.createLenderInvite(username, password);
+
+      const emailSent = await emailService.sendLenderCredentials(
+        username,
+        result.token
       );
 
       if (!emailSent) {
-        console.error('Failed to send contact confirmation email to:', validatedData.email);
+        console.error('Failed to send lender credentials email to:', username);
       }
 
-      console.log('Contact form submission:', {
-        ...validatedData,
-        source: 'contact_us',
-        emailSent,
-      });
-
-      res.json({ 
-        message: "Thank you for contacting us! We'll respond within 24 hours.",
-        emailSent,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid contact data", details: error.errors });
-      }
-      console.error('Contact form error:', error);
-      res.status(500).json({ error: "Failed to process contact form" });
-    }
-  });
-
-  // Lender Invite Routes
-  const createLenderInviteSchema = z.object({
-    username: z.string().min(1),
-    password: z.string().min(8),
-  });
-
-  app.post("/api/admin/lender-invite", ensureAuthenticated, requireRole('admin'), async (req, res) => {
-    try {
-      const validatedData = createLenderInviteSchema.parse(req.body);
-      
-      const existing = await storage.getLenderByUsername(validatedData.username);
-      if (existing) {
-        return res.status(400).json({ error: "A lender with this username already exists" });
-      }
-      
-      const { token, lender } = await storage.createLenderInvite(validatedData.username, validatedData.password);
-      
-      const inviteLink = `${req.protocol}://${req.get('host')}/lender-signup/${token}`;
-      
-      // Send lender credentials email
-      const emailSent = await emailService.sendLenderCredentials(
-        'info@redatametrix.com',
-        validatedData.username,
-        validatedData.password,
-        inviteLink
-      );
-      
       res.json({
-        success: true,
-        lenderId: lender.id,
-        token,
-        inviteLink,
-        username: lender.email,
-        emailSent,
+        message: "Lender invite created successfully",
+        token: result.token,
+        inviteUrl: `${process.env.APP_URL || "http://localhost:5000"}/lender-signup/${result.token}`,
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid invite data", details: error.errors });
-      }
+      console.error('Lender invite error:', error);
       res.status(500).json({ error: "Failed to create lender invite" });
     }
   });
 
-  const validateLenderInviteSchema = z.object({
-    token: z.string(),
-  });
-
-  app.post("/api/lender/validate-invite", async (req, res) => {
+  app.get("/api/lenders/validate-invite/:token", async (req, res) => {
     try {
-      const { token } = validateLenderInviteSchema.parse(req.body);
-      
+      const { token } = req.params;
       const lender = await storage.validateLenderInvite(token);
-      
+
       if (!lender) {
-        return res.status(400).json({ error: "Invalid or expired invite token" });
+        return res.status(400).json({ error: "Invalid or expired invite" });
       }
-      
+
       res.json({
-        valid: true,
-        lenderId: lender.id,
         email: lender.email,
-        companyName: lender.companyName,
+        isValid: true,
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid request", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to validate invite" });
+      res.status(500).json({ error: "Validation failed" });
     }
   });
 
-  const completeLenderSignupSchema = z.object({
-    token: z.string(),
-    password: z.string().min(8),
-    contactName: z.string().min(1),
-    phone: z.string().optional(),
-  });
-
-  app.post("/api/lender/complete-signup", async (req, res) => {
+  app.post("/api/lenders/accept-invite/:token", async (req, res) => {
     try {
-      const validatedData = completeLenderSignupSchema.parse(req.body);
-      
-      const lender = await storage.validateLenderInvite(validatedData.token);
-      
-      if (!lender) {
-        return res.status(400).json({ error: "Invalid or expired invite token" });
+      const { token } = req.params;
+      const { companyName, contactName, phone, website } = req.body;
+
+      const result = await storage.acceptLenderInvite(token, {
+        companyName,
+        contactName,
+        phone,
+        website,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
       }
-      
-      const hashedPassword = await hashPassword(validatedData.password);
-      
-      const completedLender = await storage.completeLenderSignup(
-        lender.id,
-        hashedPassword,
-        validatedData.contactName,
-        validatedData.phone
-      );
-      
-      res.json({
-        success: true,
-        lenderId: completedLender.id,
-        email: completedLender.email,
-        companyName: completedLender.companyName,
+
+      req.login(result.lender, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login after signup failed" });
+        }
+        res.json({
+          message: "Lender account setup successfully",
+          lender: result.lender,
+        });
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid signup data", details: error.errors });
-      }
+      console.error('Accept invite error:', error);
       res.status(500).json({ error: "Failed to complete signup" });
     }
   });
 
-  // User Profile Routes
-  const updateProfileSchema = z.object({
-    fullName: z.string().min(1).optional(),
-    street: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().length(2).optional(),
-    zipCode: z.string().optional(),
-    phone: z.string().optional(),
-    creditScoreRange: z.string().optional(),
-    autoPopulateDefaults: z.boolean().optional(),
-  });
-
-  app.get("/api/me/profile", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      
-      const [profile] = await db
-        .select()
-        .from(userProfiles)
-        .where(eq(userProfiles.userId, user.id))
-        .limit(1);
-
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
+  app.post("/api/lenders/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any | false, info: { message: string }) => {
+      if (err) {
+        return res.status(500).json({ error: "Authentication failed" });
+      }
+      if (!user) {
+        return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
 
-      const userPrefs = await db
-        .select({
-          id: investmentPreferences.id,
-          name: investmentPreferences.name,
-          displayOrder: investmentPreferences.displayOrder,
-        })
-        .from(userInvestmentPreferences)
-        .innerJoin(
-          investmentPreferences,
-          eq(userInvestmentPreferences.preferenceId, investmentPreferences.id)
-        )
-        .where(eq(userInvestmentPreferences.userId, user.id))
-        .orderBy(investmentPreferences.displayOrder);
-
-      res.json({
-        ...profile,
-        investmentPreferences: userPrefs,
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login failed" });
+        }
+        res.json({
+          id: user.id,
+          email: user.email,
+          companyName: user.companyName,
+        });
       });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch profile" });
-    }
+    })(req, res, next);
   });
 
-  app.patch("/api/me/profile", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      const validatedData = updateProfileSchema.parse(req.body);
-      
-      const [updated] = await db
-        .update(userProfiles)
-        .set({
-          ...validatedData,
-          updatedAt: new Date(),
-        })
-        .where(eq(userProfiles.userId, user.id))
-        .returning();
-
-      if (!updated) {
-        return res.status(404).json({ error: "Profile not found" });
-      }
-
-      res.json(updated);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid profile data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update profile" });
-    }
-  });
-
-  app.get("/api/me/investment-preferences", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      
-      const userPrefs = await db
-        .select({
-          id: investmentPreferences.id,
-          name: investmentPreferences.name,
-          displayOrder: investmentPreferences.displayOrder,
-        })
-        .from(userInvestmentPreferences)
-        .innerJoin(
-          investmentPreferences,
-          eq(userInvestmentPreferences.preferenceId, investmentPreferences.id)
-        )
-        .where(eq(userInvestmentPreferences.userId, user.id))
-        .orderBy(investmentPreferences.displayOrder);
-
-      res.json(userPrefs);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch investment preferences" });
-    }
-  });
-
-  const addPreferenceSchema = z.object({
-    preferenceIds: z.array(z.string()),
-  });
-
-  app.post("/api/me/investment-preferences", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      const validatedData = addPreferenceSchema.parse(req.body);
-
-      await db
-        .delete(userInvestmentPreferences)
-        .where(eq(userInvestmentPreferences.userId, user.id));
-
-      if (validatedData.preferenceIds.length > 0) {
-        await db.insert(userInvestmentPreferences).values(
-          validatedData.preferenceIds.map((prefId) => ({
-            userId: user.id,
-            preferenceId: prefId,
-          }))
-        );
-      }
-
-      const userPrefs = await db
-        .select({
-          id: investmentPreferences.id,
-          name: investmentPreferences.name,
-          displayOrder: investmentPreferences.displayOrder,
-        })
-        .from(userInvestmentPreferences)
-        .innerJoin(
-          investmentPreferences,
-          eq(userInvestmentPreferences.preferenceId, investmentPreferences.id)
-        )
-        .where(eq(userInvestmentPreferences.userId, user.id))
-        .orderBy(investmentPreferences.displayOrder);
-
-      res.json(userPrefs);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid preference data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update investment preferences" });
-    }
-  });
-
-  app.get("/api/investment-preferences/all", async (req, res) => {
-    try {
-      const allPrefs = await db
-        .select()
-        .from(investmentPreferences)
-        .orderBy(investmentPreferences.displayOrder);
-
-      res.json(allPrefs);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch investment preferences" });
-    }
-  });
-
-  // Saved Deals Routes
-  const createSavedDealSchema = z.object({
-    dealSnapshot: z.any(),
-    resultsSnapshot: z.any().optional(),
-    propertyAddress: z.string().optional(),
-    arv: z.number().optional(),
-    roi: z.number().optional(),
-    profit: z.number().optional(),
-    dscr: z.number().optional(),
-    status: z.string().default('draft'),
-    notes: z.string().optional(),
-  });
-
-  app.post("/api/deals", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      const validatedData = createSavedDealSchema.parse(req.body);
-      
-      const [savedDeal] = await db
-        .insert(savedDeals)
-        .values({
-          userId: user.id,
-          dealSnapshot: validatedData.dealSnapshot,
-          resultsSnapshot: validatedData.resultsSnapshot,
-          propertyAddress: validatedData.propertyAddress,
-          arv: validatedData.arv?.toString(),
-          roi: validatedData.roi?.toString(),
-          profit: validatedData.profit?.toString(),
-          dscr: validatedData.dscr?.toString(),
-          status: validatedData.status,
-          notes: validatedData.notes,
-        })
-        .returning();
-
-      res.json(savedDeal);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid deal data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to save deal" });
-    }
-  });
-
-  app.get("/api/deals", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      
-      const userDeals = await db
-        .select()
-        .from(savedDeals)
-        .where(eq(savedDeals.userId, user.id))
-        .orderBy(desc(savedDeals.createdAt));
-
-      res.json(userDeals);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch deals" });
-    }
-  });
-
-  app.get("/api/deals/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      
-      const [deal] = await db
-        .select()
-        .from(savedDeals)
-        .where(
-          and(
-            eq(savedDeals.id, req.params.id),
-            eq(savedDeals.userId, user.id)
-          )
-        )
-        .limit(1);
-
-      if (!deal) {
-        return res.status(404).json({ error: "Deal not found" });
-      }
-
-      res.json(deal);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch deal" });
-    }
-  });
-
-  const updateSavedDealSchema = z.object({
-    dealSnapshot: z.any().optional(),
-    resultsSnapshot: z.any().optional(),
-    propertyAddress: z.string().optional(),
-    arv: z.number().optional(),
-    roi: z.number().optional(),
-    profit: z.number().optional(),
-    dscr: z.number().optional(),
-    status: z.string().optional(),
-    notes: z.string().optional(),
-  });
-
-  app.patch("/api/deals/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      const validatedData = updateSavedDealSchema.parse(req.body);
-      
-      const updateData: any = {
-        updatedAt: new Date(),
-      };
-      
-      if (validatedData.dealSnapshot !== undefined) updateData.dealSnapshot = validatedData.dealSnapshot;
-      if (validatedData.resultsSnapshot !== undefined) updateData.resultsSnapshot = validatedData.resultsSnapshot;
-      if (validatedData.propertyAddress !== undefined) updateData.propertyAddress = validatedData.propertyAddress;
-      if (validatedData.arv !== undefined) updateData.arv = validatedData.arv.toString();
-      if (validatedData.roi !== undefined) updateData.roi = validatedData.roi.toString();
-      if (validatedData.profit !== undefined) updateData.profit = validatedData.profit.toString();
-      if (validatedData.dscr !== undefined) updateData.dscr = validatedData.dscr.toString();
-      if (validatedData.status !== undefined) updateData.status = validatedData.status;
-      if (validatedData.notes !== undefined) updateData.notes = validatedData.notes;
-      
-      const [updated] = await db
-        .update(savedDeals)
-        .set(updateData)
-        .where(
-          and(
-            eq(savedDeals.id, req.params.id),
-            eq(savedDeals.userId, user.id)
-          )
-        )
-        .returning();
-
-      if (!updated) {
-        return res.status(404).json({ error: "Deal not found" });
-      }
-
-      res.json(updated);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid deal data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update deal" });
-    }
-  });
-
-  app.delete("/api/deals/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const user = req.user as User;
-      
-      const [deleted] = await db
-        .delete(savedDeals)
-        .where(
-          and(
-            eq(savedDeals.id, req.params.id),
-            eq(savedDeals.userId, user.id)
-          )
-        )
-        .returning();
-
-      if (!deleted) {
-        return res.status(404).json({ error: "Deal not found" });
-      }
-
-      res.json({ message: "Deal deleted successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete deal" });
-    }
-  });
-  
-  // Company Info Routes
-  const companyInfoSchema = z.object({
-    lenderId: z.string(),
-    companyName: z.string().optional(),
-    contactName: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.string().optional(),
-    website: z.string().optional(),
-    referralLink: z.string().optional(),
-    referralAmount: z.preprocess(
-      (val) => val === null || val === undefined || val === "" ? undefined : val,
-      z.coerce.number().refine((val) => !isNaN(val) && isFinite(val)).optional()
-    ),
-    referralType: z.enum(["$", "%"]).optional(),
-    companyDescription: z.string().optional(),
-  });
-
-  app.post("/api/lender-company-info", async (req, res) => {
-    try {
-      const validatedData = companyInfoSchema.parse(req.body);
-      const updated = await storage.updateLenderCompanyInfo(validatedData);
-      res.json(updated);
-    } catch (error) {
-      console.error("Company info validation error:", error);
-      res.status(400).json({ error: "Invalid company info data", details: error instanceof Error ? error.message : String(error) });
-    }
-  });
-
-  app.get("/api/lender-company-info/:lenderId", async (req, res) => {
-    try {
-      const companyInfo = await storage.getLenderCompanyInfo(req.params.lenderId);
-      if (!companyInfo) {
-        return res.status(404).json({ error: "Company info not found" });
-      }
-      res.json(companyInfo);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch company info" });
-    }
-  });
-  
   // Lender Questionnaire Routes
-  app.post("/api/lender-questionnaire", async (req, res) => {
+  app.get("/api/lender-questionnaires/:lenderId", async (req, res) => {
     try {
-      const validatedData = insertLenderQuestionnaireSchema.parse(req.body);
-      const questionnaire = await storage.upsertLenderQuestionnaire(validatedData);
-      res.json(questionnaire);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid questionnaire data" });
-    }
-  });
-
-  app.get("/api/lender-questionnaire/:lenderId", async (req, res) => {
-    try {
-      const questionnaire = await storage.getLenderQuestionnaire(req.params.lenderId);
-      if (!questionnaire) {
-        return res.status(404).json({ error: "Questionnaire not found" });
-      }
-      res.json(questionnaire);
+      const { lenderId } = req.params;
+      const questionnaire = await storage.getLenderQuestionnaire(lenderId);
+      res.json(questionnaire || {});
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch questionnaire" });
     }
   });
 
-  // Lender Matching Routes
-  const lenderMatchQuerySchema = z.object({
-    loanType: z.string(),
-    state: z.string().length(2),
-    creditScore: z.coerce.number().min(300).max(850),
-  });
-
-  app.get("/api/lenders/match", async (req, res) => {
+  app.post("/api/lender-questionnaires/:lenderId", async (req, res) => {
     try {
-      const validatedQuery = lenderMatchQuerySchema.parse(req.query);
-      const { matchLendersByLoanType } = await import("./services/lender-matching.service");
-      
-      const matchedLenders = await matchLendersByLoanType({
-        loanType: validatedQuery.loanType,
-        state: validatedQuery.state,
-        creditScore: validatedQuery.creditScore,
-        storage,
+      const { lenderId } = req.params;
+      const validatedData = insertLenderQuestionnaireSchema.parse({
+        ...req.body,
+        lenderId,
       });
-      
-      res.json(matchedLenders);
+
+      const questionnaire = await storage.saveLenderQuestionnaire(validatedData);
+      res.json(questionnaire);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid query parameters", details: error.errors });
+        return res.status(400).json({ error: "Invalid questionnaire data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to match lenders" });
+      res.status(500).json({ error: "Failed to save questionnaire" });
     }
   });
 
-  // Loan Product Routes
-  app.post("/api/loan-products", async (req, res) => {
-    try {
-      const validatedData = insertLoanProductSchema.parse(req.body);
-      const product = await storage.createLoanProduct(validatedData);
-      res.json(product);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid loan product data" });
-    }
-  });
-
+  // Loan Products Routes
   app.get("/api/loan-products/:lenderId", async (req, res) => {
     try {
-      const products = await storage.getLoanProducts(req.params.lenderId);
+      const { lenderId } = req.params;
+      const products = await storage.getLoanProducts(lenderId);
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch loan products" });
     }
   });
 
-  app.patch("/api/loan-products/:id", async (req, res) => {
+  app.post("/api/loan-products", async (req, res) => {
     try {
-      const updated = await storage.updateLoanProduct(req.params.id, req.body);
-      if (!updated) {
-        return res.status(404).json({ error: "Loan product not found" });
+      const validatedData = insertLoanProductSchema.parse(req.body);
+      const product = await storage.createLoanProduct(validatedData);
+      res.json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid product data", details: error.errors });
       }
-      res.json(updated);
+      res.status(500).json({ error: "Failed to create loan product" });
+    }
+  });
+
+  app.patch("/api/loan-products/:productId", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const validatedData = insertLoanProductSchema.parse(req.body);
+      const product = await storage.updateLoanProduct(productId, validatedData);
+      res.json(product);
     } catch (error) {
       res.status(500).json({ error: "Failed to update loan product" });
     }
   });
 
-  app.delete("/api/loan-products/:id", async (req, res) => {
+  app.delete("/api/loan-products/:productId", async (req, res) => {
     try {
-      const deleted = await storage.deleteLoanProduct(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ error: "Loan product not found" });
-      }
-      res.json({ success: true });
+      const { productId } = req.params;
+      await storage.deleteLoanProduct(productId);
+      res.json({ message: "Product deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete loan product" });
     }
   });
 
-  // CSV Download - Blank Template (DISABLED - Security & Parsing Issues)
-  // TODO: Rebuild with proper authentication, PapaParse library, and robust validation
-  // app.get("/api/loan-products-csv/template", async (req, res) => {
-  //   res.status(503).json({ error: "CSV import/export feature temporarily disabled" });
-  // });
-
-  // CSV Upload - Bulk Import (DISABLED - Security & Parsing Issues)
-  // TODO: Rebuild with proper authentication, PapaParse library, and robust validation
-  // app.post("/api/loan-products-csv/upload", async (req, res) => {
-  //   res.status(503).json({ error: "CSV import/export feature temporarily disabled" });
-  // });
-
-  // Search Lenders Route
-  app.post("/api/search-lenders", async (req, res) => {
+  // Deal Analysis Routes
+  app.post("/api/deal-analyses", ensureAuthenticated, async (req, res) => {
     try {
-      const results = await storage.searchLenders(req.body);
-      res.json(results);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to search lenders" });
-    }
-  });
+      const userId = (req.user as User).id;
+      const data = insertPropertySchema.parse(req.body);
 
-  // Property Lookup Route
-  const propertyLookupSchema = z.object({
-    url: z.string().url("Valid property URL is required").refine(
-      (url) => url.includes('redfin.com') || url.includes('zillow.com'),
-      { message: "URL must be from Redfin or Zillow" }
-    ),
-  });
-
-  app.post("/api/property/lookup", async (req, res) => {
-    try {
-      const { url } = propertyLookupSchema.parse(req.body);
-      const propertyData = await propertyAPIService.getPropertyByUrl(url);
-      
-      if (!propertyData) {
-        return res.status(404).json({ error: "Property not found" });
-      }
-      
-      res.json(propertyData);
+      const dealAnalysis = await storage.createDealAnalysis(userId, data);
+      res.json(dealAnalysis);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+        return res.status(400).json({ error: "Invalid deal data", details: error.errors });
       }
-      console.error("Property lookup error:", error);
-      res.status(500).json({ error: "Failed to fetch property data" });
+      res.status(500).json({ error: "Failed to create deal analysis" });
     }
   });
 
-  // Step 6 Results API
-  const step6RequestSchema = z.object({
-    dealInputs: z.object({
-      purchasePrice: z.number(),
-      rehabBudget: z.number(),
-      arv: z.number(),
-      projectLength: z.number(),
-      closingCostsBuy: z.number(),
-      carryingCosts: z.number(),
-      sellPrice: z.number(),
-      closingCostsSell: z.number(),
-      commission: z.number(),
-      monthlyInsurance: z.number(),
-      monthlyUtilities: z.number(),
-      monthlyPropertyTax: z.number(),
-      monthlyHoa: z.number(),
-    }),
-    criteriaSelection: z.object({
-      useDefaultCriteria: z.boolean(),
-      primary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
-      secondary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
-    }),
-    userLoan: z.object({
-      desiredLoanAmount: z.number().optional(),
-      interestRate: z.number(),
-      interestDeferred: z.boolean(),
-      points: z.number(),
-      pointsDeferred: z.boolean(),
-      maxLoanToArv: z.number().optional(),
-      appraisalRequired: z.boolean(),
-      appraisalFee: z.number().optional(),
-      drawFees: z.number().optional(),
-      loanDocPrepFees: z.number().optional(),
-    }).optional(),
-    numberOfDraws: z.number().default(3),
-    excludeProductIds: z.array(z.string()).default([]),
+  app.get("/api/deal-analyses", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const deals = await storage.getUserDealAnalyses(userId);
+      res.json(deals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deal analyses" });
+    }
   });
 
-  app.post("/api/deal-analysis/results", async (req, res) => {
+  app.get("/api/deal-analyses/:dealId", ensureAuthenticated, async (req, res) => {
     try {
-      const validatedData = step6RequestSchema.parse(req.body);
-      
-      const { rankLoanProducts } = await import("./services/lender-ranking.service");
-      const { createCashSaleColumn, createLoanComparisonColumn } = await import("./services/loan-calculation.service");
-      
-      const loanProducts = await storage.getAllActiveLoanProducts();
-      const lenders = await storage.getAllLenders();
-      
-      const filteredProducts = validatedData.excludeProductIds.length > 0
-        ? loanProducts.filter(p => !validatedData.excludeProductIds.includes(p.id))
-        : loanProducts;
-      
-      const rankedProducts = rankLoanProducts({
-        dealInputs: validatedData.dealInputs,
-        loanProducts: filteredProducts,
-        lenders,
-        useDefaultCriteria: validatedData.criteriaSelection.useDefaultCriteria,
-        primaryCriteria: validatedData.criteriaSelection.primary,
-        secondaryCriteria: validatedData.criteriaSelection.secondary,
-        numberOfDraws: validatedData.numberOfDraws,
-      });
-      
-      const cashSaleColumn = createCashSaleColumn(validatedData.dealInputs);
-      
-      let userLoanColumn = null;
-      if (validatedData.userLoan) {
-        const loanInputs = {
-          maxLtvBuy: 80,
-          maxLendRehab: 100,
-          maxLoanArv: validatedData.userLoan.maxLoanToArv || 70,
-          interestRate: validatedData.userLoan.interestRate,
-          interestDeferred: validatedData.userLoan.interestDeferred,
-          drawnFundsOnly: false,
-          points: validatedData.userLoan.points,
-          pointsDeferred: validatedData.userLoan.pointsDeferred,
-          fees: validatedData.userLoan.loanDocPrepFees || 0,
-          appraisalCost: validatedData.userLoan.appraisalRequired ? 
-                        (validatedData.userLoan.appraisalFee || 500) : 0,
-          costPerDraw: validatedData.userLoan.drawFees || 0,
-        };
-        
-        userLoanColumn = createLoanComparisonColumn(
-          'user-loan',
-          validatedData.dealInputs,
-          loanInputs,
-          validatedData.numberOfDraws
-        );
+      const { dealId } = req.params;
+      const userId = (req.user as User).id;
+
+      const deal = await storage.getDealAnalysis(dealId);
+      if (!deal || deal.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
       }
-      
-      const lenderColumns = rankedProducts.slice(0, 3).map(rp => {
-        const loanInputs = {
-          maxLtvBuy: parseFloat(rp.loanProduct.maxLtvBuy || '80'),
-          maxLendRehab: parseFloat(rp.loanProduct.maxLendRehab || '100'),
-          maxLoanArv: parseFloat(rp.loanProduct.maxLoanArv || '70'),
-          interestRate: parseFloat(rp.loanProduct.interestRate || '12'),
-          interestDeferred: rp.loanProduct.interestDeferred || false,
-          drawnFundsOnly: rp.loanProduct.drawnFundsOnly || false,
-          points: parseFloat(rp.loanProduct.points || '0'),
-          pointsDeferred: rp.loanProduct.pointsDeferred || false,
-          fees: parseFloat(rp.loanProduct.fees || '0'),
-          appraisalCost: rp.loanProduct.appraisalRequired ? 
-                        parseFloat(rp.loanProduct.estimatedAppraisalCost || '500') : 0,
-          costPerDraw: parseFloat(rp.loanProduct.costPerDraw || '0'),
-        };
-        
-        return createLoanComparisonColumn(
-          'lender',
-          validatedData.dealInputs,
-          loanInputs,
-          validatedData.numberOfDraws,
-          undefined,
-          {
-            lenderId: rp.lender.id,
-            lenderName: rp.lender.companyName,
-            productId: rp.loanProduct.id,
-            productName: rp.loanProduct.productName,
-            timeToClose: rp.loanProduct.timeToClose || undefined,
-            referralLink: rp.lender.referralLink || undefined,
-          }
-        );
+
+      res.json(deal);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deal analysis" });
+    }
+  });
+
+  app.patch("/api/deal-analyses/:dealId", ensureAuthenticated, async (req, res) => {
+    try {
+      const { dealId } = req.params;
+      const userId = (req.user as User).id;
+
+      const deal = await storage.getDealAnalysis(dealId);
+      if (!deal || deal.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const updatedDeal = await storage.updateDealAnalysis(dealId, req.body);
+      res.json(updatedDeal);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update deal analysis" });
+    }
+  });
+
+  app.delete("/api/deal-analyses/:dealId", ensureAuthenticated, async (req, res) => {
+    try {
+      const { dealId } = req.params;
+      const userId = (req.user as User).id;
+
+      const deal = await storage.getDealAnalysis(dealId);
+      if (!deal || deal.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      await storage.deleteDealAnalysis(dealId);
+      res.json({ message: "Deal analysis deleted" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete deal analysis" });
+    }
+  });
+
+  app.post("/api/lenders", async (req, res) => {
+    try {
+      const lenders = await storage.getLenders();
+      res.json(lenders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lenders" });
+    }
+  });
+
+  app.get("/api/lenders", async (req, res) => {
+    try {
+      const lenders = await storage.getLenders();
+      res.json(lenders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lenders" });
+    }
+  });
+
+  app.get("/api/lenders/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const lender = await storage.getLender(id);
+      if (!lender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      res.json(lender);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lender" });
+    }
+  });
+
+  app.post("/api/prelaunch-signups", async (req, res) => {
+    try {
+      const { name, company, email, phone, consent, source } = req.body;
+
+      const existingSignup = await db
+        .select()
+        .from(savedDeals)
+        .limit(1);
+
+      const signup = await storage.createPrelaunchSignup({
+        name,
+        company,
+        email,
+        phone,
+        consent,
+        source,
       });
-      
+
       res.json({
-        cashSaleColumn,
-        userLoanColumn,
-        lenderColumns,
-        criteriaUsed: {
-          useDefaultCriteria: validatedData.criteriaSelection.useDefaultCriteria,
-          primary: validatedData.criteriaSelection.primary,
-          secondary: validatedData.criteriaSelection.secondary,
-        },
-        numberOfDraws: validatedData.numberOfDraws,
-        allRankedProducts: rankedProducts.length,
+        message: "Thank you for signing up!",
+        signup,
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid request data", details: error.errors });
-      }
-      console.error("Step 6 results error:", error);
-      res.status(500).json({ error: "Failed to calculate loan results" });
+      res.status(500).json({ error: "Failed to create signup" });
     }
   });
 
-  const httpServer = createServer(app);
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
 
-  return httpServer;
+      const emailSent = await emailService.sendContactConfirmation(
+        email,
+        name
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send contact confirmation to:', email);
+      }
+
+      res.json({
+        message: "Thank you for contacting us. We'll get back to you soon.",
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send contact message" });
+    }
+  });
+
+  // Rental Analysis Route
+  app.post("/api/rental-analyses", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const rentalAnalysis = await storage.createRentalAnalysis(userId, req.body);
+      res.json(rentalAnalysis);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create rental analysis" });
+    }
+  });
+
+  app.get("/api/rental-analyses", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const analyses = await storage.getUserRentalAnalyses(userId);
+      res.json(analyses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rental analyses" });
+    }
+  });
+
+  // Investment Preferences
+  app.get("/api/investment-preferences", async (req, res) => {
+    try {
+      const preferences = await db.select().from(investmentPreferences);
+      res.json(preferences);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch preferences" });
+    }
+  });
+
+  app.post("/api/user-investment-preferences", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { preferenceId } = req.body;
+
+      const result = await db
+        .insert(userInvestmentPreferences)
+        .values({
+          userId,
+          preferenceId,
+        })
+        .returning();
+
+      res.json(result[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save preference" });
+    }
+  });
+
+  app.get("/api/user-investment-preferences", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const preferences = await db
+        .select()
+        .from(userInvestmentPreferences)
+        .where(eq(userInvestmentPreferences.userId, userId));
+
+      res.json(preferences);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch preferences" });
+    }
+  });
+
+  // Create HTTP server
+  const server = createServer(app);
+  return server;
 }

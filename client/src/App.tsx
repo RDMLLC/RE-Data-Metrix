@@ -1,147 +1,95 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import Layout from "@/components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut } from "lucide-react";
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { WizardDataProvider } from "@/contexts/WizardDataContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import NotFound from "@/pages/not-found";
+import Home from "@/pages/Home";
+import About from "@/pages/About";
+import Company from "@/pages/Company";
+import DealAnalysis from "@/pages/DealAnalysis";
+import RentalAnalysis from "@/pages/RentalAnalysis";
+import Lenders from "@/pages/Lenders";
+import Resources from "@/pages/Resources";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Profile from "@/pages/portal/Profile";
+import Contact from "@/pages/Contact";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
+import LenderDashboard from "@/pages/LenderDashboard";
+import LenderQuestionnaire from "@/pages/LenderQuestionnaire";
+import LenderLoanProducts from "@/pages/LenderLoanProducts";
+import LenderCompanyInfo from "@/pages/LenderCompanyInfo";
+import LoanTypes from "@/pages/LoanTypes";
+import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
+import LenderSignup from "@/pages/LenderSignup";
+import LenderInvite from "@/pages/admin/LenderInvite";
+import AdminLogin from "@/pages/admin/Login";
+import AdminDashboard from "@/pages/admin/Dashboard";
+import LenderProfile from "@/pages/LenderProfile";
+import VerifyEmail from "@/pages/VerifyEmail";
+import RequestPasswordReset from "@/pages/RequestPasswordReset";
+import ResetPassword from "@/pages/ResetPassword";
 
-export default function AdminDashboard() {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [adminName, setAdminName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Get admin info from session/auth
-    const fetchAdminInfo = async () => {
-      try {
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setAdminName(data.email?.split("@")[0] || "Admin");
-        }
-      } catch (error) {
-        console.error("Failed to fetch admin info");
-      }
-    };
-    fetchAdminInfo();
-  }, []);
-
-  const handleLogout = async () => {
-    setIsLoading(true);
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      toast({
-        title: "Logged Out",
-        description: "You've been successfully logged out.",
-      });
-      setLocation("/login");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to log out",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+function Router() {
   return (
-    <Layout>
-      <div className="min-h-[calc(100vh-16rem)] py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-12">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground mt-2">Welcome, {adminName}</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              disabled={isLoading}
-              data-testid="button-admin-logout"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {isLoading ? "Logging out..." : "Logout"}
-            </Button>
-          </div>
-
-          {/* Admin Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* User Management */}
-            <Card className="hover-elevate cursor-pointer" data-testid="card-user-management">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <CardTitle>User Management</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Manage user accounts, verify emails, and handle subscriptions
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            {/* Lender Management */}
-            <Card className="hover-elevate cursor-pointer" data-testid="card-lender-management">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-accent" />
-                  </div>
-                  <CardTitle>Lender Management</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Create invites, manage lender profiles, and handle onboarding
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            {/* Analytics & Reporting */}
-            <Card className="hover-elevate cursor-pointer" data-testid="card-analytics">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="h-5 w-5 text-success" />
-                  </div>
-                  <CardTitle>Analytics & Reporting</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  View platform metrics, usage statistics, and performance data
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Access Section */}
-          <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button className="w-full" data-testid="button-create-lender-invite">
-                Create Lender Invite
-              </Button>
-              <Button variant="outline" className="w-full" data-testid="button-view-users">
-                View All Users
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Layout>
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/about" component={About} />
+      <Route path="/company" component={Company} />
+      <Route path="/deal-analysis" component={DealAnalysis} />
+      <Route path="/rental-analysis" component={RentalAnalysis} />
+      <Route path="/lenders" component={Lenders} />
+      <Route path="/lenders/:id" component={LenderProfile} />
+      <Route path="/loan-types" component={LoanTypes} />
+      <Route path="/about-private-lenders" component={AboutPrivateLenders} />
+      <Route path="/toolbox" component={Resources} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/verify-email/:token" component={VerifyEmail} />
+      <Route path="/request-password-reset" component={RequestPasswordReset} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
+      <Route path="/portal/profile">
+        {() => (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/contact" component={Contact} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/lender-portal" component={LenderDashboard} />
+      <Route path="/lender-dashboard" component={LenderDashboard} />
+      <Route path="/lender-company-info" component={LenderCompanyInfo} />
+      <Route path="/lender-questionnaire" component={LenderQuestionnaire} />
+      <Route path="/lender-loan-products" component={LenderLoanProducts} />
+      <Route path="/lender-signup/:token" component={LenderSignup} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/lender-invite" component={LenderInvite} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <WizardDataProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </WizardDataProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
