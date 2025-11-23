@@ -37,9 +37,9 @@ export interface IStorage {
   getLender(id: string): Promise<Lender | undefined>;
   getLenderByEmail(email: string): Promise<Lender | undefined>;
   getLenderByUsername(username: string): Promise<Lender | undefined>;
-  createLenderInvite(username: string, password: string): Promise<{token: string, lender: Lender}>;
+  createLenderInvite(username: string, password: string, companyName: string, referralAmount?: number, referralType?: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}>;
   validateLenderInvite(token: string): Promise<Lender | undefined>;
-  completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string): Promise<Lender>;
+  completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string, companyName?: string): Promise<Lender>;
   
   updateLenderCompanyInfo(data: any): Promise<any>;
   getLenderCompanyInfo(lenderId: string): Promise<any>;

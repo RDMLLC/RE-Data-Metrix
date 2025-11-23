@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lender Authentication Routes
   app.post("/api/lenders/invite", async (req, res) => {
     try {
-      const { username, companyName } = req.body;
+      const { username, companyName, referralAmount, referralType } = req.body;
 
       if (!username) {
         return res.status(400).json({ error: "Email is required" });
@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate random temporary password
       const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
 
-      const result = await storage.createLenderInvite(username, tempPassword, companyName);
+      const result = await storage.createLenderInvite(username, tempPassword, companyName, referralAmount, referralType);
       
       // Send email with credentials - use request origin to generate correct URL
       const protocol = req.protocol || "https";
@@ -412,25 +412,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/lenders/accept-invite/:token", async (req, res) => {
     try {
       const { token } = req.params;
-      const { companyName, contactName, phone, website } = req.body;
+      const { password, companyName, contactName, phone, website } = req.body;
 
       const lender = await storage.validateLenderInvite(token);
       if (!lender) {
         return res.status(400).json({ error: "Invalid or expired invite" });
       }
 
-      req.login(lender, (err) => {
+      const updatedLender = await storage.completeLenderSignup(
+        lender.id,
+        password,
+        contactName,
+        phone,
+        companyName
+      );
+
+      req.login(updatedLender, (err) => {
         if (err) {
           return res.status(500).json({ error: "Login after signup failed" });
         }
         res.json({
           message: "Lender account setup successfully",
-          lender: lender,
+          lender: updatedLender,
         });
       });
     } catch (error) {
       console.error('Accept invite error:', error);
       res.status(500).json({ error: "Failed to complete signup" });
+    }
+  });
+
+  app.get("/api/lenders/me", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const lender = req.user as any;
+      res.json({
+        id: lender.id,
+        email: lender.email,
+        companyName: lender.companyName,
+        contactName: lender.contactName,
+        phone: lender.phone,
+        website: lender.website,
+        referralLink: lender.referralLink,
+        referralAmount: lender.referralAmount,
+        referralType: lender.referralType,
+        companyDescription: lender.companyDescription,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch lender info" });
     }
   });
 
