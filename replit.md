@@ -111,6 +111,12 @@ This section tracks features, improvements, and fixes to be implemented in futur
   - **Impact**: Better UX, reduces password entry errors, improves accessibility
   - **Scope**: Add eye icon toggle to password reset forms (user & lender), login forms, registration forms, and any future password inputs
 
+- **Configure SPF/DKIM Records for Email Deliverability**: Set up domain authentication to prevent Gmail from blocking/spam-filtering emails
+  - **Context**: Emails are being sent successfully to Zoho SMTP and appear in Sent folder, but Gmail blocks or spam-filters them due to missing SPF/DKIM records on redatametrix.com domain
+  - **Impact**: Critical for production - users cannot receive password resets, lender invites, or other transactional emails reliably
+  - **Scope**: Add SPF, DKIM, and DMARC DNS records to redatametrix.com domain registrar (external task - requires domain DNS access, not code changes)
+  - **Resources**: Zoho Mail provides specific DNS records to add - https://www.zoho.com/mail/help/adminconsole/spf-configuration.html
+
 ### Medium Priority
 - **Lender Logout Button**: Add a logout button for lenders in the Lender Portal
   - **Context**: Lenders currently don't have an obvious way to log out of their portal session
