@@ -20,7 +20,7 @@ import {
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Lender } from "@shared/schema";
 
-type LenderWithReferrals = Lender & { referralCount: number };
+type LenderWithReferrals = Lender & { referralCount: number, loanProductCount: number };
 
 export default function LenderManagement() {
   const [, setLocation] = useLocation();
@@ -486,6 +486,9 @@ export default function LenderManagement() {
                             <div className="flex items-center gap-2 mt-2">
                               <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
                                 {lender.referralCount} referral{lender.referralCount !== 1 ? 's' : ''}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-accent/10 text-accent rounded">
+                                {lender.loanProductCount} loan product{lender.loanProductCount !== 1 ? 's' : ''}
                               </span>
                               {lender.inviteAccepted ? (
                                 <span className="text-xs px-2 py-1 bg-success/10 text-success rounded">

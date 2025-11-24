@@ -73,7 +73,7 @@ export interface IStorage {
   createLenderReferral(data: InsertLenderReferral): Promise<LenderReferral>;
   getLenderReferrals(lenderId: string): Promise<Array<LenderReferral & {investorName?: string, propertyAddress?: string}>>;
   
-  getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number}>>;
+  getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number, loanProductCount: number}>>;
   deleteLender(id: string): Promise<boolean>;
   archiveLender(id: string): Promise<Lender | undefined>;
   getLenderReferralCount(lenderId: string): Promise<number>;
@@ -399,7 +399,7 @@ export class MemStorage implements IStorage {
     throw new Error("Not implemented in MemStorage");
   }
 
-  async getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number}>> {
+  async getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number, loanProductCount: number}>> {
     throw new Error("Not implemented in MemStorage");
   }
 
@@ -826,15 +826,24 @@ export class DatabaseStorage implements IStorage {
     return enrichedReferrals;
   }
 
-  async getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number}>> {
+  async getAllLendersWithReferralCounts(): Promise<Array<Lender & {referralCount: number, loanProductCount: number}>> {
     const lenders = await db.select().from(lendersTable).orderBy(desc(lendersTable.createdAt));
     
     const lendersWithCounts = await Promise.all(
       lenders.map(async (lender) => {
         const referralCount = await this.getLenderReferralCount(lender.id);
+        
+        // Count loan products for this lender
+        const loanProductResult = await db
+          .select({ count: count() })
+          .from(loanProductsTable)
+          .where(eq(loanProductsTable.lenderId, lender.id));
+        const loanProductCount = loanProductResult[0]?.count || 0;
+        
         return {
           ...lender,
           referralCount,
+          loanProductCount,
         };
       })
     );
