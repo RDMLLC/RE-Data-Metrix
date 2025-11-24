@@ -408,6 +408,10 @@ class EmailService {
     }
 
     try {
+      console.log(`[EMAIL] Attempting to send to: ${options.to}`);
+      console.log(`[EMAIL] From: ${this.config.from.name} <${this.config.from.email}>`);
+      console.log(`[EMAIL] SMTP Host: ${this.config.host}:${this.config.port}`);
+      
       const info = await this.transporter.sendMail({
         from: `"${this.config.from.name}" <${this.config.from.email}>`,
         to: options.to,
@@ -422,10 +426,19 @@ class EmailService {
         messageId: `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@redatametrix.com>`,
       });
 
-      console.log(`✓ Email sent successfully to ${options.to} (Message ID: ${info.messageId})`);
+      console.log(`✓ Email sent successfully to ${options.to}`);
+      console.log(`  Message ID: ${info.messageId}`);
+      console.log(`  Response: ${info.response}`);
+      console.log(`  Accepted: ${info.accepted?.join(', ')}`);
+      console.log(`  Rejected: ${info.rejected?.join(', ') || 'none'}`);
       return true;
     } catch (error) {
-      console.error(`✗ Failed to send email to ${options.to}:`, error);
+      console.error(`✗ Failed to send email to ${options.to}:`);
+      console.error('  Error details:', error);
+      if (error instanceof Error) {
+        console.error('  Error message:', error.message);
+        console.error('  Error stack:', error.stack);
+      }
       return false;
     }
   }
