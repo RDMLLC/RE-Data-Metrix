@@ -3,7 +3,7 @@ import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
 import { db } from './db';
 import { users, type User, lenders } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Request, Response, NextFunction } from 'express';
 
 const SALT_ROUNDS = 10;
@@ -31,7 +31,7 @@ passport.use('user-local',
         const [user] = await db
           .select()
           .from(users)
-          .where(eq(users.email, email))
+          .where(sql`LOWER(${users.email}) = LOWER(${email})`)
           .limit(1);
 
         if (!user) {
@@ -64,7 +64,7 @@ passport.use('lender-local',
         const [lender] = await db
           .select()
           .from(lenders)
-          .where(eq(lenders.email, email))
+          .where(sql`LOWER(${lenders.email}) = LOWER(${email})`)
           .limit(1);
 
         if (!lender) {
