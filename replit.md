@@ -104,7 +104,10 @@ This section tracks features, improvements, and fixes to be implemented in futur
   - **Scope**: Add eye icon toggle to password reset forms (user & lender), login forms, registration forms, and any future password inputs
 
 ### Medium Priority
-*No tasks currently*
+- **Lender Logout Button**: Add a logout button for lenders in the Lender Portal
+  - **Context**: Lenders currently don't have an obvious way to log out of their portal session
+  - **Impact**: Better security and user control, allows lenders to properly end their session
+  - **Scope**: Add logout button to lender portal navigation/header, implement logout endpoint if needed
 
 ### Low Priority
 *No tasks currently*
