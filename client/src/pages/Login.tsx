@@ -250,7 +250,7 @@ export default function Login() {
               </Card>
             </div>
 
-            <div className="lg:col-span-2 xl:col-span-2">
+            <div className="lg:col-span-2 xl:col-span-2" id="lender-portal">
               {/* Lender Login Card */}
               <Card className="border border-accent/20" data-testid="card-lender-login">
                 <CardHeader className="p-6 pb-4">

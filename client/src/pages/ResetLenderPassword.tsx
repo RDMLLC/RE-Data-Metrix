@@ -124,7 +124,7 @@ export default function ResetLenderPassword() {
                     You can now log in to the Lender Portal with your new password.
                   </p>
                   <Button asChild data-testid="button-login">
-                    <a href="/login">Go to Login</a>
+                    <a href="/login#lender-portal">Continue to Lender Login</a>
                   </Button>
                 </div>
               </div>
