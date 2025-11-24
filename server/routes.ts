@@ -467,6 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/lenders/:lenderId/resend-invite", ensureAdmin, async (req, res) => {
     try {
       const { lenderId } = req.params;
+      console.log('[RESEND INVITE] Request received for lender ID:', lenderId);
 
       // Get lender by ID
       const [lender] = await db
@@ -476,10 +477,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(1);
 
       if (!lender) {
+        console.log('[RESEND INVITE] Lender not found');
         return res.status(404).json({ error: "Lender not found" });
       }
 
+      console.log('[RESEND INVITE] Found lender:', lender.companyName, 'inviteAccepted:', lender.inviteAccepted);
+
       if (lender.inviteAccepted) {
+        console.log('[RESEND INVITE] Lender has already accepted invite');
         return res.status(400).json({ error: "Lender has already accepted the invite" });
       }
 
@@ -487,6 +492,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newToken = crypto.randomBytes(32).toString('base64url');
       const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
       const hashedPassword = await hashPassword(tempPassword);
+
+      console.log('[RESEND INVITE] Generated new token and password, updating database...');
 
       // Update lender with new token and password
       await db
@@ -502,14 +509,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const host = req.get("host") || "localhost:5000";
       const inviteUrl = `${protocol}://${host}/lender-signup/${newToken}`;
       
-      await emailService.sendLenderCredentials(lender.email, lender.email, tempPassword, inviteUrl);
+      console.log('[RESEND INVITE] Attempting to send email to:', lender.email);
+      const emailSent = await emailService.sendLenderCredentials(lender.email, lender.email, tempPassword, inviteUrl);
+      console.log('[RESEND INVITE] Email service returned:', emailSent);
 
       res.json({
         message: "Invite resent successfully",
         inviteUrl: inviteUrl,
       });
     } catch (error) {
-      console.error('Resend invite error:', error);
+      console.error('[RESEND INVITE] ERROR:', error);
       res.status(500).json({ error: "Failed to resend invite" });
     }
   });
