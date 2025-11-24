@@ -37,6 +37,18 @@ class EmailService {
     this.initializeTransporter();
   }
 
+  private getBaseUrl(): string {
+    if (process.env.VITE_APP_URL) {
+      return process.env.VITE_APP_URL;
+    }
+    
+    if (process.env.REPLIT_DEV_DOMAIN) {
+      return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    }
+    
+    return 'http://localhost:5000';
+  }
+
   private initializeTransporter() {
     try {
       this.transporter = nodemailer.createTransport({
@@ -73,18 +85,18 @@ class EmailService {
   }
 
   async sendVerificationEmail(to: string, username: string, token: string): Promise<boolean> {
-    const verificationUrl = `${process.env.VITE_APP_URL || 'http://localhost:5000'}/verify-email/${token}`;
+    const verificationUrl = `${this.getBaseUrl()}/verify-email/${token}`;
 
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; padding: 12px 24px; background: #1E3A8A; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
           .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
         </style>
       </head>
@@ -97,7 +109,7 @@ class EmailService {
             <p>Hi ${username},</p>
             <p>Thank you for signing up! To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
             <div style="text-align: center;">
-              <a href="${verificationUrl}" class="button">Verify Email Address</a>
+              <a href="${verificationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Verify Email Address</a>
             </div>
             <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
             <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${verificationUrl}</p>
@@ -120,18 +132,18 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(to: string, username: string, token: string): Promise<boolean> {
-    const resetUrl = `${process.env.VITE_APP_URL || 'http://localhost:5000'}/reset-password/${token}`;
+    const resetUrl = `${this.getBaseUrl()}/reset-password/${token}`;
 
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; padding: 12px 24px; background: #1E3A8A; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
           .alert { background: #FEF2F2; border-left: 4px solid #DC2626; padding: 15px; margin: 20px 0; }
           .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
         </style>
@@ -145,7 +157,7 @@ class EmailService {
             <p>Hi ${username},</p>
             <p>We received a request to reset your password for your RE Data Metrix account. Click the button below to create a new password:</p>
             <div style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset Password</a>
+              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Reset Password</a>
             </div>
             <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
             <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${resetUrl}</p>
@@ -170,18 +182,18 @@ class EmailService {
   }
 
   async sendLenderPasswordResetEmail(to: string, companyName: string, token: string): Promise<boolean> {
-    const resetUrl = `${process.env.VITE_APP_URL || 'http://localhost:5000'}/lender/reset-password/${token}`;
+    const resetUrl = `${this.getBaseUrl()}/lender/reset-password/${token}`;
 
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; padding: 12px 24px; background: #1E3A8A; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
           .alert { background: #FEF2F2; border-left: 4px solid #DC2626; padding: 15px; margin: 20px 0; }
           .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
         </style>
@@ -195,7 +207,7 @@ class EmailService {
             <p>Hello ${companyName},</p>
             <p>We received a request to reset your password for your RE Data Metrix Lender Portal account. Click the button below to create a new password:</p>
             <div style="text-align: center;">
-              <a href="${resetUrl}" class="button">Reset Password</a>
+              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Reset Password</a>
             </div>
             <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
             <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${resetUrl}</p>
