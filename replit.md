@@ -98,6 +98,11 @@ This section tracks features, improvements, and fixes to be implemented in futur
   - **Impact**: Better UX, eliminates confusion when navigating between pages
   - **Scope**: Review all route changes and page loads, add scroll restoration logic
 
+- **Password Visibility Toggle**: Add show/hide password option to all password input fields
+  - **Context**: Password reset forms and all password fields currently don't allow users to verify what they've typed
+  - **Impact**: Better UX, reduces password entry errors, improves accessibility
+  - **Scope**: Add eye icon toggle to password reset forms (user & lender), login forms, registration forms, and any future password inputs
+
 ### Medium Priority
 *No tasks currently*
 
