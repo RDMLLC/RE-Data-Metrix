@@ -31,6 +31,8 @@ export default function LenderManagement() {
   const [contactNameSearch, setContactNameSearch] = useState("");
   const [newLenderEmail, setNewLenderEmail] = useState("");
   const [newLenderCompany, setNewLenderCompany] = useState("");
+  const [newLenderReferralAmount, setNewLenderReferralAmount] = useState("");
+  const [newLenderReferralType, setNewLenderReferralType] = useState("$");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -99,12 +101,12 @@ export default function LenderManagement() {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: async ({ email, companyName }: { email: string; companyName: string }) => {
+    mutationFn: async ({ email, companyName, referralAmount, referralType }: { email: string; companyName: string; referralAmount: number; referralType: string }) => {
       const response = await fetch("/api/lenders/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ username: email, companyName }),
+        body: JSON.stringify({ username: email, companyName, referralAmount, referralType }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -123,6 +125,8 @@ export default function LenderManagement() {
       }
       setNewLenderEmail("");
       setNewLenderCompany("");
+      setNewLenderReferralAmount("");
+      setNewLenderReferralType("$");
     },
     onError: (error: any) => {
       toast({
@@ -135,15 +139,24 @@ export default function LenderManagement() {
 
   const handleSendInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLenderEmail || !newLenderCompany) {
+    if (!newLenderEmail || !newLenderCompany || !newLenderReferralAmount) {
       toast({
         title: "Missing Information",
-        description: "Please provide both email and company name.",
+        description: "Please provide email, company name, and referral amount.",
         variant: "destructive",
       });
       return;
     }
-    inviteMutation.mutate({ email: newLenderEmail, companyName: newLenderCompany });
+    const referralAmount = parseFloat(newLenderReferralAmount);
+    if (isNaN(referralAmount) || referralAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Referral amount must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
+    inviteMutation.mutate({ email: newLenderEmail, companyName: newLenderCompany, referralAmount, referralType: newLenderReferralType });
   };
 
   const handleCopyLink = () => {
@@ -307,6 +320,45 @@ export default function LenderManagement() {
                         required
                         data-testid="input-new-lender-company"
                       />
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-3">Referral Fee Configuration *</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Set by admin - visible to investors but not editable by lender
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="new-lender-referral-amount" className="text-sm font-medium mb-2 block">
+                          Referral Amount *
+                        </label>
+                        <Input
+                          id="new-lender-referral-amount"
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g., 500 or 2.5"
+                          value={newLenderReferralAmount}
+                          onChange={(e) => setNewLenderReferralAmount(e.target.value)}
+                          required
+                          data-testid="input-new-lender-referral-amount"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="new-lender-referral-type" className="text-sm font-medium mb-2 block">
+                          Fee Type *
+                        </label>
+                        <select
+                          id="new-lender-referral-type"
+                          value={newLenderReferralType}
+                          onChange={(e) => setNewLenderReferralType(e.target.value)}
+                          className="w-full px-3 py-2 border border-input bg-background rounded-md text-foreground"
+                          data-testid="select-new-lender-referral-type"
+                        >
+                          <option value="$">Dollars ($)</option>
+                          <option value="%">Percentage (%)</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                   

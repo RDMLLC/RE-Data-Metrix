@@ -185,21 +185,6 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button 
-                className="w-full" 
-                onClick={() => setLocation("/admin/lender-invite")}
-                data-testid="button-create-lender-invite"
-              >
-                Create Lender Invite
-              </Button>
-              <Button variant="outline" className="w-full" data-testid="button-view-users">
-                View All Users
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </Layout>

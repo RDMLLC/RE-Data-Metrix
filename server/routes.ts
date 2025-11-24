@@ -353,10 +353,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Company name is required" });
       }
 
+      if (referralAmount === undefined || referralAmount === null || referralAmount === "") {
+        return res.status(400).json({ error: "Referral amount is required" });
+      }
+
+      if (!referralType) {
+        return res.status(400).json({ error: "Referral type is required" });
+      }
+
+      const parsedReferralAmount = parseFloat(referralAmount);
+      if (isNaN(parsedReferralAmount) || parsedReferralAmount <= 0) {
+        return res.status(400).json({ error: "Referral amount must be a positive number" });
+      }
+
       // Generate random temporary password
       const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
 
-      const result = await storage.createLenderInvite(username, tempPassword, companyName, referralAmount, referralType);
+      const result = await storage.createLenderInvite(username, tempPassword, companyName, parsedReferralAmount, referralType);
       
       // Send email with credentials - use request origin to generate correct URL
       const protocol = req.protocol || "https";
@@ -634,8 +647,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/lender-company-info", ensureLenderAuthenticated, async (req, res) => {
     try {
       const lenderId = (req.user as any).id;
+      
+      const { email, referralAmount, referralType, ...allowedFields } = req.body;
+      
       const data = {
-        ...req.body,
+        ...allowedFields,
         lenderId,
       };
       const updatedInfo = await storage.updateLenderCompanyInfo(data);

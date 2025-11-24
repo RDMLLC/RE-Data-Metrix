@@ -37,7 +37,7 @@ export interface IStorage {
   getLender(id: string): Promise<Lender | undefined>;
   getLenderByEmail(email: string): Promise<Lender | undefined>;
   getLenderByUsername(username: string): Promise<Lender | undefined>;
-  createLenderInvite(username: string, password: string, companyName: string, referralAmount?: number, referralType?: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}>;
+  createLenderInvite(username: string, password: string, companyName: string, referralAmount: number, referralType: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}>;
   validateLenderInvite(token: string): Promise<Lender | undefined>;
   completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string, companyName?: string): Promise<Lender>;
   
@@ -695,7 +695,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createLenderInvite(username: string, password: string, companyName: string, referralAmount?: number, referralType?: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
+  async createLenderInvite(username: string, password: string, companyName: string, referralAmount: number, referralType: string): Promise<{token: string, lender: Lender, isNewInvite: boolean}> {
     const token = randomBytes(32).toString('base64url');
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 7);
@@ -720,18 +720,16 @@ export class DatabaseStorage implements IStorage {
         return { token, lender: result[0], isNewInvite: false };
       } else {
         // Not yet accepted, re-invite them with updated company name and referral info
-        const updateData: any = {
-          password: hashedPassword,
-          companyName: companyName,
-          inviteToken: token,
-          inviteExpiry: expiry,
-          inviteAccepted: false,
-        };
-        if (referralAmount !== undefined) updateData.referralAmount = referralAmount;
-        if (referralType !== undefined) updateData.referralType = referralType;
-        
         const result = await db.update(lendersTable)
-          .set(updateData)
+          .set({
+            password: hashedPassword,
+            companyName: companyName,
+            referralAmount: referralAmount.toString(),
+            referralType: referralType,
+            inviteToken: token,
+            inviteExpiry: expiry,
+            inviteAccepted: false,
+          })
           .where(eq(lendersTable.email, username))
           .returning();
         return { token, lender: result[0], isNewInvite: true };
@@ -739,19 +737,17 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Create new lender
-    const createData: any = {
+    const result = await db.insert(lendersTable).values({
       email: username,
       companyName: companyName,
       password: hashedPassword,
       contactName: 'Pending',
+      referralAmount: referralAmount.toString(),
+      referralType: referralType,
       inviteToken: token,
       inviteExpiry: expiry,
       inviteAccepted: false,
-    };
-    if (referralAmount !== undefined) createData.referralAmount = referralAmount;
-    if (referralType !== undefined) createData.referralType = referralType;
-    
-    const result = await db.insert(lendersTable).values(createData).returning();
+    }).returning();
     
     return { token, lender: result[0], isNewInvite: true };
   }

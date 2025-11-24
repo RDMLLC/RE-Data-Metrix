@@ -17,9 +17,9 @@ const inviteSchema = z.object({
   username: z.string().min(1, "Email is required"),
   referralAmount: z.preprocess(
     (val) => val === "" || val === null || val === undefined ? undefined : val,
-    z.coerce.number().positive("Must be a positive number").optional()
+    z.coerce.number().positive("Must be a positive number")
   ),
-  referralType: z.enum(["$", "%"]).optional(),
+  referralType: z.enum(["$", "%"]),
 });
 
 type InviteForm = z.infer<typeof inviteSchema>;
@@ -34,7 +34,7 @@ export default function LenderInvite() {
     defaultValues: {
       companyName: "",
       username: "",
-      referralAmount: undefined,
+      referralAmount: 0,
       referralType: "$",
     },
   });
@@ -155,7 +155,7 @@ export default function LenderInvite() {
                         name="referralAmount"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Referral Fee Amount (Optional)</FormLabel>
+                            <FormLabel>Referral Fee Amount *</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -176,7 +176,7 @@ export default function LenderInvite() {
                         name="referralType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Fee Type</FormLabel>
+                            <FormLabel>Fee Type *</FormLabel>
                             <FormControl>
                               <select
                                 {...field}

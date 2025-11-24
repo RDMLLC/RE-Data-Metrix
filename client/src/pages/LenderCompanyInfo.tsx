@@ -19,7 +19,7 @@ const companyInfoSchema = z.object({
   companyName: z.string().optional(),
   contactName: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.string().optional(),
   website: z.string().url().optional().or(z.literal("")),
   referralLink: z.string().url().optional().or(z.literal("")),
   referralAmount: z.any().optional(),
@@ -105,7 +105,8 @@ export default function LenderCompanyInfo() {
   }, [lenderData]);
 
   const onSubmit = async (data: CompanyInfoForm) => {
-    saveCompanyInfoMutation.mutate(data);
+    const { email, referralAmount, referralType, ...editableFields } = data;
+    saveCompanyInfoMutation.mutate(editableFields);
   };
 
   if (isLoadingLender) {
@@ -210,13 +211,17 @@ export default function LenderCompanyInfo() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground">Email Address</FormLabel>
+                      <FormLabel className="text-foreground">
+                        Email Address
+                        <span className="text-xs text-muted-foreground ml-2">(Read-only)</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
                           type="email"
                           placeholder="contact@company.com"
+                          disabled
                           data-testid="input-email"
                         />
                       </FormControl>
@@ -273,12 +278,12 @@ export default function LenderCompanyInfo() {
                       <FormItem>
                         <FormLabel className="text-foreground">
                           Referral Type
-                          {lenderData?.referralType && <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>}
+                          <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value || ""}
-                          disabled={!!lenderData?.referralType}
+                          disabled
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-referral-type">
@@ -302,7 +307,7 @@ export default function LenderCompanyInfo() {
                       <FormItem>
                         <FormLabel className="text-foreground">
                           Referral Amount
-                          {lenderData?.referralAmount && <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>}
+                          <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -311,7 +316,7 @@ export default function LenderCompanyInfo() {
                             type="number"
                             step="0.01"
                             placeholder="Enter amount"
-                            disabled={!!lenderData?.referralAmount}
+                            disabled
                             data-testid="input-referral-amount"
                           />
                         </FormControl>
