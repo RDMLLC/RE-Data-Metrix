@@ -5,7 +5,7 @@ import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropert
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
-import { eq, inArray, desc, and } from "drizzle-orm";
+import { eq, inArray, desc, and, sql } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureLenderAuthenticated, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
@@ -518,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [lender] = await db
         .select()
         .from(lenders)
-        .where(eq(lenders.email, email))
+        .where(sql`LOWER(${lenders.email}) = LOWER(${email})`)
         .limit(1);
 
       if (!lender) {
