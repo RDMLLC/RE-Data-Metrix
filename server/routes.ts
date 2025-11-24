@@ -670,6 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password: hashedPassword,
           passwordResetToken: null,
           passwordResetExpiry: null,
+          inviteAccepted: true,
         })
         .where(eq(lenders.id, lender.id));
 
