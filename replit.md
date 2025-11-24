@@ -9,6 +9,14 @@ RE Data Metrix is a real estate investment analytics and financing platform conn
 Preferred communication style: Simple, everyday language
 Spelling: American English (analyze, not analyse)
 
+### Navigation Requirements (DO NOT CHANGE)
+**CRITICAL**: The main navigation bar must remain simple with NO dropdown menus for login/user accounts.
+- "Login" appears as a regular navigation link in the nav bar (same as Contact, Toolbox, etc.)
+- Clicking "Login" takes users directly to the /login page
+- NO dropdown menus showing username, email, or user account options
+- NO "My Portal" or "Logout" options in the navigation bar
+- Keep navigation clean and simple with all links at the same level
+
 ## System Architecture
 
 ### Frontend
