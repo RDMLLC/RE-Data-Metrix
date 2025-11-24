@@ -118,7 +118,10 @@ This section tracks features, improvements, and fixes to be implemented in futur
   - **Scope**: Add logout button to lender portal navigation/header, implement logout endpoint if needed
 
 ### Low Priority
-*No tasks currently*
+- **Add District of Columbia to States List**: Include DC as an option in state selection dropdowns
+  - **Context**: Currently only includes 50 states, missing District of Columbia
+  - **Impact**: Better data accuracy for DC-based properties and users
+  - **Scope**: Update state lists in property address forms, user registration, and lender location fields
 
 ### Notes
 - Tasks added here persist across sessions
