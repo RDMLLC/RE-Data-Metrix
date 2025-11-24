@@ -426,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyName
       );
 
-      req.login(updatedLender, (err) => {
+      req.login({ ...updatedLender, userType: 'lender' }, (err) => {
         if (err) {
           return res.status(500).json({ error: "Login after signup failed" });
         }
