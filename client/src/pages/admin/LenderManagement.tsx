@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Archive, AlertCircle, Search } from "lucide-react";
+import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,10 @@ export default function LenderManagement() {
   const [lenderToArchive, setLenderToArchive] = useState<LenderWithReferrals | null>(null);
   const [companyNameSearch, setCompanyNameSearch] = useState("");
   const [contactNameSearch, setContactNameSearch] = useState("");
+  const [newLenderEmail, setNewLenderEmail] = useState("");
+  const [newLenderCompany, setNewLenderCompany] = useState("");
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const { data: lenders, isLoading } = useQuery<LenderWithReferrals[]>({
     queryKey: ["/api/admin/lenders"],
@@ -93,6 +97,66 @@ export default function LenderManagement() {
       setLenderToArchive(null);
     },
   });
+
+  const inviteMutation = useMutation({
+    mutationFn: async ({ email, companyName }: { email: string; companyName: string }) => {
+      const response = await fetch("/api/lenders/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: email, companyName }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to send invite");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/lenders"] });
+      toast({
+        title: "Invite Sent",
+        description: "Lender invitation has been sent successfully.",
+      });
+      if (data.inviteUrl) {
+        setInviteLink(data.inviteUrl);
+      }
+      setNewLenderEmail("");
+      setNewLenderCompany("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send invite",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSendInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLenderEmail || !newLenderCompany) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both email and company name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    inviteMutation.mutate({ email: newLenderEmail, companyName: newLenderCompany });
+  };
+
+  const handleCopyLink = () => {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+      toast({
+        title: "Link Copied",
+        description: "Invite link copied to clipboard.",
+      });
+    }
+  };
 
   const handleDelete = (lender: LenderWithReferrals) => {
     if (lender.referralCount > 0) {
@@ -199,6 +263,101 @@ export default function LenderManagement() {
                     <p className="text-sm text-muted-foreground">
                       Found {activeLenders.length + archivedLenders.length} lender{activeLenders.length + archivedLenders.length !== 1 ? 's' : ''}
                     </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Add Lender - Send Link
+                </CardTitle>
+                <CardDescription>
+                  Send an invitation email with auto-generated password to a new lender
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSendInvite} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="new-lender-email" className="text-sm font-medium mb-2 block">
+                        Lender Email *
+                      </label>
+                      <Input
+                        id="new-lender-email"
+                        type="email"
+                        placeholder="lender@example.com"
+                        value={newLenderEmail}
+                        onChange={(e) => setNewLenderEmail(e.target.value)}
+                        required
+                        data-testid="input-new-lender-email"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="new-lender-company" className="text-sm font-medium mb-2 block">
+                        Company Name *
+                      </label>
+                      <Input
+                        id="new-lender-company"
+                        placeholder="Company Name"
+                        value={newLenderCompany}
+                        onChange={(e) => setNewLenderCompany(e.target.value)}
+                        required
+                        data-testid="input-new-lender-company"
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    disabled={inviteMutation.isPending}
+                    data-testid="button-send-invite"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {inviteMutation.isPending ? "Sending..." : "Send Invite Link"}
+                  </Button>
+                </form>
+
+                {inviteLink && (
+                  <div className="mt-6 p-4 bg-success/10 border border-success/20 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-success mb-2">Invite Sent Successfully!</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          The invitation email has been sent with an auto-generated password. 
+                          Copy the link below to share manually if needed:
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={inviteLink}
+                            readOnly
+                            className="font-mono text-sm"
+                            data-testid="input-invite-link"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCopyLink}
+                            data-testid="button-copy-link"
+                          >
+                            {linkCopied ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
