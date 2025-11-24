@@ -45,8 +45,19 @@ export default function LenderCompanyInfo() {
       const res = await apiRequest("POST", "/api/lender-company-info", data);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lender-company-info"] });
+    onSuccess: async (updatedLender) => {
+      queryClient.setQueryData(["/api/lenders/me"], updatedLender);
+      form.reset({
+        companyName: updatedLender.companyName || "",
+        contactName: updatedLender.contactName || "",
+        phone: updatedLender.phone || "",
+        email: updatedLender.email || "",
+        website: updatedLender.website || "",
+        referralLink: updatedLender.referralLink || "",
+        referralAmount: updatedLender.referralAmount,
+        referralType: updatedLender.referralType || "$",
+        companyDescription: updatedLender.companyDescription || "",
+      });
       toast({
         title: "Company Info Saved",
         description: "Your company information has been saved successfully.",
@@ -91,7 +102,7 @@ export default function LenderCompanyInfo() {
         companyDescription: lenderData.companyDescription || "",
       });
     }
-  }, [lenderData, form]);
+  }, [lenderData]);
 
   const onSubmit = async (data: CompanyInfoForm) => {
     saveCompanyInfoMutation.mutate(data);
