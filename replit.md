@@ -87,3 +87,24 @@ The Toolbox & Resources section provides investors with curated affiliate progra
 - **Vite**
 - **esbuild**
 - **PostCSS**
+
+## Future Tasks & Backlog
+
+This section tracks features, improvements, and fixes to be implemented in future sessions. Tasks are organized by priority.
+
+### High Priority
+- **Page Scroll Position**: Ensure all page loads show the top of the page so users don't have to scroll up to see content
+  - **Context**: Currently some page navigations land partway down the page
+  - **Impact**: Better UX, eliminates confusion when navigating between pages
+  - **Scope**: Review all route changes and page loads, add scroll restoration logic
+
+### Medium Priority
+*No tasks currently*
+
+### Low Priority
+*No tasks currently*
+
+### Notes
+- Tasks added here persist across sessions
+- At the start of each build session, agent will review backlog and ask which tasks to tackle
+- New ideas can be added anytime without immediate implementation pressure
