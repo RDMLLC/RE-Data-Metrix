@@ -595,6 +595,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/loan-products/template", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const headers = [
+        'productName',
+        'newInvestorOk',
+        'minCreditScore',
+        'maxLtvBuy',
+        'maxLendRehab',
+        'interestRate',
+        'interestDeferred',
+        'drawnFundsOnly',
+        'points',
+        'pointsDeferred',
+        'maxLoanArv',
+        'appraisalRequired',
+        'estimatedAppraisalCost',
+        'fees',
+        'costPerDraw',
+        'timeToClose',
+        'isActive'
+      ];
+      
+      const exampleRow = [
+        'Example Fix & Flip Loan',
+        'TRUE',
+        '680',
+        '75.00',
+        '100.00',
+        '10.50',
+        'FALSE',
+        'FALSE',
+        '2.00',
+        'FALSE',
+        '70.00',
+        'TRUE',
+        '500.00',
+        '1500.00',
+        '250.00',
+        '21',
+        'TRUE'
+      ];
+      
+      const csv = [
+        headers.join(','),
+        exampleRow.join(',')
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="loan-products-template.csv"');
+      res.send(csv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate CSV template" });
+    }
+  });
+
   // Admin Lender Management Routes
   app.get("/api/admin/lenders", ensureAdmin, async (req, res) => {
     try {
