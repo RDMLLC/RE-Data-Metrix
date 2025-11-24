@@ -4,8 +4,9 @@ import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Archive, AlertCircle } from "lucide-react";
+import { ArrowLeft, Trash2, Archive, AlertCircle, Search } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,8 @@ export default function LenderManagement() {
   const { toast } = useToast();
   const [lenderToDelete, setLenderToDelete] = useState<LenderWithReferrals | null>(null);
   const [lenderToArchive, setLenderToArchive] = useState<LenderWithReferrals | null>(null);
+  const [companyNameSearch, setCompanyNameSearch] = useState("");
+  const [contactNameSearch, setContactNameSearch] = useState("");
 
   const { data: lenders, isLoading } = useQuery<LenderWithReferrals[]>({
     queryKey: ["/api/admin/lenders"],
@@ -107,28 +110,99 @@ export default function LenderManagement() {
     setLenderToArchive(lender);
   };
 
-  const activeLenders = lenders?.filter(l => !l.archived) || [];
-  const archivedLenders = lenders?.filter(l => l.archived) || [];
+  const filterLenders = (lendersList: LenderWithReferrals[]) => {
+    return lendersList.filter(lender => {
+      const companyMatch = !companyNameSearch || 
+        lender.companyName.toLowerCase().includes(companyNameSearch.toLowerCase());
+      const contactMatch = !contactNameSearch || 
+        lender.contactName.toLowerCase().includes(contactNameSearch.toLowerCase());
+      
+      return companyMatch && contactMatch;
+    });
+  };
+
+  const activeLenders = filterLenders(lenders?.filter(l => !l.archived) || []);
+  const archivedLenders = filterLenders(lenders?.filter(l => l.archived) || []);
 
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 mb-8">
-            <Button
-              variant="outline"
-              onClick={() => setLocation("/admin/dashboard")}
-              data-testid="button-back-to-dashboard"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Lender Management</h1>
-              <p className="text-muted-foreground mt-2">
-                Manage lender accounts and track referral activity
-              </p>
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/admin/dashboard")}
+                data-testid="button-back-to-dashboard"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Lender Management</h1>
+                <p className="text-muted-foreground mt-2">
+                  Manage lender accounts and track referral activity
+                </p>
+              </div>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Search Lenders
+                </CardTitle>
+                <CardDescription>
+                  Filter lenders by company name or contact name
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="company-search" className="text-sm font-medium mb-2 block">
+                      Company Name
+                    </label>
+                    <Input
+                      id="company-search"
+                      placeholder="Search by company name..."
+                      value={companyNameSearch}
+                      onChange={(e) => setCompanyNameSearch(e.target.value)}
+                      data-testid="input-company-search"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="contact-search" className="text-sm font-medium mb-2 block">
+                      Contact Name
+                    </label>
+                    <Input
+                      id="contact-search"
+                      placeholder="Search by contact name..."
+                      value={contactNameSearch}
+                      onChange={(e) => setContactNameSearch(e.target.value)}
+                      data-testid="input-contact-search"
+                    />
+                  </div>
+                </div>
+                {(companyNameSearch || contactNameSearch) && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCompanyNameSearch("");
+                        setContactNameSearch("");
+                      }}
+                      data-testid="button-clear-search"
+                    >
+                      Clear Search
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      Found {activeLenders.length + archivedLenders.length} lender{activeLenders.length + archivedLenders.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {isLoading ? (
