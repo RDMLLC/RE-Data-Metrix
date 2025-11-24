@@ -10,6 +10,8 @@ import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureLenderAuthenticated, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
 import crypto from "crypto";
+import multer from "multer";
+import { parse } from "csv-parse/sync";
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -23,6 +25,14 @@ function generateReferralCode(): string {
 function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
+
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
+    files: 1
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -647,6 +657,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(csv);
     } catch (error) {
       res.status(500).json({ error: "Failed to generate CSV template" });
+    }
+  });
+
+  app.post("/api/loan-products/bulk-import", ensureLenderAuthenticated, (req, res, next) => {
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ 
+              error: "File too large", 
+              message: "CSV file must be under 5MB. Please reduce the file size or split into multiple uploads." 
+            });
+          }
+          if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ 
+              error: "Too many files", 
+              message: "Please upload only one CSV file at a time." 
+            });
+          }
+          return res.status(400).json({ 
+            error: "Upload error", 
+            message: err.message 
+          });
+        }
+        return res.status(500).json({ 
+          error: "Server error", 
+          message: "An error occurred during file upload." 
+        });
+      }
+      next();
+    });
+  }, async (req, res) => {
+    try {
+      const lenderId = (req.user as any).id;
+      
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const csvContent = req.file.buffer.toString('utf-8');
+      
+      const records = parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      });
+
+      if (records.length > 1000) {
+        return res.status(400).json({ 
+          error: "Too many products in CSV", 
+          message: "Maximum 1000 products per upload. Please split your file and upload in batches." 
+        });
+      }
+
+      const errors: Array<{ row: number; error: string }> = [];
+      const validProducts: any[] = [];
+
+      for (let i = 0; i < records.length; i++) {
+        const record: any = records[i];
+        const rowNumber = i + 2;
+
+        try {
+          const parseBool = (value: any) => {
+            if (value === '' || value === null || value === undefined) return false;
+            const str = String(value).toUpperCase().trim();
+            return str === 'TRUE' || str === 'YES' || str === '1';
+          };
+
+          const parseDecimal = (value: any, fieldName: string) => {
+            if (value === '' || value === null || value === undefined) return null;
+            const cleaned = String(value).trim().replace(/^'+/, '');
+            const num = parseFloat(cleaned);
+            if (isNaN(num)) {
+              throw new Error(`Invalid decimal value for ${fieldName}: "${value}"`);
+            }
+            return String(num);
+          };
+
+          const parseInteger = (value: any, fieldName: string) => {
+            if (value === '' || value === null || value === undefined) return null;
+            const cleaned = String(value).trim().replace(/^'+/, '');
+            const num = parseInt(cleaned, 10);
+            if (isNaN(num)) {
+              throw new Error(`Invalid integer value for ${fieldName}: "${value}"`);
+            }
+            return num;
+          };
+
+          const productData = {
+            lenderId,
+            productName: record.productName ? String(record.productName).trim().replace(/^'+/, '') : '',
+            newInvestorOk: parseBool(record.newInvestorOk),
+            minCreditScore: parseInteger(record.minCreditScore, 'minCreditScore'),
+            maxLtvBuy: parseDecimal(record.maxLtvBuy, 'maxLtvBuy'),
+            maxLendRehab: parseDecimal(record.maxLendRehab, 'maxLendRehab'),
+            interestRate: parseDecimal(record.interestRate, 'interestRate'),
+            interestDeferred: parseBool(record.interestDeferred),
+            drawnFundsOnly: parseBool(record.drawnFundsOnly),
+            points: parseDecimal(record.points, 'points'),
+            pointsDeferred: parseBool(record.pointsDeferred),
+            maxLoanArv: parseDecimal(record.maxLoanArv, 'maxLoanArv'),
+            appraisalRequired: parseBool(record.appraisalRequired),
+            estimatedAppraisalCost: parseDecimal(record.estimatedAppraisalCost, 'estimatedAppraisalCost'),
+            fees: parseDecimal(record.fees, 'fees'),
+            costPerDraw: parseDecimal(record.costPerDraw, 'costPerDraw'),
+            timeToClose: parseInteger(record.timeToClose, 'timeToClose'),
+            isActive: record.isActive !== undefined ? parseBool(record.isActive) : true,
+          };
+
+          const validatedData = insertLoanProductSchema.parse(productData);
+          validProducts.push(validatedData);
+        } catch (error: any) {
+          if (error instanceof z.ZodError) {
+            errors.push({ 
+              row: rowNumber, 
+              error: `Validation error: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}` 
+            });
+          } else {
+            errors.push({ row: rowNumber, error: error.message || "Unknown error" });
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({ 
+          error: "CSV validation failed", 
+          errors,
+          validCount: validProducts.length,
+          errorCount: errors.length 
+        });
+      }
+
+      const createdProducts = [];
+      for (const productData of validProducts) {
+        const product = await storage.createLoanProduct(productData);
+        createdProducts.push(product);
+      }
+
+      res.json({ 
+        message: `Successfully imported ${createdProducts.length} loan products`,
+        count: createdProducts.length,
+        products: createdProducts 
+      });
+    } catch (error: any) {
+      console.error('Bulk import error:', error);
+      res.status(500).json({ error: "Failed to import loan products", details: error.message });
     }
   });
 

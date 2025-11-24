@@ -13,9 +13,11 @@ import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { LoanProduct } from "@shared/schema";
+import { useState } from "react";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
     queryKey: ["/api/loan-products"],
@@ -49,6 +51,71 @@ export default function LenderLoanProducts() {
       });
     },
   });
+
+  const handleCsvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid File",
+        description: "Please upload a CSV file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/loan-products/bulk-import', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.errors && Array.isArray(result.errors)) {
+          const errorMessages = result.errors
+            .slice(0, 5)
+            .map((e: any) => `Row ${e.row}: ${e.error}`)
+            .join('\n');
+          
+          toast({
+            title: "CSV Import Failed",
+            description: `${result.errorCount} errors found:\n${errorMessages}${result.errors.length > 5 ? '\n...' : ''}`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: result.error || "Import Failed",
+            description: result.message || "Failed to import CSV file.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
+        toast({
+          title: "Import Successful",
+          description: `Successfully imported ${result.count} loan products.`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Upload Error",
+        description: "An error occurred while uploading the file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
+  };
 
   const form = useForm<any>({
     resolver: zodResolver(insertLoanProductSchema.omit({ lenderId: true }).extend({
@@ -104,13 +171,38 @@ export default function LenderLoanProducts() {
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-primary mb-4">Manage Loan Products</h1>
             <div className="h-1 w-24 bg-accent mb-4"></div>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground mb-6">
               Add and manage your loan products to make them available to investors
             </p>
+            
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                onClick={() => window.open('/api/loan-products/template', '_blank')}
+                data-testid="button-download-csv-template"
+              >
+                📥 Download CSV Template
+              </Button>
+              <div>
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="csv-upload"
+                  className="hidden"
+                  onChange={handleCsvUpload}
+                  data-testid="input-csv-file"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('csv-upload')?.click()}
+                  disabled={isUploading}
+                  data-testid="button-upload-csv"
+                >
+                  {isUploading ? "⏳ Uploading..." : "📤 Upload CSV"}
+                </Button>
+              </div>
+            </div>
           </div>
-
-          {/* CSV Import - Temporarily Disabled for Security & Reliability Improvements */}
-          {/* TODO: Re-enable after implementing authentication and robust CSV parsing */}
 
           <Card className="p-8 mb-8">
             <div className="mb-6">
