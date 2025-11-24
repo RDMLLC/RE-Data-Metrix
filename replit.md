@@ -47,6 +47,7 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Archive lenders with referrals (permanent preservation, cannot be deleted)
   - Business rule enforcement: archived lenders cannot be deleted, only zero-referral lenders can be permanently removed
   - All admin endpoints secured with ensureAdmin middleware checking user.role === 'admin'
+  - **Referral Fields**: Admin sets referralType and referralAmount during lender invite; these fields are visible to lenders (read-only in Company Info) but NOT visible to investors
 
 ### Form Handling & Validation
 

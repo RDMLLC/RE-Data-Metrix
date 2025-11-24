@@ -278,7 +278,7 @@ export default function LenderCompanyInfo() {
                       <FormItem>
                         <FormLabel className="text-foreground">
                           Referral Type
-                          <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>
+                          <span className="text-xs text-muted-foreground ml-2">(Visible to Lender, but not editable by Lender)</span>
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -307,7 +307,7 @@ export default function LenderCompanyInfo() {
                       <FormItem>
                         <FormLabel className="text-foreground">
                           Referral Amount
-                          <span className="text-xs text-muted-foreground ml-2">(Set by admin)</span>
+                          <span className="text-xs text-muted-foreground ml-2">(Visible to Lender, but not editable by Lender)</span>
                         </FormLabel>
                         <FormControl>
                           <Input
