@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, lenders, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -504,6 +504,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       });
     })(req, res, next);
+  });
+
+  app.post("/api/lenders/request-password-reset", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.email, email))
+        .limit(1);
+
+      if (!lender) {
+        return res.json({ 
+          message: "If an account exists with this email, a password reset link will be sent." 
+        });
+      }
+
+      const resetToken = generateVerificationToken();
+      const resetExpiry = new Date();
+      resetExpiry.setHours(resetExpiry.getHours() + 1);
+
+      await db
+        .update(lenders)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiry: resetExpiry,
+        })
+        .where(eq(lenders.id, lender.id));
+
+      const emailSent = await emailService.sendLenderPasswordResetEmail(
+        lender.email,
+        lender.companyName,
+        resetToken
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send password reset email to lender:', lender.email);
+      }
+
+      res.json({ 
+        message: "If an account exists with this email, a password reset link will be sent." 
+      });
+    } catch (error) {
+      console.error('Lender password reset request error:', error);
+      res.status(500).json({ error: "Password reset request failed" });
+    }
+  });
+
+  app.get("/api/lenders/validate-reset-token/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.passwordResetToken, token))
+        .limit(1);
+
+      if (!lender) {
+        return res.status(400).json({ valid: false, error: "Invalid reset token" });
+      }
+
+      if (lender.passwordResetExpiry && new Date() > lender.passwordResetExpiry) {
+        return res.status(400).json({ valid: false, error: "Reset token has expired" });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      console.error('Lender token validation error:', error);
+      res.status(500).json({ valid: false, error: "Token validation failed" });
+    }
+  });
+
+  app.post("/api/lenders/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({ error: "Password is required" });
+      }
+
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.passwordResetToken, token))
+        .limit(1);
+
+      if (!lender) {
+        return res.status(400).json({ error: "Invalid reset token" });
+      }
+
+      if (lender.passwordResetExpiry && new Date() > lender.passwordResetExpiry) {
+        return res.status(400).json({ error: "Reset token has expired" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      await db
+        .update(lenders)
+        .set({
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+        })
+        .where(eq(lenders.id, lender.id));
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error('Lender password reset error:', error);
+      res.status(500).json({ error: "Password reset failed" });
+    }
   });
 
   // Lender Questionnaire Routes

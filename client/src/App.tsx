@@ -35,6 +35,8 @@ import LenderProfile from "@/pages/LenderProfile";
 import VerifyEmail from "@/pages/VerifyEmail";
 import RequestPasswordReset from "@/pages/RequestPasswordReset";
 import ResetPassword from "@/pages/ResetPassword";
+import RequestLenderPasswordReset from "@/pages/RequestLenderPasswordReset";
+import ResetLenderPassword from "@/pages/ResetLenderPassword";
 
 function Router() {
   return (
@@ -54,6 +56,8 @@ function Router() {
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/request-password-reset" component={RequestPasswordReset} />
       <Route path="/reset-password/:token" component={ResetPassword} />
+      <Route path="/lender/request-password-reset" component={RequestLenderPasswordReset} />
+      <Route path="/lender/reset-password/:token" component={ResetLenderPassword} />
       <Route path="/portal/profile">
         {() => (
           <ProtectedRoute>
