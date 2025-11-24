@@ -100,6 +100,36 @@ export default function LenderManagement() {
     },
   });
 
+  const resendInviteMutation = useMutation({
+    mutationFn: async (lenderId: string) => {
+      const response = await fetch(`/api/admin/lenders/${lenderId}/resend-invite`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to resend invite");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Invite Resent",
+        description: "The lender invitation has been resent successfully.",
+      });
+      if (data.inviteUrl) {
+        setInviteLink(data.inviteUrl);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend invite",
+        variant: "destructive",
+      });
+    },
+  });
+
   const inviteMutation = useMutation({
     mutationFn: async ({ email, companyName, referralAmount, referralType }: { email: string; companyName: string; referralAmount: number; referralType: string }) => {
       const response = await fetch("/api/lenders/invite", {
@@ -469,6 +499,18 @@ export default function LenderManagement() {
                             </div>
                           </div>
                           <div className="flex gap-2">
+                            {!lender.inviteAccepted && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => resendInviteMutation.mutate(lender.id)}
+                                disabled={resendInviteMutation.isPending}
+                                data-testid={`button-resend-${lender.id}`}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                {resendInviteMutation.isPending ? "Sending..." : "Resend Link"}
+                              </Button>
+                            )}
                             {lender.referralCount > 0 ? (
                               <Button
                                 variant="outline"

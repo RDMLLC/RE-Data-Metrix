@@ -464,6 +464,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/lenders/:lenderId/resend-invite", ensureAdmin, async (req, res) => {
+    try {
+      const { lenderId } = req.params;
+
+      // Get lender by ID
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.id, lenderId))
+        .limit(1);
+
+      if (!lender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+
+      if (lender.inviteAccepted) {
+        return res.status(400).json({ error: "Lender has already accepted the invite" });
+      }
+
+      // Generate new invite token and temp password
+      const newToken = crypto.randomBytes(32).toString('base64url');
+      const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
+      const hashedPassword = await hashPassword(tempPassword);
+
+      // Update lender with new token and password
+      await db
+        .update(lenders)
+        .set({
+          inviteToken: newToken,
+          password: hashedPassword,
+        })
+        .where(eq(lenders.id, lenderId));
+
+      // Send email with new credentials
+      const protocol = req.protocol || "https";
+      const host = req.get("host") || "localhost:5000";
+      const inviteUrl = `${protocol}://${host}/lender-signup/${newToken}`;
+      
+      await emailService.sendLenderCredentials(lender.email, lender.email, tempPassword, inviteUrl);
+
+      res.json({
+        message: "Invite resent successfully",
+        inviteUrl: inviteUrl,
+      });
+    } catch (error) {
+      console.error('Resend invite error:', error);
+      res.status(500).json({ error: "Failed to resend invite" });
+    }
+  });
+
   app.get("/api/lenders/me", ensureLenderAuthenticated, async (req, res) => {
     try {
       const lender = req.user as any;
