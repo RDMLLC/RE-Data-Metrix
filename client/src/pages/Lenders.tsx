@@ -261,6 +261,7 @@ export default function Lenders() {
                           <SelectItem value="conventional">Conventional</SelectItem>
                           <SelectItem value="dscr">DSCR</SelectItem>
                           <SelectItem value="hard_money">Hard Money / Bridge</SelectItem>
+                          <SelectItem value="new_construction">New Construction / Ground-Up</SelectItem>
                           <SelectItem value="fha_va">FHA/VA</SelectItem>
                           <SelectItem value="portfolio">Portfolio / Blanket</SelectItem>
                           <SelectItem value="arm">5/1 ARM</SelectItem>
