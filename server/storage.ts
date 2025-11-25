@@ -22,7 +22,8 @@ import {
   properties as propertiesTable,
   dealAnalyses as dealAnalysesTable,
   dealAnalysisAccess as dealAnalysisAccessTable,
-  lenderReferrals as lenderReferralsTable
+  lenderReferrals as lenderReferralsTable,
+  savedDeals as savedDealsTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -77,6 +78,37 @@ export interface IStorage {
   deleteLender(id: string): Promise<boolean>;
   archiveLender(id: string): Promise<Lender | undefined>;
   getLenderReferralCount(lenderId: string): Promise<number>;
+  
+  // Admin Reports
+  getAllLenderReferralsForAdmin(): Promise<Array<{
+    id: string;
+    lenderId: string;
+    lenderName: string;
+    userId: string | null;
+    investorName: string | null;
+    investorEmail: string | null;
+    referralType: string;
+    savedDealId: string | null;
+    propertyAddress: string | null;
+    createdAt: Date | null;
+  }>>;
+  getAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    activeSubscribers: number;
+    totalLenders: number;
+    activeLenders: number;
+    totalReferrals: number;
+    totalDealsAnalyzed: number;
+  }>;
+  getAllUsers(): Promise<Array<{
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    subscriptionStatus: string;
+    createdAt: Date | null;
+    isEmailVerified: boolean;
+  }>>;
 }
 
 export class MemStorage implements IStorage {
@@ -412,6 +444,44 @@ export class MemStorage implements IStorage {
   }
 
   async archiveLender(id: string): Promise<Lender | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAllLenderReferralsForAdmin(): Promise<Array<{
+    id: string;
+    lenderId: string;
+    lenderName: string;
+    userId: string | null;
+    investorName: string | null;
+    investorEmail: string | null;
+    referralType: string;
+    savedDealId: string | null;
+    propertyAddress: string | null;
+    createdAt: Date | null;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    activeSubscribers: number;
+    totalLenders: number;
+    activeLenders: number;
+    totalReferrals: number;
+    totalDealsAnalyzed: number;
+  }> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAllUsers(): Promise<Array<{
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    subscriptionStatus: string;
+    createdAt: Date | null;
+    isEmailVerified: boolean;
+  }>> {
     throw new Error("Not implemented in MemStorage");
   }
 }
@@ -904,6 +974,140 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async getAllLenderReferralsForAdmin(): Promise<Array<{
+    id: string;
+    lenderId: string;
+    lenderName: string;
+    userId: string | null;
+    investorName: string | null;
+    investorEmail: string | null;
+    referralType: string;
+    savedDealId: string | null;
+    propertyAddress: string | null;
+    createdAt: Date | null;
+  }>> {
+    const referrals = await db.select().from(lenderReferralsTable)
+      .orderBy(desc(lenderReferralsTable.createdAt));
+
+    const enrichedReferrals = await Promise.all(referrals.map(async (ref) => {
+      let lenderName = 'Unknown';
+      let investorName: string | null = null;
+      let investorEmail: string | null = null;
+      let propertyAddress: string | null = null;
+
+      const lender = await db.select().from(lendersTable)
+        .where(eq(lendersTable.id, ref.lenderId)).limit(1);
+      if (lender[0]) {
+        lenderName = lender[0].companyName;
+      }
+
+      if (ref.userId) {
+        const user = await db.select().from(usersTable)
+          .where(eq(usersTable.id, ref.userId)).limit(1);
+        if (user[0]) {
+          investorName = user[0].username;
+          investorEmail = user[0].email;
+        }
+      }
+
+      if (ref.savedDealId) {
+        const savedDeal = await db.select().from(savedDealsTable)
+          .where(eq(savedDealsTable.id, ref.savedDealId)).limit(1);
+        if (savedDeal[0]) {
+          propertyAddress = savedDeal[0].propertyAddress || null;
+          if (!propertyAddress && savedDeal[0].dealSnapshot) {
+            const snapshot = savedDeal[0].dealSnapshot as any;
+            if (snapshot.property?.address) {
+              propertyAddress = snapshot.property.address;
+            } else if (snapshot.address) {
+              propertyAddress = snapshot.address;
+            }
+          }
+        }
+      }
+
+      const isDealBased = ref.savedDealId !== null;
+
+      return {
+        id: ref.id,
+        lenderId: ref.lenderId,
+        lenderName,
+        userId: ref.userId,
+        investorName,
+        investorEmail,
+        referralType: isDealBased ? 'deal_based' : ref.referralType,
+        savedDealId: ref.savedDealId,
+        propertyAddress,
+        createdAt: ref.createdAt,
+      };
+    }));
+
+    return enrichedReferrals;
+  }
+
+  async getAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    activeSubscribers: number;
+    totalLenders: number;
+    activeLenders: number;
+    totalReferrals: number;
+    totalDealsAnalyzed: number;
+  }> {
+    const usersResult = await db.select({ count: count() }).from(usersTable);
+    const totalUsers = usersResult[0]?.count || 0;
+
+    const subscribersResult = await db.select({ count: count() }).from(usersTable)
+      .where(sqlCount`${usersTable.subscriptionStatus} IN ('active', 'referral_trial', 'comped')`);
+    const activeSubscribers = subscribersResult[0]?.count || 0;
+
+    const lendersResult = await db.select({ count: count() }).from(lendersTable);
+    const totalLenders = lendersResult[0]?.count || 0;
+
+    const activeLendersResult = await db.select({ count: count() }).from(lendersTable)
+      .where(and(
+        eq(lendersTable.archived, false),
+        eq(lendersTable.inviteAccepted, true)
+      ));
+    const activeLenders = activeLendersResult[0]?.count || 0;
+
+    const referralsResult = await db.select({ count: count() }).from(lenderReferralsTable);
+    const totalReferrals = referralsResult[0]?.count || 0;
+
+    const dealsResult = await db.select({ count: count() }).from(dealAnalysesTable);
+    const totalDealsAnalyzed = dealsResult[0]?.count || 0;
+
+    return {
+      totalUsers,
+      activeSubscribers,
+      totalLenders,
+      activeLenders,
+      totalReferrals,
+      totalDealsAnalyzed,
+    };
+  }
+
+  async getAllUsers(): Promise<Array<{
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    subscriptionStatus: string;
+    createdAt: Date | null;
+    isEmailVerified: boolean;
+  }>> {
+    const users = await db.select({
+      id: usersTable.id,
+      username: usersTable.username,
+      email: usersTable.email,
+      role: usersTable.role,
+      subscriptionStatus: usersTable.subscriptionStatus,
+      createdAt: usersTable.createdAt,
+      isEmailVerified: usersTable.isEmailVerified,
+    }).from(usersTable).orderBy(desc(usersTable.createdAt));
+
+    return users;
   }
 }
 

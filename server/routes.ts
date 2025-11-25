@@ -1045,6 +1045,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Reports Routes
+  app.get("/api/admin/reports/dashboard-stats", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getAdminDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Dashboard stats error:', error);
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  app.get("/api/admin/reports/lender-referrals", ensureAdmin, async (req, res) => {
+    try {
+      const referrals = await storage.getAllLenderReferralsForAdmin();
+      res.json(referrals);
+    } catch (error) {
+      console.error('Lender referrals report error:', error);
+      res.status(500).json({ error: "Failed to fetch lender referrals" });
+    }
+  });
+
+  app.get("/api/admin/reports/users", ensureAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error('Users report error:', error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
   // Lender Company Info Routes
   app.post("/api/lender-company-info", ensureLenderAuthenticated, async (req, res) => {
     try {
