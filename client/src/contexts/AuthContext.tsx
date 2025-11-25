@@ -137,7 +137,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
-  const isSubscriber = !!user && ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+  const isSubscriber = !!user && (
+    user.role === 'admin' || 
+    ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus)
+  );
 
   return (
     <AuthContext.Provider
