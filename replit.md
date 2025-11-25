@@ -63,6 +63,17 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Add, edit, and delete individual loan products with full form validation
   - CSV bulk import/export for batch product management
   - Edit mode allows updating existing products with form pre-population
+  - **Loan Type Categorization**: Four loan types with dynamic conditional fields:
+    - **Bridge/Hard Money** (default): Full fields including rehab, ARV, draw costs
+    - **DSCR Purchase**: Simplified fields (no rehab/ARV/draw costs)
+    - **DSCR Refinance**: Same as purchase + cash-out toggle and max LTV when enabled
+    - **New Construction**: Referral link field for direct lender applications
+  - **Preferred Lender Status**: Admin-toggled flag that prioritizes lenders in Ground-Up results
+- **Ground-Up / New Construction Flow**: Deal Analysis Step 1 includes a link for ground-up projects that opens a modal allowing investors to:
+  - Select property state
+  - Enter estimated loan amount
+  - View top 2 new construction lenders (prioritizing preferred lenders, then by referral fee)
+  - Apply directly via lender referral links
 
 ### Membership Access Control
 
