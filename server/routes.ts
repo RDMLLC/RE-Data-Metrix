@@ -1045,6 +1045,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/lenders/:id/preferred", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isPreferred } = req.body;
+      
+      if (typeof isPreferred !== 'boolean') {
+        return res.status(400).json({ error: "isPreferred must be a boolean" });
+      }
+      
+      const lender = await storage.updateLenderPreferredStatus(id, isPreferred);
+      if (!lender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      res.json(lender);
+    } catch (error) {
+      console.error('Update preferred status error:', error);
+      res.status(500).json({ error: "Failed to update preferred status" });
+    }
+  });
+
   app.get("/api/admin/lenders/:id", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
@@ -1322,6 +1342,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Search lenders error:", error);
       res.status(500).json({ error: "Failed to search lenders" });
+    }
+  });
+
+  // New Construction Lenders - for Ground-Up projects
+  app.get("/api/new-construction-lenders", async (req, res) => {
+    try {
+      const { state } = req.query;
+      
+      if (!state || typeof state !== 'string') {
+        return res.status(400).json({ error: "State is required" });
+      }
+
+      const results = await storage.getNewConstructionLenders(state);
+      res.json(results);
+    } catch (error) {
+      console.error("New construction lenders error:", error);
+      res.status(500).json({ error: "Failed to fetch new construction lenders" });
     }
   });
 

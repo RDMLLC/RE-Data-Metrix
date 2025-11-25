@@ -5,10 +5,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import GroundUpModal from "./GroundUpModal";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
@@ -23,6 +24,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [propertyUrl, setPropertyUrl] = useState("");
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
+  const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -276,17 +278,30 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             <p className="text-sm text-muted-foreground mb-3">
               Don't have a property URL? You can enter property details manually instead.
             </p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setManualEntryPreference(true)}
-              data-testid="button-switch-manual-entry"
-            >
-              Switch to Manual Entry
-            </Button>
+            <div className="flex flex-wrap gap-3 items-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setManualEntryPreference(true)}
+                data-testid="button-switch-manual-entry"
+              >
+                Switch to Manual Entry
+              </Button>
+              <button
+                type="button"
+                onClick={() => setGroundUpModalOpen(true)}
+                className="text-sm text-accent hover:underline underline-offset-4 flex items-center gap-1"
+                data-testid="link-ground-up"
+              >
+                <HardHat className="h-4 w-4" />
+                Click Here for Ground-Up / New Build Projects
+              </button>
+            </div>
           </div>
         </>
       )}
+
+      <GroundUpModal open={groundUpModalOpen} onOpenChange={setGroundUpModalOpen} />
 
       {manualEntryPreference && (
         <div className="space-y-4">

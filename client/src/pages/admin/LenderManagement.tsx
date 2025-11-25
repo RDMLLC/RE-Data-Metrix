@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle, Eye } from "lucide-react";
+import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle, Eye, Star } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -498,6 +498,12 @@ export default function LenderManagement() {
                               ) : (
                                 <span className="text-xs px-2 py-1 bg-warning/10 text-warning rounded">
                                   Pending
+                                </span>
+                              )}
+                              {lender.isPreferred && (
+                                <span className="text-xs px-2 py-1 bg-accent/20 text-accent rounded flex items-center gap-1">
+                                  <Star className="h-3 w-3 fill-current" />
+                                  Preferred
                                 </span>
                               )}
                             </div>

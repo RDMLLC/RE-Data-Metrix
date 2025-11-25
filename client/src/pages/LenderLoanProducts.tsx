@@ -6,14 +6,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertLoanProductSchema } from "@shared/schema";
+import { insertLoanProductSchema, loanTypeEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, X } from "lucide-react";
+import { Plus, Pencil, X, Building2, Home, RefreshCw, HardHat } from "lucide-react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { LoanProduct } from "@shared/schema";
+import type { LoanProduct, LoanTypeEnum } from "@shared/schema";
 import { useState, useEffect, useRef } from "react";
+
+const loanTypeLabels: Record<LoanTypeEnum, { label: string; icon: any; description: string }> = {
+  'bridge': { 
+    label: 'Bridge / Hard Money', 
+    icon: Building2,
+    description: 'Traditional fix & flip and bridge loans with rehab funding'
+  },
+  'dscr-purchase': { 
+    label: 'DSCR Purchase', 
+    icon: Home,
+    description: 'Long-term rental loans based on property cash flow'
+  },
+  'dscr-refi': { 
+    label: 'DSCR Refinance', 
+    icon: RefreshCw,
+    description: 'Refinance rental properties with optional cash-out'
+  },
+  'new-construction': { 
+    label: 'New Construction / Ground-Up', 
+    icon: HardHat,
+    description: 'Ground-up construction and new build projects'
+  },
+};
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
@@ -153,8 +176,11 @@ export default function LenderLoanProducts() {
       estimatedAppraisalCost: insertLoanProductSchema.shape.estimatedAppraisalCost.nullable().optional(),
       fees: insertLoanProductSchema.shape.fees.nullable().optional(),
       costPerDraw: insertLoanProductSchema.shape.costPerDraw.nullable().optional(),
+      cashOutMaxLtv: insertLoanProductSchema.shape.cashOutMaxLtv.nullable().optional(),
+      referralLink: insertLoanProductSchema.shape.referralLink.nullable().optional(),
     })),
     defaultValues: {
+      loanType: "bridge",
       productName: "",
       newInvestorOk: false,
       minCreditScore: null,
@@ -170,9 +196,15 @@ export default function LenderLoanProducts() {
       estimatedAppraisalCost: null,
       fees: null,
       costPerDraw: null,
+      cashOutOk: false,
+      cashOutMaxLtv: null,
+      referralLink: "",
       isActive: true,
     },
   });
+
+  const watchLoanType = form.watch("loanType") as LoanTypeEnum;
+  const watchCashOutOk = form.watch("cashOutOk");
 
   const onSubmit = async (data: any) => {
     if (editingProduct) {
@@ -185,6 +217,7 @@ export default function LenderLoanProducts() {
   const handleEditProduct = (product: LoanProduct) => {
     setEditingProduct(product);
     form.reset({
+      loanType: product.loanType || "bridge",
       productName: product.productName,
       newInvestorOk: product.newInvestorOk ?? false,
       minCreditScore: product.minCreditScore,
@@ -200,6 +233,9 @@ export default function LenderLoanProducts() {
       estimatedAppraisalCost: product.estimatedAppraisalCost,
       fees: product.fees,
       costPerDraw: product.costPerDraw,
+      cashOutOk: product.cashOutOk ?? false,
+      cashOutMaxLtv: product.cashOutMaxLtv,
+      referralLink: product.referralLink || "",
       isActive: product.isActive ?? true,
     });
     setTimeout(() => {
@@ -210,6 +246,15 @@ export default function LenderLoanProducts() {
   const handleCancelEdit = () => {
     setEditingProduct(null);
     form.reset();
+  };
+
+  const getLoanTypeLabel = (type: string) => {
+    return loanTypeLabels[type as LoanTypeEnum]?.label || type;
+  };
+
+  const getLoanTypeIcon = (type: string) => {
+    const IconComponent = loanTypeLabels[type as LoanTypeEnum]?.icon;
+    return IconComponent ? <IconComponent className="h-4 w-4" /> : null;
   };
 
   return (
@@ -240,7 +285,7 @@ export default function LenderLoanProducts() {
                 onClick={() => window.open('/api/loan-products/template', '_blank')}
                 data-testid="button-download-csv-template"
               >
-                📥 Download CSV Template
+                Download CSV Template
               </Button>
               <div>
                 <input
@@ -257,7 +302,7 @@ export default function LenderLoanProducts() {
                   disabled={isUploading}
                   data-testid="button-upload-csv"
                 >
-                  {isUploading ? "⏳ Uploading..." : "📤 Upload CSV"}
+                  {isUploading ? "Uploading..." : "Upload CSV"}
                 </Button>
               </div>
             </div>
@@ -309,6 +354,42 @@ export default function LenderLoanProducts() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
+                  name="loanType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Loan Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-loan-type">
+                            <SelectValue placeholder="Select loan type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {loanTypeEnum.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              <div className="flex items-center gap-2">
+                                {getLoanTypeIcon(type)}
+                                <span>{getLoanTypeLabel(type)}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {watchLoanType && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {loanTypeLabels[watchLoanType]?.description}
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="productName"
                   render={({ field }) => (
                     <FormItem>
@@ -316,7 +397,12 @@ export default function LenderLoanProducts() {
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="e.g., Fix & Flip Bridge Loan"
+                          placeholder={
+                            watchLoanType === 'dscr-purchase' ? "e.g., DSCR 30-Year Fixed" :
+                            watchLoanType === 'dscr-refi' ? "e.g., Cash-Out DSCR Refinance" :
+                            watchLoanType === 'new-construction' ? "e.g., Ground-Up Construction Loan" :
+                            "e.g., Fix & Flip Bridge Loan"
+                          }
                           data-testid="input-product-name"
                         />
                       </FormControl>
@@ -325,13 +411,13 @@ export default function LenderLoanProducts() {
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="newInvestorOk"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-foreground">New investor OK?</FormLabel>
+                        <FormLabel className="text-foreground">New Investor OK?</FormLabel>
                         <Select
                           onValueChange={(value) => field.onChange(value === "true")}
                           value={field.value ? "true" : "false"}
@@ -371,277 +457,363 @@ export default function LenderLoanProducts() {
                       </FormItem>
                     )}
                   />
+                </div>
 
-                  <FormField
-                    control={form.control}
-                    name="drawnFundsOnly"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Drawn Funds Only</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(value === "true")}
-                          value={field.value ? "true" : "false"}
-                        >
+                <FormField
+                  control={form.control}
+                  name="maxLtvBuy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground">Max LTV (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          type="text"
+                          placeholder="75"
+                          data-testid="input-max-ltv-buy"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {(watchLoanType === 'bridge') && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="maxLendRehab"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Max Lend / Rehab (%)</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-drawn-funds">
-                              <SelectValue placeholder="Select option" />
-                            </SelectTrigger>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              type="text"
+                              placeholder="100"
+                              data-testid="input-max-lend-rehab"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="true">Yes</SelectItem>
-                            <SelectItem value="false">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="maxLtvBuy"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Max LTV / Buy (%)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="75"
-                            data-testid="input-max-ltv-buy"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="drawnFundsOnly"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Drawn Funds Only</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(value === "true")}
+                            value={field.value ? "true" : "false"}
+                          >
+                            <FormControl>
+                              <SelectTrigger data-testid="select-drawn-funds">
+                                <SelectValue placeholder="Select option" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="true">Yes</SelectItem>
+                              <SelectItem value="false">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
-                  <FormField
-                    control={form.control}
-                    name="maxLendRehab"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Max Lend / Rehab (%)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="100"
-                            data-testid="input-max-lend-rehab"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {watchLoanType === 'dscr-refi' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="cashOutOk"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Cash-Out OK?</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(value === "true")}
+                            value={field.value ? "true" : "false"}
+                          >
+                            <FormControl>
+                              <SelectTrigger data-testid="select-cash-out-ok">
+                                <SelectValue placeholder="Select option" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="true">Yes</SelectItem>
+                              <SelectItem value="false">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="interestRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Interest Rate (%)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="8.50"
-                            data-testid="input-interest-rate"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    {watchCashOutOk && (
+                      <FormField
+                        control={form.control}
+                        name="cashOutMaxLtv"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Cash-Out Max LTV (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="70"
+                                data-testid="input-cash-out-max-ltv"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
-                  />
+                  </div>
+                )}
 
-                  <FormField
-                    control={form.control}
-                    name="interestDeferred"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Interest Deferred?</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(value === "true")}
-                          value={field.value ? "true" : "false"}
-                        >
+                {watchLoanType !== 'new-construction' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="interestRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Interest Rate (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="8.50"
+                                data-testid="input-interest-rate"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {watchLoanType === 'bridge' && (
+                        <FormField
+                          control={form.control}
+                          name="interestDeferred"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-foreground">Interest Deferred?</FormLabel>
+                              <Select
+                                onValueChange={(value) => field.onChange(value === "true")}
+                                value={field.value ? "true" : "false"}
+                              >
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-interest-deferred">
+                                    <SelectValue placeholder="Select option" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="true">Yes</SelectItem>
+                                  <SelectItem value="false">No</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="points"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Points</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="2.5"
+                                data-testid="input-points"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {watchLoanType === 'bridge' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="pointsDeferred"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-foreground">Points Deferred?</FormLabel>
+                              <Select
+                                onValueChange={(value) => field.onChange(value === "true")}
+                                value={field.value ? "true" : "false"}
+                              >
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-points-deferred">
+                                    <SelectValue placeholder="Select option" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="true">Yes</SelectItem>
+                                  <SelectItem value="false">No</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="maxLoanArv"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-foreground">Max Loan / ARV (%)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  value={field.value || ""}
+                                  type="text"
+                                  placeholder="70"
+                                  data-testid="input-max-loan-arv"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="appraisalRequired"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Appraisal Required?</FormLabel>
+                            <Select
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value ? "true" : "false"}
+                            >
+                              <FormControl>
+                                <SelectTrigger data-testid="select-appraisal-required">
+                                  <SelectValue placeholder="Select option" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="true">Yes</SelectItem>
+                                <SelectItem value="false">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="estimatedAppraisalCost"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Est. Appraisal Cost ($)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="500"
+                                data-testid="input-appraisal-cost"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="fees"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Fees (Doc prep) ($)</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-interest-deferred">
-                              <SelectValue placeholder="Select option" />
-                            </SelectTrigger>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              type="text"
+                              placeholder="1500"
+                              data-testid="input-fees"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="true">Yes</SelectItem>
-                            <SelectItem value="false">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
+                    {watchLoanType === 'bridge' && (
+                      <FormField
+                        control={form.control}
+                        name="costPerDraw"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Cost per Draw ($)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="250"
+                                data-testid="input-cost-per-draw"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </>
+                )}
+
+                {watchLoanType === 'new-construction' && (
                   <FormField
                     control={form.control}
-                    name="points"
+                    name="referralLink"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-foreground">Points</FormLabel>
+                        <FormLabel className="text-foreground">Referral Link (Landing Page URL)</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             value={field.value || ""}
-                            type="text"
-                            placeholder="2.5"
-                            data-testid="input-points"
+                            type="url"
+                            placeholder="https://yourlendingsite.com/new-construction"
+                            data-testid="input-referral-link"
                           />
                         </FormControl>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          The URL investors will be directed to when clicking "Apply Now"
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="pointsDeferred"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Points Deferred?</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(value === "true")}
-                          value={field.value ? "true" : "false"}
-                        >
-                          <FormControl>
-                            <SelectTrigger data-testid="select-points-deferred">
-                              <SelectValue placeholder="Select option" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="true">Yes</SelectItem>
-                            <SelectItem value="false">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="maxLoanArv"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Max Loan / ARV (%)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="70"
-                            data-testid="input-max-loan-arv"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="appraisalRequired"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Appraisal Required?</FormLabel>
-                        <Select
-                          onValueChange={(value) => field.onChange(value === "true")}
-                          value={field.value ? "true" : "false"}
-                        >
-                          <FormControl>
-                            <SelectTrigger data-testid="select-appraisal-required">
-                              <SelectValue placeholder="Select option" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="true">Yes</SelectItem>
-                            <SelectItem value="false">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="estimatedAppraisalCost"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Est. Appraisal Cost ($)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="500"
-                            data-testid="input-appraisal-cost"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="fees"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Fees (Doc prep) ($)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="1500"
-                            data-testid="input-fees"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="costPerDraw"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Cost per Draw ($)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="text"
-                            placeholder="250"
-                            data-testid="input-cost-per-draw"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                )}
 
                 <div className="flex gap-4 pt-6">
                   <Button
@@ -692,6 +864,12 @@ export default function LenderLoanProducts() {
                   >
                     <div className="flex justify-between items-start mb-4 gap-4">
                       <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          {getLoanTypeIcon(product.loanType || 'bridge')}
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            {getLoanTypeLabel(product.loanType || 'bridge')}
+                          </span>
+                        </div>
                         <h3 className="text-xl font-semibold text-primary" data-testid={`product-name-${product.id}`}>
                           {product.productName}
                         </h3>
@@ -740,6 +918,27 @@ export default function LenderLoanProducts() {
                         <div>
                           <span className="text-muted-foreground">Points:</span>
                           <span className="ml-2 font-medium">{product.points}</span>
+                        </div>
+                      )}
+                      {product.loanType === 'dscr-refi' && product.cashOutOk && (
+                        <div>
+                          <span className="text-muted-foreground">Cash-Out:</span>
+                          <span className="ml-2 font-medium">
+                            Yes {product.cashOutMaxLtv ? `(Max ${product.cashOutMaxLtv}% LTV)` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {product.loanType === 'new-construction' && product.referralLink && (
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Referral Link:</span>
+                          <a 
+                            href={product.referralLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="ml-2 font-medium text-accent hover:underline"
+                          >
+                            {product.referralLink.substring(0, 40)}...
+                          </a>
                         </div>
                       )}
                       {product.estimatedAppraisalCost !== null && (

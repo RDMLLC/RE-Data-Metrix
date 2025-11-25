@@ -1,11 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, User, Mail, Phone, Globe, DollarSign, Calendar, FileText, Package, Users } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Building2, User, Mail, Phone, Globe, DollarSign, Calendar, FileText, Package, Users, Star } from "lucide-react";
 import type { Lender, LenderQuestionnaire, LoanProduct } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 interface LenderDetailData {
   lender: Lender;
@@ -26,6 +30,29 @@ export default function AdminLenderDetail() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
   const lenderId = params.id;
+  const { toast } = useToast();
+
+  const preferredMutation = useMutation({
+    mutationFn: async (isPreferred: boolean) => {
+      const response = await apiRequest("PATCH", `/api/admin/lenders/${lenderId}/preferred`, { isPreferred });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/lenders", lenderId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/lenders"] });
+      toast({
+        title: data.isPreferred ? "Lender Marked as Preferred" : "Preferred Status Removed",
+        description: `${data.companyName} has been ${data.isPreferred ? "marked as a preferred lender" : "removed from preferred status"}.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update preferred status.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const { data, isLoading, error } = useQuery<LenderDetailData>({
     queryKey: ["/api/admin/lenders", lenderId],
@@ -212,12 +239,38 @@ export default function AdminLenderDetail() {
                   </p>
                 </div>
                 <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">Account Status</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={lender.inviteAccepted ? "default" : "outline"}>
-                      {lender.inviteAccepted ? "Invite Accepted" : "Pending Acceptance"}
-                    </Badge>
-                    {lender.archived && <Badge variant="secondary">Archived</Badge>}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="preferred-toggle" className="flex items-center gap-2 cursor-pointer">
+                        <Star className={`h-4 w-4 ${lender.isPreferred ? 'text-accent fill-accent' : 'text-muted-foreground'}`} />
+                        Preferred Lender
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Preferred lenders are prioritized in New Construction results
+                      </p>
+                    </div>
+                    <Switch
+                      id="preferred-toggle"
+                      checked={lender.isPreferred ?? false}
+                      onCheckedChange={(checked) => preferredMutation.mutate(checked)}
+                      disabled={preferredMutation.isPending || lender.archived === true}
+                      data-testid="switch-preferred-lender"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Account Status</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={lender.inviteAccepted ? "default" : "outline"}>
+                        {lender.inviteAccepted ? "Invite Accepted" : "Pending Acceptance"}
+                      </Badge>
+                      {lender.isPreferred && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          Preferred
+                        </Badge>
+                      )}
+                      {lender.archived && <Badge variant="secondary">Archived</Badge>}
+                    </div>
                   </div>
                 </div>
               </CardContent>

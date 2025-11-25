@@ -188,6 +188,22 @@ export interface IStorage {
     usersByMonth: Array<{month: string; count: number}>;
     referralConversions: number;
   }>;
+  
+  // New Construction Lenders
+  getNewConstructionLenders(state: string): Promise<Array<{
+    lenderId: string;
+    companyName: string;
+    referralAmount: string;
+    referralType: string;
+    referralLink: string | null;
+    isPreferred: boolean;
+    productId: string;
+    productName: string;
+    productReferralLink: string | null;
+  }>>;
+  
+  // Admin: Update lender preferred status
+  updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -665,6 +681,24 @@ export class MemStorage implements IStorage {
     usersByMonth: Array<{month: string; count: number}>;
     referralConversions: number;
   }> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getNewConstructionLenders(state: string): Promise<Array<{
+    lenderId: string;
+    companyName: string;
+    referralAmount: string;
+    referralType: string;
+    referralLink: string | null;
+    isPreferred: boolean;
+    productId: string;
+    productName: string;
+    productReferralLink: string | null;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined> {
     throw new Error("Not implemented in MemStorage");
   }
 }
@@ -1174,6 +1208,16 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined> {
+    const result = await db
+      .update(lendersTable)
+      .set({ isPreferred })
+      .where(eq(lendersTable.id, lenderId))
+      .returning();
+    
+    return result[0];
+  }
+
   async getAllLenderReferralsForAdmin(): Promise<Array<{
     id: string;
     lenderId: string;
@@ -1663,6 +1707,106 @@ export class DatabaseStorage implements IStorage {
       usersByMonth,
       referralConversions,
     };
+  }
+
+  async getNewConstructionLenders(state: string): Promise<Array<{
+    lenderId: string;
+    companyName: string;
+    referralAmount: string;
+    referralType: string;
+    referralLink: string | null;
+    isPreferred: boolean;
+    productId: string;
+    productName: string;
+    productReferralLink: string | null;
+  }>> {
+    // Get all lenders with new construction products that operate in the specified state
+    const results = await db
+      .select({
+        lenderId: lendersTable.id,
+        companyName: lendersTable.companyName,
+        referralAmount: lendersTable.referralAmount,
+        referralType: lendersTable.referralType,
+        referralLink: lendersTable.referralLink,
+        isPreferred: lendersTable.isPreferred,
+        productId: loanProductsTable.id,
+        productName: loanProductsTable.productName,
+        productReferralLink: loanProductsTable.referralLink,
+        statesServiced: lenderQuestionnairesTable.statesServiced,
+        offerLoansAllStates: lenderQuestionnairesTable.offerLoansAllStates,
+      })
+      .from(lendersTable)
+      .innerJoin(loanProductsTable, eq(lendersTable.id, loanProductsTable.lenderId))
+      .leftJoin(lenderQuestionnairesTable, eq(lendersTable.id, lenderQuestionnairesTable.lenderId))
+      .where(
+        and(
+          eq(lendersTable.archived, false),
+          eq(loanProductsTable.loanType, 'new-construction'),
+          eq(loanProductsTable.isActive, true)
+        )
+      );
+
+    // Filter by state (lender must operate in the state or operate in all states)
+    const stateFiltered = results.filter(r => {
+      if (r.offerLoansAllStates === 'yes') return true;
+      if (r.statesServiced && Array.isArray(r.statesServiced)) {
+        return r.statesServiced.includes(state);
+      }
+      return false;
+    });
+
+    // Sort by: preferred first, then by referral amount (descending)
+    const sorted = stateFiltered.sort((a, b) => {
+      // Preferred lenders first
+      if (a.isPreferred && !b.isPreferred) return -1;
+      if (!a.isPreferred && b.isPreferred) return 1;
+      
+      // Then by referral amount (descending)
+      const amountA = parseFloat(a.referralAmount) || 0;
+      const amountB = parseFloat(b.referralAmount) || 0;
+      return amountB - amountA;
+    });
+
+    // Apply the 2-lender logic:
+    // - If 2+ preferred: return top 2 preferred by fee
+    // - If 1 preferred: return that 1 + highest non-preferred
+    // - If 0 preferred: return top 2 by fee
+    const preferred = sorted.filter(r => r.isPreferred);
+    const nonPreferred = sorted.filter(r => !r.isPreferred);
+
+    let finalResults: typeof sorted = [];
+    
+    if (preferred.length >= 2) {
+      finalResults = preferred.slice(0, 2);
+    } else if (preferred.length === 1) {
+      finalResults = [preferred[0]];
+      if (nonPreferred.length > 0) {
+        finalResults.push(nonPreferred[0]);
+      }
+    } else {
+      finalResults = nonPreferred.slice(0, 2);
+    }
+
+    return finalResults.map(r => ({
+      lenderId: r.lenderId,
+      companyName: r.companyName,
+      referralAmount: r.referralAmount,
+      referralType: r.referralType,
+      referralLink: r.referralLink,
+      isPreferred: r.isPreferred ?? false,
+      productId: r.productId,
+      productName: r.productName,
+      productReferralLink: r.productReferralLink,
+    }));
+  }
+
+  async updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined> {
+    const [updated] = await db
+      .update(lendersTable)
+      .set({ isPreferred })
+      .where(eq(lendersTable.id, lenderId))
+      .returning();
+    return updated;
   }
 }
 
