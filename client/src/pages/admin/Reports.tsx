@@ -111,6 +111,26 @@ interface LenderPerformance {
   isActive: boolean;
 }
 
+interface PlatformUsageStats {
+  activeUsersLast30Days: number;
+  activeUsersLast7Days: number;
+  totalDeals: number;
+  totalSavedLenders: number;
+  totalReferrals: number;
+  totalAffiliateClicks: number;
+  dealsByMonth: Array<{month: string; count: number}>;
+}
+
+interface SubscriptionStats {
+  byStatus: Record<string, number>;
+  totalActive: number;
+  totalReferralTrial: number;
+  totalComped: number;
+  totalInactive: number;
+  usersByMonth: Array<{month: string; count: number}>;
+  referralConversions: number;
+}
+
 export default function AdminReports() {
   const [, setLocation] = useLocation();
   const [referralSearch, setReferralSearch] = useState("");
@@ -149,6 +169,14 @@ export default function AdminReports() {
 
   const { data: lenderPerformance, isLoading: lenderPerformanceLoading } = useQuery<LenderPerformance[]>({
     queryKey: ["/api/admin/reports/lender-performance"],
+  });
+
+  const { data: platformUsage, isLoading: platformUsageLoading } = useQuery<PlatformUsageStats>({
+    queryKey: ["/api/admin/reports/platform-usage"],
+  });
+
+  const { data: subscriptionStats, isLoading: subscriptionStatsLoading } = useQuery<SubscriptionStats>({
+    queryKey: ["/api/admin/reports/subscriptions"],
   });
 
   const filteredReferrals = referrals?.filter(ref => {
@@ -494,6 +522,14 @@ export default function AdminReports() {
                 <TabsTrigger value="lenders" data-testid="tab-lenders">
                   <Building2 className="h-4 w-4 mr-2" />
                   Lender Performance
+                </TabsTrigger>
+                <TabsTrigger value="usage" data-testid="tab-usage">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Platform Usage
+                </TabsTrigger>
+                <TabsTrigger value="subscriptions" data-testid="tab-subscriptions">
+                  <Users className="h-4 w-4 mr-2" />
+                  Subscriptions
                 </TabsTrigger>
               </TabsList>
 
@@ -1100,6 +1136,208 @@ export default function AdminReports() {
                     {filteredLenderPerformance.length > 0 && (
                       <div className="mt-4 text-sm text-muted-foreground">
                         Showing {filteredLenderPerformance.length} of {lenderPerformance?.length || 0} lenders
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="usage">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Platform Usage</CardTitle>
+                    <CardDescription>
+                      Track feature usage, user engagement, and platform activity
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {platformUsageLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Loading platform usage data...
+                      </div>
+                    ) : !platformUsage ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">No usage data available</p>
+                        <p className="text-sm">
+                          Platform usage metrics will appear here as users interact with the platform.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Active (30 days)</div>
+                              <p className="text-2xl font-bold">{platformUsage.activeUsersLast30Days}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Active (7 days)</div>
+                              <p className="text-2xl font-bold">{platformUsage.activeUsersLast7Days}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Total Deals</div>
+                              <p className="text-2xl font-bold">{platformUsage.totalDeals}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Saved Lenders</div>
+                              <p className="text-2xl font-bold">{platformUsage.totalSavedLenders}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Referrals</div>
+                              <p className="text-2xl font-bold">{platformUsage.totalReferrals}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Affiliate Clicks</div>
+                              <p className="text-2xl font-bold">{platformUsage.totalAffiliateClicks}</p>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {platformUsage.dealsByMonth.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">Deals by Month</h3>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Month</TableHead>
+                                    <TableHead className="text-right">Deals Created</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {platformUsage.dealsByMonth.map((item) => (
+                                    <TableRow key={item.month} data-testid={`row-month-${item.month}`}>
+                                      <TableCell>{item.month}</TableCell>
+                                      <TableCell className="text-right font-medium">{item.count}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="subscriptions">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Subscription Analytics</CardTitle>
+                    <CardDescription>
+                      Track subscription status, conversions, and membership trends
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {subscriptionStatsLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Loading subscription data...
+                      </div>
+                    ) : !subscriptionStats ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">No subscription data available</p>
+                        <p className="text-sm">
+                          Subscription analytics will appear here as users sign up for the platform.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Active</div>
+                              <p className="text-2xl font-bold text-green-600">{subscriptionStats.totalActive}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Referral Trial</div>
+                              <p className="text-2xl font-bold text-blue-600">{subscriptionStats.totalReferralTrial}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Comped</div>
+                              <p className="text-2xl font-bold text-purple-600">{subscriptionStats.totalComped}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Inactive</div>
+                              <p className="text-2xl font-bold text-muted-foreground">{subscriptionStats.totalInactive}</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="p-4">
+                              <div className="text-sm text-muted-foreground mb-1">Referral Conversions</div>
+                              <p className="text-2xl font-bold text-amber-600">{subscriptionStats.referralConversions}</p>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Subscription Status Breakdown</h3>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Status</TableHead>
+                                  <TableHead className="text-right">Count</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {Object.entries(subscriptionStats.byStatus).map(([status, count]) => (
+                                  <TableRow key={status} data-testid={`row-status-${status}`}>
+                                    <TableCell>
+                                      <Badge variant={status === 'active' ? 'default' : 'secondary'}>
+                                        {status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">{count}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+
+                        {subscriptionStats.usersByMonth.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">User Registrations by Month</h3>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Month</TableHead>
+                                    <TableHead className="text-right">New Users</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {subscriptionStats.usersByMonth.map((item) => (
+                                    <TableRow key={item.month} data-testid={`row-users-${item.month}`}>
+                                      <TableCell>{item.month}</TableCell>
+                                      <TableCell className="text-right font-medium">{item.count}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

@@ -166,6 +166,28 @@ export interface IStorage {
     wonDealsValue: number;
     isActive: boolean;
   }>>;
+  
+  // Platform Usage Reports
+  getPlatformUsageStats(): Promise<{
+    activeUsersLast30Days: number;
+    activeUsersLast7Days: number;
+    totalDeals: number;
+    totalSavedLenders: number;
+    totalReferrals: number;
+    totalAffiliateClicks: number;
+    dealsByMonth: Array<{month: string; count: number}>;
+  }>;
+  
+  // Revenue/Subscription Reports
+  getSubscriptionStats(): Promise<{
+    byStatus: Record<string, number>;
+    totalActive: number;
+    totalReferralTrial: number;
+    totalComped: number;
+    totalInactive: number;
+    usersByMonth: Array<{month: string; count: number}>;
+    referralConversions: number;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -604,6 +626,30 @@ export class MemStorage implements IStorage {
     wonDealsValue: number;
     isActive: boolean;
   }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getPlatformUsageStats(): Promise<{
+    activeUsersLast30Days: number;
+    activeUsersLast7Days: number;
+    totalDeals: number;
+    totalSavedLenders: number;
+    totalReferrals: number;
+    totalAffiliateClicks: number;
+    dealsByMonth: Array<{month: string; count: number}>;
+  }> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getSubscriptionStats(): Promise<{
+    byStatus: Record<string, number>;
+    totalActive: number;
+    totalReferralTrial: number;
+    totalComped: number;
+    totalInactive: number;
+    usersByMonth: Array<{month: string; count: number}>;
+    referralConversions: number;
+  }> {
     throw new Error("Not implemented in MemStorage");
   }
 }
@@ -1444,6 +1490,149 @@ export class DatabaseStorage implements IStorage {
     }));
 
     return stats.sort((a, b) => b.referralCount - a.referralCount);
+  }
+
+  async getPlatformUsageStats(): Promise<{
+    activeUsersLast30Days: number;
+    activeUsersLast7Days: number;
+    totalDeals: number;
+    totalSavedLenders: number;
+    totalReferrals: number;
+    totalAffiliateClicks: number;
+    dealsByMonth: Array<{month: string; count: number}>;
+  }> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const dealsLast30Days = await db.select({ userId: savedDealsTable.userId })
+      .from(savedDealsTable)
+      .where(gt(savedDealsTable.createdAt, thirtyDaysAgo));
+    const uniqueUsersLast30Days = new Set(
+      dealsLast30Days.map(d => d.userId).filter(Boolean)
+    );
+
+    const savedLendersLast30Days = await db.select({ userId: savedLendersTable.userId })
+      .from(savedLendersTable)
+      .where(gt(savedLendersTable.createdAt, thirtyDaysAgo));
+    savedLendersLast30Days.forEach(s => {
+      if (s.userId) uniqueUsersLast30Days.add(s.userId);
+    });
+
+    const dealsLast7Days = await db.select({ userId: savedDealsTable.userId })
+      .from(savedDealsTable)
+      .where(gt(savedDealsTable.createdAt, sevenDaysAgo));
+    const uniqueUsersLast7Days = new Set(
+      dealsLast7Days.map(d => d.userId).filter(Boolean)
+    );
+
+    const savedLendersLast7Days = await db.select({ userId: savedLendersTable.userId })
+      .from(savedLendersTable)
+      .where(gt(savedLendersTable.createdAt, sevenDaysAgo));
+    savedLendersLast7Days.forEach(s => {
+      if (s.userId) uniqueUsersLast7Days.add(s.userId);
+    });
+
+    const totalDealsResult = await db.select({ count: count() }).from(savedDealsTable);
+    const totalSavedLendersResult = await db.select({ count: count() }).from(savedLendersTable);
+    const totalReferralsResult = await db.select({ count: count() }).from(lenderReferralsTable);
+    const totalAffiliateClicksResult = await db.select({ count: count() }).from(affiliateClicksTable);
+
+    const allDeals = await db.select({ createdAt: savedDealsTable.createdAt }).from(savedDealsTable);
+    
+    const dealsByMonthMap = new Map<string, number>();
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      dealsByMonthMap.set(monthKey, 0);
+    }
+    
+    allDeals.forEach(deal => {
+      if (deal.createdAt) {
+        const monthKey = `${deal.createdAt.getFullYear()}-${String(deal.createdAt.getMonth() + 1).padStart(2, '0')}`;
+        if (dealsByMonthMap.has(monthKey)) {
+          dealsByMonthMap.set(monthKey, (dealsByMonthMap.get(monthKey) || 0) + 1);
+        }
+      }
+    });
+    
+    const dealsByMonth = Array.from(dealsByMonthMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return {
+      activeUsersLast30Days: uniqueUsersLast30Days.size,
+      activeUsersLast7Days: uniqueUsersLast7Days.size,
+      totalDeals: Number(totalDealsResult[0]?.count || 0),
+      totalSavedLenders: Number(totalSavedLendersResult[0]?.count || 0),
+      totalReferrals: Number(totalReferralsResult[0]?.count || 0),
+      totalAffiliateClicks: Number(totalAffiliateClicksResult[0]?.count || 0),
+      dealsByMonth,
+    };
+  }
+
+  async getSubscriptionStats(): Promise<{
+    byStatus: Record<string, number>;
+    totalActive: number;
+    totalReferralTrial: number;
+    totalComped: number;
+    totalInactive: number;
+    usersByMonth: Array<{month: string; count: number}>;
+    referralConversions: number;
+  }> {
+    const allUsers = await db.select({
+      subscriptionStatus: usersTable.subscriptionStatus,
+      referredBy: usersTable.referredBy,
+      createdAt: usersTable.createdAt,
+    }).from(usersTable);
+
+    const byStatus: Record<string, number> = {
+      'active': 0,
+      'referral_trial': 0,
+      'comped': 0,
+      'inactive': 0,
+    };
+    allUsers.forEach(user => {
+      const status = user.subscriptionStatus || 'inactive';
+      byStatus[status] = (byStatus[status] || 0) + 1;
+    });
+
+    const usersByMonthMap = new Map<string, number>();
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      usersByMonthMap.set(monthKey, 0);
+    }
+    
+    allUsers.forEach(user => {
+      if (user.createdAt) {
+        const monthKey = `${user.createdAt.getFullYear()}-${String(user.createdAt.getMonth() + 1).padStart(2, '0')}`;
+        if (usersByMonthMap.has(monthKey)) {
+          usersByMonthMap.set(monthKey, (usersByMonthMap.get(monthKey) || 0) + 1);
+        }
+      }
+    });
+    
+    const usersByMonth = Array.from(usersByMonthMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    const referralConversions = allUsers.filter(u => 
+      u.referredBy && (u.subscriptionStatus === 'active')
+    ).length;
+
+    return {
+      byStatus,
+      totalActive: byStatus['active'] || 0,
+      totalReferralTrial: byStatus['referral_trial'] || 0,
+      totalComped: byStatus['comped'] || 0,
+      totalInactive: byStatus['inactive'] || 0,
+      usersByMonth,
+      referralConversions,
+    };
   }
 }
 

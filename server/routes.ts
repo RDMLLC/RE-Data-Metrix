@@ -1126,6 +1126,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/platform-usage", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getPlatformUsageStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Platform usage error:', error);
+      res.status(500).json({ error: "Failed to fetch platform usage stats" });
+    }
+  });
+
+  app.get("/api/admin/reports/subscriptions", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getSubscriptionStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Subscription stats error:', error);
+      res.status(500).json({ error: "Failed to fetch subscription stats" });
+    }
+  });
+
   // Track affiliate click (available to logged in users and guests)
   app.post("/api/affiliate-clicks", async (req, res) => {
     try {
