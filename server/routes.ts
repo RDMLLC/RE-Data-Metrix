@@ -800,6 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const headers = [
         'productName',
+        'loanType',
         'newInvestorOk',
         'minCreditScore',
         'maxLtvBuy',
@@ -815,32 +816,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'fees',
         'costPerDraw',
         'timeToClose',
+        'cashOutOk',
+        'cashOutMaxLtv',
+        'referralLink',
         'isActive'
       ];
       
-      const exampleRow = [
-        'Example Fix & Flip Loan',
-        'TRUE',
-        '680',
-        '75.00',
-        '100.00',
-        '10.50',
-        'FALSE',
-        'FALSE',
-        '2.00',
-        'FALSE',
-        '70.00',
-        'TRUE',
-        '500.00',
-        '1500.00',
-        '250.00',
-        '21',
-        'TRUE'
+      const exampleRows = [
+        [
+          'Bridge/Fix & Flip Loan',
+          'bridge',
+          'TRUE',
+          '680',
+          '75.00',
+          '100.00',
+          '10.50',
+          'FALSE',
+          'FALSE',
+          '2.00',
+          'FALSE',
+          '70.00',
+          'TRUE',
+          '500.00',
+          '1500.00',
+          '250.00',
+          '21',
+          '',
+          '',
+          '',
+          'TRUE'
+        ],
+        [
+          'DSCR Purchase Loan',
+          'dscr-purchase',
+          'TRUE',
+          '700',
+          '80.00',
+          '',
+          '7.50',
+          'FALSE',
+          '',
+          '1.50',
+          '',
+          '',
+          'TRUE',
+          '450.00',
+          '1000.00',
+          '',
+          '',
+          '',
+          '',
+          '',
+          'TRUE'
+        ],
+        [
+          'DSCR Refi with Cash-Out',
+          'dscr-refi',
+          'FALSE',
+          '720',
+          '75.00',
+          '',
+          '7.25',
+          'FALSE',
+          '',
+          '1.00',
+          '',
+          '',
+          'TRUE',
+          '450.00',
+          '1000.00',
+          '',
+          '',
+          'TRUE',
+          '70.00',
+          '',
+          'TRUE'
+        ],
+        [
+          'New Construction Loan',
+          'new-construction',
+          'FALSE',
+          '700',
+          '65.00',
+          '',
+          '9.00',
+          '',
+          '',
+          '2.00',
+          '',
+          '',
+          'TRUE',
+          '600.00',
+          '2000.00',
+          '300.00',
+          '30',
+          '',
+          '',
+          'https://example.com/apply',
+          'TRUE'
+        ]
       ];
       
       const csv = [
         headers.join(','),
-        exampleRow.join(',')
+        ...exampleRows.map(row => row.join(','))
       ].join('\n');
       
       res.setHeader('Content-Type', 'text/csv');
@@ -936,9 +1015,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return num;
           };
 
+          const validLoanTypes = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction'];
+          const rawLoanType = record.loanType ? String(record.loanType).trim().toLowerCase() : 'bridge';
+          const loanType = validLoanTypes.includes(rawLoanType) ? rawLoanType : 'bridge';
+
           const productData = {
             lenderId,
             productName: record.productName ? String(record.productName).trim().replace(/^'+/, '') : '',
+            loanType,
             newInvestorOk: parseBool(record.newInvestorOk),
             minCreditScore: parseInteger(record.minCreditScore, 'minCreditScore'),
             maxLtvBuy: parseDecimal(record.maxLtvBuy, 'maxLtvBuy'),
@@ -954,6 +1038,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fees: parseDecimal(record.fees, 'fees'),
             costPerDraw: parseDecimal(record.costPerDraw, 'costPerDraw'),
             timeToClose: parseInteger(record.timeToClose, 'timeToClose'),
+            cashOutOk: parseBool(record.cashOutOk),
+            cashOutMaxLtv: parseDecimal(record.cashOutMaxLtv, 'cashOutMaxLtv'),
+            referralLink: record.referralLink ? String(record.referralLink).trim() : null,
             isActive: record.isActive !== undefined ? parseBool(record.isActive) : true,
           };
 
