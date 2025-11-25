@@ -790,31 +790,6 @@ export default function LenderLoanProducts() {
                   </>
                 )}
 
-                {watchLoanType === 'new-construction' && (
-                  <FormField
-                    control={form.control}
-                    name="referralLink"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-foreground">Referral Link (Landing Page URL)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value || ""}
-                            type="url"
-                            placeholder="https://yourlendingsite.com/new-construction"
-                            data-testid="input-referral-link"
-                          />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          The URL investors will be directed to when clicking "Apply Now"
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
                 <div className="flex gap-4 pt-6">
                   <Button
                     type="submit"
@@ -926,19 +901,6 @@ export default function LenderLoanProducts() {
                           <span className="ml-2 font-medium">
                             Yes {product.cashOutMaxLtv ? `(Max ${product.cashOutMaxLtv}% LTV)` : ''}
                           </span>
-                        </div>
-                      )}
-                      {product.loanType === 'new-construction' && product.referralLink && (
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">Referral Link:</span>
-                          <a 
-                            href={product.referralLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="ml-2 font-medium text-accent hover:underline"
-                          >
-                            {product.referralLink.substring(0, 40)}...
-                          </a>
                         </div>
                       )}
                       {product.estimatedAppraisalCost !== null && (
