@@ -92,8 +92,15 @@ export const savedDeals = pgTable("saved_deals", {
   roi: decimal("roi", { precision: 5, scale: 2 }),
   profit: decimal("profit", { precision: 12, scale: 2 }),
   dscr: decimal("dscr", { precision: 5, scale: 2 }),
-  status: text("status").notNull().default('draft'),
+  status: text("status").notNull().default('active'),
   notes: text("notes"),
+  lendersPresented: jsonb("lenders_presented"),
+  lendersClicked: jsonb("lenders_clicked"),
+  usedReDMxLender: boolean("used_redmx_lender"),
+  closedWithLenderId: varchar("closed_with_lender_id").references(() => lenders.id),
+  closedWithProductId: varchar("closed_with_product_id").references(() => loanProducts.id),
+  wonDate: timestamp("won_date"),
+  lostDate: timestamp("lost_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
@@ -108,6 +115,24 @@ export const insertSavedDealSchema = createInsertSchema(savedDeals).omit({
 
 export type InsertSavedDeal = z.infer<typeof insertSavedDealSchema>;
 export type SavedDeal = typeof savedDeals.$inferSelect;
+
+export const savedLenders = pgTable("saved_lenders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  lenderId: varchar("lender_id").notNull().references(() => lenders.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: { name: "saved_lenders_user_id_idx", columns: [table.userId] },
+  uniqueUserLender: { name: "saved_lenders_unique", columns: [table.userId, table.lenderId] },
+}));
+
+export const insertSavedLenderSchema = createInsertSchema(savedLenders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSavedLender = z.infer<typeof insertSavedLenderSchema>;
+export type SavedLender = typeof savedLenders.$inferSelect;
 
 export const lenderReferrals = pgTable("lender_referrals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
