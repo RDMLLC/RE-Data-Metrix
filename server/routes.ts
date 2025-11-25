@@ -261,6 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/request-password-reset", async (req, res) => {
     try {
       const { email } = req.body;
+      console.log('[PASSWORD RESET] Request received for email:', email);
 
       if (!email) {
         return res.status(400).json({ error: "Email is required" });
@@ -269,15 +270,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.email, email))
+        .where(sql`LOWER(${users.email}) = LOWER(${email})`)
         .limit(1);
 
       if (!user) {
+        console.log('[PASSWORD RESET] No user found for email:', email);
         return res.json({ 
           message: "If an account exists with this email, a password reset link will be sent." 
         });
       }
 
+      console.log('[PASSWORD RESET] User found:', user.username, '- Generating token...');
       const resetToken = generateVerificationToken();
       const resetExpiry = new Date();
       resetExpiry.setHours(resetExpiry.getHours() + 1);
@@ -290,21 +293,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(users.id, user.id));
 
+      console.log('[PASSWORD RESET] Token saved to database. Attempting to send email...');
       const emailSent = await emailService.sendPasswordResetEmail(
         user.email,
         user.username,
         resetToken
       );
 
+      console.log('[PASSWORD RESET] Email service returned:', emailSent);
       if (!emailSent) {
-        console.error('Failed to send password reset email to:', user.email);
+        console.error('[PASSWORD RESET] WARNING: Email service reported failure for:', user.email);
+      } else {
+        console.log('[PASSWORD RESET] Email sent successfully to:', user.email);
       }
 
       res.json({ 
         message: "If an account exists with this email, a password reset link will be sent." 
       });
     } catch (error) {
-      console.error('Password reset request error:', error);
+      console.error('[PASSWORD RESET] Error:', error);
       res.status(500).json({ error: "Password reset request failed" });
     }
   });
