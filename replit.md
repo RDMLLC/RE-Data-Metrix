@@ -49,6 +49,7 @@ Complete authentication infrastructure implemented with user and lender tables, 
 - **Session Management**: Express sessions with PostgreSQL store
 - **Protected Routes**: Middleware-based authorization for user, lender, and admin access
 - **Login Page**: Features three entry points - main user login (center), Lender Portal (left panel), and Admin Portal (card below main login) with navy/gold design scheme
+- **Admin Credentials**: Email: info@redatametrix.com, Password: Admin123
 - **Admin Portal**: Comprehensive dashboard at /admin/dashboard with Lender Management at /admin/lenders featuring:
   - List all lenders with referral counts and status (Active/Pending/Archived)
   - Delete lenders with zero referrals (transaction-wrapped cascade delete of loan products and questionnaires)
