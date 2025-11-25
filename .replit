@@ -43,12 +43,12 @@ localPort = 40291
 externalPort = 8008
 
 [[ports]]
-localPort = 40739
-externalPort = 8000
-
-[[ports]]
 localPort = 41569
 externalPort = 6800
+
+[[ports]]
+localPort = 41845
+externalPort = 8081
 
 [[ports]]
 localPort = 44507
@@ -88,3 +88,8 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_database:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+HASDATA_API_KEY = "981d27db-574b-411a-ad4e-cdc48676a5e8"

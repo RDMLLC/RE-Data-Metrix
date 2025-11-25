@@ -1196,6 +1196,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property Lookup Route
+  app.post("/api/property/lookup", async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: "Property URL is required" });
+      }
+      
+      if (!url.includes('zillow.com') && !url.includes('redfin.com')) {
+        return res.status(400).json({ 
+          error: "Please provide a valid Zillow or Redfin property URL" 
+        });
+      }
+      
+      const propertyData = await propertyAPIService.getPropertyByUrl(url);
+      
+      if (!propertyData) {
+        return res.status(404).json({ 
+          error: "Property not found. Please check the URL and try again." 
+        });
+      }
+      
+      res.json(propertyData);
+    } catch (error: any) {
+      console.error("Property lookup error:", error);
+      
+      // Check for specific error types
+      if (error.message?.includes("API key")) {
+        return res.status(503).json({ 
+          error: "Property lookup service is temporarily unavailable. Please use manual entry instead." 
+        });
+      }
+      
+      if (error.message?.includes("rate limit")) {
+        return res.status(429).json({ 
+          error: "Too many requests. Please wait a moment and try again." 
+        });
+      }
+      
+      res.status(500).json({ 
+        error: error.message || "Unable to fetch property data. Please try manual entry instead." 
+      });
+    }
+  });
+
   // Rental Analysis Route
   app.post("/api/rental-analyses", ensureAuthenticated, async (req, res) => {
     try {

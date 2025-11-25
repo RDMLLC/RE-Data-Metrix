@@ -70,7 +70,39 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       });
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Unable to find property data. Please check the URL and try again.";
+      // Parse error message from API response (format: "500: {"error":"message"}")
+      let errorMessage = "Unable to find property data. Please check the URL and try again, or use manual entry.";
+      
+      try {
+        const errorString = error?.message || "";
+        
+        // Try to extract JSON from the error message (greedy match for nested objects)
+        const jsonMatch = errorString.match(/\{[\s\S]*\}/);
+        
+        if (jsonMatch) {
+          try {
+            const errorJson = JSON.parse(jsonMatch[0]);
+            if (errorJson.error) {
+              errorMessage = errorJson.error;
+            }
+          } catch {
+            // JSON parse failed, use default message
+          }
+        }
+        
+        // Fallback: if no JSON found, check for status code format
+        if (errorMessage === "Unable to find property data. Please check the URL and try again, or use manual entry.") {
+          if (errorString.includes(":") && !errorString.includes("{")) {
+            const afterColon = errorString.split(":").slice(1).join(":").trim();
+            if (afterColon && afterColon.length > 10) {
+              errorMessage = afterColon;
+            }
+          }
+        }
+      } catch {
+        // Keep default error message
+      }
+      
       toast({
         variant: "destructive",
         title: "Property Not Found",

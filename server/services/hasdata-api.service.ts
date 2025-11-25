@@ -1,15 +1,19 @@
 import type { IPropertyAPIService, PropertyData } from "./property-api.interface";
 
-const HASDATA_API_KEY = "981d27db-574b-411a-ad4e-cdc48676a5e8";
 const HASDATA_BASE_URL = "https://api.hasdata.com";
 
 export class HasDataAPIService implements IPropertyAPIService {
   private apiKey: string;
   private baseUrl: string;
 
-  constructor(apiKey: string = HASDATA_API_KEY, baseUrl: string = HASDATA_BASE_URL) {
-    this.apiKey = apiKey;
+  constructor(apiKey?: string, baseUrl: string = HASDATA_BASE_URL) {
+    // Use environment variable first, fall back to provided key
+    this.apiKey = process.env.HASDATA_API_KEY || apiKey || "";
     this.baseUrl = baseUrl;
+    
+    if (!this.apiKey) {
+      console.warn("HasData API key not configured. Property lookup will not work.");
+    }
   }
 
   async getPropertyByAddress(
@@ -23,6 +27,11 @@ export class HasDataAPIService implements IPropertyAPIService {
 
   async getPropertyByUrl(url: string): Promise<PropertyData | null> {
     try {
+      // Check if API key is configured
+      if (!this.apiKey) {
+        throw new Error("Property lookup service is not configured. Please use manual entry.");
+      }
+
       const isRedfin = url.includes('redfin.com');
       const isZillow = url.includes('zillow.com');
 
@@ -36,6 +45,8 @@ export class HasDataAPIService implements IPropertyAPIService {
 
       const params = new URLSearchParams({ url });
 
+      console.log(`Fetching property data from HasData API: ${endpoint}`);
+
       const response = await fetch(`${endpoint}?${params.toString()}`, {
         method: "GET",
         headers: {
@@ -44,12 +55,58 @@ export class HasDataAPIService implements IPropertyAPIService {
         },
       });
 
+      // Check content-type before parsing JSON
+      const contentType = response.headers.get("content-type") || "";
+      
       if (!response.ok) {
         if (response.status === 404) {
           return null;
         }
+        
+        // Read response as text first to handle HTML error pages
         const errorText = await response.text();
-        throw new Error(`HasData API error (${response.status}): ${errorText}`);
+        
+        // Check if we got HTML instead of JSON (common for error pages)
+        if (errorText.includes("<!DOCTYPE") || errorText.includes("<html")) {
+          console.error("HasData API returned HTML error page:", errorText.substring(0, 500));
+          throw new Error("Property lookup service is temporarily unavailable. Please use manual entry.");
+        }
+        
+        // Return user-friendly error message
+        if (response.status === 400) {
+          throw new Error("Unable to find property. Please check the URL and try again, or use manual entry.");
+        } else if (response.status === 401 || response.status === 403) {
+          throw new Error("Property lookup service is temporarily unavailable. Please use manual entry.");
+        } else if (response.status === 429) {
+          throw new Error("Too many requests. Please wait a moment and try again.");
+        }
+        throw new Error("Unable to fetch property data. Please try manual entry instead.");
+      }
+
+      // Check if response is actually JSON
+      if (!contentType.includes("application/json")) {
+        const responseText = await response.text();
+        
+        // Check if we got HTML instead of JSON
+        if (responseText.includes("<!DOCTYPE") || responseText.includes("<html")) {
+          console.error("HasData API returned HTML instead of JSON:", responseText.substring(0, 500));
+          throw new Error("Property lookup service returned an unexpected response. Please use manual entry.");
+        }
+        
+        // Try to parse as JSON anyway (some APIs don't set content-type correctly)
+        try {
+          const data = JSON.parse(responseText);
+          console.log("HasData API raw response:", JSON.stringify(data, null, 2));
+          
+          if (isRedfin) {
+            return this.transformRedfinResponse(data);
+          } else {
+            return this.transformZillowResponse(data);
+          }
+        } catch (parseError) {
+          console.error("Failed to parse HasData API response:", responseText.substring(0, 500));
+          throw new Error("Property lookup service returned invalid data. Please use manual entry.");
+        }
       }
 
       const data = await response.json();
@@ -61,8 +118,14 @@ export class HasDataAPIService implements IPropertyAPIService {
       } else {
         return this.transformZillowResponse(data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching property data from HasData:", error);
+      
+      // Re-throw with a user-friendly message if it's a network error
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        throw new Error("Unable to connect to property lookup service. Please check your connection and try again.");
+      }
+      
       throw error;
     }
   }
