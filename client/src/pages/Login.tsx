@@ -146,7 +146,7 @@ export default function Login() {
               {/* User Login Card */}
               <Card className="p-8 shadow-xl bg-card" data-testid="card-login">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Login to Your Account</CardTitle>
+                  <CardTitle className="text-2xl">Member Portal</CardTitle>
                   <CardDescription>
                     Enter your credentials to access the platform
                   </CardDescription>
