@@ -4,11 +4,46 @@ import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
 import { affiliatePrograms, categoryInfo } from "@/data/affiliatePrograms";
 import { Wrench, CheckCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import MembershipPaywall from "@/components/MembershipPaywall";
 
 export default function Resources() {
+  const { isSubscriber, isLoading: authLoading } = useAuth();
+  
   const getAffiliateProgramsByCategory = (category: string) => {
     return affiliatePrograms.filter(program => 
       program.categories.includes(category)
+    );
+  };
+
+  const renderAffiliateContent = (category: string, info: { name: string; description: string }) => {
+    if (authLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+    if (!isSubscriber) {
+      return (
+        <MembershipPaywall 
+          title="Affiliate Programs"
+          description="Access our curated collection of vetted affiliate programs and tools by becoming a member."
+        />
+      );
+    }
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-semibold mb-2">{info.name}</h2>
+          <p className="text-muted-foreground">{info.description}</p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {getAffiliateProgramsByCategory(category).map((program) => (
+            <AffiliateCard key={program.id} program={program} />
+          ))}
+        </div>
+      </div>
     );
   };
 
@@ -119,73 +154,23 @@ export default function Resources() {
           </TabsContent>
 
           <TabsContent value="marketplace">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">{categoryInfo.marketplace.name}</h2>
-                <p className="text-muted-foreground">{categoryInfo.marketplace.description}</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {getAffiliateProgramsByCategory("marketplace").map((program) => (
-                  <AffiliateCard key={program.id} program={program} />
-                ))}
-              </div>
-            </div>
+            {renderAffiliateContent("marketplace", categoryInfo.marketplace)}
           </TabsContent>
 
           <TabsContent value="property-management">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">{categoryInfo["property-management"].name}</h2>
-                <p className="text-muted-foreground">{categoryInfo["property-management"].description}</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {getAffiliateProgramsByCategory("property-management").map((program) => (
-                  <AffiliateCard key={program.id} program={program} />
-                ))}
-              </div>
-            </div>
+            {renderAffiliateContent("property-management", categoryInfo["property-management"])}
           </TabsContent>
 
           <TabsContent value="project-management">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">{categoryInfo["project-management"].name}</h2>
-                <p className="text-muted-foreground">{categoryInfo["project-management"].description}</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {getAffiliateProgramsByCategory("project-management").map((program) => (
-                  <AffiliateCard key={program.id} program={program} />
-                ))}
-              </div>
-            </div>
+            {renderAffiliateContent("project-management", categoryInfo["project-management"])}
           </TabsContent>
 
           <TabsContent value="lead-generation">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">{categoryInfo["lead-generation"].name}</h2>
-                <p className="text-muted-foreground">{categoryInfo["lead-generation"].description}</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {getAffiliateProgramsByCategory("lead-generation").map((program) => (
-                  <AffiliateCard key={program.id} program={program} />
-                ))}
-              </div>
-            </div>
+            {renderAffiliateContent("lead-generation", categoryInfo["lead-generation"])}
           </TabsContent>
 
           <TabsContent value="comps">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">{categoryInfo.comps.name}</h2>
-                <p className="text-muted-foreground">{categoryInfo.comps.description}</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {getAffiliateProgramsByCategory("comps").map((program) => (
-                  <AffiliateCard key={program.id} program={program} />
-                ))}
-              </div>
-            </div>
+            {renderAffiliateContent("comps", categoryInfo.comps)}
           </TabsContent>
 
           <TabsContent value="glossary">

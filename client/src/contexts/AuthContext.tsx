@@ -21,6 +21,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isSubscriber: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -136,12 +137,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
+  const isSubscriber = !!user && ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading: !authChecked || isLoading,
         isAuthenticated: !!user,
+        isSubscriber,
         login,
         register,
         logout,

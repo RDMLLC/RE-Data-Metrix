@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import { useAuth } from "@/contexts/AuthContext";
 import WizardLayout from "./WizardLayout";
 import Step1PropertyAddress from "./Step1PropertyAddress";
 import Step2PropertyDetails from "./Step2PropertyDetails";
@@ -10,6 +11,7 @@ import Step3PurchaseRenovation from "./Step3PurchaseRenovation";
 import Step4HoldingPeriodExit from "./Step4HoldingPeriodExit";
 import Step5LoanCriteria from "./Step5LoanCriteria";
 import Step6Results from "./Step6Results";
+import MembershipPaywall from "@/components/MembershipPaywall";
 
 const wizardSchema = z.object({
   address: z.string(),
@@ -109,6 +111,7 @@ export default function DealAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const { updatePropertyData, updateInvestorData } = useWizardData();
+  const { isSubscriber, isLoading: authLoading } = useAuth();
 
   const form = useForm<WizardFormData>({
     resolver: zodResolver(wizardSchema),
@@ -211,6 +214,21 @@ export default function DealAnalysisWizard() {
           />
         );
       case 5:
+        if (authLoading) {
+          return (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          );
+        }
+        if (!isSubscriber) {
+          return (
+            <MembershipPaywall 
+              title="Loan Comparison Results" 
+              description="Complete loan analysis and lender comparisons are available exclusively to RE Data Metrix members."
+            />
+          );
+        }
         return (
           <Step5LoanCriteria
             form={form}
@@ -219,6 +237,21 @@ export default function DealAnalysisWizard() {
           />
         );
       case 6:
+        if (authLoading) {
+          return (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          );
+        }
+        if (!isSubscriber) {
+          return (
+            <MembershipPaywall 
+              title="Full Deal Analysis Results" 
+              description="Access detailed profitability analysis and lender recommendations by becoming a member."
+            />
+          );
+        }
         return <Step6Results form={form} onBack={handleBack} />;
       default:
         return null;

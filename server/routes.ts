@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, lenders, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -1299,6 +1299,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(preferences);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch preferences" });
+    }
+  });
+
+  // Member Portal Routes
+  
+  // Get member stats
+  app.get("/api/member/stats", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      
+      const [dealStats] = await db
+        .select({
+          totalDeals: sql<number>`count(*)::int`,
+          activeDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'active')::int`,
+          wonDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'won')::int`,
+          lostDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'lost')::int`,
+        })
+        .from(savedDeals)
+        .where(eq(savedDeals.userId, userId));
+      
+      const [savedLenderStats] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(savedLenders)
+        .where(eq(savedLenders.userId, userId));
+      
+      res.json({
+        totalDeals: dealStats?.totalDeals ?? 0,
+        activeDeals: dealStats?.activeDeals ?? 0,
+        wonDeals: dealStats?.wonDeals ?? 0,
+        lostDeals: dealStats?.lostDeals ?? 0,
+        savedLenders: savedLenderStats?.count ?? 0,
+      });
+    } catch (error) {
+      console.error("Error fetching member stats:", error);
+      res.status(500).json({ error: "Failed to fetch member stats" });
+    }
+  });
+  
+  // Get member deals
+  app.get("/api/member/deals", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const statusFilter = req.query.status as string | undefined;
+      
+      let query = db
+        .select()
+        .from(savedDeals)
+        .where(eq(savedDeals.userId, userId))
+        .orderBy(desc(savedDeals.createdAt));
+      
+      const deals = await query;
+      
+      // Fetch lender/product info for won deals
+      const dealsWithLenders = await Promise.all(
+        deals.map(async (deal) => {
+          if (deal.closedWithLenderId) {
+            const [lender] = await db
+              .select()
+              .from(lenders)
+              .where(eq(lenders.id, deal.closedWithLenderId));
+            
+            let product = null;
+            if (deal.closedWithProductId) {
+              const [productResult] = await db
+                .select()
+                .from(loanProducts)
+                .where(eq(loanProducts.id, deal.closedWithProductId));
+              product = productResult;
+            }
+            
+            return {
+              ...deal,
+              closedWithLender: lender || null,
+              closedWithProduct: product,
+            };
+          }
+          return deal;
+        })
+      );
+      
+      res.json(dealsWithLenders);
+    } catch (error) {
+      console.error("Error fetching member deals:", error);
+      res.status(500).json({ error: "Failed to fetch deals" });
+    }
+  });
+  
+  // Update deal status
+  app.patch("/api/member/deals/:dealId", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealId } = req.params;
+      const updates = req.body;
+      
+      // Verify ownership
+      const [existingDeal] = await db
+        .select()
+        .from(savedDeals)
+        .where(and(eq(savedDeals.id, dealId), eq(savedDeals.userId, userId)));
+      
+      if (!existingDeal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      const [updatedDeal] = await db
+        .update(savedDeals)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(savedDeals.id, dealId))
+        .returning();
+      
+      res.json(updatedDeal);
+    } catch (error) {
+      console.error("Error updating deal:", error);
+      res.status(500).json({ error: "Failed to update deal" });
+    }
+  });
+  
+  // Delete deal
+  app.delete("/api/member/deals/:dealId", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealId } = req.params;
+      
+      // Verify ownership
+      const [existingDeal] = await db
+        .select()
+        .from(savedDeals)
+        .where(and(eq(savedDeals.id, dealId), eq(savedDeals.userId, userId)));
+      
+      if (!existingDeal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      await db.delete(savedDeals).where(eq(savedDeals.id, dealId));
+      
+      res.json({ message: "Deal deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting deal:", error);
+      res.status(500).json({ error: "Failed to delete deal" });
+    }
+  });
+  
+  // Get saved lenders
+  app.get("/api/member/saved-lenders", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      
+      const saved = await db
+        .select({
+          id: savedLenders.id,
+          lenderId: savedLenders.lenderId,
+          createdAt: savedLenders.createdAt,
+          lender: lenders,
+        })
+        .from(savedLenders)
+        .innerJoin(lenders, eq(savedLenders.lenderId, lenders.id))
+        .where(eq(savedLenders.userId, userId))
+        .orderBy(desc(savedLenders.createdAt));
+      
+      res.json(saved);
+    } catch (error) {
+      console.error("Error fetching saved lenders:", error);
+      res.status(500).json({ error: "Failed to fetch saved lenders" });
+    }
+  });
+  
+  // Save a lender (heart)
+  app.post("/api/member/saved-lenders/:lenderId", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { lenderId } = req.params;
+      
+      // Check if already saved
+      const [existing] = await db
+        .select()
+        .from(savedLenders)
+        .where(and(eq(savedLenders.userId, userId), eq(savedLenders.lenderId, lenderId)));
+      
+      if (existing) {
+        return res.json({ message: "Lender already saved", id: existing.id });
+      }
+      
+      const [saved] = await db
+        .insert(savedLenders)
+        .values({
+          userId,
+          lenderId,
+        })
+        .returning();
+      
+      res.json(saved);
+    } catch (error) {
+      console.error("Error saving lender:", error);
+      res.status(500).json({ error: "Failed to save lender" });
+    }
+  });
+  
+  // Unsave a lender (unheart)
+  app.delete("/api/member/saved-lenders/:lenderId", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { lenderId } = req.params;
+      
+      await db
+        .delete(savedLenders)
+        .where(and(eq(savedLenders.userId, userId), eq(savedLenders.lenderId, lenderId)));
+      
+      res.json({ message: "Lender removed from saved" });
+    } catch (error) {
+      console.error("Error removing saved lender:", error);
+      res.status(500).json({ error: "Failed to remove lender" });
+    }
+  });
+  
+  // Check if lender is saved
+  app.get("/api/member/saved-lenders/:lenderId/status", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { lenderId } = req.params;
+      
+      const [existing] = await db
+        .select()
+        .from(savedLenders)
+        .where(and(eq(savedLenders.userId, userId), eq(savedLenders.lenderId, lenderId)));
+      
+      res.json({ isSaved: !!existing });
+    } catch (error) {
+      console.error("Error checking saved lender status:", error);
+      res.status(500).json({ error: "Failed to check status" });
     }
   });
 

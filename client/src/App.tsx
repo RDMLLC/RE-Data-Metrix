@@ -17,6 +17,9 @@ import Resources from "@/pages/Resources";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Profile from "@/pages/portal/Profile";
+import MemberDashboard from "@/pages/portal/Dashboard";
+import MemberDeals from "@/pages/portal/Deals";
+import SavedLenders from "@/pages/portal/SavedLenders";
 import Contact from "@/pages/Contact";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
@@ -58,10 +61,31 @@ function Router() {
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/lender/request-password-reset" component={RequestLenderPasswordReset} />
       <Route path="/lender/reset-password/:token" component={ResetLenderPassword} />
+      <Route path="/portal">
+        {() => (
+          <ProtectedRoute>
+            <MemberDashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/portal/profile">
         {() => (
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/portal/deals">
+        {() => (
+          <ProtectedRoute>
+            <MemberDeals />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/portal/saved-lenders">
+        {() => (
+          <ProtectedRoute>
+            <SavedLenders />
           </ProtectedRoute>
         )}
       </Route>

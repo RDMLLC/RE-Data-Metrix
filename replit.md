@@ -57,6 +57,18 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - All admin endpoints secured with ensureAdmin middleware checking user.role === 'admin'
   - **Referral Fields**: Admin sets referralType and referralAmount during lender invite; these fields are visible to lenders (read-only in Company Info) but NOT visible to investors
 
+### Membership Access Control
+
+Subscription-based access system restricts premium features to paying members:
+- **Subscriber Status**: `isSubscriber` in AuthContext checks if user has subscriptionStatus of 'active', 'referral_trial', or 'comped'
+- **Paywall Component**: `MembershipPaywall` displays lock icon, benefits list, and login/register CTAs
+- **Protected Features** (require subscription):
+  - Deal Analysis wizard steps 5 (Loan Criteria) and 6 (Results)
+  - Loan Types education page
+  - Rental Analysis wizard
+  - Toolbox/Resources affiliate program tabs (About and Glossary remain free)
+- **Loading State Handling**: All protected pages show loading spinner while auth state resolves to prevent flash-of-paywall for legitimate subscribers
+
 ### Form Handling & Validation
 
 Client-side validation is performed using react-hook-form and Zod. All API endpoints include comprehensive server-side Zod schema validation. The system supports various forms, including prelaunch signups, contact forms, detailed lender questionnaires, and loan product entry forms.
