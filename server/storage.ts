@@ -318,6 +318,18 @@ export class MemStorage implements IStorage {
   async searchLenders(criteria: any): Promise<any[]> {
     const questionnaires = Array.from(this.questionnaires.values());
     
+    const creditScoreToNumeric = (score: string | null): number => {
+      if (!score) return 0;
+      switch (score) {
+        case "750+": return 750;
+        case "700-749": return 700;
+        case "650-699": return 650;
+        case "600-649": return 600;
+        case "below-600": return 0;
+        default: return 0;
+      }
+    };
+    
     const matchingQuestionnaires = questionnaires.filter((q) => {
       if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && criteria.brokerOrDirectLender !== "any" &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
@@ -335,9 +347,12 @@ export class MemStorage implements IStorage {
           q.workWithNewInvestors !== criteria.workWithNewInvestors) {
         return false;
       }
-      if (criteria.minCreditScore && criteria.minCreditScore !== "" && criteria.minCreditScore !== "any" &&
-          q.minCreditScore !== criteria.minCreditScore) {
-        return false;
+      if (criteria.creditScore && criteria.creditScore !== "" && criteria.creditScore !== "any") {
+        const investorScore = creditScoreToNumeric(criteria.creditScore);
+        const lenderMinScore = creditScoreToNumeric(q.minCreditScore);
+        if (investorScore < lenderMinScore) {
+          return false;
+        }
       }
       if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && criteria.offerDeferredPayment !== "any" &&
           q.offerDeferredPayment !== criteria.offerDeferredPayment) {
@@ -746,6 +761,18 @@ export class DatabaseStorage implements IStorage {
     
     const questionnaires = await query;
     
+    const creditScoreToNumeric = (score: string | null): number => {
+      if (!score) return 0;
+      switch (score) {
+        case "750+": return 750;
+        case "700-749": return 700;
+        case "650-699": return 650;
+        case "600-649": return 600;
+        case "below-600": return 0;
+        default: return 0;
+      }
+    };
+    
     const matchingQuestionnaires = questionnaires.filter((q) => {
       if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && criteria.brokerOrDirectLender !== "any" &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
@@ -763,9 +790,12 @@ export class DatabaseStorage implements IStorage {
           q.workWithNewInvestors !== criteria.workWithNewInvestors) {
         return false;
       }
-      if (criteria.minCreditScore && criteria.minCreditScore !== "" && criteria.minCreditScore !== "any" &&
-          q.minCreditScore !== criteria.minCreditScore) {
-        return false;
+      if (criteria.creditScore && criteria.creditScore !== "" && criteria.creditScore !== "any") {
+        const investorScore = creditScoreToNumeric(criteria.creditScore);
+        const lenderMinScore = creditScoreToNumeric(q.minCreditScore);
+        if (investorScore < lenderMinScore) {
+          return false;
+        }
       }
       if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && criteria.offerDeferredPayment !== "any" &&
           q.offerDeferredPayment !== criteria.offerDeferredPayment) {

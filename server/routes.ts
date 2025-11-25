@@ -1290,6 +1290,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/search-lenders", async (req, res) => {
+    try {
+      const results = await storage.searchLenders(req.body);
+      res.json(results);
+    } catch (error) {
+      console.error("Search lenders error:", error);
+      res.status(500).json({ error: "Failed to search lenders" });
+    }
+  });
+
   app.post("/api/prelaunch-signups", async (req, res) => {
     try {
       const { name, company, email, phone, consent, source } = req.body;
