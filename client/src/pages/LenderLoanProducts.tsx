@@ -8,16 +8,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLoanProductSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, X } from "lucide-react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { LoanProduct } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
 
   const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
     queryKey: ["/api/loan-products"],
@@ -47,6 +48,29 @@ export default function LenderLoanProducts() {
       toast({
         title: "Error",
         description: "Failed to add loan product. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiRequest("PATCH", `/api/loan-products/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
+      toast({
+        title: "Product Updated",
+        description: "Your loan product has been updated successfully.",
+      });
+      setEditingProduct(null);
+      form.reset();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update loan product. Please try again.",
         variant: "destructive",
       });
     },
@@ -150,7 +174,39 @@ export default function LenderLoanProducts() {
   });
 
   const onSubmit = async (data: any) => {
-    createProductMutation.mutate(data);
+    if (editingProduct) {
+      updateProductMutation.mutate({ id: editingProduct.id, data });
+    } else {
+      createProductMutation.mutate(data);
+    }
+  };
+
+  const handleEditProduct = (product: LoanProduct) => {
+    setEditingProduct(product);
+    form.reset({
+      productName: product.productName,
+      newInvestorOk: product.newInvestorOk ?? false,
+      minCreditScore: product.minCreditScore,
+      maxLtvBuy: product.maxLtvBuy,
+      maxLendRehab: product.maxLendRehab,
+      interestRate: product.interestRate,
+      interestDeferred: product.interestDeferred ?? false,
+      drawnFundsOnly: product.drawnFundsOnly ?? false,
+      points: product.points,
+      pointsDeferred: product.pointsDeferred ?? false,
+      maxLoanArv: product.maxLoanArv,
+      appraisalRequired: product.appraisalRequired ?? false,
+      estimatedAppraisalCost: product.estimatedAppraisalCost,
+      fees: product.fees,
+      costPerDraw: product.costPerDraw,
+      isActive: product.isActive ?? true,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    form.reset();
   };
 
   return (
@@ -205,11 +261,31 @@ export default function LenderLoanProducts() {
           </div>
 
           <Card className="p-8 mb-8">
-            <div className="mb-6">
+            <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-primary flex items-center gap-2">
-                <Plus className="h-6 w-6" />
-                Add New Loan Product
+                {editingProduct ? (
+                  <>
+                    <Pencil className="h-6 w-6" />
+                    Edit Loan Product
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-6 w-6" />
+                    Add New Loan Product
+                  </>
+                )}
               </h2>
+              {editingProduct && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  data-testid="button-cancel-edit"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel Edit
+                </Button>
+              )}
             </div>
 
             <Form {...form}>
@@ -554,18 +630,24 @@ export default function LenderLoanProducts() {
                   <Button
                     type="submit"
                     className="flex-1"
-                    data-testid="button-add-product"
-                    disabled={createProductMutation.isPending}
+                    data-testid={editingProduct ? "button-update-product" : "button-add-product"}
+                    disabled={createProductMutation.isPending || updateProductMutation.isPending}
                   >
-                    {createProductMutation.isPending ? "Adding..." : "Add Product"}
+                    {editingProduct
+                      ? updateProductMutation.isPending
+                        ? "Updating..."
+                        : "Update Product"
+                      : createProductMutation.isPending
+                      ? "Adding..."
+                      : "Add Product"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => form.reset()}
+                    onClick={editingProduct ? handleCancelEdit : () => form.reset()}
                     data-testid="button-reset"
                   >
-                    Reset Form
+                    {editingProduct ? "Cancel" : "Reset Form"}
                   </Button>
                 </div>
               </form>
@@ -591,7 +673,7 @@ export default function LenderLoanProducts() {
                     className="p-6 rounded-md border bg-muted/30 hover-elevate" 
                     data-testid={`product-card-${product.id}`}
                   >
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-4 gap-4">
                       <div>
                         <h3 className="text-xl font-semibold text-primary" data-testid={`product-name-${product.id}`}>
                           {product.productName}
@@ -600,6 +682,16 @@ export default function LenderLoanProducts() {
                           <span className="text-sm text-muted-foreground">(Inactive)</span>
                         )}
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditProduct(product)}
+                        disabled={editingProduct?.id === product.id}
+                        data-testid={`button-edit-product-${product.id}`}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        {editingProduct?.id === product.id ? "Editing..." : "Edit"}
+                      </Button>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">

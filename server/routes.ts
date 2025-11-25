@@ -1045,6 +1045,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/lenders/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const lender = await storage.getLender(id);
+      if (!lender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      
+      const questionnaire = await storage.getLenderQuestionnaire(id);
+      const loanProducts = await storage.getLoanProducts(id);
+      const allReferrals = await storage.getAllLenderReferralsForAdmin();
+      const lenderReferrals = allReferrals.filter(r => r.lenderId === id);
+      
+      res.json({
+        lender,
+        questionnaire,
+        loanProducts,
+        referrals: lenderReferrals,
+      });
+    } catch (error) {
+      console.error('Get lender detail error:', error);
+      res.status(500).json({ error: "Failed to fetch lender details" });
+    }
+  });
+
   // Admin Reports Routes
   app.get("/api/admin/reports/dashboard-stats", ensureAdmin, async (req, res) => {
     try {

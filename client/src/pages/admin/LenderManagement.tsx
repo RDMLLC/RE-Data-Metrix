@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle } from "lucide-react";
+import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle, Eye } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -469,8 +469,9 @@ export default function LenderManagement() {
                       {activeLenders.map((lender) => (
                         <div
                           key={lender.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
+                          className="flex items-center justify-between p-4 border rounded-lg hover-elevate cursor-pointer"
                           data-testid={`lender-${lender.id}`}
+                          onClick={() => setLocation(`/admin/lenders/${lender.id}`)}
                         >
                           <div className="flex-1">
                             <h3 className="font-semibold text-foreground">
@@ -501,7 +502,16 @@ export default function LenderManagement() {
                               )}
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setLocation(`/admin/lenders/${lender.id}`)}
+                              data-testid={`button-view-${lender.id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View
+                            </Button>
                             {!lender.inviteAccepted && (
                               <Button
                                 variant="outline"
@@ -556,8 +566,9 @@ export default function LenderManagement() {
                       {archivedLenders.map((lender) => (
                         <div
                           key={lender.id}
-                          className="flex items-center justify-between p-4 border rounded-lg opacity-60"
+                          className="flex items-center justify-between p-4 border rounded-lg opacity-60 hover-elevate cursor-pointer"
                           data-testid={`lender-archived-${lender.id}`}
+                          onClick={() => setLocation(`/admin/lenders/${lender.id}`)}
                         >
                           <div className="flex-1">
                             <h3 className="font-semibold text-foreground">
@@ -574,6 +585,17 @@ export default function LenderManagement() {
                                 Archived
                               </span>
                             </div>
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setLocation(`/admin/lenders/${lender.id}`)}
+                              data-testid={`button-view-archived-${lender.id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View
+                            </Button>
                           </div>
                         </div>
                       ))}
