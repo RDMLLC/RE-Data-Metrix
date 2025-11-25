@@ -56,6 +56,11 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Business rule enforcement: archived lenders cannot be deleted, only zero-referral lenders can be permanently removed
   - All admin endpoints secured with ensureAdmin middleware checking user.role === 'admin'
   - **Referral Fields**: Admin sets referralType and referralAmount during lender invite; these fields are visible to lenders (read-only in Company Info) but NOT visible to investors
+  - **Lender Detail Page**: Clickable lender cards navigate to /admin/lenders/:id showing complete profile with company info, referral configuration, questionnaire responses, all loan products, and referral history
+- **Lender Portal**: Comprehensive loan product management at /lender-dashboard featuring:
+  - Add, edit, and delete individual loan products with full form validation
+  - CSV bulk import/export for batch product management
+  - Edit mode allows updating existing products with form pre-population
 
 ### Membership Access Control
 
