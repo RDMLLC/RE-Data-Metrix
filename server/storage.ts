@@ -410,6 +410,7 @@ export class MemStorage implements IStorage {
     const loanProduct: LoanProduct = {
       id,
       lenderId: data.lenderId,
+      loanType: data.loanType ?? 'bridge',
       productName: data.productName,
       newInvestorOk: data.newInvestorOk ?? false,
       minCreditScore: data.minCreditScore ?? null,
@@ -426,6 +427,9 @@ export class MemStorage implements IStorage {
       fees: data.fees ?? null,
       costPerDraw: data.costPerDraw ?? null,
       timeToClose: data.timeToClose ?? null,
+      cashOutOk: data.cashOutOk ?? false,
+      cashOutMaxLtv: data.cashOutMaxLtv ?? null,
+      referralLink: data.referralLink ?? null,
       isActive: data.isActive ?? true,
       createdAt: new Date(),
     };
@@ -1532,7 +1536,7 @@ export class DatabaseStorage implements IStorage {
     isActive: boolean;
   }>> {
     const lenders = await db.select().from(lendersTable)
-      .where(eq(lendersTable.isArchived, false));
+      .where(eq(lendersTable.archived, false));
 
     const stats = await Promise.all(lenders.map(async (lender) => {
       const referrals = await db.select({ count: count() })
@@ -1559,7 +1563,7 @@ export class DatabaseStorage implements IStorage {
         savedCount: Number(saved[0]?.count || 0),
         wonDealsCount: wonDeals.length,
         wonDealsValue,
-        isActive: lender.isActive || false,
+        isActive: !lender.archived,
       };
     }));
 
@@ -1800,14 +1804,6 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined> {
-    const [updated] = await db
-      .update(lendersTable)
-      .set({ isPreferred })
-      .where(eq(lendersTable.id, lenderId))
-      .returning();
-    return updated;
-  }
 }
 
 export const storage = new DatabaseStorage();
