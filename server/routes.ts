@@ -1076,6 +1076,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/affiliate-clicks", ensureAdmin, async (req, res) => {
+    try {
+      const clicks = await storage.getAffiliateClicksForAdmin();
+      res.json(clicks);
+    } catch (error) {
+      console.error('Affiliate clicks report error:', error);
+      res.status(500).json({ error: "Failed to fetch affiliate clicks" });
+    }
+  });
+
+  app.get("/api/admin/reports/affiliate-stats", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getAffiliateClickStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Affiliate stats error:', error);
+      res.status(500).json({ error: "Failed to fetch affiliate stats" });
+    }
+  });
+
+  // Track affiliate click (available to logged in users and guests)
+  app.post("/api/affiliate-clicks", async (req, res) => {
+    try {
+      const { affiliateId, affiliateName, category } = req.body;
+      
+      if (!affiliateId || !affiliateName || !category) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const userId = req.isAuthenticated() ? (req.user as User).id : null;
+      
+      await storage.trackAffiliateClick(userId, affiliateId, affiliateName, category);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Track affiliate click error:', error);
+      res.status(500).json({ error: "Failed to track click" });
+    }
+  });
+
   // Lender Company Info Routes
   app.post("/api/lender-company-info", ensureLenderAuthenticated, async (req, res) => {
     try {

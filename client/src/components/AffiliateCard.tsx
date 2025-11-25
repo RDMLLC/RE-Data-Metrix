@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { ExternalLink, CheckCircle } from "lucide-react";
 import type { AffiliateProgram } from "@/data/affiliatePrograms";
+import { apiRequest } from "@/lib/queryClient";
 
 interface AffiliateCardProps {
   program: AffiliateProgram;
@@ -9,6 +10,18 @@ interface AffiliateCardProps {
 
 export function AffiliateCard({ program }: AffiliateCardProps) {
   const Icon = program.icon;
+
+  const handleClick = async () => {
+    try {
+      await apiRequest('POST', '/api/affiliate-clicks', {
+        affiliateId: program.id,
+        affiliateName: program.name,
+        category: program.categories[0] || 'unknown',
+      });
+    } catch (error) {
+      console.log('Click tracking failed silently');
+    }
+  };
 
   return (
     <Card className="flex flex-col h-full hover-elevate" data-testid={`card-affiliate-${program.id}`}>
@@ -48,6 +61,7 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
             href={program.referralLink}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleClick}
           >
             Visit {program.name}
             <ExternalLink className="h-4 w-4 ml-2" />

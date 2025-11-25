@@ -60,10 +60,29 @@ interface UserReport {
   isEmailVerified: boolean;
 }
 
+interface AffiliateClick {
+  id: string;
+  userId: string | null;
+  userName: string | null;
+  userEmail: string | null;
+  affiliateId: string;
+  affiliateName: string;
+  category: string;
+  createdAt: string | null;
+}
+
+interface AffiliateStats {
+  affiliateId: string;
+  affiliateName: string;
+  totalClicks: number;
+  uniqueUsers: number;
+}
+
 export default function AdminReports() {
   const [, setLocation] = useLocation();
   const [referralSearch, setReferralSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [affiliateSearch, setAffiliateSearch] = useState("");
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/reports/dashboard-stats"],
@@ -75,6 +94,14 @@ export default function AdminReports() {
 
   const { data: users, isLoading: usersLoading } = useQuery<UserReport[]>({
     queryKey: ["/api/admin/reports/users"],
+  });
+
+  const { data: affiliateClicks, isLoading: affiliateClicksLoading } = useQuery<AffiliateClick[]>({
+    queryKey: ["/api/admin/reports/affiliate-clicks"],
+  });
+
+  const { data: affiliateStats, isLoading: affiliateStatsLoading } = useQuery<AffiliateStats[]>({
+    queryKey: ["/api/admin/reports/affiliate-stats"],
   });
 
   const filteredReferrals = referrals?.filter(ref => {
@@ -97,6 +124,17 @@ export default function AdminReports() {
       user.email?.toLowerCase().includes(search) ||
       user.role?.toLowerCase().includes(search) ||
       user.subscriptionStatus?.toLowerCase().includes(search)
+    );
+  }) || [];
+
+  const filteredAffiliateClicks = affiliateClicks?.filter(click => {
+    if (!affiliateSearch) return true;
+    const search = affiliateSearch.toLowerCase();
+    return (
+      click.affiliateName?.toLowerCase().includes(search) ||
+      click.userName?.toLowerCase().includes(search) ||
+      click.userEmail?.toLowerCase().includes(search) ||
+      click.category?.toLowerCase().includes(search)
     );
   }) || [];
 
@@ -142,6 +180,38 @@ export default function AdminReports() {
     a.download = `users-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const exportAffiliateClicksToCSV = () => {
+    if (!affiliateClicks) return;
+    const headers = ['Date', 'Affiliate', 'Category', 'User Name', 'User Email'];
+    const rows = affiliateClicks.map(click => [
+      click.createdAt ? format(new Date(click.createdAt), 'MM/dd/yyyy HH:mm') : '',
+      click.affiliateName,
+      click.category,
+      click.userName || 'Anonymous',
+      click.userEmail || ''
+    ]);
+    
+    const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `affiliate-clicks-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      'marketplace': 'Marketplace & Community',
+      'property-management': 'Property Management',
+      'project-management': 'Project Management',
+      'lead-generation': 'Lead Generation',
+      'comps': 'Comps & Data'
+    };
+    return labels[category] || category;
   };
 
   const getSubscriptionBadge = (status: string) => {
@@ -477,21 +547,143 @@ export default function AdminReports() {
               </TabsContent>
 
               <TabsContent value="affiliates">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Affiliate Click Tracking</CardTitle>
-                    <CardDescription>
-                      Track clicks on affiliate programs
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-12 text-muted-foreground">
-                      <MousePointer className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium mb-2">Coming Soon</p>
-                      <p>Affiliate click tracking will be available in a future update.</p>
+                <div className="space-y-6">
+                  {/* Affiliate Stats Summary */}
+                  {affiliateStatsLoading ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <Card key={i} className="animate-pulse">
+                          <CardContent className="p-4">
+                            <div className="h-4 bg-muted rounded w-24 mb-2" />
+                            <div className="h-8 bg-muted rounded w-12" />
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : affiliateStats && affiliateStats.length > 0 ? (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Top Affiliate Programs by Clicks</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {affiliateStats.slice(0, 4).map((stat) => (
+                            <div key={stat.affiliateId} className="p-4 border rounded-md">
+                              <p className="font-medium text-sm mb-1">{stat.affiliateName}</p>
+                              <p className="text-2xl font-bold">{stat.totalClicks}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {stat.uniqueUsers} unique users
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : null}
+
+                  {/* Click Log Table */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                          <CardTitle>Affiliate Click Log</CardTitle>
+                          <CardDescription>
+                            Track individual clicks on affiliate programs
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Search clicks..."
+                              value={affiliateSearch}
+                              onChange={(e) => setAffiliateSearch(e.target.value)}
+                              className="pl-9 w-64"
+                              data-testid="input-search-affiliates"
+                            />
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={exportAffiliateClicksToCSV}
+                            disabled={!affiliateClicks?.length}
+                            data-testid="button-export-affiliates"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Export CSV
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {affiliateClicksLoading ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          Loading affiliate clicks...
+                        </div>
+                      ) : filteredAffiliateClicks.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <MousePointer className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium mb-2">
+                            {affiliateSearch ? 'No clicks match your search' : 'No affiliate clicks recorded yet'}
+                          </p>
+                          <p className="text-sm">
+                            Clicks will appear here when users visit affiliate links.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Affiliate</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead>User</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredAffiliateClicks.map((click) => (
+                                <TableRow key={click.id} data-testid={`row-affiliate-${click.id}`}>
+                                  <TableCell className="whitespace-nowrap">
+                                    {click.createdAt
+                                      ? format(new Date(click.createdAt), 'MMM d, yyyy h:mm a')
+                                      : '-'}
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {click.affiliateName}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">
+                                      {getCategoryLabel(click.category)}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {click.userName ? (
+                                      <div>
+                                        <p>{click.userName}</p>
+                                        {click.userEmail && (
+                                          <p className="text-sm text-muted-foreground">
+                                            {click.userEmail}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground">Anonymous</span>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                      {filteredAffiliateClicks.length > 0 && (
+                        <div className="mt-4 text-sm text-muted-foreground">
+                          Showing {filteredAffiliateClicks.length} of {affiliateClicks?.length || 0} clicks
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
             </Tabs>
           </div>

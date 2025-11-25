@@ -155,6 +155,26 @@ export const insertLenderReferralSchema = createInsertSchema(lenderReferrals).om
 export type InsertLenderReferral = z.infer<typeof insertLenderReferralSchema>;
 export type LenderReferral = typeof lenderReferrals.$inferSelect;
 
+export const affiliateClicks = pgTable("affiliate_clicks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  affiliateId: text("affiliate_id").notNull(),
+  affiliateName: text("affiliate_name").notNull(),
+  category: text("category").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: { name: "affiliate_clicks_user_id_idx", columns: [table.userId] },
+  affiliateIdIdx: { name: "affiliate_clicks_affiliate_id_idx", columns: [table.affiliateId] },
+}));
+
+export const insertAffiliateClickSchema = createInsertSchema(affiliateClicks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAffiliateClick = z.infer<typeof insertAffiliateClickSchema>;
+export type AffiliateClick = typeof affiliateClicks.$inferSelect;
+
 export const prelaunchSignups = pgTable("prelaunch_signups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),

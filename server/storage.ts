@@ -15,6 +15,8 @@ import {
   type InsertDealAnalysisAccess,
   type LenderReferral,
   type InsertLenderReferral,
+  type AffiliateClick,
+  type InsertAffiliateClick,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -23,7 +25,8 @@ import {
   dealAnalyses as dealAnalysesTable,
   dealAnalysisAccess as dealAnalysisAccessTable,
   lenderReferrals as lenderReferralsTable,
-  savedDeals as savedDealsTable
+  savedDeals as savedDealsTable,
+  affiliateClicks as affiliateClicksTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -108,6 +111,25 @@ export interface IStorage {
     subscriptionStatus: string;
     createdAt: Date | null;
     isEmailVerified: boolean;
+  }>>;
+  
+  // Affiliate Clicks
+  trackAffiliateClick(userId: string | null, affiliateId: string, affiliateName: string, category: string): Promise<void>;
+  getAffiliateClicksForAdmin(): Promise<Array<{
+    id: string;
+    userId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    affiliateId: string;
+    affiliateName: string;
+    category: string;
+    createdAt: Date | null;
+  }>>;
+  getAffiliateClickStats(): Promise<Array<{
+    affiliateId: string;
+    affiliateName: string;
+    totalClicks: number;
+    uniqueUsers: number;
   }>>;
 }
 
@@ -1108,6 +1130,88 @@ export class DatabaseStorage implements IStorage {
     }).from(usersTable).orderBy(desc(usersTable.createdAt));
 
     return users;
+  }
+
+  async trackAffiliateClick(userId: string | null, affiliateId: string, affiliateName: string, category: string): Promise<void> {
+    await db.insert(affiliateClicksTable).values({
+      userId: userId || undefined,
+      affiliateId,
+      affiliateName,
+      category,
+    });
+  }
+
+  async getAffiliateClicksForAdmin(): Promise<Array<{
+    id: string;
+    userId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    affiliateId: string;
+    affiliateName: string;
+    category: string;
+    createdAt: Date | null;
+  }>> {
+    const clicks = await db.select().from(affiliateClicksTable)
+      .orderBy(desc(affiliateClicksTable.createdAt));
+
+    const enrichedClicks = await Promise.all(clicks.map(async (click) => {
+      let userName: string | null = null;
+      let userEmail: string | null = null;
+
+      if (click.userId) {
+        const user = await db.select().from(usersTable)
+          .where(eq(usersTable.id, click.userId)).limit(1);
+        if (user[0]) {
+          userName = user[0].username;
+          userEmail = user[0].email;
+        }
+      }
+
+      return {
+        id: click.id,
+        userId: click.userId,
+        userName,
+        userEmail,
+        affiliateId: click.affiliateId,
+        affiliateName: click.affiliateName,
+        category: click.category,
+        createdAt: click.createdAt,
+      };
+    }));
+
+    return enrichedClicks;
+  }
+
+  async getAffiliateClickStats(): Promise<Array<{
+    affiliateId: string;
+    affiliateName: string;
+    totalClicks: number;
+    uniqueUsers: number;
+  }>> {
+    const stats = await db
+      .select({
+        affiliateId: affiliateClicksTable.affiliateId,
+        affiliateName: affiliateClicksTable.affiliateName,
+        totalClicks: count(),
+      })
+      .from(affiliateClicksTable)
+      .groupBy(affiliateClicksTable.affiliateId, affiliateClicksTable.affiliateName);
+
+    const enrichedStats = await Promise.all(stats.map(async (stat) => {
+      const uniqueUsersResult = await db
+        .select({ count: sqlCount`COUNT(DISTINCT ${affiliateClicksTable.userId})` })
+        .from(affiliateClicksTable)
+        .where(eq(affiliateClicksTable.affiliateId, stat.affiliateId));
+
+      return {
+        affiliateId: stat.affiliateId,
+        affiliateName: stat.affiliateName,
+        totalClicks: Number(stat.totalClicks),
+        uniqueUsers: Number(uniqueUsersResult[0]?.count || 0),
+      };
+    }));
+
+    return enrichedStats.sort((a, b) => b.totalClicks - a.totalClicks);
   }
 }
 
