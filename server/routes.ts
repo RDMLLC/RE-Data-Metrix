@@ -1096,6 +1096,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/deal-stats", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getDealAnalysisStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Deal stats error:', error);
+      res.status(500).json({ error: "Failed to fetch deal stats" });
+    }
+  });
+
+  app.get("/api/admin/reports/deals", ensureAdmin, async (req, res) => {
+    try {
+      const deals = await storage.getAllDealsForAdmin();
+      res.json(deals);
+    } catch (error) {
+      console.error('Deals report error:', error);
+      res.status(500).json({ error: "Failed to fetch deals" });
+    }
+  });
+
   // Track affiliate click (available to logged in users and guests)
   app.post("/api/affiliate-clicks", async (req, res) => {
     try {

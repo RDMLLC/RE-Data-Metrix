@@ -131,6 +131,29 @@ export interface IStorage {
     totalClicks: number;
     uniqueUsers: number;
   }>>;
+  
+  // Deal Analysis Reports
+  getDealAnalysisStats(): Promise<{
+    totalDeals: number;
+    averageArv: number;
+    averageRoi: number;
+    averageProfit: number;
+    statusCounts: Record<string, number>;
+    dealsThisMonth: number;
+    dealsThisWeek: number;
+  }>;
+  getAllDealsForAdmin(): Promise<Array<{
+    id: string;
+    userId: string;
+    userName: string | null;
+    userEmail: string | null;
+    propertyAddress: string | null;
+    arv: string | null;
+    roi: string | null;
+    profit: string | null;
+    status: string;
+    createdAt: Date | null;
+  }>>;
 }
 
 export class MemStorage implements IStorage {
@@ -503,6 +526,59 @@ export class MemStorage implements IStorage {
     subscriptionStatus: string;
     createdAt: Date | null;
     isEmailVerified: boolean;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async trackAffiliateClick(userId: string | null, affiliateId: string, affiliateName: string, category: string): Promise<void> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAffiliateClicksForAdmin(): Promise<Array<{
+    id: string;
+    userId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    affiliateId: string;
+    affiliateName: string;
+    category: string;
+    createdAt: Date | null;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAffiliateClickStats(): Promise<Array<{
+    affiliateId: string;
+    affiliateName: string;
+    totalClicks: number;
+    uniqueUsers: number;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getDealAnalysisStats(): Promise<{
+    totalDeals: number;
+    averageArv: number;
+    averageRoi: number;
+    averageProfit: number;
+    statusCounts: Record<string, number>;
+    dealsThisMonth: number;
+    dealsThisWeek: number;
+  }> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAllDealsForAdmin(): Promise<Array<{
+    id: string;
+    userId: string;
+    userName: string | null;
+    userEmail: string | null;
+    propertyAddress: string | null;
+    arv: string | null;
+    roi: string | null;
+    profit: string | null;
+    status: string;
+    createdAt: Date | null;
   }>> {
     throw new Error("Not implemented in MemStorage");
   }
@@ -1212,6 +1288,94 @@ export class DatabaseStorage implements IStorage {
     }));
 
     return enrichedStats.sort((a, b) => b.totalClicks - a.totalClicks);
+  }
+
+  async getDealAnalysisStats(): Promise<{
+    totalDeals: number;
+    averageArv: number;
+    averageRoi: number;
+    averageProfit: number;
+    statusCounts: Record<string, number>;
+    dealsThisMonth: number;
+    dealsThisWeek: number;
+  }> {
+    const allDeals = await db.select().from(savedDealsTable);
+    
+    const now = new Date();
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    const totalDeals = allDeals.length;
+    
+    const arvValues = allDeals.filter(d => d.arv).map(d => parseFloat(d.arv || '0'));
+    const roiValues = allDeals.filter(d => d.roi).map(d => parseFloat(d.roi || '0'));
+    const profitValues = allDeals.filter(d => d.profit).map(d => parseFloat(d.profit || '0'));
+    
+    const averageArv = arvValues.length > 0 ? arvValues.reduce((a, b) => a + b, 0) / arvValues.length : 0;
+    const averageRoi = roiValues.length > 0 ? roiValues.reduce((a, b) => a + b, 0) / roiValues.length : 0;
+    const averageProfit = profitValues.length > 0 ? profitValues.reduce((a, b) => a + b, 0) / profitValues.length : 0;
+    
+    const statusCounts: Record<string, number> = {};
+    allDeals.forEach(deal => {
+      const status = deal.status || 'active';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    
+    const dealsThisMonth = allDeals.filter(d => d.createdAt && d.createdAt >= oneMonthAgo).length;
+    const dealsThisWeek = allDeals.filter(d => d.createdAt && d.createdAt >= oneWeekAgo).length;
+    
+    return {
+      totalDeals,
+      averageArv,
+      averageRoi,
+      averageProfit,
+      statusCounts,
+      dealsThisMonth,
+      dealsThisWeek,
+    };
+  }
+
+  async getAllDealsForAdmin(): Promise<Array<{
+    id: string;
+    userId: string;
+    userName: string | null;
+    userEmail: string | null;
+    propertyAddress: string | null;
+    arv: string | null;
+    roi: string | null;
+    profit: string | null;
+    status: string;
+    createdAt: Date | null;
+  }>> {
+    const deals = await db.select().from(savedDealsTable)
+      .orderBy(desc(savedDealsTable.createdAt));
+
+    const enrichedDeals = await Promise.all(deals.map(async (deal) => {
+      let userName: string | null = null;
+      let userEmail: string | null = null;
+
+      const user = await db.select().from(usersTable)
+        .where(eq(usersTable.id, deal.userId)).limit(1);
+      if (user[0]) {
+        userName = user[0].username;
+        userEmail = user[0].email;
+      }
+
+      return {
+        id: deal.id,
+        userId: deal.userId,
+        userName,
+        userEmail,
+        propertyAddress: deal.propertyAddress,
+        arv: deal.arv,
+        roi: deal.roi,
+        profit: deal.profit,
+        status: deal.status,
+        createdAt: deal.createdAt,
+      };
+    }));
+
+    return enrichedDeals;
   }
 }
 

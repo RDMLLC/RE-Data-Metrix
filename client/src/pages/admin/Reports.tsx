@@ -78,11 +78,35 @@ interface AffiliateStats {
   uniqueUsers: number;
 }
 
+interface DealStats {
+  totalDeals: number;
+  averageArv: number;
+  averageRoi: number;
+  averageProfit: number;
+  statusCounts: Record<string, number>;
+  dealsThisMonth: number;
+  dealsThisWeek: number;
+}
+
+interface DealReport {
+  id: string;
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  propertyAddress: string | null;
+  arv: string | null;
+  roi: string | null;
+  profit: string | null;
+  status: string;
+  createdAt: string | null;
+}
+
 export default function AdminReports() {
   const [, setLocation] = useLocation();
   const [referralSearch, setReferralSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [affiliateSearch, setAffiliateSearch] = useState("");
+  const [dealSearch, setDealSearch] = useState("");
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/reports/dashboard-stats"],
@@ -102,6 +126,14 @@ export default function AdminReports() {
 
   const { data: affiliateStats, isLoading: affiliateStatsLoading } = useQuery<AffiliateStats[]>({
     queryKey: ["/api/admin/reports/affiliate-stats"],
+  });
+
+  const { data: dealStats, isLoading: dealStatsLoading } = useQuery<DealStats>({
+    queryKey: ["/api/admin/reports/deal-stats"],
+  });
+
+  const { data: deals, isLoading: dealsLoading } = useQuery<DealReport[]>({
+    queryKey: ["/api/admin/reports/deals"],
   });
 
   const filteredReferrals = referrals?.filter(ref => {
@@ -135,6 +167,17 @@ export default function AdminReports() {
       click.userName?.toLowerCase().includes(search) ||
       click.userEmail?.toLowerCase().includes(search) ||
       click.category?.toLowerCase().includes(search)
+    );
+  }) || [];
+
+  const filteredDeals = deals?.filter(deal => {
+    if (!dealSearch) return true;
+    const search = dealSearch.toLowerCase();
+    return (
+      deal.userName?.toLowerCase().includes(search) ||
+      deal.userEmail?.toLowerCase().includes(search) ||
+      deal.propertyAddress?.toLowerCase().includes(search) ||
+      deal.status?.toLowerCase().includes(search)
     );
   }) || [];
 
@@ -201,6 +244,58 @@ export default function AdminReports() {
     a.download = `affiliate-clicks-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const exportDealsToCSV = () => {
+    if (!deals) return;
+    const headers = ['Date', 'User', 'Email', 'Property Address', 'ARV', 'ROI %', 'Profit', 'Status'];
+    const rows = deals.map(deal => [
+      deal.createdAt ? format(new Date(deal.createdAt), 'MM/dd/yyyy HH:mm') : '',
+      deal.userName || 'Unknown',
+      deal.userEmail || '',
+      deal.propertyAddress || '',
+      deal.arv ? `$${parseFloat(deal.arv).toLocaleString()}` : '',
+      deal.roi ? `${parseFloat(deal.roi).toFixed(1)}%` : '',
+      deal.profit ? `$${parseFloat(deal.profit).toLocaleString()}` : '',
+      deal.status
+    ]);
+    
+    const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `deal-analysis-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
+      active: 'default',
+      won: 'default',
+      lost: 'secondary',
+      archived: 'outline',
+    };
+    return (
+      <Badge variant={variants[status] || 'outline'} data-testid={`badge-status-${status}`}>
+        {status}
+      </Badge>
+    );
+  };
+
+  const formatCurrency = (value: string | null) => {
+    if (!value) return '-';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+    return `$${num.toLocaleString()}`;
+  };
+
+  const formatPercent = (value: string | null) => {
+    if (!value) return '-';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+    return `${num.toFixed(1)}%`;
   };
 
   const getCategoryLabel = (category: string) => {
@@ -348,6 +443,10 @@ export default function AdminReports() {
                 <TabsTrigger value="affiliates" data-testid="tab-affiliates">
                   <MousePointer className="h-4 w-4 mr-2" />
                   Affiliate Clicks
+                </TabsTrigger>
+                <TabsTrigger value="deals" data-testid="tab-deals">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Deal Analysis
                 </TabsTrigger>
               </TabsList>
 
@@ -679,6 +778,181 @@ export default function AdminReports() {
                       {filteredAffiliateClicks.length > 0 && (
                         <div className="mt-4 text-sm text-muted-foreground">
                           Showing {filteredAffiliateClicks.length} of {affiliateClicks?.length || 0} clicks
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="deals">
+                <div className="space-y-6">
+                  {dealStatsLoading ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <Card key={i} className="animate-pulse">
+                          <CardContent className="p-4">
+                            <div className="h-4 bg-muted rounded w-24 mb-2" />
+                            <div className="h-8 bg-muted rounded w-12" />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : dealStats ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <Card data-testid="stat-total-deals">
+                        <CardContent className="p-4">
+                          <div className="text-muted-foreground text-sm mb-1">Total Deals</div>
+                          <p className="text-2xl font-bold">{dealStats.totalDeals}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {dealStats.dealsThisMonth} this month
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card data-testid="stat-avg-arv">
+                        <CardContent className="p-4">
+                          <div className="text-muted-foreground text-sm mb-1">Avg ARV</div>
+                          <p className="text-2xl font-bold">${dealStats.averageArv.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        </CardContent>
+                      </Card>
+                      <Card data-testid="stat-avg-roi">
+                        <CardContent className="p-4">
+                          <div className="text-muted-foreground text-sm mb-1">Avg ROI</div>
+                          <p className="text-2xl font-bold">{dealStats.averageRoi.toFixed(1)}%</p>
+                        </CardContent>
+                      </Card>
+                      <Card data-testid="stat-avg-profit">
+                        <CardContent className="p-4">
+                          <div className="text-muted-foreground text-sm mb-1">Avg Profit</div>
+                          <p className="text-2xl font-bold">${dealStats.averageProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : null}
+
+                  {dealStats && Object.keys(dealStats.statusCounts).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Deals by Status</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-4">
+                          {Object.entries(dealStats.statusCounts).map(([status, count]) => (
+                            <div key={status} className="flex items-center gap-2">
+                              {getStatusBadge(status)}
+                              <span className="font-bold">{count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                          <CardTitle>Deal Analysis Log</CardTitle>
+                          <CardDescription>
+                            All saved deal analyses from investors
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Search deals..."
+                              value={dealSearch}
+                              onChange={(e) => setDealSearch(e.target.value)}
+                              className="pl-9 w-64"
+                              data-testid="input-search-deals"
+                            />
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={exportDealsToCSV}
+                            disabled={!deals?.length}
+                            data-testid="button-export-deals"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Export CSV
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {dealsLoading ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          Loading deals...
+                        </div>
+                      ) : filteredDeals.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium mb-2">
+                            {dealSearch ? 'No deals match your search' : 'No saved deals yet'}
+                          </p>
+                          <p className="text-sm">
+                            Deals will appear here when investors save their analyses.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>User</TableHead>
+                                <TableHead>Property</TableHead>
+                                <TableHead className="text-right">ARV</TableHead>
+                                <TableHead className="text-right">ROI</TableHead>
+                                <TableHead className="text-right">Profit</TableHead>
+                                <TableHead>Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredDeals.map((deal) => (
+                                <TableRow key={deal.id} data-testid={`row-deal-${deal.id}`}>
+                                  <TableCell className="whitespace-nowrap">
+                                    {deal.createdAt
+                                      ? format(new Date(deal.createdAt), 'MMM d, yyyy')
+                                      : '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="font-medium">{deal.userName || 'Unknown'}</p>
+                                      {deal.userEmail && (
+                                        <p className="text-sm text-muted-foreground">
+                                          {deal.userEmail}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {deal.propertyAddress || (
+                                      <span className="text-muted-foreground">No address</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    {formatCurrency(deal.arv)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatPercent(deal.roi)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatCurrency(deal.profit)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {getStatusBadge(deal.status)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                      {filteredDeals.length > 0 && (
+                        <div className="mt-4 text-sm text-muted-foreground">
+                          Showing {filteredDeals.length} of {deals?.length || 0} deals
                         </div>
                       )}
                     </CardContent>
