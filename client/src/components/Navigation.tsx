@@ -18,7 +18,7 @@ export default function Navigation() {
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
     { href: "/contact", label: "Contact" },
-    { href: "/login", label: "Member Portal" },
+    { href: "/login", label: "Login" },
   ];
 
   return (
