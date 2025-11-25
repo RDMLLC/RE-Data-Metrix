@@ -101,6 +101,16 @@ The Toolbox & Resources section provides investors with curated affiliate progra
 This section tracks features, improvements, and fixes to be implemented in future sessions. Tasks are organized by priority.
 
 ### High Priority
+- **HasData Property Lookup API Fix**: Fix error handling and move API key to secure environment variable
+  - **Context**: Property lookup returns HTML error page instead of JSON when API fails, causing "Failed to execute 'json' on 'Response': Unexpected token '<'" error. API key is currently hardcoded in code.
+  - **Impact**: Property lookup feature is broken for Deal Analysis wizard - users cannot auto-populate property details from Zillow/Redfin URLs
+  - **Scope**: 
+    1. Add HASDATA_API_KEY as Replit secret (move from hardcoded value)
+    2. Add proper error handling to check response content-type before parsing JSON
+    3. Show user-friendly error messages when API fails or returns non-JSON response
+    4. Verify API key is valid by testing with sample property URL
+  - **Current API Key**: `981d27db-574b-411a-ad4e-cdc48676a5e8` (needs verification)
+
 - **Page Scroll Position**: Ensure all page loads show the top of the page so users don't have to scroll up to see content
   - **Context**: Currently some page navigations land partway down the page
   - **Impact**: Better UX, eliminates confusion when navigating between pages
