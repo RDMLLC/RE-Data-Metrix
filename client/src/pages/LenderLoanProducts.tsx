@@ -13,12 +13,13 @@ import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { LoanProduct } from "@shared/schema";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function LenderLoanProducts() {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LoanProduct | null>(null);
+  const formCardRef = useRef<HTMLDivElement>(null);
 
   const { data: loanProducts, isLoading } = useQuery<LoanProduct[]>({
     queryKey: ["/api/loan-products"],
@@ -201,7 +202,9 @@ export default function LenderLoanProducts() {
       costPerDraw: product.costPerDraw,
       isActive: product.isActive ?? true,
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleCancelEdit = () => {
@@ -260,7 +263,21 @@ export default function LenderLoanProducts() {
             </div>
           </div>
 
-          <Card className="p-8 mb-8">
+          <Card 
+            ref={formCardRef}
+            className={`p-8 mb-8 transition-all duration-300 ${
+              editingProduct 
+                ? 'ring-2 ring-[#D4AF37] ring-offset-2 bg-[#D4AF37]/5' 
+                : ''
+            }`}
+          >
+            {editingProduct && (
+              <div className="mb-4 p-3 bg-[#D4AF37]/20 border border-[#D4AF37] rounded-md" data-testid="banner-editing-product">
+                <p className="text-sm font-medium text-[#1E3A8A]">
+                  Editing: <span className="font-bold">{editingProduct.productName}</span>
+                </p>
+              </div>
+            )}
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-primary flex items-center gap-2">
                 {editingProduct ? (
