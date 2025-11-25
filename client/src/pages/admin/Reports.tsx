@@ -101,12 +101,23 @@ interface DealReport {
   createdAt: string | null;
 }
 
+interface LenderPerformance {
+  lenderId: string;
+  lenderName: string;
+  referralCount: number;
+  savedCount: number;
+  wonDealsCount: number;
+  wonDealsValue: number;
+  isActive: boolean;
+}
+
 export default function AdminReports() {
   const [, setLocation] = useLocation();
   const [referralSearch, setReferralSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [affiliateSearch, setAffiliateSearch] = useState("");
   const [dealSearch, setDealSearch] = useState("");
+  const [lenderSearch, setLenderSearch] = useState("");
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/reports/dashboard-stats"],
@@ -134,6 +145,10 @@ export default function AdminReports() {
 
   const { data: deals, isLoading: dealsLoading } = useQuery<DealReport[]>({
     queryKey: ["/api/admin/reports/deals"],
+  });
+
+  const { data: lenderPerformance, isLoading: lenderPerformanceLoading } = useQuery<LenderPerformance[]>({
+    queryKey: ["/api/admin/reports/lender-performance"],
   });
 
   const filteredReferrals = referrals?.filter(ref => {
@@ -179,6 +194,12 @@ export default function AdminReports() {
       deal.propertyAddress?.toLowerCase().includes(search) ||
       deal.status?.toLowerCase().includes(search)
     );
+  }) || [];
+
+  const filteredLenderPerformance = lenderPerformance?.filter(lender => {
+    if (!lenderSearch) return true;
+    const search = lenderSearch.toLowerCase();
+    return lender.lenderName?.toLowerCase().includes(search);
   }) || [];
 
   const exportReferralsToCSV = () => {
@@ -296,6 +317,28 @@ export default function AdminReports() {
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
     return `${num.toFixed(1)}%`;
+  };
+
+  const exportLenderPerformanceToCSV = () => {
+    if (!lenderPerformance) return;
+    const headers = ['Lender Name', 'Status', 'Referrals', 'Saved By Users', 'Won Deals', 'Won Deals Value'];
+    const rows = lenderPerformance.map(lender => [
+      lender.lenderName,
+      lender.isActive ? 'Active' : 'Inactive',
+      lender.referralCount.toString(),
+      lender.savedCount.toString(),
+      lender.wonDealsCount.toString(),
+      `$${lender.wonDealsValue.toLocaleString()}`
+    ]);
+    
+    const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lender-performance-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getCategoryLabel = (category: string) => {
@@ -447,6 +490,10 @@ export default function AdminReports() {
                 <TabsTrigger value="deals" data-testid="tab-deals">
                   <FileText className="h-4 w-4 mr-2" />
                   Deal Analysis
+                </TabsTrigger>
+                <TabsTrigger value="lenders" data-testid="tab-lenders">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Lender Performance
                 </TabsTrigger>
               </TabsList>
 
@@ -958,6 +1005,105 @@ export default function AdminReports() {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="lenders">
+                <Card>
+                  <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <CardTitle>Lender Performance</CardTitle>
+                        <CardDescription>
+                          Track lender engagement, referrals, and won deals
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search lenders..."
+                            value={lenderSearch}
+                            onChange={(e) => setLenderSearch(e.target.value)}
+                            className="pl-9 w-64"
+                            data-testid="input-search-lenders"
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={exportLenderPerformanceToCSV}
+                          disabled={!lenderPerformance?.length}
+                          data-testid="button-export-lenders"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Export CSV
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {lenderPerformanceLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Loading lender performance data...
+                      </div>
+                    ) : filteredLenderPerformance.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-2">
+                          {lenderSearch ? 'No lenders match your search' : 'No lenders registered yet'}
+                        </p>
+                        <p className="text-sm">
+                          Lender performance data will appear here after lenders are added to the platform.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Lender</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right">Referrals</TableHead>
+                              <TableHead className="text-right">Saved By</TableHead>
+                              <TableHead className="text-right">Won Deals</TableHead>
+                              <TableHead className="text-right">Won Value</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredLenderPerformance.map((lender) => (
+                              <TableRow key={lender.lenderId} data-testid={`row-lender-${lender.lenderId}`}>
+                                <TableCell className="font-medium">
+                                  {lender.lenderName}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={lender.isActive ? 'default' : 'secondary'}>
+                                    {lender.isActive ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {lender.referralCount}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {lender.savedCount}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {lender.wonDealsCount}
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  ${lender.wonDealsValue.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                    {filteredLenderPerformance.length > 0 && (
+                      <div className="mt-4 text-sm text-muted-foreground">
+                        Showing {filteredLenderPerformance.length} of {lenderPerformance?.length || 0} lenders
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>

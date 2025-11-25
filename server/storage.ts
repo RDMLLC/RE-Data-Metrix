@@ -26,6 +26,7 @@ import {
   dealAnalysisAccess as dealAnalysisAccessTable,
   lenderReferrals as lenderReferralsTable,
   savedDeals as savedDealsTable,
+  savedLenders as savedLendersTable,
   affiliateClicks as affiliateClicksTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
@@ -153,6 +154,17 @@ export interface IStorage {
     profit: string | null;
     status: string;
     createdAt: Date | null;
+  }>>;
+  
+  // Lender Performance Reports
+  getLenderPerformanceStats(): Promise<Array<{
+    lenderId: string;
+    lenderName: string;
+    referralCount: number;
+    savedCount: number;
+    wonDealsCount: number;
+    wonDealsValue: number;
+    isActive: boolean;
   }>>;
 }
 
@@ -579,6 +591,18 @@ export class MemStorage implements IStorage {
     profit: string | null;
     status: string;
     createdAt: Date | null;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getLenderPerformanceStats(): Promise<Array<{
+    lenderId: string;
+    lenderName: string;
+    referralCount: number;
+    savedCount: number;
+    wonDealsCount: number;
+    wonDealsValue: number;
+    isActive: boolean;
   }>> {
     throw new Error("Not implemented in MemStorage");
   }
@@ -1376,6 +1400,50 @@ export class DatabaseStorage implements IStorage {
     }));
 
     return enrichedDeals;
+  }
+
+  async getLenderPerformanceStats(): Promise<Array<{
+    lenderId: string;
+    lenderName: string;
+    referralCount: number;
+    savedCount: number;
+    wonDealsCount: number;
+    wonDealsValue: number;
+    isActive: boolean;
+  }>> {
+    const lenders = await db.select().from(lendersTable)
+      .where(eq(lendersTable.isArchived, false));
+
+    const stats = await Promise.all(lenders.map(async (lender) => {
+      const referrals = await db.select({ count: count() })
+        .from(lenderReferralsTable)
+        .where(eq(lenderReferralsTable.lenderId, lender.id));
+
+      const saved = await db.select({ count: count() })
+        .from(savedLendersTable)
+        .where(eq(savedLendersTable.lenderId, lender.id));
+
+      const wonDeals = await db.select()
+        .from(savedDealsTable)
+        .where(eq(savedDealsTable.closedWithLenderId, lender.id));
+
+      const wonDealsValue = wonDeals.reduce((sum, deal) => {
+        const profit = deal.profit ? parseFloat(deal.profit) : 0;
+        return sum + (isNaN(profit) ? 0 : profit);
+      }, 0);
+
+      return {
+        lenderId: lender.id,
+        lenderName: lender.companyName || lender.contactName || 'Unknown',
+        referralCount: Number(referrals[0]?.count || 0),
+        savedCount: Number(saved[0]?.count || 0),
+        wonDealsCount: wonDeals.length,
+        wonDealsValue,
+        isActive: lender.isActive || false,
+      };
+    }));
+
+    return stats.sort((a, b) => b.referralCount - a.referralCount);
   }
 }
 

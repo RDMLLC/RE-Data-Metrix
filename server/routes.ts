@@ -1116,6 +1116,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/lender-performance", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getLenderPerformanceStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Lender performance error:', error);
+      res.status(500).json({ error: "Failed to fetch lender performance stats" });
+    }
+  });
+
   // Track affiliate click (available to logged in users and guests)
   app.post("/api/affiliate-clicks", async (req, res) => {
     try {
