@@ -208,6 +208,7 @@ export const lenders = pgTable("lenders", {
   inviteExpiry: timestamp("invite_expiry"),
   inviteAccepted: boolean("invite_accepted").default(false),
   archived: boolean("archived").default(false),
+  isPreferred: boolean("is_preferred").default(false),
   passwordResetToken: varchar("password_reset_token").unique(),
   passwordResetExpiry: timestamp("password_reset_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -246,9 +247,13 @@ export const insertLenderQuestionnaireSchema = createInsertSchema(lenderQuestion
 export type InsertLenderQuestionnaire = z.infer<typeof insertLenderQuestionnaireSchema>;
 export type LenderQuestionnaire = typeof lenderQuestionnaires.$inferSelect;
 
+export const loanTypeEnum = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction'] as const;
+export type LoanTypeEnum = typeof loanTypeEnum[number];
+
 export const loanProducts = pgTable("loan_products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   lenderId: varchar("lender_id").notNull().references(() => lenders.id),
+  loanType: text("loan_type").notNull().default('bridge'),
   productName: text("product_name").notNull(),
   newInvestorOk: boolean("new_investor_ok").default(false),
   minCreditScore: integer("min_credit_score"),
@@ -265,6 +270,9 @@ export const loanProducts = pgTable("loan_products", {
   fees: decimal("fees", { precision: 12, scale: 2 }),
   costPerDraw: decimal("cost_per_draw", { precision: 12, scale: 2 }),
   timeToClose: integer("time_to_close"),
+  cashOutOk: boolean("cash_out_ok").default(false),
+  cashOutMaxLtv: decimal("cash_out_max_ltv", { precision: 5, scale: 2 }),
+  referralLink: text("referral_link"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
