@@ -3,10 +3,25 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
+import { useAuth } from "@/contexts/AuthContext";
+
+function getInitials(username: string, email: string): string {
+  if (username && username.length >= 2) {
+    return username.substring(0, 2).toUpperCase();
+  }
+  if (email) {
+    const emailPart = email.split('@')[0];
+    if (emailPart.length >= 2) {
+      return emailPart.substring(0, 2).toUpperCase();
+    }
+  }
+  return "U";
+}
 
 export default function Navigation() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -18,8 +33,9 @@ export default function Navigation() {
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
     { href: "/contact", label: "Contact" },
-    { href: "/login", label: "Login" },
   ];
+
+  const userInitials = user ? getInitials(user.username, user.email) : "";
 
   return (
     <nav className="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
@@ -49,6 +65,33 @@ export default function Navigation() {
                   </Button>
                 </Link>
               ))}
+              
+              {/* Login/User Avatar */}
+              {isLoading ? (
+                <Button variant="ghost" className="text-foreground" disabled>
+                  ...
+                </Button>
+              ) : isAuthenticated && user ? (
+                <Link href="/portal/profile" data-testid="link-nav-profile">
+                  <div 
+                    className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                    title={`Signed in as ${user.username}`}
+                  >
+                    {userInitials}
+                  </div>
+                </Link>
+              ) : (
+                <Link href="/login" data-testid="link-nav-login">
+                  <Button
+                    variant="ghost"
+                    className={`text-foreground hover:text-primary ${
+                      location === "/login" ? "text-primary font-semibold" : ""
+                    }`}
+                  >
+                    Login
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -60,15 +103,29 @@ export default function Navigation() {
             <span className="font-bold text-2xl text-primary">RE Data Metrix</span>
           </Link>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-foreground"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            data-testid="button-mobile-menu"
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Show user avatar on mobile header when logged in */}
+            {!isLoading && isAuthenticated && user && (
+              <Link href="/portal/profile" data-testid="link-nav-profile-mobile">
+                <div 
+                  className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                  title={`Signed in as ${user.username}`}
+                >
+                  {userInitials}
+                </div>
+              </Link>
+            )}
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Navigation Menu */}
@@ -86,6 +143,35 @@ export default function Navigation() {
                 </Button>
               </Link>
             ))}
+            
+            {/* Login/Profile link in mobile menu */}
+            {isLoading ? (
+              <Button variant="ghost" className="w-full justify-start text-foreground" disabled>
+                ...
+              </Button>
+            ) : isAuthenticated && user ? (
+              <Link href="/portal/profile" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start text-foreground hover:text-primary ${
+                    location === "/portal/profile" ? "text-primary font-semibold" : ""
+                  }`}
+                >
+                  My Account ({userInitials})
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start text-foreground hover:text-primary ${
+                    location === "/login" ? "text-primary font-semibold" : ""
+                  }`}
+                >
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>
