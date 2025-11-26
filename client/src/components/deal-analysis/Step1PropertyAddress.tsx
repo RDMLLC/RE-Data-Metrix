@@ -290,7 +290,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               <button
                 type="button"
                 onClick={() => setGroundUpModalOpen(true)}
-                className="text-sm text-accent hover:underline underline-offset-4 flex items-center gap-1"
+                className="text-sm text-blue-600 hover:underline underline-offset-4 flex items-center gap-1"
                 data-testid="link-ground-up"
               >
                 <HardHat className="h-4 w-4" />

@@ -1578,6 +1578,262 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deal Analysis Results Calculation
+  const dealAnalysisResultsSchema = z.object({
+    dealInputs: z.object({
+      purchasePrice: z.number(),
+      rehabBudget: z.number(),
+      arv: z.number(),
+      projectLength: z.number(),
+      closingCostsBuy: z.number(),
+      carryingCosts: z.number(),
+      sellPrice: z.number(),
+      closingCostsSell: z.number(),
+      commission: z.number(),
+      monthlyInsurance: z.number().optional(),
+      monthlyUtilities: z.number().optional(),
+      monthlyPropertyTax: z.number().optional(),
+      monthlyHoa: z.number().optional(),
+    }),
+    criteriaSelection: z.object({
+      useDefaultCriteria: z.boolean(),
+      primary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv']).optional(),
+      secondary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv']).optional(),
+    }),
+    userLoan: z.object({
+      desiredLoanAmount: z.number().optional(),
+      interestRate: z.number(),
+      interestDeferred: z.boolean().optional(),
+      points: z.number(),
+      pointsDeferred: z.boolean().optional(),
+      maxLoanToArv: z.number(),
+      appraisalRequired: z.boolean().optional(),
+      appraisalFee: z.number().optional(),
+      drawFees: z.number().optional(),
+      loanDocPrepFees: z.number().optional(),
+    }).optional(),
+    numberOfDraws: z.number().default(3),
+    excludeProductIds: z.array(z.string()).optional(),
+  });
+
+  app.post("/api/deal-analysis/results", ensureAuthenticated, async (req, res) => {
+    try {
+      const validatedData = dealAnalysisResultsSchema.parse(req.body);
+      const { dealInputs, criteriaSelection, userLoan, numberOfDraws, excludeProductIds } = validatedData;
+
+      const { purchasePrice, rehabBudget, arv, projectLength, closingCostsBuy, carryingCosts, sellPrice, closingCostsSell, commission } = dealInputs;
+      const totalProjectCost = purchasePrice + rehabBudget;
+      const percentageArv = arv > 0 ? (totalProjectCost / arv) * 100 : 0;
+
+      // Calculate Cash Sale Column (no financing)
+      const cashSaleColumn = {
+        type: 'cash' as const,
+        purchasePrice,
+        rehabBudget,
+        totalProjectCost,
+        closingCostsBuy,
+        carryingCosts,
+        totalInvestment: totalProjectCost + closingCostsBuy + carryingCosts,
+        sellPrice,
+        closingCostsSell,
+        commission,
+        rolledCosts: 0,
+        lenderDrawFees: 0,
+        profit: sellPrice - (totalProjectCost + closingCostsBuy + carryingCosts) - closingCostsSell - commission,
+        outOfPocketCost: totalProjectCost + closingCostsBuy + carryingCosts,
+        cashOnCashRoi: 0,
+        annualizedRoi: 0,
+        roi: 0,
+        percentageArv,
+      };
+      
+      const cashTotalInvestment = cashSaleColumn.totalInvestment;
+      cashSaleColumn.profit = sellPrice - cashTotalInvestment - closingCostsSell - commission;
+      cashSaleColumn.roi = cashTotalInvestment > 0 ? (cashSaleColumn.profit / cashTotalInvestment) * 100 : 0;
+      cashSaleColumn.cashOnCashRoi = cashSaleColumn.roi;
+      cashSaleColumn.annualizedRoi = projectLength > 0 ? (cashSaleColumn.cashOnCashRoi / (projectLength / 12)) : 0;
+
+      // Calculate User Loan Column (if provided)
+      let userLoanColumn = null;
+      if (userLoan) {
+        // Calculate maximum loan based on ARV constraint
+        const maxLoanFromArv = arv * (userLoan.maxLoanToArv / 100);
+        // Use desiredLoanAmount if specified, otherwise cap at max from ARV or total project cost
+        const loanAmount = userLoan.desiredLoanAmount 
+          ? Math.min(userLoan.desiredLoanAmount, maxLoanFromArv)
+          : Math.min(totalProjectCost, maxLoanFromArv);
+        
+        const pointsCost = loanAmount * (userLoan.points / 100);
+        const interestCost = (loanAmount * (userLoan.interestRate / 100) / 12) * projectLength;
+        const appraisalCost = userLoan.appraisalRequired ? (userLoan.appraisalFee || 500) : 0;
+        const drawFeesCost = (userLoan.drawFees || 0) * numberOfDraws;
+        const docPrepFees = userLoan.loanDocPrepFees || 0;
+        
+        // Properly handle deferred costs - they are NOT paid upfront but ARE added at sale
+        const rolledCosts = (userLoan.pointsDeferred ? pointsCost : 0) + 
+                           (userLoan.interestDeferred ? interestCost : 0);
+        // Upfront costs are only those NOT deferred
+        const upfrontLoanCosts = (!userLoan.pointsDeferred ? pointsCost : 0) + 
+                                 (!userLoan.interestDeferred ? interestCost : 0) +
+                                 appraisalCost + drawFeesCost + docPrepFees;
+        
+        // Out of pocket = what you pay upfront (cash needed minus loan proceeds)
+        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + carryingCosts + upfrontLoanCosts;
+        // Total investment includes rolled costs that come due at sale
+        const totalInvestment = outOfPocket + rolledCosts;
+        // Profit = sale proceeds minus all costs (upfront and rolled)
+        const profit = sellPrice - totalProjectCost - closingCostsBuy - carryingCosts - 
+                      upfrontLoanCosts - rolledCosts - closingCostsSell - commission;
+        
+        userLoanColumn = {
+          type: 'user-loan' as const,
+          interestRate: userLoan.interestRate,
+          points: userLoan.points,
+          maxLtvBuy: userLoan.maxLoanToArv,
+          purchasePrice,
+          rehabBudget,
+          totalProjectCost,
+          closingCostsBuy,
+          carryingCosts,
+          totalInvestment,
+          sellPrice,
+          closingCostsSell,
+          commission,
+          rolledCosts,
+          lenderDrawFees: drawFeesCost,
+          profit,
+          outOfPocketCost: outOfPocket,
+          cashOnCashRoi: outOfPocket > 0 ? (profit / outOfPocket) * 100 : 0,
+          annualizedRoi: outOfPocket > 0 && projectLength > 0 ? ((profit / outOfPocket) * 100) / (projectLength / 12) : 0,
+          roi: totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0,
+          percentageArv,
+          percentageArvLender: arv > 0 ? (loanAmount / arv) * 100 : 0,
+        };
+      }
+
+      // Get active loan products and filter
+      const allProducts = await storage.getAllActiveLoanProducts();
+      const allLenders = await storage.getAllLenders();
+      
+      // Create lender lookup map
+      const lenderMap = new Map<string, any>();
+      allLenders.forEach(lender => {
+        lenderMap.set(lender.id || lender.lenderId, lender);
+      });
+
+      // Filter products (exclude specified, only bridge/hard money for now)
+      let filteredProducts = allProducts.filter(p => {
+        if (excludeProductIds?.includes(p.id)) return false;
+        if (p.loanType !== 'bridge') return false;
+        return true;
+      });
+
+      // Calculate columns for each lender product
+      const lenderColumns = filteredProducts.map(product => {
+        const maxLtvBuy = parseFloat(String(product.maxLtvBuy || 0));
+        const maxLendRehab = parseFloat(String(product.maxLendRehab || 0));
+        const maxLoanArv = parseFloat(String(product.maxLoanArv || 70));
+        const interestRate = parseFloat(String(product.interestRate || 12));
+        const points = parseFloat(String(product.points || 0));
+        const costPerDraw = parseFloat(String(product.costPerDraw || 0));
+        const estimatedAppraisalCost = parseFloat(String(product.estimatedAppraisalCost || 0));
+        const fees = parseFloat(String(product.fees || 0));
+        
+        const lender = lenderMap.get(product.lenderId);
+        
+        // Calculate loan amounts
+        const purchaseLoanAmount = purchasePrice * (maxLtvBuy / 100);
+        const rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
+        const totalLoanDesired = purchaseLoanAmount + rehabLoanAmount;
+        const maxFromArv = arv * (maxLoanArv / 100);
+        const loanAmount = Math.min(totalLoanDesired, maxFromArv);
+        
+        const pointsCost = loanAmount * (points / 100);
+        const interestCost = (loanAmount * (interestRate / 100) / 12) * projectLength;
+        const drawFeesCost = costPerDraw * numberOfDraws;
+        const appraisalCost = product.appraisalRequired ? estimatedAppraisalCost : 0;
+        
+        // Properly handle deferred costs - they are NOT paid upfront but ARE added at sale
+        const rolledCosts = (product.pointsDeferred ? pointsCost : 0) + 
+                           (product.interestDeferred ? interestCost : 0);
+        // Upfront costs are only those NOT deferred
+        const upfrontLoanCosts = (!product.pointsDeferred ? pointsCost : 0) + 
+                                 (!product.interestDeferred ? interestCost : 0) +
+                                 appraisalCost + drawFeesCost + fees;
+        
+        // Out of pocket = what you pay upfront (cash needed minus loan proceeds)
+        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + carryingCosts + upfrontLoanCosts;
+        const totalInvestment = outOfPocket + rolledCosts;
+        const profit = sellPrice - totalProjectCost - closingCostsBuy - carryingCosts - 
+                      upfrontLoanCosts - rolledCosts - closingCostsSell - commission;
+
+        return {
+          type: 'lender' as const,
+          lenderId: product.lenderId,
+          lenderName: lender?.companyName || 'Unknown Lender',
+          productId: product.id,
+          productName: product.productName,
+          timeToClose: product.timeToClose,
+          maxLoanArv,
+          referralLink: product.referralLink,
+          interestRate,
+          maxLtvBuy,
+          points,
+          purchasePrice,
+          rehabBudget,
+          totalProjectCost,
+          closingCostsBuy,
+          carryingCosts,
+          totalInvestment,
+          sellPrice,
+          closingCostsSell,
+          commission,
+          rolledCosts,
+          lenderDrawFees: drawFeesCost,
+          profit,
+          outOfPocketCost: outOfPocket,
+          cashOnCashRoi: outOfPocket > 0 ? (profit / outOfPocket) * 100 : 0,
+          annualizedRoi: outOfPocket > 0 && projectLength > 0 ? ((profit / outOfPocket) * 100) / (projectLength / 12) : 0,
+          roi: totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0,
+          percentageArv,
+          percentageArvLender: arv > 0 ? (loanAmount / arv) * 100 : 0,
+        };
+      });
+
+      // Sort by criteria
+      const sortedLenderColumns = lenderColumns.sort((a, b) => {
+        const primary = criteriaSelection.primary || 'lowest_points';
+        const secondary = criteriaSelection.secondary || 'lowest_rate';
+        
+        const comparators: Record<string, (x: any, y: any) => number> = {
+          'lowest_points': (x, y) => x.points - y.points,
+          'lowest_rate': (x, y) => (x.interestRate || 0) - (y.interestRate || 0),
+          'fastest_close': (x, y) => (x.timeToClose || 999) - (y.timeToClose || 999),
+          'highest_ltv': (x, y) => (y.maxLtvBuy || 0) - (x.maxLtvBuy || 0),
+        };
+        
+        const primaryResult = comparators[primary](a, b);
+        if (primaryResult !== 0) return primaryResult;
+        return comparators[secondary](a, b);
+      });
+
+      res.json({
+        cashSaleColumn,
+        userLoanColumn,
+        lenderColumns: sortedLenderColumns,
+        criteriaUsed: criteriaSelection,
+        numberOfDraws,
+        allRankedProducts: sortedLenderColumns.length,
+      });
+    } catch (error) {
+      console.error("Deal analysis results error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to calculate deal analysis results" });
+    }
+  });
+
   app.post("/api/lenders", async (req, res) => {
     try {
       const lenders = await storage.getAllLenders();

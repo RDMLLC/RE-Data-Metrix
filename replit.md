@@ -166,24 +166,6 @@ This section tracks features, improvements, and fixes to be implemented in futur
   - **Scope**: Add logout button to lender portal navigation/header, implement logout endpoint if needed
 
 ### Low Priority
-- **Referral Program Copy Updates**: Update referral messaging to be clearer about dual benefit
-  - **Context**: Current text says "Get 2 months free when your referral subscribes"
-  - **Changes needed**:
-    - Rename card from "Refer & Earn" to "Refer a Friend"
-    - Update text to: "Give a friend 1 month free" + "You get 2 months free with their paid subscription"
-  - **Impact**: Clearer value proposition for both referrer and referred person
-  - **Scope**: Update Dashboard.tsx referral card title and description
-
-- **Remove Dashboard from User Dropdown**: Dashboard link is redundant when user is already on dashboard
-  - **Context**: Clicking user initials shows dropdown with Dashboard link, but user may already be on dashboard
-  - **Impact**: Cleaner dropdown menu, less redundant navigation
-  - **Scope**: Remove Dashboard menu item from Navigation.tsx dropdown
-
-- **Change Ground-Up Link Text Color**: Update "Click here for ground-up / new build projects" from gold to blue
-  - **Context**: The gold text color may not provide enough contrast or visual clarity
-  - **Impact**: Better readability and consistency with link styling conventions
-  - **Scope**: Update text color in Deal Analysis Step 1 component
-
 - **Add District of Columbia to States List**: Include DC as an option in state selection dropdowns
   - **Context**: Currently only includes 50 states, missing District of Columbia
   - **Impact**: Better data accuracy for DC-based properties and users

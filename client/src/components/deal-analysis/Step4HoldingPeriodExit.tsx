@@ -63,7 +63,7 @@ export default function Step4HoldingPeriodExit({
       form.setValue("attorneyFees", 750);
     }
     if (!form.getValues("docPrepFees")) {
-      form.setValue("docPrepFees", 1500);
+      form.setValue("docPrepFees", 0);
     }
     if (!form.getValues("titleExam")) {
       form.setValue("titleExam", 250);

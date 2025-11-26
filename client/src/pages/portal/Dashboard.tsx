@@ -201,17 +201,17 @@ export default function MemberDashboard() {
               </CardContent>
             </Card>
 
-            {/* Refer & Earn */}
+            {/* Refer a Friend */}
             <Card 
               className="hover-elevate cursor-pointer"
-              data-testid="card-refer-earn"
+              data-testid="card-refer-friend"
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
                     <Gift className="h-5 w-5 text-amber-600" />
                   </div>
-                  <CardTitle className="text-base">Refer & Earn</CardTitle>
+                  <CardTitle className="text-base">Refer a Friend</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
@@ -230,8 +230,9 @@ export default function MemberDashboard() {
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
-                <CardDescription>
-                  Get <span className="font-semibold text-green-600">2 months free</span> when your referral subscribes
+                <CardDescription className="space-y-1">
+                  <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
+                  <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
                 </CardDescription>
               </CardContent>
             </Card>

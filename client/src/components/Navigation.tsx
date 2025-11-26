@@ -125,14 +125,6 @@ export default function Navigation() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      onClick={() => setLocation("/portal/dashboard")}
-                      className="cursor-pointer"
-                      data-testid="menu-item-dashboard"
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
                       onClick={() => setLocation("/portal/profile")}
                       className="cursor-pointer"
                       data-testid="menu-item-manage-account"
@@ -198,13 +190,6 @@ export default function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setLocation("/portal/dashboard")}
-                    className="cursor-pointer"
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setLocation("/portal/profile")}
                     className="cursor-pointer"
