@@ -50,6 +50,8 @@ Complete authentication infrastructure implemented with user and lender tables, 
 - **Protected Routes**: Middleware-based authorization for user, lender, and admin access
 - **Login Page**: Features three entry points - main user login (center), Lender Portal (left panel), and Admin Portal (card below main login) with navy/gold design scheme
 - **Admin Credentials**: Email: info@redatametrix.com, Password: Admin123
+- **Test Password Convention**: All test users and lenders use password: TestPW123
+- **User Test Credentials**: Email: dan@greateratlhomebuyers.com, Password: TestPW123
 - **Lender Test Credentials**: Email: saleschef@gmail.com, Password: TestPW123
 - **Admin Portal**: Comprehensive dashboard at /admin/dashboard with Lender Management at /admin/lenders featuring:
   - List all lenders with referral counts and status (Active/Pending/Archived)
@@ -76,12 +78,15 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Apply directly via lender referral links
 - **Member Portal**: Dashboard-first navigation at /portal/dashboard featuring:
   - Welcome header with subscription status badge
-  - KPI cards (Deals Analyzed, Saved Lenders, Referral Code)
-  - Quick Actions grid (Start Deal Analysis, My Saved Deals, Browse Lenders, Toolbox)
-  - Recent Deals and Account Summary sections
+  - KPI cards: Deals Analyzed (clickable link to history), Saved Lenders
+  - Quick Actions grid (Start Deal Analysis, Browse Lenders, Toolbox)
+  - Recent Deals section with compact deal cards
+  - Refer & Earn section: Referral code + explanation (2 months free when referral subscribes)
+  - Account Summary card with Manage Account link
   - Profile sub-page at /portal/profile for account settings (username, email, password)
   - All authenticated user redirects (login, register, home) go to /portal/dashboard
   - User initials in navigation link to /portal/dashboard
+  - Responsive layout optimized for mobile and desktop
 
 ### Membership Access Control
 

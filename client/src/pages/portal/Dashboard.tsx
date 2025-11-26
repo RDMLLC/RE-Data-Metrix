@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Calculator, 
-  FileText, 
   Building2, 
   Wrench, 
   Users, 
@@ -20,7 +19,9 @@ import {
   Pencil,
   ExternalLink,
   MapPin,
-  Key
+  Key,
+  Gift,
+  FileText
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -169,20 +170,20 @@ export default function MemberDashboard() {
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-16rem)] py-8 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-[calc(100vh-16rem)] py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground" data-testid="text-welcome">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-welcome">
                 Welcome back, {displayName}!
               </h1>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-muted-foreground">Subscription:</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-muted-foreground">Subscription:</span>
                 {getSubscriptionBadge(user.subscriptionStatus || "inactive")}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -190,8 +191,8 @@ export default function MemberDashboard() {
                 disabled={isChangingPassword}
                 data-testid="button-change-password"
               >
-                <Key className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{isChangingPassword ? "Sending..." : "Change Password"}</span>
+                <Key className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline text-xs">{isChangingPassword ? "..." : "Password"}</span>
               </Button>
               <Button
                 variant="outline"
@@ -199,8 +200,8 @@ export default function MemberDashboard() {
                 onClick={() => setLocation("/portal/profile")}
                 data-testid="button-edit-profile"
               >
-                <Pencil className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Edit Profile</span>
+                <Pencil className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline text-xs">Profile</span>
               </Button>
               <Button
                 variant="outline"
@@ -209,114 +210,71 @@ export default function MemberDashboard() {
                 disabled={isLoggingOut}
                 data-testid="button-logout"
               >
-                <LogOut className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{isLoggingOut ? "..." : "Logout"}</span>
+                <LogOut className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline text-xs">{isLoggingOut ? "..." : "Logout"}</span>
               </Button>
             </div>
           </div>
 
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <Card data-testid="card-kpi-deals">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Deals Analyzed</p>
-                    <p className="text-3xl font-bold text-primary">
+          {/* KPI Cards - 2 columns on mobile, row on desktop */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {/* Deals Analyzed - Clickable */}
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/portal/deals")}
+              data-testid="card-kpi-deals"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Deals Analyzed</p>
+                    <p className="text-2xl font-bold text-primary">
                       {statsLoading ? "..." : stats?.totalDeals || 0}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-primary" />
-                  </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Saved Lenders */}
             <Card data-testid="card-kpi-lenders">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Saved Lenders</p>
-                    <p className="text-3xl font-bold text-accent">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Building2 className="h-5 w-5 text-accent" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Saved Lenders</p>
+                    <p className="text-2xl font-bold text-accent">
                       {statsLoading ? "..." : stats?.savedLenders || 0}
                     </p>
-                  </div>
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-accent" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card data-testid="card-kpi-referrals">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Your Referral Code</p>
-                    <div className="flex items-center gap-2">
-                      <code className="text-lg font-bold text-foreground bg-muted px-2 py-1 rounded">
-                        {user.referralCode || "N/A"}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={copyReferralCode}
-                        disabled={!user.referralCode}
-                        data-testid="button-copy-referral"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <Users className="h-6 w-6 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Actions */}
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Quick Actions - 3 cards in a row */}
+          <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             <Card 
               className="hover-elevate cursor-pointer" 
               onClick={() => setLocation("/deal-analysis")}
               data-testid="card-action-deal-analysis"
             >
-              <CardHeader className="pb-2">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Calculator className="h-5 w-5 text-primary" />
                   </div>
-                  <CardTitle className="text-base">Start Deal Analysis</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Analyze a new investment property
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/portal/deals")}
-              data-testid="card-action-saved-deals"
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <FileText className="h-5 w-5 text-accent" />
+                  <div>
+                    <p className="font-medium text-sm">Start Deal Analysis</p>
+                    <p className="text-xs text-muted-foreground">Analyze a property</p>
                   </div>
-                  <CardTitle className="text-base">My Saved Deals</CardTitle>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  View and manage your deal analyses
-                </CardDescription>
               </CardContent>
             </Card>
 
@@ -325,18 +283,16 @@ export default function MemberDashboard() {
               onClick={() => setLocation("/lenders")}
               data-testid="card-action-browse-lenders"
             >
-              <CardHeader className="pb-2">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Building2 className="h-5 w-5 text-green-600" />
                   </div>
-                  <CardTitle className="text-base">Browse Lenders</CardTitle>
+                  <div>
+                    <p className="font-medium text-sm">Browse Lenders</p>
+                    <p className="text-xs text-muted-foreground">Compare financing</p>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Find and compare financing options
-                </CardDescription>
               </CardContent>
             </Card>
 
@@ -345,30 +301,29 @@ export default function MemberDashboard() {
               onClick={() => setLocation("/toolbox")}
               data-testid="card-action-toolbox"
             >
-              <CardHeader className="pb-2">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Wrench className="h-5 w-5 text-purple-600" />
                   </div>
-                  <CardTitle className="text-base">Toolbox & Resources</CardTitle>
+                  <div>
+                    <p className="font-medium text-sm">Toolbox</p>
+                    <p className="text-xs text-muted-foreground">Resources & guides</p>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Access tools, guides, and education
-                </CardDescription>
               </CardContent>
             </Card>
           </div>
 
           {/* Recent Deals & Sidebar */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Recent Deals */}
             <div className="lg:col-span-2">
               <Card data-testid="card-recent-deals">
-                <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
                   <div>
-                    <CardTitle>Recent Deals</CardTitle>
-                    <CardDescription>Your latest deal analyses</CardDescription>
+                    <CardTitle className="text-base">Recent Deals</CardTitle>
+                    <CardDescription className="text-xs">Your latest analyses</CardDescription>
                   </div>
                   <Button
                     variant="outline"
@@ -377,50 +332,50 @@ export default function MemberDashboard() {
                     data-testid="button-view-all-deals"
                   >
                     View All
-                    <ExternalLink className="h-4 w-4 ml-2" />
+                    <ExternalLink className="h-3 w-3 ml-1" />
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {dealsLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-6 text-muted-foreground text-sm">
                       Loading deals...
                     </div>
                   ) : recentDeals && recentDeals.length > 0 ? (
-                    <div className="space-y-3">
-                      {recentDeals.slice(0, 5).map((deal) => (
+                    <div className="space-y-2">
+                      {recentDeals.slice(0, 4).map((deal) => (
                         <div
                           key={deal.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-muted/50 rounded-lg hover-elevate cursor-pointer gap-2"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 bg-muted/50 rounded-lg hover-elevate cursor-pointer gap-1.5"
                           onClick={() => setLocation(`/deal-analysis?dealId=${deal.id}`)}
                           data-testid={`deal-row-${deal.id}`}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="flex items-center gap-2 min-w-0">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                             <div className="min-w-0">
-                              <p className="font-medium truncate">
+                              <p className="font-medium text-sm truncate">
                                 {deal.propertyAddress || "Property Address"}
                               </p>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-xs text-muted-foreground">
                                 {deal.city}, {deal.state}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 flex-shrink-0 ml-7 sm:ml-0">
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-5 sm:ml-0">
                             {getStatusBadge(deal.status)}
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {deal.createdAt && formatDistanceToNow(new Date(deal.createdAt), { addSuffix: true })}
-                            </div>
+                            </span>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-muted-foreground mb-4">No deals yet</p>
-                      <Button onClick={() => setLocation("/deal-analysis")} data-testid="button-start-first-deal">
-                        Start Your First Deal Analysis
+                    <div className="text-center py-6">
+                      <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground mb-3">No deals yet</p>
+                      <Button size="sm" onClick={() => setLocation("/deal-analysis")} data-testid="button-start-first-deal">
+                        Start Your First Deal
                       </Button>
                     </div>
                   )}
@@ -428,51 +383,51 @@ export default function MemberDashboard() {
               </Card>
             </div>
 
-            {/* Sidebar Cards */}
-            <div className="space-y-6">
-              {/* Referral Card */}
+            {/* Sidebar - Refer & Earn + Account */}
+            <div className="space-y-4">
+              {/* Refer & Earn Card */}
               <Card data-testid="card-referrals">
-                <CardHeader>
-                  <CardTitle>Refer & Earn</CardTitle>
-                  <CardDescription>
-                    Share your code to give friends 1 month free trial
-                  </CardDescription>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-green-600" />
+                    <CardTitle className="text-base">Refer & Earn</CardTitle>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-4">
-                    <div className="inline-flex items-center gap-2 bg-muted px-4 py-3 rounded-lg mb-4">
-                      <code className="text-xl font-bold" data-testid="text-referral-code">
-                        {user.referralCode || "N/A"}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={copyReferralCode}
-                        disabled={!user.referralCode}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      When someone uses your code during registration, they'll get a free trial.
-                    </p>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Share your code with friends. When they sign up for a paid subscription, you get <span className="font-semibold text-green-600">2 months free!</span>
+                  </p>
+                  <div className="flex items-center justify-center gap-2 bg-muted px-3 py-2 rounded-lg">
+                    <code className="text-lg font-bold" data-testid="text-referral-code">
+                      {user.referralCode || "N/A"}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={copyReferralCode}
+                      disabled={!user.referralCode}
+                      data-testid="button-copy-referral"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Account Summary Card */}
               <Card data-testid="card-account-summary">
-                <CardHeader>
-                  <CardTitle>Account</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Account</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="pt-0 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Username</span>
                     <span className="font-medium">{user.username}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Email</span>
-                    <span className="font-medium truncate ml-2 max-w-[150px]">{user.email}</span>
+                    <span className="font-medium truncate ml-2 max-w-[140px] text-xs">{user.email}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
@@ -480,7 +435,8 @@ export default function MemberDashboard() {
                   </div>
                   <Button
                     variant="outline"
-                    className="w-full mt-4"
+                    size="sm"
+                    className="w-full mt-2"
                     onClick={() => setLocation("/portal/profile")}
                     data-testid="button-manage-account"
                   >
