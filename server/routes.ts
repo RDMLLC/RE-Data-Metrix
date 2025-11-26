@@ -1597,8 +1597,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }),
     criteriaSelection: z.object({
       useDefaultCriteria: z.boolean(),
-      primary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv']).optional(),
-      secondary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv']).optional(),
+      primary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv', 'out-of-pocket']).optional(),
+      secondary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv', 'out-of-pocket']).optional(),
     }),
     userLoan: z.object({
       desiredLoanAmount: z.number().optional(),

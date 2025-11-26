@@ -247,7 +247,10 @@ export default function Step4HoldingPeriodExit({
                       name="docPrepFees"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Doc Prep Fees</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <FormLabel>Doc Prep Fees</FormLabel>
+                            <span className="text-xs text-muted-foreground">Will be filled out in the lender step</span>
+                          </div>
                           <FormControl>
                             <Input
                               type="number"
@@ -485,7 +488,7 @@ export default function Step4HoldingPeriodExit({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="purchasePrice"
@@ -540,32 +543,6 @@ export default function Step4HoldingPeriodExit({
 
                 <FormField
                   control={form.control}
-                  name="arv"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ARV (After Repair Value)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="any"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          data-testid="input-arv-exit"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="projectLength"
                   render={({ field }) => (
                     <FormItem>
@@ -598,7 +575,7 @@ export default function Step4HoldingPeriodExit({
                   name="sellPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimated Sell Price</FormLabel>
+                      <FormLabel>Estimated Sell Price (ARV)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
