@@ -179,6 +179,11 @@ This section tracks features, improvements, and fixes to be implemented in futur
   - **Impact**: Cleaner dropdown menu, less redundant navigation
   - **Scope**: Remove Dashboard menu item from Navigation.tsx dropdown
 
+- **Change Ground-Up Link Text Color**: Update "Click here for ground-up / new build projects" from gold to blue
+  - **Context**: The gold text color may not provide enough contrast or visual clarity
+  - **Impact**: Better readability and consistency with link styling conventions
+  - **Scope**: Update text color in Deal Analysis Step 1 component
+
 - **Add District of Columbia to States List**: Include DC as an option in state selection dropdowns
   - **Context**: Currently only includes 50 states, missing District of Columbia
   - **Impact**: Better data accuracy for DC-based properties and users
