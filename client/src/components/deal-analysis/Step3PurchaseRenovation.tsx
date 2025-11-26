@@ -130,7 +130,7 @@ export default function Step3PurchaseRenovation({
                         <Input
                           type="number"
                           min="0"
-                          step="1000"
+                          step="1"
                           placeholder="Enter purchase price"
                           {...field}
                           value={field.value ?? ""}
@@ -157,7 +157,7 @@ export default function Step3PurchaseRenovation({
                         <Input
                           type="number"
                           min="0"
-                          step="1000"
+                          step="1"
                           placeholder="Enter rehab budget"
                           {...field}
                           value={field.value ?? ""}
@@ -186,7 +186,7 @@ export default function Step3PurchaseRenovation({
                         <Input
                           type="number"
                           min="0"
-                          step="1000"
+                          step="1"
                           placeholder="Enter expected ARV"
                           {...field}
                           value={field.value ?? ""}
