@@ -883,6 +883,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bridge/Hard Money CSV Template - focused fields for fix & flip loans
+  app.get("/api/loan-products/template/bridge", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const headers = [
+        'productName',
+        'loanType',
+        'newInvestorOk',
+        'minCreditScore',
+        'maxLtvBuy',
+        'maxLendRehab',
+        'interestRate',
+        'interestDeferred',
+        'drawnFundsOnly',
+        'points',
+        'pointsDeferred',
+        'maxLoanArv',
+        'appraisalRequired',
+        'estimatedAppraisalCost',
+        'fees',
+        'costPerDraw',
+        'timeToClose',
+        'referralLink',
+        'isActive'
+      ];
+      
+      const exampleRows = [
+        [
+          'Bridge/Fix & Flip - Standard',
+          'bridge',
+          'TRUE',
+          '680',
+          '75.00',
+          '100.00',
+          '10.50',
+          'FALSE',
+          'FALSE',
+          '2.00',
+          'FALSE',
+          '70.00',
+          'TRUE',
+          '500.00',
+          '1500.00',
+          '250.00',
+          '21',
+          '',
+          'TRUE'
+        ],
+        [
+          'Bridge/Fix & Flip - Premium',
+          'bridge',
+          'FALSE',
+          '720',
+          '80.00',
+          '100.00',
+          '9.50',
+          'FALSE',
+          'TRUE',
+          '1.50',
+          'FALSE',
+          '75.00',
+          'TRUE',
+          '450.00',
+          '1200.00',
+          '200.00',
+          '14',
+          '',
+          'TRUE'
+        ],
+        [
+          'New Construction Loan',
+          'new-construction',
+          'FALSE',
+          '700',
+          '65.00',
+          '',
+          '9.00',
+          '',
+          '',
+          '2.00',
+          '',
+          '',
+          'TRUE',
+          '600.00',
+          '2000.00',
+          '300.00',
+          '30',
+          'https://example.com/apply',
+          'TRUE'
+        ]
+      ];
+      
+      const csv = [
+        headers.join(','),
+        ...exampleRows.map(row => row.join(','))
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="bridge-loan-products-template.csv"');
+      res.send(csv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate Bridge CSV template" });
+    }
+  });
+
+  // DSCR CSV Template - focused fields for rental property loans
+  app.get("/api/loan-products/template/dscr", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const headers = [
+        'productName',
+        'loanType',
+        'newInvestorOk',
+        'minCreditScore',
+        'maxLtvBuy',
+        'interestRate',
+        'points',
+        'loanTermYears',
+        'minDscrRequired',
+        'appraisalRequired',
+        'estimatedAppraisalCost',
+        'fees',
+        'cashOutOk',
+        'cashOutMaxLtv',
+        'referralLink',
+        'isActive'
+      ];
+      
+      const exampleRows = [
+        [
+          'DSCR Purchase - Standard',
+          'dscr-purchase',
+          'TRUE',
+          '700',
+          '80.00',
+          '7.50',
+          '1.50',
+          '30',
+          '1.0',
+          'TRUE',
+          '450.00',
+          '1000.00',
+          '',
+          '',
+          '',
+          'TRUE'
+        ],
+        [
+          'DSCR Purchase - Premium',
+          'dscr-purchase',
+          'FALSE',
+          '720',
+          '75.00',
+          '7.00',
+          '1.00',
+          '30',
+          '1.2',
+          'TRUE',
+          '400.00',
+          '800.00',
+          '',
+          '',
+          '',
+          'TRUE'
+        ],
+        [
+          'DSCR Refi - No Cash Out',
+          'dscr-refi',
+          'TRUE',
+          '680',
+          '75.00',
+          '7.25',
+          '1.25',
+          '30',
+          '1.0',
+          'TRUE',
+          '450.00',
+          '900.00',
+          'FALSE',
+          '',
+          '',
+          'TRUE'
+        ],
+        [
+          'DSCR Refi - Cash Out',
+          'dscr-refi',
+          'FALSE',
+          '720',
+          '75.00',
+          '7.50',
+          '1.50',
+          '30',
+          '1.2',
+          'TRUE',
+          '450.00',
+          '1000.00',
+          'TRUE',
+          '70.00',
+          '',
+          'TRUE'
+        ]
+      ];
+      
+      const csv = [
+        headers.join(','),
+        ...exampleRows.map(row => row.join(','))
+      ].join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="dscr-loan-products-template.csv"');
+      res.send(csv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate DSCR CSV template" });
+    }
+  });
+
+  // Legacy combined template (kept for backwards compatibility)
   app.get("/api/loan-products/template", ensureLenderAuthenticated, async (req, res) => {
     try {
       const headers = [

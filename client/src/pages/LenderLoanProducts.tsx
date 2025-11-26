@@ -288,10 +288,17 @@ export default function LenderLoanProducts() {
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="outline"
-                onClick={() => window.open('/api/loan-products/template', '_blank')}
-                data-testid="button-download-csv-template"
+                onClick={() => window.open('/api/loan-products/template/bridge', '_blank')}
+                data-testid="button-download-bridge-template"
               >
-                Download CSV Template
+                Bridge/Hard Money Template
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open('/api/loan-products/template/dscr', '_blank')}
+                data-testid="button-download-dscr-template"
+              >
+                DSCR Template
               </Button>
               <div>
                 <input
