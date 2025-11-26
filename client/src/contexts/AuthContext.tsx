@@ -25,6 +25,7 @@ interface AuthContextType {
   login: (credentials: { email: string; password: string }) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  refetchUser: () => Promise<void>;
 }
 
 interface RegisterData {
@@ -138,6 +139,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await logoutMutation.mutateAsync();
   };
 
+  const refetchUser = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+  };
+
   const isSubscriber = !!user && (
     user.role === 'admin' || 
     ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus)
@@ -153,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
+        refetchUser,
       }}
     >
       {children}

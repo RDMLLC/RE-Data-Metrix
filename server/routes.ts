@@ -206,18 +206,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })(req, res, next);
   });
 
-  app.get("/api/auth/me", (req, res) => {
+  app.get("/api/auth/me", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     
     const user = req.user as User;
+    
+    const [userProfile] = await db
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, user.id))
+      .limit(1);
+    
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
+      subscriptionStatus: user.subscriptionStatus,
+      referralCode: user.referralCode,
+      createdAt: user.createdAt,
+      profile: userProfile ? {
+        fullName: userProfile.fullName || "",
+        creditScoreRange: userProfile.creditScoreRange || "",
+        state: userProfile.state || "",
+      } : null,
     });
+  });
+
+  app.patch("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const currentUser = req.user as User;
+    const { username, fullName } = req.body;
+    
+    try {
+      if (username && username !== currentUser.username) {
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1);
+          
+        if (existingUser) {
+          return res.status(400).json({ error: "Username is already taken" });
+        }
+        
+        await db
+          .update(users)
+          .set({ username })
+          .where(eq(users.id, currentUser.id));
+      }
+      
+      if (fullName !== undefined) {
+        const [existingProfile] = await db
+          .select()
+          .from(userProfiles)
+          .where(eq(userProfiles.userId, currentUser.id))
+          .limit(1);
+          
+        if (existingProfile) {
+          await db
+            .update(userProfiles)
+            .set({ fullName })
+            .where(eq(userProfiles.userId, currentUser.id));
+        } else {
+          await db.insert(userProfiles).values({
+            userId: currentUser.id,
+            fullName: fullName || "",
+          });
+        }
+      }
+      
+      res.json({ message: "Profile updated successfully" });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
   });
 
   app.post("/api/auth/logout", (req, res) => {
