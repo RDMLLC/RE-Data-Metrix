@@ -14,11 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { usePDF } from "react-to-pdf";
 import { QRCodeSVG } from "qrcode.react";
-import Step6CriteriaSelection from "./Step6CriteriaSelection";
 import type { LoanCriteria } from "@shared/schema";
 import { useWizardData } from "@/contexts/WizardDataContext";
 
-interface Step6ResultsProps {
+interface Step5ResultsProps {
   form: UseFormReturn<WizardFormData>;
   onBack: () => void;
 }
@@ -68,16 +67,13 @@ interface ResultsResponse {
   allRankedProducts: number;
 }
 
-export default function Step6Results({ form, onBack }: Step6ResultsProps) {
+export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { updatePropertyData, wizardData } = useWizardData();
-  const [showCriteriaSelection, setShowCriteriaSelection] = useState(true);
-  const [criteriaSelected, setCriteriaSelected] = useState(false);
-  const [useDefaultCriteria, setUseDefaultCriteria] = useState(true);
-  const [primaryCriteria, setPrimaryCriteria] = useState<LoanCriteria | undefined>();
-  const [secondaryCriteria, setSecondaryCriteria] = useState<LoanCriteria | undefined>();
-  const [visibleLenderCount, setVisibleLenderCount] = useState(3);
+  const loanPreference = form.watch("loanPreference") || "one-of-each";
+  const [hasCalculated, setHasCalculated] = useState(false);
+  const [visibleLenderCount, setVisibleLenderCount] = useState(2);
   const [results, setResults] = useState<ResultsResponse | null>(null);
   
   // Editable fields for on-the-fly scenario changes
@@ -115,13 +111,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   // Reference for scrolling to new loans
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize editable fields from form data
+  // Initialize editable fields from form data and auto-calculate on mount
   useEffect(() => {
     const formData = form.getValues();
     setEditBuyPrice(formData.purchasePrice || 0);
     setEditRehab(formData.rehabBudget || 0);
     setEditProjectLength(formData.projectLength || 6);
-  }, [form]);
+    
+    // Auto-trigger calculation on mount if not already calculated
+    if (!hasCalculated) {
+      const payload = buildPayload(loanPreference);
+      calculateResultsMutation.mutate(payload);
+      setHasCalculated(true);
+    }
+  }, [form, hasCalculated, loanPreference]);
 
   const calculateResultsMutation = useMutation<ResultsResponse, Error, any>({
     mutationFn: async (payload: any) => {
@@ -141,9 +144,7 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   });
 
   const buildPayload = (
-    useDefault: boolean,
-    primary?: LoanCriteria,
-    secondary?: LoanCriteria,
+    preference: string,
     overridePurchasePrice?: number,
     overrideRehabBudget?: number,
     overrideProjectLength?: number
@@ -159,6 +160,22 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
     const monthlyPropertyTax = ((formData.taxAssessedValue || purchasePrice) * 0.012) / 12;
     const monthlyHoa = formData.hoaFees || 0;
     const totalCarryingCosts = (monthlyInsurance + monthlyUtilities + monthlyPropertyTax + monthlyHoa) * projectLength;
+    
+    // Map preference to criteria - using schema values: 'profit', 'out-of-pocket', 'fastest'
+    let primary: LoanCriteria | undefined;
+    let secondary: LoanCriteria | undefined;
+    
+    if (preference === "lowest-oop") {
+      primary = "out-of-pocket";
+      secondary = "out-of-pocket";
+    } else if (preference === "highest-profit") {
+      primary = "profit";
+      secondary = "profit";
+    } else {
+      // one-of-each
+      primary = "out-of-pocket";
+      secondary = "profit";
+    }
     
     return {
       dealInputs: {
@@ -180,10 +197,11 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
         monthlyHoa: monthlyHoa,
       },
       criteriaSelection: {
-        useDefaultCriteria: useDefault,
+        useDefaultCriteria: false,
         primary: primary,
         secondary: secondary,
       },
+      loanPreference: preference,
       userLoan: formData.maxLendBuy ? {
         desiredLoanAmount: undefined,
         interestRate: formData.loanInterestRate || 12,
@@ -201,26 +219,9 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
     };
   };
 
-  const handleCriteriaSelected = (
-    useDefault: boolean,
-    primary?: LoanCriteria,
-    secondary?: LoanCriteria
-  ) => {
-    setUseDefaultCriteria(useDefault);
-    setPrimaryCriteria(primary);
-    setSecondaryCriteria(secondary);
-    setShowCriteriaSelection(false);
-    setCriteriaSelected(true);
-
-    const payload = buildPayload(useDefault, primary, secondary);
-    calculateResultsMutation.mutate(payload);
-  };
-
   const handleRecalculate = () => {
     const payload = buildPayload(
-      useDefaultCriteria,
-      primaryCriteria,
-      secondaryCriteria,
+      loanPreference,
       editBuyPrice,
       editRehab,
       editProjectLength
@@ -244,21 +245,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const handleViewMoreLoans = () => {
     if (results && visibleLenderCount < results.lenderColumns.length) {
       const previousCount = visibleLenderCount;
-      setVisibleLenderCount(prev => Math.min(prev + 3, results.lenderColumns.length));
+      setVisibleLenderCount(prev => Math.min(prev + 2, results.lenderColumns.length));
       
-      // Scroll to show newly loaded loans after state updates
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          // Calculate approximate position of new columns
-          const scrollWidth = scrollContainerRef.current.scrollWidth;
-          const clientWidth = scrollContainerRef.current.clientWidth;
-          // Scroll to show the newly added columns
-          scrollContainerRef.current.scrollTo({
-            left: scrollWidth - clientWidth,
-            behavior: 'smooth'
-          });
-        }
-      }, 100);
+      // Use requestAnimationFrame for more reliable timing after DOM updates
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (scrollContainerRef.current) {
+            // Scroll to the far right to show newly added columns
+            scrollContainerRef.current.scrollTo({
+              left: scrollContainerRef.current.scrollWidth,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
     }
   };
 
@@ -333,25 +333,6 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
     setLocation("/rental-analysis");
   };
 
-  if (showCriteriaSelection) {
-    return (
-      <div className="space-y-4">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onBack}
-          className="mb-4"
-          data-testid="button-back"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        
-        <Step6CriteriaSelection onContinue={handleCriteriaSelected} />
-      </div>
-    );
-  }
-
   if (calculateResultsMutation.isPending) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
@@ -365,8 +346,8 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <p className="text-lg text-destructive">No results available</p>
-        <Button onClick={() => setShowCriteriaSelection(true)}>
-          Try Again
+        <Button onClick={onBack} data-testid="button-try-again">
+          Go Back
         </Button>
       </div>
     );
@@ -392,11 +373,11 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
         <Button
           type="button"
           variant="ghost"
-          onClick={() => setShowCriteriaSelection(true)}
-          data-testid="button-change-criteria"
+          onClick={onBack}
+          data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Change Criteria
+          Back
         </Button>
         
         <div className="flex gap-2">

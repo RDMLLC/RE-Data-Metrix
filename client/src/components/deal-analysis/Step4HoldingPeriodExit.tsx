@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   Collapsible, 
   CollapsibleContent, 
@@ -717,6 +718,69 @@ export default function Step4HoldingPeriodExit({
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Loan Preferences</CardTitle>
+              <CardDescription>
+                Select how you want us to rank lenders for your deal
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="loanPreference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select your loan preferences:</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value || "one-of-each"}
+                        className="space-y-3 pt-2"
+                        data-testid="radio-loan-preference"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <RadioGroupItem value="lowest-oop" id="pref-lowest-oop" data-testid="radio-lowest-oop" />
+                          <div className="flex flex-col">
+                            <label htmlFor="pref-lowest-oop" className="cursor-pointer font-medium">
+                              Lowest out-of-pocket
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                              Show 2 lenders with the lowest upfront cash required
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <RadioGroupItem value="highest-profit" id="pref-highest-profit" data-testid="radio-highest-profit" />
+                          <div className="flex flex-col">
+                            <label htmlFor="pref-highest-profit" className="cursor-pointer font-medium">
+                              Highest Net Profit
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                              Show 2 lenders that maximize your profit in dollars
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <RadioGroupItem value="one-of-each" id="pref-one-of-each" data-testid="radio-one-of-each" />
+                          <div className="flex flex-col">
+                            <label htmlFor="pref-one-of-each" className="cursor-pointer font-medium">
+                              One of each
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                              Show the best lender for lowest out-of-pocket AND the best for highest profit
+                            </span>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
           <div className="flex gap-3 justify-between">
             <Button
               type="button"
@@ -727,7 +791,7 @@ export default function Step4HoldingPeriodExit({
               Back
             </Button>
             <Button type="submit" data-testid="button-continue">
-              Get Loan Information
+              Continue to Results
             </Button>
           </div>
         </form>

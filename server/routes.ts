@@ -1597,9 +1597,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }),
     criteriaSelection: z.object({
       useDefaultCriteria: z.boolean(),
-      primary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv', 'out-of-pocket']).optional(),
-      secondary: z.enum(['lowest_points', 'lowest_rate', 'fastest_close', 'highest_ltv', 'out-of-pocket']).optional(),
+      primary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
+      secondary: z.enum(['profit', 'out-of-pocket', 'fastest']).optional(),
     }),
+    loanPreference: z.enum(['lowest-oop', 'highest-profit', 'one-of-each']).optional(),
     userLoan: z.object({
       desiredLoanAmount: z.number().optional(),
       interestRate: z.number(),
@@ -1802,15 +1803,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Sort by criteria
       const sortedLenderColumns = lenderColumns.sort((a, b) => {
-        const primary = criteriaSelection.primary || 'lowest_points';
-        const secondary = criteriaSelection.secondary || 'lowest_rate';
+        const primary = criteriaSelection.primary || 'out-of-pocket';
+        const secondary = criteriaSelection.secondary || 'profit';
         
         const comparators: Record<string, (x: any, y: any) => number> = {
-          'lowest_points': (x, y) => x.points - y.points,
-          'lowest_rate': (x, y) => (x.interestRate || 0) - (y.interestRate || 0),
-          'fastest_close': (x, y) => (x.timeToClose || 999) - (y.timeToClose || 999),
-          'highest_ltv': (x, y) => (y.maxLtvBuy || 0) - (x.maxLtvBuy || 0),
           'out-of-pocket': (x, y) => (x.outOfPocketCost || 0) - (y.outOfPocketCost || 0),
+          'profit': (x, y) => (y.profit || 0) - (x.profit || 0), // Higher profit first
+          'fastest': (x, y) => (x.timeToClose || 999) - (y.timeToClose || 999),
         };
         
         const primaryResult = comparators[primary](a, b);

@@ -22,7 +22,7 @@ Spelling: American English (analyze, not analyse)
 
 ### Frontend
 
-The frontend is built with React and TypeScript, utilizing Vite for bundling. It employs `shadcn/ui` (New York style) with Radix UI primitives and Tailwind CSS for a professional design. Wouter manages client-side routing. State management and data fetching are handled by React Query, while forms are managed with react-hook-form and Zod validation. Key features include marketing pages, authentication, a lender portal, and a Deal Analysis Wizard for comprehensive property analysis (purchase, renovation, holding, exit, loan criteria) with real-time client-side calculations. UI/UX design emphasizes a clean, professional aesthetic.
+The frontend is built with React and TypeScript, utilizing Vite for bundling. It employs `shadcn/ui` (New York style) with Radix UI primitives and Tailwind CSS for a professional design. Wouter manages client-side routing. State management and data fetching are handled by React Query, while forms are managed with react-hook-form and Zod validation. Key features include marketing pages, authentication, a lender portal, and a streamlined 5-step Deal Analysis Wizard for comprehensive property analysis (address, details, purchase/renovation, holding/exit with loan preferences, results). UI/UX design emphasizes a clean, professional aesthetic.
 
 ### Backend
 
@@ -93,7 +93,7 @@ Subscription-based access system restricts premium features to paying members:
 - **Subscriber Status**: `isSubscriber` in AuthContext checks if user has subscriptionStatus of 'active', 'referral_trial', or 'comped'
 - **Paywall Component**: `MembershipPaywall` displays lock icon, benefits list, and login/register CTAs
 - **Protected Features** (require subscription):
-  - Deal Analysis wizard steps 5 (Loan Criteria) and 6 (Results)
+  - Deal Analysis wizard step 5 (Results with lender comparison)
   - Loan Types education page
   - Rental Analysis wizard
   - Toolbox/Resources affiliate program tabs (About and Glossary remain free)

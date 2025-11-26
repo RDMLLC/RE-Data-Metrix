@@ -22,7 +22,6 @@ export default function WizardLayout({
     "Property Details",
     "Purchase & Renovation",
     "Holding Period & Exit",
-    "Loan Criteria",
     "Results",
   ];
 

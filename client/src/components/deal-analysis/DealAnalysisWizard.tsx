@@ -9,8 +9,7 @@ import Step1PropertyAddress from "./Step1PropertyAddress";
 import Step2PropertyDetails from "./Step2PropertyDetails";
 import Step3PurchaseRenovation from "./Step3PurchaseRenovation";
 import Step4HoldingPeriodExit from "./Step4HoldingPeriodExit";
-import Step5LoanCriteria from "./Step5LoanCriteria";
-import Step6Results from "./Step6Results";
+import Step5Results from "./Step5Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
 
 const wizardSchema = z.object({
@@ -69,6 +68,7 @@ const wizardSchema = z.object({
   drawFees: z.number().optional(),
   loanDocPrepFees: z.number().optional(),
   closingTimeline: z.string().optional(),
+  loanPreference: z.enum(["lowest-oop", "highest-profit", "one-of-each"]).optional(),
 }).superRefine((data, ctx) => {
   if (data.propertyDataSource === "manual") {
     if (!data.address || data.address.trim().length === 0) {
@@ -122,6 +122,7 @@ export default function DealAnalysisWizard() {
       zipCode: "",
       addingSquareFootage: false,
       closingTimeline: "not-selected",
+      loanPreference: "one-of-each",
     },
   });
 
@@ -164,7 +165,7 @@ export default function DealAnalysisWizard() {
 
   const handleNext = () => {
     saveCurrentStepData();
-    if (currentStep < 6) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -224,35 +225,12 @@ export default function DealAnalysisWizard() {
         if (!isSubscriber) {
           return (
             <MembershipPaywall 
-              title="Loan Comparison Results" 
-              description="Complete loan analysis and lender comparisons are available exclusively to RE Data Metrix members."
-            />
-          );
-        }
-        return (
-          <Step5LoanCriteria
-            form={form}
-            onNext={handleNext}
-            onBack={handleBack}
-          />
-        );
-      case 6:
-        if (authLoading) {
-          return (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          );
-        }
-        if (!isSubscriber) {
-          return (
-            <MembershipPaywall 
               title="Full Deal Analysis Results" 
               description="Access detailed profitability analysis and lender recommendations by becoming a member."
             />
           );
         }
-        return <Step6Results form={form} onBack={handleBack} />;
+        return <Step5Results form={form} onBack={handleBack} />;
       default:
         return null;
     }
@@ -261,7 +239,7 @@ export default function DealAnalysisWizard() {
   return (
     <WizardLayout
       currentStep={currentStep}
-      totalSteps={6}
+      totalSteps={5}
       onBack={handleBack}
       canGoBack={currentStep > 1}
     >
