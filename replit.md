@@ -24,6 +24,11 @@ The platform includes a complete authentication system with user and lender tabl
 ### Membership Access Control
 A subscription-based access system restricts premium features to paying members. A `MembershipPaywall` component displays a lock icon and benefits for protected features like the Deal Analysis wizard's results, loan types education, rental analysis, and certain Toolbox/Resources tabs.
 
+### CSV Loan Product Templates
+The Lender Portal provides two separate CSV templates for bulk loan product imports:
+- **Bridge/Hard Money Template** (`/api/loan-products/template/bridge`): 19 fields optimized for fix & flip loans, including rehab %, draw costs, ARV %, interest deferred, time to close. Also includes New Construction loans.
+- **DSCR Template** (`/api/loan-products/template/dscr`): 16 fields for rental property loans, including loan term years, min DSCR required, cash-out options. Covers both DSCR Purchase and DSCR Refi products.
+
 ### Form Handling & Validation
 Client-side validation is performed using react-hook-form and Zod, complemented by comprehensive server-side Zod schema validation for all API endpoints.
 
