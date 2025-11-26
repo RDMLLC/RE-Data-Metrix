@@ -1,4 +1,4 @@
-import { Building2, Users, Wrench, Target, MapPin } from "lucide-react";
+import { Building2, Users, Wrench, Target, MapPin, Calculator, BarChart3, Search, Layers } from "lucide-react";
 
 export interface AffiliateProgram {
   id: string;
@@ -122,6 +122,118 @@ export const affiliatePrograms: AffiliateProgram[] = [
     ],
     referralLink: "https://privy.com",
     categories: ["comps"]
+  },
+  {
+    id: "rehab-valuator",
+    name: "Rehab Valuator",
+    icon: Calculator,
+    description: "Deal analysis and rehab estimating software for real estate investors. Calculate ARV, estimate repair costs, analyze deals, and generate professional reports.",
+    benefits: [
+      "Quick deal analysis calculator",
+      "Detailed rehab cost estimator",
+      "Professional PDF reports",
+      "Wholesale and flip analysis"
+    ],
+    referralLink: "https://rehabvaluator.com",
+    categories: ["project-management", "comps"]
+  },
+  {
+    id: "dealcheck",
+    name: "DealCheck",
+    icon: Calculator,
+    description: "Investment property analysis app for evaluating rental properties, flips, BRRRR deals, and multifamily investments with detailed financial projections.",
+    benefits: [
+      "Analyze any property in minutes",
+      "BRRRR and flip calculators",
+      "Rental cash flow analysis",
+      "Comp data and ARV estimates"
+    ],
+    referralLink: "https://dealcheck.io",
+    categories: ["comps", "project-management"]
+  },
+  {
+    id: "flipster",
+    name: "Flipster",
+    icon: BarChart3,
+    description: "All-in-one CRM and deal analysis platform for house flippers. Manage leads, analyze deals, track projects, and build a profitable flipping business.",
+    benefits: [
+      "Built-in deal analyzer",
+      "Lead and contact CRM",
+      "Marketing campaign tools",
+      "Mobile app access"
+    ],
+    referralLink: "https://flipster.com",
+    categories: ["project-management", "lead-generation"]
+  },
+  {
+    id: "reikit",
+    name: "REIkit",
+    icon: BarChart3,
+    description: "Comprehensive real estate investor CRM with property analytics, marketing automation, and website builder. Manage your entire investing business from one platform.",
+    benefits: [
+      "Property analytics and data",
+      "CRM with deal tracking",
+      "Marketing automation",
+      "Investor website builder"
+    ],
+    referralLink: "https://reikit.com",
+    categories: ["lead-generation", "comps"]
+  },
+  {
+    id: "motivated-sellers",
+    name: "MotivatedSellers",
+    icon: Search,
+    description: "Skip tracing and list building platform for real estate investors. Find motivated seller contact information and build targeted marketing lists.",
+    benefits: [
+      "Accurate skip tracing data",
+      "Pre-built motivated seller lists",
+      "List stacking capabilities",
+      "Direct mail integration"
+    ],
+    referralLink: "https://motivatedsellers.com",
+    categories: ["lead-generation"]
+  },
+  {
+    id: "freedomsoft",
+    name: "FreedomSoft",
+    icon: Layers,
+    description: "All-in-one real estate investing software with CRM, marketing automation, website builder, and lead management tools for wholesalers and investors.",
+    benefits: [
+      "CRM with workflow automation",
+      "Built-in marketing campaigns",
+      "Mobile app with team features",
+      "Investor website builder"
+    ],
+    referralLink: "https://freedomsoft.com",
+    categories: ["lead-generation", "marketplace"]
+  },
+  {
+    id: "resimpli",
+    name: "REsimpli",
+    icon: Layers,
+    description: "All-in-one CRM designed for real estate wholesalers with skip tracing, marketing automation, KPI tracking, and team collaboration tools.",
+    benefits: [
+      "Built-in skip tracing",
+      "SMS and email campaigns",
+      "Team collaboration features",
+      "Detailed KPI dashboards"
+    ],
+    referralLink: "https://resimpli.com",
+    categories: ["lead-generation"]
+  },
+  {
+    id: "batchleads",
+    name: "BatchLeads",
+    icon: Target,
+    description: "Property data and lead generation platform with skip tracing, list building, driving for dollars, and direct mail capabilities for real estate investors.",
+    benefits: [
+      "Driving for dollars mobile app",
+      "Skip tracing integration",
+      "Direct mail campaigns",
+      "Property data and filters"
+    ],
+    referralLink: "https://batchleads.io",
+    categories: ["lead-generation", "comps"]
   }
 ];
 
