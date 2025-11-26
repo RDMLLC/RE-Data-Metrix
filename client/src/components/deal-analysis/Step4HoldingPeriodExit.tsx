@@ -664,9 +664,12 @@ export default function Step4HoldingPeriodExit({
 
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
-              <CardTitle className="text-lg">Profitability Analysis</CardTitle>
+              <div className="flex flex-wrap items-baseline gap-2">
+                <CardTitle className="text-lg">Profitability Analysis</CardTitle>
+                <span className="text-sm text-muted-foreground">— Cash-on-cash return metrics for this deal</span>
+              </div>
               <CardDescription>
-                Cash-on-cash return metrics for this deal
+                Profitability shown for a cash purchase I.E. no lender.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
