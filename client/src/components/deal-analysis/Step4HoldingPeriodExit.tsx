@@ -59,6 +59,10 @@ export default function Step4HoldingPeriodExit({
   const closingCostsSellPercent = form.watch("closingCostsSellPercent") || 1;
   const realEstateCommissionPercent = form.watch("realEstateCommissionPercent") || 6;
 
+  // Your Loan fields
+  const hasExistingLoan = form.watch("hasExistingLoan");
+  const appraisalRequired = form.watch("appraisalRequired");
+
   // Track previous values using refs to detect changes for recalculation
   const prevPurchasePriceRef = useRef<number>(purchasePrice);
   const prevArvRef = useRef<number>(arv);
@@ -715,6 +719,390 @@ export default function Step4HoldingPeriodExit({
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Your Loan</CardTitle>
+              <CardDescription>
+                Do you already have a loan product in mind? Enter the details to compare it against our lenders.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="hasExistingLoan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Do you have a loan you are currently looking at?</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={(value) => field.onChange(value === "true")}
+                        value={field.value === undefined ? undefined : field.value.toString()}
+                        className="flex gap-4"
+                        data-testid="radio-has-loan"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="true" id="loan-yes" data-testid="radio-has-loan-yes" />
+                          <label htmlFor="loan-yes" className="cursor-pointer">Yes</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="false" id="loan-no" data-testid="radio-has-loan-no" />
+                          <label htmlFor="loan-no" className="cursor-pointer">No</label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {hasExistingLoan === true && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="maxLendBuy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max % Lend on Purchase</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                data-testid="input-max-lend-buy"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="maxLendRehab"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max % Lend on Rehab</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                data-testid="input-max-lend-rehab"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="loanInterestRate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interest Rate (Annual)</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                data-testid="input-interest-rate"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="loanPoints"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Points</FormLabel>
+                          <FormDescription className="text-xs">
+                            Upfront fee (1 point = 1% of loan)
+                          </FormDescription>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                data-testid="input-points"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="maxLoanToArv"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max % Loan to ARV</FormLabel>
+                          <FormDescription className="text-xs">
+                            After Repair Value ratio
+                          </FormDescription>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                data-testid="input-max-loan-arv"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="interestDeferred"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interest Payments Deferred?</FormLabel>
+                          <FormDescription className="text-xs">
+                            Are interest payments waived until the loan is settled?
+                          </FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-interest-deferred"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="int-defer-yes" data-testid="radio-interest-deferred-yes" />
+                                <label htmlFor="int-defer-yes" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="int-defer-no" data-testid="radio-interest-deferred-no" />
+                                <label htmlFor="int-defer-no" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="drawnFundsOnly"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Drawn Funds Only?</FormLabel>
+                          <FormDescription className="text-xs">
+                            Interest charged only when funds are received?
+                          </FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-drawn-funds"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="drawn-yes" data-testid="radio-drawn-funds-yes" />
+                                <label htmlFor="drawn-yes" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="drawn-no" data-testid="radio-drawn-funds-no" />
+                                <label htmlFor="drawn-no" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="pointsDeferred"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Points Deferred?</FormLabel>
+                        <FormDescription className="text-xs">
+                          Are the points deferred until the loan is paid off?
+                        </FormDescription>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => field.onChange(value === "true")}
+                            value={field.value === undefined ? undefined : field.value.toString()}
+                            className="flex gap-4"
+                            data-testid="radio-points-deferred"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="true" id="pts-defer-yes" data-testid="radio-points-deferred-yes" />
+                              <label htmlFor="pts-defer-yes" className="cursor-pointer">Yes</label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="false" id="pts-defer-no" data-testid="radio-points-deferred-no" />
+                              <label htmlFor="pts-defer-no" className="cursor-pointer">No</label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="appraisalRequired"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Appraisal Required?</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => field.onChange(value === "true")}
+                            value={field.value === undefined ? undefined : field.value.toString()}
+                            className="flex gap-4"
+                            data-testid="radio-appraisal-required"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="true" id="appr-yes" data-testid="radio-appraisal-yes" />
+                              <label htmlFor="appr-yes" className="cursor-pointer">Yes</label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="false" id="appr-no" data-testid="radio-appraisal-no" />
+                              <label htmlFor="appr-no" className="cursor-pointer">No</label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {appraisalRequired === true && (
+                    <FormField
+                      control={form.control}
+                      name="appraisalFee"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Appraisal Fee</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pl-7"
+                                data-testid="input-appraisal-fee"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="drawFees"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Draw Fees (per draw)</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pl-7"
+                                data-testid="input-draw-fees"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="loanDocPrepFees"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Doc Prep Fees</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pl-7"
+                                data-testid="input-doc-prep-fees"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

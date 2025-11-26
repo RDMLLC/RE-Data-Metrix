@@ -110,29 +110,95 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
 
   // Reference for scrolling to new loans
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Track previous values to detect real user changes (not initial state set)
+  const prevValuesRef = useRef<{price: number, rehab: number, length: number, preference: string} | null>(null);
+  
+  // Track the latest request ID to prevent stale responses from overwriting newer results
+  const requestIdRef = useRef(0);
 
   // Initialize editable fields from form data and auto-calculate on mount
   useEffect(() => {
     const formData = form.getValues();
-    setEditBuyPrice(formData.purchasePrice || 0);
-    setEditRehab(formData.rehabBudget || 0);
-    setEditProjectLength(formData.projectLength || 6);
+    const initialPrice = formData.purchasePrice || 0;
+    const initialRehab = formData.rehabBudget || 0;
+    const initialLength = formData.projectLength || 6;
+    
+    setEditBuyPrice(initialPrice);
+    setEditRehab(initialRehab);
+    setEditProjectLength(initialLength);
+    
+    // Store initial values to detect real user changes (including preference)
+    prevValuesRef.current = { 
+      price: initialPrice, 
+      rehab: initialRehab, 
+      length: initialLength,
+      preference: loanPreference 
+    };
     
     // Auto-trigger calculation on mount if not already calculated
     if (!hasCalculated) {
       const payload = buildPayload(loanPreference);
-      calculateResultsMutation.mutate(payload);
+      requestIdRef.current += 1;
+      calculateResultsMutation.mutate({ ...payload, _requestId: requestIdRef.current });
       setHasCalculated(true);
     }
   }, [form, hasCalculated, loanPreference]);
 
+  // Debounced auto-recalculation when editable fields or loan preference change (after initialization)
+  useEffect(() => {
+    // Skip if initial values haven't been stored yet
+    if (!prevValuesRef.current) return;
+    
+    // Check if any values have actually changed from previous values (including preference)
+    const valuesChanged = 
+      editBuyPrice !== prevValuesRef.current.price ||
+      editRehab !== prevValuesRef.current.rehab ||
+      editProjectLength !== prevValuesRef.current.length ||
+      loanPreference !== prevValuesRef.current.preference;
+    
+    // Skip if values haven't changed (prevents initial trigger)
+    if (!valuesChanged) return;
+    
+    const debounceTimer = setTimeout(() => {
+      // Update previous values
+      prevValuesRef.current = { 
+        price: editBuyPrice, 
+        rehab: editRehab, 
+        length: editProjectLength,
+        preference: loanPreference 
+      };
+      
+      const payload = buildPayload(
+        loanPreference,
+        editBuyPrice,
+        editRehab,
+        editProjectLength
+      );
+      
+      // Increment request ID and include in mutation context
+      requestIdRef.current += 1;
+      calculateResultsMutation.mutate({ ...payload, _requestId: requestIdRef.current });
+    }, 800); // 800ms debounce delay
+
+    return () => clearTimeout(debounceTimer);
+  }, [editBuyPrice, editRehab, editProjectLength, loanPreference]);
+
   const calculateResultsMutation = useMutation<ResultsResponse, Error, any>({
     mutationFn: async (payload: any) => {
-      const response = await apiRequest("POST", "/api/deal-analysis/results", payload);
-      return await response.json();
+      const { _requestId, ...apiPayload } = payload;
+      const response = await apiRequest("POST", "/api/deal-analysis/results", apiPayload);
+      const data = await response.json();
+      // Attach request ID to the result for checking in onSuccess
+      return { ...data, _requestId };
     },
-    onSuccess: (data) => {
-      setResults(data);
+    onSuccess: (dataWithId: any) => {
+      const { _requestId, ...data } = dataWithId;
+      // Only update results if this response matches the latest request
+      // (prevents stale responses from overwriting newer results)
+      if (_requestId === requestIdRef.current) {
+        setResults(data);
+      }
     },
     onError: (error: any) => {
       toast({
@@ -217,16 +283,6 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
       numberOfDraws: 3,
       excludeProductIds: [],
     };
-  };
-
-  const handleRecalculate = () => {
-    const payload = buildPayload(
-      loanPreference,
-      editBuyPrice,
-      editRehab,
-      editProjectLength
-    );
-    calculateResultsMutation.mutate(payload);
   };
 
   const formatCurrency = (value: number) => {
@@ -333,7 +389,8 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     setLocation("/rental-analysis");
   };
 
-  if (calculateResultsMutation.isPending) {
+  // Only show full-page spinner for initial load (no results yet)
+  if (calculateResultsMutation.isPending && !results) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -342,7 +399,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     );
   }
 
-  if (!results) {
+  if (!results && !calculateResultsMutation.isPending) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <p className="text-lg text-destructive">No results available</p>
@@ -351,6 +408,10 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
         </Button>
       </div>
     );
+  }
+
+  if (!results) {
+    return null; // Shouldn't reach here, but safety check
   }
 
   const visibleLenders = results.lenderColumns.slice(0, visibleLenderCount);
@@ -442,16 +503,12 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                 data-testid="input-edit-project-length"
               />
             </div>
-            <Button 
-              onClick={handleRecalculate}
-              disabled={calculateResultsMutation.isPending}
-              data-testid="button-recalculate"
-            >
-              {calculateResultsMutation.isPending ? (
+            {calculateResultsMutation.isPending && (
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Recalculate
-            </Button>
+                Recalculating...
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1053,7 +1110,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   </>
                 )}
                 
-                {/* QR Codes Row */}
+                {/* Quick Apply Row - Combined QR codes and Apply buttons */}
                 <TableRow>
                   <TableCell className={`font-medium ${stickyFirstColBase}`}>Quick Apply</TableCell>
                   <TableCell 
@@ -1073,63 +1130,29 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">
                       {lender.referralLink ? (
-                        <div className="flex flex-col items-center gap-1">
+                        <div className="flex flex-col items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            data-testid={`button-apply-lender${index + 1}`}
+                            onClick={() => {
+                              window.open(lender.referralLink, '_blank', 'noopener,noreferrer');
+                            }}
+                          >
+                            Apply Now
+                          </Button>
                           <QRCodeSVG 
                             value={lender.referralLink} 
-                            size={64}
+                            size={56}
                             level="M"
                             bgColor="transparent"
                             fgColor="currentColor"
                             className="mx-auto"
                           />
-                          <span className="text-[10px] text-muted-foreground">Scan to apply</span>
+                          <span className="text-[10px] text-muted-foreground">or scan</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">No link</span>
+                        <span className="text-xs text-muted-foreground">Contact lender directly</span>
                       )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-
-                {/* Apply Buttons Row */}
-                <TableRow>
-                  <TableCell className={`font-medium ${stickyFirstColBase}`}></TableCell>
-                  <TableCell 
-                    className="text-center sticky z-10 bg-background"
-                    style={{ left: `${metricColWidth}px` }}
-                  >
-                    -
-                  </TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell 
-                      className="text-center sticky z-10 bg-background"
-                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
-                    >
-                      <Button size="sm" variant="outline" disabled data-testid="button-apply-user-loan">
-                        Your Loan
-                      </Button>
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">
-                      <Button 
-                        size="sm" 
-                        data-testid={`button-apply-lender${index + 1}`}
-                        onClick={() => {
-                          if (lender.referralLink) {
-                            window.open(lender.referralLink, '_blank', 'noopener,noreferrer');
-                          } else {
-                            toast({
-                              title: "Referral Link Unavailable",
-                              description: "This lender has not provided a referral link yet.",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        disabled={!lender.referralLink}
-                      >
-                        Click Here to Apply
-                      </Button>
                     </TableCell>
                   ))}
                 </TableRow>

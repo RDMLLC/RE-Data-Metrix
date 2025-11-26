@@ -258,8 +258,19 @@ export default function RentalAnalysisWizard() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => setLocation('/deal-analysis?step=5')} 
+            className="gap-2"
+            data-testid="button-back-to-deal-analysis"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Deal Analysis
+          </Button>
+        </div>
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <h1 className="text-4xl font-bold text-primary">Rental Analysis</h1>
             <Button
               variant="outline"
