@@ -43,7 +43,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      setLocation("/portal/profile");
+      setLocation("/portal/dashboard");
     }
   }, [isAuthenticated, authLoading, setLocation]);
 
@@ -71,7 +71,7 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      setLocation("/portal/profile");
+      setLocation("/portal/dashboard");
     } catch (error: any) {
       const errorMessage = error.message || "Invalid email or password";
       const isVerificationError = errorMessage.includes("verify") || errorMessage.includes("Email not verified");

@@ -74,6 +74,14 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Enter estimated loan amount
   - View top 2 new construction lenders (prioritizing preferred lenders, then by referral fee)
   - Apply directly via lender referral links
+- **Member Portal**: Dashboard-first navigation at /portal/dashboard featuring:
+  - Welcome header with subscription status badge
+  - KPI cards (Deals Analyzed, Saved Lenders, Referral Code)
+  - Quick Actions grid (Start Deal Analysis, My Saved Deals, Browse Lenders, Toolbox)
+  - Recent Deals and Account Summary sections
+  - Profile sub-page at /portal/profile for account settings (username, email, password)
+  - All authenticated user redirects (login, register, home) go to /portal/dashboard
+  - User initials in navigation link to /portal/dashboard
 
 ### Membership Access Control
 

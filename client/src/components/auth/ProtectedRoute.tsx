@@ -29,7 +29,7 @@ export function ProtectedRoute({
       requiredRole &&
       user?.role !== requiredRole
     ) {
-      setLocation("/portal/profile");
+      setLocation("/portal/dashboard");
     }
   }, [isLoading, isAuthenticated, user, requiredRole, setLocation]);
 

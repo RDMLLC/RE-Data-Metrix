@@ -47,7 +47,7 @@ export default function Home() {
       if (user.role === "admin") {
         setLocation("/admin/dashboard");
       } else {
-        setLocation("/portal/profile");
+        setLocation("/portal/dashboard");
       }
     }
   }, [authLoading, lenderChecked, isAuthenticated, isLender, user, setLocation]);

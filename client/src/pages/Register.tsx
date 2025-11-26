@@ -118,7 +118,7 @@ export default function Register() {
           title: "Welcome to RE Data Metrix!",
           description: "Your account has been created successfully.",
         });
-        setLocation("/portal/profile");
+        setLocation("/portal/dashboard");
       }
     } catch (error: any) {
       toast({

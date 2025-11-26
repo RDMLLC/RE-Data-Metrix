@@ -64,7 +64,7 @@ export default function VerifyEmail() {
                 <p className="text-muted-foreground mb-6">Welcome, {username}!</p>
               )}
               <Button asChild data-testid="button-dashboard">
-                <a href="/portal/profile">Go to Dashboard</a>
+                <a href="/portal/dashboard">Go to Dashboard</a>
               </Button>
             </div>
           )}

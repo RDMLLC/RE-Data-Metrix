@@ -71,6 +71,13 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
+      <Route path="/portal/dashboard">
+        {() => (
+          <ProtectedRoute>
+            <MemberDashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/portal/profile">
         {() => (
           <ProtectedRoute>

@@ -72,7 +72,7 @@ export default function Navigation() {
                   ...
                 </Button>
               ) : isAuthenticated && user ? (
-                <Link href="/portal/profile" data-testid="link-nav-profile">
+                <Link href="/portal/dashboard" data-testid="link-nav-profile">
                   <div 
                     className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
                     title={`Signed in as ${user.username}`}
@@ -106,7 +106,7 @@ export default function Navigation() {
           <div className="flex items-center gap-2">
             {/* Show user avatar on mobile header when logged in */}
             {!isLoading && isAuthenticated && user && (
-              <Link href="/portal/profile" data-testid="link-nav-profile-mobile">
+              <Link href="/portal/dashboard" data-testid="link-nav-profile-mobile">
                 <div 
                   className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs cursor-pointer hover:opacity-80 transition-opacity"
                   title={`Signed in as ${user.username}`}
@@ -150,11 +150,11 @@ export default function Navigation() {
                 ...
               </Button>
             ) : isAuthenticated && user ? (
-              <Link href="/portal/profile" onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/portal/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant="ghost"
                   className={`w-full justify-start text-foreground hover:text-primary ${
-                    location === "/portal/profile" ? "text-primary font-semibold" : ""
+                    location === "/portal/dashboard" ? "text-primary font-semibold" : ""
                   }`}
                 >
                   My Account ({userInitials})
