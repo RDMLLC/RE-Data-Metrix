@@ -57,7 +57,7 @@ export default function Profile() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Subscription Status</p>
                     <p className="text-lg capitalize" data-testid="text-subscription-status">
-                      {user.subscriptionStatus.replace(/_/g, " ")}
+                      {(user.subscriptionStatus || "inactive").replace(/_/g, " ")}
                     </p>
                   </div>
                 </div>
@@ -77,14 +77,17 @@ export default function Profile() {
                     className="text-2xl font-bold bg-muted px-4 py-2 rounded-md"
                     data-testid="text-referral-code"
                   >
-                    {user.referralCode}
+                    {user.referralCode || "N/A"}
                   </code>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard.writeText(user.referralCode);
+                      if (user.referralCode) {
+                        navigator.clipboard.writeText(user.referralCode);
+                      }
                     }}
                     data-testid="button-copy-referral"
+                    disabled={!user.referralCode}
                   >
                     Copy Code
                   </Button>
