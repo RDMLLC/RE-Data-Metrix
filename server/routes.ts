@@ -43,6 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     password: z.string().min(8),
     fullName: z.string().min(1),
     referralCode: z.string().optional(),
+    compCode: z.string().optional(),
   });
 
   app.post("/api/auth/register", async (req, res) => {
@@ -67,8 +68,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let referredByUserId = null;
       let subscriptionStatus = 'inactive';
+      let compInviteToAccept: {id: string; email: string; status: string; expiresAt: Date} | undefined = undefined;
       
-      if (validatedData.referralCode) {
+      // Check for comp code first (highest priority)
+      if (validatedData.compCode) {
+        const invite = await storage.getCompInviteByCode(validatedData.compCode.toUpperCase());
+        if (invite && invite.status === 'pending' && new Date() <= invite.expiresAt) {
+          compInviteToAccept = invite;
+          subscriptionStatus = 'comped';
+        }
+      }
+      
+      // If no valid comp code, check for referral code
+      if (!compInviteToAccept && validatedData.referralCode) {
         const [referrer] = await db
           .select()
           .from(users)
@@ -102,6 +114,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: validatedData.fullName,
       });
 
+      // Accept the comp invite if there was one
+      if (compInviteToAccept) {
+        await storage.acceptCompInvite(validatedData.compCode!.toUpperCase(), newUser.id);
+      }
+
       const emailSent = await emailService.sendVerificationEmail(
         newUser.email,
         newUser.username,
@@ -120,6 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? "Registration successful! Please check your email to verify your account before logging in." 
           : "Registration successful! Please contact support to verify your account.",
         requiresVerification: true,
+        isComped: !!compInviteToAccept,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

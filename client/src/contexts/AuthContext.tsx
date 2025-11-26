@@ -33,6 +33,7 @@ interface RegisterData {
   password: string;
   fullName: string;
   referralCode?: string;
+  compCode?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

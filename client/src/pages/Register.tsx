@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Users } from "lucide-react";
+import { CheckCircle, Users, Gift } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const registerSchema = z
   .object({
@@ -51,6 +52,26 @@ export default function Register() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [hasReferralCode, setHasReferralCode] = useState<string>("no");
+  const [compCode, setCompCode] = useState<string | null>(null);
+  const [compCodeValid, setCompCodeValid] = useState<boolean | null>(null);
+  const [compEmail, setCompEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const comp = params.get("comp");
+    if (comp) {
+      setCompCode(comp.toUpperCase());
+      fetch(`/api/comp-invites/validate/${comp}`)
+        .then(res => res.json())
+        .then(data => {
+          setCompCodeValid(data.valid);
+          if (data.valid && data.email) {
+            setCompEmail(data.email);
+          }
+        })
+        .catch(() => setCompCodeValid(false));
+    }
+  }, []);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -64,6 +85,12 @@ export default function Register() {
     },
   });
 
+  useEffect(() => {
+    if (compEmail) {
+      form.setValue("email", compEmail);
+    }
+  }, [compEmail, form]);
+
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
@@ -73,13 +100,17 @@ export default function Register() {
         referralCode: hasReferralCode === "yes" && registerData.referralCode 
           ? registerData.referralCode 
           : undefined,
+        compCode: compCodeValid ? compCode : undefined,
       };
       const result = await register(finalData);
       
       if ((result as any)?.requiresVerification) {
+        const isComped = (result as any)?.isComped;
         toast({
-          title: "Check your email!",
-          description: (result as any).message || "We've sent you a verification link. Please check your inbox.",
+          title: isComped ? "Premium Access Activated!" : "Check your email!",
+          description: isComped 
+            ? "Your complimentary premium access is ready. Please verify your email to log in."
+            : (result as any).message || "We've sent you a verification link. Please check your inbox.",
         });
         setLocation("/login");
       } else {
@@ -158,6 +189,27 @@ export default function Register() {
                     Start analyzing deals and connecting with lenders
                   </CardDescription>
                 </CardHeader>
+                {compCodeValid === true && (
+                  <Alert className="mb-4 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+                    <Gift className="h-4 w-4 text-emerald-600" />
+                    <AlertTitle className="text-emerald-800 dark:text-emerald-200">
+                      Premium Access Invitation
+                    </AlertTitle>
+                    <AlertDescription className="text-emerald-700 dark:text-emerald-300">
+                      You've been invited with complimentary premium access! Complete your registration to activate your free membership.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {compCodeValid === false && compCode && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertTitle>Invalid or Expired Code</AlertTitle>
+                    <AlertDescription>
+                      The comp code "{compCode}" is invalid or has expired. You can still register for a standard account.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)}>
                     <CardContent className="space-y-4">
