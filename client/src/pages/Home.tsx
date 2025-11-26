@@ -1,10 +1,74 @@
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import Hero from "@/components/Hero";
 import PrelaunchForm from "@/components/PrelaunchForm";
 import { Card } from "@/components/ui/card";
 import { Users, BarChart3, Shield } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  const [isLender, setIsLender] = useState(false);
+  const [lenderChecked, setLenderChecked] = useState(false);
+
+  useEffect(() => {
+    async function checkLenderSession() {
+      try {
+        const response = await fetch("/api/lenders/me", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          setIsLender(true);
+        }
+      } catch (error) {
+        // Not a lender
+      }
+      setLenderChecked(true);
+    }
+
+    if (!authLoading && !isAuthenticated) {
+      checkLenderSession();
+    } else {
+      setLenderChecked(true);
+    }
+  }, [authLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (authLoading || !lenderChecked) return;
+
+    if (isLender) {
+      setLocation("/lender-dashboard");
+      return;
+    }
+
+    if (isAuthenticated && user) {
+      if (user.role === "admin") {
+        setLocation("/admin/dashboard");
+      } else {
+        setLocation("/portal/profile");
+      }
+    }
+  }, [authLoading, lenderChecked, isAuthenticated, isLender, user, setLocation]);
+
+  if (authLoading || !lenderChecked) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isAuthenticated || isLender) {
+    return null;
+  }
+
   const features = [
     {
       icon: <BarChart3 className="h-8 w-8 text-accent" />,
