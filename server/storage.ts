@@ -17,6 +17,7 @@ import {
   type InsertLenderReferral,
   type AffiliateClick,
   type InsertAffiliateClick,
+  type CompInvite,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -27,7 +28,8 @@ import {
   lenderReferrals as lenderReferralsTable,
   savedDeals as savedDealsTable,
   savedLenders as savedLendersTable,
-  affiliateClicks as affiliateClicksTable
+  affiliateClicks as affiliateClicksTable,
+  compInvites as compInvitesTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -204,6 +206,24 @@ export interface IStorage {
   
   // Admin: Update lender preferred status
   updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined>;
+  
+  // Comp Invites for beta testers
+  createCompInvite(email: string, invitedById: string, expiresInDays?: number): Promise<{compCode: string; email: string; expiresAt: Date}>;
+  getCompInviteByCode(compCode: string): Promise<{id: string; email: string; status: string; expiresAt: Date} | undefined>;
+  acceptCompInvite(compCode: string, userId: string): Promise<boolean>;
+  getAllCompInvites(): Promise<Array<{
+    id: string;
+    email: string;
+    compCode: string;
+    status: string;
+    invitedByEmail: string | null;
+    acceptedByEmail: string | null;
+    expiresAt: Date;
+    acceptedAt: Date | null;
+    createdAt: Date | null;
+  }>>;
+  resendCompInvite(id: string): Promise<{compCode: string; email: string; expiresAt: Date} | undefined>;
+  deleteCompInvite(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -703,6 +723,40 @@ export class MemStorage implements IStorage {
   }
 
   async updateLenderPreferredStatus(lenderId: string, isPreferred: boolean): Promise<Lender | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createCompInvite(email: string, invitedById: string, expiresInDays?: number): Promise<{compCode: string; email: string; expiresAt: Date}> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getCompInviteByCode(compCode: string): Promise<{id: string; email: string; status: string; expiresAt: Date} | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async acceptCompInvite(compCode: string, userId: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAllCompInvites(): Promise<Array<{
+    id: string;
+    email: string;
+    compCode: string;
+    status: string;
+    invitedByEmail: string | null;
+    acceptedByEmail: string | null;
+    expiresAt: Date;
+    acceptedAt: Date | null;
+    createdAt: Date | null;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async resendCompInvite(id: string): Promise<{compCode: string; email: string; expiresAt: Date} | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async deleteCompInvite(id: string): Promise<boolean> {
     throw new Error("Not implemented in MemStorage");
   }
 }
@@ -1220,6 +1274,137 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result[0];
+  }
+
+  async createCompInvite(email: string, invitedById: string, expiresInDays: number = 30): Promise<{compCode: string; email: string; expiresAt: Date}> {
+    const compCode = randomBytes(16).toString('hex').substring(0, 8).toUpperCase();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    
+    await db.insert(compInvitesTable).values({
+      email,
+      compCode,
+      status: 'pending',
+      invitedBy: invitedById,
+      expiresAt,
+    });
+    
+    return { compCode, email, expiresAt };
+  }
+
+  async getCompInviteByCode(compCode: string): Promise<{id: string; email: string; status: string; expiresAt: Date} | undefined> {
+    const result = await db.select().from(compInvitesTable)
+      .where(eq(compInvitesTable.compCode, compCode))
+      .limit(1);
+    
+    if (!result[0]) return undefined;
+    
+    return {
+      id: result[0].id,
+      email: result[0].email,
+      status: result[0].status,
+      expiresAt: result[0].expiresAt,
+    };
+  }
+
+  async acceptCompInvite(compCode: string, userId: string): Promise<boolean> {
+    const invite = await db.select().from(compInvitesTable)
+      .where(eq(compInvitesTable.compCode, compCode))
+      .limit(1);
+    
+    if (!invite[0]) return false;
+    if (invite[0].status !== 'pending') return false;
+    if (new Date() > invite[0].expiresAt) return false;
+    
+    await db.update(compInvitesTable)
+      .set({ 
+        status: 'accepted',
+        acceptedBy: userId,
+        acceptedAt: new Date(),
+      })
+      .where(eq(compInvitesTable.id, invite[0].id));
+    
+    await db.update(usersTable)
+      .set({ subscriptionStatus: 'comped' })
+      .where(eq(usersTable.id, userId));
+    
+    return true;
+  }
+
+  async getAllCompInvites(): Promise<Array<{
+    id: string;
+    email: string;
+    compCode: string;
+    status: string;
+    invitedByEmail: string | null;
+    acceptedByEmail: string | null;
+    expiresAt: Date;
+    acceptedAt: Date | null;
+    createdAt: Date | null;
+  }>> {
+    const invites = await db.select().from(compInvitesTable)
+      .orderBy(desc(compInvitesTable.createdAt));
+    
+    const enrichedInvites = await Promise.all(invites.map(async (invite) => {
+      let invitedByEmail: string | null = null;
+      let acceptedByEmail: string | null = null;
+      
+      if (invite.invitedBy) {
+        const inviter = await db.select().from(usersTable)
+          .where(eq(usersTable.id, invite.invitedBy)).limit(1);
+        if (inviter[0]) invitedByEmail = inviter[0].email;
+      }
+      
+      if (invite.acceptedBy) {
+        const accepter = await db.select().from(usersTable)
+          .where(eq(usersTable.id, invite.acceptedBy)).limit(1);
+        if (accepter[0]) acceptedByEmail = accepter[0].email;
+      }
+      
+      return {
+        id: invite.id,
+        email: invite.email,
+        compCode: invite.compCode,
+        status: invite.status,
+        invitedByEmail,
+        acceptedByEmail,
+        expiresAt: invite.expiresAt,
+        acceptedAt: invite.acceptedAt,
+        createdAt: invite.createdAt,
+      };
+    }));
+    
+    return enrichedInvites;
+  }
+
+  async resendCompInvite(id: string): Promise<{compCode: string; email: string; expiresAt: Date} | undefined> {
+    const invite = await db.select().from(compInvitesTable)
+      .where(eq(compInvitesTable.id, id))
+      .limit(1);
+    
+    if (!invite[0]) return undefined;
+    
+    const newCompCode = randomBytes(16).toString('hex').substring(0, 8).toUpperCase();
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 30);
+    
+    await db.update(compInvitesTable)
+      .set({ 
+        compCode: newCompCode,
+        expiresAt: newExpiresAt,
+        status: 'pending',
+      })
+      .where(eq(compInvitesTable.id, id));
+    
+    return { compCode: newCompCode, email: invite[0].email, expiresAt: newExpiresAt };
+  }
+
+  async deleteCompInvite(id: string): Promise<boolean> {
+    const result = await db.delete(compInvitesTable)
+      .where(eq(compInvitesTable.id, id))
+      .returning();
+    
+    return result.length > 0;
   }
 
   async getAllLenderReferralsForAdmin(): Promise<Array<{

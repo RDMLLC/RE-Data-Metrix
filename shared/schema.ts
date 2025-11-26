@@ -34,6 +34,28 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+export const compInvites = pgTable("comp_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  compCode: varchar("comp_code").notNull().unique(),
+  status: text("status").notNull().default('pending'),
+  invitedBy: varchar("invited_by").references(() => users.id),
+  acceptedBy: varchar("accepted_by").references(() => users.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCompInviteSchema = createInsertSchema(compInvites).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+  acceptedBy: true,
+});
+
+export type InsertCompInvite = z.infer<typeof insertCompInviteSchema>;
+export type CompInvite = typeof compInvites.$inferSelect;
+
 export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique().references(() => users.id),
