@@ -1810,6 +1810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'lowest_rate': (x, y) => (x.interestRate || 0) - (y.interestRate || 0),
           'fastest_close': (x, y) => (x.timeToClose || 999) - (y.timeToClose || 999),
           'highest_ltv': (x, y) => (y.maxLtvBuy || 0) - (x.maxLtvBuy || 0),
+          'out-of-pocket': (x, y) => (x.outOfPocketCost || 0) - (y.outOfPocketCost || 0),
         };
         
         const primaryResult = comparators[primary](a, b);

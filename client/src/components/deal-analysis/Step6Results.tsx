@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Loader2, TrendingUp } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import Step6CriteriaSelection from "./Step6CriteriaSelection";
@@ -76,6 +76,12 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const [secondaryCriteria, setSecondaryCriteria] = useState<LoanCriteria | undefined>();
   const [visibleLenderCount, setVisibleLenderCount] = useState(3);
   const [results, setResults] = useState<ResultsResponse | null>(null);
+  
+  // Collapsible section states
+  const [showLoanTerms, setShowLoanTerms] = useState(true);
+  const [showProjectCosts, setShowProjectCosts] = useState(false);
+  const [showCostsCarrying, setShowCostsCarrying] = useState(false);
+  const [showExitMetrics, setShowExitMetrics] = useState(false);
 
   const calculateResultsMutation = useMutation<ResultsResponse, Error, any>({
     mutationFn: async (payload: any) => {
@@ -322,240 +328,24 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
           <CardTitle>Loan Comparison Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto relative">
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[200px]">Metric</TableHead>
-                  <TableHead className="text-center">Cash Sale</TableHead>
-                  {results.userLoanColumn && <TableHead className="text-center">Your Loan</TableHead>}
+                  <TableHead className="sticky left-0 z-10 bg-background min-w-[160px] after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-border">Metric</TableHead>
+                  <TableHead className="text-center min-w-[90px]">Cash Sale</TableHead>
+                  {results.userLoanColumn && <TableHead className="text-center min-w-[90px]">Your Loan</TableHead>}
                   {visibleLenders.map((lender, index) => (
-                    <TableHead key={index} className="text-center">
+                    <TableHead key={index} className="text-center min-w-[100px] text-xs">
                       {lender.lenderName || `Lender ${index + 1}`}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Loan Product Information Rows */}
-                <TableRow className="bg-accent/10">
-                  <TableCell className="font-medium">Loan Product</TableCell>
-                  <TableCell className="text-center text-muted-foreground">-</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center text-sm">Custom Loan</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center text-sm font-medium" data-testid={`lender${index + 1}-product-name`}>
-                      {lender.productName || 'N/A'}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow className="bg-accent/10">
-                  <TableCell className="font-medium">Interest Rate</TableCell>
-                  <TableCell className="text-center text-muted-foreground">-</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">
-                      {results.userLoanColumn.interestRate !== undefined && results.userLoanColumn.interestRate !== null
-                        ? `${results.userLoanColumn.interestRate.toFixed(2)}%`
-                        : 'N/A'}
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-interest-rate`}>
-                      {lender.interestRate !== undefined && lender.interestRate !== null
-                        ? `${lender.interestRate.toFixed(2)}%`
-                        : 'N/A'}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow className="bg-accent/10">
-                  <TableCell className="font-medium">Max LTV (Buy)</TableCell>
-                  <TableCell className="text-center text-muted-foreground">-</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">
-                      {results.userLoanColumn.maxLtvBuy !== undefined && results.userLoanColumn.maxLtvBuy !== null
-                        ? `${results.userLoanColumn.maxLtvBuy.toFixed(0)}%`
-                        : 'N/A'}
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-ltv`}>
-                      {lender.maxLtvBuy !== undefined && lender.maxLtvBuy !== null
-                        ? `${lender.maxLtvBuy.toFixed(0)}%`
-                        : 'N/A'}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow className="bg-accent/10">
-                  <TableCell className="font-medium">Points</TableCell>
-                  <TableCell className="text-center text-muted-foreground">-</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">
-                      {results.userLoanColumn.points !== undefined && results.userLoanColumn.points !== null
-                        ? `${results.userLoanColumn.points.toFixed(2)}%`
-                        : 'N/A'}
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-points`}>
-                      {lender.points !== undefined && lender.points !== null
-                        ? `${lender.points.toFixed(2)}%`
-                        : 'N/A'}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow className="bg-accent/10">
-                  <TableCell className="font-medium">Time to Close</TableCell>
-                  <TableCell className="text-center text-muted-foreground">-</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">
-                      {results.userLoanColumn.timeToClose !== undefined && results.userLoanColumn.timeToClose !== null
-                        ? `${results.userLoanColumn.timeToClose} days`
-                        : 'N/A'}
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-time-to-close`}>
-                      {lender.timeToClose !== undefined && lender.timeToClose !== null
-                        ? `${lender.timeToClose} days`
-                        : 'N/A'}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Purchase Price</TableCell>
-                  <TableCell className="text-center" data-testid="cash-purchase-price">
-                    {formatCurrency(results.cashSaleColumn.purchasePrice)}
-                  </TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center" data-testid="user-purchase-price">
-                      {formatCurrency(results.userLoanColumn.purchasePrice)}
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-purchase-price`}>
-                      {formatCurrency(lender.purchasePrice)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Rehab Budget</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.rehabBudget)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rehabBudget)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.rehabBudget)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Total Project Cost</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.totalProjectCost)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.totalProjectCost)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.totalProjectCost)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Est. Closing Costs (Buy)</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.closingCostsBuy)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.closingCostsBuy)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsBuy)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Est. Carrying Costs</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.carryingCosts)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.carryingCosts)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.carryingCosts)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Est. Total Investment</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.totalInvestment)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.totalInvestment)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.totalInvestment)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Est. Sell Price (ARV)</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.sellPrice)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.sellPrice)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.sellPrice)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Est. Closing Costs (Sell)</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.closingCostsSell)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.closingCostsSell)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsSell)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Real Estate Commission</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.commission)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.commission)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.commission)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Rolled Costs</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.rolledCosts)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rolledCosts)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.rolledCosts)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow>
-                  <TableCell className="font-medium">Lender Draw Fees</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.lenderDrawFees)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.lenderDrawFees)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.lenderDrawFees)}</TableCell>
-                  ))}
-                </TableRow>
-                
+                {/* KEY METRICS - Always Visible */}
                 <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold">Est. Profit</TableCell>
+                  <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">Est. Profit</TableCell>
                   <TableCell className="text-center font-bold">{formatCurrency(results.cashSaleColumn.profit)}</TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center font-bold">{formatCurrency(results.userLoanColumn.profit)}</TableCell>
@@ -565,30 +355,8 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                   ))}
                 </TableRow>
                 
-                <TableRow>
-                  <TableCell className="font-medium">Est. Out of Pocket Cost</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.outOfPocketCost)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.outOfPocketCost)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketCost)}</TableCell>
-                  ))}
-                </TableRow>
-                
                 <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold">ROI %</TableCell>
-                  <TableCell className="text-center font-bold">{formatPercent(results.cashSaleColumn.roi)}</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center font-bold">{formatPercent(results.userLoanColumn.roi)}</TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center font-bold">{formatPercent(lender.roi)}</TableCell>
-                  ))}
-                </TableRow>
-                
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold">Cash-on-Cash ROI</TableCell>
+                  <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">Cash-on-Cash ROI</TableCell>
                   <TableCell className="text-center font-bold">{formatPercent(results.cashSaleColumn.cashOnCashRoi)}</TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center font-bold">{formatPercent(results.userLoanColumn.cashOnCashRoi)}</TableCell>
@@ -599,7 +367,7 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 </TableRow>
                 
                 <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold">Annualized Cash-on-Cash ROI</TableCell>
+                  <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">Annualized ROI</TableCell>
                   <TableCell className="text-center font-bold">{formatPercent(results.cashSaleColumn.annualizedRoi)}</TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center font-bold">{formatPercent(results.userLoanColumn.annualizedRoi)}</TableCell>
@@ -610,29 +378,306 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 </TableRow>
                 
                 <TableRow>
-                  <TableCell className="font-medium">Percentage ARV</TableCell>
-                  <TableCell className="text-center">{formatPercent(results.cashSaleColumn.percentageArv)}</TableCell>
+                  <TableCell className="font-medium sticky left-0 z-10 bg-background">Est. Out of Pocket</TableCell>
+                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.outOfPocketCost)}</TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatPercent(results.userLoanColumn.percentageArv)}</TableCell>
+                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.outOfPocketCost)}</TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatPercent(lender.percentageArv)}</TableCell>
+                    <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketCost)}</TableCell>
+                  ))}
+                </TableRow>
+
+                {/* LOAN TERMS Section Header */}
+                <TableRow 
+                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => setShowLoanTerms(!showLoanTerms)}
+                  data-testid="section-header-loan-terms"
+                >
+                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                    {showLoanTerms ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Loan Terms
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground text-sm">-</TableCell>
+                  {results.userLoanColumn && <TableCell className="text-center text-sm">Custom</TableCell>}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center text-xs">{lender.productName || 'N/A'}</TableCell>
                   ))}
                 </TableRow>
                 
-                <TableRow>
-                  <TableCell className="font-medium">Percentage ARV (Lender)</TableCell>
-                  <TableCell className="text-center">N/A</TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatPercent(results.userLoanColumn.percentageArvLender || 0)}</TableCell>
-                  )}
+                {showLoanTerms && (
+                  <>
+                    <TableRow className="bg-accent/10">
+                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Interest Rate</TableCell>
+                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">
+                          {results.userLoanColumn.interestRate !== undefined && results.userLoanColumn.interestRate !== null
+                            ? `${results.userLoanColumn.interestRate.toFixed(2)}%`
+                            : 'N/A'}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-interest-rate`}>
+                          {lender.interestRate !== undefined && lender.interestRate !== null
+                            ? `${lender.interestRate.toFixed(2)}%`
+                            : 'N/A'}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow className="bg-accent/10">
+                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Max LTV (Buy)</TableCell>
+                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">
+                          {results.userLoanColumn.maxLtvBuy !== undefined && results.userLoanColumn.maxLtvBuy !== null
+                            ? `${results.userLoanColumn.maxLtvBuy.toFixed(0)}%`
+                            : 'N/A'}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-ltv`}>
+                          {lender.maxLtvBuy !== undefined && lender.maxLtvBuy !== null
+                            ? `${lender.maxLtvBuy.toFixed(0)}%`
+                            : 'N/A'}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow className="bg-accent/10">
+                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Points</TableCell>
+                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">
+                          {results.userLoanColumn.points !== undefined && results.userLoanColumn.points !== null
+                            ? `${results.userLoanColumn.points.toFixed(2)}%`
+                            : 'N/A'}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-points`}>
+                          {lender.points !== undefined && lender.points !== null
+                            ? `${lender.points.toFixed(2)}%`
+                            : 'N/A'}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow className="bg-accent/10">
+                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Time to Close</TableCell>
+                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">
+                          {results.userLoanColumn.timeToClose !== undefined && results.userLoanColumn.timeToClose !== null
+                            ? `${results.userLoanColumn.timeToClose} days`
+                            : 'N/A'}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-time-to-close`}>
+                          {lender.timeToClose !== undefined && lender.timeToClose !== null
+                            ? `${lender.timeToClose} days`
+                            : 'N/A'}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </>
+                )}
+                
+                {/* PROJECT COSTS Section Header */}
+                <TableRow 
+                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => setShowProjectCosts(!showProjectCosts)}
+                  data-testid="section-header-project-costs"
+                >
+                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                    {showProjectCosts ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Project Costs
+                  </TableCell>
+                  <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.totalProjectCost)}</TableCell>
+                  {results.userLoanColumn && <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.totalProjectCost)}</TableCell>}
                   {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatPercent(lender.percentageArvLender || 0)}</TableCell>
+                    <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.totalProjectCost)}</TableCell>
                   ))}
                 </TableRow>
                 
+                {showProjectCosts && (
+                  <>
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Purchase Price</TableCell>
+                      <TableCell className="text-center" data-testid="cash-purchase-price">
+                        {formatCurrency(results.cashSaleColumn.purchasePrice)}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center" data-testid="user-purchase-price">
+                          {formatCurrency(results.userLoanColumn.purchasePrice)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-purchase-price`}>
+                          {formatCurrency(lender.purchasePrice)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Rehab Budget</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.rehabBudget)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rehabBudget)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.rehabBudget)}</TableCell>
+                      ))}
+                    </TableRow>
+                  </>
+                )}
+                
+                {/* COSTS & CARRYING Section Header */}
+                <TableRow 
+                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => setShowCostsCarrying(!showCostsCarrying)}
+                  data-testid="section-header-costs-carrying"
+                >
+                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                    {showCostsCarrying ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Costs & Carrying
+                  </TableCell>
+                  <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.totalInvestment)}</TableCell>
+                  {results.userLoanColumn && <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.totalInvestment)}</TableCell>}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.totalInvestment)}</TableCell>
+                  ))}
+                </TableRow>
+                
+                {showCostsCarrying && (
+                  <>
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Closing Costs (Buy)</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.closingCostsBuy)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.closingCostsBuy)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsBuy)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Carrying Costs</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.carryingCosts)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.carryingCosts)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.carryingCosts)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Rolled Costs</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.rolledCosts)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rolledCosts)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.rolledCosts)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Lender Draw Fees</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.lenderDrawFees)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.lenderDrawFees)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.lenderDrawFees)}</TableCell>
+                      ))}
+                    </TableRow>
+                  </>
+                )}
+                
+                {/* EXIT & SALE Section Header */}
+                <TableRow 
+                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => setShowExitMetrics(!showExitMetrics)}
+                  data-testid="section-header-exit-metrics"
+                >
+                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                    {showExitMetrics ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Exit & Sale
+                  </TableCell>
+                  <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.sellPrice)}</TableCell>
+                  {results.userLoanColumn && <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.sellPrice)}</TableCell>}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.sellPrice)}</TableCell>
+                  ))}
+                </TableRow>
+                
+                {showExitMetrics && (
+                  <>
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Closing Costs (Sell)</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.closingCostsSell)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.closingCostsSell)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsSell)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">RE Commission</TableCell>
+                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.commission)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.commission)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.commission)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">ROI %</TableCell>
+                      <TableCell className="text-center">{formatPercent(results.cashSaleColumn.roi)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatPercent(results.userLoanColumn.roi)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatPercent(lender.roi)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Percentage ARV</TableCell>
+                      <TableCell className="text-center">{formatPercent(results.cashSaleColumn.percentageArv)}</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatPercent(results.userLoanColumn.percentageArv)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatPercent(lender.percentageArv)}</TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">% ARV (Lender)</TableCell>
+                      <TableCell className="text-center">N/A</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center">{formatPercent(results.userLoanColumn.percentageArvLender || 0)}</TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatPercent(lender.percentageArvLender || 0)}</TableCell>
+                      ))}
+                    </TableRow>
+                  </>
+                )}
+                
+                {/* Apply Buttons Row */}
                 <TableRow>
-                  <TableCell className="font-medium"></TableCell>
+                  <TableCell className="font-medium sticky left-0 z-10 bg-background"></TableCell>
                   <TableCell className="text-center">-</TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center">
@@ -675,7 +720,7 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 onClick={handleViewMoreLoans}
                 data-testid="button-view-more-loans"
               >
-                View More Loans ({results.lenderColumns.length - visibleLenderCount} remaining)
+                View More Loans
               </Button>
             </div>
           )}
