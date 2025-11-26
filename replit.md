@@ -9,13 +9,14 @@ RE Data Metrix is a real estate investment analytics and financing platform conn
 Preferred communication style: Simple, everyday language
 Spelling: American English (analyze, not analyse)
 
-### Navigation Requirements (DO NOT CHANGE)
-**CRITICAL**: The main navigation bar must remain simple with NO dropdown menus for login/user accounts.
-- "Login" appears as a regular navigation link in the nav bar (same as Contact, Toolbox, etc.)
-- Clicking "Login" takes users directly to the /login page
-- NO dropdown menus showing username, email, or user account options
-- NO "My Portal" or "Logout" options in the navigation bar
-- Keep navigation clean and simple with all links at the same level
+### Navigation Requirements
+- When logged out: "Login" appears as a regular navigation link that takes users to /login
+- When logged in: User initials appear as a clickable avatar that opens a dropdown menu with:
+  - Username, email, and subscription status badge
+  - Dashboard link
+  - Manage Account link
+  - Logout option
+- Mobile: Same dropdown behavior on user initials, hamburger menu for nav links
 
 ## System Architecture
 
@@ -78,15 +79,13 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Apply directly via lender referral links
 - **Member Portal**: Dashboard-first navigation at /portal/dashboard featuring:
   - Welcome header with subscription status badge
-  - KPI cards: Deals Analyzed (clickable link to history), Saved Lenders
-  - Quick Actions grid (Start Deal Analysis, Browse Lenders, Toolbox)
-  - Recent Deals section with compact deal cards
-  - Refer & Earn section: Referral code + explanation (2 months free when referral subscribes)
-  - Account Summary card with Manage Account link
+  - 2x3 grid layout with 6 cards:
+    - Row 1: Deals Analyzed (clickable to history), Start Deal Analysis, Saved Lenders
+    - Row 2: Search Lenders, Tools & Resources, Refer & Earn (with referral code + 2 months free explanation)
   - Profile sub-page at /portal/profile for account settings (username, email, password)
   - All authenticated user redirects (login, register, home) go to /portal/dashboard
-  - User initials in navigation link to /portal/dashboard
-  - Responsive layout optimized for mobile and desktop
+  - User initials in navigation open dropdown with account info and actions
+  - Responsive layout: 1 column mobile, 2 columns tablet, 3 columns desktop
 
 ### Membership Access Control
 

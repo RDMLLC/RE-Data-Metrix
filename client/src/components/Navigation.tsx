@@ -1,6 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,10 +27,23 @@ function getInitials(username: string, email: string): string {
   return "U";
 }
 
+function getSubscriptionBadge(status: string) {
+  switch (status) {
+    case "active":
+      return <Badge className="bg-green-500/10 text-green-600 border-green-200 text-xs">Active</Badge>;
+    case "comped":
+      return <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs">Comped</Badge>;
+    case "referral_trial":
+      return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 text-xs">Trial</Badge>;
+    default:
+      return <Badge variant="secondary" className="text-xs">Inactive</Badge>;
+  }
+}
+
 export default function Navigation() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -36,6 +58,15 @@ export default function Navigation() {
   ];
 
   const userInitials = user ? getInitials(user.username, user.email) : "";
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation("/");
+    } catch (error) {
+      console.error("Failed to logout:", error);
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
@@ -66,20 +97,60 @@ export default function Navigation() {
                 </Link>
               ))}
               
-              {/* Login/User Avatar */}
+              {/* Login/User Avatar with Dropdown */}
               {isLoading ? (
                 <Button variant="ghost" className="text-foreground" disabled>
                   ...
                 </Button>
               ) : isAuthenticated && user ? (
-                <Link href="/portal/dashboard" data-testid="link-nav-profile">
-                  <div 
-                    className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                    title={`Signed in as ${user.username}`}
-                  >
-                    {userInitials}
-                  </div>
-                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div 
+                      className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                      data-testid="button-user-menu"
+                    >
+                      {userInitials}
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-2">
+                        <p className="text-sm font-medium">{user.username}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Status:</span>
+                          {getSubscriptionBadge(user.subscriptionStatus || "inactive")}
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setLocation("/portal/dashboard")}
+                      className="cursor-pointer"
+                      data-testid="menu-item-dashboard"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setLocation("/portal/profile")}
+                      className="cursor-pointer"
+                      data-testid="menu-item-manage-account"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Manage Account
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleLogout}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      data-testid="menu-item-logout"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Link href="/login" data-testid="link-nav-login">
                   <Button
@@ -104,16 +175,53 @@ export default function Navigation() {
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Show user avatar on mobile header when logged in */}
+            {/* Show user avatar dropdown on mobile header when logged in */}
             {!isLoading && isAuthenticated && user && (
-              <Link href="/portal/dashboard" data-testid="link-nav-profile-mobile">
-                <div 
-                  className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                  title={`Signed in as ${user.username}`}
-                >
-                  {userInitials}
-                </div>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div 
+                    className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                    data-testid="button-user-menu-mobile"
+                  >
+                    {userInitials}
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm font-medium">{user.username}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Status:</span>
+                        {getSubscriptionBadge(user.subscriptionStatus || "inactive")}
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setLocation("/portal/dashboard")}
+                    className="cursor-pointer"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setLocation("/portal/profile")}
+                    className="cursor-pointer"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Manage Account
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             
             <Button
@@ -144,23 +252,8 @@ export default function Navigation() {
               </Link>
             ))}
             
-            {/* Login/Profile link in mobile menu */}
-            {isLoading ? (
-              <Button variant="ghost" className="w-full justify-start text-foreground" disabled>
-                ...
-              </Button>
-            ) : isAuthenticated && user ? (
-              <Link href="/portal/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start text-foreground hover:text-primary ${
-                    location === "/portal/dashboard" ? "text-primary font-semibold" : ""
-                  }`}
-                >
-                  My Account ({userInitials})
-                </Button>
-              </Link>
-            ) : (
+            {/* Login link in mobile menu (only when not authenticated) */}
+            {!isLoading && !isAuthenticated && (
               <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant="ghost"
