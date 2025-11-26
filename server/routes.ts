@@ -883,9 +883,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Bridge/Hard Money CSV Template - focused fields for fix & flip loans
+  // Bridge/Fix & Flip CSV Template - focused fields for bridge loans only
   app.get("/api/loan-products/template/bridge", ensureLenderAuthenticated, async (req, res) => {
     try {
+      const instructionRow = '# LOAN TYPE: This template is for Bridge/Fix & Flip loans only. Leave loanType as 1.';
       const headers = [
         'productName',
         'loanType',
@@ -911,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exampleRows = [
         [
           'Bridge/Fix & Flip - Standard',
-          'bridge',
+          '1',
           'TRUE',
           '680',
           '75.00',
@@ -932,7 +933,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ],
         [
           'Bridge/Fix & Flip - Premium',
-          'bridge',
+          '1',
           'FALSE',
           '720',
           '80.00',
@@ -950,46 +951,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '14',
           '',
           'TRUE'
-        ],
-        [
-          'New Construction Loan',
-          'new-construction',
-          'FALSE',
-          '700',
-          '65.00',
-          '',
-          '9.00',
-          '',
-          '',
-          '2.00',
-          '',
-          '',
-          'TRUE',
-          '600.00',
-          '2000.00',
-          '300.00',
-          '30',
-          'https://example.com/apply',
-          'TRUE'
         ]
       ];
       
       const csv = [
+        instructionRow,
         headers.join(','),
         ...exampleRows.map(row => row.join(','))
       ].join('\n');
       
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="bridge-loan-products-template.csv"');
+      res.setHeader('Content-Disposition', 'attachment; filename="bridge-fix-flip-template.csv"');
       res.send(csv);
     } catch (error) {
       res.status(500).json({ error: "Failed to generate Bridge CSV template" });
     }
   });
 
-  // DSCR CSV Template - focused fields for rental property loans
+  // DSCR & New Construction CSV Template - for rental and new construction loans
   app.get("/api/loan-products/template/dscr", ensureLenderAuthenticated, async (req, res) => {
     try {
+      const instructionRow = '# LOAN TYPE: Enter 1 for DSCR Purchase | Enter 2 for DSCR Refi | Enter 3 for New Construction';
       const headers = [
         'productName',
         'loanType',
@@ -1012,7 +994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exampleRows = [
         [
           'DSCR Purchase - Standard',
-          'dscr-purchase',
+          '1',
           'TRUE',
           '700',
           '80.00',
@@ -1029,44 +1011,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'TRUE'
         ],
         [
-          'DSCR Purchase - Premium',
-          'dscr-purchase',
-          'FALSE',
-          '720',
-          '75.00',
-          '7.00',
-          '1.00',
-          '30',
-          '1.2',
-          'TRUE',
-          '400.00',
-          '800.00',
-          '',
-          '',
-          '',
-          'TRUE'
-        ],
-        [
-          'DSCR Refi - No Cash Out',
-          'dscr-refi',
-          'TRUE',
-          '680',
-          '75.00',
-          '7.25',
-          '1.25',
-          '30',
-          '1.0',
-          'TRUE',
-          '450.00',
-          '900.00',
-          'FALSE',
-          '',
-          '',
-          'TRUE'
-        ],
-        [
           'DSCR Refi - Cash Out',
-          'dscr-refi',
+          '2',
           'FALSE',
           '720',
           '75.00',
@@ -1081,16 +1027,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '70.00',
           '',
           'TRUE'
+        ],
+        [
+          'New Construction Loan',
+          '3',
+          'FALSE',
+          '700',
+          '65.00',
+          '9.00',
+          '2.00',
+          '',
+          '',
+          'TRUE',
+          '600.00',
+          '2000.00',
+          '',
+          '',
+          'https://example.com/apply',
+          'TRUE'
         ]
       ];
       
       const csv = [
+        instructionRow,
         headers.join(','),
         ...exampleRows.map(row => row.join(','))
       ].join('\n');
       
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="dscr-loan-products-template.csv"');
+      res.setHeader('Content-Disposition', 'attachment; filename="dscr-new-construction-template.csv"');
       res.send(csv);
     } catch (error) {
       res.status(500).json({ error: "Failed to generate DSCR CSV template" });
@@ -1284,6 +1249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         columns: true,
         skip_empty_lines: true,
         trim: true,
+        comment: '#', // Skip instruction rows starting with #
       });
 
       if (records.length > 1000) {
@@ -1327,9 +1293,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return num;
           };
 
+          // Convert numeric codes to loan types (from CSV templates)
+          // Bridge template: 1 = bridge
+          // DSCR template: 1 = dscr-purchase, 2 = dscr-refi, 3 = new-construction
+          const numericToLoanType: Record<string, string> = {
+            '1': 'bridge', // Default for bridge template, but DSCR template overrides based on context
+          };
+          const dscrNumericToLoanType: Record<string, string> = {
+            '1': 'dscr-purchase',
+            '2': 'dscr-refi', 
+            '3': 'new-construction',
+          };
           const validLoanTypes = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction'];
           const rawLoanType = record.loanType ? String(record.loanType).trim().toLowerCase() : 'bridge';
-          const loanType = validLoanTypes.includes(rawLoanType) ? rawLoanType : 'bridge';
+          
+          let loanType: string;
+          if (validLoanTypes.includes(rawLoanType)) {
+            // Already a valid string loan type
+            loanType = rawLoanType;
+          } else if (rawLoanType === '1' && record.loanTermYears) {
+            // If it's "1" and has loanTermYears, it's from DSCR template
+            loanType = 'dscr-purchase';
+          } else if (dscrNumericToLoanType[rawLoanType] && (record.loanTermYears || record.minDscrRequired || rawLoanType === '3')) {
+            // DSCR template numeric codes (1, 2, 3) with DSCR-specific fields
+            loanType = dscrNumericToLoanType[rawLoanType];
+          } else if (rawLoanType === '1') {
+            // Default "1" without DSCR fields = bridge
+            loanType = 'bridge';
+          } else {
+            // Default fallback
+            loanType = 'bridge';
+          }
 
           const productData = {
             lenderId,

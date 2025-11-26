@@ -291,14 +291,14 @@ export default function LenderLoanProducts() {
                 onClick={() => window.open('/api/loan-products/template/bridge', '_blank')}
                 data-testid="button-download-bridge-template"
               >
-                Bridge/Hard Money Template
+                Fix & Flip Template
               </Button>
               <Button
                 variant="outline"
                 onClick={() => window.open('/api/loan-products/template/dscr', '_blank')}
                 data-testid="button-download-dscr-template"
               >
-                DSCR Template
+                DSCR / New Construction Template
               </Button>
               <div>
                 <input
