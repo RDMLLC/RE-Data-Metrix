@@ -18,7 +18,7 @@ import {
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
 import { TrendingUp, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getUtilityCostPerSqFt } from "@shared/data/utility-costs";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 
@@ -58,6 +58,12 @@ export default function Step4HoldingPeriodExit({
   const closingCostsSellPercent = form.watch("closingCostsSellPercent") || 1;
   const realEstateCommissionPercent = form.watch("realEstateCommissionPercent") || 6;
 
+  // Track previous values using refs to detect changes for recalculation
+  const prevPurchasePriceRef = useRef<number>(purchasePrice);
+  const prevArvRef = useRef<number>(arv);
+  const isInitializedRef = useRef<boolean>(false);
+
+  // Initial setup of default values (runs once on mount)
   useEffect(() => {
     if (!form.getValues("attorneyFees")) {
       form.setValue("attorneyFees", 750);
@@ -93,7 +99,30 @@ export default function Step4HoldingPeriodExit({
     if (!form.getValues("realEstateCommissionPercent")) {
       form.setValue("realEstateCommissionPercent", 6);
     }
-  }, [form, purchasePrice, state, sqft, arv]);
+    
+    // Mark as initialized after first render
+    isInitializedRef.current = true;
+  }, [form, state, sqft]);
+
+  // Recalculate Title Insurance when Purchase Price changes
+  useEffect(() => {
+    if (isInitializedRef.current && purchasePrice !== prevPurchasePriceRef.current) {
+      form.setValue("titleInsurance", Math.round(purchasePrice * 0.012));
+      prevPurchasePriceRef.current = purchasePrice;
+    }
+  }, [purchasePrice, form]);
+
+  // Update Sell Price when ARV changes (if user hasn't manually overridden)
+  useEffect(() => {
+    if (isInitializedRef.current && arv !== prevArvRef.current) {
+      const currentSellPrice = form.getValues("sellPrice");
+      // Only update if sell price still equals the previous ARV (user hasn't manually changed it)
+      if (currentSellPrice === prevArvRef.current || !currentSellPrice) {
+        form.setValue("sellPrice", arv);
+      }
+      prevArvRef.current = arv;
+    }
+  }, [arv, form]);
 
   const totalProjectCost = purchasePrice + rehabBudget;
   
@@ -178,7 +207,10 @@ export default function Step4HoldingPeriodExit({
                         {formatCurrency(estimatedClosingCostsBuy)} total
                       </CardDescription>
                     </div>
-                    <ChevronDown className={`h-5 w-5 transition-transform ${closingCostsOpen ? 'rotate-180' : ''}`} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Expand for details or to make changes</span>
+                      <ChevronDown className={`h-5 w-5 transition-transform ${closingCostsOpen ? 'rotate-180' : ''}`} />
+                    </div>
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
@@ -304,7 +336,10 @@ export default function Step4HoldingPeriodExit({
                         {formatCurrency(estimatedCarryingCosts)} total
                       </CardDescription>
                     </div>
-                    <ChevronDown className={`h-5 w-5 transition-transform ${carryingCostsOpen ? 'rotate-180' : ''}`} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Expand for details or to make changes</span>
+                      <ChevronDown className={`h-5 w-5 transition-transform ${carryingCostsOpen ? 'rotate-180' : ''}`} />
+                    </div>
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
@@ -446,22 +481,129 @@ export default function Step4HoldingPeriodExit({
             <CardHeader>
               <CardTitle className="text-lg">Exit Strategy</CardTitle>
               <CardDescription>
-                Expected sale price and costs
+                Adjust key variables to see real-time impact on profitability
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <FormField
+                  control={form.control}
+                  name="purchasePrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Purchase Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-purchase-price-exit"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="rehabBudget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rehab Budget</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-rehab-budget-exit"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="arv"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ARV (After Repair Value)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-arv-exit"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="projectLength"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Length (months)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="60"
+                          step="1"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-project-length-exit"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="sellPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimated Sell Price (ARV)</FormLabel>
+                      <FormLabel>Estimated Sell Price</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min="0"
-                          step="1000"
+                          step="any"
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) =>
@@ -472,6 +614,9 @@ export default function Step4HoldingPeriodExit({
                           data-testid="input-sell-price"
                         />
                       </FormControl>
+                      <FormDescription>
+                        Defaults to ARV
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
