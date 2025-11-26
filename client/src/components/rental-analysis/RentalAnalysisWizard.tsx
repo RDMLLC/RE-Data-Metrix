@@ -3,8 +3,7 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Phone, Mail, Globe, Clock, Percent, Building, ArrowLeft, Loader2, ExternalLink, QrCode } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Building, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
@@ -363,56 +362,16 @@ export default function RentalAnalysisWizard() {
                         </div>
                       </div>
 
-                      {/* Quick Apply Row */}
-                      <div className="border-t pt-4 mt-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                            {lender.contactName && (
-                              <span>Contact: {lender.contactName}</span>
-                            )}
-                            {lender.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" /> {lender.phone}
-                              </span>
-                            )}
-                            {lender.email && (
-                              <span className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" /> {lender.email}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-4 flex-wrap">
-                            {lender.referralLink && (
-                              <>
-                                <div className="flex flex-col items-center gap-1">
-                                  <QRCodeSVG 
-                                    value={lender.referralLink} 
-                                    size={64}
-                                    level="M"
-                                    bgColor="transparent"
-                                    fgColor="currentColor"
-                                    data-testid={`qr-code-${lender.productId}`}
-                                  />
-                                  <span className="text-[10px] text-muted-foreground">Scan to apply</span>
-                                </div>
-                                <Button asChild data-testid={`button-apply-${lender.productId}`}>
-                                  <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
-                                    Apply Now <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                              </>
-                            )}
-                            {lender.website && (
-                              <Button variant="outline" asChild data-testid={`button-website-${lender.productId}`}>
-                                <a href={lender.website} target="_blank" rel="noopener noreferrer" className="gap-2">
-                                  <Globe className="h-4 w-4" /> Website
-                                </a>
-                              </Button>
-                            )}
-                          </div>
+                      {/* Apply Now Button */}
+                      {lender.referralLink && (
+                        <div className="border-t pt-4 mt-4 flex justify-end">
+                          <Button asChild size="lg" data-testid={`button-apply-${lender.productId}`}>
+                            <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
+                              Apply Now <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
                         </div>
-                      </div>
+                      )}
                     </Card>
                   );
                 })}

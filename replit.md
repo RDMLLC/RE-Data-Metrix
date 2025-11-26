@@ -1,121 +1,40 @@
 # RE Data Metrix
 
 ## Overview
-
-RE Data Metrix is a real estate investment analytics and financing platform connecting investors with lenders. Its primary purpose is to provide advanced profitability analysis, compare diverse financing options, and facilitate direct lender engagement through a streamlined application process. The platform offers sophisticated deal analysis tools and simplifies the lending application workflow, aiming to streamline real estate investment and financing.
+RE Data Metrix is a real estate investment analytics and financing platform designed to connect investors with lenders. It provides advanced profitability analysis, compares diverse financing options, and facilitates direct lender engagement through a streamlined application process. The platform aims to simplify real estate investment and financing by offering sophisticated deal analysis tools and a smooth lending application workflow. Its core capabilities include comprehensive deal analysis, multi-option financing comparisons, and a direct conduit to lenders. The business vision is to become a leading platform for real estate investment and financing, offering significant market potential by streamlining a complex process for both investors and lenders.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language
 Spelling: American English (analyze, not analyse)
-
-### Navigation Requirements
-- When logged out: "Login" appears as a regular navigation link that takes users to /login
-- When logged in: User initials appear as a clickable avatar that opens a dropdown menu with:
-  - Username, email, and subscription status badge
-  - Dashboard link
-  - Manage Account link
-  - Logout option
-- Mobile: Same dropdown behavior on user initials, hamburger menu for nav links
 
 ## System Architecture
 
 ### Frontend
-
-The frontend is built with React and TypeScript, utilizing Vite for bundling. It employs `shadcn/ui` (New York style) with Radix UI primitives and Tailwind CSS for a professional design. Wouter manages client-side routing. State management and data fetching are handled by React Query, while forms are managed with react-hook-form and Zod validation. Key features include marketing pages, authentication, a lender portal, and a streamlined 5-step Deal Analysis Wizard for comprehensive property analysis (address, details, purchase/renovation, holding/exit with loan preferences, results). UI/UX design emphasizes a clean, professional aesthetic.
+The frontend is built with React and TypeScript, using Vite for bundling. It leverages `shadcn/ui` (New York style) with Radix UI and Tailwind CSS for a professional design. Wouter manages client-side routing. State management and data fetching are handled by React Query, while forms utilize react-hook-form and Zod validation. Key features include marketing pages, authentication, a lender portal, and a 5-step Deal Analysis Wizard.
 
 ### Backend
-
-The backend is developed with Node.js and Express.js, providing a RESTful API. It includes an abstracted storage interface with an in-memory implementation for CRUD operations on lender questionnaires and loan products. The system is designed for PostgreSQL for session management and data persistence. Server-side validation uses Zod schemas for all API endpoints.
+The backend is developed with Node.js and Express.js, providing a RESTful API. It features an abstracted storage interface with an in-memory implementation for CRUD operations. PostgreSQL is used for session management and data persistence. All API endpoints use Zod schemas for server-side validation.
 
 ### Database
-
-PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users` (with email verification fields), `prelaunch_signups`, `lenders` (with archived boolean field), `lender_questionnaires`, `loan_products`, and `lender_referrals` for tracking investor referrals to lenders. Drizzle Kit handles schema migrations.
-
-### Email Integration (Zoho Mail)
-
-Transactional email system using Zoho Mail SMTP (smtppro.zoho.com:587):
-- **Email Verification**: Sent automatically on registration with 24-hour token expiry
-- **Welcome Email**: Sent after successful email verification
-- **Password Reset**: Secure token-based reset flow with 1-hour expiry
-- **Contact Form Confirmation**: Instant auto-reply to contact form submissions
-- **CRM Integration** (Future): Marketing/relationship emails handled by CRM
-- **Security**: All credentials stored as encrypted Replit secrets
+PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users`, `prelaunch_signups`, `lenders`, `lender_questionnaires`, `loan_products`, and `lender_referrals`. Drizzle Kit handles schema migrations.
 
 ### Authentication & Authorization
-
-Complete authentication infrastructure implemented with user and lender tables, session management, and email verification:
-- **Email Verification**: Required for all new user registrations via Zoho Mail SMTP
-- **Password Reset**: Secure token-based password recovery workflow
-- **Session Management**: Express sessions with PostgreSQL store
-- **Protected Routes**: Middleware-based authorization for user, lender, and admin access
-- **Login Page**: Features three entry points - main user login (center), Lender Portal (left panel), and Admin Portal (card below main login) with navy/gold design scheme
-- **Admin Credentials**: Email: info@redatametrix.com, Password: Admin123
-- **Test Password Convention**: All test users and lenders use password: TestPW123
-- **User Test Credentials**: Email: dan@greateratlhomebuyers.com, Password: TestPW123
-- **Lender Test Credentials**: Email: saleschef@gmail.com, Password: TestPW123
-- **Admin Portal**: Comprehensive dashboard at /admin/dashboard with Lender Management at /admin/lenders featuring:
-  - List all lenders with referral counts and status (Active/Pending/Archived)
-  - Delete lenders with zero referrals (transaction-wrapped cascade delete of loan products and questionnaires)
-  - Archive lenders with referrals (permanent preservation, cannot be deleted)
-  - Business rule enforcement: archived lenders cannot be deleted, only zero-referral lenders can be permanently removed
-  - All admin endpoints secured with ensureAdmin middleware checking user.role === 'admin'
-  - **Referral Fields**: Admin sets referralType and referralAmount during lender invite; these fields are visible to lenders (read-only in Company Info) but NOT visible to investors
-  - **Lender Detail Page**: Clickable lender cards navigate to /admin/lenders/:id showing complete profile with company info, referral configuration, questionnaire responses, all loan products, and referral history
-- **Lender Portal**: Comprehensive loan product management at /lender-dashboard featuring:
-  - Add, edit, and delete individual loan products with full form validation
-  - CSV bulk import/export for batch product management
-  - Edit mode allows updating existing products with form pre-population
-  - **Loan Type Categorization**: Four loan types with dynamic conditional fields:
-    - **Bridge/Hard Money** (default): Full fields including rehab, ARV, draw costs
-    - **DSCR Purchase**: Simplified fields (no rehab/ARV/draw costs) + Term (15/20/25/30 years) + Min DSCR Required
-    - **DSCR Refinance**: Same as purchase + cash-out toggle and max LTV when enabled + Term + Min DSCR Required
-    - **New Construction**: Referral link field for direct lender applications
-  - **DSCR Loan Product Fields**: loanTermYears (loan amortization period) and minDscrRequired (lender's minimum DSCR threshold) for DSCR products
-  - **CSV Bulk Import**: Updated template includes loanTermYears and minDscrRequired columns for DSCR products
-  - **Preferred Lender Status**: Admin-toggled flag that prioritizes lenders in Ground-Up results
-- **Ground-Up / New Construction Flow**: Deal Analysis Step 1 includes a link for ground-up projects that opens a modal allowing investors to:
-  - Select property state
-  - Enter estimated loan amount
-  - View top 2 new construction lenders (prioritizing preferred lenders, then by referral fee)
-  - Apply directly via lender referral links
-- **Member Portal**: Dashboard-first navigation at /portal/dashboard featuring:
-  - Welcome header with subscription status badge
-  - 2x3 grid layout with 6 cards:
-    - Row 1: Deals Analyzed (clickable to history), Start Deal Analysis, Saved Lenders
-    - Row 2: Search Lenders, Tools & Resources, Refer & Earn (with referral code + 2 months free explanation)
-  - Profile sub-page at /portal/profile for account settings (username, email, password)
-  - All authenticated user redirects (login, register, home) go to /portal/dashboard
-  - User initials in navigation open dropdown with account info and actions
-  - Responsive layout: 1 column mobile, 2 columns tablet, 3 columns desktop
+The platform includes a complete authentication system with user and lender tables, session management, and email verification via Zoho Mail SMTP. It supports password reset functionality and uses Express sessions with a PostgreSQL store. Middleware-based authorization protects routes for user, lender, and admin access. The login page provides distinct entry points for main users, lenders, and administrators. An Admin Portal offers comprehensive lender management, including listing, archiving, and deleting lenders, along with managing referral configurations. A Lender Portal allows for comprehensive loan product management, including adding, editing, deleting, and bulk importing loan products, categorized into Bridge/Hard Money, DSCR Purchase, DSCR Refinance, and New Construction. A Member Portal provides a dashboard with access to deals analyzed, deal analysis initiation, saved lenders, lender search, tools, and a referral program.
 
 ### Membership Access Control
-
-Subscription-based access system restricts premium features to paying members:
-- **Subscriber Status**: `isSubscriber` in AuthContext checks if user has subscriptionStatus of 'active', 'referral_trial', or 'comped'
-- **Paywall Component**: `MembershipPaywall` displays lock icon, benefits list, and login/register CTAs
-- **Protected Features** (require subscription):
-  - Deal Analysis wizard step 5 (Results with lender comparison)
-  - Loan Types education page
-  - Rental Analysis wizard
-  - Toolbox/Resources affiliate program tabs (About and Glossary remain free)
-- **Loading State Handling**: All protected pages show loading spinner while auth state resolves to prevent flash-of-paywall for legitimate subscribers
+A subscription-based access system restricts premium features to paying members. A `MembershipPaywall` component displays a lock icon and benefits for protected features like the Deal Analysis wizard's results, loan types education, rental analysis, and certain Toolbox/Resources tabs.
 
 ### Form Handling & Validation
-
-Client-side validation is performed using react-hook-form and Zod. All API endpoints include comprehensive server-side Zod schema validation. The system supports various forms, including prelaunch signups, contact forms, detailed lender questionnaires, and loan product entry forms.
+Client-side validation is performed using react-hook-form and Zod, complemented by comprehensive server-side Zod schema validation for all API endpoints.
 
 ### Build & Deployment
-
-Vite is used for development and client-side production builds, while esbuild handles the Express server build. Path aliases support a monorepo structure comprising `/client`, `/server`, `/shared`, and `/attached_assets`.
+Vite is used for frontend development and production builds, while esbuild handles the Express server build. Path aliases support a monorepo structure.
 
 ### Feature Specifications
-
-The platform includes comprehensive loan type education, intelligent lender filtering with deep linking, and a consolidated rental analysis experience. It integrates Zillow RentZestimate for automatic rent estimations and provides detailed deal analysis and loan comparison services. Educational content is a core component, accessible through dedicated pages and within the deal analysis workflow. UX improvements focus on data persistence, clear navigation, and user-friendly input methods (e.g., manual address entry, HOA fields). Loan calculations are robust, providing complete cash sale and loan comparison metrics.
+The platform includes loan type education, intelligent lender filtering with deep linking, and a consolidated rental analysis experience. It integrates Zillow RentZestimate for automatic rent estimations and provides detailed deal analysis and loan comparison services. Educational content is a core component. UX improvements focus on data persistence, clear navigation, and user-friendly input methods. Loan calculations provide complete cash sale and loan comparison metrics. The Toolbox & Resources section offers curated affiliate programs and a searchable glossary of real estate investment terms.
 
 ### DSCR Lender Matching (Rental Analysis)
-
-The Rental Analysis flow includes intelligent DSCR lender matching using actual loan products (not questionnaires):
+The Rental Analysis flow includes intelligent DSCR lender matching using actual loan products:
 - **Endpoint**: `/api/dscr-lenders` filters DSCR products by state using lender_questionnaires.states_serviced
 - **Calculation Logic**: 
   - DSCR Purchase: Loan amount = purchasePrice × LTV
@@ -124,70 +43,50 @@ The Rental Analysis flow includes intelligent DSCR lender matching using actual 
 - **Per-Product Display**: Each lender product shows calculated DSCR, loan amount, interest rate, term, LTV, points, and full PITIA breakdown
 - **Sorting**: Products ranked by best DSCR (highest first)
 - **Warnings**: Alert shown when calculated DSCR is below lender's minimum DSCR requirement
-- **Quick Apply**: Apply Now buttons with referral links + QR codes for mobile scanning
-- **Data Normalization**: All numeric values (interestRate, points, maxLtvBuy, loanTermYears, minDscrRequired) normalized via Number() coercion before calculations and display
-
-The Toolbox & Resources section provides investors with curated affiliate programs and a comprehensive investment glossary. Features include tabbed navigation with 5 affiliate categories (Marketplace & Community, Property Management, Project Management, Lead Generation, Comps & Data), 8 vetted partner programs with detailed descriptions and benefits, and a searchable glossary of 44 essential real estate investment terms organized into 7 collapsible categories.
+- **Quick Apply**: Single "Apply Now" button per product with referral link (QR codes reserved for future PDF export)
+- **Data Normalization**: All numeric values normalized via Number() coercion before calculations and display
 
 ## External Dependencies
 
 ### Database Service
-- **Neon Serverless PostgreSQL**
+- Neon Serverless PostgreSQL
 
 ### UI Component Libraries
-- **Radix UI**
-- **shadcn/ui**
-- **Lucide React**
+- Radix UI
+- shadcn/ui
+- Lucide React
 
 ### Frontend Libraries
-- **React Query**
-- **Wouter**
-- **React Hook Form**
-- **Zod**
-- **date-fns**
-- **Tailwind CSS**
-- **class-variance-authority**
+- React Query
+- Wouter
+- React Hook Form
+- Zod
+- date-fns
+- Tailwind CSS
+- class-variance-authority
 
 ### Development Tools
-- **TypeScript**
-- **Vite**
-- **esbuild**
-- **PostCSS**
+- TypeScript
+- Vite
+- esbuild
+- PostCSS
 
 ## Future Tasks & Backlog
 
-This section tracks features, improvements, and fixes to be implemented in future sessions. Tasks are organized by priority.
-
-### High Priority
-- **Page Scroll Position**: Ensure all page loads show the top of the page so users don't have to scroll up to see content
-  - **Context**: Currently some page navigations land partway down the page
-  - **Impact**: Better UX, eliminates confusion when navigating between pages
-  - **Scope**: Review all route changes and page loads, add scroll restoration logic
-
-- **Password Visibility Toggle**: Add show/hide password option to all password input fields
-  - **Context**: Password reset forms and all password fields currently don't allow users to verify what they've typed
-  - **Impact**: Better UX, reduces password entry errors, improves accessibility
-  - **Scope**: Add eye icon toggle to password reset forms (user & lender), login forms, registration forms, and any future password inputs
-
-- **Configure SPF/DKIM Records for Email Deliverability**: Set up domain authentication to prevent Gmail from blocking/spam-filtering emails
-  - **Context**: Emails are being sent successfully to Zoho SMTP and appear in Sent folder, but Gmail blocks or spam-filters them due to missing SPF/DKIM records on redatametrix.com domain
-  - **Impact**: Critical for production - users cannot receive password resets, lender invites, or other transactional emails reliably
-  - **Scope**: Add SPF, DKIM, and DMARC DNS records to redatametrix.com domain registrar (external task - requires domain DNS access, not code changes)
-  - **Resources**: Zoho Mail provides specific DNS records to add - https://www.zoho.com/mail/help/adminconsole/spf-configuration.html
+This section tracks features, improvements, and fixes to be implemented in future sessions.
 
 ### Medium Priority
-- **Lender Logout Button**: Add a logout button for lenders in the Lender Portal
-  - **Context**: Lenders currently don't have an obvious way to log out of their portal session
-  - **Impact**: Better security and user control, allows lenders to properly end their session
-  - **Scope**: Add logout button to lender portal navigation/header, implement logout endpoint if needed
-
-### Low Priority
-- **Add District of Columbia to States List**: Include DC as an option in state selection dropdowns
-  - **Context**: Currently only includes 50 states, missing District of Columbia
-  - **Impact**: Better data accuracy for DC-based properties and users
-  - **Scope**: Update state lists in property address forms, user registration, and lender location fields
+- **BRRRR Analysis**: Full Buy-Rehab-Rent-Refinance-Repeat strategy modeling
+  - **Context**: Investors often use bridge/hard money loans for acquisition and rehab, then refinance into a long-term DSCR loan once the property is stabilized and rented
+  - **Impact**: Shows the complete financing picture including: Phase 1 (Bridge loan for purchase + rehab), Phase 2 (DSCR refi to pay off bridge loan), and potential cash-out if all-in cost is below refi LTV threshold
+  - **Scope**: 
+    - Connect Deal Analysis (bridge loan) with Rental Analysis (DSCR refi) in a unified view
+    - Calculate "all-in" cost (purchase + rehab) vs. ARV
+    - Show equity position at refi: cash back if all-in ≤ 70% and refi LTV is 75%, or additional cash needed to close
+    - Display both loan phases with costs and timelines
+  - **Dependencies**: Requires more populated lender database and lender input before implementation
+  - **Future PDF Export**: Include QR codes for lender referral links in downloadable PDF version
 
 ### Notes
 - Tasks added here persist across sessions
-- At the start of each build session, agent will review backlog and ask which tasks to tackle
 - New ideas can be added anytime without immediate implementation pressure
