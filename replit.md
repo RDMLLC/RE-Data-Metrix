@@ -68,9 +68,11 @@ Complete authentication infrastructure implemented with user and lender tables, 
   - Edit mode allows updating existing products with form pre-population
   - **Loan Type Categorization**: Four loan types with dynamic conditional fields:
     - **Bridge/Hard Money** (default): Full fields including rehab, ARV, draw costs
-    - **DSCR Purchase**: Simplified fields (no rehab/ARV/draw costs)
-    - **DSCR Refinance**: Same as purchase + cash-out toggle and max LTV when enabled
+    - **DSCR Purchase**: Simplified fields (no rehab/ARV/draw costs) + Term (15/20/25/30 years) + Min DSCR Required
+    - **DSCR Refinance**: Same as purchase + cash-out toggle and max LTV when enabled + Term + Min DSCR Required
     - **New Construction**: Referral link field for direct lender applications
+  - **DSCR Loan Product Fields**: loanTermYears (loan amortization period) and minDscrRequired (lender's minimum DSCR threshold) for DSCR products
+  - **CSV Bulk Import**: Updated template includes loanTermYears and minDscrRequired columns for DSCR products
   - **Preferred Lender Status**: Admin-toggled flag that prioritizes lenders in Ground-Up results
 - **Ground-Up / New Construction Flow**: Deal Analysis Step 1 includes a link for ground-up projects that opens a modal allowing investors to:
   - Select property state
@@ -110,6 +112,20 @@ Vite is used for development and client-side production builds, while esbuild ha
 ### Feature Specifications
 
 The platform includes comprehensive loan type education, intelligent lender filtering with deep linking, and a consolidated rental analysis experience. It integrates Zillow RentZestimate for automatic rent estimations and provides detailed deal analysis and loan comparison services. Educational content is a core component, accessible through dedicated pages and within the deal analysis workflow. UX improvements focus on data persistence, clear navigation, and user-friendly input methods (e.g., manual address entry, HOA fields). Loan calculations are robust, providing complete cash sale and loan comparison metrics.
+
+### DSCR Lender Matching (Rental Analysis)
+
+The Rental Analysis flow includes intelligent DSCR lender matching using actual loan products (not questionnaires):
+- **Endpoint**: `/api/dscr-lenders` filters DSCR products by state using lender_questionnaires.states_serviced
+- **Calculation Logic**: 
+  - DSCR Purchase: Loan amount = purchasePrice × LTV
+  - DSCR Refi: Loan amount = ARV × LTV
+  - DSCR = Monthly Rent ÷ Total PITIA (P&I + Taxes + Insurance + HOA)
+- **Per-Product Display**: Each lender product shows calculated DSCR, loan amount, interest rate, term, LTV, points, and full PITIA breakdown
+- **Sorting**: Products ranked by best DSCR (highest first)
+- **Warnings**: Alert shown when calculated DSCR is below lender's minimum DSCR requirement
+- **Quick Apply**: Apply Now buttons with referral links + QR codes for mobile scanning
+- **Data Normalization**: All numeric values (interestRate, points, maxLtvBuy, loanTermYears, minDscrRequired) normalized via Number() coercion before calculations and display
 
 The Toolbox & Resources section provides investors with curated affiliate programs and a comprehensive investment glossary. Features include tabbed navigation with 5 affiliate categories (Marketplace & Community, Property Management, Project Management, Lead Generation, Comps & Data), 8 vetted partner programs with detailed descriptions and benefits, and a searchable glossary of 44 essential real estate investment terms organized into 7 collapsible categories.
 
