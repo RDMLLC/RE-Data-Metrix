@@ -36,6 +36,7 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 import LenderManagement from "@/pages/admin/LenderManagement";
 import AdminLenderDetail from "@/pages/admin/LenderDetail";
 import AdminReports from "@/pages/admin/Reports";
+import AdminCompUsers from "@/pages/admin/CompUsers";
 import LenderProfile from "@/pages/LenderProfile";
 import VerifyEmail from "@/pages/VerifyEmail";
 import RequestPasswordReset from "@/pages/RequestPasswordReset";
@@ -105,6 +106,7 @@ function Router() {
       <Route path="/admin/lenders/:id" component={AdminLenderDetail} />
       <Route path="/admin/lenders" component={LenderManagement} />
       <Route path="/admin/reports" component={AdminReports} />
+      <Route path="/admin/comp-users" component={AdminCompUsers} />
       <Route path="/admin/lender-invite" component={LenderInvite} />
       <Route component={NotFound} />
     </Switch>

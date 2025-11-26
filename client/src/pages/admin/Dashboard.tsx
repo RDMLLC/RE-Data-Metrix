@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift } from "lucide-react";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -184,6 +184,26 @@ export default function AdminDashboard() {
               <CardContent>
                 <CardDescription>
                   View platform metrics, usage statistics, and performance data
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/admin/comp-users")}
+              data-testid="card-comp-users"
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                    <Gift className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <CardTitle>Comp Users</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Invite beta testers with complimentary premium access
                 </CardDescription>
               </CardContent>
             </Card>
