@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { WizardFormData } from "./DealAnalysisWizard";
@@ -6,11 +6,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { usePDF } from "react-to-pdf";
+import { QRCodeSVG } from "qrcode.react";
 import Step6CriteriaSelection from "./Step6CriteriaSelection";
 import type { LoanCriteria } from "@shared/schema";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -68,7 +71,7 @@ interface ResultsResponse {
 export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { updatePropertyData, updateInvestorData, wizardData } = useWizardData();
+  const { updatePropertyData, wizardData } = useWizardData();
   const [showCriteriaSelection, setShowCriteriaSelection] = useState(true);
   const [criteriaSelected, setCriteriaSelected] = useState(false);
   const [useDefaultCriteria, setUseDefaultCriteria] = useState(true);
@@ -77,11 +80,48 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const [visibleLenderCount, setVisibleLenderCount] = useState(3);
   const [results, setResults] = useState<ResultsResponse | null>(null);
   
+  // Editable fields for on-the-fly scenario changes
+  const [editBuyPrice, setEditBuyPrice] = useState<number>(0);
+  const [editRehab, setEditRehab] = useState<number>(0);
+  const [editProjectLength, setEditProjectLength] = useState<number>(6);
+  
   // Collapsible section states
   const [showLoanTerms, setShowLoanTerms] = useState(true);
   const [showProjectCosts, setShowProjectCosts] = useState(false);
   const [showCostsCarrying, setShowCostsCarrying] = useState(false);
   const [showExitMetrics, setShowExitMetrics] = useState(false);
+
+  // PDF generation
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const { toPDF, targetRef } = usePDF({
+    filename: 'loan-comparison-results.pdf',
+    method: 'save',
+    resolution: 3,
+    page: {
+      margin: 10,
+      format: 'letter',
+      orientation: 'landscape',
+    },
+    canvas: {
+      mimeType: 'image/png',
+      qualityRatio: 1,
+    },
+    overrides: {
+      pdf: { compress: true },
+      canvas: { useCORS: true },
+    }
+  });
+
+  // Reference for scrolling to new loans
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize editable fields from form data
+  useEffect(() => {
+    const formData = form.getValues();
+    setEditBuyPrice(formData.purchasePrice || 0);
+    setEditRehab(formData.rehabBudget || 0);
+    setEditProjectLength(formData.projectLength || 6);
+  }, [form]);
 
   const calculateResultsMutation = useMutation<ResultsResponse, Error, any>({
     mutationFn: async (payload: any) => {
@@ -100,30 +140,30 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
     },
   });
 
-  const handleCriteriaSelected = (
+  const buildPayload = (
     useDefault: boolean,
     primary?: LoanCriteria,
-    secondary?: LoanCriteria
+    secondary?: LoanCriteria,
+    overridePurchasePrice?: number,
+    overrideRehabBudget?: number,
+    overrideProjectLength?: number
   ) => {
-    setUseDefaultCriteria(useDefault);
-    setPrimaryCriteria(primary);
-    setSecondaryCriteria(secondary);
-    setShowCriteriaSelection(false);
-    setCriteriaSelected(true);
-
     const formData = form.getValues();
+    
+    const purchasePrice = overridePurchasePrice ?? formData.purchasePrice ?? 0;
+    const rehabBudget = overrideRehabBudget ?? formData.rehabBudget ?? 0;
+    const projectLength = overrideProjectLength ?? formData.projectLength ?? 6;
     
     const monthlyInsurance = (formData.annualInsurance || 0) / 12;
     const monthlyUtilities = formData.monthlyUtilities || 0;
-    const monthlyPropertyTax = ((formData.taxAssessedValue || formData.purchasePrice || 0) * 0.012) / 12;
+    const monthlyPropertyTax = ((formData.taxAssessedValue || purchasePrice) * 0.012) / 12;
     const monthlyHoa = formData.hoaFees || 0;
-    const projectLength = formData.projectLength || 6;
     const totalCarryingCosts = (monthlyInsurance + monthlyUtilities + monthlyPropertyTax + monthlyHoa) * projectLength;
     
-    const payload = {
+    return {
       dealInputs: {
-        purchasePrice: formData.purchasePrice || 0,
-        rehabBudget: formData.rehabBudget || 0,
+        purchasePrice: purchasePrice,
+        rehabBudget: rehabBudget,
         arv: formData.arv || 0,
         projectLength: projectLength,
         closingCostsBuy: (formData.attorneyFees || 0) + (formData.docPrepFees || 0) + 
@@ -159,7 +199,32 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
       numberOfDraws: 3,
       excludeProductIds: [],
     };
+  };
 
+  const handleCriteriaSelected = (
+    useDefault: boolean,
+    primary?: LoanCriteria,
+    secondary?: LoanCriteria
+  ) => {
+    setUseDefaultCriteria(useDefault);
+    setPrimaryCriteria(primary);
+    setSecondaryCriteria(secondary);
+    setShowCriteriaSelection(false);
+    setCriteriaSelected(true);
+
+    const payload = buildPayload(useDefault, primary, secondary);
+    calculateResultsMutation.mutate(payload);
+  };
+
+  const handleRecalculate = () => {
+    const payload = buildPayload(
+      useDefaultCriteria,
+      primaryCriteria,
+      secondaryCriteria,
+      editBuyPrice,
+      editRehab,
+      editProjectLength
+    );
     calculateResultsMutation.mutate(payload);
   };
 
@@ -178,12 +243,26 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
 
   const handleViewMoreLoans = () => {
     if (results && visibleLenderCount < results.lenderColumns.length) {
+      const previousCount = visibleLenderCount;
       setVisibleLenderCount(prev => Math.min(prev + 3, results.lenderColumns.length));
+      
+      // Scroll to show newly loaded loans after state updates
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          // Calculate approximate position of new columns
+          const scrollWidth = scrollContainerRef.current.scrollWidth;
+          const clientWidth = scrollContainerRef.current.clientWidth;
+          // Scroll to show the newly added columns
+          scrollContainerRef.current.scrollTo({
+            left: scrollWidth - clientWidth,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
     }
   };
 
   const handleNavigateToRentalAnalysis = () => {
-    // Save current form data to WizardDataContext and localStorage before navigating
     const formData = form.getValues();
     
     const updatedWizardData = {
@@ -218,14 +297,12 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
       timestamp: Date.now(),
     };
     
-    // Save to localStorage synchronously before navigation
     try {
       localStorage.setItem('redatametrix_wizard_data', JSON.stringify(updatedWizardData));
     } catch (error) {
       console.error('Failed to save wizard data to localStorage:', error);
     }
     
-    // Update context (this will also trigger the useEffect to save again, but that's ok)
     updatePropertyData({
       address: formData.address,
       city: formData.city,
@@ -298,9 +375,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
   const visibleLenders = results.lenderColumns.slice(0, visibleLenderCount);
   const hasMoreLenders = visibleLenderCount < results.lenderColumns.length;
 
+  // Solid background color classes for sticky columns (z-index 20 for first column, 15 for Cash Sale & Your Loan)
+  const stickyFirstColBase = "sticky left-0 z-20 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+  const stickyFirstColMuted = "sticky left-0 z-20 bg-muted shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+  const stickyFirstColAccent = "sticky left-0 z-20 bg-accent shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
+  
+  // Calculate left positions for sticky columns
+  // First column (Metric): ~160px, Cash Sale: ~90px, Your Loan: ~90px
+  const metricColWidth = 160;
+  const cashSaleColWidth = 100;
+  const yourLoanColWidth = 100;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Button
           type="button"
           variant="ghost"
@@ -312,31 +400,112 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
         </Button>
         
         <div className="flex gap-2">
-          {results.criteriaUsed.useDefaultCriteria ? (
-            <Badge>Default Criteria</Badge>
-          ) : (
-            <>
-              {results.criteriaUsed.primary && <Badge>Primary: {results.criteriaUsed.primary}</Badge>}
-              {results.criteriaUsed.secondary && <Badge variant="secondary">Secondary: {results.criteriaUsed.secondary}</Badge>}
-            </>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toPDF()}
+            data-testid="button-download-pdf"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download PDF
+          </Button>
         </div>
       </div>
 
-      <Card>
+      {/* Editable Variables Section */}
+      <Card className="border-primary/20">
+        <CardContent className="pt-4">
+          <p className="text-sm font-medium text-muted-foreground mb-3">
+            Do you want to change any of the variables?
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="space-y-1">
+              <Label htmlFor="edit-buy-price" className="text-sm">Buy Price</Label>
+              <Input
+                id="edit-buy-price"
+                type="number"
+                value={editBuyPrice || ''}
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed)) setEditBuyPrice(parsed);
+                  else if (e.target.value === '') setEditBuyPrice(0);
+                }}
+                data-testid="input-edit-buy-price"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-rehab" className="text-sm">Rehab</Label>
+              <Input
+                id="edit-rehab"
+                type="number"
+                value={editRehab || ''}
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed)) setEditRehab(parsed);
+                  else if (e.target.value === '') setEditRehab(0);
+                }}
+                data-testid="input-edit-rehab"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-project-length" className="text-sm">Project Length (months)</Label>
+              <Input
+                id="edit-project-length"
+                type="number"
+                value={editProjectLength || ''}
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed)) setEditProjectLength(parsed);
+                  else if (e.target.value === '') setEditProjectLength(6);
+                }}
+                data-testid="input-edit-project-length"
+              />
+            </div>
+            <Button 
+              onClick={handleRecalculate}
+              disabled={calculateResultsMutation.isPending}
+              data-testid="button-recalculate"
+            >
+              {calculateResultsMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Recalculate
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card ref={targetRef}>
         <CardHeader>
           <CardTitle>Loan Comparison Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto relative">
+          <div className="overflow-x-auto relative" ref={scrollContainerRef}>
             <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 z-10 bg-background min-w-[160px] after:absolute after:right-0 after:top-0 after:h-full after:w-px after:bg-border">Metric</TableHead>
-                  <TableHead className="text-center min-w-[90px]">Cash Sale</TableHead>
-                  {results.userLoanColumn && <TableHead className="text-center min-w-[90px]">Your Loan</TableHead>}
+                  <TableHead 
+                    className={`${stickyFirstColBase} min-w-[160px]`}
+                    style={{ minWidth: `${metricColWidth}px` }}
+                  >
+                    Metric
+                  </TableHead>
+                  <TableHead 
+                    className="text-center min-w-[100px] sticky z-10 bg-background"
+                    style={{ left: `${metricColWidth}px`, minWidth: `${cashSaleColWidth}px` }}
+                  >
+                    Cash Sale
+                  </TableHead>
+                  {results.userLoanColumn && (
+                    <TableHead 
+                      className="text-center min-w-[100px] sticky z-10 bg-background"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px`, minWidth: `${yourLoanColWidth}px` }}
+                    >
+                      Your Loan
+                    </TableHead>
+                  )}
                   {visibleLenders.map((lender, index) => (
-                    <TableHead key={index} className="text-center min-w-[100px] text-xs">
+                    <TableHead key={index} className="text-center min-w-[120px] text-xs">
                       {lender.lenderName || `Lender ${index + 1}`}
                     </TableHead>
                   ))}
@@ -344,62 +513,114 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
               </TableHeader>
               <TableBody>
                 {/* KEY METRICS - Always Visible */}
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">Est. Profit</TableCell>
-                  <TableCell className="text-center font-bold">{formatCurrency(results.cashSaleColumn.profit)}</TableCell>
+                <TableRow className="bg-muted">
+                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Est. Profit</TableCell>
+                  <TableCell 
+                    className="text-center font-bold sticky z-10 bg-muted"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatCurrency(results.cashSaleColumn.profit)}
+                  </TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center font-bold">{formatCurrency(results.userLoanColumn.profit)}</TableCell>
+                    <TableCell 
+                      className="text-center font-bold sticky z-10 bg-muted"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatCurrency(results.userLoanColumn.profit)}
+                    </TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.profit)}</TableCell>
                   ))}
                 </TableRow>
                 
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">Cash-on-Cash ROI</TableCell>
-                  <TableCell className="text-center font-bold">{formatPercent(results.cashSaleColumn.cashOnCashRoi)}</TableCell>
+                <TableRow className="bg-muted">
+                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Cash-on-Cash ROI</TableCell>
+                  <TableCell 
+                    className="text-center font-bold sticky z-10 bg-muted"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatPercent(results.cashSaleColumn.cashOnCashRoi)}
+                  </TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center font-bold">{formatPercent(results.userLoanColumn.cashOnCashRoi)}</TableCell>
+                    <TableCell 
+                      className="text-center font-bold sticky z-10 bg-muted"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatPercent(results.userLoanColumn.cashOnCashRoi)}
+                    </TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center font-bold">{formatPercent(lender.cashOnCashRoi)}</TableCell>
                   ))}
                 </TableRow>
                 
-                <TableRow className="bg-muted/50">
-                  <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">Annualized ROI</TableCell>
-                  <TableCell className="text-center font-bold">{formatPercent(results.cashSaleColumn.annualizedRoi)}</TableCell>
+                <TableRow className="bg-muted">
+                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Annualized ROI</TableCell>
+                  <TableCell 
+                    className="text-center font-bold sticky z-10 bg-muted"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatPercent(results.cashSaleColumn.annualizedRoi)}
+                  </TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center font-bold">{formatPercent(results.userLoanColumn.annualizedRoi)}</TableCell>
+                    <TableCell 
+                      className="text-center font-bold sticky z-10 bg-muted"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatPercent(results.userLoanColumn.annualizedRoi)}
+                    </TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center font-bold">{formatPercent(lender.annualizedRoi)}</TableCell>
                   ))}
                 </TableRow>
                 
-                <TableRow>
-                  <TableCell className="font-medium sticky left-0 z-10 bg-background">Est. Out of Pocket</TableCell>
-                  <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.outOfPocketCost)}</TableCell>
+                <TableRow className="bg-muted">
+                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Est. Out of Pocket</TableCell>
+                  <TableCell 
+                    className="text-center font-bold sticky z-10 bg-muted"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatCurrency(results.cashSaleColumn.outOfPocketCost)}
+                  </TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center">{formatCurrency(results.userLoanColumn.outOfPocketCost)}</TableCell>
+                    <TableCell 
+                      className="text-center font-bold sticky z-10 bg-muted"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatCurrency(results.userLoanColumn.outOfPocketCost)}
+                    </TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketCost)}</TableCell>
+                    <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.outOfPocketCost)}</TableCell>
                   ))}
                 </TableRow>
 
                 {/* LOAN TERMS Section Header */}
                 <TableRow 
-                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
                   onClick={() => setShowLoanTerms(!showLoanTerms)}
                   data-testid="section-header-loan-terms"
                 >
-                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                  <TableCell className={`font-semibold ${stickyFirstColAccent} flex items-center gap-2`}>
                     {showLoanTerms ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     Loan Terms
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground text-sm">-</TableCell>
-                  {results.userLoanColumn && <TableCell className="text-center text-sm">Custom</TableCell>}
+                  <TableCell 
+                    className="text-center text-muted-foreground text-sm sticky z-10 bg-accent/30"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    -
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center text-sm sticky z-10 bg-accent/30"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      Custom
+                    </TableCell>
+                  )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-xs">{lender.productName || 'N/A'}</TableCell>
                   ))}
@@ -407,11 +628,19 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 
                 {showLoanTerms && (
                   <>
-                    <TableRow className="bg-accent/10">
-                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Interest Rate</TableCell>
-                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Interest Rate</TableCell>
+                      <TableCell 
+                        className="text-center text-muted-foreground sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        -
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
                           {results.userLoanColumn.interestRate !== undefined && results.userLoanColumn.interestRate !== null
                             ? `${results.userLoanColumn.interestRate.toFixed(2)}%`
                             : 'N/A'}
@@ -426,11 +655,19 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                       ))}
                     </TableRow>
                     
-                    <TableRow className="bg-accent/10">
-                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Max LTV (Buy)</TableCell>
-                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Max LTV (Buy)</TableCell>
+                      <TableCell 
+                        className="text-center text-muted-foreground sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        -
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
                           {results.userLoanColumn.maxLtvBuy !== undefined && results.userLoanColumn.maxLtvBuy !== null
                             ? `${results.userLoanColumn.maxLtvBuy.toFixed(0)}%`
                             : 'N/A'}
@@ -445,11 +682,19 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                       ))}
                     </TableRow>
                     
-                    <TableRow className="bg-accent/10">
-                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Points</TableCell>
-                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Points</TableCell>
+                      <TableCell 
+                        className="text-center text-muted-foreground sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        -
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
                           {results.userLoanColumn.points !== undefined && results.userLoanColumn.points !== null
                             ? `${results.userLoanColumn.points.toFixed(2)}%`
                             : 'N/A'}
@@ -464,11 +709,19 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                       ))}
                     </TableRow>
                     
-                    <TableRow className="bg-accent/10">
-                      <TableCell className="font-medium sticky left-0 z-10 bg-accent/10 pl-8">Time to Close</TableCell>
-                      <TableCell className="text-center text-muted-foreground">-</TableCell>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Time to Close</TableCell>
+                      <TableCell 
+                        className="text-center text-muted-foreground sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        -
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
                           {results.userLoanColumn.timeToClose !== undefined && results.userLoanColumn.timeToClose !== null
                             ? `${results.userLoanColumn.timeToClose} days`
                             : 'N/A'}
@@ -487,16 +740,28 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 
                 {/* PROJECT COSTS Section Header */}
                 <TableRow 
-                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
                   onClick={() => setShowProjectCosts(!showProjectCosts)}
                   data-testid="section-header-project-costs"
                 >
-                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                  <TableCell className={`font-semibold ${stickyFirstColAccent} flex items-center gap-2`}>
                     {showProjectCosts ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     Project Costs
                   </TableCell>
-                  <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.totalProjectCost)}</TableCell>
-                  {results.userLoanColumn && <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.totalProjectCost)}</TableCell>}
+                  <TableCell 
+                    className="text-center text-sm sticky z-10 bg-accent/30"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatCurrency(results.cashSaleColumn.totalProjectCost)}
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center text-sm sticky z-10 bg-accent/30"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatCurrency(results.userLoanColumn.totalProjectCost)}
+                    </TableCell>
+                  )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.totalProjectCost)}</TableCell>
                   ))}
@@ -505,12 +770,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 {showProjectCosts && (
                   <>
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Purchase Price</TableCell>
-                      <TableCell className="text-center" data-testid="cash-purchase-price">
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Purchase Price</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                        data-testid="cash-purchase-price"
+                      >
                         {formatCurrency(results.cashSaleColumn.purchasePrice)}
                       </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center" data-testid="user-purchase-price">
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                          data-testid="user-purchase-price"
+                        >
                           {formatCurrency(results.userLoanColumn.purchasePrice)}
                         </TableCell>
                       )}
@@ -522,10 +795,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Rehab Budget</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.rehabBudget)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Rehab Budget</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.rehabBudget)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rehabBudget)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.rehabBudget)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.rehabBudget)}</TableCell>
@@ -536,16 +819,28 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 
                 {/* COSTS & CARRYING Section Header */}
                 <TableRow 
-                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
                   onClick={() => setShowCostsCarrying(!showCostsCarrying)}
                   data-testid="section-header-costs-carrying"
                 >
-                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                  <TableCell className={`font-semibold ${stickyFirstColAccent} flex items-center gap-2`}>
                     {showCostsCarrying ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     Costs & Carrying
                   </TableCell>
-                  <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.totalInvestment)}</TableCell>
-                  {results.userLoanColumn && <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.totalInvestment)}</TableCell>}
+                  <TableCell 
+                    className="text-center text-sm sticky z-10 bg-accent/30"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatCurrency(results.cashSaleColumn.totalInvestment)}
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center text-sm sticky z-10 bg-accent/30"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatCurrency(results.userLoanColumn.totalInvestment)}
+                    </TableCell>
+                  )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.totalInvestment)}</TableCell>
                   ))}
@@ -554,10 +849,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 {showCostsCarrying && (
                   <>
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Closing Costs (Buy)</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.closingCostsBuy)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Closing Costs (Buy)</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.closingCostsBuy)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.closingCostsBuy)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.closingCostsBuy)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsBuy)}</TableCell>
@@ -565,10 +870,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Carrying Costs</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.carryingCosts)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Carrying Costs</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.carryingCosts)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.carryingCosts)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.carryingCosts)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.carryingCosts)}</TableCell>
@@ -576,10 +891,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Rolled Costs</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.rolledCosts)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Rolled Costs</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.rolledCosts)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rolledCosts)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.rolledCosts)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.rolledCosts)}</TableCell>
@@ -587,10 +912,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Lender Draw Fees</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.lenderDrawFees)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Lender Draw Fees</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.lenderDrawFees)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.lenderDrawFees)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.lenderDrawFees)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.lenderDrawFees)}</TableCell>
@@ -601,16 +936,28 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 
                 {/* EXIT & SALE Section Header */}
                 <TableRow 
-                  className="bg-accent/20 cursor-pointer hover:bg-accent/30 transition-colors"
+                  className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
                   onClick={() => setShowExitMetrics(!showExitMetrics)}
                   data-testid="section-header-exit-metrics"
                 >
-                  <TableCell className="font-semibold sticky left-0 z-10 bg-accent/20 flex items-center gap-2">
+                  <TableCell className={`font-semibold ${stickyFirstColAccent} flex items-center gap-2`}>
                     {showExitMetrics ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     Exit & Sale
                   </TableCell>
-                  <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.sellPrice)}</TableCell>
-                  {results.userLoanColumn && <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.sellPrice)}</TableCell>}
+                  <TableCell 
+                    className="text-center text-sm sticky z-10 bg-accent/30"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    {formatCurrency(results.cashSaleColumn.sellPrice)}
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center text-sm sticky z-10 bg-accent/30"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      {formatCurrency(results.userLoanColumn.sellPrice)}
+                    </TableCell>
+                  )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.sellPrice)}</TableCell>
                   ))}
@@ -619,10 +966,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                 {showExitMetrics && (
                   <>
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Closing Costs (Sell)</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.closingCostsSell)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Closing Costs (Sell)</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.closingCostsSell)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.closingCostsSell)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.closingCostsSell)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsSell)}</TableCell>
@@ -630,10 +987,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">RE Commission</TableCell>
-                      <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.commission)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>RE Commission</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.commission)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatCurrency(results.userLoanColumn.commission)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.commission)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.commission)}</TableCell>
@@ -641,10 +1008,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">ROI %</TableCell>
-                      <TableCell className="text-center">{formatPercent(results.cashSaleColumn.roi)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>ROI %</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatPercent(results.cashSaleColumn.roi)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatPercent(results.userLoanColumn.roi)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatPercent(results.userLoanColumn.roi)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatPercent(lender.roi)}</TableCell>
@@ -652,10 +1029,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">Percentage ARV</TableCell>
-                      <TableCell className="text-center">{formatPercent(results.cashSaleColumn.percentageArv)}</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Percentage ARV</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatPercent(results.cashSaleColumn.percentageArv)}
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatPercent(results.userLoanColumn.percentageArv)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatPercent(results.userLoanColumn.percentageArv)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatPercent(lender.percentageArv)}</TableCell>
@@ -663,10 +1050,20 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 z-10 bg-background pl-8">% ARV (Lender)</TableCell>
-                      <TableCell className="text-center">N/A</TableCell>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>% ARV (Lender)</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        N/A
+                      </TableCell>
                       {results.userLoanColumn && (
-                        <TableCell className="text-center">{formatPercent(results.userLoanColumn.percentageArvLender || 0)}</TableCell>
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatPercent(results.userLoanColumn.percentageArvLender || 0)}
+                        </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatPercent(lender.percentageArvLender || 0)}</TableCell>
@@ -675,12 +1072,58 @@ export default function Step6Results({ form, onBack }: Step6ResultsProps) {
                   </>
                 )}
                 
+                {/* QR Codes Row */}
+                <TableRow>
+                  <TableCell className={`font-medium ${stickyFirstColBase}`}>Quick Apply</TableCell>
+                  <TableCell 
+                    className="text-center sticky z-10 bg-background"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    -
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center sticky z-10 bg-background"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      -
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center">
+                      {lender.referralLink ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <QRCodeSVG 
+                            value={lender.referralLink} 
+                            size={64}
+                            level="M"
+                            bgColor="transparent"
+                            fgColor="currentColor"
+                            className="mx-auto"
+                          />
+                          <span className="text-[10px] text-muted-foreground">Scan to apply</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No link</span>
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+
                 {/* Apply Buttons Row */}
                 <TableRow>
-                  <TableCell className="font-medium sticky left-0 z-10 bg-background"></TableCell>
-                  <TableCell className="text-center">-</TableCell>
+                  <TableCell className={`font-medium ${stickyFirstColBase}`}></TableCell>
+                  <TableCell 
+                    className="text-center sticky z-10 bg-background"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    -
+                  </TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center">
+                    <TableCell 
+                      className="text-center sticky z-10 bg-background"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
                       <Button size="sm" variant="outline" disabled data-testid="button-apply-user-loan">
                         Your Loan
                       </Button>
