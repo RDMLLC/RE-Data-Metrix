@@ -3,7 +3,8 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Phone, Mail, Globe, Clock, Percent, Building, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
+import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Phone, Mail, Globe, Clock, Percent, Building, ArrowLeft, Loader2, ExternalLink, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
@@ -31,6 +32,32 @@ interface DSCRLender {
   referralLink: string;
   fees: number;
   isPreferred: boolean;
+  loanTermYears: number | null;
+  minDscrRequired: number | null;
+  estimatedAppraisalCost: number | null;
+  appraisalRequired: boolean;
+  cashOutOk: boolean;
+  cashOutMaxLtv: number | null;
+}
+
+interface DSCRProductWithCalculation {
+  lender: DSCRLender;
+  dscrCalculation: {
+    loanAmount: number;
+    monthlyPrincipalInterest: number;
+    monthlyPropertyTax: number;
+    monthlyInsurance: number;
+    monthlyHoa: number;
+    totalMonthlyPITIA: number;
+    dscr: number;
+    dscrStatus: 'poor' | 'caution' | 'good';
+    meetsMinDscr: boolean;
+    loanTermYears: number;
+    minDscrRequired: number;
+    interestRate: number;
+    points: number;
+    maxLtvBuy: number;
+  };
 }
 
 export default function RentalAnalysisWizard() {
@@ -122,10 +149,59 @@ export default function RentalAnalysisWizard() {
     }
   };
 
+  // Calculate DSCR for each lender product
+  const productsWithCalculations: DSCRProductWithCalculation[] = (dscrLenders || []).map(lender => {
+    const ltv = Number(lender.maxLtvBuy) || 75;
+    const termYears = Number(lender.loanTermYears) || 30;
+    const minRequired = Number(lender.minDscrRequired) || 1.0;
+    const interestRate = Number(lender.interestRate) || 7.5;
+    const points = Number(lender.points) || 0;
+    
+    // Use purchasePrice for DSCR purchase loans, ARV for DSCR refi
+    // For purchase: loan amount based on purchase price
+    // For refi: loan amount based on current/appraised value (ARV)
+    const loanBasis = lender.loanType === 'dscr-purchase' 
+      ? (property.purchasePrice || property.arv || 0)
+      : (property.arv || 0);
+    
+    const dscrCalc = calculateDSCR({
+      arv: loanBasis,
+      monthlyRent,
+      monthlyPropertyTax,
+      monthlyInsurance,
+      monthlyHoa,
+      interestRate,
+      loanToValuePercent: ltv,
+      loanTermYears: termYears,
+    });
+    
+    const meetsMinDscr = dscrCalc.dscr >= minRequired;
+    
+    return {
+      lender,
+      dscrCalculation: {
+        loanAmount: dscrCalc.loanAmount,
+        monthlyPrincipalInterest: dscrCalc.monthlyPrincipalInterest,
+        monthlyPropertyTax: dscrCalc.monthlyPropertyTax,
+        monthlyInsurance: dscrCalc.monthlyInsurance,
+        monthlyHoa: dscrCalc.monthlyHoa,
+        totalMonthlyPITIA: dscrCalc.totalMonthlyPITIA,
+        dscr: dscrCalc.dscr,
+        dscrStatus: dscrCalc.dscrStatus,
+        meetsMinDscr,
+        loanTermYears: termYears,
+        minDscrRequired: minRequired,
+        interestRate,
+        points,
+        maxLtvBuy: ltv,
+      },
+    };
+  }).sort((a, b) => b.dscrCalculation.dscr - a.dscrCalculation.dscr);
+
   if (showLenders) {
     return (
       <div className="min-h-screen bg-background py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <Button 
               variant="ghost" 
@@ -139,26 +215,52 @@ export default function RentalAnalysisWizard() {
           </div>
           
           <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-2 text-primary">DSCR Lenders</h2>
-            <p className="text-muted-foreground mb-6">
-              Lenders offering DSCR loans for rental property purchases and refinances in {property?.state || 'your area'}.
+            <h2 className="text-2xl font-bold mb-2 text-primary">DSCR Lender Comparison</h2>
+            <p className="text-muted-foreground mb-2">
+              Comparing DSCR loan products for {property?.state || 'your area'} based on ${monthlyRent.toLocaleString()}/mo rent.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Products are ranked by best DSCR ratio. Higher is better.
             </p>
             
             {isLoadingLenders ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Loading lenders...</span>
+                <span className="ml-3 text-muted-foreground">Calculating DSCR for each lender...</span>
               </div>
-            ) : dscrLenders && dscrLenders.length > 0 ? (
+            ) : productsWithCalculations.length > 0 ? (
               <div className="space-y-6">
-                {dscrLenders.map((lender) => (
-                  <Card key={lender.productId} className="p-6 border-l-4 border-l-primary" data-testid={`card-dscr-lender-${lender.productId}`}>
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <h3 className="text-xl font-semibold text-primary" data-testid={`text-lender-name-${lender.productId}`}>
-                            {lender.lenderName}
-                          </h3>
+                {productsWithCalculations.map((item, index) => {
+                  const { lender, dscrCalculation } = item;
+                  // Use normalized values from dscrCalculation
+                  const { minDscrRequired, interestRate, points, maxLtvBuy } = dscrCalculation;
+                  
+                  return (
+                    <Card 
+                      key={lender.productId} 
+                      className={`p-6 ${
+                        !dscrCalculation.meetsMinDscr 
+                          ? 'border-2 border-red-300 bg-red-50/30' 
+                          : dscrCalculation.dscrStatus === 'good' 
+                            ? 'border-2 border-emerald-500' 
+                            : dscrCalculation.dscrStatus === 'caution'
+                              ? 'border-2 border-yellow-500'
+                              : 'border'
+                      }`} 
+                      data-testid={`card-dscr-product-${lender.productId}`}
+                    >
+                      {/* Rank Badge */}
+                      <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Badge variant="outline" className="text-lg px-3 py-1">
+                            #{index + 1}
+                          </Badge>
+                          <div>
+                            <h3 className="text-xl font-semibold text-primary" data-testid={`text-lender-name-${lender.productId}`}>
+                              {lender.lenderName}
+                            </h3>
+                            <p className="text-muted-foreground">{lender.productName}</p>
+                          </div>
                           {lender.isPreferred && (
                             <Badge variant="default" className="bg-accent text-accent-foreground">
                               Preferred
@@ -169,72 +271,151 @@ export default function RentalAnalysisWizard() {
                           </Badge>
                         </div>
                         
-                        <p className="text-lg font-medium text-foreground mb-3">{lender.productName}</p>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                          <div className="flex items-center gap-2">
-                            <Percent className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Interest Rate</p>
-                              <p className="font-semibold">{lender.interestRate}%</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Points</p>
-                              <p className="font-semibold">{lender.points}%</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Time to Close</p>
-                              <p className="font-semibold">{lender.timeToClose || 'N/A'} days</p>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Max LTV</p>
-                            <p className="font-semibold">{lender.maxLtvBuy || lender.maxLoanArv || 'N/A'}%</p>
-                          </div>
+                        {/* DSCR Score Display */}
+                        <div className={`text-center px-4 py-2 rounded-lg ${
+                          dscrCalculation.dscrStatus === 'good' ? 'bg-emerald-500/10' :
+                          dscrCalculation.dscrStatus === 'caution' ? 'bg-yellow-500/10' :
+                          'bg-red-500/10'
+                        }`}>
+                          <p className="text-xs text-muted-foreground">DSCR</p>
+                          <p className={`text-3xl font-bold ${
+                            dscrCalculation.dscrStatus === 'good' ? 'text-emerald-600' :
+                            dscrCalculation.dscrStatus === 'caution' ? 'text-yellow-600' :
+                            'text-red-600'
+                          }`} data-testid={`text-dscr-value-${lender.productId}`}>
+                            {dscrCalculation.dscr.toFixed(2)}
+                          </p>
                         </div>
+                      </div>
 
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          {lender.contactName && (
-                            <span>Contact: {lender.contactName}</span>
-                          )}
-                          {lender.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" /> {lender.phone}
-                            </span>
-                          )}
-                          {lender.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" /> {lender.email}
-                            </span>
-                          )}
+                      {/* Warning if below lender's minimum */}
+                      {!dscrCalculation.meetsMinDscr && (
+                        <Alert className="mb-4 border-red-300 bg-red-50">
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                          <AlertDescription className="text-red-700">
+                            This property's DSCR ({dscrCalculation.dscr.toFixed(2)}) is below this lender's minimum requirement of {minDscrRequired.toFixed(1)}. You may not qualify for this product.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {/* Loan Terms & PITIA Breakdown Grid */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+                        {/* Loan Terms */}
+                        <div>
+                          <h4 className="font-semibold mb-3 text-sm text-muted-foreground uppercase tracking-wide">Loan Terms</h4>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Interest Rate</p>
+                              <p className="font-semibold">{interestRate}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Term</p>
+                              <p className="font-semibold">{dscrCalculation.loanTermYears} years</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max LTV</p>
+                              <p className="font-semibold">{maxLtvBuy}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Points</p>
+                              <p className="font-semibold">{points}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Min DSCR Required</p>
+                              <p className="font-semibold">{minDscrRequired.toFixed(1)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Loan Amount</p>
+                              <p className="font-semibold">${dscrCalculation.loanAmount.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* PITIA Breakdown */}
+                        <div>
+                          <h4 className="font-semibold mb-3 text-sm text-muted-foreground uppercase tracking-wide">Monthly PITIA Breakdown</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Principal & Interest (P&I)</span>
+                              <span className="font-semibold">${dscrCalculation.monthlyPrincipalInterest.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Property Taxes (T)</span>
+                              <span className="font-semibold">${dscrCalculation.monthlyPropertyTax.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Insurance (I)</span>
+                              <span className="font-semibold">${dscrCalculation.monthlyInsurance.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">HOA</span>
+                              <span className="font-semibold">${dscrCalculation.monthlyHoa.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                            <div className="flex items-center justify-between border-t pt-2 mt-2">
+                              <span className="font-medium">Total PITIA</span>
+                              <span className="font-bold text-primary">${dscrCalculation.totalMonthlyPITIA.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Monthly Rent</span>
+                              <span className="font-semibold text-emerald-600">${monthlyRent.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="flex flex-col gap-2 lg:items-end">
-                        {lender.referralLink && (
-                          <Button asChild data-testid={`button-apply-${lender.productId}`}>
-                            <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
-                              Apply Now <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
-                        {lender.website && (
-                          <Button variant="outline" asChild data-testid={`button-website-${lender.productId}`}>
-                            <a href={lender.website} target="_blank" rel="noopener noreferrer" className="gap-2">
-                              <Globe className="h-4 w-4" /> Visit Website
-                            </a>
-                          </Button>
-                        )}
+
+                      {/* Quick Apply Row */}
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            {lender.contactName && (
+                              <span>Contact: {lender.contactName}</span>
+                            )}
+                            {lender.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {lender.phone}
+                              </span>
+                            )}
+                            {lender.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" /> {lender.email}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 flex-wrap">
+                            {lender.referralLink && (
+                              <>
+                                <div className="flex flex-col items-center gap-1">
+                                  <QRCodeSVG 
+                                    value={lender.referralLink} 
+                                    size={64}
+                                    level="M"
+                                    bgColor="transparent"
+                                    fgColor="currentColor"
+                                    data-testid={`qr-code-${lender.productId}`}
+                                  />
+                                  <span className="text-[10px] text-muted-foreground">Scan to apply</span>
+                                </div>
+                                <Button asChild data-testid={`button-apply-${lender.productId}`}>
+                                  <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
+                                    Apply Now <ExternalLink className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                              </>
+                            )}
+                            {lender.website && (
+                              <Button variant="outline" asChild data-testid={`button-website-${lender.productId}`}>
+                                <a href={lender.website} target="_blank" rel="noopener noreferrer" className="gap-2">
+                                  <Globe className="h-4 w-4" /> Website
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12">

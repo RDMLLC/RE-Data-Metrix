@@ -295,6 +295,8 @@ export const loanProducts = pgTable("loan_products", {
   cashOutOk: boolean("cash_out_ok").default(false),
   cashOutMaxLtv: decimal("cash_out_max_ltv", { precision: 5, scale: 2 }),
   referralLink: text("referral_link"),
+  loanTermYears: integer("loan_term_years"),
+  minDscrRequired: decimal("min_dscr_required", { precision: 4, scale: 2 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

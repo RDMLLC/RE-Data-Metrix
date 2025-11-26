@@ -6,6 +6,7 @@ export interface DSCRInputs {
   monthlyHoa: number;
   interestRate: number;
   loanToValuePercent?: number;
+  loanTermYears?: number;
 }
 
 export interface DSCRResults {
@@ -19,6 +20,7 @@ export interface DSCRResults {
   dscr: number;
   dscrStatus: 'poor' | 'caution' | 'good';
   annualInterestRate: number;
+  loanTermYears: number;
 }
 
 export function calculateDSCR(inputs: DSCRInputs): DSCRResults {
@@ -30,12 +32,13 @@ export function calculateDSCR(inputs: DSCRInputs): DSCRResults {
     monthlyHoa,
     interestRate,
     loanToValuePercent = 80,
+    loanTermYears = 30,
   } = inputs;
 
   const loanAmount = arv * (loanToValuePercent / 100);
   
   const monthlyInterestRate = interestRate / 100 / 12;
-  const numberOfPayments = 30 * 12;
+  const numberOfPayments = loanTermYears * 12;
   
   const monthlyPrincipalInterest =
     (loanAmount *
@@ -71,5 +74,6 @@ export function calculateDSCR(inputs: DSCRInputs): DSCRResults {
     dscr,
     dscrStatus,
     annualInterestRate: interestRate,
+    loanTermYears,
   };
 }

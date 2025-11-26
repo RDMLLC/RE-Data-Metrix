@@ -906,7 +906,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'cashOutOk',
         'cashOutMaxLtv',
         'referralLink',
-        'isActive'
+        'isActive',
+        'loanTermYears',
+        'minDscrRequired'
       ];
       
       const exampleRows = [
@@ -931,7 +933,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '',
           '',
           '',
-          'TRUE'
+          'TRUE',
+          '',
+          ''
         ],
         [
           'DSCR Purchase Loan',
@@ -954,7 +958,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '',
           '',
           '',
-          'TRUE'
+          'TRUE',
+          '30',
+          '1.0'
         ],
         [
           'DSCR Refi with Cash-Out',
@@ -977,7 +983,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'TRUE',
           '70.00',
           '',
-          'TRUE'
+          'TRUE',
+          '30',
+          '1.2'
         ],
         [
           'New Construction Loan',
@@ -1000,7 +1008,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '',
           '',
           'https://example.com/apply',
-          'TRUE'
+          'TRUE',
+          '',
+          ''
         ]
       ];
       
@@ -1129,6 +1139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cashOutMaxLtv: parseDecimal(record.cashOutMaxLtv, 'cashOutMaxLtv'),
             referralLink: record.referralLink ? String(record.referralLink).trim() : null,
             isActive: record.isActive !== undefined ? parseBool(record.isActive) : true,
+            loanTermYears: parseInteger(record.loanTermYears, 'loanTermYears'),
+            minDscrRequired: parseDecimal(record.minDscrRequired, 'minDscrRequired'),
           };
 
           const validatedData = insertLoanProductSchema.parse(productData);
@@ -1900,13 +1912,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all active loan products
       const allProducts = await storage.getAllActiveLoanProducts();
       const allLenders = await storage.getAllLenders();
+      const allQuestionnaires = await storage.getAllLenderQuestionnaires();
+      
+      // State code to full name mapping for questionnaire matching
+      const stateCodeToName: Record<string, string> = {
+        AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+        CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+        HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+        KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+        MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
+        MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+        NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+        OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+        SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+        VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming"
+      };
+      
+      // Convert state code to full name for matching questionnaire
+      const stateName = state && typeof state === 'string' ? (stateCodeToName[state.toUpperCase()] || state) : null;
       
       // Create lender map for quick lookup
       const lenderMap = new Map<string, typeof allLenders[0]>();
       allLenders.forEach(lender => {
         if (!lender.archived) {
-          lenderMap.set(lender.id || lender.lenderId, lender);
+          lenderMap.set(lender.id, lender);
         }
+      });
+      
+      // Create questionnaire map for quick lookup
+      const questionnaireMap = new Map<string, typeof allQuestionnaires[0]>();
+      allQuestionnaires.forEach(q => {
+        questionnaireMap.set(q.lenderId, q);
       });
       
       // Filter for DSCR products only (dscr-purchase and dscr-refi)
@@ -1919,12 +1955,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const lender = lenderMap.get(product.lenderId);
         if (!lender) return null;
         
-        // If state filter provided, check if lender serves that state
-        if (state && typeof state === 'string') {
-          const statesServed = lender.statesServed || [];
-          if (!statesServed.includes(state) && !statesServed.includes('ALL')) {
+        const questionnaire = questionnaireMap.get(product.lenderId);
+        
+        // If state filter provided, check if lender serves that state via questionnaire
+        if (stateName && questionnaire) {
+          const offersAllStates = questionnaire.offerLoansAllStates === 'Yes';
+          const statesServiced = questionnaire.statesServiced || [];
+          
+          if (!offersAllStates && !statesServiced.includes(stateName)) {
             return null;
           }
+        } else if (stateName && !questionnaire) {
+          // No questionnaire = can't verify state coverage
+          return null;
         }
         
         return {
@@ -1943,9 +1986,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxLtvBuy: product.maxLtvBuy,
           maxLoanArv: product.maxLoanArv,
           timeToClose: product.timeToClose,
-          referralLink: product.referralLink,
+          referralLink: product.referralLink || lender.referralLink,
           fees: product.fees,
           isPreferred: lender.isPreferred || false,
+          loanTermYears: product.loanTermYears,
+          minDscrRequired: product.minDscrRequired,
+          estimatedAppraisalCost: product.estimatedAppraisalCost,
+          appraisalRequired: product.appraisalRequired,
+          cashOutOk: product.cashOutOk,
+          cashOutMaxLtv: product.cashOutMaxLtv,
         };
       }).filter(Boolean);
       

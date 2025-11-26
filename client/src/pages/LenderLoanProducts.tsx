@@ -178,6 +178,8 @@ export default function LenderLoanProducts() {
       costPerDraw: insertLoanProductSchema.shape.costPerDraw.nullable().optional(),
       cashOutMaxLtv: insertLoanProductSchema.shape.cashOutMaxLtv.nullable().optional(),
       referralLink: insertLoanProductSchema.shape.referralLink.nullable().optional(),
+      loanTermYears: insertLoanProductSchema.shape.loanTermYears.nullable().optional(),
+      minDscrRequired: insertLoanProductSchema.shape.minDscrRequired.nullable().optional(),
     })),
     defaultValues: {
       loanType: "bridge",
@@ -200,6 +202,8 @@ export default function LenderLoanProducts() {
       cashOutMaxLtv: null,
       referralLink: "",
       isActive: true,
+      loanTermYears: null,
+      minDscrRequired: null,
     },
   });
 
@@ -237,6 +241,8 @@ export default function LenderLoanProducts() {
       cashOutMaxLtv: product.cashOutMaxLtv,
       referralLink: product.referralLink || "",
       isActive: product.isActive ?? true,
+      loanTermYears: product.loanTermYears,
+      minDscrRequired: product.minDscrRequired,
     });
     setTimeout(() => {
       formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -579,6 +585,61 @@ export default function LenderLoanProducts() {
                   </div>
                 )}
 
+                {(watchLoanType === 'dscr-purchase' || watchLoanType === 'dscr-refi') && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="loanTermYears"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Loan Term (Years)</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                            value={field.value?.toString() || ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger data-testid="select-loan-term">
+                                <SelectValue placeholder="Select term" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="15">15 Years</SelectItem>
+                              <SelectItem value="20">20 Years</SelectItem>
+                              <SelectItem value="25">25 Years</SelectItem>
+                              <SelectItem value="30">30 Years</SelectItem>
+                              <SelectItem value="40">40 Years</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="minDscrRequired"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-foreground">Minimum DSCR Required</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              type="text"
+                              placeholder="1.0"
+                              data-testid="input-min-dscr"
+                            />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Minimum debt service coverage ratio (e.g., 1.0, 1.2)
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
                 {watchLoanType !== 'new-construction' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -901,6 +962,18 @@ export default function LenderLoanProducts() {
                           <span className="ml-2 font-medium">
                             Yes {product.cashOutMaxLtv ? `(Max ${product.cashOutMaxLtv}% LTV)` : ''}
                           </span>
+                        </div>
+                      )}
+                      {(product.loanType === 'dscr-purchase' || product.loanType === 'dscr-refi') && product.loanTermYears !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Term:</span>
+                          <span className="ml-2 font-medium">{product.loanTermYears} Years</span>
+                        </div>
+                      )}
+                      {(product.loanType === 'dscr-purchase' || product.loanType === 'dscr-refi') && product.minDscrRequired !== null && (
+                        <div>
+                          <span className="text-muted-foreground">Min DSCR:</span>
+                          <span className="ml-2 font-medium">{product.minDscrRequired}</span>
                         </div>
                       )}
                       {product.estimatedAppraisalCost !== null && (
