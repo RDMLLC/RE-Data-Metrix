@@ -1279,6 +1279,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comp Invite Routes (Admin)
+  app.post("/api/admin/comp-invites", ensureAdmin, async (req, res) => {
+    try {
+      const { email, expiresInDays } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const adminId = (req.user as User).id;
+      const result = await storage.createCompInvite(email, adminId, expiresInDays || 30);
+      
+      // Send the invitation email
+      const emailSent = await emailService.sendCompInviteEmail(result.email, result.compCode, result.expiresAt);
+      
+      res.json({ 
+        ...result, 
+        emailSent,
+        message: emailSent ? "Invitation sent successfully" : "Invitation created but email failed to send"
+      });
+    } catch (error) {
+      console.error('Create comp invite error:', error);
+      res.status(500).json({ error: "Failed to create comp invite" });
+    }
+  });
+
+  app.get("/api/admin/comp-invites", ensureAdmin, async (req, res) => {
+    try {
+      const invites = await storage.getAllCompInvites();
+      res.json(invites);
+    } catch (error) {
+      console.error('Get comp invites error:', error);
+      res.status(500).json({ error: "Failed to fetch comp invites" });
+    }
+  });
+
+  app.post("/api/admin/comp-invites/:id/resend", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await storage.resendCompInvite(id);
+      
+      if (!result) {
+        return res.status(404).json({ error: "Comp invite not found" });
+      }
+      
+      // Send the invitation email
+      const emailSent = await emailService.sendCompInviteEmail(result.email, result.compCode, result.expiresAt);
+      
+      res.json({ 
+        ...result, 
+        emailSent,
+        message: emailSent ? "Invitation resent successfully" : "Invitation updated but email failed to send"
+      });
+    } catch (error) {
+      console.error('Resend comp invite error:', error);
+      res.status(500).json({ error: "Failed to resend comp invite" });
+    }
+  });
+
+  app.delete("/api/admin/comp-invites/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteCompInvite(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Comp invite not found" });
+      }
+      
+      res.json({ success: true, message: "Comp invite deleted" });
+    } catch (error) {
+      console.error('Delete comp invite error:', error);
+      res.status(500).json({ error: "Failed to delete comp invite" });
+    }
+  });
+
+  // Validate comp code (public - for registration page)
+  app.get("/api/comp-invites/validate/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const invite = await storage.getCompInviteByCode(code.toUpperCase());
+      
+      if (!invite) {
+        return res.json({ valid: false, reason: "Invalid code" });
+      }
+      
+      if (invite.status !== 'pending') {
+        return res.json({ valid: false, reason: "Code has already been used" });
+      }
+      
+      if (new Date() > invite.expiresAt) {
+        return res.json({ valid: false, reason: "Code has expired" });
+      }
+      
+      res.json({ valid: true, email: invite.email });
+    } catch (error) {
+      console.error('Validate comp code error:', error);
+      res.status(500).json({ error: "Failed to validate code" });
+    }
+  });
+
   // Track affiliate click (available to logged in users and guests)
   app.post("/api/affiliate-clicks", async (req, res) => {
     try {
