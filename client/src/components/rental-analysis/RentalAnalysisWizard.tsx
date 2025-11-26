@@ -3,12 +3,35 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Phone, Mail, Globe, Clock, Percent, Building, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
 import LoanTypeEducation from "./LoanTypeEducation";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+
+interface DSCRLender {
+  productId: string;
+  lenderId: string;
+  lenderName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  website: string;
+  productName: string;
+  loanType: string;
+  interestRate: number;
+  points: number;
+  minCreditScore: number;
+  maxLtvBuy: number;
+  maxLoanArv: number;
+  timeToClose: number;
+  referralLink: string;
+  fees: number;
+  isPreferred: boolean;
+}
 
 export default function RentalAnalysisWizard() {
   const { wizardData, hasPropertyData, clearWizardData } = useWizardData();
@@ -78,18 +101,154 @@ export default function RentalAnalysisWizard() {
       })
     : null;
 
+  const { data: dscrLenders, isLoading: isLoadingLenders } = useQuery<DSCRLender[]>({
+    queryKey: ['/api/dscr-lenders', property?.state],
+    queryFn: async () => {
+      const url = property?.state 
+        ? `/api/dscr-lenders?state=${encodeURIComponent(property.state)}`
+        : '/api/dscr-lenders';
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch DSCR lenders');
+      return res.json();
+    },
+    enabled: showLenders,
+  });
+
+  const getLoanTypeLabel = (loanType: string) => {
+    switch (loanType) {
+      case 'dscr-purchase': return 'DSCR Purchase';
+      case 'dscr-refi': return 'DSCR Refinance';
+      default: return loanType;
+    }
+  };
+
   if (showLenders) {
     return (
       <div className="min-h-screen bg-background py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-6">DSCR Lenders</h2>
-            <p className="text-muted-foreground mb-4">
-              Lender matching will be available soon. This section will display matched DSCR lenders based on your property and credit profile.
-            </p>
-            <Button variant="outline" onClick={() => setShowLenders(false)} data-testid="button-back-to-results">
+          <div className="mb-6">
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowLenders(false)} 
+              className="gap-2"
+              data-testid="button-back-to-results"
+            >
+              <ArrowLeft className="h-4 w-4" />
               Back to Results
             </Button>
+          </div>
+          
+          <Card className="p-8">
+            <h2 className="text-2xl font-bold mb-2 text-primary">DSCR Lenders</h2>
+            <p className="text-muted-foreground mb-6">
+              Lenders offering DSCR loans for rental property purchases and refinances in {property?.state || 'your area'}.
+            </p>
+            
+            {isLoadingLenders ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Loading lenders...</span>
+              </div>
+            ) : dscrLenders && dscrLenders.length > 0 ? (
+              <div className="space-y-6">
+                {dscrLenders.map((lender) => (
+                  <Card key={lender.productId} className="p-6 border-l-4 border-l-primary" data-testid={`card-dscr-lender-${lender.productId}`}>
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className="text-xl font-semibold text-primary" data-testid={`text-lender-name-${lender.productId}`}>
+                            {lender.lenderName}
+                          </h3>
+                          {lender.isPreferred && (
+                            <Badge variant="default" className="bg-accent text-accent-foreground">
+                              Preferred
+                            </Badge>
+                          )}
+                          <Badge variant="secondary">
+                            {getLoanTypeLabel(lender.loanType)}
+                          </Badge>
+                        </div>
+                        
+                        <p className="text-lg font-medium text-foreground mb-3">{lender.productName}</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Percent className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Interest Rate</p>
+                              <p className="font-semibold">{lender.interestRate}%</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Points</p>
+                              <p className="font-semibold">{lender.points}%</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Time to Close</p>
+                              <p className="font-semibold">{lender.timeToClose || 'N/A'} days</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Max LTV</p>
+                            <p className="font-semibold">{lender.maxLtvBuy || lender.maxLoanArv || 'N/A'}%</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          {lender.contactName && (
+                            <span>Contact: {lender.contactName}</span>
+                          )}
+                          {lender.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" /> {lender.phone}
+                            </span>
+                          )}
+                          {lender.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" /> {lender.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 lg:items-end">
+                        {lender.referralLink && (
+                          <Button asChild data-testid={`button-apply-${lender.productId}`}>
+                            <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
+                              Apply Now <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        {lender.website && (
+                          <Button variant="outline" asChild data-testid={`button-website-${lender.productId}`}>
+                            <a href={lender.website} target="_blank" rel="noopener noreferrer" className="gap-2">
+                              <Globe className="h-4 w-4" /> Visit Website
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No DSCR Lenders Found</h3>
+                <p className="text-muted-foreground mb-6">
+                  We don't have any DSCR lenders in our database yet for {property?.state || 'your area'}. 
+                  Check back soon as we're constantly adding new lending partners.
+                </p>
+                <Button variant="outline" onClick={() => setShowLenders(false)}>
+                  Back to Analysis
+                </Button>
+              </div>
+            )}
           </Card>
         </div>
       </div>

@@ -1892,6 +1892,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DSCR Lenders - for Rental Analysis
+  app.get("/api/dscr-lenders", async (req, res) => {
+    try {
+      const { state } = req.query;
+      
+      // Get all active loan products
+      const allProducts = await storage.getAllActiveLoanProducts();
+      const allLenders = await storage.getAllLenders();
+      
+      // Create lender map for quick lookup
+      const lenderMap = new Map<string, typeof allLenders[0]>();
+      allLenders.forEach(lender => {
+        if (!lender.archived) {
+          lenderMap.set(lender.id || lender.lenderId, lender);
+        }
+      });
+      
+      // Filter for DSCR products only (dscr-purchase and dscr-refi)
+      const dscrProducts = allProducts.filter(p => 
+        p.loanType === 'dscr-purchase' || p.loanType === 'dscr-refi'
+      );
+      
+      // Map products to response format with lender info
+      const results = dscrProducts.map(product => {
+        const lender = lenderMap.get(product.lenderId);
+        if (!lender) return null;
+        
+        // If state filter provided, check if lender serves that state
+        if (state && typeof state === 'string') {
+          const statesServed = lender.statesServed || [];
+          if (!statesServed.includes(state) && !statesServed.includes('ALL')) {
+            return null;
+          }
+        }
+        
+        return {
+          productId: product.id,
+          lenderId: product.lenderId,
+          lenderName: lender.companyName,
+          contactName: lender.contactName,
+          phone: lender.phone,
+          email: lender.email,
+          website: lender.website,
+          productName: product.productName,
+          loanType: product.loanType,
+          interestRate: product.interestRate,
+          points: product.points,
+          minCreditScore: product.minCreditScore,
+          maxLtvBuy: product.maxLtvBuy,
+          maxLoanArv: product.maxLoanArv,
+          timeToClose: product.timeToClose,
+          referralLink: product.referralLink,
+          fees: product.fees,
+          isPreferred: lender.isPreferred || false,
+        };
+      }).filter(Boolean);
+      
+      // Sort by preferred status first, then by interest rate
+      results.sort((a: any, b: any) => {
+        if (a.isPreferred !== b.isPreferred) return b.isPreferred ? 1 : -1;
+        return (a.interestRate || 0) - (b.interestRate || 0);
+      });
+      
+      res.json(results);
+    } catch (error) {
+      console.error("DSCR lenders error:", error);
+      res.status(500).json({ error: "Failed to fetch DSCR lenders" });
+    }
+  });
+
   app.post("/api/prelaunch-signups", async (req, res) => {
     try {
       const { name, company, email, phone, consent, source } = req.body;
