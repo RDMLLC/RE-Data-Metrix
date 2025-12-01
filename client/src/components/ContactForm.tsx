@@ -58,6 +58,7 @@ export default function ContactForm() {
           <div>
             <h3 className="font-semibold text-success text-lg mb-1">Thank you for reaching out!</h3>
             <p className="text-foreground">We'll respond shortly.</p>
+            <p className="text-muted-foreground text-sm mt-2">Please check your spam folder to ensure you receive our messages.</p>
           </div>
         </div>
       </div>

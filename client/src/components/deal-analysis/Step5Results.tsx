@@ -92,15 +92,15 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const { toPDF, targetRef } = usePDF({
     filename: 'loan-comparison-results.pdf',
     method: 'save',
-    resolution: 3,
+    resolution: 2,
     page: {
-      margin: 10,
+      margin: 8,
       format: 'letter',
-      orientation: 'landscape',
+      orientation: 'portrait',
     },
     canvas: {
       mimeType: 'image/png',
-      qualityRatio: 1,
+      qualityRatio: 0.95,
     },
     overrides: {
       pdf: { compress: true },
@@ -1110,7 +1110,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   </>
                 )}
                 
-                {/* Quick Apply Row - Combined QR codes and Apply buttons */}
+                {/* Quick Apply Row - Buttons only */}
                 <TableRow>
                   <TableCell className={`font-medium ${stickyFirstColBase}`}>Quick Apply</TableCell>
                   <TableCell 
@@ -1130,28 +1130,63 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">
                       {lender.referralLink ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <Button 
-                            size="sm" 
-                            data-testid={`button-apply-lender${index + 1}`}
-                            onClick={() => {
-                              window.open(lender.referralLink, '_blank', 'noopener,noreferrer');
-                            }}
-                          >
-                            Apply Now
-                          </Button>
+                        <Button 
+                          size="sm" 
+                          data-testid={`button-apply-lender${index + 1}`}
+                          onClick={() => {
+                            window.open(lender.referralLink, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          Apply Now
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          data-testid={`button-contact-lender${index + 1}`}
+                          onClick={() => {
+                            setLocation(`/lenders?search=${encodeURIComponent(lender.lenderName || '')}`);
+                          }}
+                        >
+                          Contact Lender
+                        </Button>
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                
+                {/* QR Codes Row - Separate row at bottom for PDF */}
+                <TableRow>
+                  <TableCell className={`font-medium ${stickyFirstColBase} text-xs`}>Scan to Apply</TableCell>
+                  <TableCell 
+                    className="text-center sticky z-10 bg-background"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    -
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center sticky z-10 bg-background"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      -
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center">
+                      {lender.referralLink ? (
+                        <div className="flex flex-col items-center">
                           <QRCodeSVG 
                             value={lender.referralLink} 
-                            size={56}
+                            size={64}
                             level="M"
-                            bgColor="transparent"
-                            fgColor="currentColor"
+                            bgColor="white"
+                            fgColor="black"
                             className="mx-auto"
                           />
-                          <span className="text-[10px] text-muted-foreground">or scan</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Contact lender directly</span>
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
                   ))}

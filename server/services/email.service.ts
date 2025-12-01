@@ -257,9 +257,9 @@ class EmailService {
             <p>Our team is committed to helping real estate investors like you find the best financing solutions for your investment properties.</p>
             <p style="margin-top: 30px;">In the meantime, feel free to explore:</p>
             <ul>
-              <li><strong>Deal Analysis Tool</strong> - Analyze your investment properties and compare loan options</li>
-              <li><strong>Lender Directory</strong> - Browse our network of verified private lenders</li>
-              <li><strong>Investment Resources</strong> - Access our glossary and affiliate programs</li>
+              <li><a href="${this.getBaseUrl()}/deal-analysis" style="color: #1E3A8A; text-decoration: none;"><strong>Deal Analysis Tool</strong></a> - Start analyzing your investment properties (full results with membership)</li>
+              <li><a href="${this.getBaseUrl()}/lenders" style="color: #1E3A8A; text-decoration: none;"><strong>Lender Directory</strong></a> - Preview our network of private lenders (sign up to view details)</li>
+              <li><a href="${this.getBaseUrl()}/resources" style="color: #1E3A8A; text-decoration: none;"><strong>Investment Resources</strong></a> - Browse our free glossary of real estate investment terms</li>
             </ul>
             <p>We look forward to connecting with you soon!</p>
             <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
