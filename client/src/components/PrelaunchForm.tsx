@@ -131,7 +131,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-primary-foreground font-medium">
-                Phone Number (Optional)
+                Phone Number
               </FormLabel>
               <FormControl>
                 <Input
