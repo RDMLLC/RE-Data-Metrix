@@ -13,11 +13,15 @@ export default function Hero() {
     }
   }, []);
 
-  const toggleMute = () => {
+  // Sync muted state with video element - needed because React doesn't handle muted attribute properly
+  useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
+      videoRef.current.muted = isMuted;
     }
+  }, [isMuted]);
+
+  const toggleMute = () => {
+    setIsMuted(prev => !prev);
   };
 
   const scrollToForm = () => {
@@ -40,7 +44,7 @@ export default function Hero() {
                 ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover"
                 autoPlay
-                muted={isMuted}
+                muted
                 controls
                 loop
                 playsInline
