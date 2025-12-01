@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const prelaunchSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -26,6 +27,8 @@ interface PrelaunchFormProps {
 
 export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFormProps) {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<PrelaunchFormData>({
     resolver: zodResolver(prelaunchSchema),
@@ -39,6 +42,7 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
   });
 
   const onSubmit = async (data: PrelaunchFormData) => {
+    setIsSubmitting(true);
     try {
       const response = await fetch('/api/prelaunch-signups', {
         method: 'POST',
@@ -47,13 +51,20 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
       });
       
       if (!response.ok) {
-        throw new Error('Failed to submit');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to submit');
       }
       
       setSubmitted(true);
     } catch (error) {
       console.error('Prelaunch form submission error:', error);
-      setSubmitted(true);
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -187,9 +198,17 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
           type="submit"
           className="w-full bg-accent text-accent-foreground hover:bg-accent"
           size="lg"
+          disabled={isSubmitting}
           data-testid="button-submit"
         >
-          Lock in my Discount
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            "Lock in my Discount"
+          )}
         </Button>
       </form>
     </Form>

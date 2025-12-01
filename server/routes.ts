@@ -2575,22 +2575,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Log the signup for now (could save to database later)
-      console.log(`[PRELAUNCH] New signup: ${name} (${email}) - Source: ${source || 'unknown'}`);
+      console.log(`[PRELAUNCH] New signup: ${name} (${email}) - Company: ${company || 'N/A'} - Source: ${source || 'unknown'}`);
 
       // Send confirmation email
       const emailSent = await emailService.sendPrelaunchConfirmation(email, name);
       
       if (!emailSent) {
-        console.warn(`[PRELAUNCH] Failed to send confirmation email to ${email}`);
+        console.error(`[PRELAUNCH] FAILED to send confirmation email to ${email}`);
+        return res.status(500).json({ 
+          error: "We received your signup but couldn't send the confirmation email. Please try again or contact support." 
+        });
       }
 
+      console.log(`[PRELAUNCH] Confirmation email sent successfully to ${email}`);
       res.json({
         message: "Thank you for signing up!",
-        emailSent,
+        success: true,
       });
     } catch (error) {
-      console.error('Prelaunch signup error:', error);
-      res.status(500).json({ error: "Failed to create signup" });
+      console.error('[PRELAUNCH] Signup error:', error);
+      res.status(500).json({ error: "Failed to process signup. Please try again." });
     }
   });
 
