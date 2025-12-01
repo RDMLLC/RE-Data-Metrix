@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -1799,7 +1799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { subscriptionStatus } = req.body;
       
-      if (!['active', 'inactive', 'comped', 'referral_trial'].includes(subscriptionStatus)) {
+      if (!['active', 'inactive', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
         return res.status(400).json({ error: "Invalid subscription status" });
       }
       
@@ -1856,6 +1856,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Resend verification error:', error);
       res.status(500).json({ error: "Failed to resend verification email" });
+    }
+  });
+
+  // Delete user (Admin) - only allowed if user has no referrals
+  app.delete("/api/admin/users/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Check if user has any referral activity (direct referrals, lender referrals, affiliate clicks)
+      let totalReferralActivity = 0;
+      
+      // Check direct user referrals (users who were referred by this user)
+      if (user.referralCode) {
+        const directReferrals = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(users)
+          .where(sql`${users.referredBy} = ${user.referralCode}`);
+        
+        totalReferralActivity += Number(directReferrals[0]?.count || 0);
+      }
+      
+      // Check lender referrals created by this user
+      const lenderReferralCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(lenderReferrals)
+        .where(eq(lenderReferrals.userId, id));
+      
+      totalReferralActivity += Number(lenderReferralCount[0]?.count || 0);
+      
+      // Check affiliate clicks by this user
+      const affiliateClickCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(affiliateClicks)
+        .where(eq(affiliateClicks.userId, id));
+      
+      totalReferralActivity += Number(affiliateClickCount[0]?.count || 0);
+      
+      if (totalReferralActivity > 0) {
+        return res.status(400).json({ 
+          error: "Cannot delete user with referral activity",
+          message: "This user has referral activity recorded. Use 'inactive' or 'archived' status instead."
+        });
+      }
+      
+      // Prevent deleting admin users
+      if (user.role === 'admin') {
+        return res.status(400).json({ error: "Cannot delete admin users" });
+      }
+      
+      // Delete related records first (cascade)
+      await db.delete(userProfiles).where(eq(userProfiles.userId, id));
+      await db.delete(userInvestmentPreferences).where(eq(userInvestmentPreferences.userId, id));
+      await db.delete(savedDeals).where(eq(savedDeals.userId, id));
+      await db.delete(savedLenders).where(eq(savedLenders.userId, id));
+      await db.delete(lenderReferrals).where(eq(lenderReferrals.userId, id));
+      await db.delete(affiliateClicks).where(eq(affiliateClicks.userId, id));
+      await db.delete(dealAnalyses).where(eq(dealAnalyses.userId, id));
+      
+      // Delete the user
+      await db.delete(users).where(eq(users.id, id));
+      
+      console.log(`[ADMIN] User deleted: ${user.email} (ID: ${id})`);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ error: "Failed to delete user" });
     }
   });
 

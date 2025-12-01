@@ -19,7 +19,9 @@ import {
   Trophy,
   UserCheck,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  Archive
 } from "lucide-react";
 import {
   Select,
@@ -97,6 +99,7 @@ export default function UserManagement() {
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
   const [userToUpdate, setUserToUpdate] = useState<{user: UserWithStats, status: string} | null>(null);
   const [userToResendVerification, setUserToResendVerification] = useState<UserWithStats | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
 
   const { data: users, isLoading: usersLoading } = useQuery<UserWithStats[]>({
     queryKey: ["/api/admin/users"],
@@ -158,6 +161,31 @@ export default function UserManagement() {
     },
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/stats"] });
+      toast({
+        title: "User Deleted",
+        description: "The user has been permanently deleted.",
+      });
+      setUserToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cannot Delete User",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+      setUserToDelete(null);
+    },
+  });
+
   const getSubscriptionBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -166,6 +194,8 @@ export default function UserManagement() {
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Comped</Badge>;
       case 'referral_trial':
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Referral Trial</Badge>;
+      case 'archived':
+        return <Badge className="bg-gray-500/10 text-gray-600 border-gray-500/20">Archived</Badge>;
       default:
         return <Badge variant="secondary">Inactive</Badge>;
     }
@@ -199,6 +229,13 @@ export default function UserManagement() {
     .slice(0, 10);
 
   const unverifiedUsers = (users || []).filter(u => !u.isEmailVerified);
+  
+  const archivedUsers = (users || []).filter(u => u.subscriptionStatus === 'archived');
+  
+  // Filter out archived users from main directory - only show them when explicitly filtering for archived
+  const directoryUsers = subscriptionFilter === 'archived' 
+    ? filteredUsers 
+    : filteredUsers.filter(u => u.subscriptionStatus !== 'archived');
 
   return (
     <Layout>
@@ -286,6 +323,7 @@ export default function UserManagement() {
               <TabsTrigger value="referrals" data-testid="tab-referrals">Referral Leaders</TabsTrigger>
               <TabsTrigger value="recent" data-testid="tab-recent">Recent Signups</TabsTrigger>
               <TabsTrigger value="unverified" data-testid="tab-unverified">Unverified ({unverifiedUsers.length})</TabsTrigger>
+              <TabsTrigger value="archived" data-testid="tab-archived">Archived ({archivedUsers.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="directory">
@@ -316,6 +354,7 @@ export default function UserManagement() {
                         <SelectItem value="inactive">Inactive</SelectItem>
                         <SelectItem value="comped">Comped</SelectItem>
                         <SelectItem value="referral_trial">Referral Trial</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={verificationFilter} onValueChange={setVerificationFilter}>
@@ -348,7 +387,7 @@ export default function UserManagement() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredUsers.map((user) => (
+                          {directoryUsers.map((user) => (
                             <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                               <TableCell>
                                 <div>
@@ -369,6 +408,7 @@ export default function UserManagement() {
                                     <SelectItem value="inactive">Inactive</SelectItem>
                                     <SelectItem value="comped">Comped</SelectItem>
                                     <SelectItem value="referral_trial">Referral Trial</SelectItem>
+                                    <SelectItem value="archived">Archived</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </TableCell>
@@ -386,23 +426,36 @@ export default function UserManagement() {
                                 {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}
                               </TableCell>
                               <TableCell>
-                                {!user.isEmailVerified && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setUserToResendVerification(user)}
-                                    data-testid={`button-resend-${user.id}`}
-                                  >
-                                    <Mail className="h-4 w-4 mr-1" />
-                                    Resend
-                                  </Button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {!user.isEmailVerified && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setUserToResendVerification(user)}
+                                      data-testid={`button-resend-${user.id}`}
+                                    >
+                                      <Mail className="h-4 w-4 mr-1" />
+                                      Resend
+                                    </Button>
+                                  )}
+                                  {user.referralCount === 0 && user.role !== 'admin' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => setUserToDelete(user)}
+                                      data-testid={`button-delete-${user.id}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
-                      {filteredUsers.length === 0 && (
+                      {directoryUsers.length === 0 && (
                         <p className="text-center py-8 text-muted-foreground">No users found</p>
                       )}
                     </div>
@@ -613,6 +666,85 @@ export default function UserManagement() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="archived">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Archive className="h-5 w-5 text-gray-500" />
+                    Archived Users
+                  </CardTitle>
+                  <CardDescription>Users who have been archived (still tracked for reporting)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {archivedUsers.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead>Deals</TableHead>
+                          <TableHead>Lenders</TableHead>
+                          <TableHead>Referrals</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {archivedUsers.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{user.fullName || user.username}</p>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}
+                            </TableCell>
+                            <TableCell>{user.dealsAnalyzed}</TableCell>
+                            <TableCell>{user.lendersSaved}</TableCell>
+                            <TableCell>{user.referralCount}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={user.subscriptionStatus}
+                                  onValueChange={(value) => setUserToUpdate({ user, status: value })}
+                                >
+                                  <SelectTrigger className="w-[130px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="active">Restore Active</SelectItem>
+                                    <SelectItem value="inactive">Set Inactive</SelectItem>
+                                    <SelectItem value="archived">Keep Archived</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {user.referralCount === 0 && user.role !== 'admin' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => setUserToDelete(user)}
+                                    data-testid={`button-delete-archived-${user.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Archive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No archived users</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
@@ -663,6 +795,39 @@ export default function UserManagement() {
               }}
             >
               Send Email
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Delete User Dialog */}
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600">Delete User Permanently</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to permanently delete this user?</p>
+              <div className="bg-muted p-3 rounded-md mt-2">
+                <p className="font-medium">{userToDelete?.fullName || userToDelete?.username}</p>
+                <p className="text-sm text-muted-foreground">{userToDelete?.email}</p>
+              </div>
+              <p className="text-red-600 font-medium mt-2">
+                This action cannot be undone. All user data including deals, saved lenders, and activity will be deleted.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (userToDelete) {
+                  deleteUserMutation.mutate(userToDelete.id);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

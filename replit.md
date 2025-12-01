@@ -25,14 +25,24 @@ The platform includes a complete authentication system with user and lender tabl
 The Admin Portal includes a comprehensive User Management system accessible at `/admin/users`:
 - **User Directory**: Searchable/filterable table of all registered users with subscription management
 - **Stats Overview**: Real-time metrics showing total users, active subscriptions, comped users, referral trials, recent signups, and unverified accounts
-- **Tab Views**: User Directory, Top Active (ranked by deals+lenders activity), Referral Leaders, Recent Signups, Unverified Users
-- **Subscription Control**: Admins can update user subscription status (active, inactive, comped, referral_trial)
+- **Tab Views**: User Directory, Top Active (ranked by deals+lenders activity), Referral Leaders, Recent Signups, Unverified Users, Archived Users
+- **Subscription Control**: Admins can update user subscription status (active, inactive, comped, referral_trial, archived)
+- **User Deletion**: 
+  - Delete button visible only for users with 0 referral activity and non-admin role
+  - Referral activity check includes: direct user referrals, lender referrals, and affiliate clicks
+  - Confirmation dialog warns about permanent data deletion
+  - Cascading delete removes all related records (profile, deals, saved lenders, etc.)
+- **Archived Users**: Users with referrals cannot be deleted but can be archived
+  - Archived users hidden from main directory unless explicitly filtered
+  - Dedicated "Archived Users" tab shows archived users with activity stats
+  - Archived users can be restored to Active/Inactive status
 - **Email Verification**: Ability to resend verification emails for unverified users
 - **API Endpoints**:
   - `GET /api/admin/users` - Returns sanitized user list with activity stats
   - `GET /api/admin/users/stats` - Returns aggregate user statistics
-  - `PATCH /api/admin/users/:id/subscription` - Update subscription status
+  - `PATCH /api/admin/users/:id/subscription` - Update subscription status (including 'archived')
   - `POST /api/admin/users/:id/resend-verification` - Resend verification email
+  - `DELETE /api/admin/users/:id` - Permanently delete user (only if no referral activity)
 - **Security**: All endpoints are protected by `ensureAdmin` middleware and use `sanitizeUserForAdmin` helper to prevent exposure of sensitive fields (password hashes, verification tokens, etc.)
 
 ### Membership Access Control
