@@ -63,7 +63,6 @@ export default function Navigation() {
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
     { href: "/contact", label: "Contact" },
-    { href: "/faq", label: "FAQ" },
   ];
 
   const userInitials = user ? getInitials(user.profile?.fullName, user.username, user.email) : "";
