@@ -1,8 +1,17 @@
+import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import marketingVideo from "@assets/Real Estate Profits, Lender Referrals_video_1080 (3)_1762983667120.mp4";
 
 export default function Hero() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1.2;
+    }
+  }, []);
+
   const scrollToForm = () => {
     const formElement = document.getElementById('prelaunch-form');
     if (formElement) {
@@ -20,6 +29,7 @@ export default function Hero() {
           <div className="order-2 lg:order-1">
             <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
               <video
+                ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover"
                 controls
                 loop
