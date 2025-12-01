@@ -1,7 +1,7 @@
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, FileText, DollarSign, Settings } from "lucide-react";
+import { Building2, FileText, DollarSign, Heart } from "lucide-react";
 import { Link } from "wouter";
 
 export default function LenderDashboard() {
@@ -80,6 +80,28 @@ export default function LenderDashboard() {
                   data-testid="button-loan-products"
                 >
                   Manage Products
+                </Button>
+              </Link>
+            </Card>
+
+            {/* Who Saved You Card */}
+            <Card className="p-6 hover-elevate">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-destructive/10 rounded-lg flex items-center justify-center">
+                  <Heart className="h-6 w-6 text-destructive" />
+                </div>
+                <h2 className="text-xl font-semibold text-primary">Who Saved You</h2>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                See which investors have saved your lender profile to their favorites
+              </p>
+              <Link href="/lender-saved-by">
+                <Button
+                  className="w-full"
+                  variant="default"
+                  data-testid="button-who-saved-you"
+                >
+                  View Saved By
                 </Button>
               </Link>
             </Card>

@@ -2528,7 +2528,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save a lender (heart)
   app.post("/api/member/saved-lenders/:lenderId", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as User).id;
+      const user = req.user as User;
+      const userId = user.id;
       const { lenderId } = req.params;
       
       // Check if already saved
@@ -2548,6 +2549,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lenderId,
         })
         .returning();
+      
+      // Send email notification to the lender (async, don't wait)
+      (async () => {
+        try {
+          // Get the lender's info
+          const [lender] = await db
+            .select()
+            .from(lenders)
+            .where(eq(lenders.id, lenderId));
+          
+          if (lender && lender.email) {
+            // Get the member's profile for display name
+            const [profile] = await db
+              .select()
+              .from(userProfiles)
+              .where(eq(userProfiles.userId, userId));
+            
+            const memberName = profile?.fullName || user.username || "A member";
+            const companyName = lender.companyName || "Lender";
+            
+            await emailService.sendLenderSavedNotification(
+              lender.email,
+              companyName,
+              memberName
+            );
+          }
+        } catch (emailError) {
+          console.error("Error sending lender saved notification:", emailError);
+        }
+      })();
       
       res.json(saved);
     } catch (error) {
@@ -2588,6 +2619,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking saved lender status:", error);
       res.status(500).json({ error: "Failed to check status" });
+    }
+  });
+
+  // Get members who saved the current lender (for lender portal)
+  app.get("/api/lender/saved-by", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const lender = req.user as any;
+      
+      const savedByMembers = await db
+        .select({
+          id: savedLenders.id,
+          savedAt: savedLenders.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            email: users.email,
+          },
+          profile: {
+            fullName: userProfiles.fullName,
+            city: userProfiles.city,
+            state: userProfiles.state,
+            phone: userProfiles.phone,
+          },
+        })
+        .from(savedLenders)
+        .innerJoin(users, eq(savedLenders.userId, users.id))
+        .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+        .where(eq(savedLenders.lenderId, lender.id))
+        .orderBy(desc(savedLenders.createdAt));
+      
+      res.json(savedByMembers);
+    } catch (error) {
+      console.error("Error fetching saved-by members:", error);
+      res.status(500).json({ error: "Failed to fetch saved-by members" });
     }
   });
 
