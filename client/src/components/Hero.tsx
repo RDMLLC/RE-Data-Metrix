@@ -8,26 +8,42 @@ export default function Hero() {
   const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 1.2;
-    }
+    const video = videoRef.current;
+    if (!video) return;
+    
+    video.playbackRate = 1.2;
+    
+    // Sync muted state when native controls are used
+    const handleVolumeChange = () => {
+      setIsMuted(video.muted || video.volume === 0);
+    };
+    
+    video.addEventListener('volumechange', handleVolumeChange);
+    
+    return () => {
+      video.removeEventListener('volumechange', handleVolumeChange);
+    };
   }, []);
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      const newMutedState = !isMuted;
-      videoRef.current.muted = newMutedState;
-      
-      // When unmuting, we need to call play() to resume audio due to browser autoplay policies
-      if (!newMutedState) {
-        videoRef.current.volume = 1.0; // Ensure volume is up
-        videoRef.current.play().catch(err => {
-          console.warn('Video play failed:', err);
-        });
-      }
-      
-      setIsMuted(newMutedState);
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const newMutedState = !isMuted;
+    
+    // Set muted state directly on the video element
+    video.muted = newMutedState;
+    
+    // When unmuting, ensure volume is up and restart playback
+    if (!newMutedState) {
+      video.volume = 1.0;
+      // Force a play to activate audio after user interaction
+      video.play().catch(err => {
+        console.warn('Video play failed:', err);
+      });
     }
+    
+    setIsMuted(newMutedState);
   };
 
   const scrollToForm = () => {
@@ -58,15 +74,32 @@ export default function Hero() {
                 <source src={marketingVideo} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
-              {/* Custom mute/unmute button for better visibility */}
+              {/* Custom mute/unmute button - large and prominent */}
               <button
                 onClick={toggleMute}
-                className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                className={`absolute top-3 right-3 z-20 p-3 rounded-full transition-all ${
+                  isMuted 
+                    ? 'bg-accent hover:bg-accent/90 text-accent-foreground animate-pulse' 
+                    : 'bg-black/60 hover:bg-black/80 text-white'
+                }`}
                 data-testid="button-toggle-mute"
-                aria-label={isMuted ? "Unmute video" : "Mute video"}
+                aria-label={isMuted ? "Click to unmute video" : "Mute video"}
+                title={isMuted ? "Click to unmute" : "Mute"}
               >
-                {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
               </button>
+              {/* Unmute prompt overlay when muted */}
+              {isMuted && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10"
+                  onClick={toggleMute}
+                >
+                  <div className="bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <VolumeX className="h-5 w-5" />
+                    <span className="text-sm font-medium">Click to unmute</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
