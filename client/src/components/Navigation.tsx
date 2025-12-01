@@ -14,7 +14,15 @@ import { useState } from "react";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useAuth } from "@/contexts/AuthContext";
 
-function getInitials(username: string, email: string): string {
+function getInitials(fullName: string | undefined, username: string, email: string): string {
+  if (fullName && fullName.trim().length > 0) {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else if (parts.length === 1 && parts[0].length >= 2) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+  }
   if (username && username.length >= 2) {
     return username.substring(0, 2).toUpperCase();
   }
@@ -57,7 +65,7 @@ export default function Navigation() {
     { href: "/contact", label: "Contact" },
   ];
 
-  const userInitials = user ? getInitials(user.username, user.email) : "";
+  const userInitials = user ? getInitials(user.profile?.fullName, user.username, user.email) : "";
 
   const handleLogout = async () => {
     try {

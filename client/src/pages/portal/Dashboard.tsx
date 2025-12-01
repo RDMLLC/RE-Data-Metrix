@@ -215,25 +215,33 @@ export default function MemberDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg mb-2">
-                  <code className="text-lg font-bold flex-1" data-testid="text-referral-code">
-                    {user.referralCode || "N/A"}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={copyReferralCode}
-                    disabled={!user.referralCode}
-                    data-testid="button-copy-referral"
-                    className="h-8 w-8"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <CardDescription className="space-y-1">
-                  <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
-                  <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
-                </CardDescription>
+                {user.subscriptionStatus === "comped" ? (
+                  <CardDescription className="text-muted-foreground">
+                    Contact the Administrator for Additional Licences.
+                  </CardDescription>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg mb-2">
+                      <code className="text-lg font-bold flex-1" data-testid="text-referral-code">
+                        {user.referralCode || "N/A"}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={copyReferralCode}
+                        disabled={!user.referralCode}
+                        data-testid="button-copy-referral"
+                        className="h-8 w-8"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <CardDescription className="space-y-1">
+                      <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
+                      <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
+                    </CardDescription>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
