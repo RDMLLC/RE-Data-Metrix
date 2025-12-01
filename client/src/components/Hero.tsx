@@ -1,16 +1,24 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Volume2, VolumeX } from "lucide-react";
 import marketingVideo from "@assets/Real Estate Profits, Lender Referrals_video_1080 (3)_1762983667120.mp4";
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = 1.2;
     }
   }, []);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
 
   const scrollToForm = () => {
     const formElement = document.getElementById('prelaunch-form');
@@ -32,7 +40,7 @@ export default function Hero() {
                 ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover"
                 autoPlay
-                muted
+                muted={isMuted}
                 controls
                 loop
                 playsInline
@@ -40,6 +48,15 @@ export default function Hero() {
                 <source src={marketingVideo} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
+              {/* Custom mute/unmute button for better visibility */}
+              <button
+                onClick={toggleMute}
+                className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                data-testid="button-toggle-mute"
+                aria-label={isMuted ? "Unmute video" : "Mute video"}
+              >
+                {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
