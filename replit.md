@@ -82,6 +82,11 @@ The Rental Analysis flow includes intelligent DSCR lender matching using actual 
 
 This section tracks features, improvements, and fixes to be implemented in future sessions.
 
+### High Priority
+- **Homepage Video Auto-Start**: Make the homepage hero video auto-play when visitors land on the page
+  - **Context**: Video currently requires user interaction to start playing
+  - **Scope**: Add autoplay, muted, and loop attributes to video element for automatic playback
+
 ### Medium Priority
 - **BRRRR Analysis**: Full Buy-Rehab-Rent-Refinance-Repeat strategy modeling
   - **Context**: Investors often use bridge/hard money loans for acquisition and rehab, then refinance into a long-term DSCR loan once the property is stabilized and rented
