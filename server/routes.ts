@@ -5,7 +5,7 @@ import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropert
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
-import { eq, inArray, desc, and, sql } from "drizzle-orm";
+import { eq, inArray, desc, and, sql, count } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureLenderAuthenticated, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
@@ -1583,6 +1583,153 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Subscription stats error:', error);
       res.status(500).json({ error: "Failed to fetch subscription stats" });
+    }
+  });
+
+  // Helper function to sanitize user data for admin responses (excludes sensitive fields)
+  function sanitizeUserForAdmin(user: User) {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      subscriptionStatus: user.subscriptionStatus,
+      createdAt: user.createdAt,
+      isEmailVerified: user.isEmailVerified,
+    };
+  }
+
+  // Admin User Management Routes
+  app.get("/api/admin/users", ensureAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      
+      // Get additional stats for each user with sanitized data (no sensitive fields)
+      const usersWithStats = await Promise.all(allUsers.map(async (user) => {
+        const dealsCount = await db.select({ count: count() }).from(savedDeals)
+          .where(eq(savedDeals.userId, user.id));
+        const lendersCount = await db.select({ count: count() }).from(savedLenders)
+          .where(eq(savedLenders.userId, user.id));
+        const referrals = await db.select({ count: count() }).from(users)
+          .where(eq(users.referredBy, user.id));
+        const profile = await db.select().from(userProfiles)
+          .where(eq(userProfiles.userId, user.id)).limit(1);
+        
+        // Use sanitizeUserForAdmin helper and extend with additional profile data
+        return {
+          ...sanitizeUserForAdmin(user),
+          dealsAnalyzed: Number(dealsCount[0]?.count || 0),
+          lendersSaved: Number(lendersCount[0]?.count || 0),
+          referralCount: Number(referrals[0]?.count || 0),
+          fullName: profile[0]?.fullName || null,
+          phone: profile[0]?.phone || null,
+          city: profile[0]?.city || null,
+          state: profile[0]?.state || null,
+        };
+      }));
+      
+      res.json(usersWithStats);
+    } catch (error) {
+      console.error('Get users error:', error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/users/stats", ensureAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      
+      const stats = {
+        total: allUsers.length,
+        bySubscription: {
+          active: allUsers.filter(u => u.subscriptionStatus === 'active').length,
+          inactive: allUsers.filter(u => u.subscriptionStatus === 'inactive').length,
+          comped: allUsers.filter(u => u.subscriptionStatus === 'comped').length,
+          referral_trial: allUsers.filter(u => u.subscriptionStatus === 'referral_trial').length,
+        },
+        byRole: {
+          user: allUsers.filter(u => u.role === 'user').length,
+          admin: allUsers.filter(u => u.role === 'admin').length,
+        },
+        emailVerification: {
+          verified: allUsers.filter(u => u.isEmailVerified).length,
+          unverified: allUsers.filter(u => !u.isEmailVerified).length,
+        },
+        recentSignups: {
+          last7Days: allUsers.filter(u => u.createdAt && new Date(u.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length,
+          last30Days: allUsers.filter(u => u.createdAt && new Date(u.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length,
+        },
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error('Get user stats error:', error);
+      res.status(500).json({ error: "Failed to fetch user stats" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/subscription", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { subscriptionStatus } = req.body;
+      
+      if (!['active', 'inactive', 'comped', 'referral_trial'].includes(subscriptionStatus)) {
+        return res.status(400).json({ error: "Invalid subscription status" });
+      }
+      
+      const [updated] = await db.update(users)
+        .set({ subscriptionStatus })
+        .where(eq(users.id, id))
+        .returning();
+      
+      if (!updated) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Return sanitized user data (no sensitive fields)
+      res.json({ message: "Subscription updated successfully", user: sanitizeUserForAdmin(updated) });
+    } catch (error) {
+      console.error('Update subscription error:', error);
+      res.status(500).json({ error: "Failed to update subscription" });
+    }
+  });
+
+  app.post("/api/admin/users/:id/resend-verification", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      if (user.isEmailVerified) {
+        return res.status(400).json({ error: "User email is already verified" });
+      }
+      
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('base64url');
+      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      
+      await db.update(users)
+        .set({ verificationToken, verificationExpiry })
+        .where(eq(users.id, id));
+      
+      // Send verification email
+      const protocol = req.protocol || "https";
+      const host = req.get("host") || "localhost:5000";
+      const verifyUrl = `${protocol}://${host}/verify-email/${verificationToken}`;
+      
+      const emailSent = await emailService.sendVerificationEmail(user.email, verifyUrl);
+      
+      res.json({ 
+        message: emailSent ? "Verification email sent successfully" : "Failed to send email",
+        emailSent 
+      });
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({ error: "Failed to resend verification email" });
     }
   });
 

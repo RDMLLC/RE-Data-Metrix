@@ -21,6 +21,20 @@ PostgreSQL is the chosen database, accessed via the Neon serverless driver. Driz
 ### Authentication & Authorization
 The platform includes a complete authentication system with user and lender tables, session management, and email verification via Zoho Mail SMTP. It supports password reset functionality and uses Express sessions with a PostgreSQL store. Middleware-based authorization protects routes for user, lender, and admin access. The login page provides distinct entry points for main users, lenders, and administrators. An Admin Portal offers comprehensive lender management, including listing, archiving, and deleting lenders, along with managing referral configurations. A Lender Portal allows for comprehensive loan product management, including adding, editing, deleting, and bulk importing loan products, categorized into Bridge/Hard Money, DSCR Purchase, DSCR Refinance, and New Construction. A Member Portal provides a dashboard with access to deals analyzed, deal analysis initiation, saved lenders, lender search, tools, and a referral program.
 
+### Admin User Management
+The Admin Portal includes a comprehensive User Management system accessible at `/admin/users`:
+- **User Directory**: Searchable/filterable table of all registered users with subscription management
+- **Stats Overview**: Real-time metrics showing total users, active subscriptions, comped users, referral trials, recent signups, and unverified accounts
+- **Tab Views**: User Directory, Top Active (ranked by deals+lenders activity), Referral Leaders, Recent Signups, Unverified Users
+- **Subscription Control**: Admins can update user subscription status (active, inactive, comped, referral_trial)
+- **Email Verification**: Ability to resend verification emails for unverified users
+- **API Endpoints**:
+  - `GET /api/admin/users` - Returns sanitized user list with activity stats
+  - `GET /api/admin/users/stats` - Returns aggregate user statistics
+  - `PATCH /api/admin/users/:id/subscription` - Update subscription status
+  - `POST /api/admin/users/:id/resend-verification` - Resend verification email
+- **Security**: All endpoints are protected by `ensureAdmin` middleware and use `sanitizeUserForAdmin` helper to prevent exposure of sensitive fields (password hashes, verification tokens, etc.)
+
 ### Membership Access Control
 A subscription-based access system restricts premium features to paying members. A `MembershipPaywall` component displays a lock icon and benefits for protected features like the Deal Analysis wizard's results, loan types education, rental analysis, and certain Toolbox/Resources tabs.
 
@@ -81,11 +95,6 @@ The Rental Analysis flow includes intelligent DSCR lender matching using actual 
 ## Future Tasks & Backlog
 
 This section tracks features, improvements, and fixes to be implemented in future sessions.
-
-### High Priority
-- **Homepage Video Auto-Start**: Make the homepage hero video auto-play when visitors land on the page
-  - **Context**: Video currently requires user interaction to start playing
-  - **Scope**: Add autoplay, muted, and loop attributes to video element for automatic playback
 
 ### Medium Priority
 - **BRRRR Analysis**: Full Buy-Rehab-Rent-Refinance-Repeat strategy modeling

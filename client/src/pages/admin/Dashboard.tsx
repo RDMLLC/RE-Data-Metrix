@@ -132,7 +132,11 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="hover-elevate cursor-pointer" data-testid="card-user-management">
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/admin/users")}
+              data-testid="card-user-management"
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
