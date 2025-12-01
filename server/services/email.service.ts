@@ -279,6 +279,74 @@ class EmailService {
     });
   }
 
+  async sendPrelaunchConfirmation(to: string, name: string): Promise<boolean> {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #D4AF37 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .highlight-box { background: #F0FDF4; border: 1px solid #0F7B49; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+          .feature-box { background: #F9FAFB; padding: 15px; border-radius: 6px; margin: 15px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">You're Locked In!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Early Access Pricing Confirmed</p>
+          </div>
+          <div class="content">
+            <p>Hi ${name},</p>
+            <p>Thank you for signing up for early access to RE Data Metrix! You're now on the list to receive exclusive prelaunch pricing when we go live.</p>
+            
+            <div class="highlight-box">
+              <p style="margin: 0; font-size: 18px; color: #0F7B49; font-weight: 600;">Your Early Access Discount is Reserved!</p>
+            </div>
+            
+            <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 18px;">What's Coming:</h2>
+            
+            <div class="feature-box">
+              <strong style="color: #1E3A8A;">📊 Deal Analysis Tools</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Comprehensive flip and rental property analysis with financing comparisons</p>
+            </div>
+            
+            <div class="feature-box">
+              <strong style="color: #0F7B49;">🏦 Lender Matching</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Connect with verified private lenders matched to your investment criteria</p>
+            </div>
+            
+            <div class="feature-box">
+              <strong style="color: #D4AF37;">🛠️ Investors Toolbox</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Curated tools, resources, and affiliate partnerships for serious investors</p>
+            </div>
+            
+            <p style="margin-top: 25px;">We'll keep you updated on our progress and let you know as soon as we're ready to launch. As an early supporter, you'll get first access at our best pricing.</p>
+            
+            <p style="margin-top: 20px;">Have questions? Just reply to this email - we'd love to hear from you!</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'You\'re Locked In! Early Access Confirmed - RE Data Metrix',
+      html: htmlContent,
+    });
+  }
+
   async sendWelcomeEmail(to: string, username: string): Promise<boolean> {
     const htmlContent = `
       <!DOCTYPE html>

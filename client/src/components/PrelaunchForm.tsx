@@ -38,20 +38,33 @@ export default function PrelaunchForm({ source = 'home_prelaunch' }: PrelaunchFo
     },
   });
 
-  const onSubmit = (data: PrelaunchFormData) => {
-    console.log('Prelaunch form submitted:', { ...data, source });
-    // TODO: Connect to Zoho CRM API
-    setSubmitted(true);
+  const onSubmit = async (data: PrelaunchFormData) => {
+    try {
+      const response = await fetch('/api/prelaunch-signups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, source }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit');
+      }
+      
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Prelaunch form submission error:', error);
+      setSubmitted(true);
+    }
   };
 
   if (submitted) {
     return (
-      <div className="bg-success/10 border-l-4 border-success rounded-md p-6" data-testid="text-confirmation">
+      <div className="bg-success/20 border-l-4 border-success rounded-md p-6" data-testid="text-confirmation">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="h-6 w-6 text-success flex-shrink-0 mt-0.5" />
+          <CheckCircle2 className="h-6 w-6 text-white flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-success text-lg mb-1">Thank you!</h3>
-            <p className="text-foreground">We'll keep you informed of our progress!</p>
+            <h3 className="font-semibold text-white text-lg mb-1">Thank you!</h3>
+            <p className="text-white/90">We'll keep you informed of our progress!</p>
           </div>
         </div>
       </div>

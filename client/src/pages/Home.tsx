@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import Hero from "@/components/Hero";
 import PrelaunchForm from "@/components/PrelaunchForm";
 import { Card } from "@/components/ui/card";
-import { Users, BarChart3, Shield } from "lucide-react";
+import { Users, BarChart3, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
@@ -81,9 +81,9 @@ export default function Home() {
       description: "Connect with verified lenders who understand real estate investment and creative financing."
     },
     {
-      icon: <Shield className="h-8 w-8 text-accent" />,
-      title: "Secure & Reliable",
-      description: "Your data and deals are protected with enterprise-grade security and privacy standards."
+      icon: <Wrench className="h-8 w-8 text-accent" />,
+      title: "Investors Toolbox",
+      description: "Our curated partnerships will help you sort through the noise to determine the tools best suited to help you."
     }
   ];
 
