@@ -1599,6 +1599,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   }
 
+  // Admin Password Reset Routes
+  const adminPasswordResetRequestSchema = z.object({
+    email: z.string().email("Invalid email format"),
+  });
+
+  const adminPasswordResetSchema = z.object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+  });
+
+  app.post("/api/admin/request-password-reset", async (req, res) => {
+    try {
+      const validationResult = adminPasswordResetRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ error: validationResult.error.errors[0].message });
+      }
+      const { email } = validationResult.data;
+      console.log('[ADMIN PASSWORD RESET] Request received for email:', email);
+
+      // Find admin user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(and(
+          sql`LOWER(${users.email}) = LOWER(${email})`,
+          eq(users.role, 'admin')
+        ))
+        .limit(1);
+
+      if (!user) {
+        console.log('[ADMIN PASSWORD RESET] No admin user found for email:', email);
+        // Return same message to prevent email enumeration
+        return res.json({ 
+          message: "If an admin account exists with this email, a password reset link will be sent." 
+        });
+      }
+
+      console.log('[ADMIN PASSWORD RESET] Admin user found:', user.username, '- Generating token...');
+      const resetToken = generateVerificationToken();
+      const resetExpiry = new Date();
+      resetExpiry.setHours(resetExpiry.getHours() + 1); // 1 hour expiry
+
+      await db
+        .update(users)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiry: resetExpiry,
+        })
+        .where(eq(users.id, user.id));
+
+      console.log('[ADMIN PASSWORD RESET] Token saved to database. Attempting to send email...');
+      
+      // Send password reset email with admin-specific URL
+      const protocol = req.protocol || "https";
+      const host = req.get("host") || "localhost:5000";
+      const resetUrl = `${protocol}://${host}/admin/reset-password/${resetToken}`;
+      
+      const emailSent = await emailService.sendPasswordResetEmail(
+        user.email,
+        user.username,
+        resetToken,
+        resetUrl
+      );
+
+      console.log('[ADMIN PASSWORD RESET] Email service returned:', emailSent);
+      if (!emailSent) {
+        console.error('[ADMIN PASSWORD RESET] WARNING: Email service reported failure for:', user.email);
+      } else {
+        console.log('[ADMIN PASSWORD RESET] Email sent successfully to:', user.email);
+      }
+
+      res.json({ 
+        message: "If an admin account exists with this email, a password reset link will be sent." 
+      });
+    } catch (error) {
+      console.error('[ADMIN PASSWORD RESET] Error:', error);
+      res.status(500).json({ error: "Password reset request failed" });
+    }
+  });
+
+  app.post("/api/admin/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      const validationResult = adminPasswordResetSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ error: validationResult.error.errors[0].message });
+      }
+      const { password } = validationResult.data;
+
+      // Find admin user with this reset token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.passwordResetToken, token),
+          eq(users.role, 'admin')
+        ))
+        .limit(1);
+
+      if (!user) {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
+      }
+
+      if (user.passwordResetExpiry && new Date() > user.passwordResetExpiry) {
+        return res.status(400).json({ error: "Reset token has expired. Please request a new one." });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      await db
+        .update(users)
+        .set({
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+        })
+        .where(eq(users.id, user.id));
+
+      console.log('[ADMIN PASSWORD RESET] Password reset successfully for:', user.email);
+      res.json({ message: "Password reset successfully. You can now log in with your new password." });
+    } catch (error) {
+      console.error('[ADMIN PASSWORD RESET] Error:', error);
+      res.status(500).json({ error: "Password reset failed" });
+    }
+  });
+
   // Admin User Management Routes
   app.get("/api/admin/users", ensureAdmin, async (req, res) => {
     try {

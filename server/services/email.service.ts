@@ -131,8 +131,8 @@ class EmailService {
     });
   }
 
-  async sendPasswordResetEmail(to: string, username: string, token: string): Promise<boolean> {
-    const resetUrl = `${this.getBaseUrl()}/reset-password/${token}`;
+  async sendPasswordResetEmail(to: string, username: string, token: string, customResetUrl?: string): Promise<boolean> {
+    const resetUrl = customResetUrl || `${this.getBaseUrl()}/reset-password/${token}`;
 
     const htmlContent = `
       <!DOCTYPE html>

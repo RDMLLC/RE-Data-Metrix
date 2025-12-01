@@ -143,7 +143,7 @@ export default function AdminLogin() {
                     )}
                   />
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col gap-4">
                   <Button
                     type="submit"
                     className="w-full"
@@ -152,6 +152,13 @@ export default function AdminLogin() {
                   >
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
+                  <a 
+                    href="/admin/request-password-reset" 
+                    className="text-sm text-accent hover:underline"
+                    data-testid="link-forgot-password"
+                  >
+                    Forgot your password?
+                  </a>
                 </CardFooter>
               </form>
             </Form>

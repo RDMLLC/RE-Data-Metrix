@@ -38,6 +38,8 @@ import AdminLenderDetail from "@/pages/admin/LenderDetail";
 import AdminReports from "@/pages/admin/Reports";
 import AdminCompUsers from "@/pages/admin/CompUsers";
 import AdminUserManagement from "@/pages/admin/UserManagement";
+import AdminRequestPasswordReset from "@/pages/admin/RequestPasswordReset";
+import AdminResetPassword from "@/pages/admin/ResetPassword";
 import LenderProfile from "@/pages/LenderProfile";
 import VerifyEmail from "@/pages/VerifyEmail";
 import RequestPasswordReset from "@/pages/RequestPasswordReset";
@@ -112,6 +114,8 @@ function Router() {
       <Route path="/lender-saved-by" component={LenderSavedBy} />
       <Route path="/lender-signup/:token" component={LenderSignup} />
       <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/request-password-reset" component={AdminRequestPasswordReset} />
+      <Route path="/admin/reset-password/:token" component={AdminResetPassword} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/lenders/:id" component={AdminLenderDetail} />
       <Route path="/admin/lenders" component={LenderManagement} />
