@@ -127,19 +127,34 @@ export default function Navigation() {
                         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Status:</span>
-                          {getSubscriptionBadge(user.subscriptionStatus || "inactive")}
+                          {user.role === 'admin' ? (
+                            <Badge variant="default" className="text-xs">Admin</Badge>
+                          ) : (
+                            getSubscriptionBadge(user.subscriptionStatus || "inactive")
+                          )}
                         </div>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => setLocation("/portal/profile")}
-                      className="cursor-pointer"
-                      data-testid="menu-item-manage-account"
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Manage Account
-                    </DropdownMenuItem>
+                    {user.role === 'admin' ? (
+                      <DropdownMenuItem 
+                        onClick={() => setLocation("/admin/dashboard")}
+                        className="cursor-pointer"
+                        data-testid="menu-item-admin-dashboard"
+                      >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Admin Dashboard
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem 
+                        onClick={() => setLocation("/portal/dashboard")}
+                        className="cursor-pointer"
+                        data-testid="menu-item-member-dashboard"
+                      >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Member Dashboard
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={handleLogout}
@@ -193,18 +208,32 @@ export default function Navigation() {
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Status:</span>
-                        {getSubscriptionBadge(user.subscriptionStatus || "inactive")}
+                        {user.role === 'admin' ? (
+                          <Badge variant="default" className="text-xs">Admin</Badge>
+                        ) : (
+                          getSubscriptionBadge(user.subscriptionStatus || "inactive")
+                        )}
                       </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setLocation("/portal/profile")}
-                    className="cursor-pointer"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Manage Account
-                  </DropdownMenuItem>
+                  {user.role === 'admin' ? (
+                    <DropdownMenuItem 
+                      onClick={() => setLocation("/admin/dashboard")}
+                      className="cursor-pointer"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem 
+                      onClick={() => setLocation("/portal/dashboard")}
+                      className="cursor-pointer"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Member Dashboard
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleLogout}
