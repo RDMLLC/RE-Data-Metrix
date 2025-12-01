@@ -3,14 +3,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Heart } from "lucide-react";
 import lendersImg from "@assets/generated_images/Lenders_partnership_concept_image_281c2e15.png";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 const searchSchema = z.object({
   state: z.string().optional(),
@@ -45,6 +48,103 @@ export default function Lenders() {
   const [isSearching, setIsSearching] = useState(false);
   const [location] = useLocation();
   const lastHandledQueryRef = useRef<string>('');
+  const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  interface SavedLenderData {
+    lenderId: string;
+  }
+
+  const { data: savedLendersData } = useQuery<SavedLenderData[]>({
+    queryKey: ["/api/member/saved-lenders"],
+    enabled: !!user,
+  });
+
+  const savedLenderIds = savedLendersData?.map((sl) => sl.lenderId) ?? [];
+
+  const addPendingLender = (id: string) => {
+    setPendingLenderIds(prev => new Set(prev).add(id));
+  };
+
+  const removePendingLender = (id: string) => {
+    setPendingLenderIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const saveLenderMutation = useMutation({
+    mutationFn: async (lenderId: string) => {
+      addPendingLender(lenderId);
+      const response = await apiRequest("POST", `/api/member/saved-lenders/${lenderId}`);
+      return response.json();
+    },
+    onSuccess: (_, lenderId) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/member/saved-lenders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/member/stats"] });
+      toast({
+        title: "Lender Saved",
+        description: "Lender has been added to your saved list.",
+      });
+      removePendingLender(lenderId);
+    },
+    onError: (_, lenderId) => {
+      toast({
+        title: "Error",
+        description: "Failed to save lender. Please try again.",
+        variant: "destructive",
+      });
+      removePendingLender(lenderId);
+    },
+  });
+
+  const unsaveLenderMutation = useMutation({
+    mutationFn: async (lenderId: string) => {
+      addPendingLender(lenderId);
+      const response = await apiRequest("DELETE", `/api/member/saved-lenders/${lenderId}`);
+      if (!response.ok) throw new Error("Failed to remove lender");
+      return { success: true };
+    },
+    onSuccess: (_, lenderId) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/member/saved-lenders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/member/stats"] });
+      toast({
+        title: "Lender Removed",
+        description: "Lender has been removed from your saved list.",
+      });
+      removePendingLender(lenderId);
+    },
+    onError: (_, lenderId) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove lender. Please try again.",
+        variant: "destructive",
+      });
+      removePendingLender(lenderId);
+    },
+  });
+
+  const handleToggleSave = (lenderId: string) => {
+    if (!user) {
+      toast({
+        title: "Sign in Required",
+        description: "Please sign in to save lenders to your list.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (pendingLenderIds.has(lenderId)) return;
+
+    const isSaved = savedLenderIds.includes(lenderId);
+    if (isSaved) {
+      unsaveLenderMutation.mutate(lenderId);
+    } else {
+      saveLenderMutation.mutate(lenderId);
+    }
+  };
 
   const form = useForm<SearchForm>({
     resolver: zodResolver(searchSchema),
@@ -516,75 +616,92 @@ export default function Lenders() {
           <div className="mb-12">
             <h2 className="text-3xl font-bold text-primary mb-6">Search Results (Top {Math.min(searchResults.length, 3)})</h2>
             <div className="space-y-6">
-              {searchResults.slice(0, 3).map((lender) => (
-                <Card key={lender.id} className="p-6" data-testid={`card-lender-${lender.id}`}>
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-semibold text-primary mb-2" data-testid={`text-company-name-${lender.id}`}>
-                        {lender.companyName || "Lender"}
-                      </h3>
-                      <div className="space-y-1 text-muted-foreground">
-                        {lender.contactName && (
-                          <p data-testid={`text-contact-name-${lender.id}`}>
-                            <span className="font-medium">Contact:</span> {lender.contactName}
-                          </p>
-                        )}
-                        {lender.phone && (
-                          <p data-testid={`text-phone-${lender.id}`}>
-                            <span className="font-medium">Phone:</span> {lender.phone}
-                          </p>
-                        )}
-                        {lender.email && (
-                          <p data-testid={`text-email-${lender.id}`}>
-                            <span className="font-medium">Email:</span> {lender.email}
-                          </p>
-                        )}
-                        {lender.website && (
-                          <p data-testid={`text-website-${lender.id}`}>
-                            <span className="font-medium">Website:</span>{" "}
-                            <a
-                              href={lender.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-accent hover:underline"
-                            >
-                              {lender.website}
-                            </a>
+              {searchResults.slice(0, 3).map((lender) => {
+                const isSaved = savedLenderIds.includes(lender.id);
+                const isThisLenderPending = pendingLenderIds.has(lender.id);
+                
+                return (
+                  <Card key={lender.id} className="p-6" data-testid={`card-lender-${lender.id}`}>
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-2xl font-semibold text-primary mb-2" data-testid={`text-company-name-${lender.id}`}>
+                            {lender.companyName || "Lender"}
+                          </h3>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleToggleSave(lender.id)}
+                            disabled={isThisLenderPending}
+                            className={`flex-shrink-0 ${isSaved ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
+                            data-testid={`button-save-lender-${lender.id}`}
+                          >
+                            <Heart className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
+                          </Button>
+                        </div>
+                        <div className="space-y-1 text-muted-foreground">
+                          {lender.contactName && (
+                            <p data-testid={`text-contact-name-${lender.id}`}>
+                              <span className="font-medium">Contact:</span> {lender.contactName}
+                            </p>
+                          )}
+                          {lender.phone && (
+                            <p data-testid={`text-phone-${lender.id}`}>
+                              <span className="font-medium">Phone:</span> {lender.phone}
+                            </p>
+                          )}
+                          {lender.email && (
+                            <p data-testid={`text-email-${lender.id}`}>
+                              <span className="font-medium">Email:</span> {lender.email}
+                            </p>
+                          )}
+                          {lender.website && (
+                            <p data-testid={`text-website-${lender.id}`}>
+                              <span className="font-medium">Website:</span>{" "}
+                              <a
+                                href={lender.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-accent hover:underline"
+                              >
+                                {lender.website}
+                              </a>
+                            </p>
+                          )}
+                        </div>
+                        {lender.companyDescription && (
+                          <p className="mt-4 text-foreground" data-testid={`text-description-${lender.id}`}>
+                            {lender.companyDescription}
                           </p>
                         )}
                       </div>
-                      {lender.companyDescription && (
-                        <p className="mt-4 text-foreground" data-testid={`text-description-${lender.id}`}>
-                          {lender.companyDescription}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex-shrink-0">
-                      {lender.referralLink ? (
-                        <a
-                          href={lender.referralLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          data-testid={`button-contact-lender-${lender.id}`}
-                        >
-                          <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-                            Contact the Lender
-                            <ExternalLink className="ml-2 h-4 w-4" />
+                      <div className="flex-shrink-0">
+                        {lender.referralLink ? (
+                          <a
+                            href={lender.referralLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-testid={`button-contact-lender-${lender.id}`}
+                          >
+                            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+                              Contact the Lender
+                              <ExternalLink className="ml-2 h-4 w-4" />
+                            </Button>
+                          </a>
+                        ) : (
+                          <Button
+                            disabled
+                            data-testid={`button-contact-lender-${lender.id}`}
+                            className="bg-muted text-muted-foreground"
+                          >
+                            No Referral Link
                           </Button>
-                        </a>
-                      ) : (
-                        <Button
-                          disabled
-                          data-testid={`button-contact-lender-${lender.id}`}
-                          className="bg-muted text-muted-foreground"
-                        >
-                          No Referral Link
-                        </Button>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}
