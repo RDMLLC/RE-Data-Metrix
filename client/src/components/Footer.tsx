@@ -120,6 +120,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/faq" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-faq">
+                  FAQ
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-privacy">
                   Privacy Policy
                 </Link>
