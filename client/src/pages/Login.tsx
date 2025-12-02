@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Building2, ShieldCheck } from "lucide-react";
+import { CheckCircle, Building2, ShieldCheck, UserPlus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -207,50 +207,43 @@ export default function Login() {
                       >
                         {isLoading ? "Logging in..." : "Login"}
                       </Button>
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground text-center">
-                          <Link href="/request-password-reset">
-                            <a className="text-accent hover:underline" data-testid="link-forgot-password">
-                              Forgot your password?
-                            </a>
-                          </Link>
-                        </p>
-                        <p className="text-sm text-muted-foreground text-center">
-                          Don't have an account?{" "}
-                          <Link href="/register">
-                            <a className="text-primary hover:underline" data-testid="link-register">
-                              Sign up
-                            </a>
-                          </Link>
-                        </p>
-                      </div>
+                      <p className="text-sm text-muted-foreground text-center">
+                        <Link href="/request-password-reset">
+                          <a className="text-accent hover:underline" data-testid="link-forgot-password">
+                            Forgot your password?
+                          </a>
+                        </Link>
+                      </p>
                     </CardFooter>
                   </form>
                 </Form>
               </Card>
             </div>
 
-            {/* Bottom Row - Admin Panel (Left) and Lender Portal (Right) */}
+            {/* Middle Row - New Account (Left) and Lender Portal (Right) */}
             <div className="lg:col-span-1 xl:col-span-1">
-              {/* Admin Login Card */}
-              <Card className="border border-primary/20" data-testid="card-admin-login">
+              {/* New Account Signup Card */}
+              <Card className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20" data-testid="card-new-account">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
+                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg flex items-center justify-center">
+                      <UserPlus className="h-5 w-5 text-emerald-600" />
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-foreground">Admin Panel</h3>
-                      <p className="text-xs text-muted-foreground">Platform management</p>
+                      <h3 className="text-base font-semibold text-foreground">New Account</h3>
+                      <p className="text-xs text-muted-foreground">Join RE Data Metrix</p>
                     </div>
                   </div>
-                  <Link href="/admin/login">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Get access to deal analysis, lender comparisons, and investment tools.
+                  </p>
+                  <Link href="/checkout">
                     <Button
-                      className="w-full"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700"
                       size="sm"
-                      data-testid="button-admin-portal"
+                      data-testid="button-new-account"
                     >
-                      Admin Login
+                      Get Started
                     </Button>
                   </Link>
                 </CardContent>
@@ -330,6 +323,32 @@ export default function Login() {
                     </CardFooter>
                   </form>
                 </Form>
+              </Card>
+            </div>
+
+            {/* Bottom Row - Admin Panel */}
+            <div className="lg:col-span-3">
+              <Card className="border border-primary/20" data-testid="card-admin-login">
+                <CardContent className="p-6 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground">Admin Panel</h3>
+                      <p className="text-xs text-muted-foreground">Platform management</p>
+                    </div>
+                  </div>
+                  <Link href="/admin/login">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-admin-portal"
+                    >
+                      Admin Login
+                    </Button>
+                  </Link>
+                </CardContent>
               </Card>
             </div>
           </div>

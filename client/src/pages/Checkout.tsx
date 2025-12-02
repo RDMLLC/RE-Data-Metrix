@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users, Tag, Star } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users, Tag, Star, Ticket, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -76,6 +76,11 @@ export default function Checkout() {
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number } | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+  
+  // Comp code state
+  const [showCompCodeSection, setShowCompCodeSection] = useState(false);
+  const [compCodeInput, setCompCodeInput] = useState("");
+  const [isValidatingCompCode, setIsValidatingCompCode] = useState(false);
 
   // Calculate prices with proper rounding
   const basePrice = selectedPlan === "monthly" ? MONTHLY_PRICE : ANNUAL_PRICE;
@@ -146,6 +151,32 @@ export default function Checkout() {
   const removeDiscount = () => {
     setAppliedDiscount(null);
     setDiscountCode("");
+  };
+
+  const handleCompCodeValidation = async () => {
+    if (!compCodeInput.trim()) return;
+    setIsValidatingCompCode(true);
+    try {
+      const response = await fetch(`/api/comp-invites/validate/${compCodeInput.trim().toUpperCase()}`);
+      const data = await response.json();
+      if (data.valid) {
+        setLocation(`/register?comp=${compCodeInput.trim().toUpperCase()}`);
+      } else {
+        toast({
+          title: "Invalid Comp Code",
+          description: "This code is invalid or has expired. Please check and try again.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Unable to validate comp code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidatingCompCode(false);
+    }
   };
 
   const checkoutMutation = useMutation({
@@ -466,9 +497,9 @@ export default function Checkout() {
         <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
-              <Link href="/register" className="inline-flex items-center text-primary hover:underline">
+              <Link href="/pricing" className="inline-flex items-center text-primary hover:underline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Registration Options
+                Back to Pricing
               </Link>
             </div>
 
@@ -676,6 +707,54 @@ export default function Checkout() {
                     Sign in
                   </Link>
                 </p>
+
+                {/* Comp Code Section */}
+                <div className="mt-6 border-t pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowCompCodeSection(!showCompCodeSection)}
+                    className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    data-testid="button-toggle-comp-code"
+                  >
+                    <Ticket className="h-4 w-4" />
+                    Have a comp code instead?
+                    {showCompCodeSection ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                  
+                  {showCompCodeSection && (
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Enter your complimentary access code to register for free.
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={compCodeInput}
+                          onChange={(e) => setCompCodeInput(e.target.value.toUpperCase())}
+                          placeholder="Enter comp code"
+                          className="flex-1"
+                          data-testid="input-checkout-comp-code"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCompCodeValidation}
+                          disabled={!compCodeInput.trim() || isValidatingCompCode}
+                          data-testid="button-validate-comp-code"
+                        >
+                          {isValidatingCompCode ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Apply"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Order Summary */}
