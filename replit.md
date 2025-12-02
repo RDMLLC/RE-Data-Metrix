@@ -48,21 +48,27 @@ The Admin Portal includes a comprehensive User Management system accessible at `
 ### Membership Access Control
 A subscription-based access system restricts premium features to paying members. A `MembershipPaywall` component displays a lock icon and benefits for protected features like the Deal Analysis wizard's results, loan types education, rental analysis, and certain Toolbox/Resources tabs.
 
-### Subscription & Payment UI (Zoho Billing Placeholder)
-The platform includes a complete subscription management UI with placeholder integration points for Zoho Billing:
+### Subscription-Only Registration
+The platform requires either a paid subscription ($49/month) or a valid comp code to create an account. There are no free accounts.
+
+**Registration Flow** (`/register`):
+- Two-path choice screen: "Subscribe" or "Enter Comp Code"
+- Subscribe path leads to `/checkout` for inline registration + payment
+- Comp Code path validates the code first, then shows registration form
+- Valid comp codes create accounts with 'comped' subscription status
+- Checkout registrations create accounts with 'inactive' status (pending payment)
 
 **Pricing Page** (`/pricing`):
-- Two-tier comparison: Free Access ($0) vs Full Membership ($49/month)
-- Feature comparison table showing free vs member benefits
-- CTAs adapt to auth state: "Get Started" → "Upgrade Now" → "Manage Subscription"
-- Links to checkout page for upgrades
+- Single Full Membership tier at $49/month
+- Feature list showing all included benefits
+- CTAs adapt to auth state: "Get Started" → "Upgrade Now" → "Go to Dashboard"
+- Comp code link at bottom for users with invitation codes
 
 **Checkout Page** (`/checkout`):
-- Requires authentication (redirects to login if not authenticated)
+- Unauthenticated users see inline registration form + order summary
+- After registration, proceeds to payment (placeholder for Zoho integration)
 - Shows "Already a Member" state for existing subscribers
-- Order summary with plan details and pricing
 - Security badges (PCI-DSS, SSL encryption)
-- "Subscribe Now" button triggers checkout flow
 
 **Profile Subscription Management** (`/portal/profile`):
 - Subscription status card with appropriate badge (Active/Comped/Trial/Free)
