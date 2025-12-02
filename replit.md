@@ -163,6 +163,22 @@ The Rental Analysis flow includes intelligent DSCR lender matching using actual 
 
 This section tracks features, improvements, and fixes to be implemented in future sessions.
 
+### High Priority
+- **Zoho Billing Integration**: Connect payment processing for subscriptions
+  - **Current State**: Checkout creates accounts with 'inactive' status; no payment collection yet
+  - **Required Zoho Setup**:
+    1. Register OAuth client at https://accounts.zoho.com/developerconsole
+    2. Create plans in Zoho Billing: Monthly ($15) and Annual ($150)
+    3. Set up payment gateway (Stripe/PayPal) in Zoho Billing
+    4. Create coupons matching existing discount codes (ATLREIA, etc.)
+  - **Required Secrets**: ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_ORGANIZATION_ID, ZOHO_REFRESH_TOKEN
+  - **Implementation Steps**:
+    1. Use Zoho Hosted Payment Pages for PCI-compliant checkout
+    2. On `/api/subscription/checkout`: Create Zoho customer, generate hosted page URL, redirect user
+    3. Set up webhook at `/api/subscription/webhook` to handle: subscription_created, payment_thankyou, subscription_cancelled
+    4. Update user.subscriptionStatus to 'active' on successful payment webhook
+  - **API Docs**: https://www.zoho.com/billing/api/v1/
+
 ### Medium Priority
 - **BRRRR Analysis**: Full Buy-Rehab-Rent-Refinance-Repeat strategy modeling
   - **Context**: Investors often use bridge/hard money loans for acquisition and rehab, then refinance into a long-term DSCR loan once the property is stabilized and rented
