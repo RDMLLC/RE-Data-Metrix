@@ -78,14 +78,9 @@ class ZohoBillingService {
    * Get the OAuth authorization URL
    */
   getAuthorizationUrl(): string {
-    const scopes = [
-      'ZohoSubscriptions.subscriptions.ALL',
-      'ZohoSubscriptions.invoices.ALL', 
-      'ZohoSubscriptions.customers.ALL',
-      'ZohoSubscriptions.plans.ALL',
-      'ZohoSubscriptions.hostedpages.ALL',
-      'ZohoSubscriptions.coupons.ALL'
-    ].join(',');
+    // Zoho Subscriptions/Billing API scopes
+    // Using full scope for all Subscriptions operations
+    const scopes = 'ZohoSubscriptions.fullaccess.all';
 
     const params = new URLSearchParams({
       scope: scopes,
@@ -95,6 +90,9 @@ class ZohoBillingService {
       access_type: 'offline',
       prompt: 'consent'
     });
+
+    console.log('[Zoho OAuth] Authorization URL:', `${this.accountsUrl}/auth?${params.toString()}`);
+    console.log('[Zoho OAuth] Redirect URI:', this.redirectUri);
 
     return `${this.accountsUrl}/auth?${params.toString()}`;
   }
