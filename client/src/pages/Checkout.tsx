@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users, Tag, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -26,22 +26,22 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 
-const planDetails = {
-  name: "Full Membership",
-  price: 49,
-  interval: "month",
-  features: [
-    "Complete Deal Analysis with ROI calculations",
-    "Side-by-side lender loan comparisons",
-    "Rental Analysis with DSCR calculations",
-    "Access to curated lender network",
-    "Save and track unlimited deals",
-    "Save favorite lenders for quick access",
-    "Export loan analysis reports",
-    "Full access to Toolbox resources",
-    "Priority email support",
-  ],
-};
+const MONTHLY_PRICE = 15;
+const ANNUAL_PRICE = 150;
+const ANNUAL_MONTHLY_EQUIVALENT = (ANNUAL_PRICE / 12).toFixed(2);
+const ANNUAL_SAVINGS = (MONTHLY_PRICE * 12) - ANNUAL_PRICE;
+
+const planFeatures = [
+  "Complete Deal Analysis with ROI calculations",
+  "Side-by-side lender loan comparisons",
+  "Rental Analysis with DSCR calculations",
+  "Access to curated lender network",
+  "Save and track unlimited deals",
+  "Save favorite lenders for quick access",
+  "Export loan analysis reports",
+  "Full access to Toolbox resources",
+  "Priority email support",
+];
 
 const registerSchema = z
   .object({
@@ -62,11 +62,30 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function Checkout() {
   const { isAuthenticated, isSubscriber, user, register: registerUser } = useAuth();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [hasReferralCode, setHasReferralCode] = useState<string>("no");
   const [justRegistered, setJustRegistered] = useState(false);
+  
+  // Plan and discount state
+  const urlParams = new URLSearchParams(searchString);
+  const initialPlan = urlParams.get("plan") === "monthly" ? "monthly" : "annual";
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">(initialPlan);
+  const [discountCode, setDiscountCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number } | null>(null);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+
+  // Calculate prices with proper rounding
+  const basePrice = selectedPlan === "monthly" ? MONTHLY_PRICE : ANNUAL_PRICE;
+  const discountAmount = appliedDiscount 
+    ? (appliedDiscount.percentOff 
+        ? Math.round(basePrice * (appliedDiscount.percentOff / 100) * 100) / 100
+        : appliedDiscount.amountOff)
+    : 0;
+  const finalPrice = Math.round(Math.max(0, basePrice - discountAmount) * 100) / 100;
+  const interval = selectedPlan === "monthly" ? "month" : "year";
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -80,9 +99,61 @@ export default function Checkout() {
     },
   });
 
+  const validateDiscountMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await apiRequest("POST", "/api/subscription/validate-discount", { 
+        code, 
+        plan: selectedPlan 
+      });
+      return await response.json();
+    },
+    onSuccess: (data: { valid: boolean; percentOff?: number; amountOff?: number; message?: string }) => {
+      setIsValidatingDiscount(false);
+      if (data.valid) {
+        setAppliedDiscount({
+          code: discountCode.toUpperCase(),
+          percentOff: data.percentOff || 0,
+          amountOff: data.amountOff || 0,
+        });
+        toast({
+          title: "Discount Applied!",
+          description: data.message || "Your discount has been applied.",
+        });
+      } else {
+        toast({
+          title: "Invalid Code",
+          description: data.message || "This discount code is not valid.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      setIsValidatingDiscount(false);
+      toast({
+        title: "Error",
+        description: "Unable to validate discount code. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApplyDiscount = () => {
+    if (!discountCode.trim()) return;
+    setIsValidatingDiscount(true);
+    validateDiscountMutation.mutate(discountCode.trim());
+  };
+
+  const removeDiscount = () => {
+    setAppliedDiscount(null);
+    setDiscountCode("");
+  };
+
   const checkoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/subscription/checkout", { planId: "full-membership" });
+      const response = await apiRequest("POST", "/api/subscription/checkout", { 
+        planId: selectedPlan === "monthly" ? "monthly" : "annual",
+        discountCode: appliedDiscount?.code,
+      });
       return await response.json();
     },
     onSuccess: (data: { redirectUrl?: string; success?: boolean; message?: string; integrationPending?: boolean }) => {
@@ -134,7 +205,7 @@ export default function Checkout() {
         referralCode: hasReferralCode === "yes" && registerData.referralCode 
           ? registerData.referralCode 
           : undefined,
-        pendingSubscription: true, // Flag to indicate this is a subscription registration
+        pendingSubscription: true,
       };
       const result = await registerUser(finalData);
       
@@ -149,7 +220,6 @@ export default function Checkout() {
           title: "Account Created!",
           description: "Now proceeding to payment...",
         });
-        // Auto-proceed to checkout after registration
         handleCheckout();
       }
     } catch (error: any) {
@@ -162,6 +232,194 @@ export default function Checkout() {
       setIsRegistering(false);
     }
   };
+
+  // Order summary component used in multiple places
+  const OrderSummary = ({ showButton = false }: { showButton?: boolean }) => (
+    <Card className="sticky top-24">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg">Order Summary</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Plan Selection */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Select Plan</Label>
+          <RadioGroup
+            value={selectedPlan}
+            onValueChange={(value) => {
+              setSelectedPlan(value as "monthly" | "annual");
+              // Clear discount when switching plans (plan-specific codes may not apply)
+              if (appliedDiscount) {
+                setAppliedDiscount(null);
+                setDiscountCode("");
+                toast({
+                  title: "Discount Removed",
+                  description: "Please re-apply your discount code for the new plan.",
+                });
+              }
+            }}
+            className="space-y-2"
+            data-testid="radio-plan-selection"
+          >
+            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "monthly" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="monthly" id="plan-monthly" data-testid="radio-plan-monthly" />
+                <Label htmlFor="plan-monthly" className="cursor-pointer">
+                  <div className="font-medium">Monthly</div>
+                  <div className="text-sm text-muted-foreground">Billed monthly</div>
+                </Label>
+              </div>
+              <span className="font-semibold">${MONTHLY_PRICE}/mo</span>
+            </div>
+            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "annual" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="annual" id="plan-annual" data-testid="radio-plan-annual" />
+                <Label htmlFor="plan-annual" className="cursor-pointer">
+                  <div className="font-medium flex items-center gap-2">
+                    Annual
+                    <Badge variant="secondary" className="text-xs bg-success/20 text-success border-0">
+                      Save ${ANNUAL_SAVINGS}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">${ANNUAL_MONTHLY_EQUIVALENT}/mo, billed yearly</div>
+                </Label>
+              </div>
+              <span className="font-semibold">${ANNUAL_PRICE}/yr</span>
+            </div>
+          </RadioGroup>
+        </div>
+
+        <Separator />
+
+        {/* Discount Code */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <Tag className="h-4 w-4" />
+            Discount Code
+          </Label>
+          {appliedDiscount ? (
+            <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/30">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                <span className="font-medium text-success">{appliedDiscount.code}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({appliedDiscount.percentOff ? `${appliedDiscount.percentOff}% off` : `$${appliedDiscount.amountOff} off`})
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={removeDiscount}
+                className="text-muted-foreground hover:text-foreground"
+                data-testid="button-remove-discount"
+              >
+                Remove
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter code"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                className="flex-1"
+                data-testid="input-discount-code"
+              />
+              <Button
+                variant="outline"
+                onClick={handleApplyDiscount}
+                disabled={!discountCode.trim() || isValidatingDiscount}
+                data-testid="button-apply-discount"
+              >
+                {isValidatingDiscount ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Apply"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Price Summary */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">
+              {selectedPlan === "monthly" ? "Monthly" : "Annual"} Membership
+            </span>
+            <span className={appliedDiscount ? "line-through text-muted-foreground" : "font-medium"}>
+              ${basePrice.toFixed(2)}
+            </span>
+          </div>
+          {appliedDiscount && (
+            <div className="flex justify-between items-center text-sm text-success">
+              <span>Discount ({appliedDiscount.code})</span>
+              <span>-${discountAmount.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+        
+        <Separator />
+        
+        <div className="flex justify-between items-center text-lg font-semibold">
+          <span>Total Today</span>
+          <span className="text-primary">${finalPrice.toFixed(2)}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {selectedPlan === "monthly" 
+            ? `Billed $${finalPrice.toFixed(2)}/month. Cancel anytime.`
+            : `Billed $${finalPrice.toFixed(2)}/year. Cancel anytime.`
+          }
+        </p>
+
+        {showButton && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3 w-3 text-success" />
+                <span>PCI-DSS compliant</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Lock className="h-3 w-3 text-success" />
+                <span>256-bit SSL encryption</span>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+      {showButton && (
+        <CardFooter className="flex flex-col gap-4">
+          <Button 
+            onClick={handleCheckout}
+            disabled={isProcessing || checkoutMutation.isPending}
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            size="lg"
+            data-testid="button-subscribe-now"
+          >
+            {isProcessing || checkoutMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-4 w-4 mr-2" />
+                Subscribe Now
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            By subscribing, you agree to our{" "}
+            <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+          </p>
+        </CardFooter>
+      )}
+    </Card>
+  );
 
   // Just registered but needs email verification
   if (justRegistered && !isAuthenticated) {
@@ -422,55 +680,7 @@ export default function Checkout() {
 
               {/* Order Summary */}
               <div className="lg:col-span-2">
-                <Card className="sticky top-24">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">Order Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{planDetails.name}</span>
-                      <span className="font-medium">${planDetails.price}/{planDetails.interval}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center text-lg font-semibold">
-                      <span>Total Today</span>
-                      <span className="text-primary">${planDetails.price}.00</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      You'll be charged ${planDetails.price}/month after registration. Cancel anytime.
-                    </p>
-
-                    <Separator />
-
-                    <div>
-                      <h4 className="font-medium text-sm mb-3">What's Included</h4>
-                      <ul className="space-y-2">
-                        {planDetails.features.slice(0, 4).map((feature, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                            <span className="text-muted-foreground">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        + {planDetails.features.length - 4} more features
-                      </p>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Shield className="h-3 w-3 text-success" />
-                        <span>PCI-DSS compliant</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Lock className="h-3 w-3 text-success" />
-                        <span>256-bit SSL encryption</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <OrderSummary showButton={false} />
               </div>
             </div>
           </div>
@@ -550,12 +760,11 @@ export default function Checkout() {
                   <div className="bg-muted/30 rounded-lg p-4">
                     <div className="flex items-center gap-3 mb-4">
                       <AlertCircle className="h-5 w-5 text-accent" />
-                      <span className="font-medium text-foreground">Zoho Billing Integration</span>
+                      <span className="font-medium text-foreground">Secure Payment</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      When you click "Subscribe Now", you'll be securely redirected to our payment portal 
-                      powered by Zoho Billing. Your payment information is processed securely and never 
-                      stored on our servers.
+                      When you click "Subscribe Now", you'll be securely redirected to our payment portal. 
+                      Your payment information is processed securely and never stored on our servers.
                     </p>
                   </div>
 
@@ -564,7 +773,7 @@ export default function Checkout() {
                   <div>
                     <h3 className="font-semibold text-foreground mb-4">What's Included</h3>
                     <ul className="space-y-2">
-                      {planDetails.features.slice(0, 5).map((feature, index) => (
+                      {planFeatures.slice(0, 5).map((feature, index) => (
                         <li key={index} className="flex items-start gap-3">
                           <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
                           <span className="text-muted-foreground">{feature}</span>
@@ -572,7 +781,7 @@ export default function Checkout() {
                       ))}
                     </ul>
                     <p className="text-sm text-muted-foreground mt-3">
-                      + {planDetails.features.length - 5} more features
+                      + {planFeatures.length - 5} more features
                     </p>
                   </div>
 
@@ -597,52 +806,7 @@ export default function Checkout() {
             </div>
 
             <div className="lg:col-span-2">
-              <Card className="sticky top-24">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg">Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">{planDetails.name}</span>
-                    <span className="font-medium">${planDetails.price}/{planDetails.interval}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center text-lg font-semibold">
-                    <span>Total Today</span>
-                    <span className="text-primary">${planDetails.price}.00</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    You'll be charged ${planDetails.price}/month. Cancel anytime.
-                  </p>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                  <Button 
-                    onClick={handleCheckout}
-                    disabled={isProcessing || checkoutMutation.isPending}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                    size="lg"
-                    data-testid="button-subscribe-now"
-                  >
-                    {isProcessing || checkoutMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Subscribe Now
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    By subscribing, you agree to our{" "}
-                    <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-                  </p>
-                </CardFooter>
-              </Card>
+              <OrderSummary showButton={true} />
             </div>
           </div>
         </div>

@@ -49,7 +49,12 @@ The Admin Portal includes a comprehensive User Management system accessible at `
 A subscription-based access system restricts premium features to paying members. A `MembershipPaywall` component displays a lock icon and benefits for protected features like the Deal Analysis wizard's results, loan types education, rental analysis, and certain Toolbox/Resources tabs.
 
 ### Subscription-Only Registration
-The platform requires either a paid subscription ($49/month) or a valid comp code to create an account. There are no free accounts.
+The platform requires either a paid subscription or a valid comp code to create an account. There are no free accounts.
+
+**Pricing Tiers**:
+- Monthly: $15/month
+- Annual: $150/year (saves $30 compared to monthly)
+- Discount codes can further reduce these prices
 
 **Registration Flow** (`/register`):
 - Two-path choice screen: "Subscribe" or "Enter Comp Code"
@@ -59,16 +64,26 @@ The platform requires either a paid subscription ($49/month) or a valid comp cod
 - Checkout registrations create accounts with 'inactive' status (pending payment)
 
 **Pricing Page** (`/pricing`):
-- Single Full Membership tier at $49/month
-- Feature list showing all included benefits
+- Monthly/Annual toggle with savings badge
+- Side-by-side comparison cards
+- Discount code section directing to checkout
 - CTAs adapt to auth state: "Get Started" → "Upgrade Now" → "Go to Dashboard"
 - Comp code link at bottom for users with invitation codes
 
 **Checkout Page** (`/checkout`):
+- Plan selection (monthly/annual) with inline switching
+- Discount code input with real-time validation
 - Unauthenticated users see inline registration form + order summary
+- Order summary updates dynamically based on plan and discounts
 - After registration, proceeds to payment (placeholder for Zoho integration)
 - Shows "Already a Member" state for existing subscribers
 - Security badges (PCI-DSS, SSL encryption)
+
+**Discount Code Validation** (Placeholder):
+- Endpoint: `POST /api/subscription/validate-discount`
+- Example test codes: SAVE10, SAVE20, FIRST5, WELCOME, ANNUAL25
+- Some codes are plan-specific (e.g., ANNUAL25 only for annual plans)
+- In production, will validate against Zoho Billing's coupon system
 
 **Profile Subscription Management** (`/portal/profile`):
 - Subscription status card with appropriate badge (Active/Comped/Trial/Free)

@@ -304,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subscription/checkout", ensureAuthenticated, async (req, res) => {
     try {
       const user = req.user as User;
-      const { planId } = req.body;
+      const { planId, discountCode } = req.body;
 
       // Check if user already has an active subscription
       if (['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus)) {
@@ -316,12 +316,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // PLACEHOLDER: In production, this would:
       // 1. Create a customer in Zoho Billing if not exists
-      // 2. Create a hosted payment page session
-      // 3. Return the redirect URL to Zoho's payment page
+      // 2. Apply discount code if provided
+      // 3. Create a hosted payment page session
+      // 4. Return the redirect URL to Zoho's payment page
 
       // For now, we'll simulate a successful activation (for testing)
       // In production, remove this and integrate with Zoho API
-      console.log(`[SUBSCRIPTION] Checkout initiated for user ${user.id}, plan: ${planId}`);
+      console.log(`[SUBSCRIPTION] Checkout initiated for user ${user.id}, plan: ${planId}, discount: ${discountCode || 'none'}`);
 
       // Return placeholder response indicating Zoho integration needed
       res.json({
@@ -334,6 +335,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Checkout error:', error);
       res.status(500).json({ error: "Failed to initiate checkout" });
+    }
+  });
+
+  // Validate discount code
+  app.post("/api/subscription/validate-discount", async (req, res) => {
+    try {
+      const { code, plan } = req.body;
+
+      if (!code) {
+        return res.status(400).json({ valid: false, message: "Discount code is required" });
+      }
+
+      // PLACEHOLDER: In production, this would validate against Zoho Billing's coupon system
+      // For now, we provide some example discount codes for testing the UI
+
+      const upperCode = code.toUpperCase();
+      
+      // Example discount codes for UI testing
+      const discountCodes: Record<string, { percentOff?: number; amountOff?: number; plans?: string[]; message: string }> = {
+        'SAVE10': { percentOff: 10, message: '10% off your subscription!' },
+        'SAVE20': { percentOff: 20, message: '20% off your subscription!' },
+        'FIRST5': { amountOff: 5, message: '$5 off your first payment!' },
+        'WELCOME': { percentOff: 15, message: '15% welcome discount applied!' },
+        'ANNUAL25': { percentOff: 25, plans: ['annual'], message: '25% off annual subscriptions!' },
+      };
+
+      const discount = discountCodes[upperCode];
+      
+      if (discount) {
+        // Check if discount is plan-specific
+        if (discount.plans && !discount.plans.includes(plan)) {
+          return res.json({
+            valid: false,
+            message: `This code is only valid for ${discount.plans.join(', ')} plans.`,
+          });
+        }
+
+        return res.json({
+          valid: true,
+          percentOff: discount.percentOff,
+          amountOff: discount.amountOff,
+          message: discount.message,
+        });
+      }
+
+      return res.json({
+        valid: false,
+        message: "Invalid discount code. Please check and try again.",
+      });
+    } catch (error) {
+      console.error('Discount validation error:', error);
+      res.status(500).json({ valid: false, message: "Unable to validate discount code" });
     }
   });
 

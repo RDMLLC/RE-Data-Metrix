@@ -187,8 +187,9 @@ export default function Register() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold text-primary">
-                    $49<span className="text-base font-normal text-muted-foreground">/month</span>
+                    $15<span className="text-base font-normal text-muted-foreground">/month</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">or $150/year (save $30)</p>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-emerald-600" />

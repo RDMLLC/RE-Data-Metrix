@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
@@ -32,6 +33,12 @@ const memberFeatures = [
 
 export default function Pricing() {
   const { isAuthenticated, isSubscriber, user } = useAuth();
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
+
+  const monthlyPrice = 15;
+  const annualPrice = 150;
+  const annualMonthlyEquivalent = (annualPrice / 12).toFixed(2);
+  const annualSavings = (monthlyPrice * 12) - annualPrice;
 
   const getSubscriptionLabel = () => {
     if (!user) return null;
@@ -83,48 +90,164 @@ export default function Pricing() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 max-w-lg mx-auto mb-16">
-            <Card className="relative border-2 border-accent shadow-lg">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <Badge className="bg-accent text-accent-foreground px-4 py-1">
-                  <Star className="h-3 w-3 mr-1 inline" />
-                  Most Popular
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex items-center bg-muted rounded-lg p-1" data-testid="billing-toggle">
+              <button
+                onClick={() => setBillingCycle("monthly")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  billingCycle === "monthly"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="button-monthly"
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle("annual")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  billingCycle === "annual"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="button-annual"
+              >
+                Annual
+                <Badge variant="secondary" className="text-xs bg-success/20 text-success border-0">
+                  Save ${annualSavings}
                 </Badge>
-              </div>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-16">
+            <Card className={`relative transition-all ${billingCycle === "monthly" ? "border-2 border-accent shadow-lg" : "border"}`}>
+              {billingCycle === "monthly" && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-accent text-accent-foreground px-4 py-1">
+                    Selected
+                  </Badge>
+                </div>
+              )}
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl text-primary">Full Membership</CardTitle>
-                <CardDescription>Everything you need to succeed</CardDescription>
+                <CardTitle className="text-xl text-primary">Monthly</CardTitle>
+                <CardDescription>Pay as you go, cancel anytime</CardDescription>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-primary">$49</span>
+                  <span className="text-4xl font-bold text-primary">${monthlyPrice}</span>
                   <span className="text-muted-foreground ml-2">/month</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ul className="space-y-3">
-                  {memberBenefits.map((benefit, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                      <span className="text-foreground">{benefit}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Full access to all features
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Cancel anytime
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Priority email support
+                  </li>
                 </ul>
               </CardContent>
               <CardFooter>
                 {isSubscriber ? (
                   <Link href="/portal/profile" className="w-full">
-                    <Button className="w-full" variant="outline" data-testid="button-manage-subscription">
+                    <Button className="w-full" variant="outline" data-testid="button-manage-monthly">
                       Manage Subscription
                     </Button>
                   </Link>
                 ) : (
-                  <Link href="/checkout" className="w-full">
-                    <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-get-started">
+                  <Link href="/checkout?plan=monthly" className="w-full">
+                    <Button 
+                      className={`w-full ${billingCycle === "monthly" ? "bg-accent hover:bg-accent/90 text-accent-foreground" : ""}`}
+                      variant={billingCycle === "monthly" ? "default" : "outline"}
+                      data-testid="button-get-started-monthly"
+                    >
                       {isAuthenticated ? "Upgrade Now" : "Get Started"}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
                 )}
               </CardFooter>
+            </Card>
+
+            <Card className={`relative transition-all ${billingCycle === "annual" ? "border-2 border-accent shadow-lg" : "border"}`}>
+              {billingCycle === "annual" && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-accent text-accent-foreground px-4 py-1">
+                    <Star className="h-3 w-3 mr-1 inline" />
+                    Best Value
+                  </Badge>
+                </div>
+              )}
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-primary">Annual</CardTitle>
+                <CardDescription>Best value - save ${annualSavings}/year</CardDescription>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-primary">${annualPrice}</span>
+                  <span className="text-muted-foreground ml-2">/year</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Just ${annualMonthlyEquivalent}/month
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Everything in Monthly
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Save ${annualSavings} per year
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Lock in your rate
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                {isSubscriber ? (
+                  <Link href="/portal/profile" className="w-full">
+                    <Button className="w-full" variant="outline" data-testid="button-manage-annual">
+                      Manage Subscription
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/checkout?plan=annual" className="w-full">
+                    <Button 
+                      className={`w-full ${billingCycle === "annual" ? "bg-accent hover:bg-accent/90 text-accent-foreground" : ""}`}
+                      variant={billingCycle === "annual" ? "default" : "outline"}
+                      data-testid="button-get-started-annual"
+                    >
+                      {isAuthenticated ? "Upgrade Now" : "Get Started"}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                )}
+              </CardFooter>
+            </Card>
+          </div>
+
+          <div className="max-w-lg mx-auto mb-16">
+            <Card>
+              <CardHeader className="text-center pb-2">
+                <CardTitle className="text-lg text-primary">Have a Discount Code?</CardTitle>
+                <CardDescription>Apply it at checkout to save even more</CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Link href={`/checkout?plan=${billingCycle}`}>
+                  <Button variant="outline" data-testid="button-apply-discount">
+                    Enter Code at Checkout
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
             </Card>
           </div>
 
@@ -218,7 +341,7 @@ export default function Pricing() {
               Join thousands of real estate investors who use RE Data Metrix to analyze deals, compare financing options, and close with confidence.
             </p>
             {!isSubscriber ? (
-              <Link href="/checkout">
+              <Link href={`/checkout?plan=${billingCycle}`}>
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-cta-signup">
                   {isAuthenticated ? "Upgrade Now" : "Get Started"}
                   <ArrowRight className="h-5 w-5 ml-2" />
