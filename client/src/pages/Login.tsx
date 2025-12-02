@@ -208,10 +208,8 @@ export default function Login() {
                         {isLoading ? "Logging in..." : "Login"}
                       </Button>
                       <p className="text-sm text-muted-foreground text-center">
-                        <Link href="/request-password-reset">
-                          <a className="text-accent hover:underline" data-testid="link-forgot-password">
-                            Forgot your password?
-                          </a>
+                        <Link href="/request-password-reset" className="text-accent hover:underline" data-testid="link-forgot-password">
+                          Forgot your password?
                         </Link>
                       </p>
                     </CardFooter>
@@ -339,10 +337,8 @@ export default function Login() {
                         {isLenderLoading ? "Logging in..." : "Login as Lender"}
                       </Button>
                       <p className="text-sm text-muted-foreground text-center">
-                        <Link href="/lender/request-password-reset">
-                          <a className="text-accent hover:underline" data-testid="link-lender-forgot-password">
-                            Forgot your password?
-                          </a>
+                        <Link href="/lender/request-password-reset" className="text-accent hover:underline" data-testid="link-lender-forgot-password">
+                          Forgot your password?
                         </Link>
                       </p>
                     </CardFooter>
