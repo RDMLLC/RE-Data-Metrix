@@ -41,6 +41,7 @@ import AdminDiscountCodes from "@/pages/admin/DiscountCodes";
 import AdminUserManagement from "@/pages/admin/UserManagement";
 import AdminRequestPasswordReset from "@/pages/admin/RequestPasswordReset";
 import AdminResetPassword from "@/pages/admin/ResetPassword";
+import AdminIntegrations from "@/pages/admin/Integrations";
 import LenderProfile from "@/pages/LenderProfile";
 import VerifyEmail from "@/pages/VerifyEmail";
 import RequestPasswordReset from "@/pages/RequestPasswordReset";
@@ -130,6 +131,7 @@ function Router() {
       <Route path="/admin/comp-users" component={AdminCompUsers} />
       <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
       <Route path="/admin/users" component={AdminUserManagement} />
+      <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route path="/admin/lender-invite" component={LenderInvite} />
       <Route component={NotFound} />
     </Switch>

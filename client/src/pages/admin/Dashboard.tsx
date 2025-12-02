@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, CreditCard, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle } from "lucide-react";
 
 interface ZohoStatus {
   configured: boolean;
@@ -24,8 +24,6 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [zohoStatus, setZohoStatus] = useState<ZohoStatus | null>(null);
-  const [isConnectingZoho, setIsConnectingZoho] = useState(false);
-  const [isTestingZoho, setIsTestingZoho] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -60,66 +58,6 @@ export default function AdminDashboard() {
     fetchAdminInfo();
     fetchZohoStatus();
   }, []);
-
-  const handleConnectZoho = async () => {
-    setIsConnectingZoho(true);
-    try {
-      const response = await fetch("/api/zoho/auth", {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.authUrl) {
-          window.location.href = data.authUrl;
-        }
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.error || "Failed to start Zoho authorization",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to connect to Zoho",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnectingZoho(false);
-    }
-  };
-
-  const handleTestZoho = async () => {
-    setIsTestingZoho(true);
-    try {
-      const response = await fetch("/api/zoho/test", {
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast({
-          title: "Connection Successful",
-          description: `Found ${data.plansFound} plans in Zoho Billing`,
-        });
-      } else {
-        toast({
-          title: "Connection Failed",
-          description: data.error || "Failed to connect to Zoho Billing",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to test Zoho connection",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTestingZoho(false);
-    }
-  };
 
   const handleLogout = async () => {
     setIsLoading(true);
@@ -321,15 +259,19 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card data-testid="card-zoho-billing">
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/admin/integrations")}
+              data-testid="card-integrations"
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <CreditCard className="h-5 w-5 text-blue-500" />
+                    <Plug className="h-5 w-5 text-blue-500" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <CardTitle>Zoho Billing</CardTitle>
+                      <CardTitle>Integrations</CardTitle>
                       {zohoStatus?.ready ? (
                         <Badge variant="outline" className="text-green-600 border-green-600">
                           <CheckCircle className="h-3 w-3 mr-1" />
@@ -338,96 +280,17 @@ export default function AdminDashboard() {
                       ) : zohoStatus?.configured ? (
                         <Badge variant="outline" className="text-amber-600 border-amber-600">
                           <AlertCircle className="h-3 w-3 mr-1" />
-                          Needs Setup
+                          Setup Required
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          Not Configured
-                        </Badge>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent>
                 <CardDescription>
-                  Connect Zoho Billing to enable subscription payments
+                  Manage Zoho Billing and other external service connections
                 </CardDescription>
-                
-                {zohoStatus && (
-                  <div className="text-xs space-y-1 text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      {zohoStatus.hasClientId ? (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-3 w-3 text-red-500" />
-                      )}
-                      Client ID
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {zohoStatus.hasClientSecret ? (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-3 w-3 text-red-500" />
-                      )}
-                      Client Secret
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {zohoStatus.hasRefreshToken ? (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-3 w-3 text-red-500" />
-                      )}
-                      Refresh Token
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {zohoStatus.hasOrganizationId ? (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-3 w-3 text-red-500" />
-                      )}
-                      Organization ID
-                    </div>
-                  </div>
-                )}
-                
-                <div className="flex gap-2 pt-2">
-                  {!zohoStatus?.ready && zohoStatus?.configured && (
-                    <Button 
-                      size="sm" 
-                      onClick={handleConnectZoho}
-                      disabled={isConnectingZoho}
-                      data-testid="button-connect-zoho"
-                    >
-                      {isConnectingZoho ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        "Authorize with Zoho"
-                      )}
-                    </Button>
-                  )}
-                  {zohoStatus?.ready && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={handleTestZoho}
-                      disabled={isTestingZoho}
-                      data-testid="button-test-zoho"
-                    >
-                      {isTestingZoho ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Testing...
-                        </>
-                      ) : (
-                        "Test Connection"
-                      )}
-                    </Button>
-                  )}
-                </div>
               </CardContent>
             </Card>
           </div>
