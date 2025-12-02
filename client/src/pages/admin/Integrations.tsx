@@ -68,7 +68,13 @@ export default function AdminIntegrations() {
       if (response.ok) {
         const data = await response.json();
         if (data.authUrl) {
-          window.location.href = data.authUrl;
+          // Open in a new browser tab to avoid iframe restrictions
+          // Zoho blocks OAuth in iframes for security
+          window.open(data.authUrl, '_blank', 'noopener,noreferrer');
+          toast({
+            title: "Authorization Started",
+            description: "Complete the authorization in the new tab, then return here and click Refresh",
+          });
         }
       } else {
         const data = await response.json();
