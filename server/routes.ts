@@ -2310,16 +2310,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminUser = req.user as User;
       const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive } = req.body;
       
-      if (!code || !displayName) {
-        return res.status(400).json({ error: "Code and display name are required" });
+      if (!code || typeof code !== 'string' || code.trim().length === 0) {
+        return res.status(400).json({ error: "Code is required" });
       }
       
-      if (!percentOff && !amountOff) {
+      if (!displayName || typeof displayName !== 'string' || displayName.trim().length === 0) {
+        return res.status(400).json({ error: "Display name is required" });
+      }
+      
+      // Parse and validate discount values with explicit NaN checks
+      const numPercentOff = percentOff !== undefined && percentOff !== null && percentOff !== '' 
+        ? Number(percentOff) 
+        : null;
+      const numAmountOff = amountOff !== undefined && amountOff !== null && amountOff !== '' 
+        ? Number(amountOff) 
+        : null;
+      
+      // Check for NaN
+      if (numPercentOff !== null && !Number.isFinite(numPercentOff)) {
+        return res.status(400).json({ error: "Percent off must be a valid number" });
+      }
+      
+      if (numAmountOff !== null && !Number.isFinite(numAmountOff)) {
+        return res.status(400).json({ error: "Amount off must be a valid number" });
+      }
+      
+      // Validate mutual exclusivity
+      if (numPercentOff === null && numAmountOff === null) {
         return res.status(400).json({ error: "Either percent off or amount off is required" });
       }
       
-      if (percentOff && amountOff) {
+      if (numPercentOff !== null && numAmountOff !== null) {
         return res.status(400).json({ error: "Cannot specify both percent off and amount off" });
+      }
+      
+      // Validate ranges
+      if (numPercentOff !== null && (numPercentOff <= 0 || numPercentOff > 100)) {
+        return res.status(400).json({ error: "Percent off must be between 1 and 100" });
+      }
+      
+      if (numAmountOff !== null && numAmountOff <= 0) {
+        return res.status(400).json({ error: "Amount off must be greater than 0" });
+      }
+      
+      // Validate maxRedemptions if provided
+      if (maxRedemptions !== undefined && maxRedemptions !== null && maxRedemptions !== '') {
+        const numMax = Number(maxRedemptions);
+        if (!Number.isFinite(numMax) || numMax <= 0 || !Number.isInteger(numMax)) {
+          return res.status(400).json({ error: "Max redemptions must be a positive integer" });
+        }
+      }
+      
+      // Validate date ordering
+      if (startAt && endAt && new Date(startAt) >= new Date(endAt)) {
+        return res.status(400).json({ error: "End date must be after start date" });
       }
 
       // Check if code already exists
@@ -2334,8 +2378,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         partnerName,
         description,
         planApplicability: planApplicability || 'both',
-        percentOff: percentOff ? Number(percentOff) : undefined,
-        amountOff: amountOff ? Number(amountOff) : undefined,
+        percentOff: numPercentOff || undefined,
+        amountOff: numAmountOff || undefined,
         maxRedemptions: maxRedemptions ? Number(maxRedemptions) : undefined,
         startAt: startAt ? new Date(startAt) : undefined,
         endAt: endAt ? new Date(endAt) : undefined,
@@ -2354,20 +2398,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
+      
+      if (!id || typeof id !== 'string' || id.trim().length === 0) {
+        return res.status(400).json({ error: "Invalid discount code ID" });
+      }
+      
       const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive } = req.body;
       
       const updateData: any = {};
-      if (code !== undefined) updateData.code = code;
-      if (displayName !== undefined) updateData.displayName = displayName;
+      if (code !== undefined) {
+        if (typeof code !== 'string' || code.trim().length === 0) {
+          return res.status(400).json({ error: "Code cannot be empty" });
+        }
+        updateData.code = code;
+      }
+      if (displayName !== undefined) {
+        if (typeof displayName !== 'string' || displayName.trim().length === 0) {
+          return res.status(400).json({ error: "Display name cannot be empty" });
+        }
+        updateData.displayName = displayName;
+      }
       if (partnerName !== undefined) updateData.partnerName = partnerName;
       if (description !== undefined) updateData.description = description;
       if (planApplicability !== undefined) updateData.planApplicability = planApplicability;
-      if (percentOff !== undefined) updateData.percentOff = percentOff ? Number(percentOff) : null;
-      if (amountOff !== undefined) updateData.amountOff = amountOff ? Number(amountOff) : null;
-      if (maxRedemptions !== undefined) updateData.maxRedemptions = maxRedemptions ? Number(maxRedemptions) : null;
+      
+      // Handle discount values with validation
+      if (percentOff !== undefined || amountOff !== undefined) {
+        const numPercentOff = percentOff !== undefined && percentOff !== null && percentOff !== '' 
+          ? Number(percentOff) 
+          : null;
+        const numAmountOff = amountOff !== undefined && amountOff !== null && amountOff !== '' 
+          ? Number(amountOff) 
+          : null;
+        
+        // Check for NaN
+        if (numPercentOff !== null && !Number.isFinite(numPercentOff)) {
+          return res.status(400).json({ error: "Percent off must be a valid number" });
+        }
+        
+        if (numAmountOff !== null && !Number.isFinite(numAmountOff)) {
+          return res.status(400).json({ error: "Amount off must be a valid number" });
+        }
+        
+        if (numPercentOff !== null && numAmountOff !== null) {
+          return res.status(400).json({ error: "Cannot specify both percent off and amount off" });
+        }
+        
+        if (numPercentOff !== null && (numPercentOff <= 0 || numPercentOff > 100)) {
+          return res.status(400).json({ error: "Percent off must be between 1 and 100" });
+        }
+        
+        if (numAmountOff !== null && numAmountOff <= 0) {
+          return res.status(400).json({ error: "Amount off must be greater than 0" });
+        }
+        
+        updateData.percentOff = numPercentOff;
+        updateData.amountOff = numAmountOff;
+      }
+      
+      // Validate maxRedemptions if provided
+      if (maxRedemptions !== undefined) {
+        if (maxRedemptions !== null && maxRedemptions !== '') {
+          const numMax = Number(maxRedemptions);
+          if (!Number.isFinite(numMax) || numMax <= 0 || !Number.isInteger(numMax)) {
+            return res.status(400).json({ error: "Max redemptions must be a positive integer" });
+          }
+          updateData.maxRedemptions = numMax;
+        } else {
+          updateData.maxRedemptions = null;
+        }
+      }
+      
       if (startAt !== undefined) updateData.startAt = startAt ? new Date(startAt) : null;
       if (endAt !== undefined) updateData.endAt = endAt ? new Date(endAt) : null;
       if (isActive !== undefined) updateData.isActive = isActive;
+      
+      // Validate date ordering
+      if (updateData.startAt && updateData.endAt && updateData.startAt >= updateData.endAt) {
+        return res.status(400).json({ error: "End date must be after start date" });
+      }
 
       // Check for code uniqueness if changing code
       if (code) {
@@ -2394,6 +2503,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
+      
+      if (!id || typeof id !== 'string') {
+        return res.status(400).json({ error: "Invalid discount code ID" });
+      }
+      
       const deleted = await storage.deleteDiscountCode(id);
       
       if (!deleted) {
