@@ -163,6 +163,20 @@ The Rental Analysis flow includes intelligent DSCR lender matching using actual 
 
 This section tracks features, improvements, and fixes to be implemented in future sessions.
 
+### Low Priority
+- **Login Page Layout Reorganization**
+  - Remove "Don't have an account? Sign up" link from under Member Portal form
+  - Create new "New Account" signup box where Admin Panel currently sits (left side, same row as Lender Portal)
+  - Move Admin Panel box below the Lender Portal section
+  - **Impact**: Cleaner layout with prominent signup option for new users
+
+- **Registration Flow Simplification (Option A)**
+  - Skip /register page entirely - send new users directly to /checkout
+  - The checkout page already handles plan selection, discount codes, and registration
+  - Add small "Have a comp code instead?" link at bottom of checkout that expands comp code input
+  - Comp codes could be entered in discount code field with special handling, or via expandable section
+  - **Impact**: Eliminates extra step, streamlines user journey, de-emphasizes comp codes appropriately
+
 ### Medium Priority
 - **BRRRR Analysis**: Full Buy-Rehab-Rent-Refinance-Repeat strategy modeling
   - **Context**: Investors often use bridge/hard money loans for acquisition and rehab, then refinance into a long-term DSCR loan once the property is stabilized and rented
