@@ -18,6 +18,8 @@ import {
   type AffiliateClick,
   type InsertAffiliateClick,
   type CompInvite,
+  type DiscountCode,
+  type DiscountCodeUse,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -29,7 +31,9 @@ import {
   savedDeals as savedDealsTable,
   savedLenders as savedLendersTable,
   affiliateClicks as affiliateClicksTable,
-  compInvites as compInvitesTable
+  compInvites as compInvitesTable,
+  discountCodes as discountCodesTable,
+  discountCodeUses as discountCodeUsesTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -224,6 +228,169 @@ export interface IStorage {
   }>>;
   resendCompInvite(id: string): Promise<{compCode: string; email: string; expiresAt: Date} | undefined>;
   deleteCompInvite(id: string): Promise<boolean>;
+  
+  // Discount Codes
+  createDiscountCode(data: {
+    code: string;
+    displayName: string;
+    partnerName?: string;
+    description?: string;
+    planApplicability: 'monthly' | 'annual' | 'both';
+    percentOff?: number;
+    amountOff?: number;
+    maxRedemptions?: number;
+    startAt?: Date;
+    endAt?: Date;
+    isActive?: boolean;
+    createdBy?: string;
+  }): Promise<{
+    id: string;
+    code: string;
+    displayName: string;
+    partnerName: string | null;
+    description: string | null;
+    planApplicability: string;
+    percentOff: string | null;
+    amountOff: string | null;
+    maxRedemptions: number | null;
+    currentRedemptions: number;
+    startAt: Date | null;
+    endAt: Date | null;
+    isActive: boolean;
+    createdBy: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  }>;
+  
+  getDiscountCode(id: string): Promise<{
+    id: string;
+    code: string;
+    displayName: string;
+    partnerName: string | null;
+    description: string | null;
+    planApplicability: string;
+    percentOff: string | null;
+    amountOff: string | null;
+    maxRedemptions: number | null;
+    currentRedemptions: number;
+    startAt: Date | null;
+    endAt: Date | null;
+    isActive: boolean;
+    createdBy: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  } | undefined>;
+  
+  getDiscountCodeByCode(code: string): Promise<{
+    id: string;
+    code: string;
+    displayName: string;
+    partnerName: string | null;
+    description: string | null;
+    planApplicability: string;
+    percentOff: string | null;
+    amountOff: string | null;
+    maxRedemptions: number | null;
+    currentRedemptions: number;
+    startAt: Date | null;
+    endAt: Date | null;
+    isActive: boolean;
+    createdBy: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  } | undefined>;
+  
+  getAllDiscountCodes(filters?: {
+    search?: string;
+    partnerName?: string;
+    planApplicability?: string;
+    isActive?: boolean;
+  }): Promise<Array<{
+    id: string;
+    code: string;
+    displayName: string;
+    partnerName: string | null;
+    description: string | null;
+    planApplicability: string;
+    percentOff: string | null;
+    amountOff: string | null;
+    maxRedemptions: number | null;
+    currentRedemptions: number;
+    startAt: Date | null;
+    endAt: Date | null;
+    isActive: boolean;
+    createdBy: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+    totalRedemptions: number;
+    totalAmountDiscounted: number;
+    lastUsedAt: Date | null;
+  }>>;
+  
+  updateDiscountCode(id: string, data: {
+    code?: string;
+    displayName?: string;
+    partnerName?: string | null;
+    description?: string | null;
+    planApplicability?: 'monthly' | 'annual' | 'both';
+    percentOff?: number | null;
+    amountOff?: number | null;
+    maxRedemptions?: number | null;
+    startAt?: Date | null;
+    endAt?: Date | null;
+    isActive?: boolean;
+  }): Promise<{
+    id: string;
+    code: string;
+    displayName: string;
+    partnerName: string | null;
+    description: string | null;
+    planApplicability: string;
+    percentOff: string | null;
+    amountOff: string | null;
+    maxRedemptions: number | null;
+    currentRedemptions: number;
+    startAt: Date | null;
+    endAt: Date | null;
+    isActive: boolean;
+    createdBy: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  } | undefined>;
+  
+  deleteDiscountCode(id: string): Promise<boolean>;
+  
+  recordDiscountCodeUse(data: {
+    discountCodeId: string;
+    userId?: string;
+    plan: string;
+    amountDiscounted: number;
+  }): Promise<void>;
+  
+  getDiscountCodeUsage(discountCodeId: string): Promise<Array<{
+    id: string;
+    userId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    plan: string;
+    amountDiscounted: string;
+    redeemedAt: Date | null;
+  }>>;
+  
+  getDiscountCodeStats(): Promise<{
+    totalCodes: number;
+    activeCodes: number;
+    totalRedemptions: number;
+    totalAmountDiscounted: number;
+    topCodes: Array<{
+      id: string;
+      code: string;
+      displayName: string;
+      partnerName: string | null;
+      redemptions: number;
+      amountDiscounted: number;
+    }>;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -1987,6 +2154,249 @@ export class DatabaseStorage implements IStorage {
       productName: r.productName,
       productReferralLink: r.productReferralLink,
     }));
+  }
+
+  // Discount Code Methods
+  async createDiscountCode(data: {
+    code: string;
+    displayName: string;
+    partnerName?: string;
+    description?: string;
+    planApplicability: 'monthly' | 'annual' | 'both';
+    percentOff?: number;
+    amountOff?: number;
+    maxRedemptions?: number;
+    startAt?: Date;
+    endAt?: Date;
+    isActive?: boolean;
+    createdBy?: string;
+  }): Promise<DiscountCode> {
+    const result = await db.insert(discountCodesTable).values({
+      code: data.code.toUpperCase(),
+      displayName: data.displayName,
+      partnerName: data.partnerName || null,
+      description: data.description || null,
+      planApplicability: data.planApplicability,
+      percentOff: data.percentOff?.toString() || null,
+      amountOff: data.amountOff?.toString() || null,
+      maxRedemptions: data.maxRedemptions || null,
+      startAt: data.startAt || null,
+      endAt: data.endAt || null,
+      isActive: data.isActive ?? true,
+      createdBy: data.createdBy || null,
+    }).returning();
+    return result[0];
+  }
+
+  async getDiscountCode(id: string): Promise<DiscountCode | undefined> {
+    const result = await db.select().from(discountCodesTable).where(eq(discountCodesTable.id, id));
+    return result[0];
+  }
+
+  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+    const result = await db.select().from(discountCodesTable).where(eq(discountCodesTable.code, code.toUpperCase()));
+    return result[0];
+  }
+
+  async getAllDiscountCodes(filters?: {
+    search?: string;
+    partnerName?: string;
+    planApplicability?: string;
+    isActive?: boolean;
+  }): Promise<Array<DiscountCode & {
+    totalRedemptions: number;
+    totalAmountDiscounted: number;
+    lastUsedAt: Date | null;
+  }>> {
+    const codes = await db.select().from(discountCodesTable).orderBy(desc(discountCodesTable.createdAt));
+    
+    // Apply filters
+    let filteredCodes = codes;
+    if (filters) {
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredCodes = filteredCodes.filter(c => 
+          c.code.toLowerCase().includes(searchLower) || 
+          c.displayName.toLowerCase().includes(searchLower) ||
+          (c.partnerName && c.partnerName.toLowerCase().includes(searchLower))
+        );
+      }
+      if (filters.partnerName) {
+        filteredCodes = filteredCodes.filter(c => c.partnerName === filters.partnerName);
+      }
+      if (filters.planApplicability) {
+        filteredCodes = filteredCodes.filter(c => c.planApplicability === filters.planApplicability);
+      }
+      if (filters.isActive !== undefined) {
+        filteredCodes = filteredCodes.filter(c => c.isActive === filters.isActive);
+      }
+    }
+
+    // Get usage stats for each code
+    const usageStats = await db
+      .select({
+        discountCodeId: discountCodeUsesTable.discountCodeId,
+        totalRedemptions: count(),
+        totalAmountDiscounted: sqlCount`COALESCE(SUM(${discountCodeUsesTable.amountDiscounted}), 0)`,
+        lastUsedAt: sqlCount`MAX(${discountCodeUsesTable.redeemedAt})`,
+      })
+      .from(discountCodeUsesTable)
+      .groupBy(discountCodeUsesTable.discountCodeId);
+
+    const statsMap = new Map(usageStats.map(s => [s.discountCodeId, s]));
+
+    return filteredCodes.map(code => ({
+      ...code,
+      totalRedemptions: Number(statsMap.get(code.id)?.totalRedemptions || 0),
+      totalAmountDiscounted: Number(statsMap.get(code.id)?.totalAmountDiscounted || 0),
+      lastUsedAt: statsMap.get(code.id)?.lastUsedAt as Date | null,
+    }));
+  }
+
+  async updateDiscountCode(id: string, data: {
+    code?: string;
+    displayName?: string;
+    partnerName?: string | null;
+    description?: string | null;
+    planApplicability?: 'monthly' | 'annual' | 'both';
+    percentOff?: number | null;
+    amountOff?: number | null;
+    maxRedemptions?: number | null;
+    startAt?: Date | null;
+    endAt?: Date | null;
+    isActive?: boolean;
+  }): Promise<DiscountCode | undefined> {
+    const updateData: any = { updatedAt: new Date() };
+    if (data.code !== undefined) updateData.code = data.code.toUpperCase();
+    if (data.displayName !== undefined) updateData.displayName = data.displayName;
+    if (data.partnerName !== undefined) updateData.partnerName = data.partnerName;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.planApplicability !== undefined) updateData.planApplicability = data.planApplicability;
+    if (data.percentOff !== undefined) updateData.percentOff = data.percentOff?.toString() || null;
+    if (data.amountOff !== undefined) updateData.amountOff = data.amountOff?.toString() || null;
+    if (data.maxRedemptions !== undefined) updateData.maxRedemptions = data.maxRedemptions;
+    if (data.startAt !== undefined) updateData.startAt = data.startAt;
+    if (data.endAt !== undefined) updateData.endAt = data.endAt;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
+    const result = await db.update(discountCodesTable)
+      .set(updateData)
+      .where(eq(discountCodesTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteDiscountCode(id: string): Promise<boolean> {
+    // First delete any usage records
+    await db.delete(discountCodeUsesTable).where(eq(discountCodeUsesTable.discountCodeId, id));
+    // Then delete the code
+    const result = await db.delete(discountCodesTable).where(eq(discountCodesTable.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async recordDiscountCodeUse(data: {
+    discountCodeId: string;
+    userId?: string;
+    plan: string;
+    amountDiscounted: number;
+  }): Promise<void> {
+    await db.insert(discountCodeUsesTable).values({
+      discountCodeId: data.discountCodeId,
+      userId: data.userId || null,
+      plan: data.plan,
+      amountDiscounted: data.amountDiscounted.toString(),
+    });
+    
+    // Increment the current redemptions counter
+    await db.update(discountCodesTable)
+      .set({ 
+        currentRedemptions: sqlCount`${discountCodesTable.currentRedemptions} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(discountCodesTable.id, data.discountCodeId));
+  }
+
+  async getDiscountCodeUsage(discountCodeId: string): Promise<Array<{
+    id: string;
+    userId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    plan: string;
+    amountDiscounted: string;
+    redeemedAt: Date | null;
+  }>> {
+    const uses = await db
+      .select({
+        id: discountCodeUsesTable.id,
+        userId: discountCodeUsesTable.userId,
+        userName: usersTable.username,
+        userEmail: usersTable.email,
+        plan: discountCodeUsesTable.plan,
+        amountDiscounted: discountCodeUsesTable.amountDiscounted,
+        redeemedAt: discountCodeUsesTable.redeemedAt,
+      })
+      .from(discountCodeUsesTable)
+      .leftJoin(usersTable, eq(discountCodeUsesTable.userId, usersTable.id))
+      .where(eq(discountCodeUsesTable.discountCodeId, discountCodeId))
+      .orderBy(desc(discountCodeUsesTable.redeemedAt));
+
+    return uses;
+  }
+
+  async getDiscountCodeStats(): Promise<{
+    totalCodes: number;
+    activeCodes: number;
+    totalRedemptions: number;
+    totalAmountDiscounted: number;
+    topCodes: Array<{
+      id: string;
+      code: string;
+      displayName: string;
+      partnerName: string | null;
+      redemptions: number;
+      amountDiscounted: number;
+    }>;
+  }> {
+    const allCodes = await db.select().from(discountCodesTable);
+    const totalCodes = allCodes.length;
+    const activeCodes = allCodes.filter(c => c.isActive).length;
+
+    const usageStats = await db
+      .select({
+        discountCodeId: discountCodeUsesTable.discountCodeId,
+        redemptions: count(),
+        amountDiscounted: sqlCount`COALESCE(SUM(${discountCodeUsesTable.amountDiscounted}), 0)`,
+      })
+      .from(discountCodeUsesTable)
+      .groupBy(discountCodeUsesTable.discountCodeId);
+
+    const totalRedemptions = usageStats.reduce((sum, s) => sum + Number(s.redemptions), 0);
+    const totalAmountDiscounted = usageStats.reduce((sum, s) => sum + Number(s.amountDiscounted), 0);
+
+    // Get top codes by redemptions
+    const codeMap = new Map(allCodes.map(c => [c.id, c]));
+    const topCodes = usageStats
+      .map(s => {
+        const code = codeMap.get(s.discountCodeId);
+        return {
+          id: s.discountCodeId,
+          code: code?.code || '',
+          displayName: code?.displayName || '',
+          partnerName: code?.partnerName || null,
+          redemptions: Number(s.redemptions),
+          amountDiscounted: Number(s.amountDiscounted),
+        };
+      })
+      .sort((a, b) => b.redemptions - a.redemptions)
+      .slice(0, 10);
+
+    return {
+      totalCodes,
+      activeCodes,
+      totalRedemptions,
+      totalAmountDiscounted,
+      topCodes,
+    };
   }
 
 }

@@ -491,3 +491,61 @@ export const criteriaSelectionSchema = z.object({
 });
 
 export type CriteriaSelectionData = z.infer<typeof criteriaSelectionSchema>;
+
+// Discount Codes for subscription pricing
+export const discountCodes = pgTable("discount_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  displayName: text("display_name").notNull(),
+  partnerName: text("partner_name"),
+  description: text("description"),
+  planApplicability: text("plan_applicability").notNull().default('both'), // 'monthly', 'annual', or 'both'
+  percentOff: decimal("percent_off", { precision: 5, scale: 2 }),
+  amountOff: decimal("amount_off", { precision: 12, scale: 2 }),
+  maxRedemptions: integer("max_redemptions"),
+  currentRedemptions: integer("current_redemptions").notNull().default(0),
+  startAt: timestamp("start_at"),
+  endAt: timestamp("end_at"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertDiscountCodeSchema = createInsertSchema(discountCodes).omit({
+  id: true,
+  currentRedemptions: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDiscountCode = z.infer<typeof insertDiscountCodeSchema>;
+export type DiscountCode = typeof discountCodes.$inferSelect;
+
+// Track discount code usage
+export const discountCodeUses = pgTable("discount_code_uses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  discountCodeId: varchar("discount_code_id").notNull().references(() => discountCodes.id),
+  userId: varchar("user_id").references(() => users.id),
+  plan: text("plan").notNull(), // 'monthly' or 'annual'
+  amountDiscounted: decimal("amount_discounted", { precision: 12, scale: 2 }).notNull(),
+  redeemedAt: timestamp("redeemed_at").defaultNow(),
+}, (table) => ({
+  discountCodeIdIdx: { name: "discount_code_uses_code_idx", columns: [table.discountCodeId] },
+  userIdIdx: { name: "discount_code_uses_user_idx", columns: [table.userId] },
+}));
+
+export const insertDiscountCodeUseSchema = createInsertSchema(discountCodeUses).omit({
+  id: true,
+  redeemedAt: true,
+});
+
+export type InsertDiscountCodeUse = z.infer<typeof insertDiscountCodeUseSchema>;
+export type DiscountCodeUse = typeof discountCodeUses.$inferSelect;
+
+// Extended type for discount code with usage stats
+export interface DiscountCodeWithStats extends DiscountCode {
+  totalRedemptions: number;
+  totalAmountDiscounted: number;
+  lastUsedAt: Date | null;
+}
