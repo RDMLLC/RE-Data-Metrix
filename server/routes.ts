@@ -298,6 +298,159 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================
+  // Zoho OAuth Routes (Admin Only)
+  // ============================================
+  
+  // Import the Zoho Billing service
+  const { zohoBillingService } = await import('./services/zoho-billing.service');
+
+  // Check Zoho integration status
+  app.get("/api/zoho/status", ensureAdmin, async (req, res) => {
+    try {
+      res.json({
+        configured: zohoBillingService.isConfigured(),
+        ready: zohoBillingService.isReady(),
+        hasClientId: !!process.env.ZOHO_CLIENT_ID,
+        hasClientSecret: !!process.env.ZOHO_CLIENT_SECRET,
+        hasRefreshToken: !!process.env.ZOHO_REFRESH_TOKEN,
+        hasOrganizationId: !!process.env.ZOHO_ORGANIZATION_ID
+      });
+    } catch (error) {
+      console.error('Zoho status error:', error);
+      res.status(500).json({ error: "Failed to get Zoho status" });
+    }
+  });
+
+  // Initiate Zoho OAuth flow (admin only)
+  app.get("/api/zoho/auth", ensureAdmin, async (req, res) => {
+    try {
+      if (!zohoBillingService.isConfigured()) {
+        return res.status(400).json({ 
+          error: "Zoho Client ID and Secret not configured" 
+        });
+      }
+      
+      const authUrl = zohoBillingService.getAuthorizationUrl();
+      res.json({ authUrl });
+    } catch (error) {
+      console.error('Zoho auth error:', error);
+      res.status(500).json({ error: "Failed to generate authorization URL" });
+    }
+  });
+
+  // Handle Zoho OAuth callback
+  app.get("/api/zoho/callback", async (req, res) => {
+    try {
+      const { code, error: oauthError } = req.query;
+      
+      if (oauthError) {
+        console.error('Zoho OAuth error:', oauthError);
+        return res.redirect('/admin/settings?zoho=error&message=' + encodeURIComponent(String(oauthError)));
+      }
+      
+      if (!code || typeof code !== 'string') {
+        return res.redirect('/admin/settings?zoho=error&message=No+authorization+code+received');
+      }
+
+      // Exchange code for tokens
+      const tokens = await zohoBillingService.exchangeCodeForTokens(code);
+      
+      // Get organizations to display the Organization ID
+      const orgs = await zohoBillingService.getOrganizations(tokens.access_token);
+      
+      // Display the tokens and org info for the admin to save
+      // In production, you'd want to encrypt and store these securely
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Zoho Authorization Complete</title>
+          <style>
+            body { font-family: system-ui, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+            .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+            .token-box { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 4px; margin: 10px 0; font-family: monospace; word-break: break-all; }
+            .warning { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin: 20px 0; }
+            h1 { color: #155724; }
+            h2 { color: #333; margin-top: 30px; }
+            .org-list { list-style: none; padding: 0; }
+            .org-list li { background: #e9ecef; padding: 10px 15px; margin: 5px 0; border-radius: 4px; }
+            .copy-btn { background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+            .copy-btn:hover { background: #0056b3; }
+          </style>
+        </head>
+        <body>
+          <div class="success">
+            <h1>Zoho Authorization Successful!</h1>
+            <p>Your application is now connected to Zoho Billing.</p>
+          </div>
+          
+          <h2>Step 1: Save the Refresh Token</h2>
+          <p>Copy this refresh token and add it to your Replit Secrets as <strong>ZOHO_REFRESH_TOKEN</strong>:</p>
+          <div class="token-box">
+            ${tokens.refresh_token}
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('${tokens.refresh_token}')">Copy</button>
+          </div>
+          
+          <h2>Step 2: Select Your Organization</h2>
+          <p>Choose the organization to use and add its ID to Replit Secrets as <strong>ZOHO_ORGANIZATION_ID</strong>:</p>
+          <ul class="org-list">
+            ${orgs.map((org: any) => `
+              <li>
+                <strong>${org.name}</strong> - ID: <code>${org.organization_id}</code>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('${org.organization_id}')">Copy ID</button>
+              </li>
+            `).join('')}
+          </ul>
+          
+          <div class="warning">
+            <strong>Important:</strong> After adding both secrets (ZOHO_REFRESH_TOKEN and ZOHO_ORGANIZATION_ID), 
+            restart your application for the changes to take effect.
+          </div>
+          
+          <p><a href="/admin">Return to Admin Panel</a></p>
+        </body>
+        </html>
+      `;
+      
+      res.send(html);
+    } catch (error) {
+      console.error('Zoho callback error:', error);
+      res.redirect('/admin/settings?zoho=error&message=' + encodeURIComponent(String(error)));
+    }
+  });
+
+  // Test Zoho connection (admin only)
+  app.get("/api/zoho/test", ensureAdmin, async (req, res) => {
+    try {
+      if (!zohoBillingService.isReady()) {
+        return res.status(400).json({ 
+          error: "Zoho integration not fully configured",
+          missing: {
+            refreshToken: !process.env.ZOHO_REFRESH_TOKEN,
+            organizationId: !process.env.ZOHO_ORGANIZATION_ID
+          }
+        });
+      }
+
+      // Try to get plans to verify the connection works
+      const plans = await zohoBillingService.getPlans();
+      
+      res.json({
+        success: true,
+        message: "Zoho Billing connection successful!",
+        plansFound: plans.length,
+        plans: plans.map((p: any) => ({ code: p.plan_code, name: p.name, price: p.recurring_price }))
+      });
+    } catch (error: any) {
+      console.error('Zoho test error:', error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to connect to Zoho Billing" 
+      });
+    }
+  });
+
+  // ============================================
   // Subscription Routes (Placeholder for Zoho Billing Integration)
   // ============================================
 
