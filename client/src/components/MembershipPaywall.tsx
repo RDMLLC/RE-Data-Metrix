@@ -67,14 +67,14 @@ export default function MembershipPaywall({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/login">
-              <Button className="w-full sm:w-auto" data-testid="button-login-paywall">
-                Login to Your Account
+            <Link href="/pricing">
+              <Button className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-view-pricing-paywall">
+                View Membership Plans
               </Button>
             </Link>
-            <Link href="/register">
-              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-register-paywall">
-                Create an Account
+            <Link href="/login">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-login-paywall">
+                Login to Your Account
               </Button>
             </Link>
           </div>
@@ -84,7 +84,10 @@ export default function MembershipPaywall({
             <Link href="/login" className="text-primary hover:underline">
               Sign in
             </Link>{" "}
-            to access your full benefits.
+            to access your full benefits. Or{" "}
+            <Link href="/pricing" className="text-primary hover:underline">
+              view our plans
+            </Link>.
           </p>
         </div>
       </CardContent>

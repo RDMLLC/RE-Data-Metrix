@@ -62,6 +62,7 @@ export default function Navigation() {
     { href: "/loan-types", label: "Loan Types" },
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
+    { href: "/pricing", label: "Pricing" },
     { href: "/contact", label: "Contact" },
   ];
 

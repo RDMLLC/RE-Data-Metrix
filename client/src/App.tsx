@@ -48,6 +48,8 @@ import RequestLenderPasswordReset from "@/pages/RequestLenderPasswordReset";
 import ResetLenderPassword from "@/pages/ResetLenderPassword";
 import LenderSavedBy from "@/pages/LenderSavedBy";
 import FAQ from "@/pages/FAQ";
+import Pricing from "@/pages/Pricing";
+import Checkout from "@/pages/Checkout";
 
 function Router() {
   return (
@@ -106,6 +108,8 @@ function Router() {
       </Route>
       <Route path="/contact" component={Contact} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/checkout" component={Checkout} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/lender-portal" component={LenderDashboard} />

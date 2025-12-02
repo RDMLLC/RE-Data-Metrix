@@ -48,6 +48,42 @@ The Admin Portal includes a comprehensive User Management system accessible at `
 ### Membership Access Control
 A subscription-based access system restricts premium features to paying members. A `MembershipPaywall` component displays a lock icon and benefits for protected features like the Deal Analysis wizard's results, loan types education, rental analysis, and certain Toolbox/Resources tabs.
 
+### Subscription & Payment UI (Zoho Billing Placeholder)
+The platform includes a complete subscription management UI with placeholder integration points for Zoho Billing:
+
+**Pricing Page** (`/pricing`):
+- Two-tier comparison: Free Access ($0) vs Full Membership ($49/month)
+- Feature comparison table showing free vs member benefits
+- CTAs adapt to auth state: "Get Started" → "Upgrade Now" → "Manage Subscription"
+- Links to checkout page for upgrades
+
+**Checkout Page** (`/checkout`):
+- Requires authentication (redirects to login if not authenticated)
+- Shows "Already a Member" state for existing subscribers
+- Order summary with plan details and pricing
+- Security badges (PCI-DSS, SSL encryption)
+- "Subscribe Now" button triggers checkout flow
+
+**Profile Subscription Management** (`/portal/profile`):
+- Subscription status card with appropriate badge (Active/Comped/Trial/Free)
+- For active subscribers: Plan details, Manage Billing button, Cancel option
+- For free users: Upgrade CTA with feature highlights
+- Cancel subscription confirmation dialog
+
+**Backend API Endpoints** (Placeholder for Zoho integration):
+- `POST /api/subscription/checkout` - Initiates checkout (returns integrationPending until Zoho connected)
+- `POST /api/subscription/cancel` - Cancels active subscription
+- `POST /api/subscription/manage-billing` - Opens billing portal
+- `POST /api/subscription/webhook` - Webhook endpoint for Zoho events
+- `GET /api/subscription/status` - Returns current subscription status
+
+**Integration Points for Zoho Billing**:
+When Zoho is configured, the checkout endpoint will:
+1. Create/retrieve customer in Zoho Billing
+2. Generate hosted payment page session
+3. Return redirect URL to Zoho's payment page
+4. Handle webhooks for subscription status updates
+
 ### CSV Loan Product Templates
 The Lender Portal provides two separate CSV templates for bulk loan product imports with simplified numeric loan type codes:
 - **Fix & Flip Template** (`/api/loan-products/template/bridge`): 19 fields optimized for bridge loans, including rehab %, draw costs, ARV %, interest deferred, time to close. Uses loan type code: 1 = Bridge.

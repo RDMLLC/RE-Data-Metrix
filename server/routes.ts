@@ -297,6 +297,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // ============================================
+  // Subscription Routes (Placeholder for Zoho Billing Integration)
+  // ============================================
+
+  app.post("/api/subscription/checkout", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const { planId } = req.body;
+
+      // Check if user already has an active subscription
+      if (['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus)) {
+        return res.status(400).json({ 
+          error: "You already have an active subscription",
+          currentStatus: user.subscriptionStatus 
+        });
+      }
+
+      // PLACEHOLDER: In production, this would:
+      // 1. Create a customer in Zoho Billing if not exists
+      // 2. Create a hosted payment page session
+      // 3. Return the redirect URL to Zoho's payment page
+
+      // For now, we'll simulate a successful activation (for testing)
+      // In production, remove this and integrate with Zoho API
+      console.log(`[SUBSCRIPTION] Checkout initiated for user ${user.id}, plan: ${planId}`);
+
+      // Return placeholder response indicating Zoho integration needed
+      res.json({
+        success: false,
+        message: "Payment processing is being configured. Please check back soon.",
+        integrationPending: true,
+        // When Zoho is integrated, this will return:
+        // redirectUrl: "https://billing.zoho.com/hostedpage/xxx"
+      });
+    } catch (error) {
+      console.error('Checkout error:', error);
+      res.status(500).json({ error: "Failed to initiate checkout" });
+    }
+  });
+
+  app.post("/api/subscription/cancel", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      if (user.subscriptionStatus !== 'active') {
+        return res.status(400).json({ 
+          error: "No active subscription to cancel" 
+        });
+      }
+
+      // PLACEHOLDER: In production, this would:
+      // 1. Call Zoho Billing API to cancel the subscription
+      // 2. Handle cancellation at end of billing period
+      // 3. Update local database based on webhook confirmation
+
+      // For now, just update the local status
+      await db
+        .update(users)
+        .set({ subscriptionStatus: 'inactive' })
+        .where(eq(users.id, user.id));
+
+      console.log(`[SUBSCRIPTION] Canceled for user ${user.id}`);
+
+      res.json({
+        success: true,
+        message: "Your subscription has been canceled. You'll retain access until the end of your billing period.",
+      });
+    } catch (error) {
+      console.error('Subscription cancel error:', error);
+      res.status(500).json({ error: "Failed to cancel subscription" });
+    }
+  });
+
+  app.post("/api/subscription/manage-billing", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      // PLACEHOLDER: In production, this would:
+      // 1. Create a customer portal session in Zoho Billing
+      // 2. Return the redirect URL to Zoho's customer portal
+
+      console.log(`[SUBSCRIPTION] Manage billing requested for user ${user.id}`);
+
+      res.json({
+        success: false,
+        message: "Billing portal is being configured. Please check back soon.",
+        integrationPending: true,
+        // When Zoho is integrated, this will return:
+        // redirectUrl: "https://billing.zoho.com/portal/xxx"
+      });
+    } catch (error) {
+      console.error('Manage billing error:', error);
+      res.status(500).json({ error: "Failed to open billing portal" });
+    }
+  });
+
+  // Webhook endpoint for Zoho Billing
+  app.post("/api/subscription/webhook", async (req, res) => {
+    try {
+      const event = req.body;
+      
+      // PLACEHOLDER: In production, this would:
+      // 1. Verify the webhook signature from Zoho
+      // 2. Handle different event types:
+      //    - subscription_created: Update user to 'active'
+      //    - subscription_cancelled: Update user to 'inactive'
+      //    - payment_failed: Send notification, potentially downgrade
+      //    - subscription_renewed: Confirm status
+      // 3. Log events for audit trail
+
+      console.log('[WEBHOOK] Received Zoho event:', event.event_type || 'unknown');
+
+      // Acknowledge receipt
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // Get current subscription status
+  app.get("/api/subscription/status", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      // PLACEHOLDER: In production, this might also fetch:
+      // - Billing details from Zoho
+      // - Next billing date
+      // - Payment method info (last 4 digits)
+
+      res.json({
+        status: user.subscriptionStatus,
+        isActive: ['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus),
+        plan: user.subscriptionStatus === 'active' ? 'full-membership' : null,
+        // When Zoho is integrated, add:
+        // nextBillingDate: "2024-02-01",
+        // amount: 4900, // cents
+        // paymentMethod: { last4: "4242", brand: "visa" }
+      });
+    } catch (error) {
+      console.error('Subscription status error:', error);
+      res.status(500).json({ error: "Failed to get subscription status" });
+    }
+  });
+
+  // ============================================
+  // End of Subscription Routes
+  // ============================================
+
   app.get("/api/auth/verify-email/:token", async (req, res) => {
     try {
       const { token } = req.params;

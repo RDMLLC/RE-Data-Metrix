@@ -1,26 +1,111 @@
 import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLocation } from "wouter";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Pencil, Check, X } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { 
+  Pencil, Check, X, CreditCard, Crown, AlertCircle, 
+  Loader2, ExternalLink, Calendar, Shield 
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Profile() {
-  const { user, logout, refetchUser } = useAuth();
+  const { user, logout, refetchUser, isSubscriber } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [editForm, setEditForm] = useState({
     username: "",
     fullName: "",
   });
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/subscription/cancel");
+      return await response.json();
+    },
+    onSuccess: (data: { success?: boolean; message?: string }) => {
+      if (data.success) {
+        toast({
+          title: "Subscription Canceled",
+          description: data.message || "Your subscription has been canceled. You'll retain access until the end of your billing period.",
+        });
+        refetchUser();
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      }
+      setShowCancelDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel subscription",
+        variant: "destructive",
+      });
+      setShowCancelDialog(false);
+    },
+  });
+
+  const manageBillingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/subscription/manage-billing");
+      return await response.json();
+    },
+    onSuccess: (data: { redirectUrl?: string; message?: string; integrationPending?: boolean }) => {
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else if (data.integrationPending) {
+        toast({
+          title: "Billing Portal Setup in Progress",
+          description: data.message || "Our billing portal is being configured. Please check back soon.",
+        });
+      } else {
+        toast({
+          title: "Manage Billing",
+          description: data.message || "Billing portal is being set up.",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open billing portal",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getSubscriptionBadge = () => {
+    switch (user?.subscriptionStatus) {
+      case 'active':
+        return <Badge className="bg-success/10 text-success border-success/20">Active Member</Badge>;
+      case 'comped':
+        return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Complimentary</Badge>;
+      case 'referral_trial':
+        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Referral Trial</Badge>;
+      default:
+        return <Badge variant="secondary">Free Account</Badge>;
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -183,6 +268,139 @@ export default function Profile() {
               </CardContent>
             </Card>
 
+            <Card data-testid="card-subscription">
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-accent" />
+                      Subscription
+                    </CardTitle>
+                    <CardDescription>Manage your membership and billing</CardDescription>
+                  </div>
+                  {getSubscriptionBadge()}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {isSubscriber ? (
+                  <>
+                    <div className="bg-success/5 border border-success/20 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-success mt-0.5" />
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {user.subscriptionStatus === 'active' && 'Full Membership Active'}
+                            {user.subscriptionStatus === 'comped' && 'Complimentary Access'}
+                            {user.subscriptionStatus === 'referral_trial' && 'Referral Trial Active'}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            You have full access to all RE Data Metrix features.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {user.subscriptionStatus === 'active' && (
+                      <>
+                        <Separator />
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-foreground">Plan</p>
+                              <p className="text-sm text-muted-foreground">Full Membership</p>
+                            </div>
+                            <p className="font-semibold text-lg">$49/month</p>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                              variant="outline"
+                              onClick={() => manageBillingMutation.mutate()}
+                              disabled={manageBillingMutation.isPending}
+                              className="flex-1"
+                              data-testid="button-manage-billing"
+                            >
+                              {manageBillingMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <CreditCard className="h-4 w-4 mr-2" />
+                              )}
+                              Manage Billing
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={() => setShowCancelDialog(true)}
+                              className="text-muted-foreground hover:text-destructive"
+                              data-testid="button-cancel-subscription"
+                            >
+                              Cancel Subscription
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {(user.subscriptionStatus === 'comped' || user.subscriptionStatus === 'referral_trial') && (
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              {user.subscriptionStatus === 'comped' 
+                                ? 'Your complimentary access is managed by an administrator.'
+                                : 'Your referral trial will expire soon. Upgrade to keep full access.'}
+                            </p>
+                            {user.subscriptionStatus === 'referral_trial' && (
+                              <Link href="/checkout">
+                                <Button size="sm" className="mt-3" data-testid="button-upgrade-trial">
+                                  Upgrade Now
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-muted/30 rounded-lg p-4">
+                      <p className="text-muted-foreground mb-4">
+                        Upgrade to Full Membership to unlock all features including Deal Analysis, 
+                        Rental Analysis, Lender Comparisons, and more.
+                      </p>
+                      <ul className="space-y-2 text-sm text-muted-foreground mb-4">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-success" />
+                          Complete deal analysis with ROI calculations
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-success" />
+                          Side-by-side lender comparisons
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-success" />
+                          Save unlimited deals and lenders
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Link href="/checkout" className="flex-1">
+                        <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-now">
+                          <Crown className="h-4 w-4 mr-2" />
+                          Upgrade Now - $49/month
+                        </Button>
+                      </Link>
+                      <Link href="/pricing">
+                        <Button variant="outline" data-testid="button-view-pricing">
+                          View Plans
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card data-testid="card-referral-code">
               <CardHeader>
                 <CardTitle>Your Referral Code</CardTitle>
@@ -236,6 +454,36 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your subscription? You'll retain access 
+              until the end of your current billing period, but won't be charged again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancelSubscriptionMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={cancelSubscriptionMutation.isPending}
+              data-testid="button-confirm-cancel"
+            >
+              {cancelSubscriptionMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Canceling...
+                </>
+              ) : (
+                "Yes, Cancel"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
