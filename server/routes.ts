@@ -338,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Validate discount code
+  // Validate discount code (uses database-stored codes)
   app.post("/api/subscription/validate-discount", async (req, res) => {
     try {
       const { code, plan } = req.body;
@@ -347,42 +347,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ valid: false, message: "Discount code is required" });
       }
 
-      // PLACEHOLDER: In production, this would validate against Zoho Billing's coupon system
-      // For now, we provide some example discount codes for testing the UI
-
       const upperCode = code.toUpperCase();
       
-      // Example discount codes for UI testing
-      const discountCodes: Record<string, { percentOff?: number; amountOff?: number; plans?: string[]; message: string }> = {
-        'SAVE10': { percentOff: 10, message: '10% off your subscription!' },
-        'SAVE20': { percentOff: 20, message: '20% off your subscription!' },
-        'FIRST5': { amountOff: 5, message: '$5 off your first payment!' },
-        'WELCOME': { percentOff: 15, message: '15% welcome discount applied!' },
-        'ANNUAL25': { percentOff: 25, plans: ['annual'], message: '25% off annual subscriptions!' },
-      };
-
-      const discount = discountCodes[upperCode];
+      // Look up the discount code in the database
+      const discount = await storage.getDiscountCodeByCode(upperCode);
       
-      if (discount) {
-        // Check if discount is plan-specific
-        if (discount.plans && !discount.plans.includes(plan)) {
-          return res.json({
-            valid: false,
-            message: `This code is only valid for ${discount.plans.join(', ')} plans.`,
-          });
-        }
-
+      if (!discount) {
         return res.json({
-          valid: true,
-          percentOff: discount.percentOff,
-          amountOff: discount.amountOff,
-          message: discount.message,
+          valid: false,
+          message: "Invalid discount code. Please check and try again.",
         });
+      }
+      
+      // Check if the code is active
+      if (!discount.isActive) {
+        return res.json({
+          valid: false,
+          message: "This discount code is no longer active.",
+        });
+      }
+      
+      // Check date validity
+      const now = new Date();
+      if (discount.startAt && now < discount.startAt) {
+        return res.json({
+          valid: false,
+          message: "This discount code is not yet active.",
+        });
+      }
+      if (discount.endAt && now > discount.endAt) {
+        return res.json({
+          valid: false,
+          message: "This discount code has expired.",
+        });
+      }
+      
+      // Check redemption limit
+      if (discount.maxRedemptions && discount.currentRedemptions >= discount.maxRedemptions) {
+        return res.json({
+          valid: false,
+          message: "This discount code has reached its maximum number of uses.",
+        });
+      }
+      
+      // Check plan applicability
+      if (discount.planApplicability !== 'both' && discount.planApplicability !== plan) {
+        const planName = discount.planApplicability === 'annual' ? 'annual' : 'monthly';
+        return res.json({
+          valid: false,
+          message: `This code is only valid for ${planName} plans.`,
+        });
+      }
+      
+      // Build success message
+      let message = '';
+      if (discount.percentOff) {
+        message = `${discount.percentOff}% off your subscription!`;
+      } else if (discount.amountOff) {
+        message = `$${discount.amountOff} off your payment!`;
+      }
+      if (discount.displayName && discount.partnerName) {
+        message = `${discount.displayName} - ${message}`;
       }
 
       return res.json({
-        valid: false,
-        message: "Invalid discount code. Please check and try again.",
+        valid: true,
+        discountCodeId: discount.id,
+        percentOff: discount.percentOff ? Number(discount.percentOff) : undefined,
+        amountOff: discount.amountOff ? Number(discount.amountOff) : undefined,
+        message,
       });
     } catch (error) {
       console.error('Discount validation error:', error);
@@ -2206,6 +2239,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete comp invite error:', error);
       res.status(500).json({ error: "Failed to delete comp invite" });
+    }
+  });
+
+  // =====================
+  // Admin Discount Codes Routes
+  // =====================
+
+  // Get all discount codes with usage stats
+  app.get("/api/admin/discount-codes", ensureAdmin, async (req, res) => {
+    try {
+      const { search, partnerName, planApplicability, isActive } = req.query;
+      const filters: any = {};
+      if (search) filters.search = search as string;
+      if (partnerName) filters.partnerName = partnerName as string;
+      if (planApplicability) filters.planApplicability = planApplicability as string;
+      if (isActive !== undefined) filters.isActive = isActive === 'true';
+      
+      const codes = await storage.getAllDiscountCodes(filters);
+      res.json(codes);
+    } catch (error) {
+      console.error('Get discount codes error:', error);
+      res.status(500).json({ error: "Failed to fetch discount codes" });
+    }
+  });
+
+  // Get discount code stats for dashboard
+  app.get("/api/admin/discount-codes/stats", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getDiscountCodeStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Get discount code stats error:', error);
+      res.status(500).json({ error: "Failed to fetch discount code stats" });
+    }
+  });
+
+  // Get single discount code
+  app.get("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const code = await storage.getDiscountCode(id);
+      
+      if (!code) {
+        return res.status(404).json({ error: "Discount code not found" });
+      }
+      
+      res.json(code);
+    } catch (error) {
+      console.error('Get discount code error:', error);
+      res.status(500).json({ error: "Failed to fetch discount code" });
+    }
+  });
+
+  // Get usage for a specific discount code
+  app.get("/api/admin/discount-codes/:id/usage", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const usage = await storage.getDiscountCodeUsage(id);
+      res.json(usage);
+    } catch (error) {
+      console.error('Get discount code usage error:', error);
+      res.status(500).json({ error: "Failed to fetch discount code usage" });
+    }
+  });
+
+  // Create new discount code
+  app.post("/api/admin/discount-codes", ensureAdmin, async (req, res) => {
+    try {
+      const adminUser = req.user as User;
+      const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive } = req.body;
+      
+      if (!code || !displayName) {
+        return res.status(400).json({ error: "Code and display name are required" });
+      }
+      
+      if (!percentOff && !amountOff) {
+        return res.status(400).json({ error: "Either percent off or amount off is required" });
+      }
+      
+      if (percentOff && amountOff) {
+        return res.status(400).json({ error: "Cannot specify both percent off and amount off" });
+      }
+
+      // Check if code already exists
+      const existing = await storage.getDiscountCodeByCode(code);
+      if (existing) {
+        return res.status(409).json({ error: "A discount code with this code already exists" });
+      }
+      
+      const newCode = await storage.createDiscountCode({
+        code,
+        displayName,
+        partnerName,
+        description,
+        planApplicability: planApplicability || 'both',
+        percentOff: percentOff ? Number(percentOff) : undefined,
+        amountOff: amountOff ? Number(amountOff) : undefined,
+        maxRedemptions: maxRedemptions ? Number(maxRedemptions) : undefined,
+        startAt: startAt ? new Date(startAt) : undefined,
+        endAt: endAt ? new Date(endAt) : undefined,
+        isActive: isActive ?? true,
+        createdBy: adminUser.id,
+      });
+      
+      res.status(201).json(newCode);
+    } catch (error) {
+      console.error('Create discount code error:', error);
+      res.status(500).json({ error: "Failed to create discount code" });
+    }
+  });
+
+  // Update discount code
+  app.patch("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive } = req.body;
+      
+      const updateData: any = {};
+      if (code !== undefined) updateData.code = code;
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (partnerName !== undefined) updateData.partnerName = partnerName;
+      if (description !== undefined) updateData.description = description;
+      if (planApplicability !== undefined) updateData.planApplicability = planApplicability;
+      if (percentOff !== undefined) updateData.percentOff = percentOff ? Number(percentOff) : null;
+      if (amountOff !== undefined) updateData.amountOff = amountOff ? Number(amountOff) : null;
+      if (maxRedemptions !== undefined) updateData.maxRedemptions = maxRedemptions ? Number(maxRedemptions) : null;
+      if (startAt !== undefined) updateData.startAt = startAt ? new Date(startAt) : null;
+      if (endAt !== undefined) updateData.endAt = endAt ? new Date(endAt) : null;
+      if (isActive !== undefined) updateData.isActive = isActive;
+
+      // Check for code uniqueness if changing code
+      if (code) {
+        const existing = await storage.getDiscountCodeByCode(code);
+        if (existing && existing.id !== id) {
+          return res.status(409).json({ error: "A discount code with this code already exists" });
+        }
+      }
+      
+      const updated = await storage.updateDiscountCode(id, updateData);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Discount code not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Update discount code error:', error);
+      res.status(500).json({ error: "Failed to update discount code" });
+    }
+  });
+
+  // Delete discount code
+  app.delete("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteDiscountCode(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Discount code not found" });
+      }
+      
+      res.json({ success: true, message: "Discount code deleted" });
+    } catch (error) {
+      console.error('Delete discount code error:', error);
+      res.status(500).json({ error: "Failed to delete discount code" });
     }
   });
 
