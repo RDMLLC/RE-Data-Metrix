@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Users, Gift } from "lucide-react";
+import { CheckCircle, Users, Gift, CreditCard, Ticket, ArrowLeft, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -46,32 +46,57 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
+type RegistrationPath = "choice" | "subscribe" | "comp";
+
 export default function Register() {
   const { register } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [hasReferralCode, setHasReferralCode] = useState<string>("no");
-  const [compCode, setCompCode] = useState<string | null>(null);
+  const [compCode, setCompCode] = useState<string>("");
+  const [compCodeInput, setCompCodeInput] = useState<string>("");
   const [compCodeValid, setCompCodeValid] = useState<boolean | null>(null);
   const [compEmail, setCompEmail] = useState<string | null>(null);
+  const [compValidating, setCompValidating] = useState(false);
+  const [registrationPath, setRegistrationPath] = useState<RegistrationPath>("choice");
 
+  // Check for comp code in URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const comp = params.get("comp");
     if (comp) {
-      setCompCode(comp.toUpperCase());
-      fetch(`/api/comp-invites/validate/${comp}`)
-        .then(res => res.json())
-        .then(data => {
-          setCompCodeValid(data.valid);
-          if (data.valid && data.email) {
-            setCompEmail(data.email);
-          }
-        })
-        .catch(() => setCompCodeValid(false));
+      setCompCodeInput(comp.toUpperCase());
+      setRegistrationPath("comp");
+      validateCompCode(comp.toUpperCase());
     }
   }, []);
+
+  const validateCompCode = async (code: string) => {
+    setCompValidating(true);
+    try {
+      const res = await fetch(`/api/comp-invites/validate/${code}`);
+      const data = await res.json();
+      setCompCodeValid(data.valid);
+      if (data.valid) {
+        setCompCode(code);
+        if (data.email) {
+          setCompEmail(data.email);
+        }
+      }
+    } catch {
+      setCompCodeValid(false);
+    } finally {
+      setCompValidating(false);
+    }
+  };
+
+  const handleCompCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (compCodeInput.trim()) {
+      validateCompCode(compCodeInput.trim().toUpperCase());
+    }
+  };
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -131,6 +156,220 @@ export default function Register() {
     }
   };
 
+  // Choice screen - user picks between Subscribe or Comp Code
+  if (registrationPath === "choice") {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
+          <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold text-primary mb-4">Join RE Data Metrix</h1>
+              <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Get access to professional deal analysis tools, lender comparisons, and investment insights.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Subscribe Option */}
+              <Card className="relative overflow-hidden hover-elevate cursor-pointer" data-testid="card-subscribe-option">
+                <div className="absolute top-0 right-0 bg-accent text-accent-foreground px-3 py-1 text-sm font-medium rounded-bl-lg">
+                  Recommended
+                </div>
+                <CardHeader className="pt-8">
+                  <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                    <CreditCard className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Subscribe</CardTitle>
+                  <CardDescription>
+                    Full access to all premium features
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-3xl font-bold text-primary">
+                    $49<span className="text-base font-normal text-muted-foreground">/month</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      Unlimited deal analysis
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      Full lender database access
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      Loan comparison tools
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      Rental analysis & DSCR matching
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => setLocation("/checkout")}
+                    data-testid="button-subscribe"
+                  >
+                    Subscribe Now
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              {/* Comp Code Option */}
+              <Card className="hover-elevate cursor-pointer" data-testid="card-comp-option">
+                <CardHeader className="pt-8">
+                  <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mb-4">
+                    <Ticket className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <CardTitle className="text-2xl">Have a Comp Code?</CardTitle>
+                  <CardDescription>
+                    Complimentary access for invited users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-3xl font-bold text-emerald-600">
+                    Free<span className="text-base font-normal text-muted-foreground"> access</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Gift className="h-4 w-4 text-emerald-600" />
+                      All premium features included
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Gift className="h-4 w-4 text-emerald-600" />
+                      No credit card required
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Gift className="h-4 w-4 text-emerald-600" />
+                      Beta tester perks
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Gift className="h-4 w-4 text-emerald-600" />
+                      Early access to new features
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => setRegistrationPath("comp")}
+                    data-testid="button-use-comp-code"
+                  >
+                    Enter Comp Code
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              Already have an account?{" "}
+              <Link href="/login" className="text-primary hover:underline" data-testid="link-login">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Comp Code Entry Screen - user enters their code
+  if (registrationPath === "comp" && !compCodeValid) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
+          <div className="max-w-md w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <Button
+              variant="ghost"
+              className="mb-6"
+              onClick={() => {
+                setRegistrationPath("choice");
+                setCompCodeInput("");
+                setCompCodeValid(null);
+              }}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+
+            <Card data-testid="card-comp-code-entry">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <Ticket className="h-8 w-8 text-emerald-600" />
+                </div>
+                <CardTitle className="text-2xl">Enter Your Comp Code</CardTitle>
+                <CardDescription>
+                  Enter the code you received to activate your complimentary access
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={handleCompCodeSubmit}>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="compCode">Comp Code</Label>
+                    <Input
+                      id="compCode"
+                      value={compCodeInput}
+                      onChange={(e) => setCompCodeInput(e.target.value.toUpperCase())}
+                      placeholder="Enter your code (e.g., ABC12345)"
+                      className="text-center text-lg tracking-wider"
+                      data-testid="input-comp-code"
+                    />
+                  </div>
+
+                  {compCodeValid === false && (
+                    <Alert variant="destructive">
+                      <AlertTitle>Invalid or Expired Code</AlertTitle>
+                      <AlertDescription>
+                        This code is invalid or has expired. Please check the code and try again, or contact the person who sent it to you.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={!compCodeInput.trim() || compValidating}
+                    data-testid="button-validate-code"
+                  >
+                    {compValidating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Validating...
+                      </>
+                    ) : (
+                      "Continue"
+                    )}
+                  </Button>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Don't have a code?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setLocation("/checkout")}
+                      className="text-primary hover:underline"
+                      data-testid="link-subscribe-instead"
+                    >
+                      Subscribe instead
+                    </button>
+                  </p>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Registration Form - shown after valid comp code
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
@@ -139,7 +378,7 @@ export default function Register() {
             {/* Left Side - Navy Value Prop Panel */}
             <div className="lg:col-span-2 bg-primary text-primary-foreground rounded-lg p-12 space-y-8">
               <div>
-                <h2 className="text-4xl font-bold mb-6">Join RE Data Metrix</h2>
+                <h2 className="text-4xl font-bold mb-6">Complete Your Registration</h2>
                 <div className="h-1 w-24 bg-accent mb-8"></div>
                 <div className="space-y-4 text-lg">
                   <p className="flex items-start gap-3">
@@ -182,11 +421,28 @@ export default function Register() {
 
             {/* Right Side - Register Form */}
             <div className="lg:col-span-3">
+              <Button
+                variant="ghost"
+                className="mb-4"
+                onClick={() => {
+                  setRegistrationPath("choice");
+                  setCompCode("");
+                  setCompCodeInput("");
+                  setCompCodeValid(null);
+                  setCompEmail(null);
+                  form.reset();
+                }}
+                data-testid="button-back-to-options"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to options
+              </Button>
+
               <Card className="p-8 shadow-xl bg-card" data-testid="card-register">
                 <CardHeader>
                   <CardTitle className="text-2xl">Create Your Account</CardTitle>
                   <CardDescription>
-                    Start analyzing deals and connecting with lenders
+                    Complete your registration to access your membership
                   </CardDescription>
                 </CardHeader>
                 {compCodeValid === true && (
@@ -196,16 +452,7 @@ export default function Register() {
                       Premium Access Invitation
                     </AlertTitle>
                     <AlertDescription className="text-emerald-700 dark:text-emerald-300">
-                      You've been invited with complimentary premium access! Complete your registration to activate your free membership.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                {compCodeValid === false && compCode && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTitle>Invalid or Expired Code</AlertTitle>
-                    <AlertDescription>
-                      The comp code "{compCode}" is invalid or has expired. You can still register for a standard account.
+                      Code <span className="font-mono font-bold">{compCode}</span> verified! Complete your registration to activate your complimentary premium access.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -223,6 +470,7 @@ export default function Register() {
                       <Input
                         {...field}
                         placeholder="John Doe"
+                        autoComplete="name"
                         data-testid="input-fullname"
                       />
                     </FormControl>
@@ -240,6 +488,7 @@ export default function Register() {
                       <Input
                         {...field}
                         placeholder="johndoe"
+                        autoComplete="username"
                         data-testid="input-username"
                       />
                     </FormControl>
@@ -258,9 +507,16 @@ export default function Register() {
                         {...field}
                         type="email"
                         placeholder="you@example.com"
+                        autoComplete="email"
+                        disabled={!!compEmail}
                         data-testid="input-email"
                       />
                     </FormControl>
+                    {compEmail && (
+                      <FormDescription>
+                        Email is pre-filled from your invitation
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -276,6 +532,7 @@ export default function Register() {
                         {...field}
                         type="password"
                         placeholder="••••••••"
+                        autoComplete="new-password"
                         data-testid="input-password"
                       />
                     </FormControl>
@@ -294,6 +551,7 @@ export default function Register() {
                         {...field}
                         type="password"
                         placeholder="••••••••"
+                        autoComplete="new-password"
                         data-testid="input-confirm-password"
                       />
                     </FormControl>

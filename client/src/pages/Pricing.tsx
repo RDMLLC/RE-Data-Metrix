@@ -18,16 +18,16 @@ const memberBenefits = [
   "Priority email support",
 ];
 
-const comparisonFeatures = [
-  { feature: "Deal Analysis Wizard", free: "Preview only", member: "Full access" },
-  { feature: "Loan Comparisons", free: false, member: true },
-  { feature: "Rental Analysis", free: false, member: true },
-  { feature: "Lender Search", free: "Limited", member: "Full access" },
-  { feature: "Save Deals", free: false, member: "Unlimited" },
-  { feature: "Save Lenders", free: false, member: "Unlimited" },
-  { feature: "Toolbox Resources", free: "Limited", member: "Full access" },
-  { feature: "Export Reports", free: false, member: true },
-  { feature: "Email Support", free: false, member: "Priority" },
+const memberFeatures = [
+  { feature: "Deal Analysis Wizard", value: "Full access" },
+  { feature: "Loan Comparisons", value: "Unlimited" },
+  { feature: "Rental Analysis", value: "Full DSCR calculations" },
+  { feature: "Lender Search", value: "Full database access" },
+  { feature: "Save Deals", value: "Unlimited" },
+  { feature: "Save Lenders", value: "Unlimited" },
+  { feature: "Toolbox Resources", value: "Complete access" },
+  { feature: "Export Reports", value: "PDF & detailed reports" },
+  { feature: "Email Support", value: "Priority response" },
 ];
 
 export default function Pricing() {
@@ -83,51 +83,7 @@ export default function Pricing() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
-            <Card className="relative">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl text-foreground">Free Access</CardTitle>
-                <CardDescription>Explore the platform</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-foreground">$0</span>
-                  <span className="text-muted-foreground ml-2">forever</span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <span className="text-muted-foreground">Preview Deal Analysis wizard</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <span className="text-muted-foreground">Browse educational content</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <span className="text-muted-foreground">Limited lender search</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <span className="text-muted-foreground">Basic Toolbox access</span>
-                  </li>
-                </ul>
-              </CardContent>
-              <CardFooter>
-                {!isAuthenticated ? (
-                  <Link href="/register" className="w-full">
-                    <Button variant="outline" className="w-full" data-testid="button-free-signup">
-                      Create Free Account
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button variant="outline" className="w-full" disabled>
-                    Current Plan
-                  </Button>
-                )}
-              </CardFooter>
-            </Card>
-
+          <div className="grid grid-cols-1 max-w-lg mx-auto mb-16">
             <Card className="relative border-2 border-accent shadow-lg">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <Badge className="bg-accent text-accent-foreground px-4 py-1">
@@ -160,17 +116,10 @@ export default function Pricing() {
                       Manage Subscription
                     </Button>
                   </Link>
-                ) : isAuthenticated ? (
-                  <Link href="/checkout" className="w-full">
-                    <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-member">
-                      Upgrade Now
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
                 ) : (
-                  <Link href="/register" className="w-full">
+                  <Link href="/checkout" className="w-full">
                     <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-get-started">
-                      Get Started
+                      {isAuthenticated ? "Upgrade Now" : "Get Started"}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
@@ -180,44 +129,27 @@ export default function Pricing() {
           </div>
 
           <div className="mb-16">
-            <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8" data-testid="text-comparison-title">
-              Feature Comparison
+            <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8" data-testid="text-features-title">
+              What's Included
             </h2>
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden max-w-2xl mx-auto">
               <div className="overflow-x-auto">
-                <table className="w-full" data-testid="table-feature-comparison">
+                <table className="w-full" data-testid="table-member-features">
                   <thead>
                     <tr className="bg-primary text-primary-foreground">
                       <th className="text-left px-6 py-4 font-semibold">Feature</th>
-                      <th className="text-center px-6 py-4 font-semibold">Free</th>
-                      <th className="text-center px-6 py-4 font-semibold">Member</th>
+                      <th className="text-left px-6 py-4 font-semibold">Included</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {comparisonFeatures.map((row, index) => (
+                    {memberFeatures.map((row, index) => (
                       <tr key={index} className={index % 2 === 0 ? "bg-muted/30" : ""}>
                         <td className="px-6 py-4 text-foreground font-medium">{row.feature}</td>
-                        <td className="px-6 py-4 text-center">
-                          {typeof row.free === 'boolean' ? (
-                            row.free ? (
-                              <Check className="h-5 w-5 text-success mx-auto" />
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )
-                          ) : (
-                            <span className="text-muted-foreground text-sm">{row.free}</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {typeof row.member === 'boolean' ? (
-                            row.member ? (
-                              <Check className="h-5 w-5 text-success mx-auto" />
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )
-                          ) : (
-                            <span className="text-success font-medium text-sm">{row.member}</span>
-                          )}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-5 w-5 text-success flex-shrink-0" />
+                            <span className="text-success font-medium text-sm">{row.value}</span>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -225,6 +157,13 @@ export default function Pricing() {
                 </table>
               </div>
             </Card>
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Have a comp code?{" "}
+              <Link href="/register" className="text-primary hover:underline">
+                Register with your code
+              </Link>{" "}
+              for complimentary access.
+            </p>
           </div>
 
           <div className="mb-16">
@@ -278,17 +217,10 @@ export default function Pricing() {
             <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
               Join thousands of real estate investors who use RE Data Metrix to analyze deals, compare financing options, and close with confidence.
             </p>
-            {!isAuthenticated ? (
-              <Link href="/register">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-cta-signup">
-                  Start Your Free Account
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
-            ) : !isSubscriber ? (
+            {!isSubscriber ? (
               <Link href="/checkout">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-cta-upgrade">
-                  Upgrade to Full Access
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-cta-signup">
+                  {isAuthenticated ? "Upgrade Now" : "Get Started"}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
