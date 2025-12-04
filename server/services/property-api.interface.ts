@@ -15,6 +15,7 @@ export interface PropertyData {
   lastSalePrice?: number;
   lastSaleDate?: string;
   imageUrl?: string;
+  hoaFees?: number;
 }
 
 export interface IPropertyAPIService {
