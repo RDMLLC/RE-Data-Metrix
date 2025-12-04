@@ -21,8 +21,15 @@ import {
   AlertCircle,
   RefreshCw,
   Trash2,
-  Archive
+  Archive,
+  FileCheck,
+  FileX
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -67,6 +74,9 @@ interface UserWithStats {
   phone: string | null;
   city: string | null;
   state: string | null;
+  termsAcceptedAt: string | null;
+  termsVersion: string | null;
+  privacyVersion: string | null;
 }
 
 interface UserStats {
@@ -379,6 +389,7 @@ export default function UserManagement() {
                             <TableHead>User</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Verified</TableHead>
+                            <TableHead>Terms</TableHead>
                             <TableHead>Deals</TableHead>
                             <TableHead>Lenders</TableHead>
                             <TableHead>Referrals</TableHead>
@@ -417,6 +428,30 @@ export default function UserManagement() {
                                   <CheckCircle className="h-5 w-5 text-green-500" />
                                 ) : (
                                   <XCircle className="h-5 w-5 text-red-500" />
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {user.termsAcceptedAt ? (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <FileCheck className="h-5 w-5 text-green-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">
+                                        Accepted v{user.termsVersion || "1.0"}<br />
+                                        {format(new Date(user.termsAcceptedAt), 'MMM d, yyyy')}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <FileX className="h-5 w-5 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">No acceptance record</p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 )}
                               </TableCell>
                               <TableCell>{user.dealsAnalyzed}</TableCell>

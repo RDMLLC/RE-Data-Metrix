@@ -1991,6 +1991,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       subscriptionStatus: user.subscriptionStatus,
       createdAt: user.createdAt,
       isEmailVerified: user.isEmailVerified,
+      termsAcceptedAt: user.termsAcceptedAt,
+      termsVersion: user.termsVersion,
+      privacyVersion: user.privacyVersion,
     };
   }
 
