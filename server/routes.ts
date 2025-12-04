@@ -44,6 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     fullName: z.string().min(1),
     referralCode: z.string().optional(),
     compCode: z.string().optional(),
+    termsAccepted: z.boolean().optional(),
   });
 
   app.post("/api/auth/register", async (req, res) => {
@@ -106,6 +107,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isEmailVerified: false,
           verificationToken,
           verificationExpiry,
+          termsAcceptedAt: validatedData.termsAccepted ? new Date() : null,
+          termsVersion: validatedData.termsAccepted ? "1.0" : null,
+          privacyVersion: validatedData.termsAccepted ? "1.0" : null,
         })
         .returning();
 

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users, Tag, Star, Ticket, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users, Tag, Star, Ticket, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -25,6 +25,7 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const MONTHLY_PRICE = 15;
 const ANNUAL_PRICE = 150;
@@ -51,6 +52,9 @@ const registerSchema = z
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
     referralCode: z.string().optional(),
+    termsAccepted: z.literal(true, {
+      errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -101,6 +105,7 @@ export default function Checkout() {
       confirmPassword: "",
       fullName: "",
       referralCode: "",
+      termsAccepted: false as unknown as true,
     },
   });
 
@@ -669,6 +674,48 @@ export default function Checkout() {
                             )}
                           />
                         )}
+
+                        {/* Terms Agreement Checkbox */}
+                        <div className="border-t pt-4 mt-2">
+                          <FormField
+                            control={form.control}
+                            name="termsAccepted"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    data-testid="checkbox-checkout-terms-accepted"
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel className="text-sm font-normal cursor-pointer">
+                                    I agree to the{" "}
+                                    <Link 
+                                      href="/terms" 
+                                      className="text-primary hover:underline" 
+                                      target="_blank"
+                                      data-testid="link-checkout-terms"
+                                    >
+                                      User Agreement
+                                    </Link>{" "}
+                                    and{" "}
+                                    <Link 
+                                      href="/privacy" 
+                                      className="text-primary hover:underline" 
+                                      target="_blank"
+                                      data-testid="link-checkout-privacy"
+                                    >
+                                      Privacy Policy
+                                    </Link>
+                                  </FormLabel>
+                                  <FormMessage />
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </CardContent>
                       <CardFooter className="flex flex-col gap-4">
                         <Button
@@ -690,12 +737,6 @@ export default function Checkout() {
                             </>
                           )}
                         </Button>
-                        <p className="text-xs text-muted-foreground text-center">
-                          By continuing, you agree to our{" "}
-                          <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>{" "}
-                          and{" "}
-                          <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-                        </p>
                       </CardFooter>
                     </form>
                   </Form>

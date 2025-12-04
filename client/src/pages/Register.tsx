@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Users, Gift, CreditCard, Ticket, ArrowLeft, Loader2 } from "lucide-react";
+import { CheckCircle, Users, Gift, CreditCard, Ticket, ArrowLeft, Loader2, FileText } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -29,6 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const registerSchema = z
   .object({
@@ -38,6 +39,9 @@ const registerSchema = z
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
     referralCode: z.string().optional(),
+    termsAccepted: z.literal(true, {
+      errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -107,6 +111,7 @@ export default function Register() {
       confirmPassword: "",
       fullName: "",
       referralCode: "",
+      termsAccepted: false as unknown as true,
     },
   });
 
@@ -610,6 +615,48 @@ export default function Register() {
                   )}
                 />
               )}
+
+              {/* Terms Agreement Checkbox */}
+              <div className="border-t pt-4 mt-2">
+                <FormField
+                  control={form.control}
+                  name="termsAccepted"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-terms-accepted"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal cursor-pointer">
+                          I agree to the{" "}
+                          <Link 
+                            href="/terms" 
+                            className="text-primary hover:underline" 
+                            target="_blank"
+                            data-testid="link-terms"
+                          >
+                            User Agreement
+                          </Link>{" "}
+                          and{" "}
+                          <Link 
+                            href="/privacy" 
+                            className="text-primary hover:underline" 
+                            target="_blank"
+                            data-testid="link-privacy"
+                          >
+                            Privacy Policy
+                          </Link>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
