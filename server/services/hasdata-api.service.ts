@@ -138,6 +138,40 @@ export class HasDataAPIService implements IPropertyAPIService {
     return isNaN(parsed) ? undefined : parsed;
   }
 
+  // Normalize property type from API values to form enum values
+  private normalizePropertyType(rawType: string | undefined): string | undefined {
+    if (!rawType) return undefined;
+    
+    const normalized = rawType.toLowerCase().trim();
+    
+    // Map common API values to form enum values
+    if (normalized.includes('single') && normalized.includes('family')) {
+      return 'SINGLE_FAMILY';
+    }
+    if (normalized.includes('condo') || normalized.includes('co-op') || normalized.includes('coop')) {
+      return 'CONDO';
+    }
+    if (normalized.includes('townhouse') || normalized.includes('town house') || normalized.includes('townhome')) {
+      return 'TOWNHOUSE';
+    }
+    if (normalized.includes('multi') && normalized.includes('family')) {
+      return 'MULTI_FAMILY';
+    }
+    if (normalized.includes('apartment')) {
+      return 'APARTMENT';
+    }
+    if (normalized.includes('manufactured') || normalized.includes('mobile')) {
+      return 'MANUFACTURED';
+    }
+    if (normalized.includes('lot') || normalized.includes('land')) {
+      return 'LOT';
+    }
+    
+    // Return undefined if no match - let user select manually
+    console.log(`Unknown property type: "${rawType}" - user will need to select manually`);
+    return undefined;
+  }
+
   private transformRedfinResponse(data: any): PropertyData {
     const property = data.property || data;
     
@@ -191,18 +225,38 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedHoaFees: hoaFees
     });
     
+    // Extract tax data - Redfin uses various field names
+    const taxAssessedValue = this.parseNumber(
+      property.taxAssessedValue ||
+      property.taxValue ||
+      property.tax?.assessedValue ||
+      property.taxInfo?.assessedValue ||
+      property.propertyTaxes ||
+      property.annualTax
+    );
+    
+    console.log("Redfin tax fields:", {
+      taxAssessedValue: property.taxAssessedValue,
+      taxValue: property.taxValue,
+      tax: property.tax,
+      taxInfo: property.taxInfo,
+      propertyTaxes: property.propertyTaxes,
+      annualTax: property.annualTax,
+      extractedTax: taxAssessedValue
+    });
+    
     return {
       address: property.address?.street || '',
       city: property.address?.city || '',
       state: property.address?.state || '',
       zipCode: property.address?.zipcode || '',
-      propertyType,
+      propertyType: this.normalizePropertyType(propertyType),
       bedrooms: this.parseNumber(property.beds || property.bedrooms),
       bathrooms: this.parseNumber(property.baths || property.bathrooms),
       sqft: this.parseNumber(property.area || property.sqFt || property.squareFeet),
       lotSize: this.parseNumber(property.lotSize),
       yearBuilt: this.parseNumber(property.yearBuilt),
-      taxAssessedValue: this.parseNumber(property.taxAssessedValue),
+      taxAssessedValue,
       estimatedValue: this.parseNumber(property.price || property.listPrice),
       lastSalePrice: this.parseNumber(property.lastSoldPrice),
       lastSaleDate: property.lastSoldDate,
@@ -248,18 +302,40 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedHoaFees: hoaFees
     });
     
+    // Extract tax data - Zillow uses various field names
+    const taxAssessedValue = this.parseNumber(
+      property.taxAssessedValue ||
+      property.taxValue ||
+      property.tax?.assessedValue ||
+      property.taxInfo?.assessedValue ||
+      property.propertyTaxes ||
+      property.annualTax ||
+      property.taxAnnualAmount
+    );
+    
+    console.log("Zillow tax fields:", {
+      taxAssessedValue: property.taxAssessedValue,
+      taxValue: property.taxValue,
+      tax: property.tax,
+      taxInfo: property.taxInfo,
+      propertyTaxes: property.propertyTaxes,
+      annualTax: property.annualTax,
+      taxAnnualAmount: property.taxAnnualAmount,
+      extractedTax: taxAssessedValue
+    });
+    
     return {
       address: property.address?.street || property.addressRaw || '',
       city: property.address?.city || '',
       state: property.address?.state || '',
       zipCode: property.address?.zipcode || '',
-      propertyType: property.homeType,
+      propertyType: this.normalizePropertyType(property.homeType),
       bedrooms: this.parseNumber(property.beds),
       bathrooms: this.parseNumber(property.baths),
       sqft: this.parseNumber(property.area),
       lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
       yearBuilt: this.parseNumber(property.yearBuilt),
-      taxAssessedValue: this.parseNumber(property.taxAssessedValue),
+      taxAssessedValue,
       estimatedValue: this.parseNumber(property.price || property.zestimate),
       estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),

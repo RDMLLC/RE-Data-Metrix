@@ -121,10 +121,7 @@ export default function UserManagement() {
 
   const updateSubscriptionMutation = useMutation({
     mutationFn: async ({ userId, subscriptionStatus }: { userId: string; subscriptionStatus: string }) => {
-      return apiRequest(`/api/admin/users/${userId}/subscription`, {
-        method: "PATCH",
-        body: JSON.stringify({ subscriptionStatus }),
-      });
+      return apiRequest("PATCH", `/api/admin/users/${userId}/subscription`, { subscriptionStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -147,11 +144,10 @@ export default function UserManagement() {
 
   const resendVerificationMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest(`/api/admin/users/${userId}/resend-verification`, {
-        method: "POST",
-      });
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/resend-verification`);
+      return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: { emailSent: boolean }) => {
       toast({
         title: data.emailSent ? "Verification Email Sent" : "Email Failed",
         description: data.emailSent 
@@ -173,9 +169,7 @@ export default function UserManagement() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest(`/api/admin/users/${userId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/admin/users/${userId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
