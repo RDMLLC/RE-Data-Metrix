@@ -231,6 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       subscriptionStatus: user.subscriptionStatus,
       referralCode: user.referralCode,
       createdAt: user.createdAt,
+      termsAcceptedAt: user.termsAcceptedAt,
+      termsVersion: user.termsVersion,
+      privacyVersion: user.privacyVersion,
       profile: userProfile ? {
         fullName: userProfile.fullName || "",
         creditScoreRange: userProfile.creditScoreRange || "",

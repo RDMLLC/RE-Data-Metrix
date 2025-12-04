@@ -10,6 +10,9 @@ interface User {
   subscriptionStatus: string;
   referralCode: string;
   createdAt: string;
+  termsAcceptedAt?: string | null;
+  termsVersion?: string | null;
+  privacyVersion?: string | null;
   profile?: {
     fullName: string;
     creditScoreRange?: string;

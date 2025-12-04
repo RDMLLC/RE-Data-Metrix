@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { 
   Pencil, Check, X, CreditCard, Crown, AlertCircle, 
-  Loader2, ExternalLink, Calendar, Shield 
+  Loader2, ExternalLink, Calendar, Shield, FileText, Scale 
 } from "lucide-react";
 import {
   AlertDialog,
@@ -432,6 +432,86 @@ export default function Profile() {
                   >
                     Copy Code
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-legal-documents">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <CardTitle>Legal Documents</CardTitle>
+                    <CardDescription>
+                      Your agreement acceptance and policy documents
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {user.termsAcceptedAt ? (
+                  <div className="bg-success/5 border border-success/20 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-success mt-0.5" />
+                      <div>
+                        <p className="font-medium text-foreground">Agreements Accepted</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You accepted the User Agreement (v{user.termsVersion || "1.0"}) and Privacy Policy (v{user.privacyVersion || "1.0"}) on{" "}
+                          <span className="font-medium" data-testid="text-terms-accepted-date">
+                            {new Date(user.termsAcceptedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          No agreement acceptance record found. If you registered before our terms tracking was implemented, 
+                          your continued use of the platform indicates acceptance of our terms.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <Separator />
+                
+                <div className="grid gap-3">
+                  <p className="text-sm font-medium text-muted-foreground">View Our Policies</p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Link href="/terms" target="_blank">
+                      <Button 
+                        variant="outline" 
+                        className="w-full sm:w-auto justify-start"
+                        data-testid="button-view-terms"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        User Agreement
+                        <ExternalLink className="h-3 w-3 ml-2" />
+                      </Button>
+                    </Link>
+                    <Link href="/privacy" target="_blank">
+                      <Button 
+                        variant="outline" 
+                        className="w-full sm:w-auto justify-start"
+                        data-testid="button-view-privacy"
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Privacy Policy
+                        <ExternalLink className="h-3 w-3 ml-2" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </CardContent>
             </Card>
