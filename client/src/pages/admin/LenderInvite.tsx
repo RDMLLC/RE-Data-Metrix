@@ -183,8 +183,8 @@ export default function LenderInvite() {
                                 className="w-full px-3 py-2 border border-input bg-background rounded-md text-foreground"
                                 data-testid="select-referral-type"
                               >
-                                <option value="$">Dollars ($)</option>
                                 <option value="%">Percentage (%)</option>
+                                <option value="$">Dollars ($)</option>
                               </select>
                             </FormControl>
                             <FormMessage />
