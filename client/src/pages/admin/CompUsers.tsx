@@ -18,6 +18,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft,
   Gift,
   Mail,
@@ -47,6 +54,7 @@ export default function CompUsers() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [newEmail, setNewEmail] = useState("");
+  const [expiresInDays, setExpiresInDays] = useState("30");
   const [inviteToDelete, setInviteToDelete] = useState<CompInvite | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -55,12 +63,12 @@ export default function CompUsers() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (email: string) => {
+    mutationFn: async ({ email, expiresInDays }: { email: string; expiresInDays: number }) => {
       const response = await fetch("/api/admin/comp-invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, expiresInDays }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -165,7 +173,7 @@ export default function CompUsers() {
       });
       return;
     }
-    createMutation.mutate(newEmail);
+    createMutation.mutate({ email: newEmail, expiresInDays: parseInt(expiresInDays) });
   };
 
   const handleCopyCode = (code: string) => {
@@ -260,6 +268,18 @@ export default function CompUsers() {
                 className="flex-1"
                 data-testid="input-comp-email"
               />
+              <Select value={expiresInDays} onValueChange={setExpiresInDays}>
+                <SelectTrigger className="w-[140px]" data-testid="select-expires-days">
+                  <SelectValue placeholder="Expires in" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 days</SelectItem>
+                  <SelectItem value="14">14 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 type="submit"
                 disabled={createMutation.isPending}
