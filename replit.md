@@ -63,3 +63,25 @@ The platform includes loan type education, intelligent lender filtering with dee
 - Vite
 - esbuild
 - PostCSS
+
+## Backlog
+
+### Zoho CRM Integration (Pending CRM Setup)
+Connect platform forms to Zoho CRM for lead and contact management:
+
+**Forms to Integrate:**
+1. Contact form submissions → Create Lead (Prospect)
+2. Prelaunch discount signups → Create Lead (Prospect)  
+3. User registrations → Create Contact (Contact Type: Subscriber-Monthly or Subscriber-Annual)
+4. Lender applications → Create Contact (Contact Type: Lender) with company info and questionnaire fields
+
+**CRM Setup Required Before Integration:**
+- Custom "Contact Type" picklist field (values: Lender, Subscriber-Monthly, Subscriber-Annual)
+- Custom fields for Lender company info and questionnaire responses
+- Lead Source field configured for tracking (Contact Form, Prelaunch, etc.)
+
+**API Credentials Needed:**
+- Zoho API Console: api-console.zoho.com
+- Create Self Client for server-to-server integration
+- Scopes required: ZohoCRM.modules.ALL, ZohoCRM.settings.ALL
+- Will need: Client ID, Client Secret, Refresh Token
