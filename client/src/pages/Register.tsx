@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
+import { TermsModal } from "@/components/TermsModal";
 
 const registerSchema = z
   .object({
@@ -64,6 +64,7 @@ export default function Register() {
   const [compEmail, setCompEmail] = useState<string | null>(null);
   const [compValidating, setCompValidating] = useState(false);
   const [registrationPath, setRegistrationPath] = useState<RegistrationPath>("choice");
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // Check for comp code in URL params
   useEffect(() => {
@@ -616,47 +617,60 @@ export default function Register() {
                 />
               )}
 
-              {/* Terms Agreement Checkbox */}
+              {/* Terms Agreement Section */}
               <div className="border-t pt-4 mt-2">
                 <FormField
                   control={form.control}
                   name="termsAccepted"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-terms-accepted"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal cursor-pointer">
-                          I agree to the{" "}
-                          <Link 
-                            href="/terms" 
-                            className="text-primary hover:underline" 
-                            target="_blank"
-                            data-testid="link-terms"
-                          >
-                            User Agreement
-                          </Link>{" "}
-                          and{" "}
-                          <Link 
-                            href="/privacy" 
-                            className="text-primary hover:underline" 
-                            target="_blank"
-                            data-testid="link-privacy"
-                          >
-                            Privacy Policy
-                          </Link>
+                    <FormItem>
+                      <div className="space-y-3">
+                        <FormLabel className="text-sm font-medium flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Legal Agreements
                         </FormLabel>
+                        {field.value ? (
+                          <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-emerald-600" />
+                              <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">Terms Accepted</span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermsModal(true)}
+                              className="text-muted-foreground hover:text-foreground"
+                              data-testid="button-review-terms-again"
+                            >
+                              Review Again
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => setShowTermsModal(true)}
+                            data-testid="button-review-terms"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Review and Accept Terms
+                          </Button>
+                        )}
                         <FormMessage />
                       </div>
                     </FormItem>
                   )}
                 />
               </div>
+              
+              {/* Terms Modal */}
+              <TermsModal
+                open={showTermsModal}
+                onOpenChange={setShowTermsModal}
+                onAccept={() => form.setValue("termsAccepted", true)}
+              />
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button
