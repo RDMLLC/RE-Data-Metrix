@@ -66,7 +66,9 @@ export default function Navigation() {
     { href: "/contact", label: "Contact" },
   ];
 
-  const userInitials = user ? getInitials(user.profile?.fullName, user.username, user.email) : "";
+  const userInitials = user 
+    ? (user.role === 'admin' ? 'AD' : getInitials(user.profile?.fullName, user.username, user.email))
+    : "";
 
   const handleLogout = async () => {
     try {
@@ -138,14 +140,24 @@ export default function Navigation() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {user.role === 'admin' ? (
-                      <DropdownMenuItem 
-                        onClick={() => setLocation("/admin/dashboard")}
-                        className="cursor-pointer"
-                        data-testid="menu-item-admin-dashboard"
-                      >
-                        <Settings className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/dashboard")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-dashboard"
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          Admin Dashboard
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/portal/dashboard")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-member-portal"
+                        >
+                          <User className="mr-2 h-4 w-4" />
+                          Member Portal
+                        </DropdownMenuItem>
+                      </>
                     ) : (
                       <DropdownMenuItem 
                         onClick={() => setLocation("/portal/dashboard")}
@@ -219,13 +231,22 @@ export default function Navigation() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {user.role === 'admin' ? (
-                    <DropdownMenuItem 
-                      onClick={() => setLocation("/admin/dashboard")}
-                      className="cursor-pointer"
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem 
+                        onClick={() => setLocation("/admin/dashboard")}
+                        className="cursor-pointer"
+                      >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Admin Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setLocation("/portal/dashboard")}
+                        className="cursor-pointer"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Member Portal
+                      </DropdownMenuItem>
+                    </>
                   ) : (
                     <DropdownMenuItem 
                       onClick={() => setLocation("/portal/dashboard")}
