@@ -35,7 +35,7 @@ export default function LenderInvite() {
       companyName: "",
       username: "",
       referralAmount: 0,
-      referralType: "$",
+      referralType: "%",
     },
   });
 
