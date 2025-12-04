@@ -186,20 +186,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/admin-login", (req, res, next) => {
     passport.authenticate("user-local", (err: any, user: User | false, info: { message: string }) => {
       if (err) {
+        console.error('[Admin Login] Authentication error:', err);
         return res.status(500).json({ error: "Authentication failed" });
       }
       if (!user) {
+        console.log('[Admin Login] Invalid credentials for:', req.body.email);
         return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
       
       if (user.role !== 'admin') {
+        console.log('[Admin Login] Non-admin user attempted login:', user.email, user.role);
         return res.status(403).json({ error: "Access denied. Admin privileges required." });
       }
       
       req.login(user, (err) => {
         if (err) {
+          console.error('[Admin Login] Session creation failed:', err);
           return res.status(500).json({ error: "Login failed" });
         }
+        console.log('[Admin Login] Success for:', user.email, 'Session ID:', req.sessionID);
         res.json({
           id: user.id,
           username: user.username,

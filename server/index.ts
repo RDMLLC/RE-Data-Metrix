@@ -16,13 +16,19 @@ if (!process.env.SESSION_SECRET) {
   );
 }
 
+const sessionStore = new PgSession({
+  pool,
+  tableName: 'session',
+  createTableIfMissing: true,
+});
+
+sessionStore.on('error', (error) => {
+  console.error('Session store error:', error);
+});
+
 app.use(
   session({
-    store: new PgSession({
-      pool,
-      tableName: 'session',
-      createTableIfMissing: true,
-    }),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,

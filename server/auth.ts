@@ -92,6 +92,7 @@ passport.serializeUser((user: Express.User, done) => {
 
 passport.deserializeUser(async (sessionData: any, done) => {
   try {
+    console.log('[Deserialize] Session data:', sessionData);
     const { id, userType } = sessionData;
     
     if (userType === 'lender') {
@@ -102,9 +103,11 @@ passport.deserializeUser(async (sessionData: any, done) => {
         .limit(1);
 
       if (!lender) {
+        console.log('[Deserialize] Lender not found for id:', id);
         return done(null, false);
       }
 
+      console.log('[Deserialize] Lender restored:', lender.email);
       done(null, { ...lender, userType: 'lender' });
     } else {
       const [user] = await db
@@ -114,12 +117,15 @@ passport.deserializeUser(async (sessionData: any, done) => {
         .limit(1);
 
       if (!user) {
+        console.log('[Deserialize] User not found for id:', id);
         return done(null, false);
       }
 
+      console.log('[Deserialize] User restored:', user.email, 'role:', user.role);
       done(null, { ...user, userType: 'user' });
     }
   } catch (error) {
+    console.error('[Deserialize] Error:', error);
     done(error);
   }
 });
@@ -174,13 +180,17 @@ export function ensureAdmin(
   res: Response,
   next: NextFunction
 ) {
+  console.log('[ensureAdmin] Session ID:', req.sessionID, 'isAuthenticated:', req.isAuthenticated(), 'user:', req.user ? (req.user as any).email : 'none');
+  
   if (!req.isAuthenticated()) {
+    console.log('[ensureAdmin] Authentication failed - no valid session');
     return res.status(401).json({ error: 'Authentication required' });
   }
 
   const user = req.user as any;
   
   if (user.role !== 'admin') {
+    console.log('[ensureAdmin] Admin check failed - user role:', user.role);
     return res.status(403).json({ error: 'Admin access required' });
   }
 
