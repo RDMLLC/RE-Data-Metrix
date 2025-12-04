@@ -22,7 +22,7 @@ interface FAQSection {
 const faqSections: FAQSection[] = [
   {
     title: "Product Basics",
-    icon: <HelpCircle className="h-6 w-6 text-accent" />,
+    icon: <HelpCircle className="h-4 w-4 text-accent" />,
     items: [
       {
         question: "What is RE Data Metrix?",
@@ -48,7 +48,7 @@ const faqSections: FAQSection[] = [
   },
   {
     title: "Who It's For & Use Cases",
-    icon: <Users className="h-6 w-6 text-accent" />,
+    icon: <Users className="h-4 w-4 text-accent" />,
     items: [
       {
         question: "Who is RE Data Metrix built for?",
@@ -74,7 +74,7 @@ const faqSections: FAQSection[] = [
   },
   {
     title: "Pricing & Account Details",
-    icon: <DollarSign className="h-6 w-6 text-accent" />,
+    icon: <DollarSign className="h-4 w-4 text-accent" />,
     items: [
       {
         question: "How is RE Data Metrix priced?",
@@ -100,7 +100,7 @@ const faqSections: FAQSection[] = [
   },
   {
     title: "Data, Integrations & Security",
-    icon: <Shield className="h-6 w-6 text-accent" />,
+    icon: <Shield className="h-4 w-4 text-accent" />,
     items: [
       {
         question: "Is my deal data private?",
@@ -126,7 +126,7 @@ const faqSections: FAQSection[] = [
   },
   {
     title: "Support & Getting Started",
-    icon: <Rocket className="h-6 w-6 text-accent" />,
+    icon: <Rocket className="h-4 w-4 text-accent" />,
     items: [
       {
         question: "How do I get started?",
@@ -155,23 +155,23 @@ const faqSections: FAQSection[] = [
 export default function FAQ() {
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl lg:text-6xl font-bold text-primary mb-4" data-testid="text-faq-title">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-primary mb-2" data-testid="text-faq-title">
             Frequently Asked Questions
           </h1>
-          <div className="h-1 w-32 bg-accent mx-auto mb-8"></div>
-          <p className="text-xl text-muted-foreground">
+          <div className="h-0.5 w-24 bg-accent mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">
             Everything you need to know about RE Data Metrix
           </p>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-4">
           {faqSections.map((section, sectionIndex) => (
-            <Card key={sectionIndex} className="p-6" data-testid={`card-faq-section-${sectionIndex}`}>
-              <div className="flex items-center gap-3 mb-6">
+            <Card key={sectionIndex} className="p-4" data-testid={`card-faq-section-${sectionIndex}`}>
+              <div className="flex items-center gap-2 mb-3">
                 {section.icon}
-                <h2 className="text-2xl font-bold text-primary">{section.title}</h2>
+                <h2 className="text-base font-semibold text-primary">{section.title}</h2>
               </div>
               
               <Accordion type="single" collapsible className="w-full">
@@ -180,11 +180,12 @@ export default function FAQ() {
                     key={itemIndex} 
                     value={`section-${sectionIndex}-item-${itemIndex}`}
                     data-testid={`accordion-item-${sectionIndex}-${itemIndex}`}
+                    className="border-b-0 last:border-b-0"
                   >
-                    <AccordionTrigger className="text-left hover:text-primary">
+                    <AccordionTrigger className="text-left text-[13px] hover:text-primary py-2">
                       {item.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
+                    <AccordionContent className="text-muted-foreground text-[13px] leading-relaxed pb-2">
                       {item.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -194,14 +195,14 @@ export default function FAQ() {
           ))}
         </div>
 
-        <Card className="mt-12 p-8 bg-primary text-primary-foreground text-center">
-          <h3 className="text-2xl font-bold mb-4">Still have questions?</h3>
-          <p className="text-primary-foreground/80 mb-6">
+        <Card className="mt-8 p-6 bg-primary text-primary-foreground text-center">
+          <h3 className="text-lg font-semibold mb-2">Still have questions?</h3>
+          <p className="text-primary-foreground/80 text-sm mb-4">
             We're here to help. Reach out to our support team anytime.
           </p>
           <a 
             href="/contact" 
-            className="inline-block bg-accent text-accent-foreground px-6 py-3 rounded-md font-semibold hover:bg-accent/90 transition-colors"
+            className="inline-block bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 transition-colors"
             data-testid="link-contact-support"
           >
             Contact Support
