@@ -5,16 +5,16 @@ import { Link } from "wouter";
 export default function Terms() {
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-primary mb-4">User Agreement</h1>
-          <p className="text-lg text-muted-foreground">(Terms of Service)</p>
-          <div className="h-1 w-32 bg-accent mx-auto mb-8 mt-4"></div>
-          <p className="text-muted-foreground">Effective Date: December 4, 2025</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-primary mb-2">User Agreement</h1>
+          <p className="text-sm text-muted-foreground">(Terms of Service)</p>
+          <div className="h-0.5 w-24 bg-accent mx-auto mb-4 mt-3"></div>
+          <p className="text-xs text-muted-foreground">Effective Date: December 4, 2025</p>
         </div>
 
-        <Card className="p-8 prose prose-lg max-w-none dark:prose-invert">
-          <p className="text-foreground lead">
+        <Card className="p-6 prose prose-sm max-w-none dark:prose-invert prose-headings:text-base prose-headings:font-semibold prose-p:text-[13px] prose-p:leading-relaxed prose-li:text-[13px] prose-li:leading-relaxed">
+          <p className="text-foreground text-sm">
             This User Agreement outlines the terms and conditions governing your access to and use of the RE Data Metrix ("RDM") platform and its associated services.
           </p>
 

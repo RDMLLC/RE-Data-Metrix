@@ -5,18 +5,18 @@ import { Link } from "wouter";
 export default function Privacy() {
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-primary mb-4">Privacy Policy</h1>
-          <div className="h-1 w-32 bg-accent mx-auto mb-8"></div>
-          <p className="text-muted-foreground">Last Updated: December 4, 2025</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-primary mb-2">Privacy Policy</h1>
+          <div className="h-0.5 w-24 bg-accent mx-auto mb-4"></div>
+          <p className="text-xs text-muted-foreground">Last Updated: December 4, 2025</p>
         </div>
 
-        <Card className="p-8 prose prose-lg max-w-none dark:prose-invert">
-          <p className="text-foreground lead">
+        <Card className="p-6 prose prose-sm max-w-none dark:prose-invert prose-headings:text-base prose-headings:font-semibold prose-p:text-[13px] prose-p:leading-relaxed prose-li:text-[13px] prose-li:leading-relaxed">
+          <p className="text-foreground text-sm">
             This Privacy Policy explains how RE Data Metrix ("RDM," "we," "us," or "our") collects, uses, discloses, and safeguards information about you when you visit our website, use the RE Data Metrix platform, or otherwise interact with us (collectively, the "Services"). It is separate from, and incorporated by reference into, our <Link href="/terms" className="text-primary hover:underline">User Agreement</Link>, which governs your use of the Services. If you do not agree with this Privacy Policy, you should not use the Services.
           </p>
-          <p className="text-foreground">
+          <p className="text-foreground text-sm">
             By accessing or using the Services, you acknowledge that you have read and understood this Privacy Policy and our User Agreement.
           </p>
 
