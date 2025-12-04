@@ -151,12 +151,52 @@ export class HasDataAPIService implements IPropertyAPIService {
       imageUrl = property.photoUrl;
     }
     
+    // Extract property type - Redfin uses various field names
+    const propertyType = property.propertyType || 
+                         property.homeType || 
+                         property.propertyTypeName ||
+                         property.homeTypeLabel ||
+                         property.type;
+    
+    // Extract HOA fees - Redfin uses various field names
+    const hoaFees = this.parseNumber(
+      property.hoaDues ||
+      property.hoaFee ||
+      property.hoaFees ||
+      property.monthlyHoaFee ||
+      property.associationDues ||
+      property.associationFee ||
+      property.hoa?.dues ||
+      property.hoa?.fee
+    );
+    
+    // Log property type and HOA fields for debugging
+    console.log("Redfin property fields:", {
+      propertyType: property.propertyType,
+      homeType: property.homeType,
+      propertyTypeName: property.propertyTypeName,
+      homeTypeLabel: property.homeTypeLabel,
+      type: property.type,
+      extractedPropertyType: propertyType
+    });
+    
+    console.log("Redfin HOA fields:", {
+      hoaDues: property.hoaDues,
+      hoaFee: property.hoaFee,
+      hoaFees: property.hoaFees,
+      monthlyHoaFee: property.monthlyHoaFee,
+      associationDues: property.associationDues,
+      associationFee: property.associationFee,
+      hoa: property.hoa,
+      extractedHoaFees: hoaFees
+    });
+    
     return {
       address: property.address?.street || '',
       city: property.address?.city || '',
       state: property.address?.state || '',
       zipCode: property.address?.zipcode || '',
-      propertyType: property.propertyType || property.homeType,
+      propertyType,
       bedrooms: this.parseNumber(property.beds || property.bedrooms),
       bathrooms: this.parseNumber(property.baths || property.bathrooms),
       sqft: this.parseNumber(property.area || property.sqFt || property.squareFeet),
@@ -167,6 +207,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       lastSalePrice: this.parseNumber(property.lastSoldPrice),
       lastSaleDate: property.lastSoldDate,
       imageUrl,
+      hoaFees,
     };
   }
 
@@ -186,6 +227,27 @@ export class HasDataAPIService implements IPropertyAPIService {
       imageUrl = property.photoUrl;
     }
     
+    // Extract HOA fees - Zillow uses various field names
+    // Try multiple possible field names for HOA
+    const hoaFees = this.parseNumber(
+      property.hoaFee || 
+      property.monthlyHoaFee || 
+      property.associationFee ||
+      property.hoaDues ||
+      property.hoa?.fee ||
+      property.hoa?.monthlyFee
+    );
+    
+    // Log HOA-related fields for debugging
+    console.log("Zillow HOA fields:", {
+      hoaFee: property.hoaFee,
+      monthlyHoaFee: property.monthlyHoaFee,
+      associationFee: property.associationFee,
+      hoaDues: property.hoaDues,
+      hoa: property.hoa,
+      extractedHoaFees: hoaFees
+    });
+    
     return {
       address: property.address?.street || property.addressRaw || '',
       city: property.address?.city || '',
@@ -203,6 +265,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
       imageUrl,
+      hoaFees,
     };
   }
 }
