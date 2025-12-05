@@ -85,3 +85,23 @@ Connect platform forms to Zoho CRM for lead and contact management:
 - Create Self Client for server-to-server integration
 - Scopes required: ZohoCRM.modules.ALL, ZohoCRM.settings.ALL
 - Will need: Client ID, Client Secret, Refresh Token
+
+### Shareable Deals (Low Priority)
+Allow subscribers to share deal analyses with other subscribers.
+
+**Approach:** Independent copies (non-collaborative)
+- Share via unique link or direct user invite
+- Recipients see read-only snapshot of the deal
+- Optional "Save a Copy" to clone deal into their own portal
+- Each user's copy operates independently (no real-time sync)
+
+**Implementation Requirements:**
+- New database tables: `shared_deals` (shareCode, expiry, permissions) and `shared_deal_access` (audit log)
+- Backend routes: create share, view shared deal, copy to my deals, revoke share
+- Frontend: Share button on deal cards, share dialog, public shared deal view page
+- Security: Only active subscribers can create/view shares; validate shareCode; enforce expiry
+
+**Why Independent Copies:**
+- Simpler than real-time collaboration
+- Matches typical RE workflow where each investor runs their own numbers
+- No merge conflicts or complex permissions
