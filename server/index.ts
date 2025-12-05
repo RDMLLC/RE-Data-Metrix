@@ -8,6 +8,9 @@ import passport from "./auth";
 
 const app = express();
 
+// Trust proxy for secure cookies behind Replit's HTTPS proxy
+app.set('trust proxy', 1);
+
 const PgSession = connectPgSimple(session);
 
 if (!process.env.SESSION_SECRET) {
