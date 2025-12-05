@@ -407,23 +407,25 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Referral Bonus CTA - Integrated */}
-              <div className="border-t border-primary-foreground/20 pt-8">
-                <div className="text-center">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center">
-                      <Users className="h-8 w-8 text-accent" />
+              {/* Referral Bonus CTA - Only show for non-comp registrations */}
+              {!compCodeValid && (
+                <div className="border-t border-primary-foreground/20 pt-8">
+                  <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                      <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center">
+                        <Users className="h-8 w-8 text-accent" />
+                      </div>
                     </div>
+                    <h3 className="text-2xl font-bold mb-3">Have a referral code?</h3>
+                    <p className="mb-6 text-primary-foreground/90">
+                      Use a referral code to get 1 month free trial and help your referrer earn bonuses
+                    </p>
+                    <p className="text-sm text-primary-foreground/80">
+                      Enter your code in the registration form
+                    </p>
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">Have a referral code?</h3>
-                  <p className="mb-6 text-primary-foreground/90">
-                    Use a referral code to get 1 month free trial and help your referrer earn bonuses
-                  </p>
-                  <p className="text-sm text-primary-foreground/80">
-                    Enter your code in the registration form
-                  </p>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Right Side - Register Form */}
@@ -566,55 +568,60 @@ export default function Register() {
                   </FormItem>
                 )}
               />
-              <div className="space-y-3">
-                <Label>Do you have a referral code?</Label>
-                <RadioGroup
-                  value={hasReferralCode}
-                  onValueChange={(value) => {
-                    setHasReferralCode(value);
-                    if (value === "no") {
-                      form.setValue("referralCode", "");
-                    }
-                  }}
-                  className="flex gap-4"
-                  data-testid="radio-has-referral-code"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="no" id="no-referral" data-testid="radio-no-referral" />
-                    <Label htmlFor="no-referral" className="font-normal cursor-pointer">
-                      No
-                    </Label>
+              {/* Only show referral code option for non-comp registrations */}
+              {!compCodeValid && (
+                <>
+                  <div className="space-y-3">
+                    <Label>Do you have a referral code?</Label>
+                    <RadioGroup
+                      value={hasReferralCode}
+                      onValueChange={(value) => {
+                        setHasReferralCode(value);
+                        if (value === "no") {
+                          form.setValue("referralCode", "");
+                        }
+                      }}
+                      className="flex gap-4"
+                      data-testid="radio-has-referral-code"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="no" id="no-referral" data-testid="radio-no-referral" />
+                        <Label htmlFor="no-referral" className="font-normal cursor-pointer">
+                          No
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="yes" id="yes-referral" data-testid="radio-yes-referral" />
+                        <Label htmlFor="yes-referral" className="font-normal cursor-pointer">
+                          Yes
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="yes" id="yes-referral" data-testid="radio-yes-referral" />
-                    <Label htmlFor="yes-referral" className="font-normal cursor-pointer">
-                      Yes
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
 
-              {hasReferralCode === "yes" && (
-                <FormField
-                  control={form.control}
-                  name="referralCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enter Referral Code</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="ABC12345"
-                          data-testid="input-referral-code"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Get 1 month free trial with a referral code
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
+                  {hasReferralCode === "yes" && (
+                    <FormField
+                      control={form.control}
+                      name="referralCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Enter Referral Code</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="ABC12345"
+                              data-testid="input-referral-code"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Get 1 month free trial with a referral code
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+                </>
               )}
 
               {/* Terms Agreement Section */}
