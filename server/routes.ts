@@ -73,11 +73,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check for comp code first (highest priority)
       if (validatedData.compCode) {
+        console.log('[Registration] Comp code provided:', validatedData.compCode.toUpperCase());
         const invite = await storage.getCompInviteByCode(validatedData.compCode.toUpperCase());
+        console.log('[Registration] Comp invite found:', invite ? { 
+          id: invite.id, 
+          email: invite.email, 
+          status: invite.status, 
+          expiresAt: invite.expiresAt 
+        } : 'null');
         if (invite && invite.status === 'pending' && new Date() <= invite.expiresAt) {
           compInviteToAccept = invite;
           subscriptionStatus = 'comped';
+          console.log('[Registration] Comp code valid - setting status to comped');
+        } else if (invite) {
+          console.log('[Registration] Comp code invalid - status:', invite.status, 'expired:', new Date() > invite.expiresAt);
         }
+      } else {
+        console.log('[Registration] No comp code provided');
       }
       
       // If no valid comp code, check for referral code
