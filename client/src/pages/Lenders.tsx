@@ -5,7 +5,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Search, ExternalLink, Heart, Clock, TrendingUp, Zap, Users, DollarSign, CheckCircle, XCircle, GraduationCap } from "lucide-react";
-import lendersImg from "@assets/generated_images/Lenders_partnership_concept_image_281c2e15.png";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -821,17 +820,6 @@ export default function Lenders() {
             </Link>
           </div>
         </Card>
-
-        {/* Image Preview */}
-        <div className="mb-12">
-          <div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
-            <img 
-              src={lendersImg} 
-              alt="Lender Partnership Network"
-              className="w-full h-full object-cover opacity-80"
-            />
-          </div>
-        </div>
 
         {/* Call to Action */}
         <Card className="p-12 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-center">
