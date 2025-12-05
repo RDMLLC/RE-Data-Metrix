@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
 interface ZohoStatus {
   configured: boolean;
@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [zohoStatus, setZohoStatus] = useState<ZohoStatus | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -33,11 +34,29 @@ export default function AdminDashboard() {
         });
         if (response.ok) {
           const data = await response.json();
+          // Check if user is admin - redirect if not
+          if (data.role !== 'admin') {
+            toast({
+              title: "Access Denied",
+              description: "Admin privileges required. Please log in as admin.",
+              variant: "destructive",
+            });
+            setLocation("/admin/login");
+            return;
+          }
           setAdminName(data.email?.split("@")[0] || "Admin");
           setAdminEmail(data.email || "");
+        } else {
+          // Not authenticated - redirect to admin login
+          setLocation("/admin/login");
+          return;
         }
       } catch (error) {
         console.error("Failed to fetch admin info");
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
       }
     };
     
@@ -57,7 +76,18 @@ export default function AdminDashboard() {
     
     fetchAdminInfo();
     fetchZohoStatus();
-  }, []);
+  }, [setLocation, toast]);
+
+  // Show loading while checking auth
+  if (isAuthChecking) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   const handleLogout = async () => {
     setIsLoading(true);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   XCircle,
   Users,
+  Loader2,
 } from "lucide-react";
 
 interface CompInvite {
@@ -57,9 +58,41 @@ export default function CompUsers() {
   const [expiresInDays, setExpiresInDays] = useState("30");
   const [inviteToDelete, setInviteToDelete] = useState<CompInvite | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+
+  // Check admin authentication on mount
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin') {
+            toast({
+              title: "Access Denied",
+              description: "Admin privileges required.",
+              variant: "destructive",
+            });
+            setLocation("/admin/login");
+            return;
+          }
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const { data: invites, isLoading } = useQuery<CompInvite[]>({
     queryKey: ["/api/admin/comp-invites"],
+    enabled: !isAuthChecking, // Only fetch after auth check
   });
 
   const createMutation = useMutation({
@@ -227,6 +260,15 @@ export default function CompUsers() {
   const pendingInvites = invites?.filter(i => i.status === "pending" && new Date(i.expiresAt) >= new Date()) || [];
   const acceptedInvites = invites?.filter(i => i.status === "accepted") || [];
   const expiredInvites = invites?.filter(i => i.status === "pending" && new Date(i.expiresAt) < new Date()) || [];
+
+  // Show loading while checking auth
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
