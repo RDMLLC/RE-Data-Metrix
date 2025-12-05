@@ -614,6 +614,218 @@ class EmailService {
     });
   }
 
+  async sendLoanProductChangedNotification(
+    to: string, 
+    companyName: string, 
+    productName: string, 
+    changeType: 'created' | 'updated'
+  ): Promise<boolean> {
+    const portalUrl = `${this.getBaseUrl()}/lender-portal`;
+    const actionText = changeType === 'created' ? 'added' : 'updated';
+    const headerText = changeType === 'created' ? 'New Product Added' : 'Product Updated';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .highlight-box { background: #F0FDF4; border: 1px solid #BBF7D0; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">${headerText}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your loan product has been ${actionText}</p>
+          </div>
+          <div class="content">
+            <p>Hello ${companyName},</p>
+            <p>This is a confirmation that your loan product has been successfully ${actionText} on RE Data Metrix.</p>
+            
+            <div class="highlight-box">
+              <p style="margin: 0; font-size: 18px; color: #0F7B49; font-weight: 600;">${productName}</p>
+              <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">was ${actionText} successfully</p>
+            </div>
+            
+            <p>Your updated loan products are now visible to investors searching for financing options.</p>
+            
+            <div style="text-align: center;">
+              <a href="${portalUrl}" style="display: inline-block; padding: 14px 28px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; font-size: 16px;">View Your Products</a>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">Log in to your Lender Portal to manage all your loan products.</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `Loan Product ${changeType === 'created' ? 'Added' : 'Updated'} - RE Data Metrix`,
+      html: htmlContent,
+    });
+  }
+
+  async sendLenderContactNotification(
+    to: string, 
+    companyName: string, 
+    data: {
+      investorName: string;
+      investorEmail: string;
+      investorPhone?: string;
+      propertyAddress: string;
+      productName: string;
+      loanType: string;
+      estProfit: string;
+      cashOnCashRoi: string;
+      annualizedRoi: string;
+      estOutOfPocket: string;
+      interestRate?: string;
+      maxLtvBuy?: string;
+      points?: string;
+      timeToClose?: string;
+      projectCosts: string;
+      costsAndCarrying: string;
+      exitSale: string;
+    }
+  ): Promise<boolean> {
+    const portalUrl = `${this.getBaseUrl()}/lender-portal`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #D4AF37 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .investor-box { background: #F0F9FF; border: 1px solid #93C5FD; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .property-box { background: #F0FDF4; border: 1px solid #BBF7D0; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .metrics-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .metrics-table th { text-align: left; padding: 12px; background: #F9FAFB; border: 1px solid #e5e7eb; color: #1E3A8A; font-weight: 600; }
+          .metrics-table td { padding: 12px; border: 1px solid #e5e7eb; }
+          .metrics-table tr:nth-child(even) { background: #FAFAFA; }
+          .section-title { font-size: 16px; font-weight: 600; color: #1E3A8A; margin: 25px 0 15px 0; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">New Investor Inquiry!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">An investor is interested in your loan product</p>
+          </div>
+          <div class="content">
+            <p>Hello ${companyName},</p>
+            <p><strong>${data.investorName}</strong> selected you as a possible lender for their property at <strong>"${data.propertyAddress}"</strong>. They're interested in your <strong>"${data.productName}"</strong> product.</p>
+            
+            <div class="investor-box">
+              <h3 style="margin: 0 0 15px 0; color: #1E3A8A;">Investor Contact Information</h3>
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${data.investorName}</p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:${data.investorEmail}" style="color: #1E3A8A;">${data.investorEmail}</a></p>
+              ${data.investorPhone ? `<p style="margin: 5px 0;"><strong>Phone:</strong> <a href="tel:${data.investorPhone}" style="color: #1E3A8A;">${data.investorPhone}</a></p>` : ''}
+            </div>
+            
+            <div class="property-box">
+              <h3 style="margin: 0 0 15px 0; color: #0F7B49;">Property & Loan Details</h3>
+              <p style="margin: 5px 0;"><strong>Property Address:</strong> ${data.propertyAddress}</p>
+              <p style="margin: 5px 0;"><strong>Selected Loan Product:</strong> ${data.productName}</p>
+              <p style="margin: 5px 0;"><strong>Loan Type:</strong> ${data.loanType}</p>
+            </div>
+            
+            <h3 class="section-title">Deal Metrics</h3>
+            <table class="metrics-table">
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+              </tr>
+              <tr>
+                <td>Est. Profit</td>
+                <td style="font-weight: 600; color: #0F7B49;">${data.estProfit}</td>
+              </tr>
+              <tr>
+                <td>Cash-on-Cash ROI</td>
+                <td>${data.cashOnCashRoi}</td>
+              </tr>
+              <tr>
+                <td>Annualized ROI</td>
+                <td>${data.annualizedRoi}</td>
+              </tr>
+              <tr>
+                <td>Est. Out of Pocket</td>
+                <td>${data.estOutOfPocket}</td>
+              </tr>
+            </table>
+            
+            <h3 class="section-title">Loan Terms</h3>
+            <table class="metrics-table">
+              <tr>
+                <th>Term</th>
+                <th>Value</th>
+              </tr>
+              ${data.interestRate ? `<tr><td>Interest Rate</td><td>${data.interestRate}</td></tr>` : ''}
+              ${data.maxLtvBuy ? `<tr><td>Max LTV (Buy)</td><td>${data.maxLtvBuy}</td></tr>` : ''}
+              ${data.points ? `<tr><td>Points</td><td>${data.points}</td></tr>` : ''}
+              ${data.timeToClose ? `<tr><td>Time to Close</td><td>${data.timeToClose}</td></tr>` : ''}
+            </table>
+            
+            <h3 class="section-title">Project Summary</h3>
+            <table class="metrics-table">
+              <tr>
+                <th>Category</th>
+                <th>Amount</th>
+              </tr>
+              <tr>
+                <td>Project Costs</td>
+                <td>${data.projectCosts}</td>
+              </tr>
+              <tr>
+                <td>Costs & Carrying</td>
+                <td>${data.costsAndCarrying}</td>
+              </tr>
+              <tr>
+                <td>Exit & Sale</td>
+                <td>${data.exitSale}</td>
+              </tr>
+            </table>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${portalUrl}" style="display: inline-block; padding: 14px 28px; background-color: #D4AF37; color: #1E3A8A !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; font-size: 16px;">View All Inquiries</a>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">Log in to your Lender Portal to view all investor inquiries and manage your loan products.</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `New Investor Inquiry - ${data.propertyAddress} - RE Data Metrix`,
+      html: htmlContent,
+    });
+  }
+
   private async sendEmail(options: {
     to: string;
     subject: string;

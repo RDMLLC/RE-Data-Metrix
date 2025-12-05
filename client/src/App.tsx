@@ -50,6 +50,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import RequestLenderPasswordReset from "@/pages/RequestLenderPasswordReset";
 import ResetLenderPassword from "@/pages/ResetLenderPassword";
 import LenderSavedBy from "@/pages/LenderSavedBy";
+import LenderInquiries from "@/pages/LenderInquiries";
 import FAQ from "@/pages/FAQ";
 import Pricing from "@/pages/Pricing";
 import Checkout from "@/pages/Checkout";
@@ -121,6 +122,7 @@ function Router() {
       <Route path="/lender-questionnaire" component={LenderQuestionnaire} />
       <Route path="/lender-loan-products" component={LenderLoanProducts} />
       <Route path="/lender-saved-by" component={LenderSavedBy} />
+      <Route path="/lender-inquiries" component={LenderInquiries} />
       <Route path="/lender-signup/:token" component={LenderSignup} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/request-password-reset" component={AdminRequestPasswordReset} />

@@ -1,10 +1,44 @@
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, FileText, DollarSign, Heart } from "lucide-react";
+import { Building2, FileText, DollarSign, Heart, MessageSquare, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import type { LoanProduct } from "@shared/schema";
 
 export default function LenderDashboard() {
+  const { data: loanProducts, isLoading: loadingProducts } = useQuery<LoanProduct[]>({
+    queryKey: ["/api/loan-products"],
+    queryFn: async () => {
+      const res = await fetch("/api/loan-products", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch loan products");
+      return res.json();
+    },
+  });
+
+  const { data: inquiryCount, isLoading: loadingInquiries } = useQuery<{ count: number }>({
+    queryKey: ["/api/lender/inquiries/count"],
+    queryFn: async () => {
+      const res = await fetch("/api/lender/inquiries/count", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch inquiry count");
+      return res.json();
+    },
+  });
+
+  const { data: savedByMembers, isLoading: loadingSaved } = useQuery({
+    queryKey: ["/api/lender/saved-by"],
+    queryFn: async () => {
+      const res = await fetch("/api/lender/saved-by", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch saved by members");
+      return res.json();
+    },
+  });
+
+  const activeLoanProducts = loanProducts?.filter(p => p.isActive) || [];
+  const totalInquiries = inquiryCount?.count || 0;
+  const savedByCount = Array.isArray(savedByMembers) ? savedByMembers.length : 0;
+  const isLoadingStats = loadingProducts || loadingInquiries || loadingSaved;
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
@@ -105,19 +139,63 @@ export default function LenderDashboard() {
                 </Button>
               </Link>
             </Card>
+
+            {/* Investor Inquiries Card */}
+            <Card className="p-6 hover-elevate">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-accent" />
+                </div>
+                <h2 className="text-xl font-semibold text-primary">Investor Inquiries</h2>
+              </div>
+              <p className="text-muted-foreground mb-6">
+                View contact requests from investors interested in your loan products
+              </p>
+              <Link href="/lender-inquiries">
+                <Button
+                  className="w-full"
+                  variant="default"
+                  data-testid="button-investor-inquiries"
+                >
+                  View Inquiries
+                </Button>
+              </Link>
+            </Card>
           </div>
 
           {/* Quick Stats Section */}
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-primary mb-6">Quick Stats</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card className="p-6">
-                <div className="text-3xl font-bold text-accent mb-2" data-testid="stat-loan-products">0</div>
+                <div className="text-3xl font-bold text-accent mb-2" data-testid="stat-loan-products">
+                  {loadingProducts ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  ) : (
+                    activeLoanProducts.length
+                  )}
+                </div>
                 <div className="text-muted-foreground">Active Loan Products</div>
               </Card>
               <Card className="p-6">
-                <div className="text-3xl font-bold text-accent mb-2" data-testid="stat-inquiries">0</div>
+                <div className="text-3xl font-bold text-accent mb-2" data-testid="stat-inquiries">
+                  {loadingInquiries ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  ) : (
+                    totalInquiries
+                  )}
+                </div>
                 <div className="text-muted-foreground">Investor Inquiries</div>
+              </Card>
+              <Card className="p-6">
+                <div className="text-3xl font-bold text-accent mb-2" data-testid="stat-saved-by">
+                  {loadingSaved ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  ) : (
+                    savedByCount
+                  )}
+                </div>
+                <div className="text-muted-foreground">Saved By Investors</div>
               </Card>
               <Card className="p-6">
                 <div className="text-3xl font-bold text-accent mb-2" data-testid="stat-profile-status">Pending</div>

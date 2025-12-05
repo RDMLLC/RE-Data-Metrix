@@ -8,9 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { usePDF } from "react-to-pdf";
@@ -142,6 +151,28 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [showCostsCarrying, setShowCostsCarrying] = useState(false);
   const [showExitMetrics, setShowExitMetrics] = useState(false);
 
+  // Contact lender state
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [contactMessage, setContactMessage] = useState("");
+  const [selectedLenderForContact, setSelectedLenderForContact] = useState<{
+    lenderId: string;
+    lenderName: string;
+    productId: string;
+    productName: string;
+    loanType: string;
+    interestRate?: number;
+    maxLtvBuy?: number;
+    points?: number;
+    timeToClose?: number;
+    profit?: number;
+    cashOnCashRoi?: number;
+    annualizedRoi?: number;
+    outOfPocketCost?: number;
+    projectCosts?: number;
+    costsAndCarrying?: number;
+    exitSale?: number;
+  } | null>(null);
+
   // PDF generation
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const { toPDF, targetRef } = usePDF({
@@ -263,6 +294,91 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
       });
     },
   });
+
+  const contactLenderMutation = useMutation({
+    mutationFn: async (data: {
+      lenderId: string;
+      loanProductId: string;
+      message: string;
+      dealData: any;
+    }) => {
+      const response = await apiRequest("POST", "/api/member/contact-lender", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: `Your inquiry has been sent to ${selectedLenderForContact?.lenderName}. They will contact you soon.`,
+      });
+      setContactDialogOpen(false);
+      setContactMessage("");
+      setSelectedLenderForContact(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send inquiry. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleContactLender = (lenderData: {
+    lenderId: string;
+    lenderName: string;
+    productId: string;
+    productName: string;
+    loanType: string;
+    interestRate?: number;
+    maxLtvBuy?: number;
+    points?: number;
+    timeToClose?: number;
+    profit?: number;
+    cashOnCashRoi?: number;
+    annualizedRoi?: number;
+    outOfPocketCost?: number;
+    projectCosts?: number;
+    costsAndCarrying?: number;
+    exitSale?: number;
+  }) => {
+    setSelectedLenderForContact(lenderData);
+    setContactDialogOpen(true);
+  };
+
+  const submitContactLender = () => {
+    if (!selectedLenderForContact) return;
+    
+    const formData = form.getValues();
+    const propertyAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
+    
+    contactLenderMutation.mutate({
+      lenderId: selectedLenderForContact.lenderId,
+      loanProductId: selectedLenderForContact.productId,
+      message: contactMessage,
+      dealData: {
+        propertyAddress,
+        arv: formData.arv || 0,
+        buyPrice: editBuyPrice,
+        rehabCost: editRehab,
+        projectLength: editProjectLength,
+        estProfit: selectedLenderForContact.profit || 0,
+        cashOnCashRoi: selectedLenderForContact.cashOnCashRoi || 0,
+        annualizedRoi: selectedLenderForContact.annualizedRoi || 0,
+        estOutOfPocket: selectedLenderForContact.outOfPocketCost || 0,
+        projectCosts: selectedLenderForContact.projectCosts || 0,
+        costsAndCarrying: selectedLenderForContact.costsAndCarrying || 0,
+        exitSale: selectedLenderForContact.exitSale || 0,
+        loanTerms: {
+          interestRate: selectedLenderForContact.interestRate ? `${selectedLenderForContact.interestRate}%` : undefined,
+          maxLtvBuy: selectedLenderForContact.maxLtvBuy ? `${selectedLenderForContact.maxLtvBuy}%` : undefined,
+          points: selectedLenderForContact.points ? `${selectedLenderForContact.points}` : undefined,
+          timeToClose: selectedLenderForContact.timeToClose ? `${selectedLenderForContact.timeToClose} days` : undefined,
+        },
+        productName: selectedLenderForContact.productName,
+        loanType: selectedLenderForContact.loanType,
+      },
+    });
+  };
 
   const buildPayload = (
     preference: string,
@@ -1313,6 +1429,59 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                     </TableCell>
                   ))}
                 </TableRow>
+                
+                {/* Contact Lender Row */}
+                <TableRow>
+                  <TableCell className={`font-medium ${stickyFirstColBase}`}>Contact Lender</TableCell>
+                  <TableCell 
+                    className="text-center sticky z-10 bg-background"
+                    style={{ left: `${metricColWidth}px` }}
+                  >
+                    -
+                  </TableCell>
+                  {results.userLoanColumn && (
+                    <TableCell 
+                      className="text-center sticky z-10 bg-background"
+                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                    >
+                      -
+                    </TableCell>
+                  )}
+                  {visibleLenders.map((lender, index) => (
+                    <TableCell key={index} className="text-center">
+                      {lender.lenderId && lender.productId ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleContactLender({
+                            lenderId: lender.lenderId!,
+                            lenderName: lender.lenderName || 'Lender',
+                            productId: lender.productId!,
+                            productName: lender.productName || 'Loan Product',
+                            loanType: 'fix-and-flip',
+                            interestRate: lender.interestRate,
+                            maxLtvBuy: lender.maxLtvBuy,
+                            points: lender.points,
+                            timeToClose: lender.timeToClose,
+                            profit: lender.profit,
+                            cashOnCashRoi: lender.cashOnCashRoi,
+                            annualizedRoi: lender.annualizedRoi,
+                            outOfPocketCost: lender.outOfPocketCost,
+                            projectCosts: lender.totalProjectCost,
+                            costsAndCarrying: lender.carryingCosts + lender.closingCostsBuy,
+                            exitSale: lender.sellPrice - lender.closingCostsSell - lender.commission,
+                          })}
+                          data-testid={`button-contact-lender-${index + 1}`}
+                        >
+                          <Mail className="h-4 w-4 mr-1" />
+                          Contact
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">N/A</span>
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
               </TableBody>
             </Table>
           </div>
@@ -1554,15 +1723,33 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                             </div>
                           </div>
 
-                          {lender.referralLink && (
-                            <div className="border-t pt-4 flex justify-end">
+                          <div className="border-t pt-4 flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => handleContactLender({
+                                lenderId: lender.lenderId,
+                                lenderName: lender.lenderName,
+                                productId: lender.productId,
+                                productName: lender.productName,
+                                loanType: lender.loanType,
+                                interestRate: dscrCalculation.interestRate,
+                                maxLtvBuy: dscrCalculation.maxLtvBuy,
+                                points: dscrCalculation.points,
+                                timeToClose: lender.timeToClose,
+                              })}
+                              data-testid={`button-contact-dscr-${lender.productId}`}
+                            >
+                              <Mail className="h-4 w-4 mr-2" />
+                              Contact Lender
+                            </Button>
+                            {lender.referralLink && (
                               <Button asChild data-testid={`button-apply-dscr-${lender.productId}`}>
                                 <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
                                   Apply Now <ExternalLink className="h-4 w-4" />
                                 </a>
                               </Button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </Card>
                       );
                     })}
@@ -1581,6 +1768,77 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Contact Lender Dialog */}
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Contact {selectedLenderForContact?.lenderName}
+            </DialogTitle>
+            <DialogDescription>
+              Send an inquiry about the {selectedLenderForContact?.productName} loan product.
+              Your contact information and deal details will be included automatically.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="message">Message (Optional)</Label>
+              <Textarea
+                id="message"
+                placeholder="Include any questions or additional information for the lender..."
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
+                className="min-h-[100px]"
+                data-testid="textarea-contact-message"
+              />
+            </div>
+            
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <p className="font-medium mb-2">What will be shared:</p>
+              <ul className="text-muted-foreground space-y-1 text-xs">
+                <li>Your name, email, and phone number</li>
+                <li>Property address and details</li>
+                <li>Deal metrics (ARV, estimated profit, ROI)</li>
+                <li>Selected loan product information</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setContactDialogOpen(false);
+                setContactMessage("");
+                setSelectedLenderForContact(null);
+              }}
+              data-testid="button-cancel-contact"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={submitContactLender}
+              disabled={contactLenderMutation.isPending}
+              data-testid="button-send-contact"
+            >
+              {contactLenderMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Inquiry
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

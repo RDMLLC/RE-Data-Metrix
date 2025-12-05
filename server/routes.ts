@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -1320,6 +1320,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lenderId,
       });
       const product = await storage.createLoanProduct(validatedData);
+      
+      // Send email notification to lender (async, don't wait)
+      (async () => {
+        try {
+          const [lender] = await db.select().from(lenders).where(eq(lenders.id, lenderId));
+          if (lender && lender.email) {
+            await emailService.sendLoanProductChangedNotification(
+              lender.email,
+              lender.companyName,
+              product.productName,
+              'created'
+            );
+          }
+        } catch (emailError) {
+          console.error("Error sending loan product created notification:", emailError);
+        }
+      })();
+      
       res.json(product);
     } catch (error) {
       console.error('Loan product creation error:', error);
@@ -1347,6 +1365,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lenderId,
       });
       const product = await storage.updateLoanProduct(productId, validatedData);
+      
+      // Send email notification to lender (async, don't wait)
+      (async () => {
+        try {
+          const [lender] = await db.select().from(lenders).where(eq(lenders.id, lenderId));
+          if (lender && lender.email) {
+            await emailService.sendLoanProductChangedNotification(
+              lender.email,
+              lender.companyName,
+              product.productName,
+              'updated'
+            );
+          }
+        } catch (emailError) {
+          console.error("Error sending loan product updated notification:", emailError);
+        }
+      })();
+      
       res.json(product);
     } catch (error) {
       res.status(500).json({ error: "Failed to update loan product" });
@@ -3790,6 +3826,243 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching saved-by members:", error);
       res.status(500).json({ error: "Failed to fetch saved-by members" });
+    }
+  });
+
+  // Contact Lender - Member sends inquiry with deal details
+  const contactLenderSchema = z.object({
+    lenderId: z.string(),
+    loanProductId: z.string().optional(),
+    propertyAddress: z.string(),
+    arv: z.number().optional(),
+    buyPrice: z.number().optional(),
+    rehabCost: z.number().optional(),
+    projectLength: z.number().optional(),
+    estProfit: z.number().optional(),
+    cashOnCashRoi: z.number().optional(),
+    annualizedRoi: z.number().optional(),
+    estOutOfPocket: z.number().optional(),
+    projectCosts: z.number().optional(),
+    costsAndCarrying: z.number().optional(),
+    exitSale: z.number().optional(),
+    loanTerms: z.object({
+      interestRate: z.string().optional(),
+      maxLtvBuy: z.string().optional(),
+      points: z.string().optional(),
+      timeToClose: z.string().optional(),
+    }).optional(),
+    productName: z.string().optional(),
+    loanType: z.string().optional(),
+  });
+
+  app.post("/api/member/contact-lender", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const data = contactLenderSchema.parse(req.body);
+      
+      // Get user profile for investor info
+      const [profile] = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user.id));
+      
+      // Get lender info
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.id, data.lenderId));
+      
+      if (!lender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      
+      const investorName = profile?.fullName || user.username || "Unknown Investor";
+      const investorEmail = user.email;
+      const investorPhone = profile?.phone || undefined;
+      
+      // Store the inquiry in the database
+      const [inquiry] = await db
+        .insert(lenderInquiries)
+        .values({
+          lenderId: data.lenderId,
+          loanProductId: data.loanProductId,
+          userId: user.id,
+          propertyAddress: data.propertyAddress,
+          arv: data.arv?.toString(),
+          buyPrice: data.buyPrice?.toString(),
+          rehabCost: data.rehabCost?.toString(),
+          projectLength: data.projectLength,
+          estProfit: data.estProfit?.toString(),
+          cashOnCashRoi: data.cashOnCashRoi?.toString(),
+          annualizedRoi: data.annualizedRoi?.toString(),
+          estOutOfPocket: data.estOutOfPocket?.toString(),
+          projectCosts: data.projectCosts?.toString(),
+          costsAndCarrying: data.costsAndCarrying?.toString(),
+          exitSale: data.exitSale?.toString(),
+          loanTerms: data.loanTerms,
+          investorName,
+          investorEmail,
+          investorPhone,
+          productName: data.productName,
+          loanType: data.loanType,
+          emailSent: false,
+        })
+        .returning();
+      
+      // Helper function to format currency
+      const formatCurrency = (value: number | undefined): string => {
+        if (value === undefined || value === null) return 'N/A';
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+      };
+      
+      // Helper function to format percentage
+      const formatPercent = (value: number | undefined): string => {
+        if (value === undefined || value === null) return 'N/A';
+        return `${value.toFixed(2)}%`;
+      };
+      
+      // Send email notification to lender (async, don't wait)
+      (async () => {
+        try {
+          if (lender.email) {
+            await emailService.sendLenderContactNotification(
+              lender.email,
+              lender.companyName,
+              {
+                investorName,
+                investorEmail,
+                investorPhone,
+                propertyAddress: data.propertyAddress,
+                productName: data.productName || 'Not specified',
+                loanType: data.loanType || 'Not specified',
+                estProfit: formatCurrency(data.estProfit),
+                cashOnCashRoi: formatPercent(data.cashOnCashRoi),
+                annualizedRoi: formatPercent(data.annualizedRoi),
+                estOutOfPocket: formatCurrency(data.estOutOfPocket),
+                interestRate: data.loanTerms?.interestRate,
+                maxLtvBuy: data.loanTerms?.maxLtvBuy,
+                points: data.loanTerms?.points,
+                timeToClose: data.loanTerms?.timeToClose,
+                projectCosts: formatCurrency(data.projectCosts),
+                costsAndCarrying: formatCurrency(data.costsAndCarrying),
+                exitSale: formatCurrency(data.exitSale),
+              }
+            );
+            
+            // Update inquiry to mark email as sent
+            await db
+              .update(lenderInquiries)
+              .set({ emailSent: true })
+              .where(eq(lenderInquiries.id, inquiry.id));
+          }
+        } catch (emailError) {
+          console.error("Error sending lender contact notification:", emailError);
+        }
+      })();
+      
+      res.json({ 
+        success: true, 
+        message: "Your inquiry has been sent to the lender",
+        inquiryId: inquiry.id 
+      });
+    } catch (error) {
+      console.error("Error contacting lender:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to send inquiry" });
+    }
+  });
+  
+  // Get lender inquiries (for lender portal)
+  app.get("/api/lender/inquiries", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const lender = req.user as any;
+      const { search, startDate, endDate } = req.query;
+      
+      let query = db
+        .select({
+          id: lenderInquiries.id,
+          propertyAddress: lenderInquiries.propertyAddress,
+          arv: lenderInquiries.arv,
+          buyPrice: lenderInquiries.buyPrice,
+          rehabCost: lenderInquiries.rehabCost,
+          projectLength: lenderInquiries.projectLength,
+          estProfit: lenderInquiries.estProfit,
+          cashOnCashRoi: lenderInquiries.cashOnCashRoi,
+          annualizedRoi: lenderInquiries.annualizedRoi,
+          estOutOfPocket: lenderInquiries.estOutOfPocket,
+          projectCosts: lenderInquiries.projectCosts,
+          costsAndCarrying: lenderInquiries.costsAndCarrying,
+          exitSale: lenderInquiries.exitSale,
+          loanTerms: lenderInquiries.loanTerms,
+          investorName: lenderInquiries.investorName,
+          investorEmail: lenderInquiries.investorEmail,
+          investorPhone: lenderInquiries.investorPhone,
+          productName: lenderInquiries.productName,
+          loanType: lenderInquiries.loanType,
+          emailSent: lenderInquiries.emailSent,
+          createdAt: lenderInquiries.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+          },
+        })
+        .from(lenderInquiries)
+        .innerJoin(users, eq(lenderInquiries.userId, users.id))
+        .where(eq(lenderInquiries.lenderId, lender.id))
+        .orderBy(desc(lenderInquiries.createdAt));
+      
+      const inquiries = await query;
+      
+      // Filter by search term if provided
+      let filteredInquiries = inquiries;
+      if (search && typeof search === 'string') {
+        const searchLower = search.toLowerCase();
+        filteredInquiries = inquiries.filter(inq => 
+          inq.investorName?.toLowerCase().includes(searchLower) ||
+          inq.investorEmail?.toLowerCase().includes(searchLower) ||
+          inq.propertyAddress?.toLowerCase().includes(searchLower) ||
+          inq.productName?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Filter by date range if provided
+      if (startDate && typeof startDate === 'string') {
+        const start = new Date(startDate);
+        filteredInquiries = filteredInquiries.filter(inq => 
+          inq.createdAt && new Date(inq.createdAt) >= start
+        );
+      }
+      if (endDate && typeof endDate === 'string') {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Include the whole end day
+        filteredInquiries = filteredInquiries.filter(inq => 
+          inq.createdAt && new Date(inq.createdAt) <= end
+        );
+      }
+      
+      res.json(filteredInquiries);
+    } catch (error) {
+      console.error("Error fetching lender inquiries:", error);
+      res.status(500).json({ error: "Failed to fetch inquiries" });
+    }
+  });
+  
+  // Get inquiry count for lender dashboard
+  app.get("/api/lender/inquiries/count", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const lender = req.user as any;
+      
+      const [result] = await db
+        .select({ count: count() })
+        .from(lenderInquiries)
+        .where(eq(lenderInquiries.lenderId, lender.id));
+      
+      res.json({ count: result?.count || 0 });
+    } catch (error) {
+      console.error("Error fetching inquiry count:", error);
+      res.status(500).json({ error: "Failed to fetch inquiry count" });
     }
   });
 
