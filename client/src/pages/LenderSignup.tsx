@@ -151,6 +151,7 @@ export default function LenderSignup() {
                         <FormControl>
                           <Input
                             placeholder="John Doe"
+                            autoComplete="name"
                             {...field}
                             data-testid="input-contact-name"
                           />
@@ -170,6 +171,7 @@ export default function LenderSignup() {
                           <Input
                             type="tel"
                             placeholder="(555) 123-4567"
+                            autoComplete="tel"
                             {...field}
                             data-testid="input-phone"
                           />
@@ -190,6 +192,7 @@ export default function LenderSignup() {
                             <Input
                               type={showPassword ? "text" : "password"}
                               placeholder="Enter password"
+                              autoComplete="new-password"
                               {...field}
                               data-testid="input-password"
                             />
@@ -219,6 +222,7 @@ export default function LenderSignup() {
                             <Input
                               type={showConfirmPassword ? "text" : "password"}
                               placeholder="Confirm password"
+                              autoComplete="new-password"
                               {...field}
                               data-testid="input-confirm-password"
                             />
