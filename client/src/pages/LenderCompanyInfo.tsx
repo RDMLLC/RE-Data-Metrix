@@ -384,6 +384,20 @@ export default function LenderCompanyInfo() {
                     </Button>
                   </Link>
                 </div>
+
+                {/* Back to Dashboard link at bottom */}
+                <div className="pt-8 border-t mt-8">
+                  <Link href="/lender-dashboard">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      data-testid="button-back-to-dashboard-bottom"
+                    >
+                      ← Back to Dashboard
+                    </Button>
+                  </Link>
+                </div>
               </form>
             </Form>
           </Card>

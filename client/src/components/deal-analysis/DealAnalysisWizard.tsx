@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -111,7 +111,7 @@ export type WizardFormData = z.infer<typeof wizardSchema>;
 export default function DealAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
-  const { updatePropertyData, updateInvestorData } = useWizardData();
+  const { wizardData, updatePropertyData, updateInvestorData } = useWizardData();
   const { isSubscriber, isLoading: authLoading } = useAuth();
 
   const form = useForm<WizardFormData>({
@@ -126,6 +126,44 @@ export default function DealAnalysisWizard() {
       loanPreference: "one-of-each",
     },
   });
+
+  // Restore saved wizard data from session storage on mount
+  useEffect(() => {
+    if (wizardData.property) {
+      const property = wizardData.property;
+      form.reset({
+        ...form.getValues(),
+        address: property.address || "",
+        city: property.city || "",
+        state: property.state || "",
+        zipCode: property.zip || "",
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        sqft: property.squareFootage,
+        purchasePrice: property.purchasePrice,
+        arv: property.arv,
+        rehabBudget: property.rehabBudget,
+        taxAssessedValue: property.taxAssessedValue,
+        annualInsurance: property.annualInsurance,
+        monthlyUtilities: property.monthlyUtilities,
+        hoaFees: property.hoaFees,
+        hoaTransferFee: property.hoaTransferFee,
+        projectLength: property.projectLength,
+        sellPrice: property.sellPrice,
+        closingCostsSellPercent: property.closingCostsSellPercent,
+        realEstateCommissionPercent: property.realEstateCommissionPercent,
+        attorneyFees: property.attorneyFees,
+        docPrepFees: property.docPrepFees,
+        titleExam: property.titleExam,
+        titleInsurance: property.titleInsurance,
+      });
+    }
+    if (wizardData.investor) {
+      const investor = wizardData.investor;
+      form.setValue("creditScore", investor.creditScore);
+      form.setValue("isNewInvestor", investor.experienceLevel === "new");
+    }
+  }, []);
 
   const saveCurrentStepData = () => {
     const formData = form.getValues();

@@ -60,7 +60,6 @@ export default function Navigation() {
     { href: "/about", label: "About Us" },
     { href: "/company", label: "The Company" },
     { href: "/deal-analysis", label: "Deal Analysis" },
-    { href: "/rental-analysis", label: "Rental Analysis" },
     { href: "/loan-types", label: "Loan Types" },
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },

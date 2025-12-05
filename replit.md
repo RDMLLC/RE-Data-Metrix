@@ -39,6 +39,17 @@ Vite is used for frontend development and production builds, while esbuild handl
 ### Feature Specifications
 The platform includes loan type education, intelligent lender filtering with deep linking, consolidated rental analysis, and integrates Zillow RentZestimate. It provides detailed deal analysis and loan comparison services. Educational content, UX improvements for data persistence and navigation, and comprehensive loan calculations are core components. The Toolbox & Resources section offers curated affiliate programs and a searchable glossary. The Rental Analysis flow includes intelligent DSCR lender matching, filtering DSCR products by state and calculating DSCR and loan amounts per product.
 
+### Deal Analysis - Unified Analysis Toggle
+The Deal Analysis results page (Step 5) now features a tabbed interface that allows users to toggle between two analysis modes without navigating away:
+- **Fix & Flip Tab**: The original loan comparison table with editable variables (Buy Price, Rehab, Project Length) for fix-and-flip investment analysis
+- **Rental / DSCR Tab**: In-place DSCR (Debt Service Coverage Ratio) analysis featuring:
+  - Property overview with address, ARV, bedrooms, and bathrooms
+  - Monthly rent input (pre-populated with Zillow RentZestimate if available)
+  - Real-time DSCR calculation with status indicators (good/caution/poor)
+  - PITIA (Principal, Interest, Taxes, Insurance, Association) breakdown
+  - DSCR lender comparison showing qualifying lenders based on the property's state and calculated DSCR
+The toggle uses Shadcn Tabs component with data-testid attributes for testing.
+
 ## External Dependencies
 
 ### Database Service

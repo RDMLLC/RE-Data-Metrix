@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { WizardFormData } from "./DealAnalysisWizard";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { usePDF } from "react-to-pdf";
 import { QRCodeSVG } from "qrcode.react";
 import type { LoanCriteria } from "@shared/schema";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import { calculateDSCR } from "@shared/utils/dscr-calculator";
+import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Step5ResultsProps {
   form: UseFormReturn<WizardFormData>;
@@ -67,6 +71,53 @@ interface ResultsResponse {
   allRankedProducts: number;
 }
 
+interface DSCRLender {
+  productId: string;
+  lenderId: string;
+  lenderName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  website: string;
+  productName: string;
+  loanType: string;
+  interestRate: number;
+  points: number;
+  minCreditScore: number;
+  maxLtvBuy: number;
+  maxLoanArv: number;
+  timeToClose: number;
+  referralLink: string;
+  fees: number;
+  isPreferred: boolean;
+  loanTermYears: number | null;
+  minDscrRequired: number | null;
+  estimatedAppraisalCost: number | null;
+  appraisalRequired: boolean;
+  cashOutOk: boolean;
+  cashOutMaxLtv: number | null;
+}
+
+interface DSCRProductWithCalculation {
+  lender: DSCRLender;
+  dscrCalculation: {
+    loanAmount: number;
+    monthlyPrincipalInterest: number;
+    monthlyPropertyTax: number;
+    monthlyInsurance: number;
+    monthlyHoa: number;
+    totalMonthlyPITIA: number;
+    dscr: number;
+    dscrStatus: 'poor' | 'caution' | 'good';
+    meetsMinDscr: boolean;
+    loanTermYears: number;
+    minDscrRequired: number;
+    interestRate: number;
+    points: number;
+    maxLtvBuy: number;
+  };
+}
+
 export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -75,6 +126,10 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [hasCalculated, setHasCalculated] = useState(false);
   const [visibleLenderCount, setVisibleLenderCount] = useState(2);
   const [results, setResults] = useState<ResultsResponse | null>(null);
+  
+  // Analysis mode toggle state
+  const [analysisMode, setAnalysisMode] = useState<'fix-and-flip' | 'rental-dscr'>('fix-and-flip');
+  const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
   
   // Editable fields for on-the-fly scenario changes
   const [editBuyPrice, setEditBuyPrice] = useState<number>(0);
@@ -389,6 +444,101 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     setLocation("/rental-analysis");
   };
 
+  // DSCR Analysis calculations
+  const formData = form.getValues();
+  const propertyState = formData.state || wizardData.property?.state || '';
+  const propertyArv = formData.arv || wizardData.property?.arv || 0;
+  const propertyPurchasePrice = formData.purchasePrice || wizardData.property?.purchasePrice || 0;
+  const propertySqft = formData.sqft || wizardData.property?.squareFootage || 0;
+  
+  const annualInsurance = formData.annualInsurance || 
+    (propertyState && propertySqft 
+      ? Math.round(propertySqft * getInsuranceCostPerSqFt(propertyState))
+      : 0);
+  
+  const monthlyPropertyTax = ((formData.taxAssessedValue || propertyPurchasePrice) * 0.012) / 12;
+  const monthlyInsurance = annualInsurance / 12;
+  const monthlyHoa = formData.hoaFees || 0;
+  
+  const dscrResults = monthlyRent > 0 && propertyArv
+    ? calculateDSCR({
+        arv: propertyArv,
+        monthlyRent,
+        monthlyPropertyTax,
+        monthlyInsurance,
+        monthlyHoa,
+        interestRate: 7.5,
+      })
+    : null;
+
+  // Fetch DSCR lenders when in rental-dscr mode
+  const { data: dscrLenders, isLoading: isLoadingDscrLenders } = useQuery<DSCRLender[]>({
+    queryKey: ['/api/dscr-lenders', propertyState],
+    queryFn: async () => {
+      const url = propertyState 
+        ? `/api/dscr-lenders?state=${encodeURIComponent(propertyState)}`
+        : '/api/dscr-lenders';
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch DSCR lenders');
+      return res.json();
+    },
+    enabled: analysisMode === 'rental-dscr',
+  });
+
+  const getLoanTypeLabel = (loanType: string) => {
+    switch (loanType) {
+      case 'dscr-purchase': return 'DSCR Purchase';
+      case 'dscr-refi': return 'DSCR Refinance';
+      default: return loanType;
+    }
+  };
+
+  // Calculate DSCR for each lender product
+  const dscrProductsWithCalculations: DSCRProductWithCalculation[] = (dscrLenders || []).map(lender => {
+    const ltv = Number(lender.maxLtvBuy) || 75;
+    const termYears = Number(lender.loanTermYears) || 30;
+    const minRequired = Number(lender.minDscrRequired) || 1.0;
+    const interestRate = Number(lender.interestRate) || 7.5;
+    const points = Number(lender.points) || 0;
+    
+    const loanBasis = lender.loanType === 'dscr-purchase' 
+      ? (propertyPurchasePrice || propertyArv)
+      : propertyArv;
+    
+    const dscrCalc = calculateDSCR({
+      arv: loanBasis,
+      monthlyRent,
+      monthlyPropertyTax,
+      monthlyInsurance,
+      monthlyHoa,
+      interestRate,
+      loanToValuePercent: ltv,
+      loanTermYears: termYears,
+    });
+    
+    const meetsMinDscr = dscrCalc.dscr >= minRequired;
+    
+    return {
+      lender,
+      dscrCalculation: {
+        loanAmount: dscrCalc.loanAmount,
+        monthlyPrincipalInterest: dscrCalc.monthlyPrincipalInterest,
+        monthlyPropertyTax: dscrCalc.monthlyPropertyTax,
+        monthlyInsurance: dscrCalc.monthlyInsurance,
+        monthlyHoa: dscrCalc.monthlyHoa,
+        totalMonthlyPITIA: dscrCalc.totalMonthlyPITIA,
+        dscr: dscrCalc.dscr,
+        dscrStatus: dscrCalc.dscrStatus,
+        meetsMinDscr,
+        loanTermYears: termYears,
+        minDscrRequired: minRequired,
+        interestRate,
+        points,
+        maxLtvBuy: ltv,
+      },
+    };
+  }).sort((a, b) => b.dscrCalculation.dscr - a.dscrCalculation.dscr);
+
   // Only show full-page spinner for initial load (no results yet)
   if (calculateResultsMutation.isPending && !results) {
     return (
@@ -454,72 +604,87 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
         </div>
       </div>
 
-      {/* Editable Variables Section */}
-      <Card className="border-primary/20">
-        <CardContent className="pt-4">
-          <p className="text-sm font-medium text-muted-foreground mb-3">
-            Do you want to change any of the variables?
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-1">
-              <Label htmlFor="edit-buy-price" className="text-sm">Buy Price</Label>
-              <Input
-                id="edit-buy-price"
-                type="number"
-                value={editBuyPrice || ''}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  if (!isNaN(parsed)) setEditBuyPrice(parsed);
-                  else if (e.target.value === '') setEditBuyPrice(0);
-                }}
-                data-testid="input-edit-buy-price"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="edit-rehab" className="text-sm">Rehab</Label>
-              <Input
-                id="edit-rehab"
-                type="number"
-                value={editRehab || ''}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  if (!isNaN(parsed)) setEditRehab(parsed);
-                  else if (e.target.value === '') setEditRehab(0);
-                }}
-                data-testid="input-edit-rehab"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="edit-project-length" className="text-sm">Project Length (months)</Label>
-              <Input
-                id="edit-project-length"
-                type="number"
-                value={editProjectLength || ''}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  if (!isNaN(parsed)) setEditProjectLength(parsed);
-                  else if (e.target.value === '') setEditProjectLength(6);
-                }}
-                data-testid="input-edit-project-length"
-              />
-            </div>
-            {calculateResultsMutation.isPending && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Recalculating...
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Analysis Type Toggle */}
+      <Tabs value={analysisMode} onValueChange={(value) => setAnalysisMode(value as 'fix-and-flip' | 'rental-dscr')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+          <TabsTrigger value="fix-and-flip" className="flex items-center gap-2" data-testid="tab-fix-and-flip">
+            <Home className="h-4 w-4" />
+            Fix & Flip
+          </TabsTrigger>
+          <TabsTrigger value="rental-dscr" className="flex items-center gap-2" data-testid="tab-rental-dscr">
+            <Building2 className="h-4 w-4" />
+            Rental / DSCR
+          </TabsTrigger>
+        </TabsList>
 
-      <Card ref={targetRef}>
-        <CardHeader>
-          <CardTitle>Loan Comparison Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto relative" ref={scrollContainerRef}>
-            <Table className="min-w-full">
+        {/* Fix & Flip Analysis Tab */}
+        <TabsContent value="fix-and-flip" className="mt-6 space-y-6">
+          {/* Editable Variables Section */}
+          <Card className="border-primary/20">
+            <CardContent className="pt-4">
+              <p className="text-sm font-medium text-muted-foreground mb-3">
+                Do you want to change any of the variables?
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="space-y-1">
+                  <Label htmlFor="edit-buy-price" className="text-sm">Buy Price</Label>
+                  <Input
+                    id="edit-buy-price"
+                    type="number"
+                    value={editBuyPrice || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditBuyPrice(parsed);
+                      else if (e.target.value === '') setEditBuyPrice(0);
+                    }}
+                    data-testid="input-edit-buy-price"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-rehab" className="text-sm">Rehab</Label>
+                  <Input
+                    id="edit-rehab"
+                    type="number"
+                    value={editRehab || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditRehab(parsed);
+                      else if (e.target.value === '') setEditRehab(0);
+                    }}
+                    data-testid="input-edit-rehab"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-project-length" className="text-sm">Project Length (months)</Label>
+                  <Input
+                    id="edit-project-length"
+                    type="number"
+                    value={editProjectLength || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditProjectLength(parsed);
+                      else if (e.target.value === '') setEditProjectLength(6);
+                    }}
+                    data-testid="input-edit-project-length"
+                  />
+                </div>
+                {calculateResultsMutation.isPending && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Recalculating...
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card ref={targetRef}>
+            <CardHeader>
+              <CardTitle>Loan Comparison Results</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto relative" ref={scrollContainerRef}>
+                <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
                   <TableHead 
@@ -1208,32 +1373,268 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
 
-      <Card className="bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
-                Considering the BRRRR Strategy?
-              </h3>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-3">
-                Analyze this property as a rental! Calculate your DSCR (Debt Service Coverage Ratio), evaluate long-term cash flow, and find specialized DSCR lenders who offer financing based on rental income.
-              </p>
-              <Button
-                type="button"
-                variant="default"
-                onClick={handleNavigateToRentalAnalysis}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                data-testid="button-rental-analysis-step6"
-              >
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Analyze as Rental Property
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Rental / DSCR Analysis Tab */}
+        <TabsContent value="rental-dscr" className="mt-6 space-y-6">
+          {/* Property Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Property Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Address</p>
+                  <p className="font-medium">{formData.address}, {formData.city}, {formData.state} {formData.zipCode}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">ARV</p>
+                  <p className="font-medium">${propertyArv.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Bedrooms</p>
+                  <p className="font-medium">{formData.bedrooms || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Bathrooms</p>
+                  <p className="font-medium">{formData.bathrooms || "N/A"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Rent Input */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Expected Monthly Rent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {wizardData.property?.estimatedRent && wizardData.property.estimatedRent > 0 && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                    Zillow RentZestimate: ${wizardData.property.estimatedRent.toLocaleString()} (editable)
+                  </p>
+                )}
+                <div className="relative max-w-xs">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    value={monthlyRent || ""}
+                    onChange={(e) => setMonthlyRent(parseFloat(e.target.value) || 0)}
+                    className="pl-6"
+                    placeholder="2500"
+                    data-testid="input-monthly-rent"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* DSCR Results - Show prompt if no rent entered */}
+          {!monthlyRent || monthlyRent === 0 ? (
+            <Card>
+              <CardContent className="py-8">
+                <div className="text-center">
+                  <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Enter Monthly Rent to Calculate DSCR</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Enter your expected monthly rent above to calculate the Debt Service Coverage Ratio and see qualifying lenders.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : dscrResults && (
+            <Card>
+              <CardHeader>
+                <CardTitle>DSCR Results</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className={`p-6 rounded-lg ${
+                  dscrResults.dscrStatus === 'good' ? 'bg-emerald-500/10 border-2 border-emerald-500' :
+                  dscrResults.dscrStatus === 'caution' ? 'bg-yellow-500/10 border-2 border-yellow-500' :
+                  'bg-red-500/10 border-2 border-red-500'
+                }`}>
+                  <p className="text-sm text-muted-foreground mb-1">Debt Service Coverage Ratio</p>
+                  <p className="text-4xl font-bold" data-testid="text-dscr-value">{dscrResults.dscr.toFixed(2)}</p>
+                  <div className="flex items-center gap-2 mt-3">
+                    {dscrResults.dscrStatus === 'good' && (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                        <p className="text-sm font-medium text-emerald-700">
+                          Excellent! Most lenders will approve this property.
+                        </p>
+                      </>
+                    )}
+                    {dscrResults.dscrStatus === 'caution' && (
+                      <>
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <p className="text-sm font-medium text-yellow-700">
+                          Acceptable, but some lenders may require a higher DSCR.
+                        </p>
+                      </>
+                    )}
+                    {dscrResults.dscrStatus === 'poor' && (
+                      <>
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <p className="text-sm font-medium text-red-700">
+                          Below minimum requirements. Consider a higher rent or lower purchase price.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* PITIA Breakdown */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold">Monthly Payment Breakdown (PITIA)</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Principal & Interest</span>
+                      <span className="font-medium">${dscrResults.monthlyPrincipalInterest.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Property Tax</span>
+                      <span className="font-medium">${dscrResults.monthlyPropertyTax.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Insurance</span>
+                      <span className="font-medium">${dscrResults.monthlyInsurance.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">HOA</span>
+                      <span className="font-medium">${dscrResults.monthlyHoa.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between col-span-2 border-t pt-2">
+                      <span className="font-semibold">Total PITIA</span>
+                      <span className="font-bold text-primary">${dscrResults.totalMonthlyPITIA.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    </div>
+                    <div className="flex justify-between col-span-2">
+                      <span className="text-muted-foreground">Monthly Rent</span>
+                      <span className="font-semibold text-emerald-600">${monthlyRent.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* DSCR Lender Comparison */}
+          {monthlyRent > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>DSCR Lender Comparison</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Comparing DSCR loan products for {propertyState || 'your area'} based on ${monthlyRent.toLocaleString()}/mo rent.
+                </p>
+              </CardHeader>
+              <CardContent>
+                {isLoadingDscrLenders ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-3 text-muted-foreground">Calculating DSCR for each lender...</span>
+                  </div>
+                ) : dscrProductsWithCalculations.length > 0 ? (
+                  <div className="space-y-6">
+                    {dscrProductsWithCalculations.slice(0, 5).map((item, index) => {
+                      const { lender, dscrCalculation } = item;
+                      return (
+                        <Card 
+                          key={lender.productId} 
+                          className={`p-6 ${
+                            !dscrCalculation.meetsMinDscr 
+                              ? 'border-2 border-red-300 bg-red-50/30' 
+                              : dscrCalculation.dscrStatus === 'good' 
+                                ? 'border-2 border-emerald-500' 
+                                : dscrCalculation.dscrStatus === 'caution'
+                                  ? 'border-2 border-yellow-500'
+                                  : 'border'
+                          }`} 
+                          data-testid={`card-dscr-product-${lender.productId}`}
+                        >
+                          <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <Badge variant="outline" className="text-lg px-3 py-1">#{index + 1}</Badge>
+                              <div>
+                                <h3 className="text-xl font-semibold text-primary">{lender.lenderName}</h3>
+                                <p className="text-muted-foreground">{lender.productName}</p>
+                              </div>
+                              {lender.isPreferred && (
+                                <Badge variant="default" className="bg-accent text-accent-foreground">Preferred</Badge>
+                              )}
+                              <Badge variant="secondary">{getLoanTypeLabel(lender.loanType)}</Badge>
+                            </div>
+                            
+                            <div className={`text-center px-4 py-2 rounded-lg ${
+                              dscrCalculation.dscrStatus === 'good' ? 'bg-emerald-500/10' :
+                              dscrCalculation.dscrStatus === 'caution' ? 'bg-yellow-500/10' :
+                              'bg-red-500/10'
+                            }`}>
+                              <p className="text-xs text-muted-foreground">DSCR</p>
+                              <p className={`text-3xl font-bold ${
+                                dscrCalculation.dscrStatus === 'good' ? 'text-emerald-600' :
+                                dscrCalculation.dscrStatus === 'caution' ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>{dscrCalculation.dscr.toFixed(2)}</p>
+                            </div>
+                          </div>
+
+                          {!dscrCalculation.meetsMinDscr && (
+                            <Alert className="mb-4 border-red-300 bg-red-50">
+                              <AlertTriangle className="h-4 w-4 text-red-600" />
+                              <AlertDescription className="text-red-700">
+                                DSCR ({dscrCalculation.dscr.toFixed(2)}) is below minimum requirement of {dscrCalculation.minDscrRequired.toFixed(1)}.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                            <div>
+                              <p className="text-muted-foreground">Interest Rate</p>
+                              <p className="font-semibold">{dscrCalculation.interestRate}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Term</p>
+                              <p className="font-semibold">{dscrCalculation.loanTermYears} years</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Max LTV</p>
+                              <p className="font-semibold">{dscrCalculation.maxLtvBuy}%</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Loan Amount</p>
+                              <p className="font-semibold">${dscrCalculation.loanAmount.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                            </div>
+                          </div>
+
+                          {lender.referralLink && (
+                            <div className="border-t pt-4 flex justify-end">
+                              <Button asChild data-testid={`button-apply-dscr-${lender.productId}`}>
+                                <a href={lender.referralLink} target="_blank" rel="noopener noreferrer" className="gap-2">
+                                  Apply Now <ExternalLink className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No DSCR Lenders Found</h3>
+                    <p className="text-muted-foreground">
+                      No DSCR lenders available for {propertyState || 'your area'} yet.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
