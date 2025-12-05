@@ -50,6 +50,37 @@ The Deal Analysis results page (Step 5) now features a tabbed interface that all
   - DSCR lender comparison showing qualifying lenders based on the property's state and calculated DSCR
 The toggle uses Shadcn Tabs component with data-testid attributes for testing.
 
+### Lender Email Alerts & Investor Inquiries
+The platform now includes comprehensive lender notification and investor engagement features:
+
+**Email Notifications:**
+- **Loan Product Changes**: Lenders receive email notifications when their loan products are created or updated via the Lender Portal
+- **Contact Lender Alerts**: When investors click "Contact Lender" on deal analysis results, lenders receive detailed emails including:
+  - Investor contact information (name, email, phone)
+  - Property address and details
+  - Deal metrics (ARV, Estimated Profit, ROI, Project Costs)
+  - Selected loan product information
+  - Investor's optional message
+
+**Investor Inquiries System:**
+- **Database Storage**: Contact requests stored in `lender_inquiries` table with deal snapshots, timestamps, and status
+- **Lender Portal Page** (`/lender-inquiries`): Searchable list of all investor inquiries with:
+  - Search by property address
+  - Filter by date range (7 days, 30 days, all time)
+  - Expandable cards showing full deal details
+  - Investor contact information
+
+**Lender Dashboard Updates:**
+- New "Investor Inquiries" card with quick access to inquiries page
+- Live Quick Stats showing Active Loan Products, Investor Inquiries count, and Saved By Investors count
+- Loading states for authenticated API calls
+
+**Contact Lender Flow** (Step 5 Results):
+- "Contact Lender" button on Fix & Flip loan comparison table rows
+- "Contact Lender" button on DSCR lender comparison cards
+- Dialog for optional investor message before sending
+- Full deal data automatically included in inquiry
+
 ## External Dependencies
 
 ### Database Service
