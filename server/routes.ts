@@ -106,6 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Comp users are auto-verified since they clicked a link sent to their email
+      const isAutoVerified = !!compInviteToAccept;
+      
       const [newUser] = await db
         .insert(users)
         .values({
@@ -116,9 +119,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionStatus,
           referralCode: userReferralCode,
           referredBy: referredByUserId,
-          isEmailVerified: false,
-          verificationToken,
-          verificationExpiry,
+          isEmailVerified: isAutoVerified,
+          verificationToken: isAutoVerified ? null : verificationToken,
+          verificationExpiry: isAutoVerified ? null : verificationExpiry,
           termsAcceptedAt: validatedData.termsAccepted ? new Date() : null,
           termsVersion: validatedData.termsAccepted ? "1.0" : null,
           privacyVersion: validatedData.termsAccepted ? "1.0" : null,
@@ -135,24 +138,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.acceptCompInvite(validatedData.compCode!.toUpperCase(), newUser.id);
       }
 
-      const emailSent = await emailService.sendVerificationEmail(
-        newUser.email,
-        newUser.username,
-        verificationToken
-      );
+      // Only send verification email for non-comp users
+      let emailSent = false;
+      if (!isAutoVerified) {
+        emailSent = await emailService.sendVerificationEmail(
+          newUser.email,
+          newUser.username,
+          verificationToken
+        );
 
-      if (!emailSent) {
-        console.error('Failed to send verification email to:', newUser.email);
+        if (!emailSent) {
+          console.error('Failed to send verification email to:', newUser.email);
+        }
       }
 
       res.json({
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        message: emailSent 
-          ? "Registration successful! Please check your email to verify your account before logging in." 
-          : "Registration successful! Please contact support to verify your account.",
-        requiresVerification: true,
+        message: isAutoVerified
+          ? "Registration successful! Your premium access is ready. You can now log in."
+          : (emailSent 
+              ? "Registration successful! Please check your email to verify your account before logging in." 
+              : "Registration successful! Please contact support to verify your account."),
+        requiresVerification: !isAutoVerified,
         isComped: !!compInviteToAccept,
       });
     } catch (error) {

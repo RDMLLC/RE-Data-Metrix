@@ -135,21 +135,30 @@ export default function Register() {
       };
       const result = await register(finalData);
       
-      if ((result as any)?.requiresVerification) {
-        const isComped = (result as any)?.isComped;
+      const requiresVerification = (result as any)?.requiresVerification;
+      const isComped = (result as any)?.isComped;
+      
+      if (isComped && !requiresVerification) {
+        // Comp users are auto-verified - can log in immediately
         toast({
-          title: isComped ? "Premium Access Activated!" : "Check your email!",
-          description: isComped 
-            ? "Your complimentary premium access is ready. Please verify your email to log in."
-            : (result as any).message || "We've sent you a verification link. Please check your inbox.",
+          title: "Premium Access Activated!",
+          description: "Your complimentary premium access is ready. Please log in to get started.",
+        });
+        setLocation("/login");
+      } else if (requiresVerification) {
+        // Regular users need to verify email first
+        toast({
+          title: "Check your email!",
+          description: (result as any).message || "We've sent you a verification link. Please check your inbox.",
         });
         setLocation("/login");
       } else {
+        // Fallback - shouldn't happen but redirect to login just in case
         toast({
           title: "Welcome to RE Data Metrix!",
-          description: "Your account has been created successfully.",
+          description: "Your account has been created successfully. Please log in.",
         });
-        setLocation("/portal/dashboard");
+        setLocation("/login");
       }
     } catch (error: any) {
       toast({
