@@ -106,3 +106,4 @@ integrations = ["javascript_database:1.0.0"]
 
 [userenv.shared]
 HASDATA_API_KEY = "981d27db-574b-411a-ad4e-cdc48676a5e8"
+VITE_APP_URL = "https://redatametrix.com"
