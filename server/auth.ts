@@ -61,8 +61,6 @@ passport.use('lender-local',
     },
     async (email, password, done) => {
       try {
-        console.log('[LENDER AUTH] Login attempt for email:', email);
-        
         const [lender] = await db
           .select()
           .from(lenders)
@@ -70,25 +68,17 @@ passport.use('lender-local',
           .limit(1);
 
         if (!lender) {
-          console.log('[LENDER AUTH] Lender not found for email:', email);
           return done(null, false, { message: 'Invalid email or password' });
         }
 
-        console.log('[LENDER AUTH] Lender found:', lender.email, 'companyName:', lender.companyName);
-        console.log('[LENDER AUTH] Password hash starts with:', lender.password?.substring(0, 10), 'length:', lender.password?.length);
-        
         const isPasswordValid = await comparePassword(password, lender.password);
-        console.log('[LENDER AUTH] Password comparison result:', isPasswordValid);
 
         if (!isPasswordValid) {
-          console.log('[LENDER AUTH] Password invalid for lender:', lender.email);
           return done(null, false, { message: 'Invalid email or password' });
         }
 
-        console.log('[LENDER AUTH] Login successful for lender:', lender.email);
         return done(null, { ...lender, userType: 'lender' });
       } catch (error) {
-        console.error('[LENDER AUTH] Error during authentication:', error);
         return done(error);
       }
     }
