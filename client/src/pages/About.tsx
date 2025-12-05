@@ -9,11 +9,8 @@ export default function About() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl lg:text-6xl font-bold text-primary mb-4">About Us</h1>
-          <div className="h-1 w-32 bg-accent mx-auto mb-8"></div>
-          <p className="text-xl text-muted-foreground">
-            Empowering real estate investors with data-driven insights and funding solutions
-          </p>
+          <h1 className="text-3xl font-bold text-primary mb-4">Empowering real estate investors with data-driven insights and funding solutions</h1>
+          <div className="h-1 w-32 bg-accent mx-auto"></div>
         </div>
 
         {/* Who We Are Section - At the top */}
