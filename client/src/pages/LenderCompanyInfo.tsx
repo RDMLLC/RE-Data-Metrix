@@ -15,13 +15,33 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 
+// Custom URL validation that accepts URLs with or without protocol
+const flexibleUrlSchema = z.string()
+  .transform((val) => {
+    if (!val || val.trim() === "") return "";
+    // Add https:// if no protocol is provided
+    if (!/^https?:\/\//i.test(val)) {
+      return `https://${val}`;
+    }
+    return val;
+  })
+  .refine((val) => {
+    if (!val || val === "") return true;
+    try {
+      new URL(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, { message: "Please enter a valid website address" });
+
 const companyInfoSchema = z.object({
   companyName: z.string().optional(),
   contactName: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
-  website: z.string().url().optional().or(z.literal("")),
-  referralLink: z.string().url().optional().or(z.literal("")),
+  website: flexibleUrlSchema.optional().or(z.literal("")),
+  referralLink: flexibleUrlSchema.optional().or(z.literal("")),
   referralAmount: z.any().optional(),
   referralType: z.any().optional(),
   companyDescription: z.string().optional(),
@@ -240,8 +260,8 @@ export default function LenderCompanyInfo() {
                         <Input
                           {...field}
                           value={field.value || ""}
-                          type="url"
-                          placeholder="https://www.company.com"
+                          type="text"
+                          placeholder="www.company.com"
                           data-testid="input-website"
                         />
                       </FormControl>
@@ -260,8 +280,8 @@ export default function LenderCompanyInfo() {
                         <Input
                           {...field}
                           value={field.value || ""}
-                          type="url"
-                          placeholder="https://www.company.com/apply"
+                          type="text"
+                          placeholder="www.company.com/apply"
                           data-testid="input-referral-link"
                         />
                       </FormControl>
