@@ -149,23 +149,30 @@ export default function ToolFinder() {
         )}
       </Card>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          {selectedFeatures.length > 0 ? 'Matching Tools' : 'All Tools'}
-        </h3>
-        
-        {matchingTools.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {matchingTools.map(renderToolCard)}
-          </div>
-        ) : (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">
-              No tools match all your selected criteria. Try removing some filters.
-            </p>
-          </Card>
-        )}
-      </div>
+      {selectedFeatures.length > 0 ? (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Matching Tools</h3>
+          
+          {matchingTools.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {matchingTools.map(renderToolCard)}
+            </div>
+          ) : (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">
+                No tools match all your selected criteria. Try removing some filters.
+              </p>
+            </Card>
+          )}
+        </div>
+      ) : (
+        <Card className="p-8 text-center border-dashed">
+          <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-muted-foreground">
+            Select one or more features above to see matching tools.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }
