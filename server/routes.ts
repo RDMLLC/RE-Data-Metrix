@@ -1138,6 +1138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })(req, res, next);
   });
 
+  app.post("/api/lenders/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
   app.post("/api/lenders/request-password-reset", async (req, res) => {
     try {
       const { email } = req.body;

@@ -195,7 +195,7 @@ export default function Step2PropertyDetails({
                 </>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="yearBuilt"
@@ -240,6 +240,32 @@ export default function Step2PropertyDetails({
                             )
                           }
                           data-testid="input-sqft"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="annualTax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Annual Tax ($)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          data-testid="input-annual-tax"
                         />
                       </FormControl>
                       <FormMessage />

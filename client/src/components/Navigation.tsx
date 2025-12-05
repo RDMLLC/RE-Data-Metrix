@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, Settings } from "lucide-react";
+import { Menu, X, LogOut, User, Settings, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLenderAuth } from "@/contexts/LenderAuthContext";
 
 function getInitials(fullName: string | undefined, username: string, email: string): string {
   if (fullName && fullName.trim().length > 0) {
@@ -52,6 +53,7 @@ export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { lender, isAuthenticated: isLenderAuthenticated, isLoading: isLenderLoading, logout: lenderLogout } = useLenderAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -70,12 +72,25 @@ export default function Navigation() {
     ? (user.role === 'admin' ? 'AD' : getInitials(user.profile?.fullName, user.username, user.email))
     : "";
 
+  const lenderInitials = lender 
+    ? getInitials(lender.contactName, lender.companyName || '', lender.email)
+    : "";
+
   const handleLogout = async () => {
     try {
       await logout();
       setLocation("/");
     } catch (error) {
       console.error("Failed to logout:", error);
+    }
+  };
+
+  const handleLenderLogout = async () => {
+    try {
+      await lenderLogout();
+      setLocation("/");
+    } catch (error) {
+      console.error("Failed to logout lender:", error);
     }
   };
 
@@ -150,6 +165,14 @@ export default function Navigation() {
                           Admin Dashboard
                         </DropdownMenuItem>
                         <DropdownMenuItem 
+                          onClick={() => setLocation("/lender-dashboard")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-lender-portal"
+                        >
+                          <Building2 className="mr-2 h-4 w-4" />
+                          Lender Portal
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
                           onClick={() => setLocation("/portal/dashboard")}
                           className="cursor-pointer"
                           data-testid="menu-item-member-portal"
@@ -173,6 +196,47 @@ export default function Navigation() {
                       onClick={handleLogout}
                       className="cursor-pointer text-red-600 focus:text-red-600"
                       data-testid="menu-item-logout"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : !isLenderLoading && isLenderAuthenticated && lender ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div 
+                      className="w-9 h-9 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                      data-testid="button-lender-menu"
+                    >
+                      {lenderInitials}
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-2">
+                        <p className="text-sm font-medium">{lender.companyName || lender.contactName || 'Lender'}</p>
+                        <p className="text-xs text-muted-foreground truncate">{lender.email}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Type:</span>
+                          <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 text-xs">Lender</Badge>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setLocation("/lender-dashboard")}
+                      className="cursor-pointer"
+                      data-testid="menu-item-lender-dashboard"
+                    >
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Lender Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleLenderLogout}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      data-testid="menu-item-lender-logout"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout
@@ -204,7 +268,7 @@ export default function Navigation() {
 
           <div className="flex items-center gap-2">
             {/* Show user avatar dropdown on mobile header when logged in */}
-            {!isLoading && isAuthenticated && user && (
+            {!isLoading && isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div 
@@ -240,6 +304,13 @@ export default function Navigation() {
                         Admin Dashboard
                       </DropdownMenuItem>
                       <DropdownMenuItem 
+                        onClick={() => setLocation("/lender-dashboard")}
+                        className="cursor-pointer"
+                      >
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Lender Portal
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
                         onClick={() => setLocation("/portal/dashboard")}
                         className="cursor-pointer"
                       >
@@ -266,7 +337,46 @@ export default function Navigation() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
+            ) : !isLenderLoading && isLenderAuthenticated && lender ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div 
+                    className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-semibold text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                    data-testid="button-lender-menu-mobile"
+                  >
+                    {lenderInitials}
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm font-medium">{lender.companyName || lender.contactName || 'Lender'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{lender.email}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Type:</span>
+                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 text-xs">Lender</Badge>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setLocation("/lender-dashboard")}
+                    className="cursor-pointer"
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Lender Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleLenderLogout}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
             
             <Button
               variant="ghost"
@@ -297,7 +407,7 @@ export default function Navigation() {
             ))}
             
             {/* Login link in mobile menu (only when not authenticated) */}
-            {!isLoading && !isAuthenticated && (
+            {!isLoading && !isAuthenticated && !isLenderAuthenticated && (
               <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant="ghost"

@@ -10,11 +10,26 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useWizardData } from "@/contexts/WizardDataContext";
+
+const closingTimelineOptions = [
+  { value: "7-days", label: "7 days or less" },
+  { value: "8-14-days", label: "8-14 days" },
+  { value: "15-21-days", label: "15-21 days" },
+  { value: "22-30-days", label: "22-30 days" },
+  { value: "31-plus-days", label: "31+ days" },
+];
 
 interface Step3PurchaseRenovationProps {
   form: UseFormReturn<WizardFormData>;
@@ -175,7 +190,7 @@ export default function Step3PurchaseRenovation({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="arv"
@@ -215,7 +230,7 @@ export default function Step3PurchaseRenovation({
                           min="1"
                           max="60"
                           step="1"
-                          placeholder="Enter project duration in months"
+                          placeholder="Months"
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) =>
@@ -226,6 +241,39 @@ export default function Step3PurchaseRenovation({
                           data-testid="input-project-length"
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="closingTimeline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>How fast do you need to close?</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                        data-testid="select-closing-timeline"
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="button-closing-timeline">
+                            <SelectValue placeholder="Select timeline" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {closingTimelineOptions.map((option) => (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value}
+                              data-testid={`option-closing-${option.value}`}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
