@@ -80,19 +80,19 @@ export default function About() {
               <ul className="space-y-3 text-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-success mt-1">•</span>
-                  <span>Affordable subscription model that makes powerful tools accessible to everyone</span>
+                  <span>Data-driven decisions, not guesswork</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-success mt-1">•</span>
-                  <span>Profitability analysis that goes deeper than traditional calculators</span>
+                  <span>Built by real estate professionals</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-success mt-1">•</span>
-                  <span>One-click application flow connecting you directly with verified lenders</span>
+                  <span>Continuously updated lender network</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-success mt-1">•</span>
-                  <span>Comprehensive lender database with creative financing options</span>
+                  <span>Curated Toolbox with resources to help you manage and grow your business</span>
                 </li>
               </ul>
             </Card>
