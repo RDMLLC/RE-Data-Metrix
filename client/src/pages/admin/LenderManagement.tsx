@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle, Eye, Star } from "lucide-react";
+import { ArrowLeft, Trash2, Archive, AlertCircle, Search, Mail, Copy, CheckCircle, Eye, Star, KeyRound } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -125,6 +125,38 @@ export default function LenderManagement() {
       toast({
         title: "Error",
         description: error.message || "Failed to resend invite",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const triggerPasswordResetMutation = useMutation({
+    mutationFn: async (lenderId: string) => {
+      const response = await fetch(`/api/admin/lenders/${lenderId}/trigger-password-reset`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to trigger password reset");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.emailSent ? "Password Reset Sent" : "Reset Link Created",
+        description: data.emailSent 
+          ? "Password reset email has been sent to the lender."
+          : "Email failed to send. The reset link is available below.",
+      });
+      if (data.resetLink) {
+        setInviteLink(data.resetLink);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to trigger password reset",
         variant: "destructive",
       });
     },
@@ -518,7 +550,7 @@ export default function LenderManagement() {
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </Button>
-                            {!lender.inviteAccepted && (
+                            {!lender.inviteAccepted ? (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -528,6 +560,17 @@ export default function LenderManagement() {
                               >
                                 <Mail className="h-4 w-4 mr-2" />
                                 {resendInviteMutation.isPending ? "Sending..." : "Resend Link"}
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => triggerPasswordResetMutation.mutate(lender.id)}
+                                disabled={triggerPasswordResetMutation.isPending}
+                                data-testid={`button-reset-password-${lender.id}`}
+                              >
+                                <KeyRound className="h-4 w-4 mr-2" />
+                                {triggerPasswordResetMutation.isPending ? "Sending..." : "Reset Password"}
                               </Button>
                             )}
                             {lender.referralCount > 0 ? (

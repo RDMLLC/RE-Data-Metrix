@@ -182,7 +182,12 @@ class EmailService {
   }
 
   async sendLenderPasswordResetEmail(to: string, companyName: string, token: string): Promise<boolean> {
+    console.log('[LENDER EMAIL] sendLenderPasswordResetEmail called');
+    console.log('[LENDER EMAIL] To:', to);
+    console.log('[LENDER EMAIL] Company:', companyName);
+    
     const resetUrl = `${this.getBaseUrl()}/lender/reset-password/${token}`;
+    console.log('[LENDER EMAIL] Reset URL:', resetUrl);
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -408,6 +413,10 @@ class EmailService {
   }
 
   async sendLenderCredentials(to: string, username: string, password: string, inviteLink: string): Promise<boolean> {
+    console.log('[LENDER EMAIL] sendLenderCredentials called');
+    console.log('[LENDER EMAIL] To:', to);
+    console.log('[LENDER EMAIL] Invite link:', inviteLink);
+    
     const htmlContent = `
       <!DOCTYPE html>
       <html>

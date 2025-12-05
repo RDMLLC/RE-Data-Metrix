@@ -978,6 +978,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to trigger password reset for any lender (works for accepted or pending)
+  app.post("/api/admin/lenders/:lenderId/trigger-password-reset", ensureAdmin, async (req, res) => {
+    try {
+      const { lenderId } = req.params;
+      console.log('[ADMIN LENDER RESET] Request received for lender ID:', lenderId);
+
+      // Get lender by ID
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.id, lenderId))
+        .limit(1);
+
+      if (!lender) {
+        console.log('[ADMIN LENDER RESET] Lender not found');
+        return res.status(404).json({ error: "Lender not found" });
+      }
+
+      console.log('[ADMIN LENDER RESET] Found lender:', lender.companyName, 'email:', lender.email);
+
+      // Generate password reset token
+      const resetToken = crypto.randomBytes(32).toString('base64url');
+      const resetExpiry = new Date();
+      resetExpiry.setHours(resetExpiry.getHours() + 24); // 24 hours expiry
+
+      // Update lender with reset token
+      await db
+        .update(lenders)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiry: resetExpiry,
+        })
+        .where(eq(lenders.id, lenderId));
+
+      console.log('[ADMIN LENDER RESET] Token saved, sending email...');
+
+      // Send password reset email
+      const emailSent = await emailService.sendLenderPasswordResetEmail(
+        lender.email,
+        lender.companyName,
+        resetToken
+      );
+
+      console.log('[ADMIN LENDER RESET] Email service returned:', emailSent);
+
+      res.json({
+        message: emailSent 
+          ? "Password reset email sent successfully" 
+          : "Password reset link created but email failed to send",
+        emailSent,
+        // Return the reset link for admin to share manually if email fails
+        resetLink: emailSent ? undefined : `https://redatametrix.com/lender/reset-password/${resetToken}`,
+      });
+    } catch (error) {
+      console.error('[ADMIN LENDER RESET] ERROR:', error);
+      res.status(500).json({ error: "Failed to trigger password reset" });
+    }
+  });
+
   app.post("/api/admin/lenders/:lenderId/resend-invite", ensureAdmin, async (req, res) => {
     try {
       const { lenderId } = req.params;
@@ -998,8 +1057,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[RESEND INVITE] Found lender:', lender.companyName, 'inviteAccepted:', lender.inviteAccepted);
 
       if (lender.inviteAccepted) {
-        console.log('[RESEND INVITE] Lender has already accepted invite');
-        return res.status(400).json({ error: "Lender has already accepted the invite" });
+        console.log('[RESEND INVITE] Lender has already accepted invite, use password reset instead');
+        return res.status(400).json({ error: "Lender has already accepted the invite. Use 'Trigger Password Reset' instead." });
       }
 
       // Generate new invite token and temp password

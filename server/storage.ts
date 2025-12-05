@@ -1291,8 +1291,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async completeLenderSignup(lenderId: string, password: string, contactName: string, phone?: string, companyName?: string): Promise<Lender> {
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(password);
+    
     const updateData: any = {
-      password,
+      password: hashedPassword,
       contactName,
       inviteAccepted: true,
     };
