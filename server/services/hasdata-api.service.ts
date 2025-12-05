@@ -324,6 +324,16 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedTax: taxAssessedValue
     });
     
+    // Log price/Zestimate fields for debugging
+    // Zestimate is the estimated market value, price is the listing price
+    // For deal analysis, we want Zestimate (estimated value) not list price
+    console.log("Zillow value fields:", {
+      zestimate: property.zestimate,
+      price: property.price,
+      listPrice: property.listPrice,
+      rentZestimate: property.rentZestimate
+    });
+    
     return {
       address: property.address?.street || property.addressRaw || '',
       city: property.address?.city || '',
@@ -336,7 +346,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
-      estimatedValue: this.parseNumber(property.price || property.zestimate),
+      estimatedValue: this.parseNumber(property.zestimate || property.price),
       estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,

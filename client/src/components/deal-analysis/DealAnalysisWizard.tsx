@@ -24,6 +24,7 @@ const wizardSchema = z.object({
   lotSize: z.number().optional(),
   yearBuilt: z.number().optional(),
   taxAssessedValue: z.number().optional(),
+  annualTax: z.number().optional(),
   estimatedValue: z.number().optional(),
   propertyDataSource: z.string().optional(),
   addingSquareFootage: z.boolean().optional(),
