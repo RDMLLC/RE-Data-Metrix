@@ -1275,9 +1275,9 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   </>
                 )}
                 
-                {/* Quick Apply Row - Buttons only */}
+                {/* QR Codes Row - For PDF and quick apply */}
                 <TableRow>
-                  <TableCell className={`font-medium ${stickyFirstColBase}`}>Quick Apply</TableCell>
+                  <TableCell className={`font-medium ${stickyFirstColBase}`}>Scan to Apply</TableCell>
                   <TableCell 
                     className="text-center sticky z-10 bg-background"
                     style={{ left: `${metricColWidth}px` }}
@@ -1294,53 +1294,8 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">
-                      {lender.referralLink ? (
-                        <Button 
-                          size="sm" 
-                          data-testid={`button-apply-lender${index + 1}`}
-                          onClick={() => {
-                            window.open(lender.referralLink, '_blank', 'noopener,noreferrer');
-                          }}
-                        >
-                          Apply Now
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          data-testid={`button-contact-lender${index + 1}`}
-                          onClick={() => {
-                            setLocation(`/lenders?search=${encodeURIComponent(lender.lenderName || '')}`);
-                          }}
-                        >
-                          Contact Lender
-                        </Button>
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                
-                {/* QR Codes Row - Separate row at bottom for PDF */}
-                <TableRow>
-                  <TableCell className={`font-medium ${stickyFirstColBase} text-xs`}>Scan to Apply</TableCell>
-                  <TableCell 
-                    className="text-center sticky z-10 bg-background"
-                    style={{ left: `${metricColWidth}px` }}
-                  >
-                    -
-                  </TableCell>
-                  {results.userLoanColumn && (
-                    <TableCell 
-                      className="text-center sticky z-10 bg-background"
-                      style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
-                    >
-                      -
-                    </TableCell>
-                  )}
-                  {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center">
-                      {lender.referralLink ? (
-                        <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center" data-testid={`qrcode-lender${index + 1}`}>
+                        {lender.referralLink ? (
                           <QRCodeSVG 
                             value={lender.referralLink} 
                             size={64}
@@ -1349,10 +1304,12 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                             fgColor="black"
                             className="mx-auto"
                           />
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
-                      )}
+                        ) : (
+                          <div className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-muted-foreground/30 rounded bg-muted/20">
+                            <span className="text-xs text-muted-foreground text-center px-1">Visit Lenders Page</span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1360,17 +1317,6 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
             </Table>
           </div>
 
-          {hasMoreLenders && (
-            <div className="mt-6 flex justify-center">
-              <Button 
-                variant="outline" 
-                onClick={handleViewMoreLoans}
-                data-testid="button-view-more-loans"
-              >
-                View More Loans
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
         </TabsContent>

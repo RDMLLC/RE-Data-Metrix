@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const searchSchema = z.object({
   state: z.string().optional(),
-  creditScore: z.string().optional(),
   loanType: z.string().optional(),
   brokerOrDirectLender: z.string().optional(),
   fastestClosingTime: z.string().optional(),
@@ -150,7 +149,6 @@ export default function Lenders() {
     resolver: zodResolver(searchSchema),
     defaultValues: {
       state: "any",
-      creditScore: "any",
       loanType: "any",
       brokerOrDirectLender: "any",
       fastestClosingTime: "any",
@@ -198,16 +196,14 @@ export default function Lenders() {
     
     const params = new URLSearchParams(queryString);
     const state = params.get('state');
-    const creditScore = params.get('creditScore');
     const loanType = params.get('loanType');
 
-    const hasParams = state || creditScore || loanType;
+    const hasParams = state || loanType;
     
     if (hasParams) {
       // Reset form with all values at once to avoid race conditions
       form.reset({
         state: state || 'any',
-        creditScore: creditScore || 'any',
         loanType: loanType || 'any',
         brokerOrDirectLender: 'any',
         fastestClosingTime: 'any',
@@ -309,33 +305,6 @@ export default function Lenders() {
                           <SelectItem value="WV">West Virginia</SelectItem>
                           <SelectItem value="WI">Wisconsin</SelectItem>
                           <SelectItem value="WY">Wyoming</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Credit Score */}
-                <FormField
-                  control={form.control}
-                  name="creditScore"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground">Your Credit Score</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-search-credit-score">
-                            <SelectValue placeholder="Any" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="any">Any</SelectItem>
-                          <SelectItem value="below-600">Below 600</SelectItem>
-                          <SelectItem value="600-649">600-649</SelectItem>
-                          <SelectItem value="650-699">650-699</SelectItem>
-                          <SelectItem value="700-749">700-749</SelectItem>
-                          <SelectItem value="750+">750+</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

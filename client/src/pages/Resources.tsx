@@ -64,7 +64,6 @@ export default function Resources() {
         <Tabs defaultValue="about" className="space-y-6">
           <TabsList className="flex flex-wrap h-auto gap-2 bg-muted/50 p-2" data-testid="tabs-toolbox">
             <TabsTrigger value="about" data-testid="tab-about">About</TabsTrigger>
-            <TabsTrigger value="tool-finder" data-testid="tab-tool-finder">Tool Finder</TabsTrigger>
             <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
             <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>
             <TabsTrigger value="project-management" data-testid="tab-project-management">Project Management</TabsTrigger>
@@ -153,21 +152,22 @@ export default function Resources() {
                 </p>
               </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="tool-finder">
-            {authLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : !isSubscriber ? (
-              <MembershipPaywall 
-                title="Tool Finder"
-                description="Compare real estate software tools and find the perfect ones for your investment strategy."
-              />
-            ) : (
-              <ToolFinder />
-            )}
+            {/* Tool Finder Section */}
+            <div className="mt-8 pt-8 border-t">
+              {authLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : !isSubscriber ? (
+                <MembershipPaywall 
+                  title="Tool Finder"
+                  description="Compare real estate software tools and find the perfect ones for your investment strategy."
+                />
+              ) : (
+                <ToolFinder />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="marketplace">
