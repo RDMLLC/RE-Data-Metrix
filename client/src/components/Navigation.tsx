@@ -58,9 +58,7 @@ export default function Navigation() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/about", label: "About Us" },
-    { href: "/company", label: "The Company" },
     { href: "/deal-analysis", label: "Deal Analysis" },
-    { href: "/loan-types", label: "Loan Types" },
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
     { href: "/pricing", label: "Pricing" },

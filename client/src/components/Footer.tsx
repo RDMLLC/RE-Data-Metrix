@@ -73,11 +73,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/company" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-company">
-                  The Company
-                </Link>
-              </li>
-              <li>
                 <Link href="/deal-analysis" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-deal-analysis">
                   Deal Analysis
                 </Link>
@@ -90,11 +85,6 @@ export default function Footer() {
               <li>
                 <Link href="/lenders" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-lenders">
                   Lenders
-                </Link>
-              </li>
-              <li>
-                <Link href="/loan-types" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-loan-types">
-                  Loan Types
                 </Link>
               </li>
               <li>

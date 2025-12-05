@@ -3,17 +3,66 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ExternalLink, Heart } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Search, ExternalLink, Heart, Clock, TrendingUp, Zap, Users, DollarSign, CheckCircle, XCircle, GraduationCap } from "lucide-react";
 import lendersImg from "@assets/generated_images/Lenders_partnership_concept_image_281c2e15.png";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+
+const loanTypesData = [
+  {
+    id: "hard-money",
+    name: "Hard Money / Bridge",
+    icon: <Clock className="h-5 w-5 text-accent" />,
+    description: "Short-term loans from private lenders secured by real estate. Asset-based loans focused on property value (ARV) rather than creditworthiness. Ideal for fix-and-flip projects.",
+    terms: { rate: "9-15%", term: "6-24 months", down: "10-25%", closing: "7-14 days" },
+    pros: ["Fast funding (7-14 days)", "Flexible terms", "Credit less important than deal quality"],
+    cons: ["High interest rates", "Significant upfront costs", "Short loan terms"]
+  },
+  {
+    id: "dscr",
+    name: "DSCR (Debt Service Coverage Ratio)",
+    icon: <TrendingUp className="h-5 w-5 text-accent" />,
+    description: "Investment property loans that qualify based on the property's rental income rather than personal income. Great for self-employed investors.",
+    terms: { rate: "7.5-10%", term: "30 years", down: "20-25%", closing: "21-30 days" },
+    pros: ["No personal income verification", "Can close in LLC", "Build rental portfolio"],
+    cons: ["Higher rates than conventional", "Larger down payment", "Property must generate income"]
+  },
+  {
+    id: "transactional",
+    name: "Transactional Funding",
+    icon: <Zap className="h-5 w-5 text-accent" />,
+    description: "Ultra-short-term financing for same-day or back-to-back closings. Provides 100% financing for wholesale deals where you buy and immediately resell.",
+    terms: { rate: "Flat fee $1,500-$3,000", term: "1-3 days", down: "0%", closing: "Same day" },
+    pros: ["100% financing", "Same-day closings", "No credit checks"],
+    cons: ["Only for wholesale deals", "Requires confirmed end buyer", "High fees"]
+  },
+  {
+    id: "private-seller",
+    name: "Private/Seller Financing",
+    icon: <Users className="h-5 w-5 text-accent" />,
+    description: "Financing directly from the property seller or a private individual investor. Offers flexible terms customized to both parties' needs.",
+    terms: { rate: "6-12%", term: "5-30 years", down: "10-30%", closing: "7-30 days" },
+    pros: ["Extremely flexible terms", "Fast closings", "Can work around credit issues"],
+    cons: ["Requires finding willing sellers", "Terms vary widely", "Limited legal protections"]
+  },
+  {
+    id: "conventional",
+    name: "Conventional",
+    icon: <DollarSign className="h-5 w-5 text-accent" />,
+    description: "Traditional mortgages from banks following Fannie Mae and Freddie Mac guidelines. Best rates but strict requirements.",
+    terms: { rate: "6-8%", term: "15-30 years", down: "15-25%", closing: "30-45 days" },
+    pros: ["Lower interest rates", "Predictable payments", "Long terms"],
+    cons: ["Strict credit requirements", "Extensive documentation", "Longer closing process"]
+  }
+];
 
 const searchSchema = z.object({
   state: z.string().optional(),
@@ -683,6 +732,95 @@ export default function Lenders() {
             </p>
           </Card>
         )}
+
+        {/* Loan Types Education Section */}
+        <Card className="p-8 mb-12" data-testid="section-loan-types">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+              <GraduationCap className="h-6 w-6 text-accent" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-primary">Understanding Loan Types</h2>
+              <p className="text-muted-foreground">Learn about different financing options for your investments</p>
+            </div>
+          </div>
+
+          <Accordion type="single" collapsible className="space-y-2">
+            {loanTypesData.map((loanType) => (
+              <AccordionItem key={loanType.id} value={loanType.id} className="border rounded-lg px-4">
+                <AccordionTrigger className="hover:no-underline py-4" data-testid={`accordion-${loanType.id}`}>
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      {loanType.icon}
+                    </div>
+                    <span className="font-semibold text-primary">{loanType.name}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="space-y-4 pl-13">
+                    <p className="text-muted-foreground">{loanType.description}</p>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="text-muted-foreground text-xs">Interest Rate</div>
+                        <div className="font-medium">{loanType.terms.rate}</div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="text-muted-foreground text-xs">Loan Term</div>
+                        <div className="font-medium">{loanType.terms.term}</div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="text-muted-foreground text-xs">Down Payment</div>
+                        <div className="font-medium">{loanType.terms.down}</div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="text-muted-foreground text-xs">Closing Time</div>
+                        <div className="font-medium">{loanType.terms.closing}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
+                          <CheckCircle className="h-4 w-4 text-emerald-600" /> Advantages
+                        </h4>
+                        <ul className="space-y-1">
+                          {loanType.pros.map((pro, i) => (
+                            <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                              <span className="text-emerald-600 mt-1">•</span>
+                              <span>{pro}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm mb-2 flex items-center gap-1">
+                          <XCircle className="h-4 w-4 text-destructive" /> Considerations
+                        </h4>
+                        <ul className="space-y-1">
+                          {loanType.cons.map((con, i) => (
+                            <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                              <span className="text-destructive mt-1">•</span>
+                              <span>{con}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+
+          <div className="mt-6 pt-4 border-t">
+            <Link href="/loan-types">
+              <Button variant="outline" className="w-full md:w-auto" data-testid="button-view-all-loan-types">
+                View All Loan Types with Full Details
+              </Button>
+            </Link>
+          </div>
+        </Card>
 
         {/* Image Preview */}
         <div className="mb-12">
