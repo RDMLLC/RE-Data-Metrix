@@ -12,7 +12,10 @@ import {
   AlertCircle, 
   Loader2,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Mail,
+  Database,
+  Home
 } from "lucide-react";
 
 interface ZohoStatus {
@@ -30,6 +33,18 @@ interface ZohoPlan {
   price: number;
 }
 
+interface IntegrationStatus {
+  name: string;
+  description: string;
+  configured: boolean;
+  ready: boolean;
+  details: Record<string, boolean>;
+}
+
+interface IntegrationsResponse {
+  integrations: IntegrationStatus[];
+}
+
 export default function AdminIntegrations() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -38,6 +53,7 @@ export default function AdminIntegrations() {
   const [isConnectingZoho, setIsConnectingZoho] = useState(false);
   const [isTestingZoho, setIsTestingZoho] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [allIntegrations, setAllIntegrations] = useState<IntegrationStatus[]>([]);
 
   const fetchZohoStatus = async () => {
     try {
@@ -55,8 +71,23 @@ export default function AdminIntegrations() {
     }
   };
 
+  const fetchAllIntegrations = async () => {
+    try {
+      const response = await fetch("/api/admin/integrations/status", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data: IntegrationsResponse = await response.json();
+        setAllIntegrations(data.integrations);
+      }
+    } catch (error) {
+      console.error("Failed to fetch integrations status");
+    }
+  };
+
   useEffect(() => {
     fetchZohoStatus();
+    fetchAllIntegrations();
   }, []);
 
   const handleConnectZoho = async () => {
@@ -128,11 +159,41 @@ export default function AdminIntegrations() {
 
   const handleRefreshStatus = async () => {
     setIsLoadingStatus(true);
-    await fetchZohoStatus();
+    await Promise.all([fetchZohoStatus(), fetchAllIntegrations()]);
     toast({
       title: "Status Refreshed",
       description: "Integration status has been updated",
     });
+  };
+
+  const getIntegrationIcon = (name: string) => {
+    switch (name) {
+      case "Zoho Billing":
+        return <CreditCard className="h-6 w-6 text-blue-500" />;
+      case "HasData API":
+        return <Home className="h-6 w-6 text-emerald-500" />;
+      case "Email (SMTP)":
+        return <Mail className="h-6 w-6 text-purple-500" />;
+      case "PostgreSQL Database":
+        return <Database className="h-6 w-6 text-cyan-500" />;
+      default:
+        return <AlertCircle className="h-6 w-6 text-muted-foreground" />;
+    }
+  };
+
+  const getIntegrationBgColor = (name: string) => {
+    switch (name) {
+      case "Zoho Billing":
+        return "bg-blue-500/10";
+      case "HasData API":
+        return "bg-emerald-500/10";
+      case "Email (SMTP)":
+        return "bg-purple-500/10";
+      case "PostgreSQL Database":
+        return "bg-cyan-500/10";
+      default:
+        return "bg-muted";
+    }
   };
 
   return (
@@ -351,8 +412,66 @@ export default function AdminIntegrations() {
               </CardContent>
             </Card>
 
-            <div className="text-center text-muted-foreground text-sm py-8">
-              More integrations coming soon...
+            {/* Other Integrations */}
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Other Integrations</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allIntegrations
+                  .filter(integration => integration.name !== "Zoho Billing")
+                  .map((integration) => (
+                    <Card 
+                      key={integration.name} 
+                      data-testid={`card-integration-${integration.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 ${getIntegrationBgColor(integration.name)} rounded-lg flex items-center justify-center`}>
+                              {getIntegrationIcon(integration.name)}
+                            </div>
+                            <div>
+                              <CardTitle className="text-base">{integration.name}</CardTitle>
+                              <CardDescription className="text-xs">
+                                {integration.description}
+                              </CardDescription>
+                            </div>
+                          </div>
+                          {integration.ready ? (
+                            <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Ready
+                            </Badge>
+                          ) : integration.configured ? (
+                            <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Partial
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Not Configured
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="text-xs space-y-1">
+                          {Object.entries(integration.details).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-2">
+                              {value ? (
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3 text-red-500" />
+                              )}
+                              <span className={value ? "text-foreground" : "text-muted-foreground"}>
+                                {key.replace(/^has/, '').replace(/([A-Z])/g, ' $1').trim()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
             </div>
           </div>
         </div>
