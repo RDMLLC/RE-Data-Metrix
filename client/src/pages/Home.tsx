@@ -91,8 +91,8 @@ export default function Home() {
     <Layout>
       <Hero />
       
-      {/* Features Section */}
-      <section className="py-24 bg-background">
+      {/* Features Section - Hidden on mobile to reduce scrolling */}
+      <section className="hidden md:block py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold text-primary mb-4">
@@ -149,8 +149,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Prelaunch Signup Section */}
-      <section id="prelaunch-form" className="py-24 bg-background">
+      {/* Prelaunch Signup Section - Hidden on mobile to reduce scrolling */}
+      <section id="prelaunch-form" className="hidden md:block py-24 bg-background">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold text-primary mb-4">

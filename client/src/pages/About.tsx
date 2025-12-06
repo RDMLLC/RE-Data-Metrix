@@ -16,10 +16,11 @@ export default function About() {
         {/* Who We Are Section - At the top */}
         <section className="mb-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Company image - Hidden on mobile to reduce scrolling */}
             <img 
               src={companyImg} 
               alt="RE Data Metrix Headquarters"
-              className="w-full rounded-lg shadow-lg"
+              className="hidden md:block w-full rounded-lg shadow-lg"
             />
             <div>
               <h2 className="text-3xl font-bold text-primary mb-2">Who We Are</h2>
@@ -96,8 +97,8 @@ export default function About() {
           </div>
         </section>
 
-        {/* Platform Features Section */}
-        <section>
+        {/* Platform Features Section - Hidden on mobile to reduce scrolling */}
+        <section className="hidden md:block">
           <div className="flex items-center gap-3 mb-4">
             <Layers className="h-8 w-8 text-accent" />
             <h2 className="text-3xl font-bold text-primary">Our Platform</h2>

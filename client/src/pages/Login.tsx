@@ -220,8 +220,8 @@ export default function Login() {
 
             {/* Left Column - New Account and Admin Panel stacked */}
             <div className="lg:col-span-1 xl:col-span-1 flex flex-col gap-4">
-              {/* New Account Signup Card */}
-              <Card className="border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20" data-testid="card-new-account">
+              {/* New Account Signup Card - Hidden on mobile */}
+              <Card className="hidden md:block border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20" data-testid="card-new-account">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg flex items-center justify-center">
@@ -247,8 +247,8 @@ export default function Login() {
                 </CardContent>
               </Card>
 
-              {/* Admin Panel Card */}
-              <Card className="border border-primary/20" data-testid="card-admin-login">
+              {/* Admin Panel Card - Hidden on mobile */}
+              <Card className="hidden md:block border border-primary/20" data-testid="card-admin-login">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
