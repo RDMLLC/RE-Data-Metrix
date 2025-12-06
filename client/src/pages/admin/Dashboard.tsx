@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake } from "lucide-react";
 
 interface ZohoStatus {
   configured: boolean;
@@ -320,6 +320,26 @@ export default function AdminDashboard() {
               <CardContent>
                 <CardDescription>
                   Manage Zoho Billing and other external service connections
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/admin/affiliates")}
+              data-testid="card-affiliates"
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-teal-500/10 rounded-lg flex items-center justify-center">
+                    <Handshake className="h-5 w-5 text-teal-500" />
+                  </div>
+                  <CardTitle>Affiliate Programs</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Manage partner affiliate programs displayed in the Toolbox
                 </CardDescription>
               </CardContent>
             </Card>
