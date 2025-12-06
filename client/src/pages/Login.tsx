@@ -346,6 +346,17 @@ export default function Login() {
                 </Form>
               </Card>
             </div>
+
+            {/* Subtle Admin Link - Visible on mobile only (cards hidden on desktop show admin access) */}
+            <div className="lg:col-span-3 md:hidden text-center">
+              <Link 
+                href="/admin/login" 
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="link-admin-mobile"
+              >
+                Admin access
+              </Link>
+            </div>
           </div>
         </div>
       </div>
