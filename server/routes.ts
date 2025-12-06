@@ -354,6 +354,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check all integrations status (admin only)
+  app.get("/api/admin/integrations/status", ensureAdmin, async (req, res) => {
+    try {
+      // Zoho Billing status
+      const zohoStatus = {
+        name: "Zoho Billing",
+        description: "Subscription billing and payment processing",
+        configured: zohoBillingService.isConfigured(),
+        ready: zohoBillingService.isReady(),
+        details: {
+          hasClientId: !!process.env.ZOHO_CLIENT_ID,
+          hasClientSecret: !!process.env.ZOHO_CLIENT_SECRET,
+          hasRefreshToken: !!process.env.ZOHO_REFRESH_TOKEN,
+          hasOrganizationId: !!process.env.ZOHO_ORGANIZATION_ID
+        }
+      };
+
+      // HasData API status (property data)
+      const hasDataStatus = {
+        name: "HasData API",
+        description: "Property data lookup from Zillow and Redfin",
+        configured: !!process.env.HASDATA_API_KEY,
+        ready: !!process.env.HASDATA_API_KEY,
+        details: {
+          hasApiKey: !!process.env.HASDATA_API_KEY
+        }
+      };
+
+      // SMTP/Email status
+      const smtpStatus = {
+        name: "Email (SMTP)",
+        description: "Email notifications and verification",
+        configured: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+        ready: !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD && process.env.SMTP_FROM_EMAIL),
+        details: {
+          hasHost: !!process.env.SMTP_HOST,
+          hasPort: !!process.env.SMTP_PORT,
+          hasUser: !!process.env.SMTP_USER,
+          hasPassword: !!process.env.SMTP_PASSWORD,
+          hasFromEmail: !!process.env.SMTP_FROM_EMAIL,
+          hasFromName: !!process.env.SMTP_FROM_NAME
+        }
+      };
+
+      // Database status (always configured via Replit)
+      const databaseStatus = {
+        name: "PostgreSQL Database",
+        description: "Primary data storage powered by Neon",
+        configured: !!process.env.DATABASE_URL,
+        ready: !!process.env.DATABASE_URL,
+        details: {
+          hasDatabaseUrl: !!process.env.DATABASE_URL
+        }
+      };
+
+      res.json({
+        integrations: [
+          zohoStatus,
+          hasDataStatus,
+          smtpStatus,
+          databaseStatus
+        ]
+      });
+    } catch (error) {
+      console.error('Integrations status error:', error);
+      res.status(500).json({ error: "Failed to get integrations status" });
+    }
+  });
+
   // Initiate Zoho OAuth flow (admin only)
   app.get("/api/zoho/auth", ensureAdmin, async (req, res) => {
     try {
