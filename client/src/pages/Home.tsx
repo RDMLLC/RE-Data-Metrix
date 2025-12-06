@@ -47,7 +47,9 @@ export default function Home() {
       if (user.role === "admin") {
         setLocation("/admin/dashboard");
       } else {
-        setLocation("/portal/dashboard");
+        // On mobile (< 768px), go directly to Deal Analysis as the core functionality
+        const isMobile = window.innerWidth < 768;
+        setLocation(isMobile ? "/deal-analysis" : "/portal/dashboard");
       }
     }
   }, [authLoading, lenderChecked, isAuthenticated, isLender, user, setLocation]);
