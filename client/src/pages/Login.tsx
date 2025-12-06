@@ -27,11 +27,17 @@ import {
 } from "@/components/ui/form";
 
 const loginSchema = z.object({
+  identifier: z.string().min(1, "Email or username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const lenderLoginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+type LenderLoginFormData = z.infer<typeof lenderLoginSchema>;
 
 export default function Login() {
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -50,13 +56,13 @@ export default function Login() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      identifier: "",
       password: "",
     },
   });
 
-  const lenderForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const lenderForm = useForm<LenderLoginFormData>({
+    resolver: zodResolver(lenderLoginSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -73,7 +79,7 @@ export default function Login() {
       });
       setLocation("/portal/dashboard");
     } catch (error: any) {
-      const errorMessage = error.message || "Invalid email or password";
+      const errorMessage = error.message || "Invalid credentials";
       const isVerificationError = errorMessage.includes("verify") || errorMessage.includes("Email not verified");
       
       toast({
@@ -86,7 +92,7 @@ export default function Login() {
     }
   };
 
-  const onLenderSubmit = async (data: LoginFormData) => {
+  const onLenderSubmit = async (data: LenderLoginFormData) => {
     setIsLenderLoading(true);
     try {
       const response = await fetch("/api/lenders/login", {
@@ -163,16 +169,16 @@ export default function Login() {
                     <CardContent className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="email"
+                        name="identifier"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>Email or Username</FormLabel>
                             <FormControl>
                               <Input
                                 {...field}
-                                type="email"
-                                placeholder="you@example.com"
-                                data-testid="input-email"
+                                type="text"
+                                placeholder="you@example.com or username"
+                                data-testid="input-identifier"
                               />
                             </FormControl>
                             <FormMessage />

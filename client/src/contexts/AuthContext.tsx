@@ -25,7 +25,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isSubscriber: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (credentials: { identifier: string; password: string }) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refetchUser: () => Promise<void>;
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
+    mutationFn: async (credentials: { identifier: string; password: string }) => {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  const login = async (credentials: { email: string; password: string }) => {
+  const login = async (credentials: { identifier: string; password: string }) => {
     await loginMutation.mutateAsync(credentials);
   };
 

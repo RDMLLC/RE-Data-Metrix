@@ -19,29 +19,49 @@ export async function comparePassword(
   return bcrypt.compare(password, hash);
 }
 
-// User authentication strategy
+// Helper function to find user by email or username
+async function findUserByIdentifier(identifier: string) {
+  // Check if identifier looks like an email (contains @)
+  const isEmail = identifier.includes('@');
+  
+  if (isEmail) {
+    // Search by email (case-insensitive)
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`LOWER(${users.email}) = LOWER(${identifier})`)
+      .limit(1);
+    return user;
+  } else {
+    // Search by username (case-sensitive for usernames)
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, identifier))
+      .limit(1);
+    return user;
+  }
+}
+
+// User authentication strategy - accepts email or username as identifier
 passport.use('user-local',
   new LocalStrategy(
     {
-      usernameField: 'email',
+      usernameField: 'identifier',
       passwordField: 'password',
     },
-    async (email, password, done) => {
+    async (identifier, password, done) => {
       try {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(sql`LOWER(${users.email}) = LOWER(${email})`)
-          .limit(1);
+        const user = await findUserByIdentifier(identifier);
 
         if (!user) {
-          return done(null, false, { message: 'Invalid email or password' });
+          return done(null, false, { message: 'Invalid credentials' });
         }
 
         const isPasswordValid = await comparePassword(password, user.password);
 
         if (!isPasswordValid) {
-          return done(null, false, { message: 'Invalid email or password' });
+          return done(null, false, { message: 'Invalid credentials' });
         }
 
         return done(null, { ...user, userType: 'user' });
