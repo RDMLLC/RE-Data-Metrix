@@ -591,3 +591,42 @@ export const insertLenderInquirySchema = createInsertSchema(lenderInquiries).omi
 
 export type InsertLenderInquiry = z.infer<typeof insertLenderInquirySchema>;
 export type LenderInquiry = typeof lenderInquiries.$inferSelect;
+
+// Affiliates - partner programs displayed in the Toolbox
+export const affiliates = pgTable("affiliates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  benefits: text("benefits").array().notNull(),
+  referralLink: text("referral_link").notNull(),
+  categories: text("categories").array().notNull(),
+  iconName: text("icon_name").notNull().default("Building2"),
+  referralFee: text("referral_fee"),
+  referralFeeType: text("referral_fee_type"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAffiliateSchema = createInsertSchema(affiliates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAffiliate = z.infer<typeof insertAffiliateSchema>;
+export type Affiliate = typeof affiliates.$inferSelect;
+
+// Category info for affiliates
+export const affiliateCategories = pgTable("affiliate_categories", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
+export const insertAffiliateCategorySchema = createInsertSchema(affiliateCategories);
+
+export type InsertAffiliateCategory = z.infer<typeof insertAffiliateCategorySchema>;
+export type AffiliateCategory = typeof affiliateCategories.$inferSelect;

@@ -820,7 +820,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       className="text-center min-w-[100px] sticky z-10 bg-background"
                       style={{ left: `${metricColWidth + cashSaleColWidth}px`, minWidth: `${yourLoanColWidth}px` }}
                     >
-                      Your Loan
+                      Entered Loan
                     </TableHead>
                   )}
                   {visibleLenders.map((lender, index) => (
@@ -1391,8 +1391,8 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   </>
                 )}
                 
-                {/* QR Codes Row - For PDF and quick apply */}
-                <TableRow>
+                {/* QR Codes Row - For PDF only (hidden in browser) */}
+                <TableRow className="hidden print:table-row">
                   <TableCell className={`font-medium ${stickyFirstColBase}`}>Scan to Apply</TableCell>
                   <TableCell 
                     className="text-center sticky z-10 bg-background"
@@ -1430,8 +1430,8 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   ))}
                 </TableRow>
                 
-                {/* Contact Lender Row */}
-                <TableRow>
+                {/* Contact Lender Row - Browser only (hidden in PDF) */}
+                <TableRow className="print:hidden">
                   <TableCell className={`font-medium ${stickyFirstColBase}`}>Contact Lender</TableCell>
                   <TableCell 
                     className="text-center sticky z-10 bg-background"
@@ -1485,6 +1485,19 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
               </TableBody>
             </Table>
           </div>
+
+          {/* Show More Loans Button */}
+          {hasMoreLenders && (
+            <div className="flex justify-center mt-4 print:hidden">
+              <Button
+                variant="outline"
+                onClick={handleViewMoreLoans}
+                data-testid="button-show-more-loans"
+              >
+                Show More Loans ({results.lenderColumns.length - visibleLenderCount} remaining)
+              </Button>
+            </div>
+          )}
 
         </CardContent>
       </Card>

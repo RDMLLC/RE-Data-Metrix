@@ -54,6 +54,7 @@ export default function Step4HoldingPeriodExit({
   const monthlyUtilities = form.watch("monthlyUtilities") || 0;
   const annualInsurance = form.watch("annualInsurance") || 0;
   const taxAssessedValue = form.watch("taxAssessedValue") || 0;
+  const annualTax = form.watch("annualTax") || 0;
   
   const sellPrice = form.watch("sellPrice") || 0;
   const closingCostsSellPercent = form.watch("closingCostsSellPercent") || 1;
@@ -133,7 +134,10 @@ export default function Step4HoldingPeriodExit({
   
   const estimatedClosingCostsBuy = attorneyFees + docPrepFees + titleExam + titleInsurance;
   
-  const propertyTaxMonthly = taxAssessedValue > 0 ? (taxAssessedValue * 0.01 / 12) : 0;
+  // Use actual annualTax if available from API, otherwise estimate based on taxAssessedValue (1% rate)
+  const propertyTaxMonthly = annualTax > 0 
+    ? (annualTax / 12) 
+    : (taxAssessedValue > 0 ? (taxAssessedValue * 0.01 / 12) : 0);
   const propertyTaxTotal = propertyTaxMonthly * projectLength;
   const utilitiesTotal = monthlyUtilities * projectLength;
   const insuranceTotal = (annualInsurance / 12) * projectLength;
@@ -724,7 +728,7 @@ export default function Step4HoldingPeriodExit({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Your Loan</CardTitle>
+              <CardTitle className="text-lg">Entered Loan</CardTitle>
               <CardDescription>
                 Do you already have a loan product in mind? Enter the details to compare it against our lenders.
               </CardDescription>

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -2811,6 +2811,198 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete discount code error:', error);
       res.status(500).json({ error: "Failed to delete discount code" });
+    }
+  });
+
+  // Affiliate Management Routes
+  // List all affiliates (admin only)
+  app.get("/api/admin/affiliates", ensureAdmin, async (req, res) => {
+    try {
+      const affiliates = await storage.getAllAffiliates();
+      res.json(affiliates);
+    } catch (error) {
+      console.error('Get all affiliates error:', error);
+      res.status(500).json({ error: "Failed to fetch affiliates" });
+    }
+  });
+
+  // List active affiliates (public, for Resources page)
+  app.get("/api/affiliates", async (req, res) => {
+    try {
+      const affiliates = await storage.getActiveAffiliates();
+      res.json(affiliates);
+    } catch (error) {
+      console.error('Get active affiliates error:', error);
+      res.status(500).json({ error: "Failed to fetch affiliates" });
+    }
+  });
+
+  // Create affiliate (admin only) - with Zod validation
+  const createAffiliateSchema = insertAffiliateSchema.extend({
+    benefits: z.array(z.string()).default([]),
+    categories: z.array(z.string()).min(1, "At least one category is required"),
+  });
+  
+  app.post("/api/admin/affiliates", ensureAdmin, async (req, res) => {
+    try {
+      const validationResult = createAffiliateSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      
+      const data = validationResult.data;
+      const affiliate = await storage.createAffiliate({
+        name: data.name,
+        description: data.description,
+        benefits: data.benefits,
+        referralLink: data.referralLink,
+        categories: data.categories,
+        iconName: data.iconName || 'Building2',
+        referralFee: data.referralFee || null,
+        referralFeeType: data.referralFeeType || null,
+        isActive: data.isActive ?? true,
+        sortOrder: data.sortOrder ?? 0,
+      });
+      
+      res.status(201).json(affiliate);
+    } catch (error) {
+      console.error('Create affiliate error:', error);
+      res.status(500).json({ error: "Failed to create affiliate" });
+    }
+  });
+
+  // Update affiliate (admin only) - with Zod validation
+  const updateAffiliateSchema = z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().min(1).optional(),
+    benefits: z.array(z.string()).optional(),
+    referralLink: z.string().min(1).optional(),
+    categories: z.array(z.string()).min(1, "At least one category is required").optional(),
+    iconName: z.string().optional(),
+    referralFee: z.string().nullable().optional(),
+    referralFeeType: z.string().nullable().optional(),
+    isActive: z.boolean().optional(),
+    sortOrder: z.number().optional(),
+  });
+  
+  app.put("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validationResult = updateAffiliateSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      
+      const data = validationResult.data;
+      const updateData: any = {};
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.benefits !== undefined) updateData.benefits = data.benefits;
+      if (data.referralLink !== undefined) updateData.referralLink = data.referralLink;
+      if (data.categories !== undefined) updateData.categories = data.categories;
+      if (data.iconName !== undefined) updateData.iconName = data.iconName;
+      if (data.referralFee !== undefined) updateData.referralFee = data.referralFee;
+      if (data.referralFeeType !== undefined) updateData.referralFeeType = data.referralFeeType;
+      if (data.isActive !== undefined) updateData.isActive = data.isActive;
+      if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
+      
+      const updated = await storage.updateAffiliate(id, updateData);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Affiliate not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Update affiliate error:', error);
+      res.status(500).json({ error: "Failed to update affiliate" });
+    }
+  });
+
+  // Delete affiliate (admin only)
+  app.delete("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteAffiliate(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Affiliate not found" });
+      }
+      
+      res.json({ success: true, message: "Affiliate deleted" });
+    } catch (error) {
+      console.error('Delete affiliate error:', error);
+      res.status(500).json({ error: "Failed to delete affiliate" });
+    }
+  });
+
+  // List affiliate categories (admin only)
+  app.get("/api/admin/affiliate-categories", ensureAdmin, async (req, res) => {
+    try {
+      const categories = await storage.getAllAffiliateCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Get affiliate categories error:', error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // Create/update affiliate category (admin only) - with Zod validation
+  const upsertCategorySchema = z.object({
+    id: z.string().min(1, "ID is required"),
+    name: z.string().min(1, "Name is required"),
+    description: z.string().min(1, "Description is required"),
+    sortOrder: z.number().optional(),
+  });
+  
+  app.post("/api/admin/affiliate-categories", ensureAdmin, async (req, res) => {
+    try {
+      const validationResult = upsertCategorySchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      
+      const data = validationResult.data;
+      const category = await storage.upsertAffiliateCategory({
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        sortOrder: data.sortOrder ?? 0,
+      });
+      
+      res.json(category);
+    } catch (error) {
+      console.error('Upsert affiliate category error:', error);
+      res.status(500).json({ error: "Failed to save category" });
+    }
+  });
+
+  // Delete affiliate category (admin only)
+  app.delete("/api/admin/affiliate-categories/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteAffiliateCategory(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Category not found" });
+      }
+      
+      res.json({ success: true, message: "Category deleted" });
+    } catch (error) {
+      console.error('Delete affiliate category error:', error);
+      res.status(500).json({ error: "Failed to delete category" });
     }
   });
 

@@ -20,6 +20,10 @@ import {
   type CompInvite,
   type DiscountCode,
   type DiscountCodeUse,
+  type Affiliate,
+  type InsertAffiliate,
+  type AffiliateCategory,
+  type InsertAffiliateCategory,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -33,7 +37,9 @@ import {
   affiliateClicks as affiliateClicksTable,
   compInvites as compInvitesTable,
   discountCodes as discountCodesTable,
-  discountCodeUses as discountCodeUsesTable
+  discountCodeUses as discountCodeUsesTable,
+  affiliates as affiliatesTable,
+  affiliateCategories as affiliateCategoriesTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -138,6 +144,17 @@ export interface IStorage {
     totalClicks: number;
     uniqueUsers: number;
   }>>;
+  
+  // Affiliate Management
+  getAllAffiliates(): Promise<Affiliate[]>;
+  getActiveAffiliates(): Promise<Affiliate[]>;
+  getAffiliateById(id: string): Promise<Affiliate | undefined>;
+  createAffiliate(data: InsertAffiliate): Promise<Affiliate>;
+  updateAffiliate(id: string, data: Partial<InsertAffiliate>): Promise<Affiliate | undefined>;
+  deleteAffiliate(id: string): Promise<boolean>;
+  getAllAffiliateCategories(): Promise<AffiliateCategory[]>;
+  upsertAffiliateCategory(data: InsertAffiliateCategory): Promise<AffiliateCategory>;
+  deleteAffiliateCategory(id: string): Promise<boolean>;
   
   // Deal Analysis Reports
   getDealAnalysisStats(): Promise<{
@@ -1791,6 +1808,66 @@ export class DatabaseStorage implements IStorage {
     }));
 
     return enrichedStats.sort((a, b) => b.totalClicks - a.totalClicks);
+  }
+
+  // Affiliate Management Methods
+  async getAllAffiliates(): Promise<Affiliate[]> {
+    return await db.select().from(affiliatesTable).orderBy(affiliatesTable.sortOrder);
+  }
+
+  async getActiveAffiliates(): Promise<Affiliate[]> {
+    return await db.select().from(affiliatesTable)
+      .where(eq(affiliatesTable.isActive, true))
+      .orderBy(affiliatesTable.sortOrder);
+  }
+
+  async getAffiliateById(id: string): Promise<Affiliate | undefined> {
+    const result = await db.select().from(affiliatesTable).where(eq(affiliatesTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createAffiliate(data: InsertAffiliate): Promise<Affiliate> {
+    const result = await db.insert(affiliatesTable).values(data).returning();
+    return result[0];
+  }
+
+  async updateAffiliate(id: string, data: Partial<InsertAffiliate>): Promise<Affiliate | undefined> {
+    const result = await db.update(affiliatesTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(affiliatesTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAffiliate(id: string): Promise<boolean> {
+    const result = await db.delete(affiliatesTable).where(eq(affiliatesTable.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getAllAffiliateCategories(): Promise<AffiliateCategory[]> {
+    return await db.select().from(affiliateCategoriesTable).orderBy(affiliateCategoriesTable.sortOrder);
+  }
+
+  async upsertAffiliateCategory(data: InsertAffiliateCategory): Promise<AffiliateCategory> {
+    const existing = await db.select().from(affiliateCategoriesTable)
+      .where(eq(affiliateCategoriesTable.id, data.id))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      const result = await db.update(affiliateCategoriesTable)
+        .set({ name: data.name, description: data.description, sortOrder: data.sortOrder })
+        .where(eq(affiliateCategoriesTable.id, data.id))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db.insert(affiliateCategoriesTable).values(data).returning();
+      return result[0];
+    }
+  }
+
+  async deleteAffiliateCategory(id: string): Promise<boolean> {
+    const result = await db.delete(affiliateCategoriesTable).where(eq(affiliateCategoriesTable.id, id)).returning();
+    return result.length > 0;
   }
 
   async getDealAnalysisStats(): Promise<{

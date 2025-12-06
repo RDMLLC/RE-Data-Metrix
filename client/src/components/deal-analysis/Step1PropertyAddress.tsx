@@ -50,6 +50,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       form.setValue("lotSize", data.lotSize);
       form.setValue("yearBuilt", data.yearBuilt);
       form.setValue("taxAssessedValue", data.taxAssessedValue);
+      form.setValue("annualTax", data.annualTax);
       form.setValue("estimatedValue", data.estimatedValue);
       form.setValue("hoaFees", data.hoaFees);
       form.setValue("propertyDataSource", dataSource);

@@ -81,6 +81,35 @@ The platform now includes comprehensive lender notification and investor engagem
 - Dialog for optional investor message before sending
 - Full deal data automatically included in inquiry
 
+### Affiliate Management (Admin)
+Complete admin portal for managing affiliate partner programs displayed in the Toolbox:
+
+**Database Tables:**
+- `affiliates`: id, name, description, benefits (text[]), referral_link, categories (text[]), icon_name, referral_fee, referral_fee_type, is_active, sort_order, created_at, updated_at
+- `affiliate_categories`: id, name, description, sort_order
+
+**Admin Portal Page** (`/admin/affiliates`):
+- Tabbed interface for Affiliates and Categories management
+- Affiliates table with Name, Categories, Referral Fee, Status, Actions columns
+- Search by name/description, filter by status (All/Active/Inactive)
+- Add/Edit affiliate dialog with all form fields including multi-select categories and icon dropdown
+- Category management section with add/edit/delete functionality
+- Delete confirmation dialogs
+
+**API Routes:**
+- `GET /api/affiliates`: List active affiliates (public, for Toolbox page)
+- `GET /api/admin/affiliates`: List all affiliates (admin only)
+- `POST /api/admin/affiliates`: Create affiliate with Zod validation (admin only)
+- `PUT /api/admin/affiliates/:id`: Update affiliate with Zod validation (admin only)
+- `DELETE /api/admin/affiliates/:id`: Delete affiliate (admin only)
+- `GET /api/admin/affiliate-categories`: List categories (admin only)
+- `POST /api/admin/affiliate-categories`: Upsert category with Zod validation (admin only)
+- `DELETE /api/admin/affiliate-categories/:id`: Delete category (admin only)
+
+**Pre-seeded Data:**
+- 5 categories: marketplace, property-management, project-management, lead-generation, comps
+- 16 affiliate programs migrated from static data (Connected Investors, Padsplit, Bigger Pockets, etc.)
+
 ## External Dependencies
 
 ### Database Service

@@ -10,6 +10,7 @@ export interface PropertyData {
   lotSize?: number;
   yearBuilt?: number;
   taxAssessedValue?: number;
+  annualTax?: number;
   estimatedValue?: number;
   estimatedRent?: number;
   lastSalePrice?: number;

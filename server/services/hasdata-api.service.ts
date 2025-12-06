@@ -225,14 +225,22 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedHoaFees: hoaFees
     });
     
-    // Extract tax data - Redfin uses various field names
+    // Extract tax assessed value (the property's assessed value for tax purposes)
     const taxAssessedValue = this.parseNumber(
       property.taxAssessedValue ||
       property.taxValue ||
       property.tax?.assessedValue ||
-      property.taxInfo?.assessedValue ||
+      property.taxInfo?.assessedValue
+    );
+    
+    // Extract annual tax amount (the actual dollar amount paid in taxes)
+    const annualTax = this.parseNumber(
       property.propertyTaxes ||
-      property.annualTax
+      property.annualTax ||
+      property.tax?.annualAmount ||
+      property.taxInfo?.annualTax ||
+      property.yearlyTax ||
+      property.taxAnnualAmount
     );
     
     console.log("Redfin tax fields:", {
@@ -242,7 +250,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       taxInfo: property.taxInfo,
       propertyTaxes: property.propertyTaxes,
       annualTax: property.annualTax,
-      extractedTax: taxAssessedValue
+      extractedTaxAssessedValue: taxAssessedValue,
+      extractedAnnualTax: annualTax
     });
     
     return {
@@ -257,6 +266,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       lotSize: this.parseNumber(property.lotSize),
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
+      annualTax,
       estimatedValue: this.parseNumber(property.price || property.listPrice),
       lastSalePrice: this.parseNumber(property.lastSoldPrice),
       lastSaleDate: property.lastSoldDate,
@@ -302,15 +312,22 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedHoaFees: hoaFees
     });
     
-    // Extract tax data - Zillow uses various field names
+    // Extract tax assessed value (the property's assessed value for tax purposes)
     const taxAssessedValue = this.parseNumber(
       property.taxAssessedValue ||
       property.taxValue ||
       property.tax?.assessedValue ||
-      property.taxInfo?.assessedValue ||
+      property.taxInfo?.assessedValue
+    );
+    
+    // Extract annual tax amount (the actual dollar amount paid in taxes)
+    const annualTax = this.parseNumber(
       property.propertyTaxes ||
       property.annualTax ||
-      property.taxAnnualAmount
+      property.taxAnnualAmount ||
+      property.tax?.annualAmount ||
+      property.taxInfo?.annualTax ||
+      property.yearlyTax
     );
     
     console.log("Zillow tax fields:", {
@@ -321,7 +338,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       propertyTaxes: property.propertyTaxes,
       annualTax: property.annualTax,
       taxAnnualAmount: property.taxAnnualAmount,
-      extractedTax: taxAssessedValue
+      extractedTaxAssessedValue: taxAssessedValue,
+      extractedAnnualTax: annualTax
     });
     
     // Log price/Zestimate fields for debugging
@@ -346,6 +364,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
+      annualTax,
       estimatedValue: this.parseNumber(property.zestimate || property.price),
       estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
