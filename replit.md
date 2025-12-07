@@ -99,6 +99,29 @@ The platform now includes comprehensive lender notification and investor engagem
 - Dialog for optional investor message before sending
 - Full deal data automatically included in inquiry
 
+### Calculations Reference (Admin)
+Admin portal page for reviewing all platform calculations and formulas:
+
+**Page Location:** `/admin/calculations`
+
+**Features:**
+- 21 calculations organized into 8 categories: Loan Sizing, Interest Costs, Carrying Costs, Investment Costs, Exit/Sale, Profit & ROI, DSCR/Rental, Cash Sale
+- Each calculation shows: description, formula with display syntax, inputs with sources, output format, and worked example
+- Sidebar category navigation with anchors
+- Search functionality across names, descriptions, and formulas
+- Expand/collapse all functionality
+- Stored in shared metadata file (`shared/data/calculationReference.ts`) to prevent documentation drift
+
+**Categories:**
+1. Loan Sizing (5 calculations): Buy Loan, Rehab Loan, ARV Cap, LTC Cap, Total Loan Amount
+2. Interest Costs (2 calculations): Buy Loan Interest, Draw Interest
+3. Carrying Costs (3 calculations): Taxes, Insurance, Monthly P&I
+4. Investment Costs (4 calculations): Closing Costs, Investment Costs, Total Out-of-Pocket, Cash Required At Close
+5. Exit/Sale (1 calculation): Net Proceeds
+6. Profit & ROI (2 calculations): Estimated Profit, Cash-on-Cash ROI
+7. DSCR/Rental (3 calculations): Monthly PITIA, DSCR Ratio, Max Loan Amount
+8. Cash Sale (1 calculation): Cash Purchase Profit
+
 ### Affiliate Management (Admin)
 Complete admin portal for managing affiliate partner programs displayed in the Toolbox:
 
