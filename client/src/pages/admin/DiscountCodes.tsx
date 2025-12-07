@@ -645,6 +645,12 @@ export default function DiscountCodes() {
                               {code.planApplicability === 'both' ? 'All Plans' : 
                                code.planApplicability === 'monthly' ? 'Monthly Only' : 'Annual Only'}
                             </Badge>
+                            <Badge 
+                              variant={code.stripeCouponId ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              {code.stripeCouponId ? "Stripe Ready" : "No Stripe Coupon"}
+                            </Badge>
                           </div>
                           <div className="mt-1">
                             <span className="font-medium">{code.displayName}</span>
