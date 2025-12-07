@@ -30,6 +30,24 @@ A subscription-based access system restricts premium features. Registration requ
 ### CSV Loan Product Templates
 The Lender Portal provides two CSV templates for bulk loan product imports: "Fix & Flip" for bridge loans and "DSCR / New Construction" for rental and construction loans, each with specific fields and numeric loan type codes.
 
+### Total LTC Cap Feature
+Bridge loan products support a Total LTC (Loan-to-Cost) Cap that limits the total loan amount based on a percentage of total project cost (purchase price + rehab budget):
+
+**Database Schema:**
+- `isLtcWeighted` (boolean): Indicates if the product has an LTC cap enabled
+- `maxLtcPercent` (decimal, max 100): The maximum percentage of total project cost the lender will fund
+
+**Calculation Logic:**
+- When LTC cap is active, the system calculates three potential loan limits: standard (based on buy LTV + rehab), ARV cap, and LTC cap
+- The lowest of the three caps determines the final loan amount
+- When LTC is the limiting factor, rehab stays at 100% of advertised percentage, and the buy amount is reduced first
+- The effective buy percentage is recalculated based on remaining loan capacity after rehab
+
+**UI Indicators:**
+- Lender Portal: Toggle and percentage input for bridge loan products only
+- Deal Analysis Results: Shows "LTC Cap" badge and effective buy percentage when LTC adjustment is applied
+- CSV Import: Bridge template includes `is_ltc_weighted` (0/1) and `max_ltc_percent` columns
+
 ### Form Handling & Validation
 Client-side validation uses react-hook-form and Zod, complemented by comprehensive server-side Zod schema validation for all API endpoints.
 
