@@ -47,6 +47,10 @@ interface LoanComparisonColumn {
   interestRate?: number;
   maxLtvBuy?: number;
   points?: number;
+  isLtcWeighted?: boolean;
+  maxLtcPercent?: number;
+  isLtcAdjusted?: boolean;
+  effectiveBuyPercent?: number;
   purchasePrice: number;
   rehabBudget: number;
   totalProjectCost: number;
@@ -994,9 +998,18 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center" data-testid={`lender${index + 1}-ltv`}>
-                          {lender.maxLtvBuy !== undefined && lender.maxLtvBuy !== null
-                            ? `${lender.maxLtvBuy.toFixed(0)}%`
-                            : 'N/A'}
+                          {lender.isLtcAdjusted ? (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span>{lender.effectiveBuyPercent !== undefined ? `${lender.effectiveBuyPercent.toFixed(0)}%` : 'N/A'}</span>
+                              <Badge variant="outline" className="text-xs px-1 py-0 text-orange-600 dark:text-orange-400 border-orange-300">
+                                LTC Cap
+                              </Badge>
+                            </div>
+                          ) : (
+                            lender.maxLtvBuy !== undefined && lender.maxLtvBuy !== null
+                              ? `${lender.maxLtvBuy.toFixed(0)}%`
+                              : 'N/A'
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
