@@ -1,0 +1,20 @@
+OK, we have a wrinkle. Some lenders use a metric we don't have called LTC (loan to cost) when lending. 
+Loan to cost is the ratio of the amount a lender will lend to the total cost of the project. 
+So a 90% LTC allows for a max lend of $180,000 on a project with a total cost of $200,000
+Many lenders will loan up to 90% on the buy price and %100 on the rehab. Those numbers represent their LTC. 
+Another metric they use is percentage of ARV. They frequently cap their lend at 75% of ARV, some cap at 70%. 
+If the above example has an ARV of $280,000, the total cost is 71.4% of ARV. 
+A lender that offers 90% of the buy price and 100% of the rehab and funds up to 70% of the ARV, the will fund a maximum of $196,000 ($280,000 x 70%). 
+If the buy price is $100,000 and the rehab is $100,000, the lender would loan $90,000 on the buy and $100,000 for the rehab for a total of $190,000. This works with their model. 
+Here's the complexity. 
+While many lenders will loan up to 90% on the buy price and %100 on the rehab, some lenders will only lend to a maximum of 90% LTC for the total job. With this kind of lender, the maximum loan would be $180,000. But they generally will fund the rehab at 100%. Because their max lend is $180,000, they will only fund $80,000 of the purchase. This requires a down payment of $20,000 versus the previous lender example where the down payment would only be $10,000. This would represent 80% of the purchase price and 100% of the rehab. 
+Using the same house as an example, but changing the numbers to a buy price of $150,000 and a rehab budget of $50,000, 
+the maximum loan would still be $180,000. The rehab loan would be 100% at $50,000 and the buy loan would be $130,000, which is 86.7%. 
+Same scenario but a buy price of $170,000 and a rehab of $30,000. The loan of $180,000 is comprised of a $30,000 for the rehab and $150,000 for the purchase. This is 100% of the rehab and 88.2% of the buy price. 
+I'm sure you can see the complexity this brings to my deal and loan analysis. 
+My first thought was just to have them state their loan products will fund 90% of the buy and 90% of the rehab, but that doesn't work because they will fund 100% of the rehab. The percentage of the buy price they will fund becomes a moving target that depends on the buy . rehab price ratio and the LTC% they cover. 
+Here's my thought. 
+I can add an option asking the lender if the the loan or they, as a lender are LTC% weighted during the loan products or lender setup. If they answer yes, a new field opens up where they can enter their max LTC%. 
+During the loan analysis, we need to compare the regular loan analysis but also include the max LTC% equation. 
+After running the initial analysis, lenders with LTC% weighted status, will have their loans analyzed to make any adjustments necessary to ensure their loans meet their LTC% requirements. The adjustments will be made (I.E. reduce the amount/percentage of the buy loan coverage) and apply the appropriate existing results (I.E. calculating estimated out-of-pocket expenses) based on the updated results. 
+Does this make sense? Please recap what I'm trying to acheive, make any suggestions you may have to implement or improve this process, and ask any clarifying questions you may have. 
