@@ -56,6 +56,7 @@ import LenderInquiries from "@/pages/LenderInquiries";
 import FAQ from "@/pages/FAQ";
 import Pricing from "@/pages/Pricing";
 import Checkout from "@/pages/Checkout";
+import CheckoutSuccess from "@/pages/CheckoutSuccess";
 
 function Router() {
   return (
@@ -116,6 +117,7 @@ function Router() {
       <Route path="/faq" component={FAQ} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/lender-portal" component={LenderDashboard} />

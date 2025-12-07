@@ -18,58 +18,33 @@ import {
   Home
 } from "lucide-react";
 
-interface ZohoStatus {
-  configured: boolean;
-  ready: boolean;
-  hasClientId: boolean;
-  hasClientSecret: boolean;
-  hasRefreshToken: boolean;
-  hasOrganizationId: boolean;
-}
-
-interface ZohoPlan {
-  code: string;
-  name: string;
-  price: number;
-}
-
 interface IntegrationStatus {
   name: string;
   description: string;
   configured: boolean;
   ready: boolean;
-  details: Record<string, boolean>;
+  details: Record<string, any>;
 }
 
 interface IntegrationsResponse {
   integrations: IntegrationStatus[];
 }
 
+interface StripePlan {
+  id: string;
+  name: string;
+  planType: string;
+  amount: number;
+  interval: string;
+}
+
 export default function AdminIntegrations() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [zohoStatus, setZohoStatus] = useState<ZohoStatus | null>(null);
-  const [zohoPlans, setZohoPlans] = useState<ZohoPlan[]>([]);
-  const [isConnectingZoho, setIsConnectingZoho] = useState(false);
-  const [isTestingZoho, setIsTestingZoho] = useState(false);
+  const [stripePlans, setStripePlans] = useState<StripePlan[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [allIntegrations, setAllIntegrations] = useState<IntegrationStatus[]>([]);
-
-  const fetchZohoStatus = async () => {
-    try {
-      const response = await fetch("/api/zoho/status", {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setZohoStatus(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch Zoho status");
-    } finally {
-      setIsLoadingStatus(false);
-    }
-  };
 
   const fetchAllIntegrations = async () => {
     try {
@@ -82,94 +57,58 @@ export default function AdminIntegrations() {
       }
     } catch (error) {
       console.error("Failed to fetch integrations status");
+    } finally {
+      setIsLoadingStatus(false);
     }
   };
 
-  useEffect(() => {
-    fetchZohoStatus();
-    fetchAllIntegrations();
-  }, []);
-
-  const handleConnectZoho = async () => {
-    setIsConnectingZoho(true);
+  const fetchStripePlans = async () => {
+    setIsLoadingPlans(true);
     try {
-      const response = await fetch("/api/zoho/auth", {
+      const response = await fetch("/api/subscription/plans", {
         credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
-        if (data.authUrl) {
-          // Open in a new browser tab to avoid iframe restrictions
-          // Zoho blocks OAuth in iframes for security
-          window.open(data.authUrl, '_blank', 'noopener,noreferrer');
-          toast({
-            title: "Authorization Started",
-            description: "Complete the authorization in the new tab, then return here and click Refresh",
-          });
-        }
-      } else {
-        const data = await response.json();
+        setStripePlans(data.plans || []);
         toast({
-          title: "Error",
-          description: data.error || "Failed to start Zoho authorization",
-          variant: "destructive",
+          title: "Plans Loaded",
+          description: `Found ${data.plans?.length || 0} subscription plans`,
         });
       }
     } catch (error) {
+      console.error("Failed to fetch Stripe plans");
       toast({
         title: "Error",
-        description: "Failed to connect to Zoho",
+        description: "Failed to load subscription plans",
         variant: "destructive",
       });
     } finally {
-      setIsConnectingZoho(false);
+      setIsLoadingPlans(false);
     }
   };
 
-  const handleTestZoho = async () => {
-    setIsTestingZoho(true);
-    try {
-      const response = await fetch("/api/zoho/test", {
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        setZohoPlans(data.plans || []);
-        toast({
-          title: "Connection Successful",
-          description: `Found ${data.plansFound} plans in Zoho Billing`,
-        });
-      } else {
-        toast({
-          title: "Connection Failed",
-          description: data.error || "Failed to connect to Zoho Billing",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to test Zoho connection",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTestingZoho(false);
-    }
-  };
+  useEffect(() => {
+    fetchAllIntegrations();
+  }, []);
 
   const handleRefreshStatus = async () => {
     setIsLoadingStatus(true);
-    await Promise.all([fetchZohoStatus(), fetchAllIntegrations()]);
+    await fetchAllIntegrations();
     toast({
       title: "Status Refreshed",
       description: "Integration status has been updated",
     });
   };
 
+  const getStripeStatus = () => {
+    return allIntegrations.find(i => i.name === "Stripe Billing");
+  };
+
   const getIntegrationIcon = (name: string) => {
     switch (name) {
-      case "Zoho Billing":
-        return <CreditCard className="h-6 w-6 text-blue-500" />;
+      case "Stripe Billing":
+        return <CreditCard className="h-6 w-6 text-indigo-500" />;
       case "HasData API":
         return <Home className="h-6 w-6 text-emerald-500" />;
       case "Email (SMTP)":
@@ -183,8 +122,8 @@ export default function AdminIntegrations() {
 
   const getIntegrationBgColor = (name: string) => {
     switch (name) {
-      case "Zoho Billing":
-        return "bg-blue-500/10";
+      case "Stripe Billing":
+        return "bg-indigo-500/10";
       case "HasData API":
         return "bg-emerald-500/10";
       case "Email (SMTP)":
@@ -195,6 +134,8 @@ export default function AdminIntegrations() {
         return "bg-muted";
     }
   };
+
+  const stripeStatus = getStripeStatus();
 
   return (
     <Layout>
@@ -228,33 +169,28 @@ export default function AdminIntegrations() {
           </div>
 
           <div className="space-y-6">
-            <Card data-testid="card-zoho-billing-integration">
+            <Card data-testid="card-stripe-billing-integration">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                      <CreditCard className="h-6 w-6 text-blue-500" />
+                    <div className="w-12 h-12 bg-indigo-500/10 rounded-lg flex items-center justify-center">
+                      <CreditCard className="h-6 w-6 text-indigo-500" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">Zoho Billing</CardTitle>
+                      <CardTitle className="text-xl">Stripe Billing</CardTitle>
                       <CardDescription>
                         Subscription and payment processing
                       </CardDescription>
                     </div>
                   </div>
-                  {zohoStatus?.ready ? (
+                  {stripeStatus?.ready ? (
                     <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Connected
                     </Badge>
-                  ) : zohoStatus?.configured ? (
-                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Needs Authorization
-                    </Badge>
                   ) : (
                     <Badge variant="outline" className="text-muted-foreground">
-                      Not Configured
+                      Not Connected
                     </Badge>
                   )}
                 </div>
@@ -262,101 +198,74 @@ export default function AdminIntegrations() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium">Required Credentials</h4>
+                    <h4 className="text-sm font-medium">Connection Status</h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
-                        {zohoStatus?.hasClientId ? (
+                        {stripeStatus?.ready ? (
                           <CheckCircle className="h-4 w-4 text-green-500" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-red-500" />
                         )}
-                        <span className={zohoStatus?.hasClientId ? "text-foreground" : "text-muted-foreground"}>
-                          ZOHO_CLIENT_ID
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        {zohoStatus?.hasClientSecret ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={zohoStatus?.hasClientSecret ? "text-foreground" : "text-muted-foreground"}>
-                          ZOHO_CLIENT_SECRET
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        {zohoStatus?.hasRefreshToken ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={zohoStatus?.hasRefreshToken ? "text-foreground" : "text-muted-foreground"}>
-                          ZOHO_REFRESH_TOKEN
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        {zohoStatus?.hasOrganizationId ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={zohoStatus?.hasOrganizationId ? "text-foreground" : "text-muted-foreground"}>
-                          ZOHO_ORGANIZATION_ID
+                        <span className={stripeStatus?.ready ? "text-foreground" : "text-muted-foreground"}>
+                          {stripeStatus?.details?.message || "Stripe connector status"}
                         </span>
                       </div>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Stripe is connected via Replit's native integration. No API keys needed.
+                    </p>
                   </div>
                   
                   <div className="space-y-3">
                     <h4 className="text-sm font-medium">Quick Links</h4>
                     <div className="space-y-2">
                       <a 
-                        href="https://api-console.zoho.com/" 
+                        href="https://dashboard.stripe.com/" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                        className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        Zoho API Console
+                        Stripe Dashboard
                       </a>
                       <a 
-                        href="https://billing.zoho.com/" 
+                        href="https://dashboard.stripe.com/products" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                        className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        Zoho Billing Dashboard
+                        Products & Prices
                       </a>
                       <a 
-                        href="https://www.zoho.com/billing/api/v1/" 
+                        href="https://dashboard.stripe.com/customers" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                        className="flex items-center gap-2 text-sm text-indigo-600 hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        API Documentation
+                        Customers
                       </a>
                     </div>
                   </div>
                 </div>
 
-                {zohoPlans.length > 0 && (
+                {stripePlans.length > 0 && (
                   <div className="border-t pt-4">
                     <h4 className="text-sm font-medium mb-3">Available Plans</h4>
                     <div className="grid grid-cols-2 gap-3">
-                      {zohoPlans.map((plan) => (
+                      {stripePlans.map((plan) => (
                         <div 
-                          key={plan.code}
+                          key={plan.id}
                           className="p-3 bg-muted/50 rounded-lg"
                         >
                           <div className="font-medium text-sm">{plan.name}</div>
                           <div className="text-xs text-muted-foreground">
-                            Code: {plan.code}
+                            {plan.planType} - {plan.interval}ly
                           </div>
-                          {plan.price && (
-                            <div className="text-sm mt-1">${plan.price}</div>
-                          )}
+                          <div className="text-sm mt-1">
+                            ${(plan.amount / 100).toFixed(2)}/{plan.interval}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -364,60 +273,40 @@ export default function AdminIntegrations() {
                 )}
 
                 <div className="flex gap-3 pt-2 border-t">
-                  {!zohoStatus?.hasRefreshToken && zohoStatus?.configured && (
+                  {stripeStatus?.ready && (
                     <Button 
-                      onClick={handleConnectZoho}
-                      disabled={isConnectingZoho}
-                      data-testid="button-authorize-zoho"
+                      variant="outline"
+                      onClick={fetchStripePlans}
+                      disabled={isLoadingPlans}
+                      data-testid="button-load-stripe-plans"
                     >
-                      {isConnectingZoho ? (
+                      {isLoadingPlans ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Connecting...
+                          Loading...
                         </>
                       ) : (
                         <>
                           <CreditCard className="h-4 w-4 mr-2" />
-                          Authorize with Zoho
+                          Load Subscription Plans
                         </>
                       )}
                     </Button>
                   )}
-                  {zohoStatus?.ready && (
-                    <Button 
-                      variant="outline"
-                      onClick={handleTestZoho}
-                      disabled={isTestingZoho}
-                      data-testid="button-test-zoho-connection"
-                    >
-                      {isTestingZoho ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Testing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Test Connection
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  {!zohoStatus?.configured && (
+                  {!stripeStatus?.ready && (
                     <p className="text-sm text-muted-foreground py-2">
-                      Add ZOHO_CLIENT_ID and ZOHO_CLIENT_SECRET to Replit Secrets to get started.
+                      Connect Stripe via the Replit integrations panel to enable payments.
                     </p>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Other Integrations */}
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Other Integrations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {allIntegrations
-                  .filter(integration => integration.name !== "Zoho Billing")
+                  .filter(integration => integration.name !== "Stripe Billing")
                   .map((integration) => (
                     <Card 
                       key={integration.name} 
@@ -457,13 +346,17 @@ export default function AdminIntegrations() {
                         <div className="text-xs space-y-1">
                           {Object.entries(integration.details).map(([key, value]) => (
                             <div key={key} className="flex items-center gap-2">
-                              {value ? (
-                                <CheckCircle className="h-3 w-3 text-green-500" />
+                              {typeof value === 'boolean' ? (
+                                value ? (
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <AlertCircle className="h-3 w-3 text-red-500" />
+                                )
                               ) : (
-                                <AlertCircle className="h-3 w-3 text-red-500" />
+                                <CheckCircle className="h-3 w-3 text-muted-foreground" />
                               )}
-                              <span className={value ? "text-foreground" : "text-muted-foreground"}>
-                                {key.replace(/^has/, '').replace(/([A-Z])/g, ' $1').trim()}
+                              <span className={typeof value === 'boolean' && value ? "text-foreground" : "text-muted-foreground"}>
+                                {typeof value === 'string' ? value : key.replace(/^has/, '').replace(/([A-Z])/g, ' $1').trim()}
                               </span>
                             </div>
                           ))}

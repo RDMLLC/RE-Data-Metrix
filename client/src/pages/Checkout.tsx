@@ -187,19 +187,50 @@ export default function Checkout() {
     }
   };
 
+  const [stripePrices, setStripePrices] = useState<{ monthly?: string; annual?: string }>({});
+
+  // Fetch Stripe prices on mount
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch("/api/subscription/plans");
+        if (response.ok) {
+          const data = await response.json();
+          const prices: { monthly?: string; annual?: string } = {};
+          for (const plan of data.plans || []) {
+            if (plan.planType === "monthly") {
+              prices.monthly = plan.id;
+            } else if (plan.planType === "annual") {
+              prices.annual = plan.id;
+            }
+          }
+          setStripePrices(prices);
+        }
+      } catch (error) {
+        console.error("Failed to fetch Stripe prices:", error);
+      }
+    };
+    fetchPrices();
+  }, []);
+
   const checkoutMutation = useMutation({
     mutationFn: async () => {
+      const priceId = selectedPlan === "monthly" ? stripePrices.monthly : stripePrices.annual;
+      if (!priceId) {
+        throw new Error("Subscription plans are not available. Please try again later.");
+      }
       const response = await apiRequest("POST", "/api/subscription/checkout", { 
-        planId: selectedPlan === "monthly" ? "monthly" : "annual",
+        priceId,
         discountCode: appliedDiscount?.code,
       });
       return await response.json();
     },
-    onSuccess: (data: { redirectUrl?: string; success?: boolean; message?: string; integrationPending?: boolean }) => {
+    onSuccess: (data: { url?: string; success?: boolean; message?: string; error?: string }) => {
       setIsProcessing(false);
       
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
       } else if (data.success) {
         toast({
           title: "Subscription Activated!",
@@ -207,15 +238,10 @@ export default function Checkout() {
         });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
         setLocation("/portal/dashboard");
-      } else if (data.integrationPending) {
-        toast({
-          title: "Payment System Setup in Progress",
-          description: data.message || "Our payment system is being configured. Please check back soon.",
-        });
       } else {
         toast({
           title: "Unable to Process",
-          description: data.message || "Please try again later.",
+          description: data.error || data.message || "Please try again later.",
           variant: "destructive",
         });
       }

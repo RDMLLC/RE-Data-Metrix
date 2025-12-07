@@ -331,43 +331,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================
-  // Zoho OAuth Routes (Admin Only)
+  // Stripe Payment Routes
   // ============================================
   
-  // Import the Zoho Billing service
-  const { zohoBillingService } = await import('./services/zoho-billing.service');
+  // Import Stripe services
+  const { getUncachableStripeClient, getStripePublishableKey, isStripeConfigured } = await import('./services/stripeClient');
 
-  // Check Zoho integration status
-  app.get("/api/zoho/status", ensureAdmin, async (req, res) => {
+  // Get Stripe publishable key for frontend
+  app.get("/api/stripe/publishable-key", async (req, res) => {
     try {
-      res.json({
-        configured: zohoBillingService.isConfigured(),
-        ready: zohoBillingService.isReady(),
-        hasClientId: !!process.env.ZOHO_CLIENT_ID,
-        hasClientSecret: !!process.env.ZOHO_CLIENT_SECRET,
-        hasRefreshToken: !!process.env.ZOHO_REFRESH_TOKEN,
-        hasOrganizationId: !!process.env.ZOHO_ORGANIZATION_ID
-      });
+      const configured = await isStripeConfigured();
+      if (!configured) {
+        return res.status(503).json({ error: "Stripe not configured" });
+      }
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
     } catch (error) {
-      console.error('Zoho status error:', error);
-      res.status(500).json({ error: "Failed to get Zoho status" });
+      console.error('Stripe key error:', error);
+      res.status(500).json({ error: "Failed to get Stripe key" });
     }
   });
 
   // Check all integrations status (admin only)
   app.get("/api/admin/integrations/status", ensureAdmin, async (req, res) => {
     try {
-      // Zoho Billing status
-      const zohoStatus = {
-        name: "Zoho Billing",
+      // Stripe status
+      const stripeConfigured = await isStripeConfigured();
+      const stripeStatus = {
+        name: "Stripe Billing",
         description: "Subscription billing and payment processing",
-        configured: zohoBillingService.isConfigured(),
-        ready: zohoBillingService.isReady(),
+        configured: stripeConfigured,
+        ready: stripeConfigured,
         details: {
-          hasClientId: !!process.env.ZOHO_CLIENT_ID,
-          hasClientSecret: !!process.env.ZOHO_CLIENT_SECRET,
-          hasRefreshToken: !!process.env.ZOHO_REFRESH_TOKEN,
-          hasOrganizationId: !!process.env.ZOHO_ORGANIZATION_ID
+          connected: stripeConfigured,
+          message: stripeConfigured ? "Stripe is connected and ready" : "Stripe connector not configured"
         }
       };
 
@@ -411,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         integrations: [
-          zohoStatus,
+          stripeStatus,
           hasDataStatus,
           smtpStatus,
           databaseStatus
@@ -423,143 +420,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initiate Zoho OAuth flow (admin only)
-  app.get("/api/zoho/auth", ensureAdmin, async (req, res) => {
-    try {
-      if (!zohoBillingService.isConfigured()) {
-        return res.status(400).json({ 
-          error: "Zoho Client ID and Secret not configured" 
-        });
-      }
-      
-      const authUrl = zohoBillingService.getAuthorizationUrl();
-      res.json({ authUrl });
-    } catch (error) {
-      console.error('Zoho auth error:', error);
-      res.status(500).json({ error: "Failed to generate authorization URL" });
-    }
-  });
-
-  // Handle Zoho OAuth callback
-  app.get("/api/zoho/callback", async (req, res) => {
-    try {
-      const { code, error: oauthError } = req.query;
-      
-      if (oauthError) {
-        console.error('Zoho OAuth error:', oauthError);
-        return res.redirect('/admin/settings?zoho=error&message=' + encodeURIComponent(String(oauthError)));
-      }
-      
-      if (!code || typeof code !== 'string') {
-        return res.redirect('/admin/settings?zoho=error&message=No+authorization+code+received');
-      }
-
-      // Exchange code for tokens
-      const tokens = await zohoBillingService.exchangeCodeForTokens(code);
-      
-      // Get organizations to display the Organization ID
-      const orgs = await zohoBillingService.getOrganizations(tokens.access_token);
-      
-      // Display the tokens and org info for the admin to save
-      // In production, you'd want to encrypt and store these securely
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Zoho Authorization Complete</title>
-          <style>
-            body { font-family: system-ui, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
-            .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-            .token-box { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 4px; margin: 10px 0; font-family: monospace; word-break: break-all; }
-            .warning { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin: 20px 0; }
-            h1 { color: #155724; }
-            h2 { color: #333; margin-top: 30px; }
-            .org-list { list-style: none; padding: 0; }
-            .org-list li { background: #e9ecef; padding: 10px 15px; margin: 5px 0; border-radius: 4px; }
-            .copy-btn { background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
-            .copy-btn:hover { background: #0056b3; }
-          </style>
-        </head>
-        <body>
-          <div class="success">
-            <h1>Zoho Authorization Successful!</h1>
-            <p>Your application is now connected to Zoho Billing.</p>
-          </div>
-          
-          <h2>Step 1: Save the Refresh Token</h2>
-          <p>Copy this refresh token and add it to your Replit Secrets as <strong>ZOHO_REFRESH_TOKEN</strong>:</p>
-          <div class="token-box">
-            ${tokens.refresh_token}
-            <button class="copy-btn" onclick="navigator.clipboard.writeText('${tokens.refresh_token}')">Copy</button>
-          </div>
-          
-          <h2>Step 2: Select Your Organization</h2>
-          <p>Choose the organization to use and add its ID to Replit Secrets as <strong>ZOHO_ORGANIZATION_ID</strong>:</p>
-          <ul class="org-list">
-            ${orgs.map((org: any) => `
-              <li>
-                <strong>${org.name}</strong> - ID: <code>${org.organization_id}</code>
-                <button class="copy-btn" onclick="navigator.clipboard.writeText('${org.organization_id}')">Copy ID</button>
-              </li>
-            `).join('')}
-          </ul>
-          
-          <div class="warning">
-            <strong>Important:</strong> After adding both secrets (ZOHO_REFRESH_TOKEN and ZOHO_ORGANIZATION_ID), 
-            restart your application for the changes to take effect.
-          </div>
-          
-          <p><a href="/admin">Return to Admin Panel</a></p>
-        </body>
-        </html>
-      `;
-      
-      res.send(html);
-    } catch (error) {
-      console.error('Zoho callback error:', error);
-      res.redirect('/admin/settings?zoho=error&message=' + encodeURIComponent(String(error)));
-    }
-  });
-
-  // Test Zoho connection (admin only)
-  app.get("/api/zoho/test", ensureAdmin, async (req, res) => {
-    try {
-      if (!zohoBillingService.isReady()) {
-        return res.status(400).json({ 
-          error: "Zoho integration not fully configured",
-          missing: {
-            refreshToken: !process.env.ZOHO_REFRESH_TOKEN,
-            organizationId: !process.env.ZOHO_ORGANIZATION_ID
-          }
-        });
-      }
-
-      // Try to get plans to verify the connection works
-      const plans = await zohoBillingService.getPlans();
-      
-      res.json({
-        success: true,
-        message: "Zoho Billing connection successful!",
-        plansFound: plans.length,
-        plans: plans.map((p: any) => ({ code: p.plan_code, name: p.name, price: p.recurring_price }))
-      });
-    } catch (error: any) {
-      console.error('Zoho test error:', error);
-      res.status(500).json({ 
-        success: false,
-        error: error.message || "Failed to connect to Zoho Billing" 
-      });
-    }
-  });
-
   // ============================================
-  // Subscription Routes (Placeholder for Zoho Billing Integration)
+  // Stripe Subscription Routes
   // ============================================
 
+  // Get available subscription plans (prices from Stripe)
+  app.get("/api/subscription/plans", async (req, res) => {
+    try {
+      const stripe = await getUncachableStripeClient();
+      const prices = await stripe.prices.list({
+        active: true,
+        expand: ['data.product'],
+        limit: 10,
+      });
+
+      const plans = prices.data
+        .filter(price => price.recurring && (price.product as any)?.metadata?.plan_type)
+        .map(price => ({
+          id: price.id,
+          productId: (price.product as any).id,
+          name: (price.product as any).name,
+          description: (price.product as any).description,
+          planType: (price.product as any).metadata?.plan_type,
+          amount: price.unit_amount,
+          currency: price.currency,
+          interval: price.recurring?.interval,
+        }));
+
+      res.json({ plans });
+    } catch (error) {
+      console.error('Plans error:', error);
+      res.status(500).json({ error: "Failed to get plans" });
+    }
+  });
+
+  // Create Stripe Checkout session
   app.post("/api/subscription/checkout", ensureAuthenticated, async (req, res) => {
     try {
       const user = req.user as User;
-      const { planId, discountCode } = req.body;
+      const { priceId, discountCode } = req.body;
+
+      if (!priceId) {
+        return res.status(400).json({ error: "Price ID is required" });
+      }
 
       // Check if user already has an active subscription
       if (['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus)) {
@@ -569,23 +472,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PLACEHOLDER: In production, this would:
-      // 1. Create a customer in Zoho Billing if not exists
-      // 2. Apply discount code if provided
-      // 3. Create a hosted payment page session
-      // 4. Return the redirect URL to Zoho's payment page
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
 
-      // For now, we'll simulate a successful activation (for testing)
-      // In production, remove this and integrate with Zoho API
-      console.log(`[SUBSCRIPTION] Checkout initiated for user ${user.id}, plan: ${planId}, discount: ${discountCode || 'none'}`);
+      // Create or get existing Stripe customer
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.username,
+          metadata: {
+            userId: user.id,
+          },
+        });
+        customerId = customer.id;
+        
+        // Store the customer ID
+        await db
+          .update(users)
+          .set({ stripeCustomerId: customerId })
+          .where(eq(users.id, user.id));
+      }
 
-      // Return placeholder response indicating Zoho integration needed
+      // Build checkout session params
+      const sessionParams: any = {
+        customer: customerId,
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/checkout?canceled=true`,
+        metadata: {
+          userId: user.id,
+        },
+      };
+
+      // Apply discount if provided (lookup Stripe coupon from our discount code)
+      let discountApplied = false;
+      if (discountCode) {
+        const normalizedCode = discountCode.toUpperCase();
+        const discount = await storage.getDiscountCodeByCode(normalizedCode);
+        
+        if (discount) {
+          if (discount.stripeCouponId) {
+            sessionParams.discounts = [{ coupon: discount.stripeCouponId }];
+            discountApplied = true;
+            console.log(`[STRIPE] Discount code ${normalizedCode} applied with Stripe coupon ${discount.stripeCouponId}`);
+          } else {
+            // Discount code exists but no Stripe coupon - return error
+            console.warn(`[STRIPE] Discount code ${normalizedCode} has no Stripe coupon ID configured`);
+            return res.status(400).json({ 
+              error: "This discount code is not yet configured for Stripe checkout. Please contact support.",
+              code: "DISCOUNT_NOT_CONFIGURED"
+            });
+          }
+        } else {
+          // Invalid discount code
+          return res.status(400).json({ 
+            error: "Invalid discount code",
+            code: "INVALID_DISCOUNT"
+          });
+        }
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      console.log(`[STRIPE] Checkout session created for user ${user.id}`);
+
       res.json({
-        success: false,
-        message: "Payment processing is being configured. Please check back soon.",
-        integrationPending: true,
-        // When Zoho is integrated, this will return:
-        // redirectUrl: "https://billing.zoho.com/hostedpage/xxx"
+        success: true,
+        sessionId: session.id,
+        url: session.url,
       });
     } catch (error) {
       console.error('Checkout error:', error);
@@ -688,18 +644,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PLACEHOLDER: In production, this would:
-      // 1. Call Zoho Billing API to cancel the subscription
-      // 2. Handle cancellation at end of billing period
-      // 3. Update local database based on webhook confirmation
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ 
+          error: "No Stripe subscription found" 
+        });
+      }
 
-      // For now, just update the local status
-      await db
-        .update(users)
-        .set({ subscriptionStatus: 'inactive' })
-        .where(eq(users.id, user.id));
+      const stripe = await getUncachableStripeClient();
+      
+      // Cancel at end of billing period
+      await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
 
-      console.log(`[SUBSCRIPTION] Canceled for user ${user.id}`);
+      console.log(`[STRIPE] Subscription ${user.stripeSubscriptionId} set to cancel at period end`);
 
       res.json({
         success: true,
@@ -711,22 +669,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create Stripe Customer Portal session
   app.post("/api/subscription/manage-billing", ensureAuthenticated, async (req, res) => {
     try {
       const user = req.user as User;
 
-      // PLACEHOLDER: In production, this would:
-      // 1. Create a customer portal session in Zoho Billing
-      // 2. Return the redirect URL to Zoho's customer portal
+      if (!user.stripeCustomerId) {
+        return res.status(400).json({ 
+          error: "No billing account found. Please subscribe first." 
+        });
+      }
 
-      console.log(`[SUBSCRIPTION] Manage billing requested for user ${user.id}`);
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${baseUrl}/profile`,
+      });
+
+      console.log(`[STRIPE] Billing portal session created for user ${user.id}`);
 
       res.json({
-        success: false,
-        message: "Billing portal is being configured. Please check back soon.",
-        integrationPending: true,
-        // When Zoho is integrated, this will return:
-        // redirectUrl: "https://billing.zoho.com/portal/xxx"
+        success: true,
+        url: session.url,
       });
     } catch (error) {
       console.error('Manage billing error:', error);
@@ -734,52 +700,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Webhook endpoint for Zoho Billing
-  app.post("/api/subscription/webhook", async (req, res) => {
-    try {
-      const event = req.body;
-      
-      // PLACEHOLDER: In production, this would:
-      // 1. Verify the webhook signature from Zoho
-      // 2. Handle different event types:
-      //    - subscription_created: Update user to 'active'
-      //    - subscription_cancelled: Update user to 'inactive'
-      //    - payment_failed: Send notification, potentially downgrade
-      //    - subscription_renewed: Confirm status
-      // 3. Log events for audit trail
-
-      console.log('[WEBHOOK] Received Zoho event:', event.event_type || 'unknown');
-
-      // Acknowledge receipt
-      res.json({ received: true });
-    } catch (error) {
-      console.error('Webhook error:', error);
-      res.status(500).json({ error: "Webhook processing failed" });
-    }
-  });
-
-  // Get current subscription status
+  // Get current subscription status with Stripe details
   app.get("/api/subscription/status", ensureAuthenticated, async (req, res) => {
     try {
       const user = req.user as User;
 
-      // PLACEHOLDER: In production, this might also fetch:
-      // - Billing details from Zoho
-      // - Next billing date
-      // - Payment method info (last 4 digits)
+      let subscriptionDetails = null;
+
+      // Fetch subscription details from Stripe if user has a subscription
+      if (user.stripeSubscriptionId) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
+            expand: ['items.data.price.product'],
+          });
+
+          subscriptionDetails = {
+            id: subscription.id,
+            status: subscription.status,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+            plan: (subscription.items.data[0]?.price.product as any)?.metadata?.plan_type || 'unknown',
+          };
+        } catch (error) {
+          console.error('Error fetching subscription details:', error);
+        }
+      }
 
       res.json({
         status: user.subscriptionStatus,
         isActive: ['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus),
-        plan: user.subscriptionStatus === 'active' ? 'full-membership' : null,
-        // When Zoho is integrated, add:
-        // nextBillingDate: "2024-02-01",
-        // amount: 4900, // cents
-        // paymentMethod: { last4: "4242", brand: "visa" }
+        stripeCustomerId: user.stripeCustomerId,
+        subscription: subscriptionDetails,
       });
     } catch (error) {
       console.error('Subscription status error:', error);
       res.status(500).json({ error: "Failed to get subscription status" });
+    }
+  });
+
+  // Handle checkout success - verify session and activate subscription
+  app.get("/api/subscription/checkout-success", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const { session_id } = req.query;
+
+      if (!session_id || typeof session_id !== 'string') {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id, {
+        expand: ['subscription'],
+      });
+
+      // Verify the session is for this user
+      if (session.customer !== user.stripeCustomerId) {
+        return res.status(403).json({ error: "Session does not belong to this user" });
+      }
+
+      const subscription = session.subscription as any;
+      
+      if (subscription && subscription.status === 'active') {
+        // Update user subscription status
+        await db
+          .update(users)
+          .set({ 
+            subscriptionStatus: 'active',
+            stripeSubscriptionId: subscription.id,
+          })
+          .where(eq(users.id, user.id));
+
+        console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id}`);
+
+        res.json({
+          success: true,
+          message: "Subscription activated successfully!",
+          subscriptionId: subscription.id,
+        });
+      } else {
+        res.status(400).json({ 
+          error: "Subscription not active",
+          status: subscription?.status 
+        });
+      }
+    } catch (error) {
+      console.error('Checkout success error:', error);
+      res.status(500).json({ error: "Failed to verify checkout" });
     }
   });
 

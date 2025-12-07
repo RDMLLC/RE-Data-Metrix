@@ -7,13 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator } from "lucide-react";
 
-interface ZohoStatus {
+interface StripeStatus {
   configured: boolean;
   ready: boolean;
-  hasClientId: boolean;
-  hasClientSecret: boolean;
-  hasRefreshToken: boolean;
-  hasOrganizationId: boolean;
 }
 
 export default function AdminDashboard() {
@@ -23,7 +19,7 @@ export default function AdminDashboard() {
   const [adminEmail, setAdminEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [zohoStatus, setZohoStatus] = useState<ZohoStatus | null>(null);
+  const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   useEffect(() => {
@@ -60,22 +56,25 @@ export default function AdminDashboard() {
       }
     };
     
-    const fetchZohoStatus = async () => {
+    const fetchStripeStatus = async () => {
       try {
-        const response = await fetch("/api/zoho/status", {
+        const response = await fetch("/api/admin/integrations/status", {
           credentials: "include",
         });
         if (response.ok) {
           const data = await response.json();
-          setZohoStatus(data);
+          const stripe = data.integrations?.find((i: any) => i.name === "Stripe Billing");
+          if (stripe) {
+            setStripeStatus({ configured: stripe.configured, ready: stripe.ready });
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch Zoho status");
+        console.error("Failed to fetch Stripe status");
       }
     };
     
     fetchAdminInfo();
-    fetchZohoStatus();
+    fetchStripeStatus();
   }, [setLocation, toast]);
 
   // Show loading while checking auth
@@ -302,12 +301,12 @@ export default function AdminDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <CardTitle>Integrations</CardTitle>
-                      {zohoStatus?.ready ? (
+                      {stripeStatus?.ready ? (
                         <Badge variant="outline" className="text-green-600 border-green-600">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Connected
                         </Badge>
-                      ) : zohoStatus?.configured ? (
+                      ) : stripeStatus?.configured ? (
                         <Badge variant="outline" className="text-amber-600 border-amber-600">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           Setup Required
@@ -319,7 +318,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Manage Zoho Billing and other external service connections
+                  Manage Stripe Billing and other external service connections
                 </CardDescription>
               </CardContent>
             </Card>

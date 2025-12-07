@@ -519,6 +519,7 @@ export const discountCodes = pgTable("discount_codes", {
   endAt: timestamp("end_at"),
   isActive: boolean("is_active").notNull().default(true),
   createdBy: varchar("created_by").references(() => users.id),
+  stripeCouponId: varchar("stripe_coupon_id", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

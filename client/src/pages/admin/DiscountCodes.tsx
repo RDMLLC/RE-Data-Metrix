@@ -78,6 +78,7 @@ interface DiscountCode {
   totalRedemptions: number;
   totalAmountDiscounted: number;
   lastUsedAt: string | null;
+  stripeCouponId: string | null;
 }
 
 interface DiscountCodeStats {
