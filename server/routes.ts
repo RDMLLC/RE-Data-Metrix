@@ -3382,15 +3382,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const costPerDraw = parseFloat(String(product.costPerDraw || 0));
         const estimatedAppraisalCost = parseFloat(String(product.estimatedAppraisalCost || 0));
         const fees = parseFloat(String(product.fees || 0));
+        const isLtcWeighted = product.isLtcWeighted || false;
+        const maxLtcPercent = product.maxLtcPercent ? parseFloat(String(product.maxLtcPercent)) : undefined;
         
         const lender = lenderMap.get(product.lenderId);
         
-        // Calculate loan amounts
-        const purchaseLoanAmount = purchasePrice * (maxLtvBuy / 100);
-        const rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
+        // Calculate base loan amounts
+        let purchaseLoanAmount = purchasePrice * (maxLtvBuy / 100);
+        let rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
         const totalLoanDesired = purchaseLoanAmount + rehabLoanAmount;
+        
+        // Apply ARV cap
         const maxFromArv = arv * (maxLoanArv / 100);
-        const loanAmount = Math.min(totalLoanDesired, maxFromArv);
+        
+        // Apply LTC cap if applicable
+        let maxFromLtc = totalLoanDesired;
+        let isLtcAdjusted = false;
+        let effectiveBuyPercent = maxLtvBuy;
+        
+        if (isLtcWeighted && maxLtcPercent && maxLtcPercent > 0) {
+          maxFromLtc = totalProjectCost * (maxLtcPercent / 100);
+        }
+        
+        // Apply whichever cap is lower
+        let loanAmount = Math.min(totalLoanDesired, maxFromArv, maxFromLtc);
+        
+        // If LTC cap is the limiting factor, adjust buy amount first (rehab stays at 100%)
+        if (isLtcWeighted && maxLtcPercent && maxFromLtc < maxFromArv && maxFromLtc < totalLoanDesired) {
+          isLtcAdjusted = true;
+          // Rehab amount stays at full percentage, adjust buy amount
+          rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
+          purchaseLoanAmount = loanAmount - rehabLoanAmount;
+          if (purchaseLoanAmount < 0) {
+            purchaseLoanAmount = 0;
+            rehabLoanAmount = loanAmount;
+          }
+          if (purchasePrice > 0) {
+            effectiveBuyPercent = (purchaseLoanAmount / purchasePrice) * 100;
+          }
+        }
         
         const pointsCost = loanAmount * (points / 100);
         const interestCost = (loanAmount * (interestRate / 100) / 12) * projectLength;
@@ -3423,6 +3453,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           interestRate,
           maxLtvBuy,
           points,
+          isLtcWeighted,
+          maxLtcPercent,
+          isLtcAdjusted,
+          effectiveBuyPercent,
           purchasePrice,
           rehabBudget,
           totalProjectCost,

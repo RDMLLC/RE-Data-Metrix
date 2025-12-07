@@ -453,6 +453,10 @@ export interface LoanComparisonColumn {
   interestRate?: number;
   maxLtvBuy?: number;
   points?: number;
+  isLtcWeighted?: boolean;
+  maxLtcPercent?: number;
+  isLtcAdjusted?: boolean;
+  effectiveBuyPercent?: number;
   
   purchasePrice: number;
   rehabBudget: number;

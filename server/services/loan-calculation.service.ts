@@ -32,6 +32,8 @@ export interface LoanInputs {
   fees: number;
   appraisalCost: number;
   costPerDraw: number;
+  isLtcWeighted?: boolean;
+  maxLtcPercent?: number;
 }
 
 export interface UserLoanInputs {
@@ -90,39 +92,85 @@ export function calculateTwoStepLoanAmount(
   arv: number,
   maxLtvBuy: number,
   maxLendRehab: number,
-  maxLoanArv: number
+  maxLoanArv: number,
+  isLtcWeighted: boolean = false,
+  maxLtcPercent?: number
 ): {
   buyLoanAmount: number;
   rehabLoanAmount: number;
   totalLoanAmount: number;
   arvCapAdjustment: number;
+  ltcCapAdjustment: number;
   finalLoanAmount: number;
   additionalDownPayment: number;
+  effectiveBuyPercent: number;
+  isLtcAdjusted: boolean;
 } {
-  const buyLoanAmount = purchasePrice * (maxLtvBuy / 100);
-  const rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
-  const totalLoanAmount = buyLoanAmount + rehabLoanAmount;
+  const totalProjectCost = purchasePrice + rehabBudget;
   
-  const loanToArvRatio = (totalLoanAmount / arv) * 100;
+  let buyLoanAmount = purchasePrice * (maxLtvBuy / 100);
+  let rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
+  let totalLoanAmount = buyLoanAmount + rehabLoanAmount;
   
   let arvCapAdjustment = 0;
+  let ltcCapAdjustment = 0;
   let finalLoanAmount = totalLoanAmount;
   let additionalDownPayment = 0;
+  let effectiveBuyPercent = maxLtvBuy;
+  let isLtcAdjusted = false;
+  
+  const loanToArvRatio = (totalLoanAmount / arv) * 100;
+  let arvCappedLoan = totalLoanAmount;
   
   if (loanToArvRatio > maxLoanArv) {
-    const maxAllowedLoan = arv * (maxLoanArv / 100);
-    arvCapAdjustment = totalLoanAmount - maxAllowedLoan;
-    finalLoanAmount = maxAllowedLoan;
-    additionalDownPayment = arvCapAdjustment;
+    arvCappedLoan = arv * (maxLoanArv / 100);
+    arvCapAdjustment = totalLoanAmount - arvCappedLoan;
+  }
+  
+  let ltcCappedLoan = totalLoanAmount;
+  
+  if (isLtcWeighted && maxLtcPercent && maxLtcPercent > 0) {
+    const maxLtcLoan = totalProjectCost * (maxLtcPercent / 100);
+    
+    if (totalLoanAmount > maxLtcLoan) {
+      ltcCappedLoan = maxLtcLoan;
+      ltcCapAdjustment = totalLoanAmount - ltcCappedLoan;
+    }
+  }
+  
+  if (ltcCapAdjustment > 0 || arvCapAdjustment > 0) {
+    if (ltcCappedLoan <= arvCappedLoan && ltcCapAdjustment > 0) {
+      finalLoanAmount = ltcCappedLoan;
+      isLtcAdjusted = true;
+      additionalDownPayment = ltcCapAdjustment;
+      
+      rehabLoanAmount = rehabBudget * (maxLendRehab / 100);
+      buyLoanAmount = finalLoanAmount - rehabLoanAmount;
+      
+      if (buyLoanAmount < 0) {
+        buyLoanAmount = 0;
+        rehabLoanAmount = finalLoanAmount;
+      }
+      
+      if (purchasePrice > 0) {
+        effectiveBuyPercent = (buyLoanAmount / purchasePrice) * 100;
+      }
+    } else if (arvCapAdjustment > 0) {
+      finalLoanAmount = arvCappedLoan;
+      additionalDownPayment = arvCapAdjustment;
+    }
   }
   
   return {
     buyLoanAmount,
     rehabLoanAmount,
-    totalLoanAmount,
+    totalLoanAmount: buyLoanAmount + rehabLoanAmount,
     arvCapAdjustment,
+    ltcCapAdjustment,
     finalLoanAmount,
     additionalDownPayment,
+    effectiveBuyPercent,
+    isLtcAdjusted,
   };
 }
 
@@ -305,7 +353,7 @@ export function calculateLoanMetrics(
   loanInputs: LoanInputs,
   numberOfDraws: number = 3,
   customDrawSchedule?: DrawSchedule[]
-): LoanCalculation & { totalInvestment: number; totalProjectCost: number } {
+): LoanCalculation & { totalInvestment: number; totalProjectCost: number; isLtcAdjusted?: boolean; effectiveBuyPercent?: number } {
   const drawSchedule = calculateDrawSchedule(dealInputs.projectLength, numberOfDraws, customDrawSchedule);
   
   const loanAmounts = calculateTwoStepLoanAmount(
@@ -314,7 +362,9 @@ export function calculateLoanMetrics(
     dealInputs.arv,
     loanInputs.maxLtvBuy,
     loanInputs.maxLendRehab,
-    loanInputs.maxLoanArv
+    loanInputs.maxLoanArv,
+    loanInputs.isLtcWeighted || false,
+    loanInputs.maxLtcPercent
   );
   
   const buyInterest = calculateBuyLoanInterest(
@@ -467,6 +517,10 @@ export function createLoanComparisonColumn(
     interestRate: loanInputs.interestRate,
     maxLtvBuy: loanInputs.maxLtvBuy,
     points: loanInputs.points,
+    isLtcWeighted: loanInputs.isLtcWeighted,
+    maxLtcPercent: loanInputs.maxLtcPercent,
+    isLtcAdjusted: loanCalculation.isLtcAdjusted,
+    effectiveBuyPercent: loanCalculation.effectiveBuyPercent,
     purchasePrice: dealInputs.purchasePrice,
     rehabBudget: dealInputs.rehabBudget,
     totalProjectCost: loanCalculation.totalProjectCost,
