@@ -1494,6 +1494,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'points',
         'pointsDeferred',
         'maxLoanArv',
+        'isLtcWeighted',
+        'maxLtcPercent',
         'appraisalRequired',
         'estimatedAppraisalCost',
         'fees',
@@ -1517,6 +1519,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '2.00',
           'FALSE',
           '70.00',
+          'FALSE',
+          '',
           'TRUE',
           '500.00',
           '1500.00',
@@ -1526,11 +1530,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'TRUE'
         ],
         [
-          'Bridge/Fix & Flip - Premium',
+          'Bridge/Fix & Flip - LTC Weighted',
           '1',
           'FALSE',
           '720',
-          '80.00',
+          '90.00',
           '100.00',
           '9.50',
           'FALSE',
@@ -1538,6 +1542,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           '1.50',
           'FALSE',
           '75.00',
+          'TRUE',
+          '90.00',
           'TRUE',
           '450.00',
           '1200.00',
@@ -1944,6 +1950,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isActive: record.isActive !== undefined ? parseBool(record.isActive) : true,
             loanTermYears: parseInteger(record.loanTermYears, 'loanTermYears'),
             minDscrRequired: parseDecimal(record.minDscrRequired, 'minDscrRequired'),
+            isLtcWeighted: parseBool(record.isLtcWeighted),
+            maxLtcPercent: parseDecimal(record.maxLtcPercent, 'maxLtcPercent'),
           };
 
           const validatedData = insertLoanProductSchema.parse(productData);
