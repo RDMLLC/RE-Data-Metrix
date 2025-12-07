@@ -180,6 +180,7 @@ export default function LenderLoanProducts() {
       referralLink: insertLoanProductSchema.shape.referralLink.nullable().optional(),
       loanTermYears: insertLoanProductSchema.shape.loanTermYears.nullable().optional(),
       minDscrRequired: insertLoanProductSchema.shape.minDscrRequired.nullable().optional(),
+      maxLtcPercent: insertLoanProductSchema.shape.maxLtcPercent.nullable().optional(),
     })),
     defaultValues: {
       loanType: "bridge",
@@ -204,11 +205,14 @@ export default function LenderLoanProducts() {
       isActive: true,
       loanTermYears: null,
       minDscrRequired: null,
+      isLtcWeighted: false,
+      maxLtcPercent: null,
     },
   });
 
   const watchLoanType = form.watch("loanType") as LoanTypeEnum;
   const watchCashOutOk = form.watch("cashOutOk");
+  const watchIsLtcWeighted = form.watch("isLtcWeighted");
 
   const onSubmit = async (data: any) => {
     if (editingProduct) {
@@ -243,6 +247,8 @@ export default function LenderLoanProducts() {
       isActive: product.isActive ?? true,
       loanTermYears: product.loanTermYears,
       minDscrRequired: product.minDscrRequired,
+      isLtcWeighted: product.isLtcWeighted ?? false,
+      maxLtcPercent: product.maxLtcPercent,
     });
     setTimeout(() => {
       formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -764,6 +770,63 @@ export default function LenderLoanProducts() {
                             </FormItem>
                           )}
                         />
+                      </div>
+                    )}
+
+                    {watchLoanType === 'bridge' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="isLtcWeighted"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-foreground">Total LTC Cap?</FormLabel>
+                              <Select
+                                onValueChange={(value) => field.onChange(value === "true")}
+                                value={field.value ? "true" : "false"}
+                              >
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-ltc-weighted">
+                                    <SelectValue placeholder="Select option" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="true">Yes</SelectItem>
+                                  <SelectItem value="false">No</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Does your total loan cap at a percentage of total project cost?
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {watchIsLtcWeighted && (
+                          <FormField
+                            control={form.control}
+                            name="maxLtcPercent"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-foreground">Max LTC (%)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    value={field.value || ""}
+                                    type="text"
+                                    placeholder="90"
+                                    data-testid="input-max-ltc-percent"
+                                  />
+                                </FormControl>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Maximum loan as percentage of total cost (buy + rehab). Max 100%.
+                                </p>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                       </div>
                     )}
 

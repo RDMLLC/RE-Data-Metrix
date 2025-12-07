@@ -300,6 +300,8 @@ export const loanProducts = pgTable("loan_products", {
   referralLink: text("referral_link"),
   loanTermYears: integer("loan_term_years"),
   minDscrRequired: decimal("min_dscr_required", { precision: 4, scale: 2 }),
+  isLtcWeighted: boolean("is_ltc_weighted").default(false),
+  maxLtcPercent: decimal("max_ltc_percent", { precision: 5, scale: 2 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
