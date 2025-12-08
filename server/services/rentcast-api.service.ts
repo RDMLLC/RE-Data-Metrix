@@ -461,7 +461,10 @@ export class RentCastAPIService implements IPropertyAPIService {
 
       console.log(`Fetching property image from HasData for: ${url}`);
 
-      const response = await fetch(`${endpoint}?url=${encodeURIComponent(url)}`, {
+      const fullUrl = `${endpoint}?url=${encodeURIComponent(url)}`;
+      console.log(`[HasData] Requesting: ${fullUrl}`);
+      
+      const response = await fetch(fullUrl, {
         method: "GET",
         headers: {
           "x-api-key": this.hasDataApiKey,
@@ -470,25 +473,32 @@ export class RentCastAPIService implements IPropertyAPIService {
       });
 
       if (!response.ok) {
-        console.log(`HasData image fetch failed with status ${response.status}`);
+        const errorText = await response.text().catch(() => "");
+        console.log(`HasData image fetch failed with status ${response.status}: ${errorText}`);
         return undefined;
       }
 
       const data = await response.json();
+      console.log(`[HasData] Response keys:`, Object.keys(data));
       const property = data.property || data;
+      console.log(`[HasData] Property keys:`, Object.keys(property || {}));
 
       let imageUrl: string | undefined;
       if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
         imageUrl = property.photos[0];
+      } else if (property.image && typeof property.image === 'string') {
+        imageUrl = property.image;
       } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
         imageUrl = property.images[0];
       } else if (property.hiResImageLink) {
         imageUrl = property.hiResImageLink;
       } else if (property.photoUrl) {
         imageUrl = property.photoUrl;
+      } else if (property.primaryPhoto) {
+        imageUrl = property.primaryPhoto;
       }
 
-      console.log(`HasData returned image URL: ${imageUrl ? 'found' : 'not found'}`);
+      console.log(`[HasData] Image URL: ${imageUrl || 'not found'}`);
       return imageUrl;
     } catch (error) {
       console.error("Error fetching property image from HasData:", error);
