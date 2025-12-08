@@ -371,27 +371,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // RentCast API status (property data - ACTIVE)
       const rentCastStatus = {
         name: "RentCast API",
-        description: "Property data, tax records, valuations (AVM), and rent estimates",
+        description: "Primary property data source: tax records, valuations (AVM), and rent estimates",
         configured: !!process.env.RENTCAST_API_KEY,
         ready: !!process.env.RENTCAST_API_KEY,
         active: true,
         details: {
           hasApiKey: !!process.env.RENTCAST_API_KEY,
-          features: ["Property lookup", "Tax data", "Value estimates (AVM)", "Rent estimates", "Comparable sales"]
+          features: ["Property lookup", "Tax assessed value", "Annual tax amount", "Value estimates (AVM)", "Rent estimates", "Comparable sales"],
+          note: "Primary API for all property data except images"
         }
       };
 
-      // HasData API status (property data - INACTIVE/DEPRECATED)
+      // HasData API status (property images - ACTIVE)
       const hasDataStatus = {
         name: "HasData API",
-        description: "Property data lookup from Zillow and Redfin (replaced by RentCast)",
+        description: "Property images from Zillow and Redfin listings",
         configured: !!process.env.HASDATA_API_KEY,
-        ready: false,
-        active: false,
+        ready: !!process.env.HASDATA_API_KEY,
+        active: true,
         details: {
           hasApiKey: !!process.env.HASDATA_API_KEY,
-          status: "Deprecated - replaced by RentCast API",
-          note: "Tax data was not consistently available via this API"
+          features: ["Property photos"],
+          note: "Used as fallback for property images when RentCast doesn't provide them"
         }
       };
 
