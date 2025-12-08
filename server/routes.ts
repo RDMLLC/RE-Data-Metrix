@@ -616,6 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Complete checkout - after successful Stripe payment, creates the user account
+  // Uses the shared checkout service which handles missing pending registrations gracefully
   app.get("/api/subscription/checkout/complete", async (req, res) => {
     try {
       const { session_id } = req.query;
@@ -624,111 +625,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Session ID is required" });
       }
 
-      const stripe = await getUncachableStripeClient();
-      const session = await stripe.checkout.sessions.retrieve(session_id, {
-        expand: ['subscription', 'customer'],
-      });
+      const { completeCheckoutSession } = await import('./services/checkoutService');
+      const result = await completeCheckoutSession(session_id);
 
-      // Get the pending registration ID from session metadata
-      const pendingId = session.metadata?.pendingRegistrationId;
-      if (!pendingId) {
-        return res.status(400).json({ error: "Invalid checkout session" });
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json({ error: result.error || result.message });
       }
-
-      // Find the pending registration
-      const [pending] = await db
-        .select()
-        .from(pendingRegistrations)
-        .where(eq(pendingRegistrations.id, pendingId))
-        .limit(1);
-
-      if (!pending) {
-        return res.status(400).json({ error: "Registration not found" });
-      }
-
-      // SECURITY: Verify the session ID matches what we stored for this pending registration
-      if (pending.stripeSessionId !== session_id) {
-        console.error(`[CHECKOUT] Session ID mismatch: expected ${pending.stripeSessionId}, got ${session_id}`);
-        return res.status(403).json({ error: "Invalid session" });
-      }
-
-      if (pending.status === 'completed') {
-        // Already processed - just return success
-        return res.json({ 
-          success: true, 
-          message: "Account already created. Please verify your email to log in.",
-          alreadyProcessed: true,
-        });
-      }
-
-      // SECURITY: Verify the Stripe checkout session is complete and payment is confirmed
-      if (session.status !== 'complete') {
-        console.error(`[CHECKOUT] Session not complete: ${session.status}`);
-        return res.status(400).json({ error: "Checkout session not complete" });
-      }
-
-      if (session.payment_status !== 'paid') {
-        console.error(`[CHECKOUT] Payment not confirmed: ${session.payment_status}`);
-        return res.status(400).json({ error: "Payment not confirmed" });
-      }
-
-      // Verify subscription is active
-      const subscription = session.subscription as any;
-      if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trialing')) {
-        console.error(`[CHECKOUT] Subscription not active: ${subscription?.status}`);
-        return res.status(400).json({ error: "Subscription not active" });
-      }
-
-      // Create the actual user account
-      const referralCode = generateReferralCode();
-      const verificationToken = generateVerificationToken();
-      const verificationExpiry = new Date();
-      verificationExpiry.setHours(verificationExpiry.getHours() + 24);
-
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          username: pending.username,
-          email: pending.email,
-          password: pending.passwordHash,
-          role: 'user',
-          subscriptionStatus: 'active',
-          referralCode,
-          isEmailVerified: false,
-          verificationToken,
-          verificationExpiry,
-          termsAcceptedAt: new Date(),
-          termsVersion: '1.0',
-          privacyVersion: '1.0',
-          stripeCustomerId: session.customer as string,
-          stripeSubscriptionId: subscription.id,
-        })
-        .returning();
-
-      // Create user profile
-      await db.insert(userProfiles).values({
-        userId: newUser.id,
-        fullName: pending.fullName,
-      });
-
-      // Mark pending registration as completed
-      await db
-        .update(pendingRegistrations)
-        .set({ status: 'completed' })
-        .where(eq(pendingRegistrations.id, pending.id));
-
-      // Send verification email
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
-      const verifyUrl = `${baseUrl}/verify-email/${verificationToken}`;
-      await emailService.sendVerificationEmail(pending.email, verifyUrl);
-
-      console.log(`[CHECKOUT] Created user ${newUser.id} from pending ${pending.id}, subscription ${subscription.id}`);
-
-      res.json({ 
-        success: true, 
-        message: "Account created! Please check your email to verify your account.",
-        requiresVerification: true,
-      });
     } catch (error) {
       console.error('Checkout complete error:', error);
       res.status(500).json({ error: "Failed to complete registration" });
