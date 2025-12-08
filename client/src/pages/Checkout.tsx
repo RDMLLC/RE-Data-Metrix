@@ -515,8 +515,7 @@ export default function Checkout() {
     </Card>
     );
     return Component;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedPlan, appliedDiscount, discountCode, isValidatingDiscount, basePrice, discountAmount, finalPrice, isProcessing, checkoutMutation.isPending]);
 
   // Just registered but needs email verification
   if (justRegistered && !isAuthenticated) {
