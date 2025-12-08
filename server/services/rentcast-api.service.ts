@@ -1,6 +1,7 @@
 import type { IPropertyAPIService, PropertyData } from "./property-api.interface";
 
 const RENTCAST_BASE_URL = "https://api.rentcast.io/v1";
+const HASDATA_BASE_URL = "https://api.hasdata.com";
 
 interface RentCastProperty {
   id?: string;
@@ -57,10 +58,12 @@ interface RentCastRentResponse {
 
 export class RentCastAPIService implements IPropertyAPIService {
   private apiKey: string;
+  private hasDataApiKey: string;
   private baseUrl: string;
 
   constructor(apiKey?: string, baseUrl: string = RENTCAST_BASE_URL) {
     this.apiKey = process.env.RENTCAST_API_KEY || apiKey || "";
+    this.hasDataApiKey = process.env.HASDATA_API_KEY || "";
     this.baseUrl = baseUrl;
     
     if (!this.apiKey) {
@@ -398,5 +401,60 @@ export class RentCastAPIService implements IPropertyAPIService {
       imageUrl: undefined,
       hoaFees: undefined,
     };
+  }
+
+  async fetchPropertyImageFromUrl(url: string): Promise<string | undefined> {
+    if (!this.hasDataApiKey) {
+      console.log("HasData API key not configured, cannot fetch property image");
+      return undefined;
+    }
+
+    try {
+      const isZillow = url.includes("zillow.com");
+      const isRedfin = url.includes("redfin.com");
+
+      if (!isZillow && !isRedfin) {
+        return undefined;
+      }
+
+      const endpoint = isZillow 
+        ? `${HASDATA_BASE_URL}/scrape/zillow/property`
+        : `${HASDATA_BASE_URL}/scrape/redfin/property`;
+
+      console.log(`Fetching property image from HasData for: ${url}`);
+
+      const response = await fetch(`${endpoint}?url=${encodeURIComponent(url)}`, {
+        method: "GET",
+        headers: {
+          "x-api-key": this.hasDataApiKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        console.log(`HasData image fetch failed with status ${response.status}`);
+        return undefined;
+      }
+
+      const data = await response.json();
+      const property = data.property || data;
+
+      let imageUrl: string | undefined;
+      if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
+        imageUrl = property.photos[0];
+      } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
+        imageUrl = property.images[0];
+      } else if (property.hiResImageLink) {
+        imageUrl = property.hiResImageLink;
+      } else if (property.photoUrl) {
+        imageUrl = property.photoUrl;
+      }
+
+      console.log(`HasData returned image URL: ${imageUrl ? 'found' : 'not found'}`);
+      return imageUrl;
+    } catch (error) {
+      console.error("Error fetching property image from HasData:", error);
+      return undefined;
+    }
   }
 }

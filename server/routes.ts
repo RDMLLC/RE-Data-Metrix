@@ -3776,6 +3776,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Fetch property image from HasData if the service supports it and no image was returned
+      if (!propertyData.imageUrl && 'fetchPropertyImageFromUrl' in propertyAPIService) {
+        try {
+          const imageUrl = await (propertyAPIService as any).fetchPropertyImageFromUrl(url);
+          if (imageUrl) {
+            propertyData.imageUrl = imageUrl;
+          }
+        } catch (imageError) {
+          console.log("Could not fetch property image:", imageError);
+        }
+      }
+      
       res.json(propertyData);
     } catch (error: any) {
       console.error("Property lookup error:", error);
