@@ -275,7 +275,7 @@ export const calculationCategories: CalculationCategory[] = [
   {
     id: "carrying-costs",
     name: "Carrying Costs",
-    description: "Monthly costs of holding the property during the project",
+    description: "Monthly costs of holding the property during the project, plus one-time holding costs",
     calculations: [
       {
         id: "monthly-carrying-costs",
@@ -298,20 +298,49 @@ export const calculationCategories: CalculationCategory[] = [
       },
       {
         id: "total-carrying-costs",
-        name: "Total Carrying Costs",
-        description: "Total carrying costs over the entire project duration",
-        formula: "totalCarrying = monthlyCarryingCosts × projectLength",
-        formulaDisplay: "Total Carrying = Monthly Carrying × Project Length",
+        name: "Total Carrying Costs (Base)",
+        description: "Total carrying costs over the entire project duration, including monthly costs multiplied by project length plus one-time costs",
+        formula: "totalCarrying = (monthlyCarryingCosts × projectLength) + hoaTransferFee + otherCarryingCosts",
+        formulaDisplay: "Total Carrying = (Monthly Carrying × Months) + HOA Transfer Fee + Other Costs",
         inputs: [
           { name: "monthlyCarryingCosts", description: "Monthly carrying cost", source: "Monthly Carrying Costs calculation" },
-          { name: "projectLength", description: "Project duration in months", source: "User input (Step 3)" }
+          { name: "projectLength", description: "Project duration in months", source: "User input (Step 3)" },
+          { name: "hoaTransferFee", description: "One-time HOA transfer fee (if applicable)", source: "User input (Step 4)" },
+          { name: "otherCarryingCosts", description: "Other one-time costs (lawn care, permits, etc.)", source: "User input (Step 4)" }
         ],
-        output: "Total carrying cost for project",
+        output: "Total carrying cost for project (before interest)",
         example: {
-          inputs: { monthlyCarryingCosts: 600, projectLength: 6 },
-          result: "$3,600",
-          explanation: "$600 × 6 months = $3,600"
-        }
+          inputs: { monthlyCarryingCosts: 600, projectLength: 6, hoaTransferFee: 250, otherCarryingCosts: 500 },
+          result: "$4,350",
+          explanation: "($600 × 6 months) + $250 + $500 = $4,350"
+        },
+        notes: [
+          "HOA Transfer Fee and Other Costs are one-time amounts, not multiplied by project length",
+          "This is the base carrying cost before any lender interest is added"
+        ]
+      },
+      {
+        id: "lender-carrying-costs",
+        name: "Lender Carrying Costs (with Interest)",
+        description: "Per-lender carrying costs that include monthly interest payments when interest is NOT deferred",
+        formula: "lenderCarryingCosts = baseCarryingCosts + (interestDeferred ? 0 : totalInterestCost)",
+        formulaDisplay: "Lender Carrying = Base Carrying + Interest (if not deferred)",
+        inputs: [
+          { name: "baseCarryingCosts", description: "Total base carrying costs", source: "Total Carrying Costs calculation" },
+          { name: "totalInterestCost", description: "Total loan interest for project", source: "Total Interest calculation" },
+          { name: "interestDeferred", description: "Whether interest is deferred to payoff", source: "Lender product settings" }
+        ],
+        output: "Total carrying costs including interest (per lender)",
+        example: {
+          inputs: { baseCarryingCosts: 4350, totalInterestCost: 12675, interestDeferred: false },
+          result: "$17,025",
+          explanation: "$4,350 + $12,675 = $17,025 (interest paid monthly, included in carrying costs)"
+        },
+        notes: [
+          "When interest is NOT deferred, monthly interest payments are real out-of-pocket costs during the project",
+          "When interest IS deferred, it goes to Rolled Costs instead and is paid at sale",
+          "This is why each lender shows different carrying costs in the Deal Analysis Results"
+        ]
       },
       {
         id: "rolled-costs",
