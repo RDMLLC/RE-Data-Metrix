@@ -260,17 +260,10 @@ export default function Checkout() {
 
   const onRegisterSubmit = async (data: RegisterFormData) => {
     setIsRegistering(true);
-    console.log("[Checkout] Starting registration with data:", { 
-      username: data.username, 
-      email: data.email, 
-      plan: selectedPlan,
-      stripePrices 
-    });
     try {
       // Get the price ID for the selected plan
       const priceId = selectedPlan === "monthly" ? stripePrices.monthly : stripePrices.annual;
       if (!priceId) {
-        console.error("[Checkout] No priceId available:", { stripePrices, selectedPlan });
         toast({
           title: "Unable to process",
           description: "Subscription plans are not available. Please try again later.",
@@ -279,7 +272,6 @@ export default function Checkout() {
         return;
       }
 
-      console.log("[Checkout] Calling /api/subscription/checkout/start with priceId:", priceId);
       // Call the payment-first checkout endpoint
       const response = await fetch("/api/subscription/checkout/start", {
         method: "POST",
@@ -297,9 +289,7 @@ export default function Checkout() {
         }),
       });
 
-      console.log("[Checkout] Response status:", response.status);
       const result = await response.json();
-      console.log("[Checkout] Response data:", result);
 
       if (!response.ok) {
         throw new Error(result.error || "Registration failed");
@@ -307,20 +297,17 @@ export default function Checkout() {
 
       // Redirect to Stripe Checkout
       if (result.url) {
-        console.log("[Checkout] Redirecting to Stripe:", result.url);
         window.location.href = result.url;
       } else {
         throw new Error("No checkout URL returned");
       }
     } catch (error: any) {
-      console.error("[Checkout] Error:", error);
       toast({
         title: "Registration failed",
         description: error.message || "Please try again",
         variant: "destructive",
       });
     } finally {
-      console.log("[Checkout] Finished, resetting isRegistering");
       setIsRegistering(false);
     }
   };
