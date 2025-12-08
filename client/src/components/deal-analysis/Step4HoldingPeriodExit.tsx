@@ -18,7 +18,12 @@ import {
   CollapsibleContent, 
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
-import { TrendingUp, ChevronDown } from "lucide-react";
+import { TrendingUp, ChevronDown, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useState, useEffect, useRef } from "react";
 import { getUtilityCostPerSqFt } from "@shared/data/utility-costs";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
@@ -64,6 +69,7 @@ export default function Step4HoldingPeriodExit({
   const hoaTransferFee = form.watch("hoaTransferFee") || 0;
   const monthlyUtilities = form.watch("monthlyUtilities") || 0;
   const annualInsurance = form.watch("annualInsurance") || 0;
+  const otherCarryingCosts = form.watch("otherCarryingCosts") || 0;
   const taxAssessedValue = form.watch("taxAssessedValue") || 0;
   const annualTax = form.watch("annualTax") || 0;
   
@@ -178,7 +184,7 @@ export default function Step4HoldingPeriodExit({
   const insuranceTotal = (annualInsurance / 12) * projectLength;
   const hoaFeesTotal = hoaFees * projectLength;
   
-  const estimatedCarryingCosts = hoaFeesTotal + hoaTransferFee + propertyTaxTotal + utilitiesTotal + insuranceTotal;
+  const estimatedCarryingCosts = hoaFeesTotal + hoaTransferFee + propertyTaxTotal + utilitiesTotal + insuranceTotal + otherCarryingCosts;
   
   const estimatedTotalInvestment = totalProjectCost + estimatedClosingCostsBuy + estimatedCarryingCosts;
   
@@ -528,61 +534,22 @@ export default function Step4HoldingPeriodExit({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="hoaFees"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Monthly HOA Fees</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder="0"
-                              {...field}
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? parseFloat(e.target.value) : undefined
-                                )
-                              }
-                              data-testid="input-hoa-fees"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="hoaTransferFee"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>HOA Transfer Fee</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder="0"
-                              {...field}
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? parseFloat(e.target.value) : undefined
-                                )
-                              }
-                              data-testid="input-hoa-transfer-fee"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Typically one month HOA fee if applicable
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormItem>
+                      <FormLabel>Monthly Interest</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          value="0"
+                          disabled
+                          className="bg-muted"
+                          data-testid="input-monthly-interest"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Will be calculated upon lender selection
+                      </FormDescription>
+                    </FormItem>
 
                     <FormField
                       control={form.control}
@@ -617,11 +584,42 @@ export default function Step4HoldingPeriodExit({
                       name="annualInsurance"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Annual Insurance</FormLabel>
+                          <FormLabel>Monthly Insurance</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
                               min="0"
+                              {...field}
+                              value={field.value ? Math.round(field.value / 12) : ""}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? parseFloat(e.target.value) * 12 : undefined
+                                )
+                              }
+                              data-testid="input-monthly-insurance"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Auto-filled based on {state} rates
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="hoaFees"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Monthly HOA</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
                               {...field}
                               value={field.value ?? ""}
                               onChange={(e) =>
@@ -629,12 +627,81 @@ export default function Step4HoldingPeriodExit({
                                   e.target.value ? parseFloat(e.target.value) : undefined
                                 )
                               }
-                              data-testid="input-annual-insurance"
+                              data-testid="input-hoa-fees"
                             />
                           </FormControl>
-                          <FormDescription>
-                            Auto-filled based on {state} rates
-                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="hoaTransferFee"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            HOA Transfer Fee
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? parseFloat(e.target.value) : undefined
+                                )
+                              }
+                              data-testid="input-hoa-transfer-fee"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="otherCarryingCosts"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            Other
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>One-time costs not multiplied by holding period. Examples: lawn care, permits, internet setup, etc.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? parseFloat(e.target.value) : undefined
+                                )
+                              }
+                              data-testid="input-other-carrying-costs"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -654,6 +721,12 @@ export default function Step4HoldingPeriodExit({
                       <span>Insurance ({projectLength} months):</span>
                       <span className="font-medium">{formatCurrency(insuranceTotal)}</span>
                     </div>
+                    {otherCarryingCosts > 0 && (
+                      <div className="flex justify-between">
+                        <span>Other:</span>
+                        <span className="font-medium">{formatCurrency(otherCarryingCosts)}</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </CollapsibleContent>

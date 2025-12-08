@@ -50,6 +50,7 @@ const wizardSchema = z.object({
   hoaTransferFee: z.number().optional(),
   monthlyUtilities: z.number().optional(),
   annualInsurance: z.number().optional(),
+  otherCarryingCosts: z.number().optional(),
   
   sellPrice: z.number().optional(),
   closingCostsSellPercent: z.number().optional(),

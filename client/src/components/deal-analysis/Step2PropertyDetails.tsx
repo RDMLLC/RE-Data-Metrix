@@ -20,7 +20,12 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home } from "lucide-react";
+import { Home, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Step2PropertyDetailsProps {
   form: UseFormReturn<WizardFormData>;
@@ -392,7 +397,17 @@ export default function Step2PropertyDetails({
                   name="hoaTransferFee"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>HOA Transfer Fee</FormLabel>
+                      <FormLabel className="flex items-center gap-1">
+                        HOA Transfer Fee
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
