@@ -36,15 +36,20 @@ async function initStripe() {
     const stripeSync = await getStripeSync();
 
     console.log('Setting up managed webhook...');
-    const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
-    const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
-      `${webhookBaseUrl}/api/stripe/webhook`,
-      {
-        enabled_events: ['*'],
-        description: 'Managed webhook for Stripe sync',
-      }
-    );
-    console.log(`Webhook configured: ${webhook.url} (UUID: ${uuid})`);
+    const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
+    if (!domain) {
+      console.warn('REPLIT_DOMAINS not set - skipping webhook setup');
+    } else {
+      const webhookBaseUrl = `https://${domain}`;
+      const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
+        `${webhookBaseUrl}/api/stripe/webhook`,
+        {
+          enabled_events: ['*'],
+          description: 'Managed webhook for Stripe sync',
+        }
+      );
+      console.log(`Webhook configured: ${webhook.url} (UUID: ${uuid})`);
+    }
 
     console.log('Syncing Stripe data...');
     stripeSync.syncBackfill()
@@ -92,20 +97,30 @@ app.post(
 const PgSession = connectPgSimple(session);
 
 if (!process.env.SESSION_SECRET) {
-  throw new Error(
-    "SESSION_SECRET must be set. Did you forget to add it to your environment?"
-  );
+  console.error("SESSION_SECRET must be set. Did you forget to add it to your environment?");
+  process.exit(1);
 }
 
-const sessionStore = new PgSession({
-  pool,
-  tableName: 'session',
-  createTableIfMissing: true,
-});
+if (!process.env.DATABASE_URL) {
+  console.error("DATABASE_URL must be set for session storage.");
+  process.exit(1);
+}
 
-sessionStore.on('error', (error) => {
-  console.error('Session store error:', error);
-});
+let sessionStore: InstanceType<typeof PgSession>;
+try {
+  sessionStore = new PgSession({
+    pool,
+    tableName: 'session',
+    createTableIfMissing: true,
+  });
+
+  sessionStore.on('error', (error) => {
+    console.error('Session store error:', error);
+  });
+} catch (error) {
+  console.error('Failed to initialize session store:', error);
+  process.exit(1);
+}
 
 app.use(
   session({
