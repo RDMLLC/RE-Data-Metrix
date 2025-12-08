@@ -82,6 +82,17 @@ An Admin portal for Affiliate Management (`/admin/affiliates`) allows managing a
 ### Total LTC Cap Feature
 Bridge loan products include a Total LTC (Loan-to-Cost) Cap feature, allowing lenders to limit the total loan amount based on a percentage of the total project cost. The system calculates loan limits based on LTV, ARV, and LTC caps, with the lowest determining the final loan amount. UI indicators are present in the Lender Portal and Deal Analysis Results.
 
+### Carrying Costs Calculation
+Deal Analysis Step 4 collects carrying/holding costs with the following fields arranged in two rows:
+- **Row 1:** Monthly Insurance, Monthly Utilities, Monthly Property Tax
+- **Row 2:** Monthly HOA, HOA Transfer Fee (one-time, with tooltip), Other Costs (one-time, with tooltip)
+- **Monthly Interest:** Read-only field showing $0 with helper text "Will be calculated upon lender selection"
+
+The backend calculates per-lender carrying costs:
+- When interest is NOT deferred: Monthly interest payments are added to carrying costs for display
+- When interest IS deferred: Interest goes to rolled costs (added to payoff amount)
+- Total carrying costs = (monthly costs × project length) + one-time costs + interest (if not deferred)
+
 ### Form Handling & Validation
 Client-side validation uses react-hook-form and Zod, complemented by comprehensive server-side Zod schema validation for all API endpoints.
 
