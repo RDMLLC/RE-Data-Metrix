@@ -185,10 +185,14 @@ export default function Checkout() {
   };
 
   const [stripePrices, setStripePrices] = useState<{ monthly?: string; annual?: string }>({});
+  const [pricesLoading, setPricesLoading] = useState(true);
+  const [pricesError, setPricesError] = useState(false);
 
   // Fetch Stripe prices on mount
   useEffect(() => {
     const fetchPrices = async () => {
+      setPricesLoading(true);
+      setPricesError(false);
       try {
         const response = await fetch("/api/subscription/plans");
         if (response.ok) {
@@ -201,10 +205,19 @@ export default function Checkout() {
               prices.annual = plan.id;
             }
           }
-          setStripePrices(prices);
+          if (prices.monthly && prices.annual) {
+            setStripePrices(prices);
+          } else {
+            setPricesError(true);
+          }
+        } else {
+          setPricesError(true);
         }
       } catch (error) {
         console.error("Failed to fetch Stripe prices:", error);
+        setPricesError(true);
+      } finally {
+        setPricesLoading(false);
       }
     };
     fetchPrices();
@@ -718,14 +731,24 @@ export default function Checkout() {
                         />
                       </CardContent>
                       <CardFooter className="flex flex-col gap-4">
+                        {pricesError && (
+                          <p className="text-sm text-destructive text-center">
+                            Unable to load subscription plans. Please refresh the page.
+                          </p>
+                        )}
                         <Button
                           type="submit"
                           className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                           size="lg"
-                          disabled={isRegistering}
+                          disabled={isRegistering || pricesLoading || pricesError}
                           data-testid="button-register-and-subscribe"
                         >
-                          {isRegistering ? (
+                          {pricesLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading Plans...
+                            </>
+                          ) : isRegistering ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Creating Account...
