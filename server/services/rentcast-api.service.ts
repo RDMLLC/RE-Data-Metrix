@@ -3,6 +3,18 @@ import type { IPropertyAPIService, PropertyData } from "./property-api.interface
 const RENTCAST_BASE_URL = "https://api.rentcast.io/v1";
 const HASDATA_BASE_URL = "https://api.hasdata.com";
 
+interface RentCastTaxAssessment {
+  year: number;
+  value?: number;
+  land?: number;
+  improvements?: number;
+}
+
+interface RentCastPropertyTax {
+  year: number;
+  total?: number;
+}
+
 interface RentCastProperty {
   id?: string;
   formattedAddress?: string;
@@ -25,6 +37,8 @@ interface RentCastProperty {
   lastSalePrice?: number;
   ownerOccupied?: boolean;
   features?: Record<string, any>;
+  taxAssessments?: Record<string, RentCastTaxAssessment>;
+  propertyTaxes?: Record<string, RentCastPropertyTax>;
 }
 
 interface RentCastAVMResponse {
@@ -366,17 +380,41 @@ export class RentCastAPIService implements IPropertyAPIService {
     return undefined;
   }
 
+  private extractLatestTaxAssessedValue(taxAssessments?: Record<string, RentCastTaxAssessment>): number | undefined {
+    if (!taxAssessments) return undefined;
+    
+    const years = Object.keys(taxAssessments).map(Number).sort((a, b) => b - a);
+    if (years.length === 0) return undefined;
+    
+    const latestYear = years[0].toString();
+    return taxAssessments[latestYear]?.value;
+  }
+
+  private extractLatestAnnualTax(propertyTaxes?: Record<string, RentCastPropertyTax>): number | undefined {
+    if (!propertyTaxes) return undefined;
+    
+    const years = Object.keys(propertyTaxes).map(Number).sort((a, b) => b - a);
+    if (years.length === 0) return undefined;
+    
+    const latestYear = years[0].toString();
+    return propertyTaxes[latestYear]?.total;
+  }
+
   private transformResponse(
     property: RentCastProperty,
     valueData: RentCastAVMResponse | null,
     rentData: RentCastRentResponse | null
   ): PropertyData {
+    const taxAssessedValue = this.extractLatestTaxAssessedValue(property.taxAssessments) || property.assessedValue;
+    const annualTax = this.extractLatestAnnualTax(property.propertyTaxes);
+
     console.log("Transforming RentCast response:", {
       propertyType: property.propertyType,
       bedrooms: property.bedrooms,
       bathrooms: property.bathrooms,
       sqft: property.squareFootage,
-      assessedValue: property.assessedValue,
+      taxAssessedValue,
+      annualTax,
       estimatedValue: valueData?.price,
       estimatedRent: rentData?.rent
     });
@@ -392,8 +430,8 @@ export class RentCastAPIService implements IPropertyAPIService {
       sqft: property.squareFootage,
       lotSize: property.lotSize,
       yearBuilt: property.yearBuilt,
-      taxAssessedValue: property.assessedValue,
-      annualTax: undefined,
+      taxAssessedValue,
+      annualTax,
       estimatedValue: valueData?.price || property.lastSalePrice,
       estimatedRent: rentData?.rent,
       lastSalePrice: property.lastSalePrice,
