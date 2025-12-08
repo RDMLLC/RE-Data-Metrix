@@ -860,9 +860,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to send welcome email to:', user.email);
       }
 
+      // Check if user has an active subscription or is comped
+      const hasSubscription = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'comped';
+
       res.json({ 
         message: "Email verified successfully! Welcome to RE Data Metrix.",
         username: user.username,
+        hasSubscription,
+        isComped: user.subscriptionStatus === 'comped',
       });
     } catch (error) {
       console.error('Email verification error:', error);

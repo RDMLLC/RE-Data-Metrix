@@ -3,13 +3,14 @@ import { useRoute } from "wouter";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, CreditCard } from "lucide-react";
 
 export default function VerifyEmail() {
   const [, params] = useRoute("/verify-email/:token");
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [username, setUsername] = useState('');
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -30,6 +31,7 @@ export default function VerifyEmail() {
           setStatus('success');
           setMessage(data.message);
           setUsername(data.username || '');
+          setHasSubscription(data.hasSubscription || false);
         } else {
           setStatus('error');
           setMessage(data.error || 'Verification failed');
@@ -63,9 +65,30 @@ export default function VerifyEmail() {
               {username && (
                 <p className="text-muted-foreground mb-6">Welcome, {username}!</p>
               )}
-              <Button asChild data-testid="button-dashboard">
-                <a href="/portal/dashboard">Go to Dashboard</a>
-              </Button>
+              {hasSubscription ? (
+                <Button asChild data-testid="button-dashboard">
+                  <a href="/portal/dashboard">Go to Dashboard</a>
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 text-sm">
+                    <p className="text-foreground font-medium mb-1">Complete Your Subscription</p>
+                    <p className="text-muted-foreground">
+                      Your email is verified! Complete payment to unlock all premium features.
+                    </p>
+                  </div>
+                  <Button asChild data-testid="button-complete-subscription">
+                    <a href="/checkout">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Complete Subscription
+                    </a>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Already subscribed?{" "}
+                    <a href="/login" className="text-accent hover:underline">Sign in</a>
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
