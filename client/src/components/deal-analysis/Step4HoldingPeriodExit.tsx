@@ -35,6 +35,7 @@ export default function Step4HoldingPeriodExit({
   onBack,
 }: Step4HoldingPeriodExitProps) {
   const [closingCostsOpen, setClosingCostsOpen] = useState(false);
+  const [closingCosts2Open, setClosingCosts2Open] = useState(false);
   const [carryingCostsOpen, setCarryingCostsOpen] = useState(false);
 
   const purchasePrice = form.watch("purchasePrice") || 0;
@@ -44,10 +45,20 @@ export default function Step4HoldingPeriodExit({
   const state = form.watch("state") || "";
   const sqft = form.watch("sqft") || 0;
   
+  // Double close fields
+  const isDoubleClose = form.watch("isDoubleClose");
+  const payingForBothSides = form.watch("payingForBothSides");
+  
   const attorneyFees = form.watch("attorneyFees") || 0;
   const docPrepFees = form.watch("docPrepFees") || 0;
   const titleExam = form.watch("titleExam") || 0;
   const titleInsurance = form.watch("titleInsurance") || 0;
+  
+  // Buy2 closing costs (for double close)
+  const attorneyFees2 = form.watch("attorneyFees2") || 0;
+  const docPrepFees2 = form.watch("docPrepFees2") || 0;
+  const titleExam2 = form.watch("titleExam2") || 0;
+  const titleInsurance2 = form.watch("titleInsurance2") || 0;
   
   const hoaFees = form.watch("hoaFees") || 0;
   const hoaTransferFee = form.watch("hoaTransferFee") || 0;
@@ -82,6 +93,20 @@ export default function Step4HoldingPeriodExit({
     }
     if (!form.getValues("titleInsurance") && purchasePrice) {
       form.setValue("titleInsurance", Math.round(purchasePrice * 0.012));
+    }
+    
+    // Set default values for Buy2 closing costs (same as Buy1)
+    if (!form.getValues("attorneyFees2")) {
+      form.setValue("attorneyFees2", 750);
+    }
+    if (!form.getValues("docPrepFees2")) {
+      form.setValue("docPrepFees2", 0);
+    }
+    if (!form.getValues("titleExam2")) {
+      form.setValue("titleExam2", 250);
+    }
+    if (!form.getValues("titleInsurance2") && purchasePrice) {
+      form.setValue("titleInsurance2", Math.round(purchasePrice * 0.012));
     }
     
     if (!form.getValues("monthlyUtilities") && state && sqft) {
@@ -132,7 +157,17 @@ export default function Step4HoldingPeriodExit({
 
   const totalProjectCost = purchasePrice + rehabBudget;
   
-  const estimatedClosingCostsBuy = attorneyFees + docPrepFees + titleExam + titleInsurance;
+  // Buy1 closing costs
+  const estimatedClosingCostsBuy1 = attorneyFees + docPrepFees + titleExam + titleInsurance;
+  
+  // Buy2 closing costs (for double close when paying for both sides)
+  const estimatedClosingCostsBuy2 = attorneyFees2 + docPrepFees2 + titleExam2 + titleInsurance2;
+  
+  // Total closing costs: includes Buy2 only if double close AND paying for both sides
+  const showBuy2ClosingCosts = isDoubleClose === true && payingForBothSides === true;
+  const estimatedClosingCostsBuy = showBuy2ClosingCosts 
+    ? estimatedClosingCostsBuy1 + estimatedClosingCostsBuy2 
+    : estimatedClosingCostsBuy1;
   
   // Use actual annualTax if available from API, otherwise estimate based on taxAssessedValue (1% rate)
   const propertyTaxMonthly = annualTax > 0 
@@ -211,9 +246,11 @@ export default function Step4HoldingPeriodExit({
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="text-left">
-                      <CardTitle className="text-lg">Estimated Closing Costs (Buy)</CardTitle>
+                      <CardTitle className="text-lg">
+                        {showBuy2ClosingCosts ? "Estimated Closing Costs (Buy1)" : "Estimated Closing Costs (Buy)"}
+                      </CardTitle>
                       <CardDescription>
-                        {formatCurrency(estimatedClosingCostsBuy)} total
+                        {formatCurrency(estimatedClosingCostsBuy1)} total
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
@@ -336,6 +373,140 @@ export default function Step4HoldingPeriodExit({
               </CollapsibleContent>
             </Card>
           </Collapsible>
+
+          {showBuy2ClosingCosts && (
+            <Collapsible open={closingCosts2Open} onOpenChange={setClosingCosts2Open}>
+              <Card>
+                <CollapsibleTrigger className="w-full" data-testid="button-toggle-closing-costs-2">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="text-left">
+                        <CardTitle className="text-lg">Estimated Closing Costs (Buy2)</CardTitle>
+                        <CardDescription>
+                          {formatCurrency(estimatedClosingCostsBuy2)} total
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Expand for details or to make changes</span>
+                        <ChevronDown className={`h-5 w-5 transition-transform ${closingCosts2Open ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="attorneyFees2"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Attorney Fees</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value ? parseFloat(e.target.value) : undefined
+                                  )
+                                }
+                                data-testid="input-attorney-fees-2"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="docPrepFees2"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <FormLabel>Doc Prep Fees</FormLabel>
+                              <span className="text-xs text-muted-foreground">Will be filled out in the lender step</span>
+                            </div>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value ? parseFloat(e.target.value) : undefined
+                                  )
+                                }
+                                data-testid="input-doc-prep-fees-2"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="titleExam2"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title Exam</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value ? parseFloat(e.target.value) : undefined
+                                  )
+                                }
+                                data-testid="input-title-exam-2"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="titleInsurance2"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title Insurance</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value ? parseFloat(e.target.value) : undefined
+                                  )
+                                }
+                                data-testid="input-title-insurance-2"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Auto-calculated at 1.2% of purchase price
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
 
           <Collapsible open={carryingCostsOpen} onOpenChange={setCarryingCostsOpen}>
             <Card>

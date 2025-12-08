@@ -40,6 +40,12 @@ const wizardSchema = z.object({
   titleExam: z.number().optional(),
   titleInsurance: z.number().optional(),
   
+  // Double Close - Buy2 closing costs
+  attorneyFees2: z.number().optional(),
+  docPrepFees2: z.number().optional(),
+  titleExam2: z.number().optional(),
+  titleInsurance2: z.number().optional(),
+  
   hoaFees: z.number().optional(),
   hoaTransferFee: z.number().optional(),
   monthlyUtilities: z.number().optional(),

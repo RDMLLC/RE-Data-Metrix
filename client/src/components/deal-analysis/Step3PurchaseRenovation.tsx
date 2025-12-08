@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { useEffect } from "react";
@@ -188,7 +190,70 @@ export default function Step3PurchaseRenovation({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="isDoubleClose"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Is this a double close?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => {
+                            field.onChange(value === "yes");
+                            if (value === "no") {
+                              form.setValue("payingForBothSides", false);
+                            }
+                          }}
+                          value={field.value === true ? "yes" : field.value === false ? "no" : ""}
+                          className="flex gap-4"
+                          data-testid="radio-double-close"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="double-close-yes" data-testid="radio-double-close-yes" />
+                            <Label htmlFor="double-close-yes">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="double-close-no" data-testid="radio-double-close-no" />
+                            <Label htmlFor="double-close-no">No</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
+
+              {form.watch("isDoubleClose") === true && (
+                <FormField
+                  control={form.control}
+                  name="payingForBothSides"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Are you paying for both transactions?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => field.onChange(value === "yes")}
+                          value={field.value === true ? "yes" : field.value === false ? "no" : ""}
+                          className="flex gap-4"
+                          data-testid="radio-paying-both-sides"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="paying-both-yes" data-testid="radio-paying-both-yes" />
+                            <Label htmlFor="paying-both-yes">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="paying-both-no" data-testid="radio-paying-both-no" />
+                            <Label htmlFor="paying-both-no">No</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <div className="grid grid-cols-3 gap-4">
                 <FormField
