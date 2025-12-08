@@ -233,6 +233,7 @@ export default function DealAnalysisWizard() {
             form={form}
             onNext={handleNext}
             onPropertyDataLoaded={handlePropertyDataLoaded}
+            isSubscriber={isSubscriber}
           />
         );
       case 2:

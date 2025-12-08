@@ -5,19 +5,21 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
+import { Link } from "wouter";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
   onNext: () => void;
   onPropertyDataLoaded: (data: any) => void;
+  isSubscriber?: boolean;
 }
 
-export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded }: Step1Props) {
+export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false }: Step1Props) {
   const { toast } = useToast();
   const { updatePropertyData } = useWizardData();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
@@ -161,133 +163,165 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
           <div>
             <h2 className="text-xl font-semibold mb-2">Property Lookup</h2>
             <p className="text-muted-foreground">
-              Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
+              {isSubscriber 
+                ? "Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal."
+                : "Enter property details manually to analyze your deal, or upgrade to unlock automatic property data lookup."
+              }
             </p>
             
-            <Alert className="mt-4">
-              <ExternalLink className="h-4 w-4" />
-              <AlertDescription>
-                Find your property on{" "}
-                <a
-                  href="https://www.redfin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium underline underline-offset-4 hover:text-primary"
-                >
-                  Redfin
-                </a>
-                {" "}or{" "}
-                <a
-                  href="https://www.zillow.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium underline underline-offset-4 hover:text-primary"
-                >
-                  Zillow
-                </a>
-                , then copy and paste the full URL here.
-              </AlertDescription>
-            </Alert>
-          </div>
-
-          <div className="grid gap-6">
-            <div className="space-y-2">
-              <label htmlFor="property-url" className="text-sm font-medium">
-                Property URL *
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  id="property-url"
-                  value={propertyUrl}
-                  onChange={(e) => setPropertyUrl(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleLookup();
-                    }
-                  }}
-                  placeholder="https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/"
-                  className="flex-1"
-                  data-testid="input-property-url"
-                />
-                <Button
-                  type="button"
-                  onClick={handleLookup}
-                  disabled={propertyLookupMutation.isPending}
-                  data-testid="button-lookup-property"
-                >
-                  {propertyLookupMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
-              </p>
-            </div>
-
-            {isLookupComplete && (
-              <div className="pt-4 border-t space-y-4">
-                <div className="rounded-lg bg-muted p-4">
-                  <h3 className="font-semibold mb-2">Property Found</h3>
-                  {propertyImage && (
-                    <div className="mb-3 rounded-md overflow-hidden">
-                      <img 
-                        src={propertyImage} 
-                        alt="Property"
-                        className="w-full object-contain"
-                        data-testid="img-property"
-                      />
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
-                  </p>
-                </div>
-                
-                <div className="flex gap-3 flex-wrap">
-                  <Button
-                    type="button"
-                    onClick={handleNext}
-                    className="flex-1 md:flex-initial"
-                    data-testid="button-next-step"
+            {isSubscriber ? (
+              <Alert className="mt-4">
+                <ExternalLink className="h-4 w-4" />
+                <AlertDescription>
+                  Find your property on{" "}
+                  <a
+                    href="https://www.redfin.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline underline-offset-4 hover:text-primary"
                   >
-                    Continue to Property Details
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
-                    disabled={!propertyUrl}
-                    className="flex-1 md:flex-initial"
-                    data-testid="button-view-listing"
+                    Redfin
+                  </a>
+                  {" "}or{" "}
+                  <a
+                    href="https://www.zillow.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline underline-offset-4 hover:text-primary"
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Listing
-                  </Button>
+                    Zillow
+                  </a>
+                  , then copy and paste the full URL here.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-full bg-primary/10 p-3">
+                    <Lock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold flex items-center gap-2 mb-1">
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                      Premium Feature: Auto Property Lookup
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Members can automatically fetch property details, tax records, and valuations from Zillow or Redfin URLs - saving time and ensuring accuracy.
+                    </p>
+                    <Link href="/checkout">
+                      <Button size="sm" data-testid="button-upgrade-lookup">
+                        Upgrade to Unlock
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
+          {isSubscriber && (
+            <div className="grid gap-6">
+              <div className="space-y-2">
+                <label htmlFor="property-url" className="text-sm font-medium">
+                  Property URL *
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="property-url"
+                    value={propertyUrl}
+                    onChange={(e) => setPropertyUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleLookup();
+                      }
+                    }}
+                    placeholder="https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/"
+                    className="flex-1"
+                    data-testid="input-property-url"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleLookup}
+                    disabled={propertyLookupMutation.isPending}
+                    data-testid="button-lookup-property"
+                  >
+                    {propertyLookupMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
+                </p>
+              </div>
+
+              {isLookupComplete && (
+                <div className="pt-4 border-t space-y-4">
+                  <div className="rounded-lg bg-muted p-4">
+                    <h3 className="font-semibold mb-2">Property Found</h3>
+                    {propertyImage && (
+                      <div className="mb-3 rounded-md overflow-hidden">
+                        <img 
+                          src={propertyImage} 
+                          alt="Property"
+                          className="w-full object-contain"
+                          data-testid="img-property"
+                        />
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3 flex-wrap">
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      className="flex-1 md:flex-initial"
+                      data-testid="button-next-step"
+                    >
+                      Continue to Property Details
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
+                      disabled={!propertyUrl}
+                      className="flex-1 md:flex-initial"
+                      data-testid="button-view-listing"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Listing
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground mb-3">
-              Don't have a property URL? You can enter property details manually instead.
+              {isSubscriber 
+                ? "Don't have a property URL? You can enter property details manually instead."
+                : "Continue with manual entry to analyze your deal."
+              }
             </p>
             <div className="flex flex-wrap gap-3 items-center">
               <Button
                 type="button"
-                variant="outline"
+                variant={isSubscriber ? "outline" : "default"}
                 onClick={() => setManualEntryPreference(true)}
                 data-testid="button-switch-manual-entry"
               >
-                Switch to Manual Entry
+                {isSubscriber ? "Switch to Manual Entry" : "Continue with Manual Entry"}
               </Button>
               <button
                 type="button"

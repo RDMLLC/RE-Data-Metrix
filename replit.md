@@ -24,6 +24,13 @@ The platform features a complete authentication system with user and lender tabl
 ### Membership Access Control
 A subscription-based access system restricts premium features, requiring either a paid subscription or a valid comp code. Pricing tiers are monthly ($15) and annual ($150), with discount code support. Stripe Billing is integrated for checkout and subscription management.
 
+**Premium Feature Gating:**
+- Deal Analysis Step 5 (Results): Requires subscription to view full analysis and lender recommendations
+- Property API Lookup: Automatic property data fetch from Zillow/Redfin URLs is subscriber-only
+- Non-subscribers can still use Deal Analysis with manual property entry
+- Rental Analysis: Full tool access requires subscription
+- Toolbox & Resources: Affiliate programs require subscription
+
 ### Stripe Billing Integration
 The platform uses Stripe for all subscription and payment processing via Replit's native connector (`stripe-replit-sync`):
 
