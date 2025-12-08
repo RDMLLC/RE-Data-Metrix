@@ -55,12 +55,7 @@ export default function Step2PropertyDetails({
   const addingSquareFootage = form.watch("addingSquareFootage");
   const dataSource = form.watch("propertyDataSource") || "unknown";
   
-  let estimateLabel = "Estimated Value";
-  if (dataSource === "zillow") {
-    estimateLabel = "Zestimate";
-  } else if (dataSource === "redfin") {
-    estimateLabel = "Redfin Estimate";
-  }
+  const estimateLabel = "Estimated Market Value (Not ARV)";
 
   const handleSubmit = form.handleSubmit(() => {
     onNext();
