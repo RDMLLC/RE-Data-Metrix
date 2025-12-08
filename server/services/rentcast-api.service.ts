@@ -459,9 +459,13 @@ export class RentCastAPIService implements IPropertyAPIService {
         ? `${HASDATA_BASE_URL}/scrape/zillow/property`
         : `${HASDATA_BASE_URL}/scrape/redfin/property`;
 
-      console.log(`Fetching property image from HasData for: ${url}`);
+      // Clean the URL - remove tracking parameters and ensure proper format
+      let cleanUrl = url.split('?')[0].split('#')[0];
+      
+      console.log(`Fetching property image from HasData for: ${cleanUrl}`);
+      console.log(`[HasData] Source: ${isZillow ? 'Zillow' : 'Redfin'}`);
 
-      const fullUrl = `${endpoint}?url=${encodeURIComponent(url)}`;
+      const fullUrl = `${endpoint}?url=${encodeURIComponent(cleanUrl)}`;
       console.log(`[HasData] Requesting: ${fullUrl}`);
       
       const response = await fetch(fullUrl, {
@@ -475,6 +479,7 @@ export class RentCastAPIService implements IPropertyAPIService {
       if (!response.ok) {
         const errorText = await response.text().catch(() => "");
         console.log(`HasData image fetch failed with status ${response.status}: ${errorText}`);
+        console.log(`[HasData] Failed URL was: ${cleanUrl}`);
         return undefined;
       }
 
@@ -484,8 +489,17 @@ export class RentCastAPIService implements IPropertyAPIService {
       console.log(`[HasData] Property keys:`, Object.keys(property || {}));
 
       let imageUrl: string | undefined;
-      if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
-        imageUrl = property.photos[0];
+      
+      // Zillow uses responsivePhotos array with objects containing url field
+      if (property.responsivePhotos && Array.isArray(property.responsivePhotos) && property.responsivePhotos.length > 0) {
+        const firstPhoto = property.responsivePhotos[0];
+        imageUrl = typeof firstPhoto === 'string' ? firstPhoto : firstPhoto?.url;
+        console.log(`[HasData] Found responsivePhotos, extracted: ${imageUrl}`);
+      }
+      // Redfin uses photos array with direct URL strings
+      else if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
+        const firstPhoto = property.photos[0];
+        imageUrl = typeof firstPhoto === 'string' ? firstPhoto : firstPhoto?.url;
       } else if (property.image && typeof property.image === 'string') {
         imageUrl = property.image;
       } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
