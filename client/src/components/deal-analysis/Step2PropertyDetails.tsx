@@ -340,7 +340,17 @@ export default function Step2PropertyDetails({
                   name="estimatedValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{estimateLabel}</FormLabel>
+                      <FormLabel className="flex items-center gap-1">
+                        {estimateLabel}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
