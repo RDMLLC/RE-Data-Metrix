@@ -241,13 +241,23 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedHoaFees: hoaFees
     });
     
+    // Extract tax from taxHistory array (most recent entry) if available
+    let taxHistoryAmount: number | undefined;
+    let taxHistoryAssessedValue: number | undefined;
+    if (property.taxHistory && Array.isArray(property.taxHistory) && property.taxHistory.length > 0) {
+      const sortedHistory = [...property.taxHistory].sort((a: any, b: any) => (b.year || 0) - (a.year || 0));
+      const mostRecent = sortedHistory[0];
+      taxHistoryAmount = this.parseNumber(mostRecent.taxPaid || mostRecent.tax || mostRecent.amount || mostRecent.taxAmount);
+      taxHistoryAssessedValue = this.parseNumber(mostRecent.value || mostRecent.assessedValue || mostRecent.taxAssessedValue);
+    }
+    
     // Extract tax assessed value (the property's assessed value for tax purposes)
     const taxAssessedValue = this.parseNumber(
       property.taxAssessedValue ||
       property.taxValue ||
       property.tax?.assessedValue ||
       property.taxInfo?.assessedValue
-    );
+    ) || taxHistoryAssessedValue;
     
     // Extract annual tax amount (the actual dollar amount paid in taxes)
     const annualTax = this.parseNumber(
@@ -257,13 +267,14 @@ export class HasDataAPIService implements IPropertyAPIService {
       property.taxInfo?.annualTax ||
       property.yearlyTax ||
       property.taxAnnualAmount
-    );
+    ) || taxHistoryAmount;
     
     console.log("Redfin tax fields:", {
       taxAssessedValue: property.taxAssessedValue,
       taxValue: property.taxValue,
       tax: property.tax,
       taxInfo: property.taxInfo,
+      taxHistory: property.taxHistory ? `Array with ${property.taxHistory.length} entries` : undefined,
       propertyTaxes: property.propertyTaxes,
       annualTax: property.annualTax,
       extractedTaxAssessedValue: taxAssessedValue,
@@ -328,29 +339,46 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedHoaFees: hoaFees
     });
     
+    // Extract tax from taxHistory array (most recent entry) if available
+    let taxHistoryAmount: number | undefined;
+    let taxHistoryAssessedValue: number | undefined;
+    if (property.taxHistory && Array.isArray(property.taxHistory) && property.taxHistory.length > 0) {
+      // Sort by year descending to get the most recent
+      const sortedHistory = [...property.taxHistory].sort((a: any, b: any) => (b.year || 0) - (a.year || 0));
+      const mostRecent = sortedHistory[0];
+      taxHistoryAmount = this.parseNumber(mostRecent.taxPaid || mostRecent.tax || mostRecent.amount || mostRecent.taxAmount);
+      taxHistoryAssessedValue = this.parseNumber(mostRecent.value || mostRecent.assessedValue || mostRecent.taxAssessedValue);
+    }
+    
     // Extract tax assessed value (the property's assessed value for tax purposes)
     const taxAssessedValue = this.parseNumber(
       property.taxAssessedValue ||
       property.taxValue ||
       property.tax?.assessedValue ||
-      property.taxInfo?.assessedValue
-    );
+      property.taxInfo?.assessedValue ||
+      property.resoFacts?.taxAssessedValue
+    ) || taxHistoryAssessedValue;
     
     // Extract annual tax amount (the actual dollar amount paid in taxes)
+    // Check multiple possible field locations including nested objects and taxHistory
     const annualTax = this.parseNumber(
       property.propertyTaxes ||
       property.annualTax ||
       property.taxAnnualAmount ||
       property.tax?.annualAmount ||
       property.taxInfo?.annualTax ||
-      property.yearlyTax
-    );
+      property.yearlyTax ||
+      property.resoFacts?.taxAnnualAmount ||
+      property.attributionInfo?.taxAmount
+    ) || taxHistoryAmount;
     
     console.log("Zillow tax fields:", {
       taxAssessedValue: property.taxAssessedValue,
       taxValue: property.taxValue,
       tax: property.tax,
       taxInfo: property.taxInfo,
+      taxHistory: property.taxHistory ? `Array with ${property.taxHistory.length} entries` : undefined,
+      resoFacts: property.resoFacts ? 'present' : undefined,
       propertyTaxes: property.propertyTaxes,
       annualTax: property.annualTax,
       taxAnnualAmount: property.taxAnnualAmount,
