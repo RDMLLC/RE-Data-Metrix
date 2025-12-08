@@ -261,25 +261,45 @@ export default function Checkout() {
   const onRegisterSubmit = async (data: RegisterFormData) => {
     setIsRegistering(true);
     try {
-      const { confirmPassword, ...registerData } = data;
-      const finalData = {
-        ...registerData,
-        pendingSubscription: true,
-      };
-      const result = await registerUser(finalData);
-      
-      if ((result as any)?.requiresVerification) {
+      // Get the price ID for the selected plan
+      const priceId = selectedPlan === "monthly" ? stripePrices.monthly : stripePrices.annual;
+      if (!priceId) {
         toast({
-          title: "Check your email!",
-          description: "We've sent you a verification link. Please verify your email to activate your account and complete your subscription.",
+          title: "Unable to process",
+          description: "Subscription plans are not available. Please try again later.",
+          variant: "destructive",
         });
-        setJustRegistered(true);
+        return;
+      }
+
+      // Call the payment-first checkout endpoint
+      const response = await fetch("/api/subscription/checkout/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+          fullName: data.fullName,
+          priceId,
+          selectedPlan,
+          discountCode: appliedDiscount?.code,
+          termsAccepted: data.termsAccepted,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Registration failed");
+      }
+
+      // Redirect to Stripe Checkout
+      if (result.url) {
+        window.location.href = result.url;
       } else {
-        toast({
-          title: "Account Created!",
-          description: "Now proceeding to payment...",
-        });
-        handleCheckout();
+        throw new Error("No checkout URL returned");
       }
     } catch (error: any) {
       toast({

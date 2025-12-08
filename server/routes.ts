@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -483,7 +483,259 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create Stripe Checkout session
+  // Payment-first checkout - for NEW user registration (unauthenticated)
+  // Validates credentials, stores pending registration, creates Stripe checkout
+  const checkoutStartSchema = z.object({
+    username: z.string().min(3),
+    email: z.string().email(),
+    password: z.string().min(8),
+    fullName: z.string().min(1),
+    priceId: z.string(),
+    selectedPlan: z.enum(['monthly', 'annual']),
+    discountCode: z.string().optional(),
+    termsAccepted: z.literal(true),
+  });
+
+  app.post("/api/subscription/checkout/start", async (req, res) => {
+    try {
+      const validatedData = checkoutStartSchema.parse(req.body);
+
+      // Check if email is already in use
+      const existingEmail = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.email}) = LOWER(${validatedData.email})`)
+        .limit(1);
+
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+
+      // Check if username is already in use
+      const existingUsername = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.username}) = LOWER(${validatedData.username})`)
+        .limit(1);
+
+      if (existingUsername.length > 0) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+
+      // Check if there's already a pending registration with this email
+      const existingPending = await db
+        .select()
+        .from(pendingRegistrations)
+        .where(and(
+          sql`LOWER(${pendingRegistrations.email}) = LOWER(${validatedData.email})`,
+          eq(pendingRegistrations.status, 'pending')
+        ))
+        .limit(1);
+
+      // Delete old pending registration if exists
+      if (existingPending.length > 0) {
+        await db
+          .delete(pendingRegistrations)
+          .where(eq(pendingRegistrations.id, existingPending[0].id));
+      }
+
+      // Hash password
+      const passwordHash = await hashPassword(validatedData.password);
+
+      // Set expiry for 24 hours
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
+      // Create pending registration
+      const [pending] = await db
+        .insert(pendingRegistrations)
+        .values({
+          username: validatedData.username,
+          email: validatedData.email,
+          passwordHash,
+          fullName: validatedData.fullName,
+          discountCode: validatedData.discountCode || null,
+          selectedPlan: validatedData.selectedPlan,
+          expiresAt,
+        })
+        .returning();
+
+      // Create Stripe checkout session
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+
+      // Create a new Stripe customer for this pending registration
+      const customer = await stripe.customers.create({
+        email: validatedData.email,
+        name: validatedData.fullName,
+        metadata: {
+          pendingRegistrationId: pending.id,
+        },
+      });
+
+      // Build checkout session params
+      const sessionParams: any = {
+        customer: customer.id,
+        line_items: [{ price: validatedData.priceId, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/checkout?canceled=true`,
+        metadata: {
+          pendingRegistrationId: pending.id,
+        },
+      };
+
+      // Apply discount if provided
+      if (validatedData.discountCode) {
+        const normalizedCode = validatedData.discountCode.toUpperCase();
+        const discount = await storage.getDiscountCodeByCode(normalizedCode);
+        
+        if (discount && discount.stripeCouponId) {
+          sessionParams.discounts = [{ coupon: discount.stripeCouponId }];
+        }
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      // Update pending registration with session ID
+      await db
+        .update(pendingRegistrations)
+        .set({ stripeSessionId: session.id })
+        .where(eq(pendingRegistrations.id, pending.id));
+
+      console.log(`[CHECKOUT] Created pending registration ${pending.id} with Stripe session ${session.id}`);
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error('Checkout start error:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: "Invalid registration data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to start checkout" });
+    }
+  });
+
+  // Complete checkout - after successful Stripe payment, creates the user account
+  app.get("/api/subscription/checkout/complete", async (req, res) => {
+    try {
+      const { session_id } = req.query;
+
+      if (!session_id || typeof session_id !== 'string') {
+        return res.status(400).json({ error: "Session ID is required" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id, {
+        expand: ['subscription', 'customer'],
+      });
+
+      // Get the pending registration ID from session metadata
+      const pendingId = session.metadata?.pendingRegistrationId;
+      if (!pendingId) {
+        return res.status(400).json({ error: "Invalid checkout session" });
+      }
+
+      // Find the pending registration
+      const [pending] = await db
+        .select()
+        .from(pendingRegistrations)
+        .where(eq(pendingRegistrations.id, pendingId))
+        .limit(1);
+
+      if (!pending) {
+        return res.status(400).json({ error: "Registration not found" });
+      }
+
+      // SECURITY: Verify the session ID matches what we stored for this pending registration
+      if (pending.stripeSessionId !== session_id) {
+        console.error(`[CHECKOUT] Session ID mismatch: expected ${pending.stripeSessionId}, got ${session_id}`);
+        return res.status(403).json({ error: "Invalid session" });
+      }
+
+      if (pending.status === 'completed') {
+        // Already processed - just return success
+        return res.json({ 
+          success: true, 
+          message: "Account already created. Please verify your email to log in.",
+          alreadyProcessed: true,
+        });
+      }
+
+      // SECURITY: Verify the Stripe checkout session is complete and payment is confirmed
+      if (session.status !== 'complete') {
+        console.error(`[CHECKOUT] Session not complete: ${session.status}`);
+        return res.status(400).json({ error: "Checkout session not complete" });
+      }
+
+      if (session.payment_status !== 'paid') {
+        console.error(`[CHECKOUT] Payment not confirmed: ${session.payment_status}`);
+        return res.status(400).json({ error: "Payment not confirmed" });
+      }
+
+      // Verify subscription is active
+      const subscription = session.subscription as any;
+      if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trialing')) {
+        console.error(`[CHECKOUT] Subscription not active: ${subscription?.status}`);
+        return res.status(400).json({ error: "Subscription not active" });
+      }
+
+      // Create the actual user account
+      const referralCode = generateReferralCode();
+      const verificationToken = generateVerificationToken();
+      const verificationExpiry = new Date();
+      verificationExpiry.setHours(verificationExpiry.getHours() + 24);
+
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          username: pending.username,
+          email: pending.email,
+          password: pending.passwordHash,
+          role: 'user',
+          subscriptionStatus: 'active',
+          referralCode,
+          isEmailVerified: false,
+          verificationToken,
+          verificationExpiry,
+          termsAcceptedAt: new Date(),
+          termsVersion: '1.0',
+          privacyVersion: '1.0',
+          stripeCustomerId: session.customer as string,
+          stripeSubscriptionId: subscription.id,
+        })
+        .returning();
+
+      // Create user profile
+      await db.insert(userProfiles).values({
+        userId: newUser.id,
+        fullName: pending.fullName,
+      });
+
+      // Mark pending registration as completed
+      await db
+        .update(pendingRegistrations)
+        .set({ status: 'completed' })
+        .where(eq(pendingRegistrations.id, pending.id));
+
+      // Send verification email
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+      const verifyUrl = `${baseUrl}/verify-email/${verificationToken}`;
+      await emailService.sendVerificationEmail(pending.email, verifyUrl);
+
+      console.log(`[CHECKOUT] Created user ${newUser.id} from pending ${pending.id}, subscription ${subscription.id}`);
+
+      res.json({ 
+        success: true, 
+        message: "Account created! Please check your email to verify your account.",
+        requiresVerification: true,
+      });
+    } catch (error) {
+      console.error('Checkout complete error:', error);
+      res.status(500).json({ error: "Failed to complete registration" });
+    }
+  });
+
+  // Create Stripe Checkout session (for EXISTING authenticated users)
   app.post("/api/subscription/checkout", ensureAuthenticated, async (req, res) => {
     try {
       const user = req.user as User;
