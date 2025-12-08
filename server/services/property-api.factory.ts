@@ -1,12 +1,16 @@
 import type { IPropertyAPIService } from "./property-api.interface";
+import { RentCastAPIService } from "./rentcast-api.service";
 import { HasDataAPIService } from "./hasdata-api.service";
 
 export class PropertyAPIFactory {
   private static instance: IPropertyAPIService | null = null;
 
-  static getService(provider: string = "hasdata"): IPropertyAPIService {
+  static getService(provider: string = "rentcast"): IPropertyAPIService {
     if (!this.instance) {
       switch (provider.toLowerCase()) {
+        case "rentcast":
+          this.instance = new RentCastAPIService();
+          break;
         case "hasdata":
           this.instance = new HasDataAPIService();
           break;
