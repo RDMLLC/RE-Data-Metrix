@@ -2645,11 +2645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.id, id));
       
       // Send verification email
-      const protocol = req.protocol || "https";
-      const host = req.get("host") || "localhost:5000";
-      const verifyUrl = `${protocol}://${host}/verify-email/${verificationToken}`;
-      
-      const emailSent = await emailService.sendVerificationEmail(user.email, verifyUrl);
+      const emailSent = await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
       
       res.json({ 
         message: emailSent ? "Verification email sent successfully" : "Failed to send email",
