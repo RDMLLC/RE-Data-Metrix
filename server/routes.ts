@@ -164,9 +164,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requiresVerification: !isAutoVerified,
         isComped: !!compInviteToAccept,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[Registration Error]', error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid registration data", details: error.errors });
+      }
+      // Handle database unique constraint violations
+      if (error.code === '23505') {
+        if (error.constraint?.includes('username')) {
+          return res.status(400).json({ error: "Username already taken" });
+        }
+        if (error.constraint?.includes('email')) {
+          return res.status(400).json({ error: "Email already in use" });
+        }
+        return res.status(400).json({ error: "Account already exists" });
       }
       res.status(500).json({ error: "Registration failed" });
     }

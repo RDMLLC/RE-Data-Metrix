@@ -101,6 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(data),
         credentials: "include",
       });
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Registration failed. Please try again.");
+      }
       const responseData = await response.json();
       if (!response.ok) {
         throw new Error(responseData.error || "Registration failed");
