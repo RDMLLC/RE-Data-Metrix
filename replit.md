@@ -35,9 +35,19 @@ A subscription-based access system restricts premium features, requiring either 
 The platform uses Stripe for all subscription and payment processing via Replit's native connector (`stripe-replit-sync`):
 
 **Key Components:**
-- `server/services/stripeClient.ts`: Stripe initialization and configuration
+- `server/services/stripeClient.ts`: Stripe initialization and configuration (supports manual API keys as fallback)
 - `server/services/stripeService.ts`: Checkout sessions, billing portal, and subscription management
 - Webhook route: `/api/stripe/webhook/:uuid` (registered before express.json() middleware)
+
+**API Key Configuration:**
+- Primary: Uses Replit's Stripe connector for development
+- Fallback: Manual `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` environment secrets for production
+- The stripeClient.ts checks for manual keys first, then falls back to Replit connector
+
+**Stripe Product Setup:**
+- Products must have `plan_type` metadata set to either `monthly` or `annual`
+- Metadata can be on either the Price OR the Product object (code checks both)
+- Products must be created in LIVE mode for production (test mode products are separate)
 
 **API Endpoints:**
 - `GET /api/subscription/plans`: List available subscription plans

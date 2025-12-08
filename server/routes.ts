@@ -464,13 +464,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const plans = prices.data
-        .filter(price => price.recurring && price.metadata?.plan_type)
+        .filter(price => price.recurring && (price.metadata?.plan_type || (price.product as any)?.metadata?.plan_type))
         .map(price => ({
           id: price.id,
           productId: (price.product as any).id,
           name: (price.product as any).name,
           description: (price.product as any).description,
-          planType: price.metadata?.plan_type,
+          planType: price.metadata?.plan_type || (price.product as any)?.metadata?.plan_type,
           amount: price.unit_amount,
           currency: price.currency,
           interval: price.recurring?.interval,
