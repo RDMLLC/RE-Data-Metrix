@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, memo } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
@@ -61,6 +61,223 @@ const registerSchema = z
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
+
+interface OrderSummaryProps {
+  showButton: boolean;
+  selectedPlan: "monthly" | "annual";
+  setSelectedPlan: (plan: "monthly" | "annual") => void;
+  appliedDiscount: { code: string; percentOff: number; amountOff: number } | null;
+  setAppliedDiscount: (discount: { code: string; percentOff: number; amountOff: number } | null) => void;
+  discountCode: string;
+  setDiscountCode: (code: string) => void;
+  isValidatingDiscount: boolean;
+  basePrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  isProcessing: boolean;
+  isPending: boolean;
+  onApplyDiscount: () => void;
+  onRemoveDiscount: () => void;
+  onCheckout: () => void;
+}
+
+const OrderSummary = memo(function OrderSummary({
+  showButton,
+  selectedPlan,
+  setSelectedPlan,
+  appliedDiscount,
+  setAppliedDiscount,
+  discountCode,
+  setDiscountCode,
+  isValidatingDiscount,
+  basePrice,
+  discountAmount,
+  finalPrice,
+  isProcessing,
+  isPending,
+  onApplyDiscount,
+  onRemoveDiscount,
+  onCheckout,
+}: OrderSummaryProps) {
+  return (
+    <Card className="sticky top-24">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg">Order Summary</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Select Plan</Label>
+          <RadioGroup
+            value={selectedPlan}
+            onValueChange={(value) => {
+              setSelectedPlan(value as "monthly" | "annual");
+              if (appliedDiscount) {
+                setAppliedDiscount(null);
+                setDiscountCode("");
+              }
+            }}
+            className="space-y-2"
+            data-testid="radio-plan-selection"
+          >
+            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "monthly" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="monthly" id="plan-monthly" data-testid="radio-plan-monthly" />
+                <Label htmlFor="plan-monthly" className="cursor-pointer">
+                  <div className="font-medium">Monthly</div>
+                  <div className="text-sm text-muted-foreground">Billed monthly</div>
+                </Label>
+              </div>
+              <span className="font-semibold">${MONTHLY_PRICE}/mo</span>
+            </div>
+            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "annual" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="annual" id="plan-annual" data-testid="radio-plan-annual" />
+                <Label htmlFor="plan-annual" className="cursor-pointer">
+                  <div className="font-medium flex items-center gap-2">
+                    Annual
+                    <Badge variant="secondary" className="text-xs bg-success/20 text-success border-0">
+                      Save ${ANNUAL_SAVINGS}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">${ANNUAL_MONTHLY_EQUIVALENT}/mo, billed yearly</div>
+                </Label>
+              </div>
+              <span className="font-semibold">${ANNUAL_PRICE}/yr</span>
+            </div>
+          </RadioGroup>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <Tag className="h-4 w-4" />
+            Discount Code
+          </Label>
+          {appliedDiscount ? (
+            <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/30">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                <span className="font-medium text-success">{appliedDiscount.code}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({appliedDiscount.percentOff ? `${appliedDiscount.percentOff}% off` : `$${appliedDiscount.amountOff} off`})
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRemoveDiscount}
+                className="text-muted-foreground hover:text-foreground"
+                data-testid="button-remove-discount"
+              >
+                Remove
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter code"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                className="flex-1"
+                data-testid="input-discount-code"
+              />
+              <Button
+                variant="outline"
+                onClick={onApplyDiscount}
+                disabled={!discountCode.trim() || isValidatingDiscount}
+                data-testid="button-apply-discount"
+              >
+                {isValidatingDiscount ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Apply"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">
+              {selectedPlan === "monthly" ? "Monthly" : "Annual"} Membership
+            </span>
+            <span className={appliedDiscount ? "line-through text-muted-foreground" : "font-medium"}>
+              ${basePrice.toFixed(2)}
+            </span>
+          </div>
+          {appliedDiscount && (
+            <div className="flex justify-between items-center text-sm text-success">
+              <span>Discount ({appliedDiscount.code})</span>
+              <span>-${discountAmount.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+        
+        <Separator />
+        
+        <div className="flex justify-between items-center text-lg font-semibold">
+          <span>Total Today</span>
+          <span className="text-primary">${finalPrice.toFixed(2)}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {selectedPlan === "monthly" 
+            ? `Billed $${finalPrice.toFixed(2)}/month. Cancel anytime.`
+            : `Billed $${finalPrice.toFixed(2)}/year. Cancel anytime.`
+          }
+        </p>
+
+        {showButton && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3 w-3 text-success" />
+                <span>PCI-DSS compliant</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Lock className="h-3 w-3 text-success" />
+                <span>256-bit SSL encryption</span>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+      {showButton && (
+        <CardFooter className="flex flex-col gap-4">
+          <Button 
+            onClick={onCheckout}
+            disabled={isProcessing || isPending}
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            size="lg"
+            data-testid="button-subscribe-now"
+          >
+            {isProcessing || isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-4 w-4 mr-2" />
+                Subscribe Now
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            By subscribing, you agree to our{" "}
+            <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+          </p>
+        </CardFooter>
+      )}
+    </Card>
+  );
+});
 
 export default function Checkout() {
   const { isAuthenticated, isSubscriber, user, register: registerUser } = useAuth();
@@ -325,197 +542,24 @@ export default function Checkout() {
     }
   };
 
-  // Order summary component - memoized to prevent re-creation on every render
-  // which would cause the discount code input to lose focus
-  const OrderSummary = useMemo(() => {
-    const Component = ({ showButton = false }: { showButton?: boolean }) => (
-    <Card className="sticky top-24">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Order Summary</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Plan Selection */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Select Plan</Label>
-          <RadioGroup
-            value={selectedPlan}
-            onValueChange={(value) => {
-              setSelectedPlan(value as "monthly" | "annual");
-              // Clear discount when switching plans (plan-specific codes may not apply)
-              if (appliedDiscount) {
-                setAppliedDiscount(null);
-                setDiscountCode("");
-                toast({
-                  title: "Discount Removed",
-                  description: "Please re-apply your discount code for the new plan.",
-                });
-              }
-            }}
-            className="space-y-2"
-            data-testid="radio-plan-selection"
-          >
-            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "monthly" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="monthly" id="plan-monthly" data-testid="radio-plan-monthly" />
-                <Label htmlFor="plan-monthly" className="cursor-pointer">
-                  <div className="font-medium">Monthly</div>
-                  <div className="text-sm text-muted-foreground">Billed monthly</div>
-                </Label>
-              </div>
-              <span className="font-semibold">${MONTHLY_PRICE}/mo</span>
-            </div>
-            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "annual" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="annual" id="plan-annual" data-testid="radio-plan-annual" />
-                <Label htmlFor="plan-annual" className="cursor-pointer">
-                  <div className="font-medium flex items-center gap-2">
-                    Annual
-                    <Badge variant="secondary" className="text-xs bg-success/20 text-success border-0">
-                      Save ${ANNUAL_SAVINGS}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-muted-foreground">${ANNUAL_MONTHLY_EQUIVALENT}/mo, billed yearly</div>
-                </Label>
-              </div>
-              <span className="font-semibold">${ANNUAL_PRICE}/yr</span>
-            </div>
-          </RadioGroup>
-        </div>
-
-        <Separator />
-
-        {/* Discount Code */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Discount Code
-          </Label>
-          {appliedDiscount ? (
-            <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/30">
-              <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-success" />
-                <span className="font-medium text-success">{appliedDiscount.code}</span>
-                <span className="text-sm text-muted-foreground">
-                  ({appliedDiscount.percentOff ? `${appliedDiscount.percentOff}% off` : `$${appliedDiscount.amountOff} off`})
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={removeDiscount}
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="button-remove-discount"
-              >
-                Remove
-              </Button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter code"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                className="flex-1"
-                data-testid="input-discount-code"
-              />
-              <Button
-                variant="outline"
-                onClick={handleApplyDiscount}
-                disabled={!discountCode.trim() || isValidatingDiscount}
-                data-testid="button-apply-discount"
-              >
-                {isValidatingDiscount ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Apply"
-                )}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <Separator />
-
-        {/* Price Summary */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">
-              {selectedPlan === "monthly" ? "Monthly" : "Annual"} Membership
-            </span>
-            <span className={appliedDiscount ? "line-through text-muted-foreground" : "font-medium"}>
-              ${basePrice.toFixed(2)}
-            </span>
-          </div>
-          {appliedDiscount && (
-            <div className="flex justify-between items-center text-sm text-success">
-              <span>Discount ({appliedDiscount.code})</span>
-              <span>-${discountAmount.toFixed(2)}</span>
-            </div>
-          )}
-        </div>
-        
-        <Separator />
-        
-        <div className="flex justify-between items-center text-lg font-semibold">
-          <span>Total Today</span>
-          <span className="text-primary">${finalPrice.toFixed(2)}</span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {selectedPlan === "monthly" 
-            ? `Billed $${finalPrice.toFixed(2)}/month. Cancel anytime.`
-            : `Billed $${finalPrice.toFixed(2)}/year. Cancel anytime.`
-          }
-        </p>
-
-        {showButton && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Shield className="h-3 w-3 text-success" />
-                <span>PCI-DSS compliant</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Lock className="h-3 w-3 text-success" />
-                <span>256-bit SSL encryption</span>
-              </div>
-            </div>
-          </>
-        )}
-      </CardContent>
-      {showButton && (
-        <CardFooter className="flex flex-col gap-4">
-          <Button 
-            onClick={handleCheckout}
-            disabled={isProcessing || checkoutMutation.isPending}
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-            size="lg"
-            data-testid="button-subscribe-now"
-          >
-            {isProcessing || checkoutMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-4 w-4 mr-2" />
-                Subscribe Now
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            By subscribing, you agree to our{" "}
-            <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-          </p>
-        </CardFooter>
-      )}
-    </Card>
-    );
-    return Component;
-  }, [selectedPlan, appliedDiscount, discountCode, isValidatingDiscount, basePrice, discountAmount, finalPrice, isProcessing, checkoutMutation.isPending]);
+  // Common props for OrderSummary component
+  const orderSummaryProps = {
+    selectedPlan,
+    setSelectedPlan,
+    appliedDiscount,
+    setAppliedDiscount,
+    discountCode,
+    setDiscountCode,
+    isValidatingDiscount,
+    basePrice,
+    discountAmount,
+    finalPrice,
+    isProcessing,
+    isPending: checkoutMutation.isPending,
+    onApplyDiscount: handleApplyDiscount,
+    onRemoveDiscount: removeDiscount,
+    onCheckout: handleCheckout,
+  };
 
   // Just registered but needs email verification
   if (justRegistered && !isAuthenticated) {
@@ -827,7 +871,7 @@ export default function Checkout() {
 
               {/* Order Summary */}
               <div className="lg:col-span-2">
-                <OrderSummary showButton={false} />
+                <OrderSummary showButton={false} {...orderSummaryProps} />
               </div>
             </div>
           </div>
@@ -953,7 +997,7 @@ export default function Checkout() {
             </div>
 
             <div className="lg:col-span-2">
-              <OrderSummary showButton={true} />
+              <OrderSummary showButton={true} {...orderSummaryProps} />
             </div>
           </div>
         </div>
