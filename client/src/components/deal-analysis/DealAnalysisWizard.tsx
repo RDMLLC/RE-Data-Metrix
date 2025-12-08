@@ -118,7 +118,7 @@ export type WizardFormData = z.infer<typeof wizardSchema>;
 export default function DealAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
-  const { wizardData, updatePropertyData, updateInvestorData } = useWizardData();
+  const { wizardData, updatePropertyData, updateInvestorData, clearWizardData } = useWizardData();
   const { isSubscriber, isLoading: authLoading } = useAuth();
 
   const form = useForm<WizardFormData>({
@@ -222,6 +222,21 @@ export default function DealAnalysisWizard() {
     }
   };
 
+  const handleStartNew = () => {
+    clearWizardData();
+    setPropertySnapshot(null);
+    form.reset({
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      addingSquareFootage: false,
+      closingTimeline: "not-selected",
+      loanPreference: "one-of-each",
+    });
+    setCurrentStep(1);
+  };
+
   const handlePropertyDataLoaded = (propertyData: any) => {
     setPropertySnapshot(propertyData);
   };
@@ -288,6 +303,7 @@ export default function DealAnalysisWizard() {
       currentStep={currentStep}
       totalSteps={5}
       onBack={handleBack}
+      onStartNew={handleStartNew}
       canGoBack={currentStep > 1}
     >
       {renderStep()}

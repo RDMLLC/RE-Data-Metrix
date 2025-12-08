@@ -1,7 +1,41 @@
 import type { IPropertyAPIService, PropertyData } from "./property-api.interface";
+import { z } from "zod";
 
 const RENTCAST_BASE_URL = "https://api.rentcast.io/v1";
 const HASDATA_BASE_URL = "https://api.hasdata.com";
+const PLACEHOLDER_IMAGE_URL = "/images/property-placeholder.svg";
+
+// HasData API configuration
+const HASDATA_CONFIG = {
+  maxRetries: 3,
+  timeoutMs: 15000,
+  backoffScheduleMs: [1500, 3000], // Fixed schedule: wait 1.5s after 1st fail, 3s after 2nd fail
+};
+
+// Zod schema for extracting image URLs from various response formats
+const photoObjectSchema = z.object({
+  url: z.string().optional(),
+  src: z.string().optional(),
+  href: z.string().optional(),
+}).passthrough();
+
+const photoArrayItemSchema = z.union([
+  z.string(),
+  photoObjectSchema,
+]);
+
+// Schema for HasData response - flexible to handle different formats
+const hasDataResponseSchema = z.object({
+  responsivePhotos: z.array(photoArrayItemSchema).optional(),
+  photos: z.array(photoArrayItemSchema).optional(),
+  images: z.array(photoArrayItemSchema).optional(),
+  image: z.string().optional(),
+  photoUrl: z.string().optional(),
+  hiResImageLink: z.string().optional(),
+  primaryPhoto: z.string().optional(),
+  mainImage: z.string().optional(),
+  thumbnail: z.string().optional(),
+}).passthrough();
 
 interface RentCastTaxAssessment {
   year: number;
@@ -443,80 +477,234 @@ export class RentCastAPIService implements IPropertyAPIService {
 
   async fetchPropertyImageFromUrl(url: string): Promise<string | undefined> {
     if (!this.hasDataApiKey) {
-      console.log("HasData API key not configured, cannot fetch property image");
-      return undefined;
+      console.log("[HasData] API key not configured, returning placeholder");
+      return PLACEHOLDER_IMAGE_URL;
     }
 
     try {
-      const isZillow = url.includes("zillow.com");
-      const isRedfin = url.includes("redfin.com");
-
-      if (!isZillow && !isRedfin) {
-        return undefined;
+      // Validate and determine source
+      const source = this.detectPropertySource(url);
+      if (!source) {
+        console.log(`[HasData] URL not from supported source: ${url}`);
+        return PLACEHOLDER_IMAGE_URL;
       }
 
-      const endpoint = isZillow 
-        ? `${HASDATA_BASE_URL}/scrape/zillow/property`
-        : `${HASDATA_BASE_URL}/scrape/redfin/property`;
+      // Clean and validate URL
+      const cleanUrl = this.cleanPropertyUrl(url);
+      if (!cleanUrl) {
+        console.log(`[HasData] Could not clean URL: ${url}`);
+        return PLACEHOLDER_IMAGE_URL;
+      }
 
-      // Clean the URL - remove tracking parameters and ensure proper format
+      console.log(`[HasData] Fetching image for ${source}: ${cleanUrl}`);
+
+      // Attempt to fetch with retries
+      const imageUrl = await this.fetchImageWithRetry(source, cleanUrl);
+      
+      if (imageUrl) {
+        console.log(`[HasData] Successfully extracted image: ${imageUrl}`);
+        return imageUrl;
+      }
+
+      console.log(`[HasData] No image found, returning placeholder`);
+      return PLACEHOLDER_IMAGE_URL;
+    } catch (error) {
+      console.error("[HasData] Error fetching property image:", error);
+      return PLACEHOLDER_IMAGE_URL;
+    }
+  }
+
+  private detectPropertySource(url: string): 'zillow' | 'redfin' | null {
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes("zillow.com")) return 'zillow';
+    if (lowerUrl.includes("redfin.com")) return 'redfin';
+    return null;
+  }
+
+  private cleanPropertyUrl(url: string): string | null {
+    try {
+      // Remove query parameters and hash fragments
       let cleanUrl = url.split('?')[0].split('#')[0];
       
-      console.log(`Fetching property image from HasData for: ${cleanUrl}`);
-      console.log(`[HasData] Source: ${isZillow ? 'Zillow' : 'Redfin'}`);
-
-      const fullUrl = `${endpoint}?url=${encodeURIComponent(cleanUrl)}`;
-      console.log(`[HasData] Requesting: ${fullUrl}`);
-      
-      const response = await fetch(fullUrl, {
-        method: "GET",
-        headers: {
-          "x-api-key": this.hasDataApiKey,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        console.log(`HasData image fetch failed with status ${response.status}: ${errorText}`);
-        console.log(`[HasData] Failed URL was: ${cleanUrl}`);
-        return undefined;
+      // Ensure it starts with https://
+      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        cleanUrl = 'https://' + cleanUrl;
       }
+      
+      // Convert http to https
+      if (cleanUrl.startsWith('http://')) {
+        cleanUrl = cleanUrl.replace('http://', 'https://');
+      }
+      
+      // Validate it's a proper URL
+      new URL(cleanUrl);
+      
+      return cleanUrl;
+    } catch {
+      return null;
+    }
+  }
 
-      const data = await response.json();
-      console.log(`[HasData] Response keys:`, Object.keys(data));
+  private async fetchImageWithRetry(source: 'zillow' | 'redfin', cleanUrl: string): Promise<string | undefined> {
+    const endpoint = source === 'zillow'
+      ? `${HASDATA_BASE_URL}/scrape/zillow/property`
+      : `${HASDATA_BASE_URL}/scrape/redfin/property`;
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= HASDATA_CONFIG.maxRetries; attempt++) {
+      try {
+        console.log(`[HasData] Attempt ${attempt}/${HASDATA_CONFIG.maxRetries} for ${source}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), HASDATA_CONFIG.timeoutMs);
+
+        const fullUrl = `${endpoint}?url=${encodeURIComponent(cleanUrl)}`;
+        
+        const response = await fetch(fullUrl, {
+          method: "GET",
+          headers: {
+            "x-api-key": this.hasDataApiKey,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        // Don't retry on 4xx errors (except 429 rate limit)
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          const errorText = await response.text().catch(() => "");
+          console.log(`[HasData] Client error ${response.status}: ${errorText.substring(0, 200)}`);
+          return undefined; // Don't retry on client errors
+        }
+
+        // Retry on 5xx or 429
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        return this.extractImageFromResponse(data, source);
+        
+      } catch (error: any) {
+        lastError = error;
+        const isTimeout = error.name === 'AbortError';
+        const isRetryable = isTimeout || error.message?.includes('5') || error.message?.includes('429');
+        
+        console.log(`[HasData] Attempt ${attempt} failed: ${error.message}${isTimeout ? ' (timeout)' : ''}`);
+
+        if (!isRetryable || attempt === HASDATA_CONFIG.maxRetries) {
+          break;
+        }
+
+        // Wait before next retry using fixed schedule (1.5s, 3s)
+        const backoffIndex = attempt - 1;
+        const backoffMs = HASDATA_CONFIG.backoffScheduleMs[backoffIndex] || 3000;
+        const jitter = Math.random() * 200; // Small jitter (0-200ms)
+        await new Promise(resolve => setTimeout(resolve, backoffMs + jitter));
+      }
+    }
+
+    if (lastError) {
+      console.log(`[HasData] All ${HASDATA_CONFIG.maxRetries} attempts failed: ${lastError.message}`);
+    }
+    return undefined;
+  }
+
+  private extractImageFromResponse(data: any, source: 'zillow' | 'redfin'): string | undefined {
+    try {
+      // Handle nested property object
       const property = data.property || data;
-      console.log(`[HasData] Property keys:`, Object.keys(property || {}));
-
-      let imageUrl: string | undefined;
       
-      // Zillow uses responsivePhotos array with objects containing url field
-      if (property.responsivePhotos && Array.isArray(property.responsivePhotos) && property.responsivePhotos.length > 0) {
-        const firstPhoto = property.responsivePhotos[0];
-        imageUrl = typeof firstPhoto === 'string' ? firstPhoto : firstPhoto?.url;
-        console.log(`[HasData] Found responsivePhotos, extracted: ${imageUrl}`);
-      }
-      // Redfin uses photos array with direct URL strings
-      else if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
-        const firstPhoto = property.photos[0];
-        imageUrl = typeof firstPhoto === 'string' ? firstPhoto : firstPhoto?.url;
-      } else if (property.image && typeof property.image === 'string') {
-        imageUrl = property.image;
-      } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
-        imageUrl = property.images[0];
-      } else if (property.hiResImageLink) {
-        imageUrl = property.hiResImageLink;
-      } else if (property.photoUrl) {
-        imageUrl = property.photoUrl;
-      } else if (property.primaryPhoto) {
-        imageUrl = property.primaryPhoto;
+      console.log(`[HasData] Response keys for ${source}:`, Object.keys(property || {}).slice(0, 15));
+
+      // Parse with schema for validation
+      const parsed = hasDataResponseSchema.safeParse(property);
+      if (!parsed.success) {
+        console.log(`[HasData] Schema validation warning: ${parsed.error.message}`);
+        // Continue anyway - we'll try manual extraction
       }
 
-      console.log(`[HasData] Image URL: ${imageUrl || 'not found'}`);
-      return imageUrl;
-    } catch (error) {
-      console.error("Error fetching property image from HasData:", error);
+      const obj = parsed.success ? parsed.data : property;
+
+      // Ordered list of candidate fields (Zillow-preferred first, then Redfin-preferred)
+      const candidateArrays = source === 'zillow'
+        ? [obj.responsivePhotos, obj.photos, obj.images]
+        : [obj.photos, obj.images, obj.responsivePhotos];
+      
+      const candidateStrings = [
+        obj.image,
+        obj.photoUrl,
+        obj.hiResImageLink,
+        obj.primaryPhoto,
+        obj.mainImage,
+        obj.thumbnail,
+      ];
+
+      // Try array fields first
+      for (const arr of candidateArrays) {
+        if (Array.isArray(arr) && arr.length > 0) {
+          const imageUrl = this.extractUrlFromArrayItem(arr[0]);
+          if (imageUrl && this.isValidImageUrl(imageUrl)) {
+            console.log(`[HasData] Found image in array field`);
+            return imageUrl;
+          }
+        }
+      }
+
+      // Try string fields
+      for (const str of candidateStrings) {
+        if (typeof str === 'string' && this.isValidImageUrl(str)) {
+          console.log(`[HasData] Found image in string field`);
+          return str;
+        }
+      }
+
+      console.log(`[HasData] No valid image URL found in response`);
       return undefined;
+    } catch (error) {
+      console.error(`[HasData] Error extracting image:`, error);
+      return undefined;
+    }
+  }
+
+  private extractUrlFromArrayItem(item: any): string | undefined {
+    if (typeof item === 'string') {
+      return item;
+    }
+    if (typeof item === 'object' && item !== null) {
+      // Direct URL fields
+      if (item.url) return item.url;
+      if (item.src) return item.src;
+      if (item.href) return item.href;
+      
+      // Zillow mixedSources format: { jpeg: [{ url: "..." }], webp: [...] }
+      if (item.mixedSources) {
+        const sources = item.mixedSources.jpeg || item.mixedSources.webp || [];
+        if (Array.isArray(sources) && sources.length > 0 && sources[0]?.url) {
+          return sources[0].url;
+        }
+      }
+      
+      // Nested photo object: { photo: { url: "..." } }
+      if (item.photo?.url) return item.photo.url;
+    }
+    return undefined;
+  }
+
+  private isValidImageUrl(url: string): boolean {
+    if (!url || typeof url !== 'string') return false;
+    
+    // Must be a proper URL
+    try {
+      const parsed = new URL(url);
+      // Allow http or https (some CDNs use http)
+      if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+      // Should look like an image URL or CDN
+      return true;
+    } catch {
+      return false;
     }
   }
 }

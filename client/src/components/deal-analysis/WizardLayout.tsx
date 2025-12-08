@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, RotateCcw } from "lucide-react";
 
 interface WizardLayoutProps {
   currentStep: number;
   totalSteps: number;
   onBack: () => void;
+  onStartNew?: () => void;
   canGoBack: boolean;
   children: React.ReactNode;
 }
@@ -14,6 +15,7 @@ export default function WizardLayout({
   currentStep,
   totalSteps,
   onBack,
+  onStartNew,
   canGoBack,
   children,
 }: WizardLayoutProps) {
@@ -45,9 +47,22 @@ export default function WizardLayout({
             <h1 className="text-3xl font-bold text-foreground">
               Deal Analysis
             </h1>
-            <span className="text-sm text-muted-foreground">
-              Step {currentStep} of {totalSteps}
-            </span>
+            <div className="flex items-center gap-4">
+              {onStartNew && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onStartNew}
+                  data-testid="button-start-new-analysis"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Start New Analysis
+                </Button>
+              )}
+              <span className="text-sm text-muted-foreground">
+                Step {currentStep} of {totalSteps}
+              </span>
+            </div>
           </div>
           
           <div className="flex gap-2 mb-6">

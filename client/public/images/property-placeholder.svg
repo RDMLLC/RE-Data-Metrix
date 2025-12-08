@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#f3f4f6"/>
+  <g transform="translate(200, 130)">
+    <path d="M-60 20 L0 -30 L60 20 L60 60 L-60 60 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="-15" y="25" width="30" height="35" fill="#9ca3af"/>
+    <rect x="-45" y="5" width="20" height="20" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1"/>
+    <rect x="25" y="5" width="20" height="20" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1"/>
+  </g>
+  <text x="200" y="220" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Property Image</text>
+  <text x="200" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#9ca3af">Not Available</text>
+</svg>
