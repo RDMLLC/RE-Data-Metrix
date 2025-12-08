@@ -6,6 +6,7 @@ RE Data Metrix is a real estate investment analytics and financing platform desi
 ## User Preferences
 Preferred communication style: Simple, everyday language
 Spelling: American English (analyze, not analyse)
+Calculation verification: Use `shared/data/calculationReference.ts` as the source of truth when verifying calculations are working correctly
 
 ## System Architecture
 
@@ -67,7 +68,7 @@ The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & F
 
 Lender email alerts notify lenders of loan product changes and new investor inquiries. The Investor Inquiries system stores contact requests in a `lender_inquiries` table, viewable by lenders in a dedicated portal page (`/lender-inquiries`) with search and filter capabilities. A "Contact Lender" flow on the Deal Analysis results page allows investors to send detailed inquiries.
 
-An Admin portal page (`/admin/calculations`) provides a reference for 22 platform calculations across 8 categories, including descriptions, formulas, inputs, and worked examples, with search and navigation features.
+An Admin portal page (`/admin/calculations`) provides a reference for 23 platform calculations across 8 categories, including descriptions, formulas, inputs, and worked examples, with search and navigation features. **This reference (`shared/data/calculationReference.ts`) should be used as the source of truth when verifying calculations are functioning correctly.**
 
 ### Double Close Transaction Support
 Deal Analysis Step 3 includes support for double close transactions (common when buying from wholesalers). Features include:
