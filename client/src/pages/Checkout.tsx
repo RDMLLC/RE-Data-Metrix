@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Users, Tag, Star, Ticket, ChevronDown, ChevronUp, FileText, CheckCircle } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, Ticket, ChevronDown, ChevronUp, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -51,7 +51,6 @@ const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
-    referralCode: z.string().optional(),
     termsAccepted: z.literal(true, {
       errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
     }),
@@ -70,7 +69,6 @@ export default function Checkout() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [hasReferralCode, setHasReferralCode] = useState<string>("no");
   const [justRegistered, setJustRegistered] = useState(false);
   
   // Plan and discount state
@@ -107,7 +105,6 @@ export default function Checkout() {
       password: "",
       confirmPassword: "",
       fullName: "",
-      referralCode: "",
       termsAccepted: false as unknown as true,
     },
   });
@@ -267,9 +264,6 @@ export default function Checkout() {
       const { confirmPassword, ...registerData } = data;
       const finalData = {
         ...registerData,
-        referralCode: hasReferralCode === "yes" && registerData.referralCode 
-          ? registerData.referralCode 
-          : undefined,
         pendingSubscription: true,
       };
       const result = await registerUser(finalData);
@@ -647,62 +641,6 @@ export default function Checkout() {
                             )}
                           />
                         </div>
-
-                        <Separator className="my-4" />
-
-                        <div className="space-y-3">
-                          <Label className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            Do you have a referral code?
-                          </Label>
-                          <RadioGroup
-                            value={hasReferralCode}
-                            onValueChange={(value) => {
-                              setHasReferralCode(value);
-                              if (value === "no") {
-                                form.setValue("referralCode", "");
-                              }
-                            }}
-                            className="flex gap-4"
-                            data-testid="radio-checkout-has-referral"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="no" id="no-referral" data-testid="radio-checkout-no-referral" />
-                              <Label htmlFor="no-referral" className="font-normal cursor-pointer">
-                                No
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="yes" id="yes-referral" data-testid="radio-checkout-yes-referral" />
-                              <Label htmlFor="yes-referral" className="font-normal cursor-pointer">
-                                Yes
-                              </Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-
-                        {hasReferralCode === "yes" && (
-                          <FormField
-                            control={form.control}
-                            name="referralCode"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Enter Referral Code</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder="ABC12345"
-                                    data-testid="input-checkout-referral-code"
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  Get 1 month free trial with a referral code
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
 
                         {/* Terms Agreement Section */}
                         <div className="border-t pt-4 mt-2">
