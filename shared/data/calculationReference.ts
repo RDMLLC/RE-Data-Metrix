@@ -418,6 +418,31 @@ export const calculationCategories: CalculationCategory[] = [
           result: "$258,600",
           explanation: "$200,000 + $50,000 + $5,000 + $3,600 = $258,600"
         }
+      },
+      {
+        id: "double-close-closing-costs",
+        name: "Double Close Closing Costs",
+        description: "Total closing costs when buying from a wholesaler in a double close transaction where the investor pays for both transactions",
+        formula: "totalClosingCosts = closingCostsBuy1 + closingCostsBuy2",
+        formulaDisplay: "Total Closing Costs = Buy1 Closing Costs + Buy2 Closing Costs",
+        inputs: [
+          { name: "closingCostsBuy1", description: "Closing costs for the wholesaler's purchase (Buy1)", source: "User input (Step 4)" },
+          { name: "closingCostsBuy2", description: "Closing costs for investor's purchase from wholesaler (Buy2)", source: "User input (Step 4)" },
+          { name: "isDoubleClose", description: "Whether this is a double close transaction", source: "User input (Step 3)" },
+          { name: "payingForBothSides", description: "Whether investor pays both transaction costs", source: "User input (Step 3)" }
+        ],
+        output: "Combined closing costs for both transactions",
+        example: {
+          inputs: { closingCostsBuy1: 1750, closingCostsBuy2: 1750, isDoubleClose: true, payingForBothSides: true },
+          result: "$3,500",
+          explanation: "$1,750 (Buy1) + $1,750 (Buy2) = $3,500 total closing costs"
+        },
+        notes: [
+          "Only applies when purchasing from a wholesaler who requires a double close",
+          "Each transaction includes: Attorney Fees, Doc Prep Fees, Title Exam, and Title Insurance",
+          "Buy1 and Buy2 costs are pre-populated with the same defaults but can be adjusted separately",
+          "If not a double close or not paying for both sides, only Buy1 closing costs apply"
+        ]
       }
     ]
   },

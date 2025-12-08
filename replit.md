@@ -50,7 +50,15 @@ The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & F
 
 Lender email alerts notify lenders of loan product changes and new investor inquiries. The Investor Inquiries system stores contact requests in a `lender_inquiries` table, viewable by lenders in a dedicated portal page (`/lender-inquiries`) with search and filter capabilities. A "Contact Lender" flow on the Deal Analysis results page allows investors to send detailed inquiries.
 
-An Admin portal page (`/admin/calculations`) provides a reference for 21 platform calculations across 8 categories, including descriptions, formulas, inputs, and worked examples, with search and navigation features.
+An Admin portal page (`/admin/calculations`) provides a reference for 22 platform calculations across 8 categories, including descriptions, formulas, inputs, and worked examples, with search and navigation features.
+
+### Double Close Transaction Support
+Deal Analysis Step 3 includes support for double close transactions (common when buying from wholesalers). Features include:
+- "Is this a double close?" question with Yes/No radio buttons
+- Follow-up "Are you paying for both transactions?" question when Yes is selected
+- Step 4 displays two separate closing cost sections (Buy1 and Buy2) when paying for both sides
+- Both sections are pre-populated with standard closing cost defaults and fully editable
+- Total investment calculations automatically include both sets of closing costs
 
 An Admin portal for Affiliate Management (`/admin/affiliates`) allows managing affiliate partner programs and categories, including CRUD operations and pre-seeded data.
 
