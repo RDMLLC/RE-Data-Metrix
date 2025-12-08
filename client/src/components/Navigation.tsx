@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, Settings, Building2 } from "lucide-react";
+import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -88,6 +88,23 @@ export default function Navigation() {
       setLocation("/");
     } catch (error) {
       console.error("Failed to logout lender:", error);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const response = await fetch('/api/subscription/billing-portal', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("No billing portal URL returned");
+      }
+    } catch (error) {
+      console.error("Failed to open billing portal:", error);
     }
   };
 
@@ -188,6 +205,22 @@ export default function Navigation() {
                         Member Dashboard
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem 
+                      onClick={() => setLocation("/portal/settings")}
+                      className="cursor-pointer"
+                      data-testid="menu-item-account-settings"
+                    >
+                      <UserCog className="mr-2 h-4 w-4" />
+                      Account Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleManageSubscription}
+                      className="cursor-pointer"
+                      data-testid="menu-item-manage-subscription"
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Manage Subscription
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={handleLogout}
@@ -324,6 +357,20 @@ export default function Navigation() {
                       Member Dashboard
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem 
+                    onClick={() => setLocation("/portal/settings")}
+                    className="cursor-pointer"
+                  >
+                    <UserCog className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleManageSubscription}
+                    className="cursor-pointer"
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Manage Subscription
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleLogout}
