@@ -3508,7 +3508,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : Math.min(totalProjectCost, maxLoanFromArv);
         
         const pointsCost = loanAmount * (userLoan.points / 100);
-        const interestCost = (loanAmount * (userLoan.interestRate / 100) / 12) * projectLength;
+        const monthlyInterestPayment = (loanAmount * (userLoan.interestRate / 100) / 12);
+        const interestCost = monthlyInterestPayment * projectLength;
         const appraisalCost = userLoan.appraisalRequired ? (userLoan.appraisalFee || 500) : 0;
         const drawFeesCost = (userLoan.drawFees || 0) * numberOfDraws;
         const docPrepFees = userLoan.loanDocPrepFees || 0;
@@ -3516,17 +3517,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Properly handle deferred costs - they are NOT paid upfront but ARE added at sale
         const rolledCosts = (userLoan.pointsDeferred ? pointsCost : 0) + 
                            (userLoan.interestDeferred ? interestCost : 0);
-        // Upfront costs are only those NOT deferred
+        
+        // User loan carrying costs include monthly interest when NOT deferred
+        const userLoanCarryingCosts = carryingCosts + (!userLoan.interestDeferred ? interestCost : 0);
+        
+        // Upfront loan costs (points if not deferred + appraisal + draws + doc prep)
         const upfrontLoanCosts = (!userLoan.pointsDeferred ? pointsCost : 0) + 
-                                 (!userLoan.interestDeferred ? interestCost : 0) +
                                  appraisalCost + drawFeesCost + docPrepFees;
         
         // Out of pocket = what you pay upfront (cash needed minus loan proceeds)
-        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + carryingCosts + upfrontLoanCosts;
+        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + userLoanCarryingCosts + upfrontLoanCosts;
         // Total investment includes rolled costs that come due at sale
         const totalInvestment = outOfPocket + rolledCosts;
         // Profit = sale proceeds minus all costs (upfront and rolled)
-        const profit = sellPrice - totalProjectCost - closingCostsBuy - carryingCosts - 
+        const profit = sellPrice - totalProjectCost - closingCostsBuy - userLoanCarryingCosts - 
                       upfrontLoanCosts - rolledCosts - closingCostsSell - commission;
         
         userLoanColumn = {
@@ -3538,7 +3542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rehabBudget,
           totalProjectCost,
           closingCostsBuy,
-          carryingCosts,
+          carryingCosts: userLoanCarryingCosts,
           totalInvestment,
           sellPrice,
           closingCostsSell,
@@ -3623,22 +3627,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const pointsCost = loanAmount * (points / 100);
-        const interestCost = (loanAmount * (interestRate / 100) / 12) * projectLength;
+        const monthlyInterestPayment = (loanAmount * (interestRate / 100) / 12);
+        const interestCost = monthlyInterestPayment * projectLength;
         const drawFeesCost = costPerDraw * numberOfDraws;
         const appraisalCost = product.appraisalRequired ? estimatedAppraisalCost : 0;
         
         // Properly handle deferred costs - they are NOT paid upfront but ARE added at sale
         const rolledCosts = (product.pointsDeferred ? pointsCost : 0) + 
                            (product.interestDeferred ? interestCost : 0);
-        // Upfront costs are only those NOT deferred
+        
+        // Lender-specific carrying costs include monthly interest when NOT deferred
+        // Base carrying costs (from frontend) + interest payments if not deferred
+        const lenderCarryingCosts = carryingCosts + (!product.interestDeferred ? interestCost : 0);
+        
+        // Upfront loan costs (points if not deferred + appraisal + draws + fees)
+        // Note: Interest is now part of carrying costs, not upfront loan costs
         const upfrontLoanCosts = (!product.pointsDeferred ? pointsCost : 0) + 
-                                 (!product.interestDeferred ? interestCost : 0) +
                                  appraisalCost + drawFeesCost + fees;
         
         // Out of pocket = what you pay upfront (cash needed minus loan proceeds)
-        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + carryingCosts + upfrontLoanCosts;
+        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + lenderCarryingCosts + upfrontLoanCosts;
         const totalInvestment = outOfPocket + rolledCosts;
-        const profit = sellPrice - totalProjectCost - closingCostsBuy - carryingCosts - 
+        const profit = sellPrice - totalProjectCost - closingCostsBuy - lenderCarryingCosts - 
                       upfrontLoanCosts - rolledCosts - closingCostsSell - commission;
 
         return {
@@ -3661,7 +3671,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rehabBudget,
           totalProjectCost,
           closingCostsBuy,
-          carryingCosts,
+          carryingCosts: lenderCarryingCosts,
           totalInvestment,
           sellPrice,
           closingCostsSell,

@@ -400,7 +400,9 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     const monthlyUtilities = formData.monthlyUtilities || 0;
     const monthlyPropertyTax = ((formData.taxAssessedValue || purchasePrice) * 0.012) / 12;
     const monthlyHoa = formData.hoaFees || 0;
-    const totalCarryingCosts = (monthlyInsurance + monthlyUtilities + monthlyPropertyTax + monthlyHoa) * projectLength;
+    const hoaTransferFee = formData.hoaTransferFee || 0;
+    const otherCarryingCosts = formData.otherCarryingCosts || 0;
+    const totalCarryingCosts = (monthlyInsurance + monthlyUtilities + monthlyPropertyTax + monthlyHoa) * projectLength + hoaTransferFee + otherCarryingCosts;
     
     // Map preference to criteria - using schema values: 'profit', 'out-of-pocket', 'fastest'
     let primary: LoanCriteria | undefined;
