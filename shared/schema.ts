@@ -61,6 +61,30 @@ export const insertCompInviteSchema = createInsertSchema(compInvites).omit({
 export type InsertCompInvite = z.infer<typeof insertCompInviteSchema>;
 export type CompInvite = typeof compInvites.$inferSelect;
 
+// Pending registrations - stores registration data before Stripe payment completes
+export const pendingRegistrations = pgTable("pending_registrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull(),
+  email: text("email").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  fullName: text("full_name").notNull(),
+  discountCode: text("discount_code"),
+  selectedPlan: text("selected_plan").notNull(), // 'monthly' or 'annual'
+  stripeSessionId: text("stripe_session_id"),
+  status: text("status").notNull().default('pending'), // 'pending', 'completed', 'expired'
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPendingRegistrationSchema = createInsertSchema(pendingRegistrations).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export type InsertPendingRegistration = z.infer<typeof insertPendingRegistrationSchema>;
+export type PendingRegistration = typeof pendingRegistrations.$inferSelect;
+
 export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique().references(() => users.id),
