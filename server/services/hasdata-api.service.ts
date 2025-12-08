@@ -134,7 +134,23 @@ export class HasDataAPIService implements IPropertyAPIService {
     if (value === null || value === undefined || value === "") {
       return undefined;
     }
-    const parsed = typeof value === "string" ? parseFloat(value) : Number(value);
+    
+    let stringValue = String(value);
+    
+    // Remove currency symbols, commas, and common suffixes
+    // Handles formats like: "$2,871", "$2,871/year", "2,871/mo", "$223,200"
+    stringValue = stringValue
+      .replace(/[$,]/g, '')           // Remove $ and commas
+      .replace(/\/(year|yr|month|mo|annually|monthly)/gi, '')  // Remove time suffixes
+      .replace(/per\s*(year|month|yr|mo)/gi, '')  // Remove "per year" etc.
+      .trim();
+    
+    // If no digits remain, return undefined
+    if (!/\d/.test(stringValue)) {
+      return undefined;
+    }
+    
+    const parsed = parseFloat(stringValue);
     return isNaN(parsed) ? undefined : parsed;
   }
 
