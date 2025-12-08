@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
@@ -325,8 +325,10 @@ export default function Checkout() {
     }
   };
 
-  // Order summary component used in multiple places
-  const OrderSummary = ({ showButton = false }: { showButton?: boolean }) => (
+  // Order summary component - memoized to prevent re-creation on every render
+  // which would cause the discount code input to lose focus
+  const OrderSummary = useMemo(() => {
+    const Component = ({ showButton = false }: { showButton?: boolean }) => (
     <Card className="sticky top-24">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Order Summary</CardTitle>
@@ -511,7 +513,10 @@ export default function Checkout() {
         </CardFooter>
       )}
     </Card>
-  );
+    );
+    return Component;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Just registered but needs email verification
   if (justRegistered && !isAuthenticated) {
