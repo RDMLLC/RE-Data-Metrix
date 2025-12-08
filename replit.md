@@ -91,3 +91,18 @@ Vite is used for frontend development and production builds, while esbuild handl
 
 ### Email Service
 - Zoho Mail SMTP (for email verification and notifications)
+
+### Property Data API
+- **RentCast API** (Active): Property data, tax records, valuations (AVM), rent estimates, and comparable sales
+  - Service file: `server/services/rentcast-api.service.ts`
+  - Supports address-based lookup and URL parsing (Zillow/Redfin)
+  - Returns: property details, tax assessed value, estimated value, estimated rent
+- **HasData API** (Inactive/Deprecated): Previously used for Zillow/Redfin scraping
+  - Replaced due to inconsistent tax data availability
+  - Service file retained: `server/services/hasdata-api.service.ts`
+
+### API Integration Tracking
+Admin panel (`/admin/integrations`) shows all API integrations with active/inactive status:
+- Active integrations show features and ready status
+- Inactive integrations are grayed out with deprecation notes
+- Integration changes should be tracked in Admin Panel

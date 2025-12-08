@@ -153,13 +153,25 @@ export class RentCastAPIService implements IPropertyAPIService {
           const parts = addressPart.split('-');
           
           if (parts.length >= 4) {
-            const zipCode = parts[parts.length - 2];
-            const state = parts[parts.length - 3];
-            const city = parts[parts.length - 4];
-            const streetParts = parts.slice(0, parts.length - 4);
-            const address = streetParts.join(' ');
+            const zipCode = parts[parts.length - 1];
+            const state = parts[parts.length - 2];
             
-            if (address && city && state && zipCode && /^\d{5}$/.test(zipCode)) {
+            let cityStartIndex = -1;
+            for (let i = parts.length - 3; i >= 0; i--) {
+              if (/^\d/.test(parts[i]) || /^(St|Ave|Rd|Dr|Ln|Ct|Blvd|Way|Pl|Cir|Ter|Pkwy|Hwy)$/i.test(parts[i])) {
+                cityStartIndex = i + 1;
+                break;
+              }
+            }
+            
+            if (cityStartIndex === -1) cityStartIndex = Math.max(0, parts.length - 4);
+            
+            const streetParts = parts.slice(0, cityStartIndex);
+            const cityParts = parts.slice(cityStartIndex, parts.length - 2);
+            const address = streetParts.join(' ');
+            const city = cityParts.join(' ');
+            
+            if (address && city && state && zipCode && /^\d{5}$/.test(zipCode) && /^[A-Z]{2}$/i.test(state)) {
               return {
                 address: this.formatStreetAddress(address),
                 city: this.formatCityName(city),

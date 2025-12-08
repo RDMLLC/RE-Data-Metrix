@@ -23,6 +23,7 @@ interface IntegrationStatus {
   description: string;
   configured: boolean;
   ready: boolean;
+  active?: boolean;
   details: Record<string, any>;
 }
 
@@ -105,27 +106,33 @@ export default function AdminIntegrations() {
     return allIntegrations.find(i => i.name === "Stripe Billing");
   };
 
-  const getIntegrationIcon = (name: string) => {
+  const getIntegrationIcon = (name: string, active?: boolean) => {
+    const opacity = active === false ? "opacity-50" : "";
     switch (name) {
       case "Stripe Billing":
-        return <CreditCard className="h-6 w-6 text-indigo-500" />;
+        return <CreditCard className={`h-6 w-6 text-indigo-500 ${opacity}`} />;
+      case "RentCast API":
+        return <Home className={`h-6 w-6 text-blue-500 ${opacity}`} />;
       case "HasData API":
-        return <Home className="h-6 w-6 text-emerald-500" />;
+        return <Home className={`h-6 w-6 text-gray-400 ${opacity}`} />;
       case "Email (SMTP)":
-        return <Mail className="h-6 w-6 text-purple-500" />;
+        return <Mail className={`h-6 w-6 text-purple-500 ${opacity}`} />;
       case "PostgreSQL Database":
-        return <Database className="h-6 w-6 text-cyan-500" />;
+        return <Database className={`h-6 w-6 text-cyan-500 ${opacity}`} />;
       default:
-        return <AlertCircle className="h-6 w-6 text-muted-foreground" />;
+        return <AlertCircle className={`h-6 w-6 text-muted-foreground ${opacity}`} />;
     }
   };
 
-  const getIntegrationBgColor = (name: string) => {
+  const getIntegrationBgColor = (name: string, active?: boolean) => {
+    if (active === false) return "bg-gray-200/50 dark:bg-gray-800/50";
     switch (name) {
       case "Stripe Billing":
         return "bg-indigo-500/10";
+      case "RentCast API":
+        return "bg-blue-500/10";
       case "HasData API":
-        return "bg-emerald-500/10";
+        return "bg-gray-500/10";
       case "Email (SMTP)":
         return "bg-purple-500/10";
       case "PostgreSQL Database":
@@ -310,36 +317,50 @@ export default function AdminIntegrations() {
                   .map((integration) => (
                     <Card 
                       key={integration.name} 
+                      className={integration.active === false ? "opacity-75" : ""}
                       data-testid={`card-integration-${integration.name.toLowerCase().replace(/\s+/g, '-')}`}
                     >
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 ${getIntegrationBgColor(integration.name)} rounded-lg flex items-center justify-center`}>
-                              {getIntegrationIcon(integration.name)}
+                            <div className={`w-10 h-10 ${getIntegrationBgColor(integration.name, integration.active)} rounded-lg flex items-center justify-center`}>
+                              {getIntegrationIcon(integration.name, integration.active)}
                             </div>
                             <div>
-                              <CardTitle className="text-base">{integration.name}</CardTitle>
+                              <CardTitle className={`text-base ${integration.active === false ? "text-muted-foreground" : ""}`}>
+                                {integration.name}
+                              </CardTitle>
                               <CardDescription className="text-xs">
                                 {integration.description}
                               </CardDescription>
                             </div>
                           </div>
-                          {integration.ready ? (
-                            <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Ready
-                            </Badge>
-                          ) : integration.configured ? (
-                            <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                              Partial
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">
-                              Not Configured
-                            </Badge>
-                          )}
+                          <div className="flex flex-col items-end gap-1">
+                            {integration.active === false ? (
+                              <Badge variant="outline" className="text-gray-500 border-gray-400">
+                                Inactive
+                              </Badge>
+                            ) : integration.ready ? (
+                              <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Ready
+                              </Badge>
+                            ) : integration.configured ? (
+                              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Partial
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                Not Configured
+                              </Badge>
+                            )}
+                            {integration.active === true && (
+                              <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px]">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
@@ -352,11 +373,17 @@ export default function AdminIntegrations() {
                                 ) : (
                                   <AlertCircle className="h-3 w-3 text-red-500" />
                                 )
+                              ) : Array.isArray(value) ? (
+                                <CheckCircle className="h-3 w-3 text-blue-500" />
                               ) : (
                                 <CheckCircle className="h-3 w-3 text-muted-foreground" />
                               )}
                               <span className={typeof value === 'boolean' && value ? "text-foreground" : "text-muted-foreground"}>
-                                {typeof value === 'string' ? value : key.replace(/^has/, '').replace(/([A-Z])/g, ' $1').trim()}
+                                {Array.isArray(value) 
+                                  ? `${key}: ${value.join(', ')}`
+                                  : typeof value === 'string' 
+                                    ? value 
+                                    : key.replace(/^has/, '').replace(/([A-Z])/g, ' $1').trim()}
                               </span>
                             </div>
                           ))}

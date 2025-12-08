@@ -368,14 +368,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
-      // HasData API status (property data)
+      // RentCast API status (property data - ACTIVE)
+      const rentCastStatus = {
+        name: "RentCast API",
+        description: "Property data, tax records, valuations (AVM), and rent estimates",
+        configured: !!process.env.RENTCAST_API_KEY,
+        ready: !!process.env.RENTCAST_API_KEY,
+        active: true,
+        details: {
+          hasApiKey: !!process.env.RENTCAST_API_KEY,
+          features: ["Property lookup", "Tax data", "Value estimates (AVM)", "Rent estimates", "Comparable sales"]
+        }
+      };
+
+      // HasData API status (property data - INACTIVE/DEPRECATED)
       const hasDataStatus = {
         name: "HasData API",
-        description: "Property data lookup from Zillow and Redfin",
+        description: "Property data lookup from Zillow and Redfin (replaced by RentCast)",
         configured: !!process.env.HASDATA_API_KEY,
-        ready: !!process.env.HASDATA_API_KEY,
+        ready: false,
+        active: false,
         details: {
-          hasApiKey: !!process.env.HASDATA_API_KEY
+          hasApiKey: !!process.env.HASDATA_API_KEY,
+          status: "Deprecated - replaced by RentCast API",
+          note: "Tax data was not consistently available via this API"
         }
       };
 
@@ -409,6 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         integrations: [
           stripeStatus,
+          rentCastStatus,
           hasDataStatus,
           smtpStatus,
           databaseStatus
