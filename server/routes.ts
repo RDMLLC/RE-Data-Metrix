@@ -2824,8 +2824,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[ADMIN] User deleted: ${user.email} (ID: ${id})`);
       
       res.json({ message: "User deleted successfully" });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Delete user error:', error);
+      // Provide more specific error messages
+      if (error.code === '23503' || error.message?.includes('foreign key')) {
+        return res.status(400).json({ 
+          error: "Cannot delete user",
+          message: "User has related records that couldn't be deleted. Try updating their status to 'inactive' instead."
+        });
+      }
       res.status(500).json({ error: "Failed to delete user" });
     }
   });
