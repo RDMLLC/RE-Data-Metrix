@@ -68,6 +68,11 @@ export default function Footer() {
             <h3 className="font-semibold text-lg mb-4 text-accent">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
+                <Link href="/" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-home">
+                  Home
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-about">
                   About Us
                 </Link>
@@ -78,23 +83,18 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/rental-analysis" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-rental-analysis">
-                  Rental Analysis
-                </Link>
-              </li>
-              <li>
                 <Link href="/lenders" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-lenders">
                   Lenders
                 </Link>
               </li>
               <li>
-                <Link href="/about-private-lenders" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-private-lenders">
-                  About Private Lenders
+                <Link href="/toolbox" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-toolbox">
+                  Toolbox
                 </Link>
               </li>
               <li>
-                <Link href="/toolbox" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-toolbox">
-                  Toolbox
+                <Link href="/pricing" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-pricing">
+                  Pricing
                 </Link>
               </li>
             </ul>
