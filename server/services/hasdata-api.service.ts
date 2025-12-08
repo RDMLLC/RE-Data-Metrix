@@ -112,6 +112,23 @@ export class HasDataAPIService implements IPropertyAPIService {
       const data = await response.json();
       
       console.log("HasData API raw response:", JSON.stringify(data, null, 2));
+      
+      // Log ALL property keys to help identify missing field mappings
+      const property = data.property || data;
+      console.log("=== ALL PROPERTY KEYS ===");
+      console.log("Top-level keys:", Object.keys(property));
+      
+      // Look for any keys containing 'tax' (case insensitive)
+      const taxRelatedKeys = Object.keys(property).filter(k => 
+        k.toLowerCase().includes('tax') || 
+        k.toLowerCase().includes('assess')
+      );
+      console.log("Tax-related keys found:", taxRelatedKeys);
+      if (taxRelatedKeys.length > 0) {
+        taxRelatedKeys.forEach(key => {
+          console.log(`  ${key}:`, JSON.stringify(property[key]));
+        });
+      }
 
       if (isRedfin) {
         return this.transformRedfinResponse(data);
