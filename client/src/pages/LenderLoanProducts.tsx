@@ -1020,6 +1020,14 @@ export default function LenderLoanProducts() {
                           <span className="ml-2 font-medium">{product.maxLtvBuy}%</span>
                         </div>
                       )}
+                      {product.loanType === 'bridge' && (
+                        <div>
+                          <span className="text-muted-foreground">Max Loan ARV:</span>
+                          <span className="ml-2 font-medium">
+                            {product.maxLoanArv !== null ? `${product.maxLoanArv}%` : '70% (default)'}
+                          </span>
+                        </div>
+                      )}
                       {product.points !== null && (
                         <div>
                           <span className="text-muted-foreground">Points:</span>
