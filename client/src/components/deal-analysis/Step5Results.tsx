@@ -165,6 +165,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [editBuyPrice, setEditBuyPrice] = useState<number>(0);
   const [editRehab, setEditRehab] = useState<number>(0);
   const [editProjectLength, setEditProjectLength] = useState<number>(6);
+  const [editArv, setEditArv] = useState<number>(0);
   
   // Collapsible section states for main table rows
   const [showProjectCosts, setShowProjectCosts] = useState(false);
@@ -226,7 +227,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Track previous values to detect real user changes (not initial state set)
-  const prevValuesRef = useRef<{price: number, rehab: number, length: number, preference: string} | null>(null);
+  const prevValuesRef = useRef<{price: number, rehab: number, length: number, arv: number, preference: string} | null>(null);
   
   // Track the latest request ID to prevent stale responses from overwriting newer results
   const requestIdRef = useRef(0);
@@ -242,16 +243,19 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     const initialPrice = formData.purchasePrice || 0;
     const initialRehab = formData.rehabBudget || 0;
     const initialLength = formData.projectLength || 6;
+    const initialArv = formData.arv || 0;
     
     setEditBuyPrice(initialPrice);
     setEditRehab(initialRehab);
     setEditProjectLength(initialLength);
+    setEditArv(initialArv);
     
     // Store initial values to detect real user changes (including preference)
     prevValuesRef.current = { 
       price: initialPrice, 
       rehab: initialRehab, 
       length: initialLength,
+      arv: initialArv,
       preference: loanPreference 
     };
     
@@ -274,6 +278,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
       editBuyPrice !== prevValuesRef.current.price ||
       editRehab !== prevValuesRef.current.rehab ||
       editProjectLength !== prevValuesRef.current.length ||
+      editArv !== prevValuesRef.current.arv ||
       loanPreference !== prevValuesRef.current.preference;
     
     // Skip if values haven't changed (prevents initial trigger)
@@ -285,6 +290,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
         price: editBuyPrice, 
         rehab: editRehab, 
         length: editProjectLength,
+        arv: editArv,
         preference: loanPreference 
       };
       
@@ -292,7 +298,8 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
         loanPreference,
         editBuyPrice,
         editRehab,
-        editProjectLength
+        editProjectLength,
+        editArv
       );
       
       // Increment request ID and include in mutation context
@@ -301,7 +308,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     }, 800); // 800ms debounce delay
 
     return () => clearTimeout(debounceTimer);
-  }, [editBuyPrice, editRehab, editProjectLength, loanPreference]);
+  }, [editBuyPrice, editRehab, editProjectLength, editArv, loanPreference]);
 
   const calculateResultsMutation = useMutation<ResultsResponse, Error, any>({
     mutationFn: async (payload: any) => {
@@ -390,7 +397,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
       message: contactMessage,
       dealData: {
         propertyAddress,
-        arv: formData.arv || 0,
+        arv: editArv || formData.arv || 0,
         buyPrice: editBuyPrice,
         rehabCost: editRehab,
         projectLength: editProjectLength,
@@ -417,13 +424,15 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     preference: string,
     overridePurchasePrice?: number,
     overrideRehabBudget?: number,
-    overrideProjectLength?: number
+    overrideProjectLength?: number,
+    overrideArv?: number
   ) => {
     const formData = form.getValues();
     
     const purchasePrice = overridePurchasePrice ?? formData.purchasePrice ?? 0;
     const rehabBudget = overrideRehabBudget ?? formData.rehabBudget ?? 0;
     const projectLength = overrideProjectLength ?? formData.projectLength ?? 6;
+    const arv = overrideArv ?? formData.arv ?? 0;
     
     const monthlyInsurance = (formData.annualInsurance || 0) / 12;
     const monthlyUtilities = formData.monthlyUtilities || 0;
@@ -453,15 +462,15 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
       dealInputs: {
         purchasePrice: purchasePrice,
         rehabBudget: rehabBudget,
-        arv: formData.arv || 0,
+        arv: arv,
         projectLength: projectLength,
         closingCostsBuy: (formData.attorneyFees || 0) + (formData.docPrepFees || 0) + 
                          (formData.titleExam || 0) + (formData.titleInsurance || 0),
         carryingCosts: totalCarryingCosts,
-        sellPrice: formData.sellPrice || formData.arv || 0,
-        closingCostsSell: (formData.sellPrice || formData.arv || 0) * 
+        sellPrice: formData.sellPrice || arv || 0,
+        closingCostsSell: (formData.sellPrice || arv || 0) * 
                           ((formData.closingCostsSellPercent || 2) / 100),
-        commission: (formData.sellPrice || formData.arv || 0) * 
+        commission: (formData.sellPrice || arv || 0) * 
                     ((formData.realEstateCommissionPercent || 6) / 100),
         monthlyInsurance: monthlyInsurance,
         monthlyUtilities: monthlyUtilities,
@@ -789,7 +798,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
               <p className="text-sm font-medium text-muted-foreground mb-3">
                 Do you want to change any of the variables?
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                 <div className="space-y-1">
                   <Label htmlFor="edit-buy-price" className="text-sm">Buy Price</Label>
                   <Input
@@ -830,6 +839,20 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       else if (e.target.value === '') setEditProjectLength(6);
                     }}
                     data-testid="input-edit-project-length"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-arv" className="text-sm">ARV (Est. Sale Price)</Label>
+                  <Input
+                    id="edit-arv"
+                    type="number"
+                    value={editArv || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditArv(parsed);
+                      else if (e.target.value === '') setEditArv(0);
+                    }}
+                    data-testid="input-edit-arv"
                   />
                 </div>
                 {calculateResultsMutation.isPending && (
