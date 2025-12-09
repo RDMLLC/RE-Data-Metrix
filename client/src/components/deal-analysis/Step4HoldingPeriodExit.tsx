@@ -599,7 +599,7 @@ export default function Step4HoldingPeriodExit({
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4 items-end">
                     <FormField
                       control={form.control}
                       name="hoaFees"
