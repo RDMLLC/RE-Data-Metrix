@@ -21,7 +21,7 @@ interface Step1Props {
 
 export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false }: Step1Props) {
   const { toast } = useToast();
-  const { updatePropertyData } = useWizardData();
+  const { updatePropertyData, clearWizardData } = useWizardData();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
@@ -41,6 +41,18 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         dataSource = 'redfin';
       }
       
+      // Clear previous wizard data and reset financial fields for new property
+      clearWizardData();
+      form.setValue("purchasePrice", undefined);
+      form.setValue("rehabBudget", undefined);
+      form.setValue("arv", undefined);
+      form.setValue("projectLength", undefined);
+      form.setValue("sellPrice", undefined);
+      form.setValue("closingTimeline", "not-selected");
+      form.setValue("isDoubleClose", undefined);
+      form.setValue("payingForBothSides", undefined);
+      
+      // Set property data from lookup
       form.setValue("address", data.address || "");
       form.setValue("city", data.city || "");
       form.setValue("state", data.state || "");
@@ -360,6 +372,16 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             <Button
               type="button"
               onClick={() => {
+                // Clear financial fields for fresh analysis (not wizard context)
+                form.setValue("purchasePrice", undefined);
+                form.setValue("rehabBudget", undefined);
+                form.setValue("arv", undefined);
+                form.setValue("projectLength", undefined);
+                form.setValue("sellPrice", undefined);
+                form.setValue("closingTimeline", "not-selected");
+                form.setValue("isDoubleClose", undefined);
+                form.setValue("payingForBothSides", undefined);
+                
                 form.setValue("propertyDataSource", "manual");
                 form.setValue("address", "");
                 form.setValue("city", "");

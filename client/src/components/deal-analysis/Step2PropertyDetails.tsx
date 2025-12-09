@@ -77,6 +77,23 @@ export default function Step2PropertyDetails({
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardContent className="pt-6 space-y-4">
+              {/* Property Address Display - Always shown */}
+              {(form.watch("address") || form.watch("city") || form.watch("state")) && (
+                <div className="space-y-2">
+                  <FormLabel>Property Address</FormLabel>
+                  <div className="p-3 bg-muted rounded-md border">
+                    <p className="font-medium" data-testid="text-property-address">
+                      {[
+                        form.watch("address"),
+                        form.watch("city"),
+                        form.watch("state"),
+                        form.watch("zipCode")
+                      ].filter(Boolean).join(", ").replace(/, ([A-Z]{2}),/, ", $1")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <FormField
                 control={form.control}
                 name="propertyType"

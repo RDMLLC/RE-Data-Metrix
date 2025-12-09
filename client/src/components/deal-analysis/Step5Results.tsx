@@ -167,6 +167,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [showCostsCarrying, setShowCostsCarrying] = useState(false);
   const [showExitMetrics, setShowExitMetrics] = useState(false);
   const [showOutOfPocketBreakdown, setShowOutOfPocketBreakdown] = useState(false);
+  const [showBaseClosingBreakdown, setShowBaseClosingBreakdown] = useState(false);
 
   // Contact lender state
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -991,8 +992,15 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       ))}
                     </TableRow>
                     
-                    <TableRow>
-                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Base Closing</TableCell>
+                    <TableRow 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setShowBaseClosingBreakdown(!showBaseClosingBreakdown)}
+                      data-testid="row-base-closing"
+                    >
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground flex items-center gap-1`}>
+                        {showBaseClosingBreakdown ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        Base Closing
+                      </TableCell>
                       <TableCell 
                         className="text-center sticky z-10 bg-background text-xs"
                         style={{ left: `${metricColWidth}px` }}
@@ -1013,6 +1021,75 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                         </TableCell>
                       ))}
                     </TableRow>
+                    
+                    {showBaseClosingBreakdown && (
+                      <>
+                        <TableRow>
+                          <TableCell className={`font-medium ${stickyFirstColBase} pl-16 text-xs text-muted-foreground`}>- Attorney Fees</TableCell>
+                          <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth}px` }}>
+                            {formatCurrency(formData.attorneyFees || 0)}
+                          </TableCell>
+                          {results.userLoanColumn && (
+                            <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                              {formatCurrency(formData.attorneyFees || 0)}
+                            </TableCell>
+                          )}
+                          {visibleLenders.map((_, index) => (
+                            <TableCell key={index} className="text-center text-xs">
+                              {formatCurrency(formData.attorneyFees || 0)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className={`font-medium ${stickyFirstColBase} pl-16 text-xs text-muted-foreground`}>- Doc Prep Fees</TableCell>
+                          <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth}px` }}>
+                            {formatCurrency(formData.docPrepFees || 0)}
+                          </TableCell>
+                          {results.userLoanColumn && (
+                            <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                              {formatCurrency(formData.docPrepFees || 0)}
+                            </TableCell>
+                          )}
+                          {visibleLenders.map((_, index) => (
+                            <TableCell key={index} className="text-center text-xs">
+                              {formatCurrency(formData.docPrepFees || 0)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className={`font-medium ${stickyFirstColBase} pl-16 text-xs text-muted-foreground`}>- Title Exam</TableCell>
+                          <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth}px` }}>
+                            {formatCurrency(formData.titleExam || 0)}
+                          </TableCell>
+                          {results.userLoanColumn && (
+                            <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                              {formatCurrency(formData.titleExam || 0)}
+                            </TableCell>
+                          )}
+                          {visibleLenders.map((_, index) => (
+                            <TableCell key={index} className="text-center text-xs">
+                              {formatCurrency(formData.titleExam || 0)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className={`font-medium ${stickyFirstColBase} pl-16 text-xs text-muted-foreground`}>- Title Insurance</TableCell>
+                          <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth}px` }}>
+                            {formatCurrency(formData.titleInsurance || 0)}
+                          </TableCell>
+                          {results.userLoanColumn && (
+                            <TableCell className="text-center sticky z-10 bg-background text-xs" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                              {formatCurrency(formData.titleInsurance || 0)}
+                            </TableCell>
+                          )}
+                          {visibleLenders.map((_, index) => (
+                            <TableCell key={index} className="text-center text-xs">
+                              {formatCurrency(formData.titleInsurance || 0)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </>
+                    )}
                     
                     <TableRow>
                       <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Points</TableCell>
