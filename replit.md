@@ -72,6 +72,18 @@ The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & F
 - Detailed loan comparison table with expandable breakdowns
 - PDF download with QR codes for lender referral links (hidden in browser, shown in PDF)
 
+**Loan Comparison Table Structure:**
+The table displays metrics in a hierarchical structure with expandable sections:
+1. **Project Cost** (expandable): Purchase Price, Rehab Budget
+2. **Closing Costs (Buy)** (expandable): Attorney Fees, Title Exam, Title Insurance, Transfer Fee
+3. **Lender Fees** (expandable): Points, Doc Prep Fees, Appraisal Fee, Draw Fees
+4. **Carrying Costs** (expandable): Interest Payments, Insurance, Utilities, HOA Monthly, HOA Transfer Fee, Taxes, Other
+5. **Total Investment** (summary row)
+6. **Estimated Sale Price** (row)
+7. **Gross Profit** (calculated: Sale Price - Total Investment)
+8. **Selling Costs** (expandable): Real Estate Commission, Closing Costs (Sell)
+9. **Net Profit** (final row with highlighted styling)
+
 **PDF Generation Notes:**
 - Uses `react-to-pdf` library which uses HTML-to-canvas (NOT CSS print media queries)
 - `isGeneratingPdf` state controls element visibility during PDF capture
