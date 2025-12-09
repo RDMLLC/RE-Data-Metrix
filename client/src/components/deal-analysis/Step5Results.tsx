@@ -39,6 +39,8 @@ interface OutOfPocketBreakdown {
   downPayment: number;
   baseClosingCosts: number;
   pointsCost: number;
+  totalPointsCost?: number;
+  pointsDeferred?: boolean;
   appraisalCost: number;
   docPrepFee: number;
   lenderFees: number;
@@ -1180,12 +1182,22 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   </TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center text-sm sticky z-10 bg-accent/30" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
-                      {formatCurrency((results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) + (results.userLoanColumn.lenderDrawFees || 0))}
+                      {formatCurrency(
+                        (results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) + 
+                        (results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.userLoanColumn.lenderDrawFees || 0)
+                      )}
                     </TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">
-                      {formatCurrency((lender.outOfPocketBreakdown?.pointsCost || 0) + (lender.lenderDrawFees || 0))}
+                      {formatCurrency(
+                        (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) + 
+                        (lender.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (lender.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (lender.lenderDrawFees || 0)
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1198,14 +1210,14 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       </TableCell>
                       {results.userLoanColumn && (
                         <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
-                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0)}
-                          {results.userLoanColumn.rolledCosts > 0 && <span className="text-xs text-muted-foreground ml-1">(deferred)</span>}
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0)}
+                          {results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred && <span className="text-xs text-muted-foreground ml-1">(deferred)</span>}
                         </TableCell>
                       )}
                       {visibleLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">
-                          {formatCurrency(lender.outOfPocketBreakdown?.pointsCost || 0)}
-                          {lender.rolledCosts > 0 && <span className="text-xs text-muted-foreground ml-1">(deferred)</span>}
+                          {formatCurrency(lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0)}
+                          {lender.outOfPocketBreakdown?.pointsDeferred && <span className="text-xs text-muted-foreground ml-1">(deferred)</span>}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -1216,11 +1228,11 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       </TableCell>
                       {results.userLoanColumn && (
                         <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
-                          {formatCurrency(formData.docPrepFees || 0)}
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
-                        <TableCell key={index} className="text-center">{formatCurrency(formData.docPrepFees || 0)}</TableCell>
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.docPrepFee || 0)}</TableCell>
                       ))}
                     </TableRow>
                     <TableRow>

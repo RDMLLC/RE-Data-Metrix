@@ -63,7 +63,7 @@ const wizardSchema = z.object({
   creditScore: z.string().optional(),
   isDoubleClose: z.boolean().optional(),
   payingForBothSides: z.boolean().optional(),
-  hasExistingLoan: z.boolean().optional(),
+  hasExistingLoan: z.boolean(),
   maxLendBuy: z.number().optional(),
   maxLendRehab: z.number().optional(),
   loanInterestRate: z.number().optional(),
@@ -132,6 +132,7 @@ export default function DealAnalysisWizard() {
       addingSquareFootage: false,
       closingTimeline: "not-selected",
       loanPreference: "one-of-each",
+      hasExistingLoan: false,
     },
   });
 

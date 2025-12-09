@@ -3634,6 +3634,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           downPayment,
           baseClosingCosts: closingCostsBuy,
           pointsCost: upfrontPointsCost,
+          totalPointsCost: pointsCost,
+          pointsDeferred: userLoan.pointsDeferred || false,
           appraisalCost,
           docPrepFee: docPrepFees,
           lenderFees: drawFeesCost,
@@ -3796,6 +3798,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           downPayment: downPaymentLender,
           baseClosingCosts: closingCostsBuy,
           pointsCost: upfrontPointsCost,
+          totalPointsCost: pointsCost,
+          pointsDeferred: product.pointsDeferred || false,
           appraisalCost,
           docPrepFee: 0, // Lender products don't have separate doc prep - included in lenderFees
           lenderFees: fees + drawFeesCost,
