@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -2717,6 +2717,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.delete(lenderReferrals).where(eq(lenderReferrals.userId, id));
       await db.delete(affiliateClicks).where(eq(affiliateClicks.userId, id));
       await db.delete(dealAnalyses).where(eq(dealAnalyses.userId, id));
+      await db.delete(discountCodeUses).where(eq(discountCodeUses.userId, id));
+      await db.delete(lenderInquiries).where(eq(lenderInquiries.userId, id));
+      // Clear comp invite references (set to null instead of deleting the invites)
+      await db.update(compInvites).set({ invitedBy: null }).where(eq(compInvites.invitedBy, id));
+      await db.update(compInvites).set({ acceptedBy: null }).where(eq(compInvites.acceptedBy, id));
       
       // Delete the user
       await db.delete(users).where(eq(users.id, id));
