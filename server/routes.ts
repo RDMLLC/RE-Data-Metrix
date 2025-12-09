@@ -3763,7 +3763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const downPaymentLender = Math.max(0, totalProjectCost - loanAmount);
         
         // Debug: Log calculation details for troubleshooting
-        if (lender?.companyName?.includes('Finance of America')) {
+        if (lender?.companyName?.includes('Test Lender')) {
           console.log('[Down Payment Debug]', {
             lender: lender?.companyName,
             product: product.productName,
@@ -3783,6 +3783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             maxLtcPercent,
             finalLoanAmount: loanAmount,
             downPayment: downPaymentLender,
+            limitingFactor: loanAmount === maxFromArv ? 'ARV cap' : (loanAmount === maxFromLtc ? 'LTC cap' : 'LTV cap'),
           });
         }
         
