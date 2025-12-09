@@ -19,7 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { usePDF } from "react-to-pdf";
@@ -520,6 +526,277 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     return `${value.toFixed(2)}%`;
   };
 
+  // CSV Export function
+  const generateCSV = () => {
+    if (!results) return;
+    
+    const formData = form.getValues();
+    const visibleLendersForCSV = results.lenderColumns;
+    
+    // Build CSV rows
+    const rows: string[][] = [];
+    
+    // Header row
+    const headerRow = ['Metric', 'Cash Sale'];
+    if (results.userLoanColumn) headerRow.push('Entered Loan');
+    visibleLendersForCSV.forEach(lender => {
+      headerRow.push(`${lender.lenderName} - ${lender.productName}`);
+    });
+    rows.push(headerRow);
+    
+    // Property Info section
+    rows.push(['--- PROPERTY INFO ---']);
+    rows.push(['Address', formData.address || '']);
+    rows.push(['City', formData.city || '']);
+    rows.push(['State', formData.state || '']);
+    rows.push(['Zip', formData.zipCode || '']);
+    rows.push(['']);
+    
+    // Deal Inputs
+    rows.push(['--- DEAL INPUTS ---']);
+    rows.push(['Purchase Price', editBuyPrice.toString()]);
+    rows.push(['Rehab Budget', editRehab.toString()]);
+    rows.push(['Project Length (months)', editProjectLength.toString()]);
+    rows.push(['ARV (Est. Sale Price)', editArv.toString()]);
+    rows.push(['']);
+    
+    // Helper to build data row
+    const buildRow = (label: string, cashValue: any, userLoanValue: any, lenderValues: any[]) => {
+      const row = [label, String(cashValue)];
+      if (results.userLoanColumn) row.push(String(userLoanValue));
+      lenderValues.forEach(v => row.push(String(v)));
+      return row;
+    };
+    
+    // Summary metrics
+    rows.push(['--- SUMMARY ---']);
+    rows.push(buildRow('Net Profit', 
+      results.cashSaleColumn.profit,
+      results.userLoanColumn?.profit || '',
+      visibleLendersForCSV.map(l => l.profit)
+    ));
+    rows.push(buildRow('Out-of-Pocket', 
+      results.cashSaleColumn.outOfPocketCost,
+      results.userLoanColumn?.outOfPocketCost || '',
+      visibleLendersForCSV.map(l => l.outOfPocketCost)
+    ));
+    rows.push(buildRow('Cash-on-Cash ROI %', 
+      results.cashSaleColumn.cashOnCashRoi.toFixed(2) + '%',
+      results.userLoanColumn ? results.userLoanColumn.cashOnCashRoi.toFixed(2) + '%' : '',
+      visibleLendersForCSV.map(l => l.cashOnCashRoi.toFixed(2) + '%')
+    ));
+    rows.push(buildRow('Annualized ROI %', 
+      results.cashSaleColumn.annualizedRoi.toFixed(2) + '%',
+      results.userLoanColumn ? results.userLoanColumn.annualizedRoi.toFixed(2) + '%' : '',
+      visibleLendersForCSV.map(l => l.annualizedRoi.toFixed(2) + '%')
+    ));
+    rows.push(['']);
+    
+    // Loan Terms
+    rows.push(['--- LOAN TERMS ---']);
+    rows.push(buildRow('Interest Rate %', 
+      'N/A',
+      results.userLoanColumn?.interestRate ? results.userLoanColumn.interestRate + '%' : '',
+      visibleLendersForCSV.map(l => l.interestRate ? l.interestRate + '%' : '')
+    ));
+    rows.push(buildRow('Points %', 
+      'N/A',
+      results.userLoanColumn?.points !== undefined ? results.userLoanColumn.points + '%' : '',
+      visibleLendersForCSV.map(l => l.points !== undefined ? l.points + '%' : '')
+    ));
+    rows.push(buildRow('Max LTV (Buy) %', 
+      'N/A',
+      results.userLoanColumn?.maxLtvBuy ? results.userLoanColumn.maxLtvBuy + '%' : '',
+      visibleLendersForCSV.map(l => l.maxLtvBuy ? l.maxLtvBuy + '%' : '')
+    ));
+    rows.push(buildRow('Max ARV %', 
+      'N/A',
+      results.userLoanColumn?.maxLoanArv ? results.userLoanColumn.maxLoanArv + '%' : '',
+      visibleLendersForCSV.map(l => l.maxLoanArv ? l.maxLoanArv + '%' : '')
+    ));
+    rows.push(buildRow('Max LTC %', 
+      'N/A',
+      'N/A',
+      visibleLendersForCSV.map(l => l.isLtcWeighted && l.maxLtcPercent ? l.maxLtcPercent + '%' : 'N/A')
+    ));
+    rows.push(['']);
+    
+    // Out of Pocket Breakdown
+    rows.push(['--- OUT-OF-POCKET BREAKDOWN ---']);
+    rows.push(buildRow('Down Payment', 
+      results.cashSaleColumn.outOfPocketBreakdown?.downPayment || 0,
+      results.userLoanColumn?.outOfPocketBreakdown?.downPayment || '',
+      visibleLendersForCSV.map(l => l.outOfPocketBreakdown?.downPayment || 0)
+    ));
+    rows.push(buildRow('Closing Costs (Buy)', 
+      results.cashSaleColumn.outOfPocketBreakdown?.totalClosingCostsBuy || 0,
+      results.userLoanColumn?.outOfPocketBreakdown?.totalClosingCostsBuy || '',
+      visibleLendersForCSV.map(l => l.outOfPocketBreakdown?.totalClosingCostsBuy || 0)
+    ));
+    rows.push(buildRow('Carrying Costs', 
+      results.cashSaleColumn.outOfPocketBreakdown?.carryingCosts || 0,
+      results.userLoanColumn?.outOfPocketBreakdown?.carryingCosts || '',
+      visibleLendersForCSV.map(l => l.outOfPocketBreakdown?.carryingCosts || 0)
+    ));
+    rows.push(['']);
+    
+    // Project Costs
+    rows.push(['--- PROJECT COSTS ---']);
+    rows.push(buildRow('Purchase Price', 
+      results.cashSaleColumn.purchasePrice,
+      results.userLoanColumn?.purchasePrice || '',
+      visibleLendersForCSV.map(l => l.purchasePrice)
+    ));
+    rows.push(buildRow('Rehab Budget', 
+      results.cashSaleColumn.rehabBudget,
+      results.userLoanColumn?.rehabBudget || '',
+      visibleLendersForCSV.map(l => l.rehabBudget)
+    ));
+    rows.push(buildRow('Total Project Cost', 
+      results.cashSaleColumn.totalProjectCost,
+      results.userLoanColumn?.totalProjectCost || '',
+      visibleLendersForCSV.map(l => l.totalProjectCost)
+    ));
+    rows.push(['']);
+    
+    // Closing Costs (Buy)
+    rows.push(['--- CLOSING COSTS (BUY) ---']);
+    rows.push(buildRow('Attorney Fees', formData.attorneyFees || 0, formData.attorneyFees || 0, visibleLendersForCSV.map(() => formData.attorneyFees || 0)));
+    rows.push(buildRow('Title Exam', formData.titleExam || 0, formData.titleExam || 0, visibleLendersForCSV.map(() => formData.titleExam || 0)));
+    rows.push(buildRow('Title Insurance', formData.titleInsurance || 0, formData.titleInsurance || 0, visibleLendersForCSV.map(() => formData.titleInsurance || 0)));
+    rows.push(buildRow('Transfer Fee', formData.transferFee || 0, formData.transferFee || 0, visibleLendersForCSV.map(() => formData.transferFee || 0)));
+    rows.push(['']);
+    
+    // Lender Fees
+    rows.push(['--- LENDER FEES ---']);
+    rows.push(buildRow('Points Cost', 
+      0,
+      results.userLoanColumn?.outOfPocketBreakdown?.pointsCost || '',
+      visibleLendersForCSV.map(l => l.outOfPocketBreakdown?.pointsCost || 0)
+    ));
+    rows.push(buildRow('Doc Prep Fee', 
+      0,
+      results.userLoanColumn?.outOfPocketBreakdown?.docPrepFee || '',
+      visibleLendersForCSV.map(l => l.outOfPocketBreakdown?.docPrepFee || 0)
+    ));
+    rows.push(buildRow('Appraisal Fee', 
+      0,
+      results.userLoanColumn?.outOfPocketBreakdown?.appraisalCost || '',
+      visibleLendersForCSV.map(l => l.outOfPocketBreakdown?.appraisalCost || 0)
+    ));
+    rows.push(buildRow('Draw Fees', 
+      0,
+      results.userLoanColumn?.lenderDrawFees || '',
+      visibleLendersForCSV.map(l => l.lenderDrawFees || 0)
+    ));
+    rows.push(['']);
+    
+    // Carrying Costs
+    rows.push(['--- CARRYING COSTS ---']);
+    rows.push(buildRow('Interest Payments', 
+      0,
+      results.userLoanColumn?.interestCost || '',
+      visibleLendersForCSV.map(l => l.interestCost || 0)
+    ));
+    rows.push(buildRow('Carrying Costs Total', 
+      results.cashSaleColumn.carryingCosts,
+      results.userLoanColumn?.carryingCosts || '',
+      visibleLendersForCSV.map(l => l.carryingCosts)
+    ));
+    rows.push(['']);
+    
+    // Total Investment & Exit
+    rows.push(['--- TOTAL INVESTMENT & EXIT ---']);
+    rows.push(buildRow('Total Investment', 
+      results.cashSaleColumn.totalInvestment,
+      results.userLoanColumn?.totalInvestment || '',
+      visibleLendersForCSV.map(l => l.totalInvestment)
+    ));
+    rows.push(buildRow('Estimated Sale Price (ARV)', 
+      results.cashSaleColumn.sellPrice,
+      results.userLoanColumn?.sellPrice || '',
+      visibleLendersForCSV.map(l => l.sellPrice)
+    ));
+    rows.push(buildRow('Rolled Costs (Loan Payoff)', 
+      0,
+      results.userLoanColumn?.rolledCosts || '',
+      visibleLendersForCSV.map(l => l.rolledCosts)
+    ));
+    rows.push(['']);
+    
+    // Selling Costs
+    rows.push(['--- SELLING COSTS ---']);
+    rows.push(buildRow('Real Estate Commission', 
+      results.cashSaleColumn.commission,
+      results.userLoanColumn?.commission || '',
+      visibleLendersForCSV.map(l => l.commission)
+    ));
+    rows.push(buildRow('Closing Costs (Sell)', 
+      results.cashSaleColumn.closingCostsSell,
+      results.userLoanColumn?.closingCostsSell || '',
+      visibleLendersForCSV.map(l => l.closingCostsSell)
+    ));
+    
+    // Convert to CSV string
+    const csvContent = rows.map(row => 
+      row.map(cell => {
+        // Escape quotes and wrap in quotes if contains comma
+        const cellStr = String(cell);
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      }).join(',')
+    ).join('\n');
+    
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `deal-analysis-${formData.address || 'results'}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    toast({
+      title: "CSV Downloaded",
+      description: "Your analysis data has been exported to CSV.",
+    });
+  };
+
+  // PDF generation with detailed mode
+  const handleDownloadPDF = async (detailed: boolean) => {
+    if (detailed) {
+      // Expand all sections for detailed PDF
+      setShowProjectCosts(true);
+      setShowClosingCostsBuy(true);
+      setShowLenderFees(true);
+      setShowCarryingCosts(true);
+      setShowSellingCosts(true);
+      setShowOutOfPocketBreakdown(true);
+      setShowCashOnCashBreakdown(true);
+      setShowLoanTerms(true);
+      // Wait for state updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    setIsGeneratingPdf(true);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await toPDF();
+    setIsGeneratingPdf(false);
+    
+    if (detailed) {
+      // Collapse sections back after PDF generation
+      setShowProjectCosts(false);
+      setShowClosingCostsBuy(false);
+      setShowLenderFees(false);
+      setShowCarryingCosts(false);
+      setShowSellingCosts(false);
+      setShowOutOfPocketBreakdown(false);
+      setShowCashOnCashBreakdown(false);
+      setShowLoanTerms(false);
+    }
+  };
+
   const handleViewMoreLoans = () => {
     if (results && visibleLenderCount < results.lenderColumns.length) {
       const previousCount = visibleLenderCount;
@@ -762,19 +1039,37 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={async () => {
-              setIsGeneratingPdf(true);
-              // Wait for state to update and re-render
-              await new Promise(resolve => setTimeout(resolve, 100));
-              await toPDF();
-              setIsGeneratingPdf(false);
-            }}
-            disabled={isGeneratingPdf}
-            data-testid="button-download-pdf"
+            onClick={generateCSV}
+            data-testid="button-download-csv"
           >
-            <Download className="h-4 w-4 mr-2" />
-            {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download CSV
           </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isGeneratingPdf}
+                data-testid="button-download-pdf"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleDownloadPDF(false)} data-testid="pdf-overview">
+                <FileText className="h-4 w-4 mr-2" />
+                Overview (Summary)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownloadPDF(true)} data-testid="pdf-detailed">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Detailed (All Expanded)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
