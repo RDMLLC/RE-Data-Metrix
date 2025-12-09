@@ -411,10 +411,12 @@ export default function AdminLenderDetail() {
                             <span className="ml-1 font-medium">{product.points}</span>
                           </div>
                         )}
-                        {product.maxLoanArv !== null && (
+                        {product.loanType === 'bridge' && (
                           <div>
                             <span className="text-muted-foreground">Max ARV:</span>
-                            <span className="ml-1 font-medium">{product.maxLoanArv}%</span>
+                            <span className="ml-1 font-medium">
+                              {product.maxLoanArv !== null ? `${product.maxLoanArv}%` : '70% (default)'}
+                            </span>
                           </div>
                         )}
                         {product.fees !== null && (
