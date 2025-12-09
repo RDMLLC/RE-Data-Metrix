@@ -3759,8 +3759,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate per-lender total closing costs (base + points + appraisal + lender fees)
         const totalClosingCostsBuyLender = closingCostsBuy + upfrontPointsCost + appraisalCost + fees;
         
-        // Down payment = project cost minus loan
-        const downPaymentLender = Math.max(0, totalProjectCost - loanAmount);
+        // Calculate down payment using component breakdown:
+        // 1. Buy Down Payment = Buy Price × (100% - Max LTV Buy%)
+        // 2. Rehab Down Payment = Rehab × (100% - Max Lend Rehab%)
+        // 3. ARV Adjustment = amount by which loan exceeds ARV cap
+        const buyDownPayment = purchasePrice * (1 - maxLtvBuy / 100);
+        const rehabDownPayment = rehabBudget * (1 - maxLendRehab / 100);
+        const arvAdjustment = Math.max(0, totalLoanDesired - maxFromArv);
+        // Also check LTC adjustment if applicable
+        const ltcAdjustment = (isLtcWeighted && maxLtcPercent) ? Math.max(0, totalLoanDesired - maxFromLtc) : 0;
+        // Final down payment is the sum of components, taking the larger of ARV or LTC adjustment
+        const capAdjustment = Math.max(arvAdjustment, ltcAdjustment);
+        const downPaymentLender = buyDownPayment + rehabDownPayment + capAdjustment;
         
         // Debug: Log calculation details for troubleshooting
         if (lender?.companyName?.includes('Test Lender')) {
@@ -3782,6 +3792,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isLtcWeighted,
             maxLtcPercent,
             finalLoanAmount: loanAmount,
+            // Down payment component breakdown
+            buyDownPayment,
+            rehabDownPayment,
+            arvAdjustment,
+            ltcAdjustment,
+            capAdjustment,
             downPayment: downPaymentLender,
             limitingFactor: loanAmount === maxFromArv ? 'ARV cap' : (loanAmount === maxFromLtc ? 'LTC cap' : 'LTV cap'),
           });
@@ -3797,6 +3813,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Lender fees (admin/origination fees) separated from draw fees for clarity
         const lenderBreakdown = {
           downPayment: downPaymentLender,
+          // Down payment component breakdown for debugging/display
+          buyDownPayment,
+          rehabDownPayment,
+          arvAdjustment,
+          ltcAdjustment,
+          capAdjustment,
           baseClosingCosts: closingCostsBuy,
           pointsCost: upfrontPointsCost,
           totalPointsCost: pointsCost,
