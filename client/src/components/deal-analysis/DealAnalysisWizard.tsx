@@ -227,6 +227,7 @@ export default function DealAnalysisWizard() {
   const handleStartNew = () => {
     clearWizardData();
     setPropertySnapshot(null);
+    // Reset ALL form fields to ensure no sticky data
     form.reset({
       address: "",
       city: "",
@@ -235,6 +236,49 @@ export default function DealAnalysisWizard() {
       addingSquareFootage: false,
       closingTimeline: "not-selected",
       loanPreference: "one-of-each",
+      hasExistingLoan: false,
+      // Clear all financial/analysis fields
+      purchasePrice: undefined,
+      rehabBudget: undefined,
+      arv: undefined,
+      projectLength: undefined,
+      sellPrice: undefined,
+      estimatedValue: undefined,
+      taxAssessedValue: undefined,
+      annualTax: undefined,
+      // Clear investor fields
+      isNewInvestor: undefined,
+      creditScore: undefined,
+      // Clear closing cost fields
+      attorneyFees: undefined,
+      docPrepFees: undefined,
+      titleExam: undefined,
+      titleInsurance: undefined,
+      transferFee: undefined,
+      attorneyFees2: undefined,
+      docPrepFees2: undefined,
+      titleExam2: undefined,
+      titleInsurance2: undefined,
+      // Clear carrying cost fields
+      monthlyUtilities: undefined,
+      annualInsurance: undefined,
+      hoaFees: undefined,
+      hoaTransferFee: undefined,
+      otherCarryingCosts: undefined,
+      // Clear exit cost fields
+      closingCostsSellPercent: undefined,
+      realEstateCommissionPercent: undefined,
+      // Clear double close fields
+      isDoubleClose: undefined,
+      payingForBothSides: undefined,
+      // Clear property details
+      bedrooms: undefined,
+      bathrooms: undefined,
+      sqft: undefined,
+      lotSize: undefined,
+      yearBuilt: undefined,
+      propertyType: undefined,
+      propertyDataSource: undefined,
     });
     setCurrentStep(1);
   };

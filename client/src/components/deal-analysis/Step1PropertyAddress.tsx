@@ -41,8 +41,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         dataSource = 'redfin';
       }
       
-      // Clear previous wizard data and reset financial fields for new property
+      // Clear previous wizard data and reset ALL financial/analysis fields for new property
       clearWizardData();
+      
+      // Reset Step 3 fields (Purchase & Renovation)
       form.setValue("purchasePrice", undefined);
       form.setValue("rehabBudget", undefined);
       form.setValue("arv", undefined);
@@ -51,6 +53,29 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       form.setValue("closingTimeline", "not-selected");
       form.setValue("isDoubleClose", undefined);
       form.setValue("payingForBothSides", undefined);
+      
+      // Reset Step 4 fields (Holding Period & Exit)
+      form.setValue("attorneyFees", undefined);
+      form.setValue("docPrepFees", undefined);
+      form.setValue("titleExam", undefined);
+      form.setValue("titleInsurance", undefined);
+      form.setValue("transferFee", undefined);
+      form.setValue("attorneyFees2", undefined);
+      form.setValue("docPrepFees2", undefined);
+      form.setValue("titleExam2", undefined);
+      form.setValue("titleInsurance2", undefined);
+      form.setValue("monthlyUtilities", undefined);
+      form.setValue("annualInsurance", undefined);
+      form.setValue("hoaTransferFee", undefined);
+      form.setValue("otherCarryingCosts", undefined);
+      form.setValue("closingCostsSellPercent", undefined);
+      form.setValue("realEstateCommissionPercent", undefined);
+      
+      // Reset investor/loan fields
+      form.setValue("isNewInvestor", undefined);
+      form.setValue("creditScore", undefined);
+      form.setValue("hasExistingLoan", false);
+      form.setValue("loanPreference", "one-of-each");
       
       // Set property data from lookup
       form.setValue("address", data.address || "");
