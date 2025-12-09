@@ -3840,7 +3840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       upfrontPointsCost - appraisalCost - drawFeesCost - fees - rolledCosts - closingCostsSell - commission;
         
         // Build out-of-pocket breakdown for this lender
-        // Lender fees (admin/origination fees) separated from draw fees for clarity
+        // Lender fees (draw fees) separated from doc prep fees for clarity
         const lenderBreakdown = {
           downPayment: downPaymentLender,
           // Down payment component breakdown for debugging/display
@@ -3854,8 +3854,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalPointsCost: pointsCost,
           pointsDeferred: product.pointsDeferred || false,
           appraisalCost,
-          docPrepFee: 0, // Lender products don't have separate doc prep - included in lenderFees
-          lenderFees: fees + drawFeesCost,
+          docPrepFee: fees, // Lender's doc prep / admin fees from product.fees
+          lenderFees: drawFeesCost, // Draw fees only
           totalClosingCostsBuy: totalClosingCostsBuyLender + drawFeesCost,
           carryingCosts: lenderCarryingCosts,
           total: outOfPocket,

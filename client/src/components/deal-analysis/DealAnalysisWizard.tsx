@@ -218,6 +218,13 @@ export default function DealAnalysisWizard() {
     }
   };
 
+  // Scroll to top when navigating to Step 5 so summary is visible (works for both subscribers and paywall)
+  useEffect(() => {
+    if (currentStep === 5) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStep]);
+
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);

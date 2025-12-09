@@ -231,6 +231,11 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   // Track the latest request ID to prevent stale responses from overwriting newer results
   const requestIdRef = useRef(0);
 
+  // Scroll to top when Step 5 mounts so summary box is visible
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Initialize editable fields from form data and auto-calculate on mount
   useEffect(() => {
     const formData = form.getValues();
