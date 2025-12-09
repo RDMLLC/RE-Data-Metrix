@@ -68,7 +68,7 @@ The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & F
 
 **Fix & Flip Tab Features:**
 - Summary metrics box at top displaying: Net Profit, Total Out-of-Pocket, Cash-on-Cash Return, and Annualized Return
-- Editable variables section for quick recalculations (Buy Price, Rehab, Project Length)
+- Editable variables section for quick recalculations (Buy Price, Rehab, Project Length, ARV)
 - Detailed loan comparison table with expandable breakdowns
 - PDF download with QR codes for lender referral links (hidden in browser, shown in PDF)
 
@@ -119,6 +119,16 @@ The backend calculates per-lender carrying costs:
 - When interest is NOT deferred: Monthly interest payments are added to carrying costs for display
 - When interest IS deferred: Interest goes to rolled costs (added to payoff amount)
 - Total carrying costs = (monthly costs × project length) + one-time costs + interest (if not deferred)
+
+### Shared Calculation Module
+All loan calculation logic is centralized in `shared/calculations/loan-calculations.ts` as a single source of truth:
+- **Location**: `shared/calculations/loan-calculations.ts`
+- **Backend access**: Via re-export in `server/services/loan-calculation.service.ts`
+- **Key functions**: `calculateLoanMetrics`, `calculateTwoStepLoanAmount`, `calculateProfit`, `calculateROI`, `calculateCashOnCashROI`, `calculateAnnualizedROI`
+- **Interfaces**: `DealInputs`, `LoanInputs`, `OutOfPocketBreakdown`
+- **Reference**: Use `shared/data/calculationReference.ts` to verify calculation formulas
+
+This module contains pure math functions with typed inputs/outputs, making calculations testable and consistent across the platform.
 
 ### Form Handling & Validation
 Client-side validation uses react-hook-form and Zod, complemented by comprehensive server-side Zod schema validation for all API endpoints.
