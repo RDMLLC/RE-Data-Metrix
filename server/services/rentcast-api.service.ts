@@ -496,11 +496,13 @@ export class RentCastAPIService implements IPropertyAPIService {
         return PLACEHOLDER_IMAGE_URL;
       }
 
-      // Try Redfin first (more reliable), then Zillow as fallback
-      // Both endpoints can work with either URL format in some cases
-      const sources: Array<'redfin' | 'zillow'> = ['redfin', 'zillow'];
+      // Try the original source first, then fallback to the other
+      // Each endpoint requires URLs from its own platform
+      const sources: Array<'redfin' | 'zillow'> = originalSource === 'zillow' 
+        ? ['zillow', 'redfin'] 
+        : ['redfin', 'zillow'];
       
-      console.log(`[HasData] Original URL source: ${originalSource}, will try Redfin first (more reliable), then Zillow`);
+      console.log(`[HasData] Original URL source: ${originalSource}, trying ${sources[0]} first, then ${sources[1]}`);
       
       for (const source of sources) {
         console.log(`[HasData] Trying ${source} endpoint...`);
@@ -562,7 +564,7 @@ export class RentCastAPIService implements IPropertyAPIService {
 
     for (let attempt = 1; attempt <= HASDATA_CONFIG.maxRetries; attempt++) {
       try {
-        console.log(`[HasData] Attempt ${attempt}/${HASDATA_CONFIG.maxRetries} for ${source}`);
+        console.log(`[HasData] Attempt ${attempt}/${HASDATA_CONFIG.maxRetries} for ${source}, URL: ${cleanUrl}`);
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), HASDATA_CONFIG.timeoutMs);
