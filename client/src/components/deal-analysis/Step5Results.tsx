@@ -40,6 +40,7 @@ interface OutOfPocketBreakdown {
   baseClosingCosts: number;
   pointsCost: number;
   appraisalCost: number;
+  docPrepFee: number;
   lenderFees: number;
   totalClosingCostsBuy: number;
   carryingCosts: number;
@@ -162,7 +163,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [editProjectLength, setEditProjectLength] = useState<number>(6);
   
   // Collapsible section states
-  const [showLoanTerms, setShowLoanTerms] = useState(true);
+  const [showLoanTerms, setShowLoanTerms] = useState(false);
   const [showProjectCosts, setShowProjectCosts] = useState(false);
   const [showCostsCarrying, setShowCostsCarrying] = useState(false);
   const [showExitMetrics, setShowExitMetrics] = useState(false);
@@ -1138,6 +1139,29 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                     </TableRow>
                     
                     <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Doc Prep Fee</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-xs"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        $0
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-xs"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-xs">
+                          {formatCurrency(lender.outOfPocketBreakdown?.docPrepFee || 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
                       <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Lender Fees</TableCell>
                       <TableCell 
                         className="text-center sticky z-10 bg-background text-xs"
@@ -1752,7 +1776,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                           data-testid={`button-contact-lender-${index + 1}`}
                         >
                           <Mail className="h-4 w-4 mr-1" />
-                          Contact
+                          Contact Lender
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">N/A</span>

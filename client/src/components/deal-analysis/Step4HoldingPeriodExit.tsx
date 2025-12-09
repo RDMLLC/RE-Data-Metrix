@@ -845,7 +845,7 @@ export default function Step4HoldingPeriodExit({
                         />
                       </FormControl>
                       <FormDescription>
-                        Defaults to ARV
+                        Defaults to Market Value (Not ARV)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

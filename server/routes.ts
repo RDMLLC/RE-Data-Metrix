@@ -3551,6 +3551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseClosingCosts: closingCostsBuy,
         pointsCost: 0,
         appraisalCost: 0,
+        docPrepFee: 0,
         lenderFees: 0,
         totalClosingCostsBuy: closingCostsBuy,
         carryingCosts: carryingCosts,
@@ -3634,7 +3635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           baseClosingCosts: closingCostsBuy,
           pointsCost: upfrontPointsCost,
           appraisalCost,
-          lenderFees: docPrepFees + drawFeesCost,
+          docPrepFee: docPrepFees,
+          lenderFees: drawFeesCost,
           totalClosingCostsBuy: totalClosingCostsBuyUser + drawFeesCost,
           carryingCosts: userLoanCarryingCosts,
           total: outOfPocket,
@@ -3763,12 +3765,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const profit = sellPrice - totalProjectCost - closingCostsBuy - lenderCarryingCosts - 
                       upfrontPointsCost - appraisalCost - drawFeesCost - fees - rolledCosts - closingCostsSell - commission;
         
-        // Build out-of-pocket breakdown for this lender (draw fees included in lenderFees for display)
+        // Build out-of-pocket breakdown for this lender
+        // Lender fees (admin/origination fees) separated from draw fees for clarity
         const lenderBreakdown = {
           downPayment: downPaymentLender,
           baseClosingCosts: closingCostsBuy,
           pointsCost: upfrontPointsCost,
           appraisalCost,
+          docPrepFee: 0, // Lender products don't have separate doc prep - included in lenderFees
           lenderFees: fees + drawFeesCost,
           totalClosingCostsBuy: totalClosingCostsBuyLender + drawFeesCost,
           carryingCosts: lenderCarryingCosts,
