@@ -35,6 +35,17 @@ interface Step5ResultsProps {
   onBack: () => void;
 }
 
+interface OutOfPocketBreakdown {
+  downPayment: number;
+  baseClosingCosts: number;
+  pointsCost: number;
+  appraisalCost: number;
+  lenderFees: number;
+  totalClosingCostsBuy: number;
+  carryingCosts: number;
+  total: number;
+}
+
 interface LoanComparisonColumn {
   type: 'cash' | 'user-loan' | 'lender';
   lenderId?: string;
@@ -64,6 +75,7 @@ interface LoanComparisonColumn {
   lenderDrawFees: number;
   profit: number;
   outOfPocketCost: number;
+  outOfPocketBreakdown?: OutOfPocketBreakdown;
   cashOnCashRoi: number;
   annualizedRoi: number;
   roi: number;
@@ -154,6 +166,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [showProjectCosts, setShowProjectCosts] = useState(false);
   const [showCostsCarrying, setShowCostsCarrying] = useState(false);
   const [showExitMetrics, setShowExitMetrics] = useState(false);
+  const [showOutOfPocketBreakdown, setShowOutOfPocketBreakdown] = useState(false);
 
   // Contact lender state
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -901,8 +914,15 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   ))}
                 </TableRow>
                 
-                <TableRow className="bg-muted">
-                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Est. Out of Pocket</TableCell>
+                <TableRow 
+                  className="bg-muted cursor-pointer hover:bg-muted/80 transition-colors"
+                  onClick={() => setShowOutOfPocketBreakdown(!showOutOfPocketBreakdown)}
+                  data-testid="row-out-of-pocket"
+                >
+                  <TableCell className={`font-bold ${stickyFirstColMuted} flex items-center gap-2`}>
+                    {showOutOfPocketBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Est. Out of Pocket
+                  </TableCell>
                   <TableCell 
                     className="text-center font-bold sticky z-10 bg-muted"
                     style={{ left: `${metricColWidth}px` }}
@@ -921,6 +941,172 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                     <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.outOfPocketCost)}</TableCell>
                   ))}
                 </TableRow>
+                
+                {/* Out of Pocket Breakdown - Expandable */}
+                {showOutOfPocketBreakdown && (
+                  <>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8 text-sm text-muted-foreground`}>Down Payment</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-sm"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.downPayment || results.cashSaleColumn.totalProjectCost)}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-sm"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-sm">
+                          {formatCurrency(lender.outOfPocketBreakdown?.downPayment || 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8 text-sm text-muted-foreground`}>Closing Costs (Buy)</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-sm"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.totalClosingCostsBuy || results.cashSaleColumn.closingCostsBuy)}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-sm"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.totalClosingCostsBuy || results.userLoanColumn.closingCostsBuy)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-sm">
+                          {formatCurrency(lender.outOfPocketBreakdown?.totalClosingCostsBuy || lender.closingCostsBuy)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Base Closing</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-xs"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.baseClosingCosts || results.cashSaleColumn.closingCostsBuy)}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-xs"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.baseClosingCosts || 0)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-xs">
+                          {formatCurrency(lender.outOfPocketBreakdown?.baseClosingCosts || 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Points</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-xs"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        $0
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-xs"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-xs">
+                          {formatCurrency(lender.outOfPocketBreakdown?.pointsCost || 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Appraisal</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-xs"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        $0
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-xs"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-xs">
+                          {formatCurrency(lender.outOfPocketBreakdown?.appraisalCost || 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-12 text-xs text-muted-foreground`}>• Lender Fees</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-xs"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        $0
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-xs"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.lenderFees || 0)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-xs">
+                          {formatCurrency(lender.outOfPocketBreakdown?.lenderFees || 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8 text-sm text-muted-foreground`}>Carrying Costs</TableCell>
+                      <TableCell 
+                        className="text-center sticky z-10 bg-background text-sm"
+                        style={{ left: `${metricColWidth}px` }}
+                      >
+                        {formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.carryingCosts || results.cashSaleColumn.carryingCosts)}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell 
+                          className="text-center sticky z-10 bg-background text-sm"
+                          style={{ left: `${metricColWidth + cashSaleColWidth}px` }}
+                        >
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.carryingCosts || results.userLoanColumn.carryingCosts)}
+                        </TableCell>
+                      )}
+                      {visibleLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center text-sm">
+                          {formatCurrency(lender.outOfPocketBreakdown?.carryingCosts || lender.carryingCosts)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </>
+                )}
 
                 {/* LOAN TERMS Section Header */}
                 <TableRow 

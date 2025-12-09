@@ -467,6 +467,17 @@ export interface LoanCalculation {
   annualizedRoi: number;
 }
 
+export interface OutOfPocketBreakdown {
+  downPayment: number;
+  baseClosingCosts: number;
+  pointsCost: number;
+  appraisalCost: number;
+  lenderFees: number;
+  totalClosingCostsBuy: number;
+  carryingCosts: number;
+  total: number;
+}
+
 export interface LoanComparisonColumn {
   type: 'cash' | 'user-loan' | 'lender';
   lenderId?: string;
@@ -501,6 +512,7 @@ export interface LoanComparisonColumn {
   
   profit: number;
   outOfPocketCost: number;
+  outOfPocketBreakdown?: OutOfPocketBreakdown;
   
   cashOnCashRoi: number;
   annualizedRoi: number;

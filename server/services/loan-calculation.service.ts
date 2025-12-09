@@ -257,6 +257,57 @@ export function calculateRolledCosts(
   return rolledCosts;
 }
 
+export interface OutOfPocketBreakdown {
+  downPayment: number;
+  baseClosingCosts: number;
+  pointsCost: number;
+  appraisalCost: number;
+  lenderFees: number;
+  totalClosingCostsBuy: number;
+  carryingCosts: number;
+  total: number;
+}
+
+export function calculateOutOfPocketWithBreakdown(
+  purchasePrice: number,
+  rehabBudget: number,
+  baseClosingCostsBuy: number,
+  monthlyCarryingCosts: number,
+  projectLength: number,
+  finalLoanAmount: number,
+  points: number,
+  pointsDeferred: boolean,
+  interestDeferred: boolean,
+  appraisalCost: number = 0,
+  lenderFees: number = 0
+): OutOfPocketBreakdown {
+  const totalProjectCost = purchasePrice + rehabBudget;
+  const downPayment = totalProjectCost - finalLoanAmount;
+  
+  // Points cost (only if not deferred)
+  const pointsCost = pointsDeferred ? 0 : finalLoanAmount * (points / 100);
+  
+  // Total Closing Costs (Buy) = base + points + appraisal + lender fees
+  const totalClosingCostsBuy = baseClosingCostsBuy + pointsCost + appraisalCost + lenderFees;
+  
+  // Carrying costs over project duration
+  const carryingCosts = monthlyCarryingCosts * projectLength;
+  
+  // Total out of pocket
+  const total = downPayment + totalClosingCostsBuy + carryingCosts;
+  
+  return {
+    downPayment,
+    baseClosingCosts: baseClosingCostsBuy,
+    pointsCost,
+    appraisalCost,
+    lenderFees,
+    totalClosingCostsBuy,
+    carryingCosts,
+    total,
+  };
+}
+
 export function calculateOutOfPocketCost(
   purchasePrice: number,
   rehabBudget: number,
@@ -353,7 +404,14 @@ export function calculateLoanMetrics(
   loanInputs: LoanInputs,
   numberOfDraws: number = 3,
   customDrawSchedule?: DrawSchedule[]
-): LoanCalculation & { totalInvestment: number; totalProjectCost: number; isLtcAdjusted?: boolean; effectiveBuyPercent?: number } {
+): LoanCalculation & { 
+  totalInvestment: number; 
+  totalProjectCost: number; 
+  isLtcAdjusted?: boolean; 
+  effectiveBuyPercent?: number;
+  outOfPocketBreakdown: OutOfPocketBreakdown;
+  totalClosingCostsBuy: number;
+} {
   const drawSchedule = calculateDrawSchedule(dealInputs.projectLength, numberOfDraws, customDrawSchedule);
   
   const loanAmounts = calculateTwoStepLoanAmount(
@@ -404,7 +462,8 @@ export function calculateLoanMetrics(
     loanAmounts.finalLoanAmount
   );
   
-  const outOfPocketCost = calculateOutOfPocketCost(
+  // Calculate out of pocket with full breakdown
+  const outOfPocketBreakdown = calculateOutOfPocketWithBreakdown(
     dealInputs.purchasePrice,
     dealInputs.rehabBudget,
     dealInputs.closingCostsBuy,
@@ -413,13 +472,15 @@ export function calculateLoanMetrics(
     loanAmounts.finalLoanAmount,
     loanInputs.points,
     loanInputs.pointsDeferred,
-    loanInputs.interestDeferred
+    loanInputs.interestDeferred,
+    loanInputs.appraisalCost,
+    loanInputs.fees
   );
   
   const drawFees = loanInputs.costPerDraw * numberOfDraws;
   
   const totalProjectCost = dealInputs.purchasePrice + dealInputs.rehabBudget;
-  const totalInvestment = totalProjectCost + dealInputs.closingCostsBuy + (monthlyCarryingCosts * dealInputs.projectLength);
+  const totalInvestment = totalProjectCost + outOfPocketBreakdown.totalClosingCostsBuy + (monthlyCarryingCosts * dealInputs.projectLength);
   
   const profit = calculateProfit(
     dealInputs.sellPrice,
@@ -431,7 +492,7 @@ export function calculateLoanMetrics(
   );
   
   const roi = calculateROI(profit, totalInvestment);
-  const cashOnCashRoi = calculateCashOnCashROI(profit, outOfPocketCost);
+  const cashOnCashRoi = calculateCashOnCashROI(profit, outOfPocketBreakdown.total);
   const annualizedRoi = calculateAnnualizedROI(cashOnCashRoi, dealInputs.projectLength);
   
   return {
@@ -447,7 +508,9 @@ export function calculateLoanMetrics(
     monthlyPayment,
     monthlyCarryingCosts,
     rolledCosts,
-    outOfPocketCost,
+    outOfPocketCost: outOfPocketBreakdown.total,
+    outOfPocketBreakdown,
+    totalClosingCostsBuy: outOfPocketBreakdown.totalClosingCostsBuy,
     profit,
     roi,
     cashOnCashRoi,
@@ -459,6 +522,18 @@ export function calculateLoanMetrics(
 
 export function createCashSaleColumn(dealInputs: DealInputs): LoanComparisonColumn {
   const cashMetrics = calculateCashSaleMetrics(dealInputs);
+  
+  // For cash sales, breakdown is simpler - no lender fees, points, or appraisal
+  const outOfPocketBreakdown: OutOfPocketBreakdown = {
+    downPayment: cashMetrics.totalProjectCost, // Full amount is down payment
+    baseClosingCosts: dealInputs.closingCostsBuy,
+    pointsCost: 0,
+    appraisalCost: 0,
+    lenderFees: 0,
+    totalClosingCostsBuy: dealInputs.closingCostsBuy,
+    carryingCosts: dealInputs.carryingCosts,
+    total: cashMetrics.outOfPocketCost,
+  };
   
   return {
     type: 'cash',
@@ -475,6 +550,7 @@ export function createCashSaleColumn(dealInputs: DealInputs): LoanComparisonColu
     lenderDrawFees: 0,
     profit: cashMetrics.profit,
     outOfPocketCost: cashMetrics.outOfPocketCost,
+    outOfPocketBreakdown,
     cashOnCashRoi: cashMetrics.cashOnCashRoi,
     annualizedRoi: cashMetrics.annualizedRoi,
     roi: cashMetrics.roi,
@@ -524,7 +600,7 @@ export function createLoanComparisonColumn(
     purchasePrice: dealInputs.purchasePrice,
     rehabBudget: dealInputs.rehabBudget,
     totalProjectCost: loanCalculation.totalProjectCost,
-    closingCostsBuy: dealInputs.closingCostsBuy,
+    closingCostsBuy: loanCalculation.totalClosingCostsBuy, // Now includes points, appraisal, lender fees
     carryingCosts: loanCalculation.monthlyCarryingCosts * dealInputs.projectLength,
     totalInvestment: loanCalculation.totalInvestment,
     sellPrice: dealInputs.sellPrice,
@@ -534,6 +610,7 @@ export function createLoanComparisonColumn(
     lenderDrawFees: loanCalculation.drawFees,
     profit: loanCalculation.profit,
     outOfPocketCost: loanCalculation.outOfPocketCost,
+    outOfPocketBreakdown: loanCalculation.outOfPocketBreakdown,
     cashOnCashRoi: loanCalculation.cashOnCashRoi,
     annualizedRoi: loanCalculation.annualizedRoi,
     roi: loanCalculation.roi,

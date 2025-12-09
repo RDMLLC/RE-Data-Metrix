@@ -3470,6 +3470,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const percentageArv = arv > 0 ? (totalProjectCost / arv) * 100 : 0;
 
       // Calculate Cash Sale Column (no financing)
+      // For cash purchase, closingCostsBuy is just the base amount (no lender fees)
+      const cashOutOfPocketBreakdown = {
+        downPayment: totalProjectCost,
+        baseClosingCosts: closingCostsBuy,
+        pointsCost: 0,
+        appraisalCost: 0,
+        lenderFees: 0,
+        totalClosingCostsBuy: closingCostsBuy,
+        carryingCosts: carryingCosts,
+        total: totalProjectCost + closingCostsBuy + carryingCosts,
+      };
+      
       const cashSaleColumn = {
         type: 'cash' as const,
         purchasePrice,
@@ -3485,6 +3497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lenderDrawFees: 0,
         profit: sellPrice - (totalProjectCost + closingCostsBuy + carryingCosts) - closingCostsSell - commission,
         outOfPocketCost: totalProjectCost + closingCostsBuy + carryingCosts,
+        outOfPocketBreakdown: cashOutOfPocketBreakdown,
         cashOnCashRoi: 0,
         annualizedRoi: 0,
         roi: 0,
@@ -3525,13 +3538,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const upfrontLoanCosts = (!userLoan.pointsDeferred ? pointsCost : 0) + 
                                  appraisalCost + drawFeesCost + docPrepFees;
         
-        // Out of pocket = what you pay upfront (cash needed minus loan proceeds)
-        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + userLoanCarryingCosts + upfrontLoanCosts;
+        // Calculate per-lender total closing costs
+        const upfrontPointsCost = !userLoan.pointsDeferred ? pointsCost : 0;
+        const totalClosingCostsBuyUser = closingCostsBuy + upfrontPointsCost + appraisalCost + docPrepFees;
+        
+        // Down payment = project cost minus loan
+        const downPayment = Math.max(0, totalProjectCost - loanAmount);
+        
+        // Out of pocket = what you pay upfront (down payment + total closing costs + carrying + draw fees)
+        const outOfPocket = downPayment + totalClosingCostsBuyUser + userLoanCarryingCosts + drawFeesCost;
         // Total investment includes rolled costs that come due at sale
         const totalInvestment = outOfPocket + rolledCosts;
         // Profit = sale proceeds minus all costs (upfront and rolled)
         const profit = sellPrice - totalProjectCost - closingCostsBuy - userLoanCarryingCosts - 
                       upfrontLoanCosts - rolledCosts - closingCostsSell - commission;
+        
+        // Build out-of-pocket breakdown for user loan (draw fees included in lenderFees for display)
+        const userLoanBreakdown = {
+          downPayment,
+          baseClosingCosts: closingCostsBuy,
+          pointsCost: upfrontPointsCost,
+          appraisalCost,
+          lenderFees: docPrepFees + drawFeesCost,
+          totalClosingCostsBuy: totalClosingCostsBuyUser + drawFeesCost,
+          carryingCosts: userLoanCarryingCosts,
+          total: outOfPocket,
+        };
         
         userLoanColumn = {
           type: 'user-loan' as const,
@@ -3541,7 +3573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchasePrice,
           rehabBudget,
           totalProjectCost,
-          closingCostsBuy,
+          closingCostsBuy: totalClosingCostsBuyUser + drawFeesCost,
           carryingCosts: userLoanCarryingCosts,
           totalInvestment,
           sellPrice,
@@ -3551,6 +3583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lenderDrawFees: drawFeesCost,
           profit,
           outOfPocketCost: outOfPocket,
+          outOfPocketBreakdown: userLoanBreakdown,
           cashOnCashRoi: outOfPocket > 0 ? (profit / outOfPocket) * 100 : 0,
           annualizedRoi: outOfPocket > 0 && projectLength > 0 ? ((profit / outOfPocket) * 100) / (projectLength / 12) : 0,
           roi: totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0,
@@ -3640,16 +3673,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Base carrying costs (from frontend) + interest payments if not deferred
         const lenderCarryingCosts = carryingCosts + (!product.interestDeferred ? interestCost : 0);
         
-        // Upfront loan costs (points if not deferred + appraisal + draws + fees)
-        // Note: Interest is now part of carrying costs, not upfront loan costs
-        const upfrontLoanCosts = (!product.pointsDeferred ? pointsCost : 0) + 
-                                 appraisalCost + drawFeesCost + fees;
+        // Calculate upfront points cost (only if not deferred)
+        const upfrontPointsCost = !product.pointsDeferred ? pointsCost : 0;
         
-        // Out of pocket = what you pay upfront (cash needed minus loan proceeds)
-        const outOfPocket = Math.max(0, totalProjectCost - loanAmount) + closingCostsBuy + lenderCarryingCosts + upfrontLoanCosts;
+        // Calculate per-lender total closing costs (base + points + appraisal + lender fees)
+        const totalClosingCostsBuyLender = closingCostsBuy + upfrontPointsCost + appraisalCost + fees;
+        
+        // Down payment = project cost minus loan
+        const downPaymentLender = Math.max(0, totalProjectCost - loanAmount);
+        
+        // Out of pocket = what you pay upfront (down payment + total closing costs + carrying + draw fees)
+        const outOfPocket = downPaymentLender + totalClosingCostsBuyLender + lenderCarryingCosts + drawFeesCost;
         const totalInvestment = outOfPocket + rolledCosts;
         const profit = sellPrice - totalProjectCost - closingCostsBuy - lenderCarryingCosts - 
-                      upfrontLoanCosts - rolledCosts - closingCostsSell - commission;
+                      upfrontPointsCost - appraisalCost - drawFeesCost - fees - rolledCosts - closingCostsSell - commission;
+        
+        // Build out-of-pocket breakdown for this lender (draw fees included in lenderFees for display)
+        const lenderBreakdown = {
+          downPayment: downPaymentLender,
+          baseClosingCosts: closingCostsBuy,
+          pointsCost: upfrontPointsCost,
+          appraisalCost,
+          lenderFees: fees + drawFeesCost,
+          totalClosingCostsBuy: totalClosingCostsBuyLender + drawFeesCost,
+          carryingCosts: lenderCarryingCosts,
+          total: outOfPocket,
+        };
 
         return {
           type: 'lender' as const,
@@ -3670,7 +3719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purchasePrice,
           rehabBudget,
           totalProjectCost,
-          closingCostsBuy,
+          closingCostsBuy: totalClosingCostsBuyLender + drawFeesCost,
           carryingCosts: lenderCarryingCosts,
           totalInvestment,
           sellPrice,
@@ -3680,6 +3729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lenderDrawFees: drawFeesCost,
           profit,
           outOfPocketCost: outOfPocket,
+          outOfPocketBreakdown: lenderBreakdown,
           cashOnCashRoi: outOfPocket > 0 ? (profit / outOfPocket) * 100 : 0,
           annualizedRoi: outOfPocket > 0 && projectLength > 0 ? ((profit / outOfPocket) * 100) / (projectLength / 12) : 0,
           roi: totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0,

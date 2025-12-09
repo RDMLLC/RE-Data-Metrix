@@ -407,26 +407,50 @@ export const calculationCategories: CalculationCategory[] = [
         }
       },
       {
+        id: "closing-costs-buy-total",
+        name: "Closing Costs (Buy) - Total",
+        description: "Per-lender total closing costs to purchase, including base closing costs plus all lender-specific fees",
+        formula: "closingCostsBuyTotal = baseClosingCosts + pointsCost + appraisalCost + lenderFees",
+        formulaDisplay: "Closing Costs (Buy) = Base Closing + Points + Appraisal + Lender Fees",
+        inputs: [
+          { name: "baseClosingCosts", description: "User-entered closing costs (attorney, title, etc.)", source: "User input (Step 4)" },
+          { name: "pointsCost", description: "Origination points in dollars", source: "Loan Amount × Points%" },
+          { name: "appraisalCost", description: "Lender's required appraisal fee", source: "Lender product settings" },
+          { name: "lenderFees", description: "Additional lender document/processing fees", source: "Lender product settings" }
+        ],
+        output: "Total upfront closing costs including lender-specific fees",
+        example: {
+          inputs: { baseClosingCosts: 5000, pointsCost: 4200, appraisalCost: 650, lenderFees: 1195 },
+          result: "$11,045",
+          explanation: "$5,000 base + $4,200 points + $650 appraisal + $1,195 lender fees = $11,045"
+        },
+        notes: [
+          "This is a lender-specific calculation - each lender column shows different totals",
+          "Points are calculated as loanAmount × (points% / 100)",
+          "For cash purchases, only base closing costs apply (no points, appraisal, or lender fees)"
+        ]
+      },
+      {
         id: "out-of-pocket-cost",
         name: "Out-of-Pocket Cost (Cash Required)",
-        description: "Total cash the investor needs to complete the deal",
-        formula: "outOfPocket = downPayment + closingCostsBuy + (pointsDeferred ? 0 : pointsCost) + totalCarryingCosts",
-        formulaDisplay: "Cash Required = Down Payment + Closing Costs + Upfront Points + Carrying Costs",
+        description: "Total cash the investor needs to complete the deal. Expandable to show itemized breakdown.",
+        formula: "outOfPocket = downPayment + closingCostsBuyTotal + totalCarryingCosts",
+        formulaDisplay: "Cash Required = Down Payment + Closing Costs (Buy) + Carrying Costs",
         inputs: [
-          { name: "downPayment", description: "Required down payment", source: "Down Payment calculation" },
-          { name: "closingCostsBuy", description: "Closing costs to purchase", source: "User input (Step 4)" },
-          { name: "pointsCost", description: "Origination points (if not deferred)", source: "Origination Points calculation" },
-          { name: "totalCarryingCosts", description: "Total carrying costs", source: "Total Carrying Costs calculation" }
+          { name: "downPayment", description: "Cash needed for project cost not covered by loan", source: "Down Payment calculation" },
+          { name: "closingCostsBuyTotal", description: "Total closing costs including lender fees", source: "Closing Costs (Buy) - Total calculation" },
+          { name: "totalCarryingCosts", description: "Total carrying costs during project", source: "Total Carrying Costs calculation" }
         ],
         output: "Total cash investor must invest",
         example: {
-          inputs: { downPayment: 40000, closingCostsBuy: 5000, pointsCost: 4200, totalCarryingCosts: 3600 },
-          result: "$52,800",
-          explanation: "$40,000 + $5,000 + $4,200 + $3,600 = $52,800 cash needed"
+          inputs: { downPayment: 40000, closingCostsBuyTotal: 11045, totalCarryingCosts: 3600 },
+          result: "$54,645",
+          explanation: "$40,000 down payment + $11,045 closing costs + $3,600 carrying = $54,645 cash needed"
         },
         notes: [
           "This is the actual cash invested, used for Cash-on-Cash ROI calculations",
-          "If points or interest are deferred, those amounts are NOT included here"
+          "Click the row to expand and see itemized breakdown: down payment, closing costs (base + points + appraisal + lender fees), and carrying costs",
+          "Closing Costs (Buy) now includes per-lender totals with points, appraisal, and lender fees"
         ]
       },
       {
