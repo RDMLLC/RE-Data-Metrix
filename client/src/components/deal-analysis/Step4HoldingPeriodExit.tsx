@@ -27,6 +27,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { getUtilityCostPerSqFt } from "@shared/data/utility-costs";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
+import { calculateTransferTax, getTransferTaxRate } from "@shared/data/transferTaxRates";
 
 interface Step4HoldingPeriodExitProps {
   form: UseFormReturn<WizardFormData>;
@@ -58,6 +59,7 @@ export default function Step4HoldingPeriodExit({
   const docPrepFees = form.watch("docPrepFees") || 0;
   const titleExam = form.watch("titleExam") || 0;
   const titleInsurance = form.watch("titleInsurance") || 0;
+  const transferFee = form.watch("transferFee") || 0;
   
   // Buy2 closing costs (for double close)
   const attorneyFees2 = form.watch("attorneyFees2") || 0;
@@ -99,6 +101,12 @@ export default function Step4HoldingPeriodExit({
     }
     if (!form.getValues("titleInsurance") && purchasePrice) {
       form.setValue("titleInsurance", Math.round(purchasePrice * 0.012));
+    }
+    
+    // Auto-calculate transfer fee based on state and purchase price
+    if (!form.getValues("transferFee") && state && purchasePrice) {
+      const calculatedTransferFee = calculateTransferTax(state, purchasePrice);
+      form.setValue("transferFee", calculatedTransferFee);
     }
     
     // Set default values for Buy2 closing costs (same as Buy1)
@@ -163,8 +171,8 @@ export default function Step4HoldingPeriodExit({
 
   const totalProjectCost = purchasePrice + rehabBudget;
   
-  // Buy1 closing costs
-  const estimatedClosingCostsBuy1 = attorneyFees + docPrepFees + titleExam + titleInsurance;
+  // Buy1 closing costs (including transfer fee)
+  const estimatedClosingCostsBuy1 = attorneyFees + docPrepFees + titleExam + titleInsurance + transferFee;
   
   // Buy2 closing costs (for double close when paying for both sides)
   const estimatedClosingCostsBuy2 = attorneyFees2 + docPrepFees2 + titleExam2 + titleInsurance2;
@@ -373,6 +381,53 @@ export default function Step4HoldingPeriodExit({
                           <FormMessage />
                         </FormItem>
                       )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="transferFee"
+                      render={({ field }) => {
+                        const taxRate = getTransferTaxRate(state);
+                        return (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              Transfer Tax/Fee
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>
+                                    {taxRate 
+                                      ? `${taxRate.stateName}: ${taxRate.ratePercent}% - ${taxRate.notes}. Typically paid by ${taxRate.paidBy}.`
+                                      : 'Transfer tax varies by state. Some states have no transfer tax.'}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value ? parseFloat(e.target.value) : undefined
+                                  )
+                                }
+                                data-testid="input-transfer-fee"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              {taxRate && taxRate.ratePercent > 0 
+                                ? `Auto-calculated at ${taxRate.ratePercent}% for ${taxRate.stateName}`
+                                : state ? `No state transfer tax in ${state}` : 'Based on state rates'}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   </div>
                 </CardContent>

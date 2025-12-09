@@ -64,7 +64,14 @@ The platform uses Stripe for all subscription and payment processing via Replit'
 ### Feature Specifications
 Key features include loan type education, intelligent lender filtering with deep linking, consolidated rental analysis, Zillow RentZestimate integration, detailed deal analysis, and loan comparison services. The platform also offers a "Toolbox & Resources" section with affiliate programs and a glossary. The Rental Analysis flow includes intelligent DSCR lender matching and loan calculations.
 
-The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & Flip" and "Rental / DSCR" analysis. The Rental / DSCR tab provides property overview, monthly rent input, real-time DSCR calculation, PITIA breakdown, and DSCR lender comparison.
+The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & Flip" and "Rental / DSCR" analysis. 
+
+**Fix & Flip Tab Features:**
+- Summary metrics box at top displaying: Net Profit, Total Out-of-Pocket, Cash-on-Cash Return, and Annualized Return
+- Editable variables section for quick recalculations (Buy Price, Rehab, Project Length)
+- Detailed loan comparison table with expandable breakdowns
+
+The Rental / DSCR tab provides property overview, monthly rent input, real-time DSCR calculation, PITIA breakdown, and DSCR lender comparison.
 
 Lender email alerts notify lenders of loan product changes and new investor inquiries. The Investor Inquiries system stores contact requests in a `lender_inquiries` table, viewable by lenders in a dedicated portal page (`/lender-inquiries`) with search and filter capabilities. A "Contact Lender" flow on the Deal Analysis results page allows investors to send detailed inquiries.
 

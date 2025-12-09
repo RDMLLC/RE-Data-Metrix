@@ -20,10 +20,16 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { DollarSign, TrendingUp, HelpCircle } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import { useToast } from "@/hooks/use-toast";
 
 const closingTimelineOptions = [
   { value: "7-days", label: "7 days or less" },
@@ -45,6 +51,7 @@ export default function Step3PurchaseRenovation({
   onBack,
 }: Step3PurchaseRenovationProps) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const { updatePropertyData, updateInvestorData, wizardData } = useWizardData();
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
@@ -61,6 +68,28 @@ export default function Step3PurchaseRenovation({
   }, [form]);
 
   const handleSubmit = form.handleSubmit(() => {
+    const projectLength = form.getValues("projectLength");
+    const closingTimeline = form.getValues("closingTimeline");
+    
+    const errors: string[] = [];
+    
+    if (!projectLength || projectLength <= 0) {
+      errors.push("Project Length is required");
+    }
+    
+    if (!closingTimeline || closingTimeline === "not-selected" || closingTimeline === "") {
+      errors.push("Please select how fast you need to close");
+    }
+    
+    if (errors.length > 0) {
+      toast({
+        title: "Required Fields Missing",
+        description: errors.join(". "),
+        variant: "destructive",
+      });
+      return;
+    }
+    
     onNext();
   });
 
@@ -261,13 +290,23 @@ export default function Step3PurchaseRenovation({
                   name="arv"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>ARV (After Repair Value)</FormLabel>
+                      <FormLabel className="flex items-center gap-1">
+                        Estimated Market Value (Not ARV)
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min="0"
                           step="1"
-                          placeholder="Enter expected ARV"
+                          placeholder="Enter estimated market value"
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) =>

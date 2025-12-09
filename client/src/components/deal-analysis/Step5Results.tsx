@@ -756,6 +756,40 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
 
         {/* Fix & Flip Analysis Tab */}
         <TabsContent value="fix-and-flip" className="mt-6 space-y-6">
+          {/* Summary Metrics Box */}
+          {results && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Net Profit</p>
+                    <p className="text-2xl font-bold text-green-600" data-testid="summary-net-profit">
+                      {formatCurrency(results.userLoanColumn?.profit ?? results.cashSaleColumn.profit)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Total Out-of-Pocket</p>
+                    <p className="text-2xl font-bold" data-testid="summary-out-of-pocket">
+                      {formatCurrency(results.userLoanColumn?.outOfPocketCost ?? results.cashSaleColumn.outOfPocketCost)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Cash-on-Cash Return</p>
+                    <p className="text-2xl font-bold text-primary" data-testid="summary-coc-roi">
+                      {formatPercent(results.userLoanColumn?.cashOnCashRoi ?? results.cashSaleColumn.cashOnCashRoi)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground mb-1">Annualized Return</p>
+                    <p className="text-2xl font-bold text-primary" data-testid="summary-annualized-roi">
+                      {formatPercent(results.userLoanColumn?.annualizedRoi ?? results.cashSaleColumn.annualizedRoi)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Editable Variables Section */}
           <Card className="border-primary/20">
             <CardContent className="pt-4">
