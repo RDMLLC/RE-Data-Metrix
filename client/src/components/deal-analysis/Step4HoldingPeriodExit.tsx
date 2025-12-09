@@ -621,6 +621,9 @@ export default function Step4HoldingPeriodExit({
                               data-testid="input-hoa-fees"
                             />
                           </FormControl>
+                          <FormDescription>
+                            From property listing if applicable
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

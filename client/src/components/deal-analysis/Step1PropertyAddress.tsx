@@ -278,16 +278,18 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 <div className="pt-4 border-t space-y-4">
                   <div className="rounded-lg bg-muted p-4">
                     <h3 className="font-semibold mb-2">Property Found</h3>
-                    {propertyImage && (
-                      <div className="mb-3 rounded-md overflow-hidden">
-                        <img 
-                          src={propertyImage} 
-                          alt="Property"
-                          className="w-full object-contain"
-                          data-testid="img-property"
-                        />
-                      </div>
-                    )}
+                    <div className="mb-3 rounded-md overflow-hidden bg-muted">
+                      <img 
+                        src={propertyImage || "/images/property-placeholder.svg"} 
+                        alt="Property"
+                        className="w-full h-48 object-cover"
+                        data-testid="img-property"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/images/property-placeholder.svg";
+                        }}
+                      />
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
                     </p>
