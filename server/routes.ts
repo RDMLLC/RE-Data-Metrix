@@ -3091,6 +3091,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync discount code to Stripe (create coupon)
+  app.post("/api/admin/discount-codes/:id/sync-stripe", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get the discount code
+      const discountCode = await storage.getDiscountCode(id);
+      if (!discountCode) {
+        return res.status(404).json({ error: "Discount code not found" });
+      }
+      
+      // Check if already synced
+      if (discountCode.stripeCouponId) {
+        return res.status(400).json({ 
+          error: "Already synced", 
+          message: `This discount code is already linked to Stripe coupon: ${discountCode.stripeCouponId}` 
+        });
+      }
+      
+      // Get Stripe client
+      const stripe = await getUncachableStripeClient();
+      
+      // Build coupon params
+      const couponParams: any = {
+        id: discountCode.code, // Use code as coupon ID for easy reference
+        name: `${discountCode.code} - ${discountCode.displayName}`,
+        duration: 'once', // Apply once per subscription
+      };
+      
+      if (discountCode.percentOff) {
+        couponParams.percent_off = Number(discountCode.percentOff);
+      } else if (discountCode.amountOff) {
+        couponParams.amount_off = Math.round(Number(discountCode.amountOff) * 100); // Convert to cents
+        couponParams.currency = 'usd';
+      }
+      
+      // Create coupon in Stripe
+      const stripeCoupon = await stripe.coupons.create(couponParams);
+      
+      // Update discount code with Stripe coupon ID
+      const updated = await storage.updateDiscountCode(id, {
+        stripeCouponId: stripeCoupon.id,
+      });
+      
+      console.log(`[STRIPE] Created coupon ${stripeCoupon.id} for discount code ${discountCode.code}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully synced to Stripe`,
+        stripeCouponId: stripeCoupon.id,
+        discountCode: updated
+      });
+    } catch (error: any) {
+      console.error('Sync discount code to Stripe error:', error);
+      
+      // Handle Stripe-specific errors
+      if (error.type === 'StripeInvalidRequestError') {
+        if (error.code === 'resource_already_exists') {
+          return res.status(400).json({ 
+            error: "Coupon already exists in Stripe", 
+            message: "A coupon with this code already exists in Stripe. You may need to link it manually or use a different code." 
+          });
+        }
+        return res.status(400).json({ error: error.message });
+      }
+      
+      res.status(500).json({ error: "Failed to sync discount code to Stripe" });
+    }
+  });
+
   // Affiliate Management Routes
   // List all affiliates (admin only)
   app.get("/api/admin/affiliates", ensureAdmin, async (req, res) => {

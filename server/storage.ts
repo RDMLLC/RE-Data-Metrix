@@ -356,6 +356,7 @@ export interface IStorage {
     startAt?: Date | null;
     endAt?: Date | null;
     isActive?: boolean;
+    stripeCouponId?: string | null;
   }): Promise<{
     id: string;
     code: string;
@@ -2345,6 +2346,7 @@ export class DatabaseStorage implements IStorage {
     startAt?: Date | null;
     endAt?: Date | null;
     isActive?: boolean;
+    stripeCouponId?: string | null;
   }): Promise<DiscountCode | undefined> {
     const updateData: any = { updatedAt: new Date() };
     if (data.code !== undefined) updateData.code = data.code.toUpperCase();
@@ -2358,6 +2360,7 @@ export class DatabaseStorage implements IStorage {
     if (data.startAt !== undefined) updateData.startAt = data.startAt;
     if (data.endAt !== undefined) updateData.endAt = data.endAt;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.stripeCouponId !== undefined) updateData.stripeCouponId = data.stripeCouponId;
 
     const result = await db.update(discountCodesTable)
       .set(updateData)
