@@ -474,6 +474,8 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
         interestDeferred: formData.interestDeferred || false,
         points: formData.loanPoints || 0,
         pointsDeferred: formData.pointsDeferred || false,
+        maxLendBuy: formData.maxLendBuy,
+        maxLendRehab: formData.maxLendRehab || 100,
         maxLoanToArv: formData.maxLoanToArv || 70,
         appraisalRequired: formData.appraisalRequired || false,
         appraisalFee: formData.appraisalFee || 500,

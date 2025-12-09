@@ -3525,6 +3525,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       interestDeferred: z.boolean().optional(),
       points: z.number(),
       pointsDeferred: z.boolean().optional(),
+      maxLendBuy: z.number().optional(), // Max % Lend on Purchase
+      maxLendRehab: z.number().optional(), // Max % Lend on Rehab
       maxLoanToArv: z.number(),
       appraisalRequired: z.boolean().optional(),
       appraisalFee: z.number().optional(),
@@ -3589,12 +3591,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate User Loan Column (if provided)
       let userLoanColumn = null;
       if (userLoan) {
-        // Calculate maximum loan based on ARV constraint
-        const maxLoanFromArv = arv * (userLoan.maxLoanToArv / 100);
-        // Use desiredLoanAmount if specified, otherwise cap at max from ARV or total project cost
-        const loanAmount = userLoan.desiredLoanAmount 
-          ? Math.min(userLoan.desiredLoanAmount, maxLoanFromArv)
-          : Math.min(totalProjectCost, maxLoanFromArv);
+        // Get user loan LTV parameters (with sensible defaults)
+        const userMaxLtvBuy = userLoan.maxLendBuy || 80; // Default 80% if not specified
+        const userMaxLendRehab = userLoan.maxLendRehab || 100; // Default 100% if not specified
+        const userMaxLoanArv = userLoan.maxLoanToArv || 70; // Default 70% if not specified
+        
+        // Calculate loan components based on user's entered terms
+        const purchaseLoanAmount = Math.round(purchasePrice * (userMaxLtvBuy / 100) * 100) / 100;
+        const rehabLoanAmount = Math.round(rehabBudget * (userMaxLendRehab / 100) * 100) / 100;
+        const totalLoanDesired = purchaseLoanAmount + rehabLoanAmount;
+        
+        // Calculate ARV cap
+        const maxFromArv = Math.round(arv * (userMaxLoanArv / 100) * 100) / 100;
+        
+        // Final loan amount is the lesser of desired vs ARV cap
+        const loanAmount = Math.min(totalLoanDesired, maxFromArv);
+        
+        // Calculate down payment using component breakdown (same as lender calculation)
+        const userBuyDownPayment = Math.round(purchasePrice * (1 - userMaxLtvBuy / 100) * 100) / 100;
+        const userRehabDownPayment = Math.round(rehabBudget * (1 - userMaxLendRehab / 100) * 100) / 100;
+        const userArvAdjustment = Math.round(Math.max(0, totalLoanDesired - maxFromArv) * 100) / 100;
+        const downPayment = Math.round((userBuyDownPayment + userRehabDownPayment + userArvAdjustment) * 100) / 100;
         
         const pointsCost = loanAmount * (userLoan.points / 100);
         const monthlyInterestPayment = (loanAmount * (userLoan.interestRate / 100) / 12);
@@ -3618,9 +3635,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const upfrontPointsCost = !userLoan.pointsDeferred ? pointsCost : 0;
         const totalClosingCostsBuyUser = closingCostsBuy + upfrontPointsCost + appraisalCost + docPrepFees;
         
-        // Down payment = project cost minus loan
-        const downPayment = Math.max(0, totalProjectCost - loanAmount);
-        
         // Out of pocket = what you pay upfront (down payment + total closing costs + carrying + draw fees)
         const outOfPocket = downPayment + totalClosingCostsBuyUser + userLoanCarryingCosts + drawFeesCost;
         // Total investment includes rolled costs that come due at sale
@@ -3632,6 +3646,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Build out-of-pocket breakdown for user loan (draw fees included in lenderFees for display)
         const userLoanBreakdown = {
           downPayment,
+          // Down payment component breakdown for debugging/display
+          buyDownPayment: userBuyDownPayment,
+          rehabDownPayment: userRehabDownPayment,
+          arvAdjustment: userArvAdjustment,
           baseClosingCosts: closingCostsBuy,
           pointsCost: upfrontPointsCost,
           totalPointsCost: pointsCost,
@@ -3648,7 +3666,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'user-loan' as const,
           interestRate: userLoan.interestRate,
           points: userLoan.points,
-          maxLtvBuy: userLoan.maxLoanToArv,
+          maxLtvBuy: userMaxLtvBuy,
+          maxLendRehab: userMaxLendRehab,
+          maxLoanArv: userMaxLoanArv,
           purchasePrice,
           rehabBudget,
           totalProjectCost,
