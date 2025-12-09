@@ -850,8 +850,13 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                           <TableHead className="text-center min-w-[100px]">Entered Loan</TableHead>
                         )}
                         {visibleLenders.map((lender, index) => (
-                          <TableHead key={index} className="text-center min-w-[120px] text-xs">
-                            {lender.lenderName || `Lender ${index + 1}`}
+                          <TableHead key={index} className="text-center min-w-[140px] text-xs">
+                            <div className="flex flex-col">
+                              <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
+                              {lender.productName && (
+                                <span className="text-muted-foreground font-normal">{lender.productName}</span>
+                              )}
+                            </div>
                           </TableHead>
                         ))}
                       </TableRow>
@@ -1028,8 +1033,13 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                     </TableHead>
                   )}
                   {visibleLenders.map((lender, index) => (
-                    <TableHead key={index} className="text-center min-w-[120px] text-xs">
-                      {lender.lenderName || `Lender ${index + 1}`}
+                    <TableHead key={index} className="text-center min-w-[140px] text-xs">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
+                        {lender.productName && (
+                          <span className="text-muted-foreground font-normal">{lender.productName}</span>
+                        )}
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>
