@@ -482,9 +482,9 @@ export class RentCastAPIService implements IPropertyAPIService {
     }
 
     try {
-      // Validate and determine source
-      const source = this.detectPropertySource(url);
-      if (!source) {
+      // Validate URL is from a supported source
+      const originalSource = this.detectPropertySource(url);
+      if (!originalSource) {
         console.log(`[HasData] URL not from supported source: ${url}`);
         return PLACEHOLDER_IMAGE_URL;
       }
@@ -496,17 +496,24 @@ export class RentCastAPIService implements IPropertyAPIService {
         return PLACEHOLDER_IMAGE_URL;
       }
 
-      console.log(`[HasData] Fetching image for ${source}: ${cleanUrl}`);
-
-      // Attempt to fetch with retries
-      const imageUrl = await this.fetchImageWithRetry(source, cleanUrl);
+      // Priority order: Try Redfin first (more reliable), then Zillow as fallback
+      // This order is based on observed reliability - Redfin currently has better uptime
+      const sourcePriority: Array<'redfin' | 'zillow'> = ['redfin', 'zillow'];
       
-      if (imageUrl) {
-        console.log(`[HasData] Successfully extracted image: ${imageUrl}`);
-        return imageUrl;
+      for (const source of sourcePriority) {
+        console.log(`[HasData] Trying ${source} for image (priority ${sourcePriority.indexOf(source) + 1}/${sourcePriority.length})`);
+        
+        const imageUrl = await this.fetchImageWithRetry(source, cleanUrl);
+        
+        if (imageUrl) {
+          console.log(`[HasData] SUCCESS: Image retrieved from ${source}: ${imageUrl}`);
+          return imageUrl;
+        }
+        
+        console.log(`[HasData] ${source} failed, ${source === sourcePriority[sourcePriority.length - 1] ? 'no more sources to try' : 'trying next source...'}`);
       }
 
-      console.log(`[HasData] No image found, returning placeholder`);
+      console.log(`[HasData] All sources exhausted, returning placeholder`);
       return PLACEHOLDER_IMAGE_URL;
     } catch (error) {
       console.error("[HasData] Error fetching property image:", error);

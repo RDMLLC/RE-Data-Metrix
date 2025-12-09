@@ -135,8 +135,11 @@ Vite is used for frontend development and production builds, while esbuild handl
   - Supports address-based lookup and URL parsing (Zillow/Redfin)
   - Returns: property details, tax assessed value, annual tax amount, estimated value, estimated rent, comparable sales
 - **HasData API** (Active - Images Only): Property photos from Zillow/Redfin
-  - Used as fallback for property images when RentCast doesn't provide them
   - Integrated into RentCastAPIService via `fetchPropertyImageFromUrl` method
+  - **Source Priority Order**: Redfin first (more reliable), Zillow as fallback
+  - Both sources are tried in sequence until an image is found
+  - If both fail, a placeholder image is returned
+  - Includes success/error logging to track which source is working
 
 ### API Integration Tracking
 Admin panel (`/admin/integrations`) shows all API integrations with active/inactive status:
