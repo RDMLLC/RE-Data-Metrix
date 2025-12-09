@@ -85,6 +85,7 @@ interface LoanComparisonColumn {
   roi: number;
   percentageArv: number;
   percentageArvLender?: number;
+  isPreferred?: boolean;
 }
 
 interface ResultsResponse {
@@ -851,10 +852,13 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                         )}
                         {visibleLenders.map((lender, index) => (
                           <TableHead key={index} className="text-center min-w-[140px] text-xs">
-                            <div className="flex flex-col">
+                            <div className="flex flex-col items-center gap-1">
                               <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
                               {lender.productName && (
                                 <span className="text-muted-foreground font-normal">{lender.productName}</span>
+                              )}
+                              {lender.isPreferred && (
+                                <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-accent text-accent-foreground">Preferred</Badge>
                               )}
                             </div>
                           </TableHead>
@@ -1034,10 +1038,13 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   )}
                   {visibleLenders.map((lender, index) => (
                     <TableHead key={index} className="text-center min-w-[140px] text-xs">
-                      <div className="flex flex-col">
+                      <div className="flex flex-col items-center gap-1">
                         <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
                         {lender.productName && (
                           <span className="text-muted-foreground font-normal">{lender.productName}</span>
+                        )}
+                        {lender.isPreferred && (
+                          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-accent text-accent-foreground">Preferred</Badge>
                         )}
                       </div>
                     </TableHead>

@@ -3897,11 +3897,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           roi: totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0,
           percentageArv,
           percentageArvLender: arv > 0 ? (loanAmount / arv) * 100 : 0,
+          isPreferred: lender?.isPreferred || false,
         };
       });
 
-      // Sort by criteria
+      // Sort by criteria - preferred lenders first, then by user's selected criteria
       const sortedLenderColumns = lenderColumns.sort((a, b) => {
+        // Preferred lenders always come first
+        if (a.isPreferred !== b.isPreferred) {
+          return b.isPreferred ? 1 : -1;
+        }
+        
         const primary = criteriaSelection.primary || 'out-of-pocket';
         const secondary = criteriaSelection.secondary || 'profit';
         
