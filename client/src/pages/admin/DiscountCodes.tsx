@@ -58,6 +58,9 @@ import {
   Download,
   Eye,
   Building2,
+  RefreshCw,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react";
 
 interface DiscountCode {
@@ -278,6 +281,34 @@ export default function DiscountCodes() {
         variant: "destructive",
       });
       setCodeToDelete(null);
+    },
+  });
+
+  const syncStripeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/discount-codes/${id}/sync-stripe`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || error.error || "Failed to sync to Stripe");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/discount-codes"] });
+      toast({
+        title: "Synced to Stripe",
+        description: `Created Stripe coupon: ${data.stripeCouponId}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync discount code to Stripe",
+        variant: "destructive",
+      });
     },
   });
 
@@ -694,6 +725,22 @@ export default function DiscountCodes() {
                         </div>
                         
                         <div className="flex items-center gap-2 flex-shrink-0">
+                          {!code.stripeCouponId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => syncStripeMutation.mutate(code.id)}
+                              disabled={syncStripeMutation.isPending}
+                              data-testid={`button-sync-stripe-${code.id}`}
+                            >
+                              {syncStripeMutation.isPending ? (
+                                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <CreditCard className="h-4 w-4 mr-1" />
+                              )}
+                              Sync to Stripe
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -760,6 +807,12 @@ export default function DiscountCodes() {
                               <Building2 className="h-3 w-3 mr-1" />
                               {code.partnerName}
                             </Badge>
+                            <Badge 
+                              variant={code.stripeCouponId ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              {code.stripeCouponId ? "Stripe Ready" : "No Stripe Coupon"}
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             <span className="font-medium text-foreground">{code.displayName}</span>
@@ -767,15 +820,33 @@ export default function DiscountCodes() {
                             <span>${code.totalAmountDiscounted.toFixed(2)} in discounts</span>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setViewingUsage(code)}
-                          data-testid={`button-view-partner-${code.id}`}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Members
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {!code.stripeCouponId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => syncStripeMutation.mutate(code.id)}
+                              disabled={syncStripeMutation.isPending}
+                              data-testid={`button-sync-stripe-partner-${code.id}`}
+                            >
+                              {syncStripeMutation.isPending ? (
+                                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <CreditCard className="h-4 w-4 mr-1" />
+                              )}
+                              Sync
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewingUsage(code)}
+                            data-testid={`button-view-partner-${code.id}`}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Members
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -816,6 +887,12 @@ export default function DiscountCodes() {
                             <Badge variant={code.isActive ? "default" : "secondary"}>
                               {code.isActive ? "Active" : "Inactive"}
                             </Badge>
+                            <Badge 
+                              variant={code.stripeCouponId ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              {code.stripeCouponId ? "Stripe Ready" : "No Stripe Coupon"}
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             <span className="font-medium text-foreground">{code.displayName}</span>
@@ -826,6 +903,22 @@ export default function DiscountCodes() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {!code.stripeCouponId && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => syncStripeMutation.mutate(code.id)}
+                              disabled={syncStripeMutation.isPending}
+                              data-testid={`button-sync-stripe-general-${code.id}`}
+                            >
+                              {syncStripeMutation.isPending ? (
+                                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <CreditCard className="h-4 w-4 mr-1" />
+                              )}
+                              Sync
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
