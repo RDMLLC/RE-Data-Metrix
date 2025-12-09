@@ -3763,14 +3763,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 1. Buy Down Payment = Buy Price × (100% - Max LTV Buy%)
         // 2. Rehab Down Payment = Rehab × (100% - Max Lend Rehab%)
         // 3. ARV Adjustment = amount by which loan exceeds ARV cap
-        const buyDownPayment = purchasePrice * (1 - maxLtvBuy / 100);
-        const rehabDownPayment = rehabBudget * (1 - maxLendRehab / 100);
-        const arvAdjustment = Math.max(0, totalLoanDesired - maxFromArv);
+        const buyDownPayment = Math.round(purchasePrice * (1 - maxLtvBuy / 100) * 100) / 100;
+        const rehabDownPayment = Math.round(rehabBudget * (1 - maxLendRehab / 100) * 100) / 100;
+        const arvAdjustment = Math.round(Math.max(0, totalLoanDesired - maxFromArv) * 100) / 100;
         // Also check LTC adjustment if applicable
-        const ltcAdjustment = (isLtcWeighted && maxLtcPercent) ? Math.max(0, totalLoanDesired - maxFromLtc) : 0;
+        const ltcAdjustment = (isLtcWeighted && maxLtcPercent) ? Math.round(Math.max(0, totalLoanDesired - maxFromLtc) * 100) / 100 : 0;
         // Final down payment is the sum of components, taking the larger of ARV or LTC adjustment
         const capAdjustment = Math.max(arvAdjustment, ltcAdjustment);
-        const downPaymentLender = buyDownPayment + rehabDownPayment + capAdjustment;
+        const downPaymentLender = Math.round((buyDownPayment + rehabDownPayment + capAdjustment) * 100) / 100;
         
         // Debug: Log calculation details for troubleshooting
         if (lender?.companyName?.includes('Test Lender')) {
