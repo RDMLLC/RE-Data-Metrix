@@ -391,7 +391,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                         <FormItem>
                           <FormLabel>Points</FormLabel>
                           <FormDescription className="text-xs">
-                            Upfront fee (1 point = 1% of loan)
+                            1 point = 1% of loan
                           </FormDescription>
                           <FormControl>
                             <div className="relative">

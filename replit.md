@@ -70,6 +70,13 @@ The Deal Analysis results page (Step 5) features a tabbed interface for "Fix & F
 - Summary metrics box at top displaying: Net Profit, Total Out-of-Pocket, Cash-on-Cash Return, and Annualized Return
 - Editable variables section for quick recalculations (Buy Price, Rehab, Project Length)
 - Detailed loan comparison table with expandable breakdowns
+- PDF download with QR codes for lender referral links (hidden in browser, shown in PDF)
+
+**PDF Generation Notes:**
+- Uses `react-to-pdf` library which uses HTML-to-canvas (NOT CSS print media queries)
+- `isGeneratingPdf` state controls element visibility during PDF capture
+- QR codes shown only in PDF via conditional rendering `{isGeneratingPdf && ...}`
+- "Contact Lender" buttons and "Show More Loans" hidden in PDF via `{!isGeneratingPdf && ...}`
 
 The Rental / DSCR tab provides property overview, monthly rent input, real-time DSCR calculation, PITIA breakdown, and DSCR lender comparison.
 

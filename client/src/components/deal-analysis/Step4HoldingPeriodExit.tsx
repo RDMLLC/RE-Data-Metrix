@@ -56,14 +56,12 @@ export default function Step4HoldingPeriodExit({
   const payingForBothSides = form.watch("payingForBothSides");
   
   const attorneyFees = form.watch("attorneyFees") || 0;
-  const docPrepFees = form.watch("docPrepFees") || 0;
   const titleExam = form.watch("titleExam") || 0;
   const titleInsurance = form.watch("titleInsurance") || 0;
   const transferFee = form.watch("transferFee") || 0;
   
   // Buy2 closing costs (for double close)
   const attorneyFees2 = form.watch("attorneyFees2") || 0;
-  const docPrepFees2 = form.watch("docPrepFees2") || 0;
   const titleExam2 = form.watch("titleExam2") || 0;
   const titleInsurance2 = form.watch("titleInsurance2") || 0;
   
@@ -93,9 +91,6 @@ export default function Step4HoldingPeriodExit({
     if (!form.getValues("attorneyFees")) {
       form.setValue("attorneyFees", 750);
     }
-    if (!form.getValues("docPrepFees")) {
-      form.setValue("docPrepFees", 0);
-    }
     if (!form.getValues("titleExam")) {
       form.setValue("titleExam", 250);
     }
@@ -112,9 +107,6 @@ export default function Step4HoldingPeriodExit({
     // Set default values for Buy2 closing costs (same as Buy1)
     if (!form.getValues("attorneyFees2")) {
       form.setValue("attorneyFees2", 750);
-    }
-    if (!form.getValues("docPrepFees2")) {
-      form.setValue("docPrepFees2", 0);
     }
     if (!form.getValues("titleExam2")) {
       form.setValue("titleExam2", 250);
@@ -172,10 +164,10 @@ export default function Step4HoldingPeriodExit({
   const totalProjectCost = purchasePrice + rehabBudget;
   
   // Buy1 closing costs (including transfer fee)
-  const estimatedClosingCostsBuy1 = attorneyFees + docPrepFees + titleExam + titleInsurance + transferFee;
+  const estimatedClosingCostsBuy1 = attorneyFees + titleExam + titleInsurance + transferFee;
   
   // Buy2 closing costs (for double close when paying for both sides)
-  const estimatedClosingCostsBuy2 = attorneyFees2 + docPrepFees2 + titleExam2 + titleInsurance2;
+  const estimatedClosingCostsBuy2 = attorneyFees2 + titleExam2 + titleInsurance2;
   
   // Total closing costs: includes Buy2 only if double close AND paying for both sides
   const showBuy2ClosingCosts = isDoubleClose === true && payingForBothSides === true;
@@ -304,34 +296,6 @@ export default function Step4HoldingPeriodExit({
 
                     <FormField
                       control={form.control}
-                      name="docPrepFees"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center gap-2">
-                            <FormLabel>Doc Prep Fees</FormLabel>
-                            <span className="text-xs text-muted-foreground">Will be filled out in the lender step</span>
-                          </div>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              {...field}
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(
-                                  e.target.value ? parseFloat(e.target.value) : undefined
-                                )
-                              }
-                              data-testid="input-doc-prep-fees"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="titleExam"
                       render={({ field }) => (
                         <FormItem>
@@ -399,7 +363,7 @@ export default function Step4HoldingPeriodExit({
                                 <TooltipContent className="max-w-xs">
                                   <p>
                                     {taxRate 
-                                      ? `${taxRate.stateName}: ${taxRate.ratePercent}% - ${taxRate.notes}. Typically paid by ${taxRate.paidBy}.`
+                                      ? `${taxRate.stateName}: ${taxRate.ratePercent}% - ${taxRate.notes}.`
                                       : 'Transfer tax varies by state. Some states have no transfer tax.'}
                                   </p>
                                 </TooltipContent>
@@ -475,34 +439,6 @@ export default function Step4HoldingPeriodExit({
                                   )
                                 }
                                 data-testid="input-attorney-fees-2"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="docPrepFees2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex items-center gap-2">
-                              <FormLabel>Doc Prep Fees</FormLabel>
-                              <span className="text-xs text-muted-foreground">Will be filled out in the lender step</span>
-                            </div>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="0"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value ? parseFloat(e.target.value) : undefined
-                                  )
-                                }
-                                data-testid="input-doc-prep-fees-2"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1151,7 +1087,7 @@ export default function Step4HoldingPeriodExit({
                         <FormItem>
                           <FormLabel>Points</FormLabel>
                           <FormDescription className="text-xs">
-                            Upfront fee (1 point = 1% of loan)
+                            1 point = 1% of loan
                           </FormDescription>
                           <FormControl>
                             <div className="relative">

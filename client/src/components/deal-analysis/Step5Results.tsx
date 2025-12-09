@@ -170,6 +170,9 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   const [showOutOfPocketBreakdown, setShowOutOfPocketBreakdown] = useState(false);
   const [showBaseClosingBreakdown, setShowBaseClosingBreakdown] = useState(false);
 
+  // PDF generation state - controls visibility of elements during PDF capture
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
   // Contact lender state
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [contactMessage, setContactMessage] = useState("");
@@ -732,11 +735,18 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toPDF()}
+            onClick={async () => {
+              setIsGeneratingPdf(true);
+              // Wait for state to update and re-render
+              await new Promise(resolve => setTimeout(resolve, 100));
+              await toPDF();
+              setIsGeneratingPdf(false);
+            }}
+            disabled={isGeneratingPdf}
             data-testid="button-download-pdf"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download PDF
+            {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
           </Button>
         </div>
       </div>
@@ -756,35 +766,93 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
 
         {/* Fix & Flip Analysis Tab */}
         <TabsContent value="fix-and-flip" className="mt-6 space-y-6">
-          {/* Summary Metrics Box */}
+          {/* Summary Metrics Box - Columns aligned with loan comparison table */}
           {results && (
             <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Net Profit</p>
-                    <p className="text-2xl font-bold text-green-600" data-testid="summary-net-profit">
-                      {formatCurrency(results.userLoanColumn?.profit ?? results.cashSaleColumn.profit)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Total Out-of-Pocket</p>
-                    <p className="text-2xl font-bold" data-testid="summary-out-of-pocket">
-                      {formatCurrency(results.userLoanColumn?.outOfPocketCost ?? results.cashSaleColumn.outOfPocketCost)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Cash-on-Cash Return</p>
-                    <p className="text-2xl font-bold text-primary" data-testid="summary-coc-roi">
-                      {formatPercent(results.userLoanColumn?.cashOnCashRoi ?? results.cashSaleColumn.cashOnCashRoi)}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Annualized Return</p>
-                    <p className="text-2xl font-bold text-primary" data-testid="summary-annualized-roi">
-                      {formatPercent(results.userLoanColumn?.annualizedRoi ?? results.cashSaleColumn.annualizedRoi)}
-                    </p>
-                  </div>
+              <CardContent className="pt-4 pb-4">
+                <div className="overflow-x-auto">
+                  <Table className="min-w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[120px]">Summary</TableHead>
+                        <TableHead className="text-center min-w-[100px]">Cash Sale</TableHead>
+                        {results.userLoanColumn && (
+                          <TableHead className="text-center min-w-[100px]">Entered Loan</TableHead>
+                        )}
+                        {visibleLenders.map((lender, index) => (
+                          <TableHead key={index} className="text-center min-w-[120px] text-xs">
+                            {lender.lenderName || `Lender ${index + 1}`}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Net Profit</TableCell>
+                        <TableCell className="text-center font-bold text-green-600" data-testid="summary-net-profit-cash">
+                          {formatCurrency(results.cashSaleColumn.profit)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center font-bold text-green-600" data-testid="summary-net-profit-loan">
+                            {formatCurrency(results.userLoanColumn.profit)}
+                          </TableCell>
+                        )}
+                        {visibleLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center font-bold text-green-600">
+                            {formatCurrency(lender.profit)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Out-of-Pocket</TableCell>
+                        <TableCell className="text-center font-bold" data-testid="summary-oop-cash">
+                          {formatCurrency(results.cashSaleColumn.outOfPocketCost)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center font-bold" data-testid="summary-oop-loan">
+                            {formatCurrency(results.userLoanColumn.outOfPocketCost)}
+                          </TableCell>
+                        )}
+                        {visibleLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center font-bold">
+                            {formatCurrency(lender.outOfPocketCost)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Cash-on-Cash</TableCell>
+                        <TableCell className="text-center font-bold text-primary" data-testid="summary-coc-cash">
+                          {formatPercent(results.cashSaleColumn.cashOnCashRoi)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center font-bold text-primary" data-testid="summary-coc-loan">
+                            {formatPercent(results.userLoanColumn.cashOnCashRoi)}
+                          </TableCell>
+                        )}
+                        {visibleLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center font-bold text-primary">
+                            {formatPercent(lender.cashOnCashRoi)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Annualized</TableCell>
+                        <TableCell className="text-center font-bold text-primary" data-testid="summary-annual-cash">
+                          {formatPercent(results.cashSaleColumn.annualizedRoi)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center font-bold text-primary" data-testid="summary-annual-loan">
+                            {formatPercent(results.userLoanColumn.annualizedRoi)}
+                          </TableCell>
+                        )}
+                        {visibleLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center font-bold text-primary">
+                            {formatPercent(lender.annualizedRoi)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
@@ -1727,8 +1795,9 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   </>
                 )}
                 
-                {/* QR Codes Row - For PDF only (hidden in browser) */}
-                <TableRow className="hidden print:table-row">
+                {/* QR Codes Row - Shown in PDF only */}
+                {isGeneratingPdf && (
+                <TableRow>
                   <TableCell className={`font-medium ${stickyFirstColBase}`}>Scan to Apply</TableCell>
                   <TableCell 
                     className="text-center sticky z-10 bg-background"
@@ -1765,9 +1834,11 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                     </TableCell>
                   ))}
                 </TableRow>
+                )}
                 
-                {/* Contact Lender Row - Browser only (hidden in PDF) */}
-                <TableRow className="print:hidden">
+                {/* Contact Lender Row - Hidden in PDF */}
+                {!isGeneratingPdf && (
+                <TableRow>
                   <TableCell className={`font-medium ${stickyFirstColBase}`}>Contact Lender</TableCell>
                   <TableCell 
                     className="text-center sticky z-10 bg-background"
@@ -1818,13 +1889,14 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                     </TableCell>
                   ))}
                 </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {/* Show More Loans Button */}
-          {hasMoreLenders && (
-            <div className="flex justify-center mt-4 print:hidden">
+          {/* Show More Loans Button - Hidden in PDF */}
+          {hasMoreLenders && !isGeneratingPdf && (
+            <div className="flex justify-center mt-4">
               <Button
                 variant="outline"
                 onClick={handleViewMoreLoans}
