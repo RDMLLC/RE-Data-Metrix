@@ -3760,6 +3760,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Down payment = project cost minus loan
         const downPaymentLender = Math.max(0, totalProjectCost - loanAmount);
         
+        // Debug: Log calculation details for troubleshooting
+        if (lender?.companyName?.includes('Finance of America')) {
+          console.log('[Down Payment Debug]', {
+            lender: lender?.companyName,
+            product: product.productName,
+            purchasePrice,
+            rehabBudget,
+            totalProjectCost,
+            maxLtvBuy,
+            maxLendRehab,
+            maxLoanArv,
+            arv,
+            purchaseLoanAmount,
+            rehabLoanAmount,
+            totalLoanDesired,
+            maxFromArv,
+            maxFromLtc,
+            isLtcWeighted,
+            maxLtcPercent,
+            finalLoanAmount: loanAmount,
+            downPayment: downPaymentLender,
+          });
+        }
+        
         // Out of pocket = what you pay upfront (down payment + total closing costs + carrying + draw fees)
         const outOfPocket = downPaymentLender + totalClosingCostsBuyLender + lenderCarryingCosts + drawFeesCost;
         const totalInvestment = outOfPocket + rolledCosts;

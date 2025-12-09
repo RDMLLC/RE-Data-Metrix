@@ -496,19 +496,23 @@ export class RentCastAPIService implements IPropertyAPIService {
         return PLACEHOLDER_IMAGE_URL;
       }
 
-      // Try the matching source first - if user provides Zillow URL, try Zillow endpoint
-      // HasData API endpoints expect URLs from their respective platforms
-      console.log(`[HasData] Original URL source: ${originalSource}, will try ${originalSource} endpoint first`);
+      // Try Redfin first (more reliable), then Zillow as fallback
+      // Both endpoints can work with either URL format in some cases
+      const sources: Array<'redfin' | 'zillow'> = ['redfin', 'zillow'];
       
-      const imageUrl = await this.fetchImageWithRetry(originalSource, cleanUrl);
+      console.log(`[HasData] Original URL source: ${originalSource}, will try Redfin first (more reliable), then Zillow`);
       
-      if (imageUrl) {
-        console.log(`[HasData] SUCCESS: Image retrieved from ${originalSource}: ${imageUrl}`);
-        return imageUrl;
+      for (const source of sources) {
+        console.log(`[HasData] Trying ${source} endpoint...`);
+        const imageUrl = await this.fetchImageWithRetry(source, cleanUrl);
+        
+        if (imageUrl) {
+          console.log(`[HasData] SUCCESS: Image retrieved from ${source}: ${imageUrl}`);
+          return imageUrl;
+        }
+        
+        console.log(`[HasData] ${source} endpoint failed`);
       }
-      
-      console.log(`[HasData] ${originalSource} endpoint failed for ${originalSource} URL`);
-      // Note: We can't try the other source because we don't have a URL for that platform
 
       console.log(`[HasData] All sources exhausted, returning placeholder`);
       return PLACEHOLDER_IMAGE_URL;
