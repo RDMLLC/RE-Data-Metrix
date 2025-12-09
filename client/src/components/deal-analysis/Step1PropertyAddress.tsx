@@ -41,67 +41,96 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         dataSource = 'redfin';
       }
       
-      // Clear previous wizard data and reset ALL financial/analysis fields for new property
+      // Clear previous wizard data completely
       clearWizardData();
       
-      // Reset Step 3 fields (Purchase & Renovation)
-      form.setValue("purchasePrice", undefined);
-      form.setValue("rehabBudget", undefined);
-      form.setValue("arv", undefined);
-      form.setValue("projectLength", undefined);
-      form.setValue("sellPrice", undefined);
-      form.setValue("closingTimeline", "not-selected");
-      form.setValue("isDoubleClose", undefined);
-      form.setValue("payingForBothSides", undefined);
-      
-      // Reset Step 4 fields (Holding Period & Exit)
-      form.setValue("attorneyFees", undefined);
-      form.setValue("docPrepFees", undefined);
-      form.setValue("titleExam", undefined);
-      form.setValue("titleInsurance", undefined);
-      form.setValue("transferFee", undefined);
-      form.setValue("attorneyFees2", undefined);
-      form.setValue("docPrepFees2", undefined);
-      form.setValue("titleExam2", undefined);
-      form.setValue("titleInsurance2", undefined);
-      form.setValue("monthlyUtilities", undefined);
-      form.setValue("annualInsurance", undefined);
-      form.setValue("hoaTransferFee", undefined);
-      form.setValue("otherCarryingCosts", undefined);
-      form.setValue("closingCostsSellPercent", undefined);
-      form.setValue("realEstateCommissionPercent", undefined);
-      
-      // Reset investor/loan fields
-      form.setValue("isNewInvestor", undefined);
-      form.setValue("creditScore", undefined);
-      form.setValue("hasExistingLoan", false);
-      form.setValue("loanPreference", "one-of-each");
-      
-      // Set property data from lookup
-      form.setValue("address", data.address || "");
-      form.setValue("city", data.city || "");
-      form.setValue("state", data.state || "");
-      form.setValue("zipCode", data.zipCode || "");
-      form.setValue("propertyType", data.propertyType || "");
-      form.setValue("bedrooms", data.bedrooms);
-      form.setValue("bathrooms", data.bathrooms);
-      form.setValue("sqft", data.sqft);
-      form.setValue("lotSize", data.lotSize);
-      form.setValue("yearBuilt", data.yearBuilt);
-      form.setValue("taxAssessedValue", data.taxAssessedValue);
-      form.setValue("annualTax", data.annualTax);
-      form.setValue("estimatedValue", data.estimatedValue);
-      form.setValue("hoaFees", data.hoaFees);
-      form.setValue("propertyDataSource", dataSource);
+      // Use form.reset() to atomically reset ALL fields and set new property data
+      // This properly resets react-hook-form's internal state unlike setValue()
+      form.reset({
+        // New property data from lookup
+        address: data.address || "",
+        city: data.city || "",
+        state: data.state || "",
+        zipCode: data.zipCode || "",
+        propertyType: data.propertyType || "",
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        sqft: data.sqft,
+        lotSize: data.lotSize,
+        yearBuilt: data.yearBuilt,
+        taxAssessedValue: data.taxAssessedValue,
+        annualTax: data.annualTax,
+        estimatedValue: data.estimatedValue,
+        hoaFees: data.hoaFees,
+        propertyDataSource: dataSource,
+        // Required defaults
+        addingSquareFootage: false,
+        closingTimeline: "not-selected",
+        loanPreference: "one-of-each",
+        hasExistingLoan: false,
+        // Explicitly clear all financial/analysis fields
+        purchasePrice: undefined,
+        rehabBudget: undefined,
+        arv: undefined,
+        projectLength: undefined,
+        sellPrice: undefined,
+        isDoubleClose: undefined,
+        payingForBothSides: undefined,
+        // Clear Step 4 fields
+        attorneyFees: undefined,
+        docPrepFees: undefined,
+        titleExam: undefined,
+        titleInsurance: undefined,
+        transferFee: undefined,
+        attorneyFees2: undefined,
+        docPrepFees2: undefined,
+        titleExam2: undefined,
+        titleInsurance2: undefined,
+        monthlyUtilities: undefined,
+        annualInsurance: undefined,
+        hoaTransferFee: undefined,
+        otherCarryingCosts: undefined,
+        closingCostsSellPercent: undefined,
+        realEstateCommissionPercent: undefined,
+        // Clear investor fields
+        isNewInvestor: undefined,
+        creditScore: undefined,
+      });
       
       // Store property image
       if (data.imageUrl) {
         setPropertyImage(data.imageUrl);
+      } else {
+        setPropertyImage(null);
       }
       
-      // Always save estimated rent to WizardDataContext (even if undefined) to clear stale data
+      // Save only the lookup data to WizardDataContext (with financial fields cleared)
       updatePropertyData({
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zip: data.zipCode,
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        squareFootage: data.sqft,
+        taxAssessedValue: data.taxAssessedValue,
         estimatedRent: data.estimatedRent,
+        // Explicitly clear financial fields in context
+        purchasePrice: undefined,
+        arv: undefined,
+        rehabBudget: undefined,
+        projectLength: undefined,
+        sellPrice: undefined,
+        attorneyFees: undefined,
+        docPrepFees: undefined,
+        titleExam: undefined,
+        titleInsurance: undefined,
+        annualInsurance: undefined,
+        monthlyUtilities: undefined,
+        hoaFees: data.hoaFees,
+        hoaTransferFee: undefined,
+        closingCostsSellPercent: undefined,
+        realEstateCommissionPercent: undefined,
       });
       
       onPropertyDataLoaded(data);
