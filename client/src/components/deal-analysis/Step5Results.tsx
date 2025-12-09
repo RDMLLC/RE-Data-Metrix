@@ -468,20 +468,24 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
         secondary: secondary,
       },
       loanPreference: preference,
-      userLoan: formData.maxLendBuy ? {
-        desiredLoanAmount: undefined,
-        interestRate: formData.loanInterestRate || 12,
-        interestDeferred: formData.interestDeferred || false,
-        points: formData.loanPoints || 0,
-        pointsDeferred: formData.pointsDeferred || false,
-        maxLendBuy: formData.maxLendBuy,
-        maxLendRehab: formData.maxLendRehab || 100,
-        maxLoanToArv: formData.maxLoanToArv || 70,
-        appraisalRequired: formData.appraisalRequired || false,
-        appraisalFee: formData.appraisalFee || 500,
-        drawFees: formData.drawFees || 0,
-        loanDocPrepFees: formData.loanDocPrepFees || 0,
-      } : undefined,
+      userLoan: formData.maxLendBuy ? (() => {
+        const userLoanPayload = {
+          desiredLoanAmount: undefined,
+          interestRate: formData.loanInterestRate || 12,
+          interestDeferred: formData.interestDeferred || false,
+          points: formData.loanPoints || 0,
+          pointsDeferred: formData.pointsDeferred || false,
+          maxLendBuy: formData.maxLendBuy,
+          maxLendRehab: formData.maxLendRehab || 100,
+          maxLoanToArv: formData.maxLoanToArv || 70,
+          appraisalRequired: formData.appraisalRequired || false,
+          appraisalFee: formData.appraisalFee || 500,
+          drawFees: formData.drawFees || 0,
+          loanDocPrepFees: formData.loanDocPrepFees || 0,
+        };
+        console.log('[USER LOAN FRONTEND DEBUG] Sending userLoan payload:', userLoanPayload);
+        return userLoanPayload;
+      })() : undefined,
       numberOfDraws: 3,
       excludeProductIds: [],
     };

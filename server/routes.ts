@@ -3591,10 +3591,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate User Loan Column (if provided)
       let userLoanColumn = null;
       if (userLoan) {
+        console.log('[USER LOAN DEBUG] Received userLoan:', JSON.stringify(userLoan, null, 2));
+        
         // Get user loan LTV parameters (with sensible defaults)
         const userMaxLtvBuy = userLoan.maxLendBuy || 80; // Default 80% if not specified
         const userMaxLendRehab = userLoan.maxLendRehab || 100; // Default 100% if not specified
         const userMaxLoanArv = userLoan.maxLoanToArv || 70; // Default 70% if not specified
+        
+        console.log('[USER LOAN DEBUG] LTV params:', { userMaxLtvBuy, userMaxLendRehab, userMaxLoanArv });
         
         // Calculate loan components based on user's entered terms
         const purchaseLoanAmount = Math.round(purchasePrice * (userMaxLtvBuy / 100) * 100) / 100;
@@ -3612,6 +3616,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userRehabDownPayment = Math.round(rehabBudget * (1 - userMaxLendRehab / 100) * 100) / 100;
         const userArvAdjustment = Math.round(Math.max(0, totalLoanDesired - maxFromArv) * 100) / 100;
         const downPayment = Math.round((userBuyDownPayment + userRehabDownPayment + userArvAdjustment) * 100) / 100;
+        
+        console.log('[USER LOAN DEBUG] Down payment breakdown:', {
+          purchasePrice, rehabBudget, arv,
+          purchaseLoanAmount, rehabLoanAmount, totalLoanDesired, maxFromArv, loanAmount,
+          userBuyDownPayment, userRehabDownPayment, userArvAdjustment, downPayment
+        });
         
         const pointsCost = loanAmount * (userLoan.points / 100);
         const monthlyInterestPayment = (loanAmount * (userLoan.interestRate / 100) / 12);
