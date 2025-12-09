@@ -31,6 +31,7 @@ async function findUserByIdentifier(identifier: string) {
       .from(users)
       .where(sql`LOWER(${users.email}) = LOWER(${identifier})`)
       .limit(1);
+    console.log('[findUserByIdentifier] Email search for:', identifier, 'found user:', user ? { id: user.id, email: user.email, isEmailVerified: user.isEmailVerified, typeOfVerified: typeof user.isEmailVerified } : 'not found');
     return user;
   } else {
     // Search by username (case-sensitive for usernames)
@@ -39,6 +40,7 @@ async function findUserByIdentifier(identifier: string) {
       .from(users)
       .where(eq(users.username, identifier))
       .limit(1);
+    console.log('[findUserByIdentifier] Username search for:', identifier, 'found user:', user ? { id: user.id, email: user.email, isEmailVerified: user.isEmailVerified, typeOfVerified: typeof user.isEmailVerified } : 'not found');
     return user;
   }
 }

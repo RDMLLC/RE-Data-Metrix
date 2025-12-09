@@ -192,7 +192,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
       
+      console.log('[LOGIN DEBUG] User object:', { 
+        id: user.id, 
+        email: user.email, 
+        isEmailVerified: user.isEmailVerified,
+        typeOfVerified: typeof user.isEmailVerified,
+        rawValue: JSON.stringify(user.isEmailVerified)
+      });
+      
       if (!user.isEmailVerified) {
+        console.log('[LOGIN DEBUG] Email verification check FAILED - returning 403');
         return res.status(403).json({ 
           error: "Email not verified",
           message: "Please verify your email address before logging in. Check your inbox for the verification link.",
