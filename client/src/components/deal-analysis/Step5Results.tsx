@@ -176,6 +176,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
   // Summary box expandable states
   const [showOutOfPocketBreakdown, setShowOutOfPocketBreakdown] = useState(false);
   const [showCashOnCashBreakdown, setShowCashOnCashBreakdown] = useState(false);
+  const [showLoanTerms, setShowLoanTerms] = useState(false);
 
   // PDF generation state - controls visibility of elements during PDF capture
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -1028,6 +1029,86 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                           </TableCell>
                         ))}
                       </TableRow>
+                      {/* Loan Terms - Expandable */}
+                      <TableRow 
+                        className="cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => setShowLoanTerms(!showLoanTerms)}
+                        data-testid="summary-row-loan-terms"
+                      >
+                        <TableCell className="font-medium flex items-center gap-2">
+                          {showLoanTerms ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Loan Terms
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center text-sm">
+                            {results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}
+                          </TableCell>
+                        )}
+                        {visibleLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center text-sm">
+                            {lender.interestRate ? `${lender.interestRate}%` : '—'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {showLoanTerms && (
+                        <>
+                          <TableRow className="bg-muted/20">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">Interest Rate</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center text-sm">{results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}</TableCell>
+                            )}
+                            {visibleLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center text-sm">{lender.interestRate ? `${lender.interestRate}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow className="bg-muted/20">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">Points</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center text-sm">{results.userLoanColumn.points !== undefined ? `${results.userLoanColumn.points}%` : '—'}</TableCell>
+                            )}
+                            {visibleLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center text-sm">{lender.points !== undefined ? `${lender.points}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow className="bg-muted/20">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">Max LTV (Buy)</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center text-sm">{results.userLoanColumn.maxLtvBuy ? `${results.userLoanColumn.maxLtvBuy}%` : '—'}</TableCell>
+                            )}
+                            {visibleLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center text-sm">{lender.maxLtvBuy ? `${lender.maxLtvBuy}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow className="bg-muted/20">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">Max ARV %</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center text-sm">{results.userLoanColumn.maxLoanArv ? `${results.userLoanColumn.maxLoanArv}%` : '—'}</TableCell>
+                            )}
+                            {visibleLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center text-sm">{lender.maxLoanArv ? `${lender.maxLoanArv}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          {visibleLenders.some(l => l.isLtcWeighted && l.maxLtcPercent) && (
+                            <TableRow className="bg-muted/20">
+                              <TableCell className="pl-8 text-sm text-muted-foreground">Max LTC %</TableCell>
+                              <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                              {results.userLoanColumn && (
+                                <TableCell className="text-center text-sm">—</TableCell>
+                              )}
+                              {visibleLenders.map((lender, index) => (
+                                <TableCell key={index} className="text-center text-sm">
+                                  {lender.isLtcWeighted && lender.maxLtcPercent ? `${lender.maxLtcPercent}%` : '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          )}
+                        </>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
