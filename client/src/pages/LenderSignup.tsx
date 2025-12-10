@@ -64,11 +64,11 @@ export default function LenderSignup() {
     onSuccess: () => {
       toast({
         title: "Signup Complete",
-        description: "Your lender account has been created successfully. Redirecting to dashboard...",
+        description: "Your lender account has been created. Let's complete your company profile...",
       });
       setTimeout(() => {
-        setLocation("/lender-dashboard");
-      }, 2000);
+        setLocation("/lender-company-info");
+      }, 1500);
     },
     onError: (error: any) => {
       toast({

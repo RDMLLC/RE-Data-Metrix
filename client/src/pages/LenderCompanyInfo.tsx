@@ -62,7 +62,8 @@ export default function LenderCompanyInfo() {
       }
       return await res.json();
     },
-    retry: false,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const saveCompanyInfoMutation = useMutation({
