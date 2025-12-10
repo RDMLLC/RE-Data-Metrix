@@ -284,7 +284,7 @@ export default function Step3PurchaseRenovation({
                 />
               )}
 
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4">
                 <FormField
                   control={form.control}
                   name="arv"
@@ -327,7 +327,7 @@ export default function Step3PurchaseRenovation({
                   name="projectLength"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Project Length (months)</FormLabel>
+                      <FormLabel className="text-sm">Length (mo)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -355,7 +355,7 @@ export default function Step3PurchaseRenovation({
                   name="closingTimeline"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>How fast do you need to close?</FormLabel>
+                      <FormLabel className="text-sm">Close Speed</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value || ""}

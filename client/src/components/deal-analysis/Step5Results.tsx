@@ -1416,7 +1416,219 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
               <CardTitle>Loan Comparison Results</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto relative" ref={scrollContainerRef}>
+              {/* Mobile Card View - visible only on small screens */}
+              <div className="lg:hidden space-y-4">
+                {/* Cash Sale Card */}
+                <div className="border rounded-lg p-4 bg-card">
+                  <h3 className="font-semibold text-lg mb-3">Cash Sale</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Net Profit</span>
+                      <span className={`font-bold ${results.cashSaleColumn.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {formatCurrency(results.cashSaleColumn.profit)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Out-of-Pocket</span>
+                      <span className="font-semibold">{formatCurrency(results.cashSaleColumn.outOfPocketCost)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Cash-on-Cash ROI</span>
+                      <span className="font-semibold">{results.cashSaleColumn.cashOnCashRoi.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Annualized ROI</span>
+                      <span className="font-semibold">{results.cashSaleColumn.annualizedRoi.toFixed(1)}%</span>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Project Cost</span>
+                        <span>{formatCurrency(results.cashSaleColumn.totalProjectCost)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Closing Costs</span>
+                        <span>{formatCurrency(results.cashSaleColumn.closingCostsBuy)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Carrying Costs</span>
+                        <span>{formatCurrency(results.cashSaleColumn.carryingCosts)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Selling Costs</span>
+                        <span>{formatCurrency(results.cashSaleColumn.closingCostsSell + results.cashSaleColumn.commission)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Entered Loan Card */}
+                {results.userLoanColumn && (
+                  <div className="border rounded-lg p-4 bg-card">
+                    <h3 className="font-semibold text-lg mb-3">Entered Loan</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Net Profit</span>
+                        <span className={`font-bold ${results.userLoanColumn.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatCurrency(results.userLoanColumn.profit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Out-of-Pocket</span>
+                        <span className="font-semibold">{formatCurrency(results.userLoanColumn.outOfPocketCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Cash-on-Cash ROI</span>
+                        <span className="font-semibold">{results.userLoanColumn.cashOnCashRoi.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Annualized ROI</span>
+                        <span className="font-semibold">{results.userLoanColumn.annualizedRoi.toFixed(1)}%</span>
+                      </div>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Project Cost</span>
+                          <span>{formatCurrency(results.userLoanColumn.totalProjectCost)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Closing + Lender Fees</span>
+                          <span>{formatCurrency(results.userLoanColumn.closingCostsBuy + (results.userLoanColumn.outOfPocketBreakdown?.lenderFees || 0))}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Carrying Costs</span>
+                          <span>{formatCurrency(results.userLoanColumn.carryingCosts)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lender Cards */}
+                {visibleLenders.map((lender, index) => (
+                  <div key={index} className="border rounded-lg p-4 bg-card">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">{lender.lenderName}</h3>
+                        {lender.productName && (
+                          <p className="text-sm text-muted-foreground">{lender.productName}</p>
+                        )}
+                      </div>
+                      {lender.isPreferred && (
+                        <Badge variant="default" className="text-xs bg-accent text-accent-foreground">Preferred</Badge>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Net Profit</span>
+                        <span className={`font-bold ${lender.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatCurrency(lender.profit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Out-of-Pocket</span>
+                        <span className="font-semibold">{formatCurrency(lender.outOfPocketCost)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Cash-on-Cash ROI</span>
+                        <span className="font-semibold">{lender.cashOnCashRoi.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Annualized ROI</span>
+                        <span className="font-semibold">{lender.annualizedRoi.toFixed(1)}%</span>
+                      </div>
+                      
+                      {/* Loan Terms */}
+                      <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Interest Rate</span>
+                          <p className="font-medium">{lender.interestRate}%</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Points</span>
+                          <p className="font-medium">{lender.points}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Max LTV</span>
+                          <p className="font-medium">{lender.maxLtvBuy}%</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Time to Close</span>
+                          <p className="font-medium">{lender.timeToClose} days</p>
+                        </div>
+                      </div>
+                      
+                      {/* Cost Breakdown */}
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Project Cost</span>
+                          <span>{formatCurrency(lender.totalProjectCost)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Closing Costs</span>
+                          <span>{formatCurrency(lender.closingCostsBuy)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Lender Fees</span>
+                          <span>{formatCurrency(lender.outOfPocketBreakdown?.lenderFees || 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Carrying Costs</span>
+                          <span>{formatCurrency(lender.carryingCosts)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-medium border-t pt-1 mt-1">
+                          <span>Total Investment</span>
+                          <span>{formatCurrency(lender.totalInvestment)}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Contact Button */}
+                      {!isGeneratingPdf && lender.lenderId && (
+                        <Button
+                          className="w-full mt-3"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleContactLender({
+                            lenderId: lender.lenderId!,
+                            lenderName: lender.lenderName || 'Lender',
+                            productId: lender.productId!,
+                            productName: lender.productName || 'Loan Product',
+                            loanType: 'fix-and-flip',
+                            interestRate: lender.interestRate,
+                            maxLtvBuy: lender.maxLtvBuy,
+                            points: lender.points,
+                            timeToClose: lender.timeToClose,
+                            profit: lender.profit,
+                            cashOnCashRoi: lender.cashOnCashRoi,
+                            annualizedRoi: lender.annualizedRoi,
+                            outOfPocketCost: lender.outOfPocketCost,
+                            projectCosts: lender.totalProjectCost,
+                            costsAndCarrying: lender.carryingCosts + lender.closingCostsBuy,
+                            exitSale: lender.sellPrice - lender.closingCostsSell - lender.commission,
+                          })}
+                          data-testid={`button-contact-lender-mobile-${index + 1}`}
+                        >
+                          <Mail className="h-4 w-4 mr-2" />
+                          Contact Lender
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Show More Button for Mobile */}
+                {hasMoreLenders && !isGeneratingPdf && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleViewMoreLoans}
+                    data-testid="button-show-more-loans-mobile"
+                  >
+                    Show More Loans ({results.lenderColumns.length - visibleLenderCount} remaining)
+                  </Button>
+                )}
+              </div>
+              
+              {/* Desktop Table View - hidden on mobile */}
+              <div className="hidden lg:block overflow-x-auto relative" ref={scrollContainerRef}>
                 <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
