@@ -268,7 +268,7 @@ export default function Step4HoldingPeriodExit({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="attorneyFees"
@@ -420,7 +420,7 @@ export default function Step4HoldingPeriodExit({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <CardContent className="space-y-4 pt-0">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="attorneyFees2"
@@ -525,7 +525,7 @@ export default function Step4HoldingPeriodExit({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <FormItem>
                       <FormLabel>Monthly Interest</FormLabel>
                       <FormControl>
@@ -599,7 +599,7 @@ export default function Step4HoldingPeriodExit({
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 items-end">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <FormField
                       control={form.control}
                       name="hoaFees"
@@ -813,7 +813,7 @@ export default function Step4HoldingPeriodExit({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="sellPrice"
@@ -938,7 +938,7 @@ export default function Step4HoldingPeriodExit({
                   {formatCurrency(estimatedProfit)}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t">
                 <div className="text-center">
                   <div className="text-xs text-muted-foreground mb-1">% of ARV</div>
                   <div className="text-lg font-semibold" data-testid="text-percentage-arv-step4">
@@ -999,7 +999,7 @@ export default function Step4HoldingPeriodExit({
 
               {hasExistingLoan === true && (
                 <div className="space-y-4 pt-4 border-t">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="maxLendBuy"
@@ -1053,7 +1053,7 @@ export default function Step4HoldingPeriodExit({
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="loanInterestRate"
@@ -1139,7 +1139,7 @@ export default function Step4HoldingPeriodExit({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="interestDeferred"
@@ -1289,7 +1289,7 @@ export default function Step4HoldingPeriodExit({
                     />
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="drawFees"

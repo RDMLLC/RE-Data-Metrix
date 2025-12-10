@@ -165,7 +165,7 @@ export default function Step3PurchaseRenovation({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="purchasePrice"
@@ -284,14 +284,14 @@ export default function Step3PurchaseRenovation({
                 />
               )}
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="arv"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        Estimated Market Value (Not ARV)
+                      <FormLabel className="flex items-center gap-1 text-sm">
+                        Est. Market Value
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />

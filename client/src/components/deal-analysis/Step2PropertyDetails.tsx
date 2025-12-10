@@ -148,7 +148,7 @@ export default function Step2PropertyDetails({
                     )}
                   />
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="city"
@@ -212,7 +212,7 @@ export default function Step2PropertyDetails({
                 </>
               )}
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="yearBuilt"
@@ -454,7 +454,7 @@ export default function Step2PropertyDetails({
                 Please fill in the requested values if there is an HOA
               </p>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="bedrooms"
