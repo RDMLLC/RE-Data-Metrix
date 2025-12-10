@@ -67,7 +67,8 @@ export default function LenderSignup() {
         description: "Your lender account has been created. Let's complete your company profile...",
       });
       setTimeout(() => {
-        setLocation("/lender-company-info");
+        // Use hard navigation to ensure session cookie is properly attached
+        window.location.href = "/lender-company-info";
       }, 1500);
     },
     onError: (error: any) => {
