@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
@@ -51,13 +51,18 @@ type CompanyInfoForm = z.infer<typeof companyInfoSchema>;
 
 export default function LenderCompanyInfo() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
-  const { data: lenderData, isLoading: isLoadingLender } = useQuery({
+  const { data: lenderData, isLoading: isLoadingLender, error: lenderError } = useQuery({
     queryKey: ['/api/lenders/me'],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/lenders/me");
+      if (!res.ok) {
+        throw new Error("Not authenticated as lender");
+      }
       return await res.json();
     },
+    retry: false,
   });
 
   const saveCompanyInfoMutation = useMutation({
@@ -137,6 +142,27 @@ export default function LenderCompanyInfo() {
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary mb-4" />
             <p className="text-lg text-muted-foreground">Loading your information...</p>
           </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (lenderError || !lenderData) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-16rem)] py-16 bg-background flex items-center justify-center">
+          <Card className="max-w-md p-8 text-center">
+            <h2 className="text-xl font-semibold mb-4">Session Expired</h2>
+            <p className="text-muted-foreground mb-6">
+              Please log in to access your company information.
+            </p>
+            <Button
+              onClick={() => setLocation("/lender-login")}
+              data-testid="button-login"
+            >
+              Go to Lender Login
+            </Button>
+          </Card>
         </div>
       </Layout>
     );
