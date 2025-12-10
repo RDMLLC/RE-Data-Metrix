@@ -1094,9 +1094,9 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
               <p className="text-sm font-medium text-muted-foreground mb-3">
                 Do you want to change any of the variables?
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-5 gap-3 items-end">
                 <div className="space-y-1">
-                  <Label htmlFor="edit-buy-price" className="text-sm">Buy Price</Label>
+                  <Label htmlFor="edit-buy-price" className="text-xs sm:text-sm">Buy Price</Label>
                   <Input
                     id="edit-buy-price"
                     type="number"
@@ -1110,7 +1110,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="edit-rehab" className="text-sm">Rehab</Label>
+                  <Label htmlFor="edit-rehab" className="text-xs sm:text-sm">Rehab</Label>
                   <Input
                     id="edit-rehab"
                     type="number"
@@ -1124,7 +1124,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="edit-project-length" className="text-sm">Project Length (months)</Label>
+                  <Label htmlFor="edit-project-length" className="text-xs sm:text-sm whitespace-nowrap">Project (mo.)</Label>
                   <Input
                     id="edit-project-length"
                     type="number"
@@ -1138,7 +1138,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="edit-arv" className="text-sm">ARV (Est. Sale Price)</Label>
+                  <Label htmlFor="edit-arv" className="text-xs sm:text-sm whitespace-nowrap">ARV (Sale)</Label>
                   <Input
                     id="edit-arv"
                     type="number"
@@ -2169,7 +2169,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                 {/* PITIA Breakdown */}
                 <div className="space-y-3">
                   <h4 className="font-semibold">Monthly Payment Breakdown (PITIA)</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Principal & Interest</span>
                       <span className="font-medium">${dscrResults.monthlyPrincipalInterest.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
@@ -2186,11 +2186,11 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                       <span className="text-muted-foreground">HOA</span>
                       <span className="font-medium">${dscrResults.monthlyHoa.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                     </div>
-                    <div className="flex justify-between col-span-2 border-t pt-2">
+                    <div className="flex justify-between sm:col-span-2 border-t pt-2">
                       <span className="font-semibold">Total PITIA</span>
                       <span className="font-bold text-primary">${dscrResults.totalMonthlyPITIA.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                     </div>
-                    <div className="flex justify-between col-span-2">
+                    <div className="flex justify-between sm:col-span-2">
                       <span className="text-muted-foreground">Monthly Rent</span>
                       <span className="font-semibold text-emerald-600">${monthlyRent.toLocaleString()}</span>
                     </div>
@@ -2288,7 +2288,7 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                             </div>
                           </div>
 
-                          <div className="border-t pt-4 flex justify-end gap-2">
+                          <div className="border-t pt-4 flex flex-col sm:flex-row justify-end gap-2">
                             <Button
                               variant="outline"
                               onClick={() => handleContactLender({

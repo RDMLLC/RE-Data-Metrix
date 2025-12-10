@@ -940,20 +940,20 @@ export default function Step4HoldingPeriodExit({
               </div>
               <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t">
                 <div className="text-center">
-                  <div className="text-xs text-muted-foreground mb-1">% of ARV</div>
-                  <div className="text-lg font-semibold" data-testid="text-percentage-arv-step4">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">% of ARV</div>
+                  <div className="text-base sm:text-lg font-semibold" data-testid="text-percentage-arv-step4">
                     {percentageArv.toFixed(1)}%
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-muted-foreground mb-1">Cash on Cash ROI</div>
-                  <div className="text-lg font-semibold" data-testid="text-cash-on-cash-roi">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">Cash on Cash</div>
+                  <div className="text-base sm:text-lg font-semibold" data-testid="text-cash-on-cash-roi">
                     {cashOnCashRoi.toFixed(1)}%
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-muted-foreground mb-1">Annual ROI</div>
-                  <div className="text-lg font-semibold" data-testid="text-annual-roi">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">Annual ROI</div>
+                  <div className="text-base sm:text-lg font-semibold" data-testid="text-annual-roi">
                     {annualCashOnCashRoi.toFixed(1)}%
                   </div>
                 </div>
