@@ -332,11 +332,11 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 <div className="pt-4 border-t space-y-4">
                   <div className="rounded-lg bg-muted p-4">
                     <h3 className="font-semibold mb-2">Property Found</h3>
-                    <div className="mb-3 rounded-md overflow-hidden bg-muted h-48 md:h-56">
+                    <div className="mb-3 rounded-md overflow-hidden bg-muted">
                       <img 
                         src={propertyImage || "/images/property-placeholder.svg"} 
                         alt="Property"
-                        className="w-full h-full object-cover"
+                        className="w-full max-h-64 md:max-h-80 object-contain"
                         data-testid="img-property"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
