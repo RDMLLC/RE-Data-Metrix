@@ -31,6 +31,7 @@ import LenderCompanyInfo from "@/pages/LenderCompanyInfo";
 import LoanTypes from "@/pages/LoanTypes";
 import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
 import LenderSignup from "@/pages/LenderSignup";
+import LenderLogin from "@/pages/LenderLogin";
 import LenderInvite from "@/pages/admin/LenderInvite";
 import AdminLogin from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -137,6 +138,7 @@ function Router() {
       <Route path="/lender-saved-by" component={LenderSavedBy} />
       <Route path="/lender-inquiries" component={LenderInquiries} />
       <Route path="/lender-signup/:token" component={LenderSignup} />
+      <Route path="/lender-login" component={LenderLogin} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/request-password-reset" component={AdminRequestPasswordReset} />
       <Route path="/admin/reset-password/:token" component={AdminResetPassword} />
