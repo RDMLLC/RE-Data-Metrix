@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { usePDF } from "react-to-pdf";
 import { QRCodeSVG } from "qrcode.react";
 import type { LoanCriteria } from "@shared/schema";
@@ -39,6 +39,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface Step5ResultsProps {
   form: UseFormReturn<WizardFormData>;
   onBack: () => void;
+  isSubscriber?: boolean;
 }
 
 interface OutOfPocketBreakdown {
@@ -154,7 +155,7 @@ interface DSCRProductWithCalculation {
   };
 }
 
-export default function Step5Results({ form, onBack }: Step5ResultsProps) {
+export default function Step5Results({ form, onBack, isSubscriber = false }: Step5ResultsProps) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { updatePropertyData, wizardData } = useWizardData();
@@ -1008,8 +1009,9 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
     return null; // Shouldn't reach here, but safety check
   }
 
-  const visibleLenders = results.lenderColumns.slice(0, visibleLenderCount);
-  const hasMoreLenders = visibleLenderCount < results.lenderColumns.length;
+  // For non-subscribers, hide lender columns
+  const visibleLenders = isSubscriber ? results.lenderColumns.slice(0, visibleLenderCount) : [];
+  const hasMoreLenders = isSubscriber && visibleLenderCount < results.lenderColumns.length;
 
   // Solid background color classes for sticky columns (z-index 20 for first column, 15 for Cash Sale & Your Loan)
   const stickyFirstColBase = "sticky left-0 z-20 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
@@ -1624,6 +1626,21 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                   >
                     Show More Loans ({results.lenderColumns.length - visibleLenderCount} remaining)
                   </Button>
+                )}
+                
+                {/* Subscribe prompt for non-subscribers - Mobile */}
+                {!isSubscriber && !isGeneratingPdf && (
+                  <div className="mt-4 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-4 text-center">
+                    <h3 className="font-semibold text-base mb-2">Subscribe to Get Lender Referrals and More</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Upgrade to compare multiple lender options and get connected with lenders who can fund your deals.
+                    </p>
+                    <Link href="/checkout">
+                      <Button size="sm" data-testid="button-subscribe-step5-mobile">
+                        Subscribe Now
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </div>
               
@@ -2263,6 +2280,21 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
             </div>
           )}
 
+          {/* Subscribe prompt for non-subscribers */}
+          {!isSubscriber && !isGeneratingPdf && (
+            <div className="mt-6 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
+              <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Upgrade to compare multiple lender options, see detailed financing comparisons, and get connected directly with lenders who can fund your deals.
+              </p>
+              <Link href="/checkout">
+                <Button data-testid="button-subscribe-step5">
+                  Subscribe Now
+                </Button>
+              </Link>
+            </div>
+          )}
+
         </CardContent>
       </Card>
         </TabsContent>
@@ -2422,7 +2454,19 @@ export default function Step5Results({ form, onBack }: Step5ResultsProps) {
                 </p>
               </CardHeader>
               <CardContent>
-                {isLoadingDscrLenders ? (
+                {!isSubscriber ? (
+                  <div className="rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
+                    <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Upgrade to compare DSCR lender options, see detailed financing comparisons, and get connected directly with lenders who can fund your deals.
+                    </p>
+                    <Link href="/checkout">
+                      <Button data-testid="button-subscribe-dscr">
+                        Subscribe Now
+                      </Button>
+                    </Link>
+                  </div>
+                ) : isLoadingDscrLenders ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <span className="ml-3 text-muted-foreground">Calculating DSCR for each lender...</span>

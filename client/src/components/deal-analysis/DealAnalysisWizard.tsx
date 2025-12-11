@@ -337,15 +337,7 @@ export default function DealAnalysisWizard() {
             </div>
           );
         }
-        if (!isSubscriber) {
-          return (
-            <MembershipPaywall 
-              title="Full Deal Analysis Results" 
-              description="Access detailed profitability analysis and lender recommendations by becoming a member."
-            />
-          );
-        }
-        return <Step5Results form={form} onBack={handleBack} />;
+        return <Step5Results form={form} onBack={handleBack} isSubscriber={isSubscriber} />;
       default:
         return null;
     }

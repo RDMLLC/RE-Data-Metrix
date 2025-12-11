@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, PlayCircle } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Volume2, VolumeX } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
 import { Link } from "wouter";
+import demoVideo from "@assets/Deal_Analysis_and_Loan_Comparison_Tool_1765464743849.mp4";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
@@ -27,6 +28,43 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
+  
+  // Video player state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    // Sync muted state when native controls are used
+    const handleVolumeChange = () => {
+      setIsMuted(video.muted || video.volume === 0);
+    };
+    
+    video.addEventListener('volumechange', handleVolumeChange);
+    
+    return () => {
+      video.removeEventListener('volumechange', handleVolumeChange);
+    };
+  }, []);
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const newMutedState = !isMuted;
+    video.muted = newMutedState;
+    
+    if (!newMutedState) {
+      video.volume = 1.0;
+      video.play().catch(err => {
+        console.warn('Video play failed:', err);
+      });
+    }
+    
+    setIsMuted(newMutedState);
+  };
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -226,68 +264,83 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     <div className="space-y-6">
       {!isSubscriber && (
         <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
-          <div className="flex flex-col sm:flex-row items-start gap-4">
-            <div className="rounded-full bg-primary/10 p-3 shrink-0">
-              <PlayCircle className="h-6 w-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg mb-1">See What This Tool Can Do</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Watch a quick demo to see how the Deal Analysis tool helps you compare loan options, calculate profits, and find the best financing for your deals.
-              </p>
-              <a 
-                href="https://drive.google.com/file/d/1TohlHcr_r2hqxTSA_cuXYyMdVGyhrvh3/view"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-                data-testid="button-watch-demo-step1"
+          <h3 className="font-semibold text-lg mb-2">See What This Tool Can Do</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Watch a quick demo to see how the Deal Analysis tool helps you compare loan options, calculate profits, and find the best financing for your deals.
+          </p>
+          <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-lg border border-white/20">
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              autoPlay
+              muted={isMuted}
+              controls
+              loop
+              playsInline
+              data-testid="video-demo"
+            >
+              <source src={demoVideo} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <button
+              onClick={toggleMute}
+              className={`absolute top-3 right-3 z-20 p-3 rounded-full transition-all ${
+                isMuted 
+                  ? 'bg-accent hover:bg-accent/90 text-accent-foreground animate-pulse' 
+                  : 'bg-black/60 hover:bg-black/80 text-white'
+              }`}
+              data-testid="button-toggle-mute-demo"
+              aria-label={isMuted ? "Click to unmute video" : "Mute video"}
+              title={isMuted ? "Click to unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+            </button>
+            {isMuted && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10"
+                onClick={toggleMute}
               >
-                <PlayCircle className="h-5 w-5" />
-                Watch Demo Video
-              </a>
-            </div>
+                <div className="bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                  <VolumeX className="h-5 w-5" />
+                  <span className="text-sm font-medium">Click to unmute</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {!manualEntryPreference && (
         <>
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Property Lookup</h2>
-            <p className="text-muted-foreground">
-              {isSubscriber 
-                ? "Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal."
-                : "Enter property details manually to analyze your deal, or upgrade to unlock automatic property data lookup."
-              }
-            </p>
-            
-            {isSubscriber ? (
-              <Alert className="mt-4">
-                <ExternalLink className="h-4 w-4" />
-                <AlertDescription>
-                  Find your property on{" "}
-                  <a
-                    href="https://www.redfin.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium underline underline-offset-4 hover:text-primary"
+          {/* For non-subscribers: Show "Try it for free" first, then premium lookup */}
+          {!isSubscriber && (
+            <>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Get Started</h2>
+                <p className="text-muted-foreground mb-4">
+                  Enter property details manually to analyze your deal and compare financing options.
+                </p>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <Button
+                    type="button"
+                    onClick={() => setManualEntryPreference(true)}
+                    data-testid="button-switch-manual-entry"
                   >
-                    Redfin
-                  </a>
-                  {" "}or{" "}
-                  <a
-                    href="https://www.zillow.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium underline underline-offset-4 hover:text-primary"
+                    Try it for Free
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setGroundUpModalOpen(true)}
+                    className="text-sm text-blue-600 hover:underline underline-offset-4 flex items-center gap-1"
+                    data-testid="link-ground-up"
                   >
-                    Zillow
-                  </a>
-                  , then copy and paste the full URL here.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-6">
+                    <HardHat className="h-4 w-4" />
+                    Click Here for Ground-Up / New Build Projects
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-6">
                 <div className="flex items-start gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
                     <Lock className="h-5 w-5 text-primary" />
@@ -308,126 +361,157 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-
-          {isSubscriber && (
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <label htmlFor="property-url" className="text-sm font-medium">
-                  Property URL *
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    id="property-url"
-                    value={propertyUrl}
-                    onChange={(e) => setPropertyUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleLookup();
-                      }
-                    }}
-                    placeholder="https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/"
-                    className="flex-1"
-                    data-testid="input-property-url"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleLookup}
-                    disabled={propertyLookupMutation.isPending}
-                    data-testid="button-lookup-property"
-                  >
-                    {propertyLookupMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
-                </p>
-              </div>
-
-              {isLookupComplete && (
-                <div className="pt-4 border-t space-y-4">
-                  <div className="rounded-lg bg-muted p-4">
-                    <h3 className="font-semibold mb-2">Property Found</h3>
-                    <div className="mb-3 rounded-md overflow-hidden bg-muted">
-                      <img 
-                        src={propertyImage || "/images/property-placeholder.svg"} 
-                        alt="Property"
-                        className="w-full max-h-64 md:max-h-80 object-contain"
-                        data-testid="img-property"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/images/property-placeholder.svg";
-                        }}
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-3 flex-wrap">
-                    <Button
-                      type="button"
-                      onClick={handleNext}
-                      className="flex-1 md:flex-initial"
-                      data-testid="button-next-step"
-                    >
-                      Continue to Property Details
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
-                      disabled={!propertyUrl}
-                      className="flex-1 md:flex-initial"
-                      data-testid="button-view-listing"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View Listing
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+            </>
           )}
 
-          <div className="pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-3">
-              {isSubscriber 
-                ? "Don't have a property URL? You can enter property details manually instead."
-                : "Continue with manual entry to analyze your deal."
-              }
-            </p>
-            <div className="flex flex-wrap gap-3 items-center">
-              <Button
-                type="button"
-                variant={isSubscriber ? "outline" : "default"}
-                onClick={() => setManualEntryPreference(true)}
-                data-testid="button-switch-manual-entry"
-              >
-                {isSubscriber ? "Switch to Manual Entry" : "Continue with Manual Entry"}
-              </Button>
-              <button
-                type="button"
-                onClick={() => setGroundUpModalOpen(true)}
-                className="text-sm text-blue-600 hover:underline underline-offset-4 flex items-center gap-1"
-                data-testid="link-ground-up"
-              >
-                <HardHat className="h-4 w-4" />
-                Click Here for Ground-Up / New Build Projects
-              </button>
-            </div>
-          </div>
+          {/* For subscribers: Show property lookup interface */}
+          {isSubscriber && (
+            <>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Property Lookup</h2>
+                <p className="text-muted-foreground">
+                  Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
+                </p>
+                <Alert className="mt-4">
+                  <ExternalLink className="h-4 w-4" />
+                  <AlertDescription>
+                    Find your property on{" "}
+                    <a
+                      href="https://www.redfin.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium underline underline-offset-4 hover:text-primary"
+                    >
+                      Redfin
+                    </a>
+                    {" "}or{" "}
+                    <a
+                      href="https://www.zillow.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium underline underline-offset-4 hover:text-primary"
+                    >
+                      Zillow
+                    </a>
+                    , then copy and paste the full URL here.
+                  </AlertDescription>
+                </Alert>
+              </div>
+
+              <div className="grid gap-6">
+                <div className="space-y-2">
+                  <label htmlFor="property-url" className="text-sm font-medium">
+                    Property URL *
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="property-url"
+                      value={propertyUrl}
+                      onChange={(e) => setPropertyUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleLookup();
+                        }
+                      }}
+                      placeholder="https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/"
+                      className="flex-1"
+                      data-testid="input-property-url"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleLookup}
+                      disabled={propertyLookupMutation.isPending}
+                      data-testid="button-lookup-property"
+                    >
+                      {propertyLookupMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
+                  </p>
+                </div>
+
+                {isLookupComplete && (
+                  <div className="pt-4 border-t space-y-4">
+                    <div className="rounded-lg bg-muted p-4">
+                      <h3 className="font-semibold mb-2">Property Found</h3>
+                      <div className="mb-3 rounded-md overflow-hidden bg-muted">
+                        <img 
+                          src={propertyImage || "/images/property-placeholder.svg"} 
+                          alt="Property"
+                          className="w-full max-h-64 md:max-h-80 object-contain"
+                          data-testid="img-property"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/images/property-placeholder.svg";
+                          }}
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3 flex-wrap">
+                      <Button
+                        type="button"
+                        onClick={handleNext}
+                        className="flex-1 md:flex-initial"
+                        data-testid="button-next-step"
+                      >
+                        Continue to Property Details
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
+                        disabled={!propertyUrl}
+                        className="flex-1 md:flex-initial"
+                        data-testid="button-view-listing"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View Listing
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Don't have a property URL? You can enter property details manually instead.
+                </p>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setManualEntryPreference(true)}
+                    data-testid="button-switch-manual-entry-subscriber"
+                  >
+                    Switch to Manual Entry
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setGroundUpModalOpen(true)}
+                    className="text-sm text-blue-600 hover:underline underline-offset-4 flex items-center gap-1"
+                    data-testid="link-ground-up-subscriber"
+                  >
+                    <HardHat className="h-4 w-4" />
+                    Click Here for Ground-Up / New Build Projects
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
