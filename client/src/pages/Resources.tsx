@@ -1,14 +1,32 @@
+import { Link } from "wouter";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
 import ToolFinder from "@/components/ToolFinder";
 import { categoryInfo } from "@/data/affiliatePrograms";
-import { Wrench, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Wrench, CheckCircle, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import MembershipPaywall from "@/components/MembershipPaywall";
 import { useQuery } from "@tanstack/react-query";
 import type { Affiliate } from "@shared/schema";
+
+function SubscribeOverlay({ title = "Subscribe to View" }: { title?: string }) {
+  return (
+    <div className="absolute inset-0 backdrop-blur-md bg-background/60 z-10 flex flex-col items-center justify-center p-6 rounded-lg">
+      <Lock className="h-10 w-10 text-muted-foreground mb-4" />
+      <p className="text-lg font-semibold text-foreground text-center mb-2">{title}</p>
+      <p className="text-sm text-muted-foreground text-center mb-4">
+        Get full access to our curated partner programs and tools
+      </p>
+      <Link href="/pricing">
+        <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-subscribe-affiliates">
+          View Membership Plans
+        </Button>
+      </Link>
+    </div>
+  );
+}
 
 export default function Resources() {
   const { isSubscriber, isLoading: authLoading } = useAuth();
@@ -34,44 +52,41 @@ export default function Resources() {
         </div>
       );
     }
-    if (!isSubscriber) {
-      return (
-        <MembershipPaywall 
-          title="Affiliate Programs"
-          description="Access our curated collection of vetted affiliate programs and tools by becoming a member."
-        />
-      );
-    }
     
     const categoryAffiliates = getAffiliateProgramsByCategory(category);
     
-    if (categoryAffiliates.length === 0) {
-      return (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-semibold mb-2">{info.name}</h2>
-            <p className="text-muted-foreground">{info.description}</p>
-          </div>
-          <div className="text-center py-12 text-muted-foreground">
-            No affiliate programs available in this category yet.
-          </div>
-        </div>
-      );
-    }
-    
-    return (
+    const content = (
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-semibold mb-2">{info.name}</h2>
           <p className="text-muted-foreground">{info.description}</p>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {categoryAffiliates.map((program) => (
-            <AffiliateCard key={program.id} program={program} />
-          ))}
-        </div>
+        {categoryAffiliates.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No affiliate programs available in this category yet.
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {categoryAffiliates.map((program) => (
+              <AffiliateCard key={program.id} program={program} />
+            ))}
+          </div>
+        )}
       </div>
     );
+
+    if (!isSubscriber) {
+      return (
+        <div className="relative">
+          <div className="pointer-events-none select-none">
+            {content}
+          </div>
+          <SubscribeOverlay title="Subscribe to View Programs" />
+        </div>
+      );
+    }
+    
+    return content;
   };
 
   return (
@@ -185,13 +200,8 @@ export default function Resources() {
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : !isSubscriber ? (
-                <MembershipPaywall 
-                  title="Tool Finder"
-                  description="Compare real estate software tools and find the perfect ones for your investment strategy."
-                />
               ) : (
-                <ToolFinder />
+                <ToolFinder isBlurred={!isSubscriber} />
               )}
             </div>
           </TabsContent>

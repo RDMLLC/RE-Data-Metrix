@@ -1,12 +1,17 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink, Check, X, Search, RotateCcw } from "lucide-react";
+import { ExternalLink, Check, X, Search, RotateCcw, Lock } from "lucide-react";
 import { tools, featureLabels, getToolsByFeatures, type ToolFeatures, type Tool } from "@/data/toolComparison";
 
-export default function ToolFinder() {
+interface ToolFinderProps {
+  isBlurred?: boolean;
+}
+
+export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
   const [selectedFeatures, setSelectedFeatures] = useState<(keyof ToolFeatures)[]>([]);
 
   const toggleFeature = (feature: keyof ToolFeatures) => {
@@ -108,6 +113,52 @@ export default function ToolFinder() {
     );
   };
 
+  const renderBlurredOverlay = () => (
+    <div className="absolute inset-0 backdrop-blur-md bg-background/60 z-10 flex flex-col items-center justify-center p-6 rounded-lg">
+      <Lock className="h-10 w-10 text-muted-foreground mb-4" />
+      <p className="text-lg font-semibold text-foreground text-center mb-2">Subscribe to View Tools</p>
+      <p className="text-sm text-muted-foreground text-center mb-4">
+        Get full access to our curated tool recommendations
+      </p>
+      <Link href="/pricing">
+        <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-subscribe-tools">
+          View Membership Plans
+        </Button>
+      </Link>
+    </div>
+  );
+
+  const renderResults = () => {
+    if (selectedFeatures.length > 0) {
+      return (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Matching Tools</h3>
+          
+          {matchingTools.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {matchingTools.map(renderToolCard)}
+            </div>
+          ) : (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">
+                No tools match all your selected criteria. Try removing some filters.
+              </p>
+            </Card>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Card className="p-8 text-center border-dashed">
+        <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+        <p className="text-muted-foreground">
+          Select one or more features above to see matching tools.
+        </p>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -149,29 +200,15 @@ export default function ToolFinder() {
         )}
       </Card>
 
-      {selectedFeatures.length > 0 ? (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Matching Tools</h3>
-          
-          {matchingTools.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {matchingTools.map(renderToolCard)}
-            </div>
-          ) : (
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">
-                No tools match all your selected criteria. Try removing some filters.
-              </p>
-            </Card>
-          )}
+      {isBlurred ? (
+        <div className="relative">
+          <div className="pointer-events-none select-none">
+            {renderResults()}
+          </div>
+          {renderBlurredOverlay()}
         </div>
       ) : (
-        <Card className="p-8 text-center border-dashed">
-          <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-          <p className="text-muted-foreground">
-            Select one or more features above to see matching tools.
-          </p>
-        </Card>
+        renderResults()
       )}
     </div>
   );
