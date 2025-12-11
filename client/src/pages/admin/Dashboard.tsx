@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, RefreshCw, AlertTriangle } from "lucide-react";
 
 interface StripeStatus {
   configured: boolean;
   ready: boolean;
+}
+
+interface DataHealth {
+  affiliates: number;
+  affiliateCategories: number;
+  lenders: number;
+  loanProducts: number;
+  hasIssues: boolean;
+  missingData: string[];
 }
 
 export default function AdminDashboard() {
@@ -21,6 +30,9 @@ export default function AdminDashboard() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [dataHealth, setDataHealth] = useState<DataHealth | null>(null);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -73,9 +85,65 @@ export default function AdminDashboard() {
       }
     };
     
+    const fetchDataHealth = async () => {
+      setIsLoadingHealth(true);
+      try {
+        const response = await fetch("/api/admin/data-health", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDataHealth(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data health");
+      } finally {
+        setIsLoadingHealth(false);
+      }
+    };
+    
     fetchAdminInfo();
     fetchStripeStatus();
+    fetchDataHealth();
   }, [setLocation, toast]);
+
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const response = await fetch("/api/admin/seed-database", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Database Seeded Successfully",
+          description: `Added: ${data.results.affiliates.added} affiliates, ${data.results.lenders.added} lenders, ${data.results.loanProducts.added} loan products`,
+        });
+        const healthResponse = await fetch("/api/admin/data-health", {
+          credentials: "include",
+        });
+        if (healthResponse.ok) {
+          setDataHealth(await healthResponse.json());
+        }
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Seeding Failed",
+          description: error.error || "Failed to seed database",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to seed database",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   // Show loading while checking auth
   if (isAuthChecking) {
@@ -186,6 +254,82 @@ export default function AdminDashboard() {
               </Button>
             </div>
           </div>
+
+          {dataHealth && (
+            <Card className={`mb-8 ${dataHealth.hasIssues ? 'border-amber-500' : 'border-green-500'}`} data-testid="card-data-health">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${dataHealth.hasIssues ? 'bg-amber-500/10' : 'bg-green-500/10'}`}>
+                      <Database className={`h-5 w-5 ${dataHealth.hasIssues ? 'text-amber-500' : 'text-green-500'}`} />
+                    </div>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        Database Health
+                        {dataHealth.hasIssues ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-500">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Missing Data
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-green-600 border-green-500">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Healthy
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {dataHealth.hasIssues 
+                          ? `Missing: ${dataHealth.missingData.join(', ')}`
+                          : 'All baseline data is present'
+                        }
+                      </CardDescription>
+                    </div>
+                  </div>
+                  {dataHealth.hasIssues && (
+                    <Button
+                      onClick={handleSeedDatabase}
+                      disabled={isSeeding}
+                      className="bg-amber-500 hover:bg-amber-600 text-white"
+                      data-testid="button-seed-database"
+                    >
+                      {isSeeding ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Seeding...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Seed Database
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{dataHealth.lenders}</div>
+                    <div className="text-sm text-muted-foreground">Lenders</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{dataHealth.loanProducts}</div>
+                    <div className="text-sm text-muted-foreground">Loan Products</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{dataHealth.affiliates}</div>
+                    <div className="text-sm text-muted-foreground">Affiliates</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{dataHealth.affiliateCategories}</div>
+                    <div className="text-sm text-muted-foreground">Categories</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card 

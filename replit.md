@@ -19,6 +19,32 @@ The backend is built with Node.js and Express.js, providing a RESTful API. It ut
 ### Database
 PostgreSQL is the chosen database, accessed via the Neon serverless driver. Drizzle ORM ensures type-safe operations and manages the schema, which includes tables for `users`, `prelaunch_signups`, `lenders`, `lender_questionnaires`, `loan_products`, and `lender_referrals`. Drizzle Kit handles schema migrations.
 
+**IMPORTANT: Development and production use separate databases.** Data created in development does NOT automatically transfer to production. After publishing, the production database starts empty unless seeded.
+
+### Database Seeding System
+To prevent data loss after deployments, a database seeding system is in place:
+
+**Seed Data File:** `server/seed-data.ts`
+- Contains baseline data: 16 affiliates, 5 affiliate categories, 1 real lender (Finance of America Commercial), 14 loan products
+- Only includes production-ready data; test lenders are excluded
+- Each record has a stable ID for idempotent seeding (won't create duplicates)
+
+**Admin Dashboard Data Health Widget:**
+- Located at `/admin` (Admin Dashboard)
+- Shows counts for lenders, loan products, affiliates, and categories
+- Displays green "Healthy" badge when all data present
+- Shows amber "Missing Data" warning with "Seed Database" button when empty
+
+**API Endpoints:**
+- `GET /api/admin/data-health`: Returns record counts and missing data indicators
+- `POST /api/admin/seed-database`: Inserts baseline data, skips existing records
+
+**Post-Deployment Checklist:**
+1. Login to Admin Dashboard at `/admin`
+2. Check Data Health widget for any missing data warnings
+3. Click "Seed Database" button if data is missing
+4. Verify counts update correctly
+
 ### Authentication & Authorization
 The platform features a complete authentication system with user and lender tables, session management, email verification via Zoho Mail SMTP, and password reset functionality. Express sessions with a PostgreSQL store are used. Middleware-based authorization protects routes for user, lender, and admin access, with separate portals for each. Admin functionalities include user management, subscription control, and terms acceptance tracking. Legal documents (`/terms`, `/privacy`) with user acceptance tracking are integrated.
 
