@@ -150,13 +150,17 @@ export default function ViewDeals() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "draft":
+        return <Badge variant="secondary">Draft</Badge>;
+      case "final":
+        return <Badge className="bg-green-500/10 text-green-600 border-green-200">Final</Badge>;
       case "won":
         return <Badge className="bg-success text-success-foreground">Won</Badge>;
       case "lost":
         return <Badge variant="destructive">Lost</Badge>;
       case "active":
       default:
-        return <Badge variant="secondary">Active</Badge>;
+        return <Badge variant="outline">Active</Badge>;
     }
   };
 
@@ -215,6 +219,8 @@ export default function ViewDeals() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Deals</SelectItem>
+                  <SelectItem value="draft">Drafts</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="won">Won</SelectItem>
                   <SelectItem value="lost">Lost</SelectItem>
@@ -295,7 +301,28 @@ export default function ViewDeals() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        {deal.status === "active" && (
+                        {deal.status === "draft" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateDealMutation.mutate({ dealId: deal.id, updates: { status: "final" } })}
+                            data-testid={`button-mark-final-${deal.id}`}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Mark Final
+                          </Button>
+                        )}
+                        {deal.status === "final" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateDealMutation.mutate({ dealId: deal.id, updates: { status: "draft" } })}
+                            data-testid={`button-mark-draft-${deal.id}`}
+                          >
+                            Move to Drafts
+                          </Button>
+                        )}
+                        {(deal.status === "active" || deal.status === "final") && (
                           <>
                             <Button
                               variant="outline"

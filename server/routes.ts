@@ -4318,6 +4318,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [dealStats] = await db
         .select({
           totalDeals: sql<number>`count(*)::int`,
+          draftDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'draft')::int`,
+          finalDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'final')::int`,
           activeDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'active')::int`,
           wonDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'won')::int`,
           lostDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'lost')::int`,
@@ -4332,6 +4334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         totalDeals: dealStats?.totalDeals ?? 0,
+        draftDeals: dealStats?.draftDeals ?? 0,
+        finalDeals: dealStats?.finalDeals ?? 0,
         activeDeals: dealStats?.activeDeals ?? 0,
         wonDeals: dealStats?.wonDeals ?? 0,
         lostDeals: dealStats?.lostDeals ?? 0,

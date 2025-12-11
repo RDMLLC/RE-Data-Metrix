@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { WizardFormData } from "./DealAnalysisWizard";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -159,10 +160,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { updatePropertyData, wizardData } = useWizardData();
+  const { isAuthenticated, user } = useAuth();
   const loanPreference = form.watch("loanPreference") || "one-of-each";
   const [hasCalculated, setHasCalculated] = useState(false);
   const [visibleLenderCount, setVisibleLenderCount] = useState(2);
   const [results, setResults] = useState<ResultsResponse | null>(null);
+  
+  // Auto-save state
+  const [dealSaved, setDealSaved] = useState(false);
+  const [savedDealId, setSavedDealId] = useState<string | null>(null);
+  const saveAttemptedRef = useRef(false); // Prevent duplicate saves
   
   // Analysis mode toggle state
   const [analysisMode, setAnalysisMode] = useState<'fix-and-flip' | 'rental-dscr'>('fix-and-flip');
@@ -370,6 +377,104 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
       });
     },
   });
+
+  // Auto-save deal mutation
+  const saveDealMutation = useMutation({
+    mutationFn: async (dealData: {
+      dealSnapshot: any;
+      resultsSnapshot: any;
+      propertyAddress: string;
+      arv?: number;
+      roi?: number;
+      profit?: number;
+      status?: string;
+      lendersPresented?: any;
+    }) => {
+      const response = await apiRequest("POST", "/api/member/deals", dealData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setDealSaved(true);
+      setSavedDealId(data.id);
+      // Invalidate member stats to update dashboard count
+      queryClient.invalidateQueries({ queryKey: ['/api/member/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/member/deals'] });
+    },
+    onError: (error: any) => {
+      console.error("Failed to auto-save deal:", error);
+      // Silent fail for auto-save - don't show toast to avoid interrupting user
+      // Reset the ref so user can retry if they want
+      saveAttemptedRef.current = false;
+    },
+  });
+
+  // Mark deal as final mutation
+  const markFinalMutation = useMutation({
+    mutationFn: async (dealId: string) => {
+      const response = await apiRequest("PATCH", `/api/member/deals/${dealId}`, { status: 'final' });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Deal Saved",
+        description: "This analysis has been marked as final and saved to your dashboard.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/member/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/member/deals'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save deal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Auto-save effect - triggers once when results are first loaded for authenticated users
+  useEffect(() => {
+    // Skip if already saved or save already attempted
+    if (!results || !isAuthenticated || dealSaved || saveAttemptedRef.current) return;
+    
+    // Mark as attempted immediately to prevent duplicate saves
+    saveAttemptedRef.current = true;
+    
+    const formData = form.getValues();
+    
+    // Build and normalize the property address
+    const addressParts = [
+      formData.address || '',
+      formData.city || '',
+      formData.state || '',
+      formData.zipCode || ''
+    ].filter(part => part.trim() !== '');
+    const propertyAddress = addressParts.length > 0 ? addressParts.join(', ') : 'Manual Entry';
+    
+    // Get summary metrics from best available column
+    const bestColumn = results.userLoanColumn || results.cashSaleColumn;
+    
+    saveDealMutation.mutate({
+      dealSnapshot: formData,
+      resultsSnapshot: results,
+      propertyAddress,
+      arv: formData.arv || editArv,
+      roi: bestColumn?.cashOnCashRoi,
+      profit: bestColumn?.profit,
+      status: 'draft',
+      lendersPresented: results.lenderColumns?.map(l => ({
+        lenderId: l.lenderId,
+        lenderName: l.lenderName,
+        productId: l.productId,
+        productName: l.productName,
+      })),
+    });
+  }, [results, isAuthenticated, dealSaved]);
+
+  const handleMarkAsFinal = () => {
+    if (savedDealId) {
+      markFinalMutation.mutate(savedDealId);
+    }
+  };
 
   const handleContactLender = (lenderData: {
     lenderId: string;
@@ -1074,6 +1179,53 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Auto-save status banner */}
+      {isAuthenticated && dealSaved && !isGeneratingPdf && (
+        <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-green-700 dark:text-green-400">
+              Analysis saved automatically as draft.{" "}
+              <Link href="/portal/dashboard" className="underline font-medium" data-testid="link-view-dashboard">
+                View in Dashboard
+              </Link>
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleMarkAsFinal}
+              disabled={markFinalMutation.isPending}
+              className="border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
+              data-testid="button-save-as-final"
+            >
+              {markFinalMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Save as Final
+                </>
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Prompt for non-authenticated users */}
+      {!isAuthenticated && !isGeneratingPdf && (
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
+          <AlertDescription className="text-blue-700 dark:text-blue-400">
+            <Link href="/register" className="font-medium underline" data-testid="link-signup-to-save">
+              Create a free account
+            </Link>{" "}
+            to save your analyses and access them from your dashboard.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Analysis Type Toggle */}
       <Tabs value={analysisMode} onValueChange={(value) => setAnalysisMode(value as 'fix-and-flip' | 'rental-dscr')} className="w-full">

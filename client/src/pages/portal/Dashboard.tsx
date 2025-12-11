@@ -19,6 +19,8 @@ import {
 
 interface MemberStats {
   totalDeals: number;
+  draftDeals: number;
+  finalDeals: number;
   activeDeals: number;
   wonDeals: number;
   lostDeals: number;
