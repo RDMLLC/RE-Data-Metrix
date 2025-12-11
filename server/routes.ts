@@ -3295,6 +3295,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle affiliate status (admin only)
+  app.patch("/api/admin/affiliates/:id/status", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ error: "isActive must be a boolean" });
+      }
+      
+      const updated = await storage.updateAffiliate(id, { isActive });
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Affiliate not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Toggle affiliate status error:', error);
+      res.status(500).json({ error: "Failed to update affiliate status" });
+    }
+  });
+
   // Delete affiliate (admin only)
   app.delete("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
     try {

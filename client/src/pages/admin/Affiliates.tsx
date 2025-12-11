@@ -237,6 +237,32 @@ export default function Affiliates() {
     },
   });
 
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const response = await fetch(`/api/admin/affiliates/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isActive }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update status");
+      }
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
+      toast({ 
+        title: "Status Updated", 
+        description: `Affiliate is now ${variables.isActive ? "active" : "inactive"}.` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const upsertCategoryMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
       const response = await fetch("/api/admin/affiliate-categories", {
@@ -460,9 +486,19 @@ export default function Affiliates() {
                                 )}
                               </td>
                               <td className="py-3 px-4">
-                                <Badge variant={affiliate.isActive ? "default" : "secondary"}>
-                                  {affiliate.isActive ? "Active" : "Inactive"}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={affiliate.isActive}
+                                    onCheckedChange={(checked) => 
+                                      toggleStatusMutation.mutate({ id: affiliate.id, isActive: checked })
+                                    }
+                                    disabled={toggleStatusMutation.isPending}
+                                    data-testid={`switch-status-${affiliate.id}`}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    {affiliate.isActive ? "Active" : "Inactive"}
+                                  </span>
+                                </div>
                               </td>
                               <td className="py-3 px-4">
                                 <div className="flex justify-end gap-2">
