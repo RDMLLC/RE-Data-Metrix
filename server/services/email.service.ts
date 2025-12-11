@@ -438,7 +438,17 @@ class EmailService {
           </div>
           <div class="content">
             <p>Hi ${username},</p>
-            <p>You've been invited to join RE Data Metrix as a lender. To get started, please click the button below to complete your account setup:</p>
+            <p>You've been invited to join RE Data Metrix as a lender!</p>
+            
+            <div class="info-box" style="background: #F0F9FF; border-left-color: #1E3A8A;">
+              <h3 style="margin-top: 0; color: #1E3A8A;">📺 Before You Begin</h3>
+              <p style="margin: 0 0 15px 0;">Watch this short video to see how to set up your lender profile and start connecting with investors:</p>
+              <div style="text-align: center;">
+                <a href="https://drive.google.com/file/d/18Hs8CHTLId4dtRT15X8Sj1DL7ldWg2hf/view" style="display: inline-block; padding: 10px 20px; background: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600;">▶ Watch Setup Guide (2 min)</a>
+              </div>
+            </div>
+            
+            <p style="margin-top: 25px;">When you're ready, click the button below to complete your account setup:</p>
             
             <div style="text-align: center;">
               <a href="${inviteLink}" class="button">Complete Your Setup</a>
