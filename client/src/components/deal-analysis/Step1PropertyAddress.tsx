@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, PlayCircle } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -224,6 +224,32 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
   return (
     <div className="space-y-6">
+      {!isSubscriber && (
+        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="rounded-full bg-primary/10 p-3 shrink-0">
+              <PlayCircle className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg mb-1">See What This Tool Can Do</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Watch a quick demo to see how the Deal Analysis tool helps you compare loan options, calculate profits, and find the best financing for your deals.
+              </p>
+              <a 
+                href="https://drive.google.com/file/d/1TohlHcr_r2hqxTSA_cuXYyMdVGyhrvh3/view"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                data-testid="button-watch-demo-step1"
+              >
+                <PlayCircle className="h-5 w-5" />
+                Watch Demo Video
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!manualEntryPreference && (
         <>
           <div>
