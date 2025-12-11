@@ -5,7 +5,7 @@ import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropert
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
-import { eq, inArray, desc, and, sql, count } from "drizzle-orm";
+import { eq, inArray, desc, and, sql, count, gt } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureLenderAuthenticated, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
@@ -4340,6 +4340,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching member stats:", error);
       res.status(500).json({ error: "Failed to fetch member stats" });
+    }
+  });
+  
+  // Create/save a deal (auto-save from Step 5)
+  app.post("/api/member/deals", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealSnapshot, resultsSnapshot, propertyAddress, arv, roi, profit, dscr, status = 'draft', notes, lendersPresented } = req.body;
+      
+      // Check for duplicate within last 5 minutes (same user + same address)
+      if (propertyAddress) {
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const [existingDeal] = await db
+          .select()
+          .from(savedDeals)
+          .where(and(
+            eq(savedDeals.userId, userId),
+            eq(savedDeals.propertyAddress, propertyAddress),
+            gt(savedDeals.createdAt, fiveMinutesAgo)
+          ))
+          .orderBy(desc(savedDeals.createdAt))
+          .limit(1);
+        
+        if (existingDeal) {
+          // Update existing deal instead of creating duplicate
+          const [updatedDeal] = await db
+            .update(savedDeals)
+            .set({
+              dealSnapshot,
+              resultsSnapshot,
+              arv: arv?.toString(),
+              roi: roi?.toString(),
+              profit: profit?.toString(),
+              dscr: dscr?.toString(),
+              lendersPresented,
+              updatedAt: new Date(),
+            })
+            .where(eq(savedDeals.id, existingDeal.id))
+            .returning();
+          
+          return res.json({ ...updatedDeal, isUpdate: true });
+        }
+      }
+      
+      // Create new deal
+      const [newDeal] = await db
+        .insert(savedDeals)
+        .values({
+          userId,
+          dealSnapshot,
+          resultsSnapshot,
+          propertyAddress,
+          arv: arv?.toString(),
+          roi: roi?.toString(),
+          profit: profit?.toString(),
+          dscr: dscr?.toString(),
+          status,
+          notes,
+          lendersPresented,
+        })
+        .returning();
+      
+      res.status(201).json(newDeal);
+    } catch (error) {
+      console.error("Error saving deal:", error);
+      res.status(500).json({ error: "Failed to save deal" });
     }
   });
   
