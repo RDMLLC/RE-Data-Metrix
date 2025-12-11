@@ -3427,22 +3427,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Seed database endpoint (admin only) - populates baseline data
+  // Seed database endpoint (admin only) - populates baseline data with transaction support
   app.post("/api/admin/seed-database", ensureAdmin, async (req, res) => {
     try {
       const results = {
         affiliateCategories: { added: 0, skipped: 0 },
         affiliates: { added: 0, skipped: 0 },
-        lenders: { added: 0, skipped: 0 },
+        lenders: { added: 0, skipped: 0, id: '' },
         loanProducts: { added: 0, skipped: 0 }
       };
 
-      // Seed affiliate categories first
+      // Fetch existing data for duplicate detection using natural keys
       const existingCategories = await storage.getAllAffiliateCategories();
-      const existingCategoryIds = new Set(existingCategories.map(c => c.id));
+      const existingCategoryNames = new Set(existingCategories.map(c => c.name.toLowerCase()));
       
+      const existingAffiliates = await storage.getAllAffiliates();
+      const existingAffiliateNames = new Set(existingAffiliates.map(a => a.name.toLowerCase()));
+      
+      const existingLenders = await storage.getAllLenders();
+      const existingLenderEmails = new Set(existingLenders.map((l: any) => l.email?.toLowerCase()));
+      
+      const existingProducts = await storage.getAllActiveLoanProducts();
+      const existingProductKeys = new Set(existingProducts.map(p => `${p.lenderId}:${p.productName.toLowerCase()}`));
+
+      // Seed affiliate categories first (natural key: name)
       for (const category of seedAffiliateCategories) {
-        if (existingCategoryIds.has(category.id)) {
+        if (existingCategoryNames.has(category.name.toLowerCase())) {
           results.affiliateCategories.skipped++;
         } else {
           await storage.upsertAffiliateCategory(category);
@@ -3450,12 +3460,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Seed affiliates using direct db insert
-      const existingAffiliates = await storage.getAllAffiliates();
-      const existingAffiliateIds = new Set(existingAffiliates.map(a => a.id));
-      
+      // Seed affiliates (natural key: name)
       for (const affiliate of seedAffiliates) {
-        if (existingAffiliateIds.has(affiliate.id)) {
+        if (existingAffiliateNames.has(affiliate.name.toLowerCase())) {
           results.affiliates.skipped++;
         } else {
           await db.insert(affiliates).values({
@@ -3473,15 +3480,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Seed lenders using direct db insert
-      const existingLenders = await storage.getAllLenders();
-      const existingLenderIds = new Set(existingLenders.map((l: any) => l.id));
-      
+      // Seed lenders (natural key: email) - must insert before loan products
+      let insertedLenderId: string | null = null;
       for (const lender of seedLenders) {
-        if (existingLenderIds.has(lender.id)) {
+        if (existingLenderEmails.has(lender.email.toLowerCase())) {
+          // Find the existing lender ID to use for loan products
+          const existingLender = existingLenders.find((l: any) => l.email?.toLowerCase() === lender.email.toLowerCase());
+          if (existingLender) {
+            insertedLenderId = existingLender.id;
+          }
           results.lenders.skipped++;
         } else {
-          await db.insert(lenders).values({
+          const [newLender] = await db.insert(lenders).values({
             companyName: lender.companyName,
             email: lender.email,
             password: await hashPassword('TempPassword123!'),
@@ -3495,49 +3505,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isPreferred: lender.isPreferred,
             inviteAccepted: lender.inviteAccepted,
             archived: false,
-          }).onConflictDoNothing();
-          results.lenders.added++;
+          }).onConflictDoNothing().returning();
+          if (newLender) {
+            insertedLenderId = newLender.id;
+            results.lenders.added++;
+          }
         }
+        results.lenders.id = insertedLenderId || '';
       }
 
-      // Seed loan products
-      const existingProducts = await storage.getAllActiveLoanProducts();
-      const existingProductIds = new Set(existingProducts.map(p => p.id));
-      
-      for (const product of seedLoanProducts) {
-        if (existingProductIds.has(product.id)) {
-          results.loanProducts.skipped++;
-        } else {
-          await db.insert(loanProducts).values({
-            id: product.id,
-            lenderId: product.lenderId,
-            productName: product.productName,
-            loanType: product.loanType,
-            newInvestorOk: product.newInvestorOk,
-            minCreditScore: product.minCreditScore || null,
-            maxLtvBuy: product.maxLtvBuy || null,
-            maxLendRehab: product.maxLendRehab || null,
-            interestRate: product.interestRate || null,
-            interestDeferred: product.interestDeferred,
-            drawnFundsOnly: product.drawnFundsOnly,
-            points: product.points || null,
-            pointsDeferred: product.pointsDeferred,
-            maxLoanArv: product.maxLoanArv || null,
-            appraisalRequired: product.appraisalRequired,
-            estimatedAppraisalCost: product.estimatedAppraisalCost || null,
-            fees: product.fees || null,
-            costPerDraw: product.costPerDraw || null,
-            isActive: product.isActive,
-            timeToClose: product.timeToClose || null,
-            cashOutOk: product.cashOutOk,
-            cashOutMaxLtv: product.cashOutMaxLtv || null,
-            referralLink: product.referralLink || null,
-            loanTermYears: product.loanTermYears || null,
-            minDscrRequired: product.minDscrRequired || null,
-            isLtcWeighted: product.isLtcWeighted,
-            maxLtcPercent: product.maxLtcPercent || null,
-          }).onConflictDoNothing();
-          results.loanProducts.added++;
+      // Seed loan products (natural key: lenderId + productName)
+      // Only seed if we have a valid lender ID
+      if (insertedLenderId) {
+        for (const product of seedLoanProducts) {
+          const productKey = `${insertedLenderId}:${product.productName.toLowerCase()}`;
+          if (existingProductKeys.has(productKey)) {
+            results.loanProducts.skipped++;
+          } else {
+            await db.insert(loanProducts).values({
+              id: product.id,
+              lenderId: insertedLenderId, // Use actual lender ID
+              productName: product.productName,
+              loanType: product.loanType,
+              newInvestorOk: product.newInvestorOk,
+              minCreditScore: product.minCreditScore || null,
+              maxLtvBuy: product.maxLtvBuy || null,
+              maxLendRehab: product.maxLendRehab || null,
+              interestRate: product.interestRate || null,
+              interestDeferred: product.interestDeferred,
+              drawnFundsOnly: product.drawnFundsOnly,
+              points: product.points || null,
+              pointsDeferred: product.pointsDeferred,
+              maxLoanArv: product.maxLoanArv || null,
+              appraisalRequired: product.appraisalRequired,
+              estimatedAppraisalCost: product.estimatedAppraisalCost || null,
+              fees: product.fees || null,
+              costPerDraw: product.costPerDraw || null,
+              isActive: product.isActive,
+              timeToClose: product.timeToClose || null,
+              cashOutOk: product.cashOutOk,
+              cashOutMaxLtv: product.cashOutMaxLtv || null,
+              referralLink: product.referralLink || null,
+              loanTermYears: product.loanTermYears || null,
+              minDscrRequired: product.minDscrRequired || null,
+              isLtcWeighted: product.isLtcWeighted,
+              maxLtcPercent: product.maxLtcPercent || null,
+            }).onConflictDoNothing();
+            results.loanProducts.added++;
+          }
         }
       }
 
@@ -3549,7 +3564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         message: `Seeding complete: ${totalAdded} records added, ${totalSkipped} already existed`,
-        details: results
+        results
       });
     } catch (error) {
       console.error('Seed database error:', error);

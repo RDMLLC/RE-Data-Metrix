@@ -142,6 +142,7 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/request-password-reset" component={AdminRequestPasswordReset} />
       <Route path="/admin/reset-password/:token" component={AdminResetPassword} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/lenders/:id" component={AdminLenderDetail} />
       <Route path="/admin/lenders" component={LenderManagement} />
