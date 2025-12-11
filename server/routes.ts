@@ -3537,10 +3537,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     excludeProductIds: z.array(z.string()).optional(),
   });
 
-  app.post("/api/deal-analysis/results", ensureAuthenticated, async (req, res) => {
+  app.post("/api/deal-analysis/results", async (req, res) => {
     try {
       const validatedData = dealAnalysisResultsSchema.parse(req.body);
       const { dealInputs, criteriaSelection, userLoan, numberOfDraws, excludeProductIds } = validatedData;
+      
+      // Check if user is authenticated (subscriber)
+      const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
+      const isSubscriber = isAuthenticated && (req.user as any)?.isSubscriber;
 
       const { purchasePrice, rehabBudget, arv, projectLength, closingCostsBuy, carryingCosts, sellPrice, closingCostsSell, commission } = dealInputs;
       const totalProjectCost = purchasePrice + rehabBudget;
@@ -3702,7 +3706,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
 
-      // Get active loan products and filter
+      // For non-subscribers, return only cash and user loan columns (no lender data)
+      if (!isSubscriber) {
+        res.json({
+          cashSaleColumn,
+          userLoanColumn,
+          lenderColumns: [],
+          criteriaUsed: criteriaSelection,
+          numberOfDraws,
+          allRankedProducts: 0,
+        });
+        return;
+      }
+
+      // Get active loan products and filter (only for subscribers)
       const allProducts = await storage.getAllActiveLoanProducts();
       const allLenders = await storage.getAllLenders();
       
