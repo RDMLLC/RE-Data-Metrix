@@ -3,22 +3,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
 import ToolFinder from "@/components/ToolFinder";
-import { affiliatePrograms, categoryInfo } from "@/data/affiliatePrograms";
+import { categoryInfo } from "@/data/affiliatePrograms";
 import { Wrench, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import MembershipPaywall from "@/components/MembershipPaywall";
+import { useQuery } from "@tanstack/react-query";
+import type { Affiliate } from "@shared/schema";
 
 export default function Resources() {
   const { isSubscriber, isLoading: authLoading } = useAuth();
   
+  const { data: affiliates = [], isLoading: affiliatesLoading } = useQuery<Affiliate[]>({
+    queryKey: ['/api/affiliates'],
+  });
+  
   const getAffiliateProgramsByCategory = (category: string) => {
-    return affiliatePrograms.filter(program => 
-      program.categories.includes(category)
-    );
+    return affiliates
+      .filter(program => program.categories.includes(category))
+      .sort((a, b) => {
+        if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+        return (a.sortOrder || 0) - (b.sortOrder || 0);
+      });
   };
 
   const renderAffiliateContent = (category: string, info: { name: string; description: string }) => {
-    if (authLoading) {
+    if (authLoading || affiliatesLoading) {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -33,6 +42,23 @@ export default function Resources() {
         />
       );
     }
+    
+    const categoryAffiliates = getAffiliateProgramsByCategory(category);
+    
+    if (categoryAffiliates.length === 0) {
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">{info.name}</h2>
+            <p className="text-muted-foreground">{info.description}</p>
+          </div>
+          <div className="text-center py-12 text-muted-foreground">
+            No affiliate programs available in this category yet.
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="space-y-6">
         <div>
@@ -40,7 +66,7 @@ export default function Resources() {
           <p className="text-muted-foreground">{info.description}</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {getAffiliateProgramsByCategory(category).map((program) => (
+          {categoryAffiliates.map((program) => (
             <AffiliateCard key={program.id} program={program} />
           ))}
         </div>

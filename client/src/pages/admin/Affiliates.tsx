@@ -253,6 +253,7 @@ export default function Affiliates() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/affiliates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/affiliates"] });
       toast({ 
         title: "Status Updated", 
         description: `Affiliate is now ${variables.isActive ? "active" : "inactive"}.` 

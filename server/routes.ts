@@ -3194,13 +3194,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // List active affiliates (public, for Resources page)
+  // List all affiliates (public, for Resources page - includes isActive status for display)
   app.get("/api/affiliates", async (req, res) => {
     try {
-      const affiliates = await storage.getActiveAffiliates();
+      const affiliates = await storage.getAllAffiliates();
       res.json(affiliates);
     } catch (error) {
-      console.error('Get active affiliates error:', error);
+      console.error('Get affiliates error:', error);
       res.status(500).json({ error: "Failed to fetch affiliates" });
     }
   });
