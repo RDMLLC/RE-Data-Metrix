@@ -348,7 +348,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   <div className="flex-1">
                     <h3 className="font-semibold flex items-center gap-2 mb-1">
                       <Sparkles className="h-4 w-4 text-amber-500" />
-                      Premium Feature: Auto Property Lookup
+                      Premium Feature: Auto Property Lookup & Lender Referral
                     </h3>
                     <p className="text-sm text-muted-foreground mb-3">
                       Members can automatically fetch property details, tax records, and valuations from Zillow or Redfin URLs - saving time and ensuring accuracy.
