@@ -590,8 +590,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const normalizedCode = validatedData.discountCode.toUpperCase();
         const discount = await storage.getDiscountCodeByCode(normalizedCode);
         
-        if (discount && discount.stripeCouponId) {
-          sessionParams.discounts = [{ coupon: discount.stripeCouponId }];
+        if (discount) {
+          if (discount.stripeCouponId) {
+            sessionParams.discounts = [{ coupon: discount.stripeCouponId }];
+            console.log(`[CHECKOUT/START] Discount code ${normalizedCode} applied with Stripe coupon ${discount.stripeCouponId}`);
+          } else {
+            // Discount code exists but no Stripe coupon - return error
+            console.warn(`[CHECKOUT/START] Discount code ${normalizedCode} has no Stripe coupon ID configured`);
+            return res.status(400).json({ 
+              error: "This discount code is not yet configured for Stripe checkout. Please contact support.",
+              code: "DISCOUNT_NOT_CONFIGURED"
+            });
+          }
+        } else {
+          // Invalid discount code
+          return res.status(400).json({ 
+            error: "Invalid discount code",
+            code: "INVALID_DISCOUNT"
+          });
         }
       }
 
