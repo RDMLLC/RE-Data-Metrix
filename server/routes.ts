@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -12,6 +12,7 @@ import { emailService } from "./services/email.service";
 import crypto from "crypto";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
+import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts } from "./seed-data";
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -3394,6 +3395,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete affiliate category error:', error);
       res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  // Data health check endpoint (admin only) - returns counts of key data
+  app.get("/api/admin/data-health", ensureAdmin, async (req, res) => {
+    try {
+      const allAffiliates = await storage.getAllAffiliates();
+      const allCategories = await storage.getAllAffiliateCategories();
+      const allLenders = await storage.getAllLenders();
+      const allProducts = await storage.getAllActiveLoanProducts();
+      
+      const health = {
+        affiliates: allAffiliates.length,
+        affiliateCategories: allCategories.length,
+        lenders: allLenders.length,
+        loanProducts: allProducts.length,
+        hasIssues: allAffiliates.length === 0 || allCategories.length === 0 || allLenders.length === 0 || allProducts.length === 0,
+        missingData: [] as string[]
+      };
+      
+      if (allAffiliates.length === 0) health.missingData.push('affiliates');
+      if (allCategories.length === 0) health.missingData.push('affiliateCategories');
+      if (allLenders.length === 0) health.missingData.push('lenders');
+      if (allProducts.length === 0) health.missingData.push('loanProducts');
+      
+      res.json(health);
+    } catch (error) {
+      console.error('Data health check error:', error);
+      res.status(500).json({ error: "Failed to check data health" });
+    }
+  });
+
+  // Seed database endpoint (admin only) - populates baseline data
+  app.post("/api/admin/seed-database", ensureAdmin, async (req, res) => {
+    try {
+      const results = {
+        affiliateCategories: { added: 0, skipped: 0 },
+        affiliates: { added: 0, skipped: 0 },
+        lenders: { added: 0, skipped: 0 },
+        loanProducts: { added: 0, skipped: 0 }
+      };
+
+      // Seed affiliate categories first
+      const existingCategories = await storage.getAllAffiliateCategories();
+      const existingCategoryIds = new Set(existingCategories.map(c => c.id));
+      
+      for (const category of seedAffiliateCategories) {
+        if (existingCategoryIds.has(category.id)) {
+          results.affiliateCategories.skipped++;
+        } else {
+          await storage.upsertAffiliateCategory(category);
+          results.affiliateCategories.added++;
+        }
+      }
+
+      // Seed affiliates using direct db insert
+      const existingAffiliates = await storage.getAllAffiliates();
+      const existingAffiliateIds = new Set(existingAffiliates.map(a => a.id));
+      
+      for (const affiliate of seedAffiliates) {
+        if (existingAffiliateIds.has(affiliate.id)) {
+          results.affiliates.skipped++;
+        } else {
+          await db.insert(affiliates).values({
+            id: affiliate.id,
+            name: affiliate.name,
+            description: affiliate.description,
+            benefits: affiliate.benefits,
+            referralLink: affiliate.referralLink,
+            categories: affiliate.categories,
+            iconName: affiliate.iconName,
+            isActive: affiliate.isActive,
+            sortOrder: affiliate.sortOrder,
+          }).onConflictDoNothing();
+          results.affiliates.added++;
+        }
+      }
+
+      // Seed lenders using direct db insert
+      const existingLenders = await storage.getAllLenders();
+      const existingLenderIds = new Set(existingLenders.map((l: any) => l.id));
+      
+      for (const lender of seedLenders) {
+        if (existingLenderIds.has(lender.id)) {
+          results.lenders.skipped++;
+        } else {
+          await db.insert(lenders).values({
+            companyName: lender.companyName,
+            email: lender.email,
+            password: await hashPassword('TempPassword123!'),
+            contactName: lender.contactName,
+            phone: lender.phone || null,
+            website: lender.website || null,
+            companyDescription: lender.companyDescription || null,
+            referralLink: lender.referralLink || null,
+            referralAmount: lender.referralAmount || "0",
+            referralType: lender.referralType || "%",
+            isPreferred: lender.isPreferred,
+            inviteAccepted: lender.inviteAccepted,
+            archived: false,
+          }).onConflictDoNothing();
+          results.lenders.added++;
+        }
+      }
+
+      // Seed loan products
+      const existingProducts = await storage.getAllActiveLoanProducts();
+      const existingProductIds = new Set(existingProducts.map(p => p.id));
+      
+      for (const product of seedLoanProducts) {
+        if (existingProductIds.has(product.id)) {
+          results.loanProducts.skipped++;
+        } else {
+          await db.insert(loanProducts).values({
+            id: product.id,
+            lenderId: product.lenderId,
+            productName: product.productName,
+            loanType: product.loanType,
+            newInvestorOk: product.newInvestorOk,
+            minCreditScore: product.minCreditScore || null,
+            maxLtvBuy: product.maxLtvBuy || null,
+            maxLendRehab: product.maxLendRehab || null,
+            interestRate: product.interestRate || null,
+            interestDeferred: product.interestDeferred,
+            drawnFundsOnly: product.drawnFundsOnly,
+            points: product.points || null,
+            pointsDeferred: product.pointsDeferred,
+            maxLoanArv: product.maxLoanArv || null,
+            appraisalRequired: product.appraisalRequired,
+            estimatedAppraisalCost: product.estimatedAppraisalCost || null,
+            fees: product.fees || null,
+            costPerDraw: product.costPerDraw || null,
+            isActive: product.isActive,
+            timeToClose: product.timeToClose || null,
+            cashOutOk: product.cashOutOk,
+            cashOutMaxLtv: product.cashOutMaxLtv || null,
+            referralLink: product.referralLink || null,
+            loanTermYears: product.loanTermYears || null,
+            minDscrRequired: product.minDscrRequired || null,
+            isLtcWeighted: product.isLtcWeighted,
+            maxLtcPercent: product.maxLtcPercent || null,
+          }).onConflictDoNothing();
+          results.loanProducts.added++;
+        }
+      }
+
+      const totalAdded = results.affiliateCategories.added + results.affiliates.added + 
+                         results.lenders.added + results.loanProducts.added;
+      const totalSkipped = results.affiliateCategories.skipped + results.affiliates.skipped + 
+                           results.lenders.skipped + results.loanProducts.skipped;
+
+      res.json({
+        success: true,
+        message: `Seeding complete: ${totalAdded} records added, ${totalSkipped} already existed`,
+        details: results
+      });
+    } catch (error) {
+      console.error('Seed database error:', error);
+      res.status(500).json({ error: "Failed to seed database", details: String(error) });
     }
   });
 
