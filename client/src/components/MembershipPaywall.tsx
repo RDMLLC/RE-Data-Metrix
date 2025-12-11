@@ -1,16 +1,20 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, Star, Check } from "lucide-react";
+import { Lock, Star, Check, PlayCircle } from "lucide-react";
 
 interface MembershipPaywallProps {
   title?: string;
   description?: string;
+  videoUrl?: string;
+  videoTitle?: string;
 }
 
 export default function MembershipPaywall({ 
   title = "Members Only Content",
-  description = "This feature is available exclusively to RE Data Metrix members."
+  description = "This feature is available exclusively to RE Data Metrix members.",
+  videoUrl,
+  videoTitle = "See What You'll Get"
 }: MembershipPaywallProps) {
   return (
     <Card className="max-w-2xl mx-auto mt-8">
@@ -27,6 +31,30 @@ export default function MembershipPaywall({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {videoUrl && (
+            <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-6 border border-primary/20">
+              <h3 className="font-semibold text-lg text-foreground mb-3 flex items-center gap-2">
+                <PlayCircle className="h-5 w-5 text-primary" />
+                {videoTitle}
+              </h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Watch this demo to see how the Deal Analysis tool helps you compare loan options and maximize your profits.
+              </p>
+              <div className="text-center">
+                <a 
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                  data-testid="button-watch-demo"
+                >
+                  <PlayCircle className="h-5 w-5" />
+                  Watch Demo Video
+                </a>
+              </div>
+            </div>
+          )}
+
           <div className="bg-muted/50 rounded-lg p-6">
             <h3 className="font-semibold text-lg text-foreground mb-4 flex items-center gap-2">
               <Star className="h-5 w-5 text-accent" />

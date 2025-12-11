@@ -342,6 +342,8 @@ export default function DealAnalysisWizard() {
             <MembershipPaywall 
               title="Full Deal Analysis Results" 
               description="Access detailed profitability analysis and lender recommendations by becoming a member."
+              videoUrl="https://drive.google.com/file/d/1TohlHcr_r2hqxTSA_cuXYyMdVGyhrvh3/view"
+              videoTitle="See the Deal Analysis Tool in Action"
             />
           );
         }
