@@ -292,6 +292,17 @@ export const seedAffiliates: SeedAffiliate[] = [
     iconName: "Target",
     isActive: false,
     sortOrder: 16
+  },
+  {
+    id: "a8c3f912-5e71-4b8a-9c2d-8f1e3a7b6c5d",
+    name: "Carrot",
+    description: "Real estate investor website builder and marketing platform. Generate motivated seller leads with SEO-optimized websites designed to convert visitors into leads.",
+    benefits: ["SEO-optimized investor websites", "Motivated seller lead generation", "Landing page templates", "Lead capture and CRM integration"],
+    referralLink: "https://carrot.com",
+    categories: ["lead-generation"],
+    iconName: "Leaf",
+    isActive: false,
+    sortOrder: 17
   }
 ];
 
