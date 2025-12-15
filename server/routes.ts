@@ -3195,16 +3195,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // List all affiliates (public, for Resources page - includes isActive status for display)
+  // List active affiliates (public, for Resources page and Tool Finder)
   app.get("/api/affiliates", async (req, res) => {
     try {
-      const affiliates = await storage.getAllAffiliates();
-      // Ensure features is always an array for each affiliate
-      const normalizedAffiliates = affiliates.map(a => ({
-        ...a,
-        features: a.features || [],
-      }));
-      res.json(normalizedAffiliates);
+      // Only return active affiliates to the public
+      const affiliates = await storage.getActiveAffiliates();
+      res.json(affiliates);
     } catch (error) {
       console.error('Get affiliates error:', error);
       res.status(500).json({ error: "Failed to fetch affiliates" });

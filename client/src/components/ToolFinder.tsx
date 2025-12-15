@@ -6,90 +6,81 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2 } from "lucide-react";
-import type { Affiliate } from "@shared/schema";
+import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
 interface ToolFinderProps {
   isBlurred?: boolean;
 }
 
-// Feature definitions for the Tool Finder
-// Note: Feature names should be distinct from Category names to avoid confusion
-const featureLabels: Record<string, string> = {
-  drivingForDollars: "Driving for Dollars",
-  directMail: "Direct Mail",
-  skipTracing: "Skip Tracing",
-  listBuilding: "List Building",
-  crm: "CRM",
-  propertyAnalytics: "Property Analytics",
-  dealAnalysis: "Deal Analysis",
-  mobileApp: "Mobile App",
-  teamCollaboration: "Team Collaboration",
-  marketingAutomation: "Marketing Automation",
-  rehabCostEstimating: "Rehab Cost Estimating",
-  landlordTools: "Landlord/Tenant Tools",
-  websiteLandingPage: "Website/Landing Page",
-  mlsDataFeeds: "MLS Data Feeds",
-  virtualDriving: "Virtual Driving",
-};
-
-const allFeatureKeys = Object.keys(featureLabels);
-
 export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Fetch active affiliates with features from the database
-  const { data: affiliates, isLoading } = useQuery<Affiliate[]>({
+  const { data: affiliates, isLoading: affiliatesLoading } = useQuery<Affiliate[]>({
     queryKey: ["/api/affiliates"],
   });
 
-  // Filter affiliates that have features defined
-  const toolAffiliates = affiliates?.filter(a => a.features && a.features.length > 0) || [];
+  const { data: categories, isLoading: categoriesLoading } = useQuery<AffiliateCategory[]>({
+    queryKey: ["/api/affiliate-categories"],
+  });
 
-  const toggleFeature = (feature: string) => {
-    setSelectedFeatures(prev => 
-      prev.includes(feature)
-        ? prev.filter(f => f !== feature)
-        : [...prev, feature]
+  const isLoading = affiliatesLoading || categoriesLoading;
+
+  const toolAffiliates = affiliates?.filter(a => a.categories && a.categories.length > 0) || [];
+
+  const categoryLabels: Record<string, string> = {};
+  categories?.forEach(cat => {
+    categoryLabels[cat.id] = cat.name;
+  });
+
+  const allCategoryKeys = categories?.map(c => c.id).sort((a, b) => {
+    const catA = categories.find(c => c.id === a);
+    const catB = categories.find(c => c.id === b);
+    return (catA?.sortOrder || 0) - (catB?.sortOrder || 0);
+  }) || [];
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(c => c !== categoryId)
+        : [...prev, categoryId]
     );
   };
 
   const resetFilters = () => {
-    setSelectedFeatures([]);
+    setSelectedCategories([]);
   };
 
-  // Filter affiliates by selected features - must match ALL selected features
-  const matchingTools = selectedFeatures.length > 0
+  const matchingTools = selectedCategories.length > 0
     ? toolAffiliates.filter(affiliate => 
-        selectedFeatures.every(feature => affiliate.features?.includes(feature))
+        selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
       ).sort((a, b) => {
-        // Sort by total number of features (descending) as a secondary sort
-        const aTotal = (a.features?.length || 0);
-        const bTotal = (b.features?.length || 0);
+        const aTotal = (a.categories?.length || 0);
+        const bTotal = (b.categories?.length || 0);
         return bTotal - aTotal;
       })
     : [];
 
-  const renderFeatureCheckbox = (feature: string) => (
-    <div key={feature} className="flex items-center space-x-2">
+  const renderCategoryCheckbox = (categoryId: string) => (
+    <div key={categoryId} className="flex items-center space-x-2">
       <Checkbox
-        id={feature}
-        checked={selectedFeatures.includes(feature)}
-        onCheckedChange={() => toggleFeature(feature)}
-        data-testid={`checkbox-feature-${feature}`}
+        id={categoryId}
+        checked={selectedCategories.includes(categoryId)}
+        onCheckedChange={() => toggleCategory(categoryId)}
+        data-testid={`checkbox-category-${categoryId}`}
       />
       <label
-        htmlFor={feature}
+        htmlFor={categoryId}
         className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
       >
-        {featureLabels[feature]}
+        {categoryLabels[categoryId] || categoryId}
       </label>
     </div>
   );
 
   const renderToolCard = (affiliate: Affiliate) => {
-    const affiliateFeatures = affiliate.features || [];
-    const matchingCount = selectedFeatures.filter(f => affiliateFeatures.includes(f)).length;
-    const totalFeatures = affiliateFeatures.length;
+    const affiliateCategories = affiliate.categories || [];
+    const matchingCount = selectedCategories.filter(c => affiliateCategories.includes(c)).length;
+    const totalCategories = affiliateCategories.length;
 
     return (
       <Card key={affiliate.id} className="p-5" data-testid={`card-tool-${affiliate.id}`}>
@@ -100,10 +91,10 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
                 {affiliate.name}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {totalFeatures} feature{totalFeatures !== 1 ? 's' : ''}
-                {selectedFeatures.length > 0 && (
+                {totalCategories} categor{totalCategories !== 1 ? 'ies' : 'y'}
+                {selectedCategories.length > 0 && (
                   <span className="ml-2 text-accent font-medium">
-                    ({matchingCount}/{selectedFeatures.length} matched)
+                    ({matchingCount}/{selectedCategories.length} matched)
                   </span>
                 )}
               </p>
@@ -121,30 +112,30 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
           </div>
           
           <div className="flex flex-wrap gap-1.5">
-            {allFeatureKeys.map(feature => {
-              const hasFeature = affiliateFeatures.includes(feature);
-              const isSelected = selectedFeatures.includes(feature);
+            {allCategoryKeys.map(categoryId => {
+              const hasCategory = affiliateCategories.includes(categoryId);
+              const isSelected = selectedCategories.includes(categoryId);
               
-              if (!hasFeature && !isSelected) return null;
+              if (!hasCategory && !isSelected) return null;
               
               return (
                 <Badge
-                  key={feature}
-                  variant={hasFeature ? "default" : "outline"}
+                  key={categoryId}
+                  variant={hasCategory ? "default" : "outline"}
                   className={`text-xs ${
-                    hasFeature 
+                    hasCategory 
                       ? isSelected 
                         ? 'bg-accent text-accent-foreground' 
                         : 'bg-muted text-muted-foreground'
                       : 'border-destructive/50 text-destructive bg-destructive/10'
                   }`}
                 >
-                  {hasFeature ? (
+                  {hasCategory ? (
                     <Check className="h-3 w-3 mr-1" />
                   ) : (
                     <X className="h-3 w-3 mr-1" />
                   )}
-                  {featureLabels[feature]}
+                  {categoryLabels[categoryId] || categoryId}
                 </Badge>
               );
             })}
@@ -184,13 +175,13 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
         <Card className="p-8 text-center border-dashed">
           <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
           <p className="text-muted-foreground">
-            No tools with features are available yet. Check back soon!
+            No tools with categories are available yet. Check back soon!
           </p>
         </Card>
       );
     }
 
-    if (selectedFeatures.length > 0) {
+    if (selectedCategories.length > 0) {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Matching Tools</h3>
@@ -214,7 +205,7 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
       <Card className="p-8 text-center border-dashed">
         <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
         <p className="text-muted-foreground">
-          Select one or more features above to see matching tools.
+          Select one or more categories above to see matching tools.
         </p>
       </Card>
     );
@@ -225,7 +216,7 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
       <div>
         <h2 className="text-2xl font-semibold mb-2">Tool Finder</h2>
         <p className="text-muted-foreground">
-          Select the features you need and we'll show you which tools offer them.
+          Select the categories you need and we'll show you which tools offer them.
         </p>
       </div>
 
@@ -233,9 +224,9 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Search className="h-5 w-5 text-muted-foreground" />
-            <h3 className="font-semibold">Select Features You Need</h3>
+            <h3 className="font-semibold">Select Categories You Need</h3>
           </div>
-          {selectedFeatures.length > 0 && (
+          {selectedCategories.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -248,11 +239,17 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {allFeatureKeys.map(renderFeatureCheckbox)}
-        </div>
+        {categoriesLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {allCategoryKeys.map(renderCategoryCheckbox)}
+          </div>
+        )}
 
-        {selectedFeatures.length > 0 && (
+        {selectedCategories.length > 0 && (
           <div className="mt-4 pt-4 border-t">
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{matchingTools.length}</span> tool{matchingTools.length !== 1 ? 's' : ''} match{matchingTools.length === 1 ? 'es' : ''} your criteria
