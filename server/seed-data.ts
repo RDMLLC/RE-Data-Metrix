@@ -101,6 +101,18 @@ export const seedAffiliateCategories: SeedAffiliateCategory[] = [
     name: "Comps & Market Data",
     description: "Access comprehensive property data, comparables, and market intelligence for smarter investing.",
     sortOrder: 5
+  },
+  {
+    id: "mls-access",
+    name: "MLS Access",
+    description: "Access MLS listings and data without a real estate license through investor-friendly platforms.",
+    sortOrder: 6
+  },
+  {
+    id: "legal",
+    name: "Legal",
+    description: "Legal services, contracts, entity formation, and compliance resources for real estate investors.",
+    sortOrder: 7
   }
 ];
 
