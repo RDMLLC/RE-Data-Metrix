@@ -1,20 +1,50 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink, Check, X, Search, RotateCcw, Lock } from "lucide-react";
-import { tools, featureLabels, getToolsByFeatures, type ToolFeatures, type Tool } from "@/data/toolComparison";
+import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2 } from "lucide-react";
+import type { Affiliate } from "@shared/schema";
 
 interface ToolFinderProps {
   isBlurred?: boolean;
 }
 
-export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
-  const [selectedFeatures, setSelectedFeatures] = useState<(keyof ToolFeatures)[]>([]);
+// Feature definitions for the Tool Finder
+const featureLabels: Record<string, string> = {
+  drivingForDollars: "Driving for Dollars",
+  directMail: "Direct Mail",
+  skipTracing: "Skip Tracing",
+  listBuilding: "List Building",
+  crm: "CRM",
+  propertyAnalytics: "Property Analytics",
+  dealAnalysis: "Deal Analysis",
+  mobileApp: "Mobile App",
+  teamCollaboration: "Team Collaboration",
+  marketingAutomation: "Marketing Automation",
+  rehabCostEstimating: "Rehab Cost Estimating",
+  propertyManagement: "Property Management",
+  websiteLandingPage: "Website/Landing Page",
+  mlsAccess: "MLS Access",
+  virtualDriving: "Virtual Driving",
+};
 
-  const toggleFeature = (feature: keyof ToolFeatures) => {
+const allFeatureKeys = Object.keys(featureLabels);
+
+export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+
+  // Fetch active affiliates with features from the database
+  const { data: affiliates, isLoading } = useQuery<Affiliate[]>({
+    queryKey: ["/api/affiliates"],
+  });
+
+  // Filter affiliates that have features defined
+  const toolAffiliates = affiliates?.filter(a => a.features && a.features.length > 0) || [];
+
+  const toggleFeature = (feature: string) => {
     setSelectedFeatures(prev => 
       prev.includes(feature)
         ? prev.filter(f => f !== feature)
@@ -26,10 +56,19 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
     setSelectedFeatures([]);
   };
 
-  const matchingTools = getToolsByFeatures(selectedFeatures);
-  const allFeatureKeys = Object.keys(featureLabels) as (keyof ToolFeatures)[];
+  // Filter affiliates by selected features - must match ALL selected features
+  const matchingTools = selectedFeatures.length > 0
+    ? toolAffiliates.filter(affiliate => 
+        selectedFeatures.every(feature => affiliate.features?.includes(feature))
+      ).sort((a, b) => {
+        // Sort by total number of features (descending) as a secondary sort
+        const aTotal = (a.features?.length || 0);
+        const bTotal = (b.features?.length || 0);
+        return bTotal - aTotal;
+      })
+    : [];
 
-  const renderFeatureCheckbox = (feature: keyof ToolFeatures) => (
+  const renderFeatureCheckbox = (feature: string) => (
     <div key={feature} className="flex items-center space-x-2">
       <Checkbox
         id={feature}
@@ -46,17 +85,18 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
     </div>
   );
 
-  const renderToolCard = (tool: Tool) => {
-    const matchingCount = selectedFeatures.filter(f => tool.features[f]).length;
-    const totalFeatures = Object.values(tool.features).filter(Boolean).length;
+  const renderToolCard = (affiliate: Affiliate) => {
+    const affiliateFeatures = affiliate.features || [];
+    const matchingCount = selectedFeatures.filter(f => affiliateFeatures.includes(f)).length;
+    const totalFeatures = affiliateFeatures.length;
 
     return (
-      <Card key={tool.id} className="p-5" data-testid={`card-tool-${tool.id}`}>
+      <Card key={affiliate.id} className="p-5" data-testid={`card-tool-${affiliate.id}`}>
         <div className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-foreground" data-testid={`text-tool-name-${tool.id}`}>
-                {tool.name}
+              <h3 className="text-lg font-semibold text-foreground" data-testid={`text-tool-name-${affiliate.id}`}>
+                {affiliate.name}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {totalFeatures} feature{totalFeatures !== 1 ? 's' : ''}
@@ -71,8 +111,8 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
               size="sm"
               variant="outline"
               className="flex-shrink-0"
-              onClick={() => window.open(tool.website, '_blank', 'noopener,noreferrer')}
-              data-testid={`button-visit-${tool.id}`}
+              onClick={() => window.open(affiliate.referralLink, '_blank', 'noopener,noreferrer')}
+              data-testid={`button-visit-${affiliate.id}`}
             >
               <ExternalLink className="h-4 w-4 mr-1" />
               Visit
@@ -81,7 +121,7 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
           
           <div className="flex flex-wrap gap-1.5">
             {allFeatureKeys.map(feature => {
-              const hasFeature = tool.features[feature];
+              const hasFeature = affiliateFeatures.includes(feature);
               const isSelected = selectedFeatures.includes(feature);
               
               if (!hasFeature && !isSelected) return null;
@@ -129,6 +169,26 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
   );
 
   const renderResults = () => {
+    if (isLoading) {
+      return (
+        <Card className="p-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground mt-2">Loading tools...</p>
+        </Card>
+      );
+    }
+
+    if (toolAffiliates.length === 0) {
+      return (
+        <Card className="p-8 text-center border-dashed">
+          <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-muted-foreground">
+            No tools with features are available yet. Check back soon!
+          </p>
+        </Card>
+      );
+    }
+
     if (selectedFeatures.length > 0) {
       return (
         <div className="space-y-4">

@@ -3199,7 +3199,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/affiliates", async (req, res) => {
     try {
       const affiliates = await storage.getAllAffiliates();
-      res.json(affiliates);
+      // Ensure features is always an array for each affiliate
+      const normalizedAffiliates = affiliates.map(a => ({
+        ...a,
+        features: a.features || [],
+      }));
+      res.json(normalizedAffiliates);
     } catch (error) {
       console.error('Get affiliates error:', error);
       res.status(500).json({ error: "Failed to fetch affiliates" });
@@ -3472,6 +3477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             benefits: affiliate.benefits,
             referralLink: affiliate.referralLink,
             categories: affiliate.categories,
+            features: affiliate.features || [],
             iconName: affiliate.iconName,
             isActive: affiliate.isActive,
             sortOrder: affiliate.sortOrder,

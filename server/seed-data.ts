@@ -14,6 +14,7 @@ export interface SeedAffiliate {
   benefits: string[];
   referralLink: string;
   categories: string[];
+  features: string[];
   iconName: string;
   isActive: boolean;
   sortOrder: number;
@@ -124,6 +125,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["50+ property data filters", "Nationwide MLS comps", "Pre-foreclosure and probate lists", "Marketing list building tools"],
     referralLink: "https://propstream.com",
     categories: ["comps"],
+    features: ["directMail", "skipTracing", "listBuilding", "dealAnalysis", "websiteLandingPage", "mlsAccess", "virtualDriving"],
     iconName: "MapPin",
     isActive: true,
     sortOrder: 1
@@ -135,6 +137,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Access nationwide deal marketplace", "Connect with private money lenders", "Network with 200,000+ investors", "Find buyers, sellers, and partners"],
     referralLink: "https://connectedinvestors.com",
     categories: ["marketplace", "lead-generation", "comps"],
+    features: ["listBuilding", "propertyAnalytics", "teamCollaboration"],
     iconName: "Users",
     isActive: false,
     sortOrder: 1
@@ -146,6 +149,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Increase rental income by 2-3x", "Professional tenant screening", "Automated rent collection", "Property management support"],
     referralLink: "https://padsplit.com",
     categories: ["marketplace", "property-management"],
+    features: ["propertyManagement"],
     iconName: "Building2",
     isActive: false,
     sortOrder: 2
@@ -157,6 +161,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Access to 3+ million investors", "Educational resources and podcasts", "Active forums and networking", "Deal analysis calculators"],
     referralLink: "https://biggerpockets.com",
     categories: ["marketplace"],
+    features: ["dealAnalysis", "teamCollaboration"],
     iconName: "Users",
     isActive: false,
     sortOrder: 3
@@ -168,6 +173,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Online rent collection and payments", "Maintenance request tracking", "Accounting and financial reporting", "Tenant screening and leasing"],
     referralLink: "https://buildium.com",
     categories: ["property-management"],
+    features: ["propertyManagement", "teamCollaboration"],
     iconName: "Building2",
     isActive: false,
     sortOrder: 4
@@ -179,6 +185,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Detailed rehab budget tracking", "Contractor management tools", "Timeline and milestone tracking", "Real-time cost monitoring"],
     referralLink: "https://flipperforce.com",
     categories: ["project-management"],
+    features: ["rehabCostEstimating", "dealAnalysis", "mobileApp"],
     iconName: "Wrench",
     isActive: false,
     sortOrder: 5
@@ -190,6 +197,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Mobile driving-for-dollars", "Built-in skip tracing", "Direct mail campaign automation", "Deal pipeline management"],
     referralLink: "https://dealmachine.com",
     categories: ["lead-generation", "comps"],
+    features: ["drivingForDollars", "directMail", "skipTracing", "listBuilding", "crm", "mobileApp"],
     iconName: "Target",
     isActive: false,
     sortOrder: 6
@@ -201,6 +209,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Instant property valuations", "Comparable sales analysis", "Motivated seller identification", "Deal profitability calculator"],
     referralLink: "https://privy.com",
     categories: ["comps"],
+    features: ["dealAnalysis", "virtualDriving"],
     iconName: "MapPin",
     isActive: false,
     sortOrder: 8
@@ -212,6 +221,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Quick deal analysis calculator", "Detailed rehab cost estimator", "Professional PDF reports", "Wholesale and flip analysis"],
     referralLink: "https://rehabvaluator.com",
     categories: ["project-management", "comps"],
+    features: ["dealAnalysis", "rehabCostEstimating"],
     iconName: "Calculator",
     isActive: false,
     sortOrder: 9
@@ -223,6 +233,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Analyze any property in minutes", "BRRRR and flip calculators", "Rental cash flow analysis", "Comp data and ARV estimates"],
     referralLink: "https://dealcheck.io",
     categories: ["comps", "project-management"],
+    features: ["propertyAnalytics", "dealAnalysis", "mobileApp"],
     iconName: "Calculator",
     isActive: false,
     sortOrder: 10
@@ -234,6 +245,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Built-in deal analyzer", "Lead and contact CRM", "Marketing campaign tools", "Mobile app access"],
     referralLink: "https://flipster.com",
     categories: ["project-management", "lead-generation"],
+    features: ["crm", "dealAnalysis", "mobileApp", "marketingAutomation"],
     iconName: "BarChart3",
     isActive: false,
     sortOrder: 11
@@ -245,6 +257,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Property analytics and data", "CRM with deal tracking", "Marketing automation", "Investor website builder"],
     referralLink: "https://reikit.com",
     categories: ["lead-generation", "comps"],
+    features: ["crm", "propertyAnalytics", "marketingAutomation", "websiteLandingPage"],
     iconName: "BarChart3",
     isActive: false,
     sortOrder: 12
@@ -256,6 +269,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Accurate skip tracing data", "Pre-built motivated seller lists", "List stacking capabilities", "Direct mail integration"],
     referralLink: "https://motivatedsellers.com",
     categories: ["lead-generation"],
+    features: ["skipTracing", "listBuilding", "directMail"],
     iconName: "Search",
     isActive: false,
     sortOrder: 13
@@ -267,6 +281,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["CRM with workflow automation", "Built-in marketing campaigns", "Mobile app with team features", "Investor website builder"],
     referralLink: "https://freedomsoft.com",
     categories: ["lead-generation", "marketplace"],
+    features: ["crm", "mobileApp", "teamCollaboration", "marketingAutomation", "websiteLandingPage"],
     iconName: "Layers",
     isActive: false,
     sortOrder: 14
@@ -278,6 +293,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Built-in skip tracing", "SMS and email campaigns", "Team collaboration features", "Detailed KPI dashboards"],
     referralLink: "https://resimpli.com",
     categories: ["lead-generation"],
+    features: ["skipTracing", "crm", "teamCollaboration", "marketingAutomation"],
     iconName: "Layers",
     isActive: false,
     sortOrder: 15
@@ -289,6 +305,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Driving for dollars mobile app", "Skip tracing integration", "Direct mail campaigns", "Property data and filters"],
     referralLink: "https://batchleads.io",
     categories: ["lead-generation", "comps"],
+    features: ["drivingForDollars", "directMail", "skipTracing", "listBuilding", "mobileApp"],
     iconName: "Target",
     isActive: false,
     sortOrder: 16
@@ -300,6 +317,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["SEO-optimized investor websites", "Motivated seller lead generation", "Landing page templates", "Lead capture and CRM integration"],
     referralLink: "https://carrot.com",
     categories: ["lead-generation"],
+    features: ["marketingAutomation", "websiteLandingPage"],
     iconName: "Leaf",
     isActive: false,
     sortOrder: 17

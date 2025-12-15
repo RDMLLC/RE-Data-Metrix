@@ -89,12 +89,32 @@ interface AffiliateFormData {
   benefits: string;
   referralLink: string;
   categories: string[];
+  features: string[];
   iconName: string;
   referralFee: string;
   referralFeeType: string;
   isActive: boolean;
   sortOrder: number;
 }
+
+// Tool Finder feature options (matches toolComparison.ts)
+const featureOptions = [
+  { key: "drivingForDollars", label: "Driving for Dollars" },
+  { key: "directMail", label: "Direct Mail" },
+  { key: "skipTracing", label: "Skip Tracing" },
+  { key: "listBuilding", label: "List Building" },
+  { key: "crm", label: "CRM" },
+  { key: "propertyAnalytics", label: "Property Analytics" },
+  { key: "dealAnalysis", label: "Deal Analysis" },
+  { key: "mobileApp", label: "Mobile App" },
+  { key: "teamCollaboration", label: "Team Collaboration" },
+  { key: "marketingAutomation", label: "Marketing Automation" },
+  { key: "rehabCostEstimating", label: "Rehab Cost Estimating" },
+  { key: "propertyManagement", label: "Property Management" },
+  { key: "websiteLandingPage", label: "Website/Landing Page" },
+  { key: "mlsAccess", label: "MLS Access" },
+  { key: "virtualDriving", label: "Virtual Driving" },
+];
 
 interface CategoryFormData {
   id: string;
@@ -109,6 +129,7 @@ const emptyAffiliateForm: AffiliateFormData = {
   benefits: '',
   referralLink: '',
   categories: [],
+  features: [],
   iconName: 'Building2',
   referralFee: '',
   referralFeeType: '',
@@ -157,6 +178,7 @@ export default function Affiliates() {
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
           categories: data.categories,
+          features: data.features,
           iconName: data.iconName,
           referralFee: data.referralFee || null,
           referralFeeType: data.referralFeeType || null,
@@ -193,6 +215,7 @@ export default function Affiliates() {
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
           categories: data.categories,
+          features: data.features,
           iconName: data.iconName,
           referralFee: data.referralFee || null,
           referralFeeType: data.referralFeeType || null,
@@ -317,6 +340,7 @@ export default function Affiliates() {
       benefits: affiliate.benefits.join('\n'),
       referralLink: affiliate.referralLink,
       categories: affiliate.categories,
+      features: affiliate.features || [],
       iconName: affiliate.iconName,
       referralFee: affiliate.referralFee || '',
       referralFeeType: affiliate.referralFeeType || '',
@@ -355,6 +379,15 @@ export default function Affiliates() {
       categories: prev.categories.includes(categoryId)
         ? prev.categories.filter(c => c !== categoryId)
         : [...prev.categories, categoryId],
+    }));
+  };
+
+  const toggleFeature = (featureKey: string) => {
+    setAffiliateForm(prev => ({
+      ...prev,
+      features: prev.features.includes(featureKey)
+        ? prev.features.filter(f => f !== featureKey)
+        : [...prev.features, featureKey],
     }));
   };
 
@@ -687,6 +720,41 @@ export default function Affiliates() {
                   ))}
                 </div>
               </div>
+
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="features" className="border rounded-md px-3">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Tool Finder Features</span>
+                      {affiliateForm.features.length > 0 && (
+                        <Badge variant="secondary" className="ml-2">
+                          {affiliateForm.features.length} selected
+                        </Badge>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select features this tool offers for the Tool Finder comparison:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {featureOptions.map(feat => (
+                        <div key={feat.key} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`feat-${feat.key}`}
+                            checked={affiliateForm.features.includes(feat.key)}
+                            onCheckedChange={() => toggleFeature(feat.key)}
+                            data-testid={`checkbox-feature-${feat.key}`}
+                          />
+                          <Label htmlFor={`feat-${feat.key}`} className="text-sm font-normal cursor-pointer">
+                            {feat.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
