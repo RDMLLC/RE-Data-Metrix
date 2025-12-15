@@ -73,6 +73,7 @@ export interface SeedLoanProduct {
 }
 
 export const seedAffiliateCategories: SeedAffiliateCategory[] = [
+  // Primary business categories
   {
     id: "marketplace",
     name: "Marketplace & Community",
@@ -114,6 +115,85 @@ export const seedAffiliateCategories: SeedAffiliateCategory[] = [
     name: "Legal",
     description: "Legal services, contracts, entity formation, and compliance resources for real estate investors.",
     sortOrder: 7
+  },
+  // Tool capabilities (formerly "features")
+  {
+    id: "driving-for-dollars",
+    name: "Driving for Dollars",
+    description: "Mobile tools for finding distressed properties while driving neighborhoods.",
+    sortOrder: 8
+  },
+  {
+    id: "direct-mail",
+    name: "Direct Mail",
+    description: "Automated direct mail campaigns to reach motivated sellers.",
+    sortOrder: 9
+  },
+  {
+    id: "skip-tracing",
+    name: "Skip Tracing",
+    description: "Find property owner contact information and track down hard-to-reach sellers.",
+    sortOrder: 10
+  },
+  {
+    id: "list-building",
+    name: "List Building",
+    description: "Build targeted lists of properties and owners for marketing campaigns.",
+    sortOrder: 11
+  },
+  {
+    id: "crm",
+    name: "CRM",
+    description: "Customer relationship management to track leads and deals.",
+    sortOrder: 12
+  },
+  {
+    id: "property-analytics",
+    name: "Property Analytics",
+    description: "Detailed property data analysis and valuation tools.",
+    sortOrder: 13
+  },
+  {
+    id: "deal-analysis",
+    name: "Deal Analysis",
+    description: "Calculate profitability, ROI, and analyze investment opportunities.",
+    sortOrder: 14
+  },
+  {
+    id: "mobile-app",
+    name: "Mobile App",
+    description: "Access tools on-the-go with dedicated mobile applications.",
+    sortOrder: 15
+  },
+  {
+    id: "team-collaboration",
+    name: "Team Collaboration",
+    description: "Share deals, tasks, and communicate with team members.",
+    sortOrder: 16
+  },
+  {
+    id: "marketing-automation",
+    name: "Marketing Automation",
+    description: "Automated marketing workflows and campaign management.",
+    sortOrder: 17
+  },
+  {
+    id: "rehab-cost-estimating",
+    name: "Rehab Cost Estimating",
+    description: "Estimate renovation costs and create detailed rehab budgets.",
+    sortOrder: 18
+  },
+  {
+    id: "website-landing-page",
+    name: "Website/Landing Page",
+    description: "Build investor websites and landing pages for lead capture.",
+    sortOrder: 19
+  },
+  {
+    id: "virtual-driving",
+    name: "Virtual Driving",
+    description: "Find distressed properties using satellite imagery without physical driving.",
+    sortOrder: 20
   }
 ];
 
@@ -124,8 +204,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Comprehensive property research platform providing detailed property data, ownership information, comparables, and pre-foreclosure lists for investment analysis.",
     benefits: ["50+ property data filters", "Nationwide MLS comps", "Pre-foreclosure and probate lists", "Marketing list building tools"],
     referralLink: "https://propstream.com",
-    categories: ["comps"],
-    features: ["directMail", "skipTracing", "listBuilding", "dealAnalysis", "websiteLandingPage", "mlsDataFeeds", "virtualDriving"],
+    categories: ["comps", "direct-mail", "skip-tracing", "list-building", "deal-analysis", "website-landing-page", "mls-access", "virtual-driving"],
+    features: [],
     iconName: "MapPin",
     isActive: true,
     sortOrder: 1
@@ -136,8 +216,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Network with thousands of active real estate investors, find deals, connect with private lenders, and access funding opportunities in one centralized platform.",
     benefits: ["Access nationwide deal marketplace", "Connect with private money lenders", "Network with 200,000+ investors", "Find buyers, sellers, and partners"],
     referralLink: "https://connectedinvestors.com",
-    categories: ["marketplace", "lead-generation", "comps"],
-    features: ["listBuilding", "propertyAnalytics", "teamCollaboration"],
+    categories: ["marketplace", "lead-generation", "comps", "list-building", "property-analytics", "team-collaboration"],
+    features: [],
     iconName: "Users",
     isActive: false,
     sortOrder: 1
@@ -149,7 +229,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Increase rental income by 2-3x", "Professional tenant screening", "Automated rent collection", "Property management support"],
     referralLink: "https://padsplit.com",
     categories: ["marketplace", "property-management"],
-    features: ["landlordTools"],
+    features: [],
     iconName: "Building2",
     isActive: false,
     sortOrder: 2
@@ -160,8 +240,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Join the largest real estate investing community with active forums, educational resources, podcasts, and a marketplace to connect with investors nationwide.",
     benefits: ["Access to 3+ million investors", "Educational resources and podcasts", "Active forums and networking", "Deal analysis calculators"],
     referralLink: "https://biggerpockets.com",
-    categories: ["marketplace"],
-    features: ["dealAnalysis", "teamCollaboration"],
+    categories: ["marketplace", "deal-analysis", "team-collaboration"],
+    features: [],
     iconName: "Users",
     isActive: false,
     sortOrder: 3
@@ -172,8 +252,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Comprehensive property management software for landlords and property managers. Streamline rent collection, maintenance, accounting, and tenant communication.",
     benefits: ["Online rent collection and payments", "Maintenance request tracking", "Accounting and financial reporting", "Tenant screening and leasing"],
     referralLink: "https://buildium.com",
-    categories: ["property-management"],
-    features: ["landlordTools", "teamCollaboration"],
+    categories: ["property-management", "team-collaboration"],
+    features: [],
     iconName: "Building2",
     isActive: false,
     sortOrder: 4
@@ -184,8 +264,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Project management platform designed specifically for house flippers. Track rehab budgets, manage contractors, monitor timelines, and control costs from one dashboard.",
     benefits: ["Detailed rehab budget tracking", "Contractor management tools", "Timeline and milestone tracking", "Real-time cost monitoring"],
     referralLink: "https://flipperforce.com",
-    categories: ["project-management"],
-    features: ["rehabCostEstimating", "dealAnalysis", "mobileApp"],
+    categories: ["project-management", "rehab-cost-estimating", "deal-analysis", "mobile-app"],
+    features: [],
     iconName: "Wrench",
     isActive: false,
     sortOrder: 5
@@ -196,8 +276,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Drive-for-dollars app that helps investors find off-market properties, skip trace owner information, and send direct mail campaigns to motivated sellers.",
     benefits: ["Mobile driving-for-dollars", "Built-in skip tracing", "Direct mail campaign automation", "Deal pipeline management"],
     referralLink: "https://dealmachine.com",
-    categories: ["lead-generation", "comps"],
-    features: ["drivingForDollars", "directMail", "skipTracing", "listBuilding", "crm", "mobileApp"],
+    categories: ["lead-generation", "comps", "driving-for-dollars", "direct-mail", "skip-tracing", "list-building", "crm", "mobile-app"],
+    features: [],
     iconName: "Target",
     isActive: false,
     sortOrder: 6
@@ -208,8 +288,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Real estate data and lead generation platform offering property valuations, comparables, and tools to identify motivated sellers and off-market opportunities.",
     benefits: ["Instant property valuations", "Comparable sales analysis", "Motivated seller identification", "Deal profitability calculator"],
     referralLink: "https://privy.com",
-    categories: ["comps"],
-    features: ["dealAnalysis", "virtualDriving"],
+    categories: ["comps", "deal-analysis", "virtual-driving"],
+    features: [],
     iconName: "MapPin",
     isActive: false,
     sortOrder: 8
@@ -220,8 +300,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Deal analysis and rehab estimating software for real estate investors. Calculate ARV, estimate repair costs, analyze deals, and generate professional reports.",
     benefits: ["Quick deal analysis calculator", "Detailed rehab cost estimator", "Professional PDF reports", "Wholesale and flip analysis"],
     referralLink: "https://rehabvaluator.com",
-    categories: ["project-management", "comps"],
-    features: ["dealAnalysis", "rehabCostEstimating"],
+    categories: ["project-management", "comps", "deal-analysis", "rehab-cost-estimating"],
+    features: [],
     iconName: "Calculator",
     isActive: false,
     sortOrder: 9
@@ -232,8 +312,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Investment property analysis app for evaluating rental properties, flips, BRRRR deals, and multifamily investments with detailed financial projections.",
     benefits: ["Analyze any property in minutes", "BRRRR and flip calculators", "Rental cash flow analysis", "Comp data and ARV estimates"],
     referralLink: "https://dealcheck.io",
-    categories: ["comps", "project-management"],
-    features: ["propertyAnalytics", "dealAnalysis", "mobileApp"],
+    categories: ["comps", "project-management", "property-analytics", "deal-analysis", "mobile-app"],
+    features: [],
     iconName: "Calculator",
     isActive: false,
     sortOrder: 10
@@ -244,8 +324,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "All-in-one CRM and deal analysis platform for house flippers. Manage leads, analyze deals, track projects, and build a profitable flipping business.",
     benefits: ["Built-in deal analyzer", "Lead and contact CRM", "Marketing campaign tools", "Mobile app access"],
     referralLink: "https://flipster.com",
-    categories: ["project-management", "lead-generation"],
-    features: ["crm", "dealAnalysis", "mobileApp", "marketingAutomation"],
+    categories: ["project-management", "lead-generation", "crm", "deal-analysis", "mobile-app", "marketing-automation"],
+    features: [],
     iconName: "BarChart3",
     isActive: false,
     sortOrder: 11
@@ -256,8 +336,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Comprehensive real estate investor CRM with property analytics, marketing automation, and website builder. Manage your entire investing business from one platform.",
     benefits: ["Property analytics and data", "CRM with deal tracking", "Marketing automation", "Investor website builder"],
     referralLink: "https://reikit.com",
-    categories: ["lead-generation", "comps"],
-    features: ["crm", "propertyAnalytics", "marketingAutomation", "websiteLandingPage"],
+    categories: ["lead-generation", "comps", "crm", "property-analytics", "marketing-automation", "website-landing-page"],
+    features: [],
     iconName: "BarChart3",
     isActive: false,
     sortOrder: 12
@@ -268,8 +348,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Skip tracing and list building platform for real estate investors. Find motivated seller contact information and build targeted marketing lists.",
     benefits: ["Accurate skip tracing data", "Pre-built motivated seller lists", "List stacking capabilities", "Direct mail integration"],
     referralLink: "https://motivatedsellers.com",
-    categories: ["lead-generation"],
-    features: ["skipTracing", "listBuilding", "directMail"],
+    categories: ["lead-generation", "skip-tracing", "list-building", "direct-mail"],
+    features: [],
     iconName: "Search",
     isActive: false,
     sortOrder: 13
@@ -280,8 +360,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "All-in-one real estate investing software with CRM, marketing automation, website builder, and lead management tools for wholesalers and investors.",
     benefits: ["CRM with workflow automation", "Built-in marketing campaigns", "Mobile app with team features", "Investor website builder"],
     referralLink: "https://freedomsoft.com",
-    categories: ["lead-generation", "marketplace"],
-    features: ["crm", "mobileApp", "teamCollaboration", "marketingAutomation", "websiteLandingPage"],
+    categories: ["lead-generation", "marketplace", "crm", "mobile-app", "team-collaboration", "marketing-automation", "website-landing-page"],
+    features: [],
     iconName: "Layers",
     isActive: false,
     sortOrder: 14
@@ -292,8 +372,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "All-in-one CRM designed for real estate wholesalers with skip tracing, marketing automation, KPI tracking, and team collaboration tools.",
     benefits: ["Built-in skip tracing", "SMS and email campaigns", "Team collaboration features", "Detailed KPI dashboards"],
     referralLink: "https://resimpli.com",
-    categories: ["lead-generation"],
-    features: ["skipTracing", "crm", "teamCollaboration", "marketingAutomation"],
+    categories: ["lead-generation", "skip-tracing", "crm", "team-collaboration", "marketing-automation"],
+    features: [],
     iconName: "Layers",
     isActive: false,
     sortOrder: 15
@@ -304,8 +384,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Property data and lead generation platform with skip tracing, list building, driving for dollars, and direct mail capabilities for real estate investors.",
     benefits: ["Driving for dollars mobile app", "Skip tracing integration", "Direct mail campaigns", "Property data and filters"],
     referralLink: "https://batchleads.io",
-    categories: ["lead-generation", "comps"],
-    features: ["drivingForDollars", "directMail", "skipTracing", "listBuilding", "mobileApp"],
+    categories: ["lead-generation", "comps", "driving-for-dollars", "direct-mail", "skip-tracing", "list-building", "mobile-app"],
+    features: [],
     iconName: "Target",
     isActive: false,
     sortOrder: 16
@@ -316,8 +396,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Real estate investor website builder and marketing platform. Generate motivated seller leads with SEO-optimized websites designed to convert visitors into leads.",
     benefits: ["SEO-optimized investor websites", "Motivated seller lead generation", "Landing page templates", "Lead capture and CRM integration"],
     referralLink: "https://carrot.com",
-    categories: ["lead-generation"],
-    features: ["marketingAutomation", "websiteLandingPage"],
+    categories: ["lead-generation", "marketing-automation", "website-landing-page"],
+    features: [],
     iconName: "Leaf",
     isActive: false,
     sortOrder: 17
