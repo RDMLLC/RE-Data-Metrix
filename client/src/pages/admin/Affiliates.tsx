@@ -83,33 +83,12 @@ interface AffiliateFormData {
   benefits: string;
   referralLink: string;
   categories: string[];
-  features: string[];
   iconName: string;
   referralFee: string;
   referralFeeType: string;
   isActive: boolean;
   sortOrder: number;
 }
-
-// Tool Finder feature options (must match ToolFinder.tsx featureLabels)
-// Note: Feature names are distinct from Category names to avoid confusion
-const featureOptions = [
-  { key: "drivingForDollars", label: "Driving for Dollars" },
-  { key: "directMail", label: "Direct Mail" },
-  { key: "skipTracing", label: "Skip Tracing" },
-  { key: "listBuilding", label: "List Building" },
-  { key: "crm", label: "CRM" },
-  { key: "propertyAnalytics", label: "Property Analytics" },
-  { key: "dealAnalysis", label: "Deal Analysis" },
-  { key: "mobileApp", label: "Mobile App" },
-  { key: "teamCollaboration", label: "Team Collaboration" },
-  { key: "marketingAutomation", label: "Marketing Automation" },
-  { key: "rehabCostEstimating", label: "Rehab Cost Estimating" },
-  { key: "landlordTools", label: "Landlord/Tenant Tools" },
-  { key: "websiteLandingPage", label: "Website/Landing Page" },
-  { key: "mlsDataFeeds", label: "MLS Data Feeds" },
-  { key: "virtualDriving", label: "Virtual Driving" },
-];
 
 interface CategoryFormData {
   id: string;
@@ -124,7 +103,6 @@ const emptyAffiliateForm: AffiliateFormData = {
   benefits: '',
   referralLink: '',
   categories: [],
-  features: [],
   iconName: 'Building2',
   referralFee: '',
   referralFeeType: '',
@@ -173,7 +151,7 @@ export default function Affiliates() {
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
           categories: data.categories,
-          features: data.features,
+          features: [], // Categories now unified - features field deprecated
           iconName: data.iconName,
           referralFee: data.referralFee || null,
           referralFeeType: data.referralFeeType || null,
@@ -210,7 +188,7 @@ export default function Affiliates() {
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
           categories: data.categories,
-          features: data.features,
+          features: [], // Categories now unified - features field deprecated
           iconName: data.iconName,
           referralFee: data.referralFee || null,
           referralFeeType: data.referralFeeType || null,
@@ -335,7 +313,6 @@ export default function Affiliates() {
       benefits: affiliate.benefits.join('\n'),
       referralLink: affiliate.referralLink,
       categories: affiliate.categories,
-      features: affiliate.features || [],
       iconName: affiliate.iconName,
       referralFee: affiliate.referralFee || '',
       referralFeeType: affiliate.referralFeeType || '',
@@ -377,14 +354,6 @@ export default function Affiliates() {
     }));
   };
 
-  const toggleFeature = (featureKey: string) => {
-    setAffiliateForm(prev => ({
-      ...prev,
-      features: prev.features.includes(featureKey)
-        ? prev.features.filter(f => f !== featureKey)
-        : [...prev.features, featureKey],
-    }));
-  };
 
   const filteredAffiliates = affiliates?.filter(affiliate => {
     const matchesSearch = affiliate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -710,25 +679,6 @@ export default function Affiliates() {
                       />
                       <Label htmlFor={`cat-${cat.id}`} className="text-sm font-normal cursor-pointer">
                         {cat.name}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tool Finder Features</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {featureOptions.map(feat => (
-                    <div key={feat.key} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`feat-${feat.key}`}
-                        checked={affiliateForm.features.includes(feat.key)}
-                        onCheckedChange={() => toggleFeature(feat.key)}
-                        data-testid={`checkbox-feature-${feat.key}`}
-                      />
-                      <Label htmlFor={`feat-${feat.key}`} className="text-sm font-normal cursor-pointer">
-                        {feat.label}
                       </Label>
                     </div>
                   ))}
