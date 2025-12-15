@@ -13,6 +13,12 @@ Calculation verification: Use `shared/data/calculationReference.ts` as the sourc
 ### Frontend
 The frontend uses React and TypeScript, built with Vite, `shadcn/ui` (New York style), Radix UI, and Tailwind CSS. Routing is handled by Wouter, state and data fetching by React Query, and forms by react-hook-form with Zod validation. It includes marketing pages, authentication, a lender portal, and a 5-step Deal Analysis Wizard.
 
+**React Query Pattern Note:**
+The default query fetcher in `client/src/lib/queryClient.ts` joins all queryKey elements with "/" to create the URL. For example, `queryKey: ["/api/member/deals", "all"]` will fetch `/api/member/deals/all`. Therefore:
+- Use single-element queryKeys for simple GET requests: `queryKey: ["/api/member/deals"]`
+- Only add extra elements for actual URL path segments: `queryKey: ["/api/lenders", lenderId, "products"]` → `/api/lenders/{id}/products`
+- Client-side filters should NOT be added to the queryKey as they will become part of the URL
+
 ### Backend
 The backend is built with Node.js and Express.js, providing a RESTful API. It utilizes an abstracted storage interface with an in-memory implementation for CRUD operations and PostgreSQL for session management and data persistence. All API endpoints include Zod schemas for server-side validation.
 

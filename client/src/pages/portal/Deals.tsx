@@ -52,7 +52,7 @@ export default function ViewDeals() {
   const [selectedProductId, setSelectedProductId] = useState<string>("");
 
   const { data: deals, isLoading } = useQuery<DealWithLender[]>({
-    queryKey: ["/api/member/deals", statusFilter],
+    queryKey: ["/api/member/deals"],
   });
 
   const { data: availableLenders } = useQuery<Lender[]>({
