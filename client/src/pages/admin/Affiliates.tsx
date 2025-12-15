@@ -91,7 +91,8 @@ interface AffiliateFormData {
   sortOrder: number;
 }
 
-// Tool Finder feature options (matches toolComparison.ts)
+// Tool Finder feature options (must match ToolFinder.tsx featureLabels)
+// Note: Feature names are distinct from Category names to avoid confusion
 const featureOptions = [
   { key: "drivingForDollars", label: "Driving for Dollars" },
   { key: "directMail", label: "Direct Mail" },
@@ -104,9 +105,9 @@ const featureOptions = [
   { key: "teamCollaboration", label: "Team Collaboration" },
   { key: "marketingAutomation", label: "Marketing Automation" },
   { key: "rehabCostEstimating", label: "Rehab Cost Estimating" },
-  { key: "propertyManagement", label: "Property Management" },
+  { key: "landlordTools", label: "Landlord/Tenant Tools" },
   { key: "websiteLandingPage", label: "Website/Landing Page" },
-  { key: "mlsAccess", label: "MLS Access" },
+  { key: "mlsDataFeeds", label: "MLS Data Feeds" },
   { key: "virtualDriving", label: "Virtual Driving" },
 ];
 

@@ -13,6 +13,7 @@ interface ToolFinderProps {
 }
 
 // Feature definitions for the Tool Finder
+// Note: Feature names should be distinct from Category names to avoid confusion
 const featureLabels: Record<string, string> = {
   drivingForDollars: "Driving for Dollars",
   directMail: "Direct Mail",
@@ -25,9 +26,9 @@ const featureLabels: Record<string, string> = {
   teamCollaboration: "Team Collaboration",
   marketingAutomation: "Marketing Automation",
   rehabCostEstimating: "Rehab Cost Estimating",
-  propertyManagement: "Property Management",
+  landlordTools: "Landlord/Tenant Tools",
   websiteLandingPage: "Website/Landing Page",
-  mlsAccess: "MLS Access",
+  mlsDataFeeds: "MLS Data Feeds",
   virtualDriving: "Virtual Driving",
 };
 

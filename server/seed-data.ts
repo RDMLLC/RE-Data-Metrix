@@ -125,7 +125,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["50+ property data filters", "Nationwide MLS comps", "Pre-foreclosure and probate lists", "Marketing list building tools"],
     referralLink: "https://propstream.com",
     categories: ["comps"],
-    features: ["directMail", "skipTracing", "listBuilding", "dealAnalysis", "websiteLandingPage", "mlsAccess", "virtualDriving"],
+    features: ["directMail", "skipTracing", "listBuilding", "dealAnalysis", "websiteLandingPage", "mlsDataFeeds", "virtualDriving"],
     iconName: "MapPin",
     isActive: true,
     sortOrder: 1
@@ -149,7 +149,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Increase rental income by 2-3x", "Professional tenant screening", "Automated rent collection", "Property management support"],
     referralLink: "https://padsplit.com",
     categories: ["marketplace", "property-management"],
-    features: ["propertyManagement"],
+    features: ["landlordTools"],
     iconName: "Building2",
     isActive: false,
     sortOrder: 2
@@ -173,7 +173,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     benefits: ["Online rent collection and payments", "Maintenance request tracking", "Accounting and financial reporting", "Tenant screening and leasing"],
     referralLink: "https://buildium.com",
     categories: ["property-management"],
-    features: ["propertyManagement", "teamCollaboration"],
+    features: ["landlordTools", "teamCollaboration"],
     iconName: "Building2",
     isActive: false,
     sortOrder: 4
