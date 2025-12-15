@@ -43,12 +43,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   ArrowLeft,
   Plus,
   Edit2,
@@ -721,40 +715,24 @@ export default function Affiliates() {
                 </div>
               </div>
 
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="features" className="border rounded-md px-3">
-                  <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Tool Finder Features</span>
-                      {affiliateForm.features.length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                          {affiliateForm.features.length} selected
-                        </Badge>
-                      )}
+              <div className="space-y-2">
+                <Label>Tool Finder Features</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {featureOptions.map(feat => (
+                    <div key={feat.key} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`feat-${feat.key}`}
+                        checked={affiliateForm.features.includes(feat.key)}
+                        onCheckedChange={() => toggleFeature(feat.key)}
+                        data-testid={`checkbox-feature-${feat.key}`}
+                      />
+                      <Label htmlFor={`feat-${feat.key}`} className="text-sm font-normal cursor-pointer">
+                        {feat.label}
+                      </Label>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-4">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Select features this tool offers for the Tool Finder comparison:
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {featureOptions.map(feat => (
-                        <div key={feat.key} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`feat-${feat.key}`}
-                            checked={affiliateForm.features.includes(feat.key)}
-                            onCheckedChange={() => toggleFeature(feat.key)}
-                            data-testid={`checkbox-feature-${feat.key}`}
-                          />
-                          <Label htmlFor={`feat-${feat.key}`} className="text-sm font-normal cursor-pointer">
-                            {feat.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                  ))}
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
