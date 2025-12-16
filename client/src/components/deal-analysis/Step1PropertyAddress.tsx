@@ -12,8 +12,8 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
 import { Link } from "wouter";
 
-// Use static URL for video - served directly by Express for reliable production delivery
-const demoVideoUrl = "/static-assets/Deal_Analysis_and_Loan_Comparison_Tool_1765464743849.mp4";
+// Video served from public folder - included in production build
+const demoVideoUrl = "/videos/demo.mp4";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
