@@ -11,7 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
 import { Link } from "wouter";
-import demoVideo from "@assets/Deal_Analysis_and_Loan_Comparison_Tool_1765464743849.mp4";
+
+// Use static URL for video - served directly by Express for reliable production delivery
+const demoVideoUrl = "/static-assets/Deal_Analysis_and_Loan_Comparison_Tool_1765464743849.mp4";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
@@ -279,7 +281,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               playsInline
               data-testid="video-demo"
             >
-              <source src={demoVideo} type="video/mp4" />
+              <source src={demoVideoUrl} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
             <button
