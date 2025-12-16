@@ -93,6 +93,7 @@ interface AffiliateFormData {
   referralFeeType: string;
   costFrom: string;
   costTo: string;
+  hasFreeTrial: boolean;
   isActive: boolean;
   sortOrder: number;
 }
@@ -116,6 +117,7 @@ const emptyAffiliateForm: AffiliateFormData = {
   referralFeeType: '',
   costFrom: '',
   costTo: '',
+  hasFreeTrial: false,
   isActive: true,
   sortOrder: 0,
 };
@@ -232,6 +234,7 @@ export default function Affiliates() {
           referralFeeType: data.referralFeeType || null,
           costFrom: data.costFrom || null,
           costTo: data.costTo || null,
+          hasFreeTrial: data.hasFreeTrial,
           isActive: data.isActive,
           sortOrder: data.sortOrder,
         }),
@@ -272,6 +275,7 @@ export default function Affiliates() {
           referralFeeType: data.referralFeeType || null,
           costFrom: data.costFrom || null,
           costTo: data.costTo || null,
+          hasFreeTrial: data.hasFreeTrial,
           isActive: data.isActive,
           sortOrder: data.sortOrder,
         }),
@@ -399,6 +403,7 @@ export default function Affiliates() {
       referralFeeType: affiliate.referralFeeType || '',
       costFrom: affiliate.costFrom || '',
       costTo: affiliate.costTo || '',
+      hasFreeTrial: affiliate.hasFreeTrial || false,
       isActive: affiliate.isActive,
       sortOrder: affiliate.sortOrder || 0,
     });
@@ -867,14 +872,25 @@ export default function Affiliates() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isActive"
-                  checked={affiliateForm.isActive}
-                  onCheckedChange={(checked) => setAffiliateForm(prev => ({ ...prev, isActive: checked }))}
-                  data-testid="switch-is-active"
-                />
-                <Label htmlFor="isActive">Active</Label>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="hasFreeTrial"
+                    checked={affiliateForm.hasFreeTrial}
+                    onCheckedChange={(checked) => setAffiliateForm(prev => ({ ...prev, hasFreeTrial: checked }))}
+                    data-testid="switch-free-trial"
+                  />
+                  <Label htmlFor="hasFreeTrial">Free Trial?</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isActive"
+                    checked={affiliateForm.isActive}
+                    onCheckedChange={(checked) => setAffiliateForm(prev => ({ ...prev, isActive: checked }))}
+                    data-testid="switch-is-active"
+                  />
+                  <Label htmlFor="isActive">Active</Label>
+                </div>
               </div>
             </div>
             <DialogFooter>

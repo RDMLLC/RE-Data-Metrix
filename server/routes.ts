@@ -3246,6 +3246,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         iconName: data.iconName || 'Building2',
         referralFee: data.referralFee || null,
         referralFeeType: data.referralFeeType || null,
+        costFrom: data.costFrom || null,
+        costTo: data.costTo || null,
+        hasFreeTrial: data.hasFreeTrial ?? false,
         isActive: data.isActive ?? true,
         sortOrder: data.sortOrder ?? 0,
       });
@@ -3268,6 +3271,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     iconName: z.string().optional(),
     referralFee: z.string().nullable().optional(),
     referralFeeType: z.string().nullable().optional(),
+    costFrom: z.string().nullable().optional(),
+    costTo: z.string().nullable().optional(),
+    hasFreeTrial: z.boolean().optional(),
     isActive: z.boolean().optional(),
     sortOrder: z.number().optional(),
   });
@@ -3295,6 +3301,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (data.iconName !== undefined) updateData.iconName = data.iconName;
       if (data.referralFee !== undefined) updateData.referralFee = data.referralFee;
       if (data.referralFeeType !== undefined) updateData.referralFeeType = data.referralFeeType;
+      if (data.costFrom !== undefined) updateData.costFrom = data.costFrom;
+      if (data.costTo !== undefined) updateData.costTo = data.costTo;
+      if (data.hasFreeTrial !== undefined) updateData.hasFreeTrial = data.hasFreeTrial;
       if (data.isActive !== undefined) updateData.isActive = data.isActive;
       if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
       

@@ -194,6 +194,12 @@ export const seedAffiliateCategories: SeedAffiliateCategory[] = [
     name: "Virtual Driving",
     description: "Find distressed properties using satellite imagery without physical driving.",
     sortOrder: 20
+  },
+  {
+    id: "sms",
+    name: "SMS",
+    description: "Text messaging campaigns and automation for reaching property owners.",
+    sortOrder: 21
   }
 ];
 

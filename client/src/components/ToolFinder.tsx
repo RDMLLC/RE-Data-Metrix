@@ -96,9 +96,16 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
         <div className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-foreground" data-testid={`text-tool-name-${affiliate.id}`}>
-                {affiliate.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-foreground" data-testid={`text-tool-name-${affiliate.id}`}>
+                  {affiliate.name}
+                </h3>
+                {affiliate.hasFreeTrial && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs" data-testid={`badge-free-trial-${affiliate.id}`}>
+                    Free Trial
+                  </Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 {totalCategories} categor{totalCategories !== 1 ? 'ies' : 'y'}
                 {selectedCategories.length > 0 && (
