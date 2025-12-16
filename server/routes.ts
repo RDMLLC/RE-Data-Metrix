@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -3594,6 +3594,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Seed database error:', error);
       res.status(500).json({ error: "Failed to seed database", details: String(error) });
+    }
+  });
+
+  // Sync seed data endpoint (admin only) - upserts affiliate data including active status
+  app.post("/api/admin/sync-seed-data", ensureAdmin, async (req, res) => {
+    try {
+      const results = {
+        affiliateCategories: { added: 0, updated: 0 },
+        affiliates: { added: 0, updated: 0 }
+      };
+
+      // Fetch existing data by ID for efficient lookup
+      const existingCategories = await storage.getAllAffiliateCategories();
+      const existingCategoryIds = new Map(existingCategories.map(c => [c.id, c]));
+      
+      const existingAffiliates = await storage.getAllAffiliates();
+      const existingAffiliateIds = new Map(existingAffiliates.map(a => [a.id, a]));
+
+      // Sync affiliate categories - upsert by ID
+      for (const category of seedAffiliateCategories) {
+        const existing = existingCategoryIds.get(category.id);
+        if (existing) {
+          // Update existing category
+          await db.update(affiliateCategories)
+            .set({
+              name: category.name,
+              description: category.description,
+              sortOrder: category.sortOrder
+            })
+            .where(eq(affiliateCategories.id, category.id));
+          results.affiliateCategories.updated++;
+        } else {
+          // Insert new category
+          await storage.upsertAffiliateCategory(category);
+          results.affiliateCategories.added++;
+        }
+      }
+
+      // Sync affiliates - upsert by ID with full data including isActive
+      for (const affiliate of seedAffiliates) {
+        const existing = existingAffiliateIds.get(affiliate.id);
+        if (existing) {
+          // Update existing affiliate with all seed data
+          await db.update(affiliates)
+            .set({
+              name: affiliate.name,
+              description: affiliate.description,
+              benefits: affiliate.benefits,
+              referralLink: affiliate.referralLink,
+              categories: affiliate.categories,
+              features: affiliate.features || [],
+              iconName: affiliate.iconName,
+              isActive: affiliate.isActive,
+              sortOrder: affiliate.sortOrder,
+              updatedAt: new Date()
+            })
+            .where(eq(affiliates.id, affiliate.id));
+          results.affiliates.updated++;
+        } else {
+          // Insert new affiliate
+          await db.insert(affiliates).values({
+            id: affiliate.id,
+            name: affiliate.name,
+            description: affiliate.description,
+            benefits: affiliate.benefits,
+            referralLink: affiliate.referralLink,
+            categories: affiliate.categories,
+            features: affiliate.features || [],
+            iconName: affiliate.iconName,
+            isActive: affiliate.isActive,
+            sortOrder: affiliate.sortOrder,
+          }).onConflictDoNothing();
+          results.affiliates.added++;
+        }
+      }
+
+      const totalAdded = results.affiliateCategories.added + results.affiliates.added;
+      const totalUpdated = results.affiliateCategories.updated + results.affiliates.updated;
+
+      res.json({
+        success: true,
+        message: `Sync complete: ${totalAdded} added, ${totalUpdated} updated`,
+        results
+      });
+    } catch (error) {
+      console.error('Sync seed data error:', error);
+      res.status(500).json({ error: "Failed to sync seed data", details: String(error) });
     }
   });
 
