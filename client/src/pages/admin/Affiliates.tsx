@@ -362,6 +362,12 @@ export default function Affiliates() {
       (statusFilter === "active" && affiliate.isActive) ||
       (statusFilter === "inactive" && !affiliate.isActive);
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    // Sort by active status first (active before inactive), then alphabetically by name
+    if (a.isActive !== b.isActive) {
+      return a.isActive ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name);
   });
 
   const getCategoryName = (categoryId: string) => {
@@ -703,26 +709,14 @@ export default function Affiliates() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sortOrder">Sort Order</Label>
-                  <Input
-                    id="sortOrder"
-                    type="number"
-                    value={affiliateForm.sortOrder}
-                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
-                    data-testid="input-sort-order"
-                  />
-                </div>
-                <div className="flex items-center space-x-2 pt-8">
-                  <Switch
-                    id="isActive"
-                    checked={affiliateForm.isActive}
-                    onCheckedChange={(checked) => setAffiliateForm(prev => ({ ...prev, isActive: checked }))}
-                    data-testid="switch-is-active"
-                  />
-                  <Label htmlFor="isActive">Active</Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={affiliateForm.isActive}
+                  onCheckedChange={(checked) => setAffiliateForm(prev => ({ ...prev, isActive: checked }))}
+                  data-testid="switch-is-active"
+                />
+                <Label htmlFor="isActive">Active</Label>
               </div>
             </div>
             <DialogFooter>
