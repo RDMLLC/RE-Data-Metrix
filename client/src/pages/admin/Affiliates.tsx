@@ -550,7 +550,19 @@ export default function Affiliates() {
                                     <IconComponent className="h-4 w-4 text-primary" />
                                   </div>
                                   <div>
-                                    <div className="font-medium" data-testid={`text-affiliate-name-${affiliate.id}`}>{affiliate.name}</div>
+                                    {affiliate.portalUrl ? (
+                                      <a 
+                                        href={affiliate.portalUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-primary hover:underline"
+                                        data-testid={`link-affiliate-name-${affiliate.id}`}
+                                      >
+                                        {affiliate.name}
+                                      </a>
+                                    ) : (
+                                      <div className="font-medium" data-testid={`text-affiliate-name-${affiliate.id}`}>{affiliate.name}</div>
+                                    )}
                                     <div className="text-sm text-muted-foreground truncate max-w-xs">{affiliate.description}</div>
                                   </div>
                                 </div>
