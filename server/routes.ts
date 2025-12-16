@@ -3241,6 +3241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: data.description,
         benefits: data.benefits,
         referralLink: data.referralLink,
+        portalUrl: data.portalUrl || null,
         categories: data.categories,
         iconName: data.iconName || 'Building2',
         referralFee: data.referralFee || null,
@@ -3262,6 +3263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     description: z.string().min(1).optional(),
     benefits: z.array(z.string()).optional(),
     referralLink: z.string().min(1).optional(),
+    portalUrl: z.string().nullable().optional(),
     categories: z.array(z.string()).min(1, "At least one category is required").optional(),
     iconName: z.string().optional(),
     referralFee: z.string().nullable().optional(),
@@ -3288,6 +3290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (data.description !== undefined) updateData.description = data.description;
       if (data.benefits !== undefined) updateData.benefits = data.benefits;
       if (data.referralLink !== undefined) updateData.referralLink = data.referralLink;
+      if (data.portalUrl !== undefined) updateData.portalUrl = data.portalUrl;
       if (data.categories !== undefined) updateData.categories = data.categories;
       if (data.iconName !== undefined) updateData.iconName = data.iconName;
       if (data.referralFee !== undefined) updateData.referralFee = data.referralFee;

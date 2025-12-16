@@ -82,6 +82,7 @@ interface AffiliateFormData {
   description: string;
   benefits: string;
   referralLink: string;
+  portalUrl: string;
   categories: string[];
   iconName: string;
   referralFee: string;
@@ -102,6 +103,7 @@ const emptyAffiliateForm: AffiliateFormData = {
   description: '',
   benefits: '',
   referralLink: '',
+  portalUrl: '',
   categories: [],
   iconName: 'Building2',
   referralFee: '',
@@ -150,6 +152,7 @@ export default function Affiliates() {
           description: data.description,
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
+          portalUrl: data.portalUrl || null,
           categories: data.categories,
           features: [], // Categories now unified - features field deprecated
           iconName: data.iconName,
@@ -187,6 +190,7 @@ export default function Affiliates() {
           description: data.description,
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
+          portalUrl: data.portalUrl || null,
           categories: data.categories,
           features: [], // Categories now unified - features field deprecated
           iconName: data.iconName,
@@ -312,6 +316,7 @@ export default function Affiliates() {
       description: affiliate.description,
       benefits: affiliate.benefits.join('\n'),
       referralLink: affiliate.referralLink,
+      portalUrl: affiliate.portalUrl || '',
       categories: affiliate.categories,
       iconName: affiliate.iconName,
       referralFee: affiliate.referralFee || '',
@@ -664,6 +669,17 @@ export default function Affiliates() {
                   onChange={(e) => setAffiliateForm(prev => ({ ...prev, referralLink: e.target.value }))}
                   placeholder="https://..."
                   data-testid="input-referral-link"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="portalUrl">Portal URL (Dashboard Login)</Label>
+                <Input
+                  id="portalUrl"
+                  value={affiliateForm.portalUrl}
+                  onChange={(e) => setAffiliateForm(prev => ({ ...prev, portalUrl: e.target.value }))}
+                  placeholder="https://affiliate.example.com/login"
+                  data-testid="input-portal-url"
                 />
               </div>
 

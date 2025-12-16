@@ -644,6 +644,7 @@ export const affiliates = pgTable("affiliates", {
   description: text("description").notNull(),
   benefits: text("benefits").array().notNull(),
   referralLink: text("referral_link").notNull(),
+  portalUrl: text("portal_url"),
   categories: text("categories").array().notNull(),
   features: text("features").array().default([]),
   iconName: text("icon_name").notNull().default("Building2"),
