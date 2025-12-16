@@ -219,7 +219,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["marketplace", "lead-generation", "comps", "list-building", "team-collaboration"],
     features: [],
     iconName: "Users",
-    isActive: false,
+    isActive: true,
     sortOrder: 1
   },
   {
@@ -231,7 +231,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["marketplace", "property-management"],
     features: [],
     iconName: "Building2",
-    isActive: false,
+    isActive: true,
     sortOrder: 2
   },
   {
@@ -243,7 +243,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["marketplace", "deal-analysis", "team-collaboration"],
     features: [],
     iconName: "Users",
-    isActive: false,
+    isActive: true,
     sortOrder: 3
   },
   {
@@ -255,7 +255,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["property-management", "team-collaboration"],
     features: [],
     iconName: "Building2",
-    isActive: false,
+    isActive: true,
     sortOrder: 4
   },
   {
@@ -267,7 +267,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["project-management", "rehab-cost-estimating", "deal-analysis", "mobile-app"],
     features: [],
     iconName: "Wrench",
-    isActive: false,
+    isActive: true,
     sortOrder: 5
   },
   {
@@ -279,7 +279,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "comps", "driving-for-dollars", "direct-mail", "skip-tracing", "list-building", "crm", "mobile-app"],
     features: [],
     iconName: "Target",
-    isActive: false,
+    isActive: true,
     sortOrder: 6
   },
   {
@@ -291,7 +291,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["comps", "deal-analysis", "virtual-driving"],
     features: [],
     iconName: "MapPin",
-    isActive: false,
+    isActive: true,
     sortOrder: 8
   },
   {
@@ -303,7 +303,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["project-management", "comps", "deal-analysis", "rehab-cost-estimating"],
     features: [],
     iconName: "Calculator",
-    isActive: false,
+    isActive: true,
     sortOrder: 9
   },
   {
@@ -315,7 +315,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["comps", "project-management", "deal-analysis", "mobile-app"],
     features: [],
     iconName: "Calculator",
-    isActive: false,
+    isActive: true,
     sortOrder: 10
   },
   {
@@ -327,7 +327,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["project-management", "lead-generation", "crm", "deal-analysis", "mobile-app", "marketing-automation"],
     features: [],
     iconName: "BarChart3",
-    isActive: false,
+    isActive: true,
     sortOrder: 11
   },
   {
@@ -339,7 +339,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "comps", "crm", "marketing-automation", "website-landing-page"],
     features: [],
     iconName: "BarChart3",
-    isActive: false,
+    isActive: true,
     sortOrder: 12
   },
   {
@@ -351,7 +351,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "skip-tracing", "list-building", "direct-mail"],
     features: [],
     iconName: "Search",
-    isActive: false,
+    isActive: true,
     sortOrder: 13
   },
   {
@@ -363,7 +363,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "marketplace", "crm", "mobile-app", "team-collaboration", "marketing-automation", "website-landing-page"],
     features: [],
     iconName: "Layers",
-    isActive: false,
+    isActive: true,
     sortOrder: 14
   },
   {
@@ -375,7 +375,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "skip-tracing", "crm", "team-collaboration", "marketing-automation"],
     features: [],
     iconName: "Layers",
-    isActive: false,
+    isActive: true,
     sortOrder: 15
   },
   {
@@ -387,7 +387,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "comps", "driving-for-dollars", "direct-mail", "skip-tracing", "list-building", "mobile-app"],
     features: [],
     iconName: "Target",
-    isActive: false,
+    isActive: true,
     sortOrder: 16
   },
   {
@@ -399,7 +399,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     categories: ["lead-generation", "marketing-automation", "website-landing-page"],
     features: [],
     iconName: "Leaf",
-    isActive: false,
+    isActive: true,
     sortOrder: 17
   }
 ];
