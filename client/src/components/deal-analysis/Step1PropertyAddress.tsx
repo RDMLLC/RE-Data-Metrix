@@ -274,16 +274,15 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             <video
               ref={videoRef}
               className="absolute inset-0 w-full h-full object-cover"
+              src={demoVideoUrl}
               autoPlay
-              muted={isMuted}
+              muted
               controls
               loop
               playsInline
+              preload="auto"
               data-testid="video-demo"
-            >
-              <source src={demoVideoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            />
             <button
               onClick={toggleMute}
               className={`absolute top-3 right-3 z-20 p-3 rounded-full transition-all ${
