@@ -148,12 +148,6 @@ export const seedAffiliateCategories: SeedAffiliateCategory[] = [
     sortOrder: 12
   },
   {
-    id: "property-analytics",
-    name: "Property Analytics",
-    description: "Detailed property data analysis and valuation tools.",
-    sortOrder: 13
-  },
-  {
     id: "deal-analysis",
     name: "Deal Analysis",
     description: "Calculate profitability, ROI, and analyze investment opportunities.",
@@ -222,7 +216,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Network with thousands of active real estate investors, find deals, connect with private lenders, and access funding opportunities in one centralized platform.",
     benefits: ["Access nationwide deal marketplace", "Connect with private money lenders", "Network with 200,000+ investors", "Find buyers, sellers, and partners"],
     referralLink: "https://connectedinvestors.com",
-    categories: ["marketplace", "lead-generation", "comps", "list-building", "property-analytics", "team-collaboration"],
+    categories: ["marketplace", "lead-generation", "comps", "list-building", "team-collaboration"],
     features: [],
     iconName: "Users",
     isActive: false,
@@ -318,7 +312,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Investment property analysis app for evaluating rental properties, flips, BRRRR deals, and multifamily investments with detailed financial projections.",
     benefits: ["Analyze any property in minutes", "BRRRR and flip calculators", "Rental cash flow analysis", "Comp data and ARV estimates"],
     referralLink: "https://dealcheck.io",
-    categories: ["comps", "project-management", "property-analytics", "deal-analysis", "mobile-app"],
+    categories: ["comps", "project-management", "deal-analysis", "mobile-app"],
     features: [],
     iconName: "Calculator",
     isActive: false,
@@ -342,7 +336,7 @@ export const seedAffiliates: SeedAffiliate[] = [
     description: "Comprehensive real estate investor CRM with property analytics, marketing automation, and website builder. Manage your entire investing business from one platform.",
     benefits: ["Property analytics and data", "CRM with deal tracking", "Marketing automation", "Investor website builder"],
     referralLink: "https://reikit.com",
-    categories: ["lead-generation", "comps", "crm", "property-analytics", "marketing-automation", "website-landing-page"],
+    categories: ["lead-generation", "comps", "crm", "marketing-automation", "website-landing-page"],
     features: [],
     iconName: "BarChart3",
     isActive: false,
