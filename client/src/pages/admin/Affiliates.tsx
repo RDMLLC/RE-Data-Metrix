@@ -57,7 +57,11 @@ import {
   BarChart3,
   Layers,
   ExternalLink,
+  Download,
+  Copy,
+  Check,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
 const iconOptions = [
@@ -132,6 +136,70 @@ export default function Affiliates() {
   const [editingCategory, setEditingCategory] = useState<AffiliateCategory | null>(null);
   const [affiliateForm, setAffiliateForm] = useState<AffiliateFormData>(emptyAffiliateForm);
   const [categoryForm, setCategoryForm] = useState<CategoryFormData>(emptyCategoryForm);
+  const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
+
+  const downloadQrCode = (affiliateId: string, affiliateName: string) => {
+    const svg = document.getElementById(`qr-${affiliateId}`);
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width * 2;
+      canvas.height = img.height * 2;
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const pngUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `${affiliateName.replace(/\s+/g, '-').toLowerCase()}-qr.png`;
+        link.href = pngUrl;
+        link.click();
+      }
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  const copyQrCode = async (affiliateId: string) => {
+    const svg = document.getElementById(`qr-${affiliateId}`);
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = async () => {
+      canvas.width = img.width * 2;
+      canvas.height = img.height * 2;
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              setCopiedQrId(affiliateId);
+              toast({ title: "Copied!", description: "QR code copied to clipboard" });
+              setTimeout(() => setCopiedQrId(null), 2000);
+            } catch (err) {
+              toast({ title: "Error", description: "Failed to copy QR code", variant: "destructive" });
+            }
+          }
+        }, 'image/png');
+      }
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
 
   const { data: affiliates, isLoading } = useQuery<Affiliate[]>({
     queryKey: ["/api/admin/affiliates"],
@@ -451,6 +519,7 @@ export default function Affiliates() {
                           <th className="text-left py-3 px-4 font-medium">Name</th>
                           <th className="text-left py-3 px-4 font-medium">Categories</th>
                           <th className="text-left py-3 px-4 font-medium">Referral Fee</th>
+                          <th className="text-center py-3 px-4 font-medium">QR Code</th>
                           <th className="text-left py-3 px-4 font-medium">Status</th>
                           <th className="text-right py-3 px-4 font-medium">Actions</th>
                         </tr>
@@ -488,6 +557,46 @@ export default function Affiliates() {
                                 ) : (
                                   <span className="text-muted-foreground text-sm">-</span>
                                 )}
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <div className="p-1 bg-white rounded border">
+                                    <QRCodeSVG
+                                      id={`qr-${affiliate.id}`}
+                                      value={affiliate.referralLink}
+                                      size={48}
+                                      level="M"
+                                      bgColor="white"
+                                      fgColor="black"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => copyQrCode(affiliate.id)}
+                                      title="Copy QR code"
+                                      data-testid={`button-copy-qr-${affiliate.id}`}
+                                    >
+                                      {copiedQrId === affiliate.id ? (
+                                        <Check className="h-3 w-3 text-green-500" />
+                                      ) : (
+                                        <Copy className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={() => downloadQrCode(affiliate.id, affiliate.name)}
+                                      title="Download QR code"
+                                      data-testid={`button-download-qr-${affiliate.id}`}
+                                    >
+                                      <Download className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
                               </td>
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-2">
