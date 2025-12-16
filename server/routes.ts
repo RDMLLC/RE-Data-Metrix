@@ -3207,6 +3207,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // List affiliate categories (public, for Tool Finder)
+  app.get("/api/affiliate-categories", async (req, res) => {
+    try {
+      const categories = await storage.getAllAffiliateCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error('Get affiliate categories error:', error);
+      res.status(500).json({ error: "Failed to fetch affiliate categories" });
+    }
+  });
+
   // Create affiliate (admin only) - with Zod validation
   const createAffiliateSchema = insertAffiliateSchema.extend({
     benefits: z.array(z.string()).default([]),
