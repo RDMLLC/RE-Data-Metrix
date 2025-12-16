@@ -1,51 +1,10 @@
-import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Volume2, VolumeX } from "lucide-react";
-import marketingVideo from "@assets/Real Estate Profits, Lender Referrals_video_1080 (3)_1762983667120.mp4";
+import { ChevronDown } from "lucide-react";
+
+// YouTube video for landing page
+const YOUTUBE_VIDEO_ID = "quO8Zn_IIAY";
 
 export default function Hero() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    
-    video.playbackRate = 1.2;
-    
-    // Sync muted state when native controls are used
-    const handleVolumeChange = () => {
-      setIsMuted(video.muted || video.volume === 0);
-    };
-    
-    video.addEventListener('volumechange', handleVolumeChange);
-    
-    return () => {
-      video.removeEventListener('volumechange', handleVolumeChange);
-    };
-  }, []);
-
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    
-    const newMutedState = !isMuted;
-    
-    // Set muted state directly on the video element
-    video.muted = newMutedState;
-    
-    // When unmuting, ensure volume is up and restart playback
-    if (!newMutedState) {
-      video.volume = 1.0;
-      // Force a play to activate audio after user interaction
-      video.play().catch(err => {
-        console.warn('Video play failed:', err);
-      });
-    }
-    
-    setIsMuted(newMutedState);
-  };
-
   const scrollToForm = () => {
     const formElement = document.getElementById('prelaunch-form');
     if (formElement) {
@@ -61,45 +20,16 @@ export default function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-center">
           {/* Left: Video */}
           <div className="order-2 lg:order-1">
-            <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
-              <video
-                ref={videoRef}
-                className="absolute inset-0 w-full h-full object-cover"
-                autoPlay
-                muted={isMuted}
-                controls
-                loop
-                playsInline
-              >
-                <source src={marketingVideo} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-              {/* Custom mute/unmute button - large and prominent */}
-              <button
-                onClick={toggleMute}
-                className={`absolute top-3 right-3 z-20 p-3 rounded-full transition-all ${
-                  isMuted 
-                    ? 'bg-accent hover:bg-accent/90 text-accent-foreground animate-pulse' 
-                    : 'bg-black/60 hover:bg-black/80 text-white'
-                }`}
-                data-testid="button-toggle-mute"
-                aria-label={isMuted ? "Click to unmute video" : "Mute video"}
-                title={isMuted ? "Click to unmute" : "Mute"}
-              >
-                {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
-              </button>
-              {/* Unmute prompt overlay when muted */}
-              {isMuted && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10"
-                  onClick={toggleMute}
-                >
-                  <div className="bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                    <VolumeX className="h-5 w-5" />
-                    <span className="text-sm font-medium">Click to unmute</span>
-                  </div>
-                </div>
-              )}
+            <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
+                title="RE Data Metrix Overview"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                data-testid="video-hero"
+              />
             </div>
           </div>
 
