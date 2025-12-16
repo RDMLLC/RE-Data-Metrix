@@ -461,17 +461,12 @@ export default function Affiliates() {
                                 </div>
                               </td>
                               <td className="py-3 px-4">
-                                <div className="flex flex-wrap gap-1">
-                                  {affiliate.categories.slice(0, 2).map(cat => (
+                                <div className="flex flex-wrap gap-1 max-w-md">
+                                  {affiliate.categories.map(cat => (
                                     <Badge key={cat} variant="secondary" className="text-xs">
                                       {getCategoryName(cat)}
                                     </Badge>
                                   ))}
-                                  {affiliate.categories.length > 2 && (
-                                    <Badge variant="outline" className="text-xs">
-                                      +{affiliate.categories.length - 2}
-                                    </Badge>
-                                  )}
                                 </div>
                               </td>
                               <td className="py-3 px-4">
