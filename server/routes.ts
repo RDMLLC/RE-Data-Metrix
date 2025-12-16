@@ -3598,6 +3598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync seed data endpoint (admin only) - upserts affiliate data including active status
+  // Uses name as stable key for matching (works regardless of how records were originally inserted)
   app.post("/api/admin/sync-seed-data", ensureAdmin, async (req, res) => {
     try {
       const results = {
@@ -3605,41 +3606,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         affiliates: { added: 0, updated: 0 }
       };
 
-      // Fetch existing data by ID for efficient lookup
+      // Fetch existing data by name (lowercase) for stable matching
       const existingCategories = await storage.getAllAffiliateCategories();
-      const existingCategoryIds = new Map(existingCategories.map(c => [c.id, c]));
+      const existingCategoryByName = new Map(existingCategories.map(c => [c.name.toLowerCase(), c]));
       
       const existingAffiliates = await storage.getAllAffiliates();
-      const existingAffiliateIds = new Map(existingAffiliates.map(a => [a.id, a]));
+      const existingAffiliateByName = new Map(existingAffiliates.map(a => [a.name.toLowerCase(), a]));
 
-      // Sync affiliate categories - upsert by ID
+      // Sync affiliate categories - match by name
       for (const category of seedAffiliateCategories) {
-        const existing = existingCategoryIds.get(category.id);
+        const existing = existingCategoryByName.get(category.name.toLowerCase());
         if (existing) {
-          // Update existing category
+          // Update existing category using its actual database ID
           await db.update(affiliateCategories)
             .set({
-              name: category.name,
               description: category.description,
               sortOrder: category.sortOrder
             })
-            .where(eq(affiliateCategories.id, category.id));
+            .where(eq(affiliateCategories.id, existing.id));
           results.affiliateCategories.updated++;
         } else {
-          // Insert new category
-          await storage.upsertAffiliateCategory(category);
+          // Insert new category with seed ID
+          await db.insert(affiliateCategories).values({
+            id: category.id,
+            name: category.name,
+            description: category.description,
+            sortOrder: category.sortOrder
+          }).onConflictDoNothing();
           results.affiliateCategories.added++;
         }
       }
 
-      // Sync affiliates - upsert by ID with full data including isActive
+      // Sync affiliates - match by name with full data including isActive
       for (const affiliate of seedAffiliates) {
-        const existing = existingAffiliateIds.get(affiliate.id);
+        const existing = existingAffiliateByName.get(affiliate.name.toLowerCase());
         if (existing) {
-          // Update existing affiliate with all seed data
+          // Update existing affiliate using its actual database ID
           await db.update(affiliates)
             .set({
-              name: affiliate.name,
               description: affiliate.description,
               benefits: affiliate.benefits,
               referralLink: affiliate.referralLink,
@@ -3650,10 +3654,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               sortOrder: affiliate.sortOrder,
               updatedAt: new Date()
             })
-            .where(eq(affiliates.id, affiliate.id));
+            .where(eq(affiliates.id, existing.id));
           results.affiliates.updated++;
         } else {
-          // Insert new affiliate
+          // Insert new affiliate with seed ID
           await db.insert(affiliates).values({
             id: affiliate.id,
             name: affiliate.name,

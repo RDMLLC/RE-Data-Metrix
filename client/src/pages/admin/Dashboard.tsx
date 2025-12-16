@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [dataHealth, setDataHealth] = useState<DataHealth | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -142,6 +143,44 @@ export default function AdminDashboard() {
       });
     } finally {
       setIsSeeding(false);
+    }
+  };
+
+  const handleSyncSeedData = async () => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch("/api/admin/sync-seed-data", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Data Synced Successfully",
+          description: `Updated: ${data.results.affiliates.updated} affiliates. Added: ${data.results.affiliates.added} new affiliates.`,
+        });
+        const healthResponse = await fetch("/api/admin/data-health", {
+          credentials: "include",
+        });
+        if (healthResponse.ok) {
+          setDataHealth(await healthResponse.json());
+        }
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Sync Failed",
+          description: error.error || "Failed to sync seed data",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sync seed data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -326,6 +365,29 @@ export default function AdminDashboard() {
                     <div className="text-2xl font-bold">{dataHealth.affiliateCategories}</div>
                     <div className="text-sm text-muted-foreground">Categories</div>
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t flex items-center justify-between gap-4 flex-wrap">
+                  <p className="text-sm text-muted-foreground">
+                    Sync updates existing affiliate data with latest seed values
+                  </p>
+                  <Button
+                    onClick={handleSyncSeedData}
+                    disabled={isSyncing}
+                    variant="outline"
+                    data-testid="button-sync-seed-data"
+                  >
+                    {isSyncing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Sync Seed Data
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
