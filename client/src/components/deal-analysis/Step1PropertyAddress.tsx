@@ -1,19 +1,19 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
 import { Link } from "wouter";
 
-// Video served from public folder - included in production build
-const demoVideoUrl = "/videos/demo.mp4";
+// YouTube video for demo
+const YOUTUBE_VIDEO_ID = "m6SjKQ3dYe4";
 
 interface Step1Props {
   form: UseFormReturn<WizardFormData>;
@@ -30,43 +30,6 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
-  
-  // Video player state
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    
-    // Sync muted state when native controls are used
-    const handleVolumeChange = () => {
-      setIsMuted(video.muted || video.volume === 0);
-    };
-    
-    video.addEventListener('volumechange', handleVolumeChange);
-    
-    return () => {
-      video.removeEventListener('volumechange', handleVolumeChange);
-    };
-  }, []);
-
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    
-    const newMutedState = !isMuted;
-    video.muted = newMutedState;
-    
-    if (!newMutedState) {
-      video.volume = 1.0;
-      video.play().catch(err => {
-        console.warn('Video play failed:', err);
-      });
-    }
-    
-    setIsMuted(newMutedState);
-  };
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -270,43 +233,16 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
           <p className="text-sm text-muted-foreground mb-4">
             Watch a quick demo to see how the Deal Analysis tool helps you compare loan options, calculate profits, and find the best financing for your deals.
           </p>
-          <div className="relative aspect-video bg-black/20 rounded-xl overflow-hidden shadow-lg border border-white/20">
-            <video
-              ref={videoRef}
-              className="absolute inset-0 w-full h-full object-cover"
-              src={demoVideoUrl}
-              autoPlay
-              muted
-              controls
-              loop
-              playsInline
-              preload="auto"
+          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-white/20">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
+              title="RE Data Metrix Demo Video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
               data-testid="video-demo"
             />
-            <button
-              onClick={toggleMute}
-              className={`absolute top-3 right-3 z-20 p-3 rounded-full transition-all ${
-                isMuted 
-                  ? 'bg-accent hover:bg-accent/90 text-accent-foreground animate-pulse' 
-                  : 'bg-black/60 hover:bg-black/80 text-white'
-              }`}
-              data-testid="button-toggle-mute-demo"
-              aria-label={isMuted ? "Click to unmute video" : "Mute video"}
-              title={isMuted ? "Click to unmute" : "Mute"}
-            >
-              {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
-            </button>
-            {isMuted && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10"
-                onClick={toggleMute}
-              >
-                <div className="bg-black/70 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                  <VolumeX className="h-5 w-5" />
-                  <span className="text-sm font-medium">Click to unmute</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
