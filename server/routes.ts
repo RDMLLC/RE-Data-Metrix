@@ -3637,27 +3637,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Sync affiliates - match by name with full data including isActive
+      // Sync affiliates - match by name, only update isActive status (preserve existing referral links)
       for (const affiliate of seedAffiliates) {
         const existing = existingAffiliateByName.get(affiliate.name.toLowerCase());
         if (existing) {
-          // Update existing affiliate using its actual database ID
+          // Only update isActive status - preserve manually configured referral links and other data
           await db.update(affiliates)
             .set({
-              description: affiliate.description,
-              benefits: affiliate.benefits,
-              referralLink: affiliate.referralLink,
-              categories: affiliate.categories,
-              features: affiliate.features || [],
-              iconName: affiliate.iconName,
               isActive: affiliate.isActive,
-              sortOrder: affiliate.sortOrder,
               updatedAt: new Date()
             })
             .where(eq(affiliates.id, existing.id));
           results.affiliates.updated++;
         } else {
-          // Insert new affiliate with seed ID
+          // Insert new affiliate with seed ID (new affiliates get seed data)
           await db.insert(affiliates).values({
             id: affiliate.id,
             name: affiliate.name,
