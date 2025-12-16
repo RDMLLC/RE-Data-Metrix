@@ -91,6 +91,8 @@ interface AffiliateFormData {
   iconName: string;
   referralFee: string;
   referralFeeType: string;
+  costFrom: string;
+  costTo: string;
   isActive: boolean;
   sortOrder: number;
 }
@@ -112,6 +114,8 @@ const emptyAffiliateForm: AffiliateFormData = {
   iconName: 'Building2',
   referralFee: '',
   referralFeeType: '',
+  costFrom: '',
+  costTo: '',
   isActive: true,
   sortOrder: 0,
 };
@@ -226,6 +230,8 @@ export default function Affiliates() {
           iconName: data.iconName,
           referralFee: data.referralFee || null,
           referralFeeType: data.referralFeeType || null,
+          costFrom: data.costFrom || null,
+          costTo: data.costTo || null,
           isActive: data.isActive,
           sortOrder: data.sortOrder,
         }),
@@ -264,6 +270,8 @@ export default function Affiliates() {
           iconName: data.iconName,
           referralFee: data.referralFee || null,
           referralFeeType: data.referralFeeType || null,
+          costFrom: data.costFrom || null,
+          costTo: data.costTo || null,
           isActive: data.isActive,
           sortOrder: data.sortOrder,
         }),
@@ -389,6 +397,8 @@ export default function Affiliates() {
       iconName: affiliate.iconName,
       referralFee: affiliate.referralFee || '',
       referralFeeType: affiliate.referralFeeType || '',
+      costFrom: affiliate.costFrom || '',
+      costTo: affiliate.costTo || '',
       isActive: affiliate.isActive,
       sortOrder: affiliate.sortOrder || 0,
     });
@@ -830,6 +840,29 @@ export default function Affiliates() {
                     onChange={(e) => setAffiliateForm(prev => ({ ...prev, referralFeeType: e.target.value }))}
                     placeholder="e.g. per signup, commission"
                     data-testid="input-fee-type"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="costFrom">Program Cost (From)</Label>
+                  <Input
+                    id="costFrom"
+                    value={affiliateForm.costFrom}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, costFrom: e.target.value }))}
+                    placeholder="e.g. $99, Free"
+                    data-testid="input-cost-from"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="costTo">Program Cost (To)</Label>
+                  <Input
+                    id="costTo"
+                    value={affiliateForm.costTo}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, costTo: e.target.value }))}
+                    placeholder="e.g. $499, $999"
+                    data-testid="input-cost-to"
                   />
                 </div>
               </div>

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2 } from "lucide-react";
+import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2, DollarSign } from "lucide-react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
 interface ToolFinderProps {
@@ -77,10 +77,19 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
     </div>
   );
 
+  const formatCostRange = (costFrom: string | null | undefined, costTo: string | null | undefined): string | null => {
+    if (!costFrom && !costTo) return null;
+    if (costFrom && costTo) return `${costFrom} - ${costTo}`;
+    if (costFrom) return `From ${costFrom}`;
+    if (costTo) return `Up to ${costTo}`;
+    return null;
+  };
+
   const renderToolCard = (affiliate: Affiliate) => {
     const affiliateCategories = affiliate.categories || [];
     const matchingCount = selectedCategories.filter(c => affiliateCategories.includes(c)).length;
     const totalCategories = affiliateCategories.length;
+    const costDisplay = formatCostRange(affiliate.costFrom, affiliate.costTo);
 
     return (
       <Card key={affiliate.id} className="p-5" data-testid={`card-tool-${affiliate.id}`}>
@@ -98,6 +107,12 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
                   </span>
                 )}
               </p>
+              {costDisplay && (
+                <div className="flex items-center gap-1 mt-1" data-testid={`text-cost-${affiliate.id}`}>
+                  <DollarSign className="h-3.5 w-3.5 text-accent" />
+                  <span className="text-sm font-medium text-accent">{costDisplay}</span>
+                </div>
+              )}
             </div>
             <Button
               size="sm"

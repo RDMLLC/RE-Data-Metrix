@@ -650,6 +650,8 @@ export const affiliates = pgTable("affiliates", {
   iconName: text("icon_name").notNull().default("Building2"),
   referralFee: text("referral_fee"),
   referralFeeType: text("referral_fee_type"),
+  costFrom: text("cost_from"),
+  costTo: text("cost_to"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
