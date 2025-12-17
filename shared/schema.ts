@@ -638,6 +638,7 @@ export type InsertLenderInquiry = z.infer<typeof insertLenderInquirySchema>;
 export type LenderInquiry = typeof lenderInquiries.$inferSelect;
 
 // Affiliates - partner programs displayed in the Toolbox
+// Note: loginUsername/loginPassword store admin's credentials for external affiliate portals (admin-only access)
 export const affiliates = pgTable("affiliates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -645,6 +646,8 @@ export const affiliates = pgTable("affiliates", {
   benefits: text("benefits").array().notNull(),
   referralLink: text("referral_link").notNull(),
   portalUrl: text("portal_url"),
+  loginUsername: text("login_username"),
+  loginPassword: text("login_password"),
   categories: text("categories").array().notNull(),
   features: text("features").array().default([]),
   iconName: text("icon_name").notNull().default("Building2"),

@@ -87,6 +87,8 @@ interface AffiliateFormData {
   benefits: string;
   referralLink: string;
   portalUrl: string;
+  loginUsername: string;
+  loginPassword: string;
   categories: string[];
   iconName: string;
   referralFee: string;
@@ -111,6 +113,8 @@ const emptyAffiliateForm: AffiliateFormData = {
   benefits: '',
   referralLink: '',
   portalUrl: '',
+  loginUsername: '',
+  loginPassword: '',
   categories: [],
   iconName: 'Building2',
   referralFee: '',
@@ -138,11 +142,14 @@ export default function Affiliates() {
   const [categoryToDelete, setCategoryToDelete] = useState<AffiliateCategory | null>(null);
   const [showAffiliateDialog, setShowAffiliateDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false);
+  const [credentialsAffiliate, setCredentialsAffiliate] = useState<Affiliate | null>(null);
   const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null);
   const [editingCategory, setEditingCategory] = useState<AffiliateCategory | null>(null);
   const [affiliateForm, setAffiliateForm] = useState<AffiliateFormData>(emptyAffiliateForm);
   const [categoryForm, setCategoryForm] = useState<CategoryFormData>(emptyCategoryForm);
   const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
+  const [copiedCredential, setCopiedCredential] = useState<string | null>(null);
 
   const downloadQrCode = (affiliateId: string, affiliateName: string) => {
     const svg = document.getElementById(`qr-${affiliateId}`);
@@ -227,6 +234,8 @@ export default function Affiliates() {
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
           portalUrl: data.portalUrl || null,
+          loginUsername: data.loginUsername || null,
+          loginPassword: data.loginPassword || null,
           categories: data.categories,
           features: [], // Categories now unified - features field deprecated
           iconName: data.iconName,
@@ -268,6 +277,8 @@ export default function Affiliates() {
           benefits: data.benefits.split('\n').filter(b => b.trim()),
           referralLink: data.referralLink,
           portalUrl: data.portalUrl || null,
+          loginUsername: data.loginUsername || null,
+          loginPassword: data.loginPassword || null,
           categories: data.categories,
           features: [], // Categories now unified - features field deprecated
           iconName: data.iconName,
@@ -397,6 +408,8 @@ export default function Affiliates() {
       benefits: affiliate.benefits.join('\n'),
       referralLink: affiliate.referralLink,
       portalUrl: affiliate.portalUrl || '',
+      loginUsername: affiliate.loginUsername || '',
+      loginPassword: affiliate.loginPassword || '',
       categories: affiliate.categories,
       iconName: affiliate.iconName,
       referralFee: affiliate.referralFee || '',
@@ -442,6 +455,30 @@ export default function Affiliates() {
     }));
   };
 
+  const handleAffiliateNameClick = (affiliate: Affiliate) => {
+    if (affiliate.portalUrl) {
+      setCredentialsAffiliate(affiliate);
+      setShowCredentialsDialog(true);
+    }
+  };
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedCredential(field);
+      toast({ title: "Copied!", description: `${field} copied to clipboard` });
+      setTimeout(() => setCopiedCredential(null), 2000);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to copy", variant: "destructive" });
+    }
+  };
+
+  const goToAffiliateDashboard = () => {
+    if (credentialsAffiliate?.portalUrl) {
+      window.open(credentialsAffiliate.portalUrl, '_blank', 'noopener,noreferrer');
+      setShowCredentialsDialog(false);
+    }
+  };
 
   const filteredAffiliates = affiliates?.filter(affiliate => {
     const matchesSearch = affiliate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -551,15 +588,13 @@ export default function Affiliates() {
                                   </div>
                                   <div>
                                     {affiliate.portalUrl ? (
-                                      <a 
-                                        href={affiliate.portalUrl} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="font-medium text-primary hover:underline"
+                                      <button 
+                                        onClick={() => handleAffiliateNameClick(affiliate)}
+                                        className="font-medium text-primary hover:underline text-left"
                                         data-testid={`link-affiliate-name-${affiliate.id}`}
                                       >
                                         {affiliate.name}
-                                      </a>
+                                      </button>
                                     ) : (
                                       <div className="font-medium" data-testid={`text-affiliate-name-${affiliate.id}`}>{affiliate.name}</div>
                                     )}
@@ -819,6 +854,30 @@ export default function Affiliates() {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="loginUsername">Login Username</Label>
+                  <Input
+                    id="loginUsername"
+                    value={affiliateForm.loginUsername}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, loginUsername: e.target.value }))}
+                    placeholder="your@email.com"
+                    data-testid="input-login-username"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="loginPassword">Login Password</Label>
+                  <Input
+                    id="loginPassword"
+                    type="password"
+                    value={affiliateForm.loginPassword}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, loginPassword: e.target.value }))}
+                    placeholder="Password"
+                    data-testid="input-login-password"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label>Categories *</Label>
                 <div className="grid grid-cols-2 gap-2">
@@ -1029,6 +1088,80 @@ export default function Affiliates() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={showCredentialsDialog} onOpenChange={setShowCredentialsDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ExternalLink className="h-5 w-5" />
+                {credentialsAffiliate?.name} Dashboard
+              </DialogTitle>
+              <DialogDescription>
+                Your saved login credentials for this affiliate portal
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {credentialsAffiliate?.loginUsername ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Username</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={credentialsAffiliate.loginUsername}
+                        readOnly
+                        className="font-mono"
+                        data-testid="text-credentials-username"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyToClipboard(credentialsAffiliate.loginUsername!, 'Username')}
+                        data-testid="button-copy-username"
+                      >
+                        {copiedCredential === 'Username' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">Password</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={credentialsAffiliate.loginPassword || ''}
+                        readOnly
+                        type="password"
+                        className="font-mono"
+                        data-testid="text-credentials-password"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => credentialsAffiliate.loginPassword && copyToClipboard(credentialsAffiliate.loginPassword, 'Password')}
+                        data-testid="button-copy-password"
+                      >
+                        {copiedCredential === 'Password' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  No login credentials saved for this affiliate.
+                  <br />
+                  <span className="text-sm">Edit the affiliate to add credentials.</span>
+                </div>
+              )}
+            </div>
+            <DialogFooter className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowCredentialsDialog(false)} data-testid="button-close-credentials">
+                Close
+              </Button>
+              <Button onClick={goToAffiliateDashboard} data-testid="button-go-to-dashboard">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Go to Dashboard
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
