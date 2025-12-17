@@ -76,20 +76,23 @@ function TrainingVideosSection() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Video className="h-6 w-6 text-accent" />
-          <h3 className="text-xl font-semibold">Training Videos</h3>
-        </div>
-
-        <Card className="overflow-hidden" data-testid="card-featured-video">
-          <div className="aspect-video bg-muted">
+        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Video className="h-5 w-5 text-accent" />
+            <h3 className="font-semibold text-lg">Training Videos</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            {featuredVideo.description || "Watch our training videos to learn how to use RE Data Metrix effectively."}
+          </p>
+          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-white/20" data-testid="card-featured-video">
             {featuredVideoId ? (
               <iframe
-                src={`https://www.youtube.com/embed/${featuredVideoId}`}
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${featuredVideoId}?rel=0&modestbranding=1`}
                 title={featuredVideo.title}
+                frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                className="w-full h-full"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -97,13 +100,7 @@ function TrainingVideosSection() {
               </div>
             )}
           </div>
-          <div className="p-4">
-            <h4 className="font-semibold text-lg" data-testid="text-featured-video-title">{featuredVideo.title}</h4>
-            {featuredVideo.description && (
-              <p className="text-muted-foreground mt-1">{featuredVideo.description}</p>
-            )}
-          </div>
-        </Card>
+        </div>
 
         {additionalVideos.length > 0 && (
           <div>

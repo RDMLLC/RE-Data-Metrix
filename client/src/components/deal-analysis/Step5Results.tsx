@@ -36,6 +36,7 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import logoImg from "@assets/Transparent Logo_1762969260481.png";
 
 interface Step5ResultsProps {
   form: UseFormReturn<WizardFormData>;
@@ -1566,6 +1567,20 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
           )}
 
           <Card ref={targetRef}>
+            {/* Company Header for PDF */}
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
+              <div className="flex items-center gap-3">
+                <img src={logoImg} alt="RE Data Metrix" className="h-12 w-12" />
+                <div>
+                  <div className="font-bold text-lg text-primary">RE Data Metrix</div>
+                  <div className="text-xs text-muted-foreground italic">Turning Terms into Returns</div>
+                </div>
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                <div className="font-medium">www.redatametrix.com</div>
+                <div className="text-xs">Deal Analysis Report</div>
+              </div>
+            </div>
             <CardHeader>
               <CardTitle>Loan Comparison Results</CardTitle>
             </CardHeader>
