@@ -699,7 +699,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
     if (!results) return;
     
     const formData = form.getValues();
-    const visibleLendersForCSV = results.lenderColumns;
+    // Apply demo mode transformation to lender columns for CSV export
+    const visibleLendersForCSV = getDisplayLenders(results.lenderColumns);
     
     // Build CSV rows
     const rows: string[][] = [];
@@ -1151,6 +1152,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
     };
   }).sort((a, b) => b.dscrCalculation.dscr - a.dscrCalculation.dscr);
 
+  // Apply demo mode transformation to DSCR products for display
+  const displayDscrProducts = getDisplayDscrLenders(dscrProductsWithCalculations);
+
   // Only show full-page spinner for initial load (no results yet)
   if (calculateResultsMutation.isPending && !results) {
     return (
@@ -1177,7 +1181,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
   }
 
   // For non-subscribers, hide lender columns
-  const visibleLenders = isSubscriber ? results.lenderColumns.slice(0, visibleLenderCount) : [];
+  // Apply demo mode transformation to lender columns before slicing for visibility
+  const displayLenderColumns = getDisplayLenders(results.lenderColumns);
+  const visibleLenders = isSubscriber ? displayLenderColumns.slice(0, visibleLenderCount) : [];
   const hasMoreLenders = isSubscriber && visibleLenderCount < results.lenderColumns.length;
 
   // Solid background color classes for sticky columns (z-index 20 for first column, 15 for Cash Sale & Your Loan)
@@ -2699,9 +2705,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     <span className="ml-3 text-muted-foreground">Calculating DSCR for each lender...</span>
                   </div>
-                ) : dscrProductsWithCalculations.length > 0 ? (
+                ) : displayDscrProducts.length > 0 ? (
                   <div className="space-y-6">
-                    {dscrProductsWithCalculations.slice(0, 5).map((item, index) => {
+                    {displayDscrProducts.slice(0, 5).map((item, index) => {
                       const { lender, dscrCalculation } = item;
                       return (
                         <Card 
