@@ -593,12 +593,12 @@ export default function Affiliates() {
                           const IconComponent = getIconComponent(affiliate.iconName);
                           return (
                             <tr key={affiliate.id} className="border-b hover-elevate" data-testid={`row-affiliate-${affiliate.id}`}>
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-primary/10 rounded-md">
+                              <td className="py-3 px-4 align-top">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-primary/10 rounded-md mt-0.5">
                                     <IconComponent className="h-4 w-4 text-primary" />
                                   </div>
-                                  <div>
+                                  <div className="max-w-xs">
                                     {affiliate.portalUrl ? (
                                       <button 
                                         onClick={() => handleAffiliateNameClick(affiliate)}
@@ -610,7 +610,7 @@ export default function Affiliates() {
                                     ) : (
                                       <div className="font-medium" data-testid={`text-affiliate-name-${affiliate.id}`}>{affiliate.name}</div>
                                     )}
-                                    <div className="text-sm text-muted-foreground truncate max-w-xs">{affiliate.description}</div>
+                                    <div className="text-sm text-muted-foreground">{affiliate.description}</div>
                                   </div>
                                 </div>
                               </td>
