@@ -179,12 +179,12 @@ export default function Navigation() {
                           Admin Dashboard
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => setLocation("/lender-dashboard")}
+                          onClick={() => setLocation("/admin/lenders")}
                           className="cursor-pointer"
                           data-testid="menu-item-lender-portal"
                         >
                           <Building2 className="mr-2 h-4 w-4" />
-                          Lender Portal
+                          Lender Management
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => setLocation("/portal/dashboard")}
@@ -334,11 +334,11 @@ export default function Navigation() {
                         Admin Dashboard
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => setLocation("/lender-dashboard")}
+                        onClick={() => setLocation("/admin/lenders")}
                         className="cursor-pointer"
                       >
                         <Building2 className="mr-2 h-4 w-4" />
-                        Lender Portal
+                        Lender Management
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => setLocation("/portal/dashboard")}
