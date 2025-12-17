@@ -3906,9 +3906,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = dealAnalysisResultsSchema.parse(req.body);
       const { dealInputs, criteriaSelection, userLoan, numberOfDraws, excludeProductIds } = validatedData;
       
-      // Check if user is authenticated (subscriber)
+      // Check if user is authenticated and is a subscriber
+      // isSubscriber = admin role OR subscriptionStatus is active/referral_trial/comped
       const isAuthenticated = req.isAuthenticated && req.isAuthenticated();
-      const isSubscriber = isAuthenticated && (req.user as any)?.isSubscriber;
+      const user = req.user as any;
+      const isSubscriber = isAuthenticated && (
+        user?.role === 'admin' || 
+        ['active', 'referral_trial', 'comped'].includes(user?.subscriptionStatus)
+      );
 
       const { purchasePrice, rehabBudget, arv, projectLength, closingCostsBuy, carryingCosts, sellPrice, closingCostsSell, commission } = dealInputs;
       const totalProjectCost = purchasePrice + rehabBudget;
