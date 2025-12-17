@@ -120,6 +120,11 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
                   <span className="text-sm font-medium text-accent">{costDisplay}</span>
                 </div>
               )}
+              {affiliate.description && (
+                <p className="text-sm text-muted-foreground mt-2" data-testid={`text-description-${affiliate.id}`}>
+                  {affiliate.description}
+                </p>
+              )}
             </div>
             <Button
               size="sm"

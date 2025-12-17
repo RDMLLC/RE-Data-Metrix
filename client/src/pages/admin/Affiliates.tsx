@@ -610,7 +610,7 @@ export default function Affiliates() {
                                     ) : (
                                       <div className="font-medium" data-testid={`text-affiliate-name-${affiliate.id}`}>{affiliate.name}</div>
                                     )}
-                                    <div className="text-sm text-muted-foreground">{affiliate.description}</div>
+                                    <div className="text-sm text-muted-foreground line-clamp-3">{affiliate.description}</div>
                                   </div>
                                 </div>
                               </td>
