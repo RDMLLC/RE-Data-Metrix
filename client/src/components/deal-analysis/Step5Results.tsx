@@ -38,6 +38,28 @@ import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 
+// Demo lender names for Demo Mode - used when shooting marketing content
+const DEMO_LENDER_NAMES = [
+  { lenderName: "Capital Bridge Funding", productName: "Bridge Express" },
+  { lenderName: "Investor Lending Group", productName: "Fix & Flip Pro" },
+  { lenderName: "Premier Hard Money", productName: "Quick Close Bridge" },
+  { lenderName: "Freedom Capital Partners", productName: "Investor Bridge Loan" },
+  { lenderName: "National Rehab Lenders", productName: "Rehab Advantage" },
+  { lenderName: "Apex Funding Solutions", productName: "Fast Track Bridge" },
+  { lenderName: "Summit Private Lending", productName: "Bridge Plus" },
+  { lenderName: "Keystone Capital Group", productName: "Investor Choice" },
+  { lenderName: "Alliance Hard Money", productName: "Bridge Builder" },
+  { lenderName: "Metro Investment Lending", productName: "Urban Flip Loan" },
+];
+
+const DEMO_DSCR_LENDER_NAMES = [
+  { lenderName: "Investor DSCR Capital", productName: "DSCR Premier", contactName: "Investment Team", email: "info@example.com", phone: "(800) 555-0100" },
+  { lenderName: "Rental Property Funding", productName: "Cash Flow Loan", contactName: "Lending Dept", email: "loans@example.com", phone: "(800) 555-0200" },
+  { lenderName: "Portfolio Lending Group", productName: "DSCR Advantage", contactName: "DSCR Team", email: "dscr@example.com", phone: "(800) 555-0300" },
+  { lenderName: "Income Property Capital", productName: "Rental Express", contactName: "Capital Team", email: "rentals@example.com", phone: "(800) 555-0400" },
+  { lenderName: "Landlord Lending Corp", productName: "DSCR Plus", contactName: "Support Team", email: "support@example.com", phone: "(800) 555-0500" },
+];
+
 interface Step5ResultsProps {
   form: UseFormReturn<WizardFormData>;
   onBack: () => void;
@@ -247,6 +269,45 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
   
   // Track the latest request ID to prevent stale responses from overwriting newer results
   const requestIdRef = useRef(0);
+
+  // Demo Mode - fetch status to show dummy lender names for marketing content
+  const { data: demoModeData } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/settings/demo-mode"],
+  });
+  const isDemoMode = demoModeData?.enabled || false;
+
+  // Function to anonymize lender columns when demo mode is active
+  const getDisplayLenders = (lenderColumns: LoanComparisonColumn[]): LoanComparisonColumn[] => {
+    if (!isDemoMode) return lenderColumns;
+    
+    return lenderColumns.map((lender, index) => ({
+      ...lender,
+      lenderId: `demo-lender-${index + 1}`,
+      lenderName: DEMO_LENDER_NAMES[index % DEMO_LENDER_NAMES.length].lenderName,
+      productName: DEMO_LENDER_NAMES[index % DEMO_LENDER_NAMES.length].productName,
+      referralLink: "#",
+    }));
+  };
+
+  // Function to anonymize DSCR lenders when demo mode is active
+  const getDisplayDscrLenders = (dscrProducts: DSCRProductWithCalculation[]): DSCRProductWithCalculation[] => {
+    if (!isDemoMode) return dscrProducts;
+    
+    return dscrProducts.map((product, index) => ({
+      ...product,
+      lender: {
+        ...product.lender,
+        lenderId: `demo-dscr-${index + 1}`,
+        lenderName: DEMO_DSCR_LENDER_NAMES[index % DEMO_DSCR_LENDER_NAMES.length].lenderName,
+        productName: DEMO_DSCR_LENDER_NAMES[index % DEMO_DSCR_LENDER_NAMES.length].productName,
+        contactName: DEMO_DSCR_LENDER_NAMES[index % DEMO_DSCR_LENDER_NAMES.length].contactName,
+        email: DEMO_DSCR_LENDER_NAMES[index % DEMO_DSCR_LENDER_NAMES.length].email,
+        phone: DEMO_DSCR_LENDER_NAMES[index % DEMO_DSCR_LENDER_NAMES.length].phone,
+        website: "https://example.com",
+        referralLink: "#",
+      },
+    }));
+  };
 
   // Scroll to top when Step 5 mounts so summary box is visible
   useEffect(() => {
