@@ -195,6 +195,30 @@ export function ensureLenderAuthenticated(
   next();
 }
 
+export function ensureLenderOrAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const user = req.user as any;
+  
+  // Allow lenders
+  if (user.userType === 'lender') {
+    return next();
+  }
+  
+  // Allow admin users
+  if (user.role === 'admin') {
+    return next();
+  }
+
+  return res.status(403).json({ error: 'Access denied: Lender or admin authentication required' });
+}
+
 export function ensureAdmin(
   req: Request,
   res: Response,

@@ -37,6 +37,26 @@ The production database is protected by Replit's **point-in-time restore** featu
 - **Code deployments** - Only affect code; database data is preserved unless structure changes
 - **Seed data** - Only used for initial population of empty databases; production data is your source of truth
 
+## Critical Feature Dependencies
+
+### Admin Access to Lender Portal
+Admin users can access the Lender Portal to preview what lenders see. This feature requires:
+- **Backend**: `/api/lenders/me` endpoint uses `ensureLenderOrAdmin` middleware (in `server/auth.ts`)
+- **Backend**: Returns synthetic lender profile with `isAdminPreview: true` for admin users
+- **Frontend**: `LenderAuthContext` exposes `isAdminPreview` flag from the lender data
+- **Frontend**: Lender pages (LenderDashboard, LenderCompanyInfo) call `refetchLender()` on mount to get fresh data
+- **Frontend**: Admin preview banner displays when `isAdminPreview` is true
+
+**DO NOT BREAK**: If changing lender authentication or the `/api/lenders/me` endpoint, ensure admin access is preserved.
+
+### Demo Mode Lender Anonymization
+Demo mode anonymizes real lender data in Step 5 Results:
+- **Backend**: `demo_mode` setting controls anonymization
+- **Frontend**: `getDisplayLenders()` and `getDisplayDscrLenders()` helper functions in Step5Results.tsx
+- Used for: Step 5 loan comparison tables, CSV export, PDF export, DSCR section
+
+**DO NOT BREAK**: Changes to lender display logic must maintain demo mode anonymization.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React

@@ -7,7 +7,7 @@ import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
 import { eq, inArray, desc, and, sql, count, gt } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
-import passport, { ensureAdmin, ensureLenderAuthenticated, ensureAuthenticated, requireRole } from "./auth";
+import passport, { ensureAdmin, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
 import crypto from "crypto";
 import multer from "multer";
@@ -1379,9 +1379,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/lenders/me", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/lenders/me", ensureLenderOrAdmin, async (req, res) => {
     try {
-      const lender = req.user as any;
+      const user = req.user as any;
+      
+      // If the user is an admin, return a synthetic lender profile for portal preview
+      if (user.role === 'admin' && user.userType !== 'lender') {
+        return res.json({
+          id: 0,
+          email: user.email,
+          companyName: "Admin Preview Mode",
+          contactName: user.username || "Admin User",
+          phone: "",
+          website: "",
+          referralLink: "",
+          referralAmount: null,
+          referralType: "$",
+          companyDescription: "",
+          isAdminPreview: true,
+        });
+      }
+      
+      // Regular lender - return their actual data
+      const lender = user;
       res.json({
         id: lender.id,
         email: lender.email,
@@ -1393,6 +1413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralAmount: lender.referralAmount,
         referralType: lender.referralType,
         companyDescription: lender.companyDescription,
+        isAdminPreview: false,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch lender info" });
@@ -1585,7 +1606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Loan Products Routes
-  app.get("/api/loan-products", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/loan-products", ensureLenderOrAdmin, async (req, res) => {
     try {
       const lenderId = (req.user as any).id;
       const products = await storage.getLoanProducts(lenderId);
@@ -3767,7 +3788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lender Company Info Routes
-  app.post("/api/lender-company-info", ensureLenderAuthenticated, async (req, res) => {
+  app.post("/api/lender-company-info", ensureLenderOrAdmin, async (req, res) => {
     try {
       const lenderId = (req.user as any).id;
       
@@ -4995,7 +5016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get members who saved the current lender (for lender portal)
-  app.get("/api/lender/saved-by", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/lender/saved-by", ensureLenderOrAdmin, async (req, res) => {
     try {
       const lender = req.user as any;
       
@@ -5174,7 +5195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get lender inquiries (for lender portal)
-  app.get("/api/lender/inquiries", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/lender/inquiries", ensureLenderOrAdmin, async (req, res) => {
     try {
       const lender = req.user as any;
       const { search, startDate, endDate } = req.query;
@@ -5249,7 +5270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get inquiry count for lender dashboard
-  app.get("/api/lender/inquiries/count", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/lender/inquiries/count", ensureLenderOrAdmin, async (req, res) => {
     try {
       const lender = req.user as any;
       

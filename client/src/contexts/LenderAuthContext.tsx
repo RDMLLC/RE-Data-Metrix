@@ -11,12 +11,14 @@ interface Lender {
   website?: string;
   status: string;
   createdAt: string;
+  isAdminPreview?: boolean;
 }
 
 interface LenderAuthContextType {
   lender: Lender | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdminPreview: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   refetchLender: () => Promise<void>;
@@ -32,6 +34,9 @@ export function LenderAuthProvider({ children }: { children: React.ReactNode }) 
     queryKey: ["/api/lenders/me"],
     retry: false,
     enabled: authChecked,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     queryFn: async () => {
       try {
         const response = await fetch("/api/lenders/me", {
@@ -107,6 +112,7 @@ export function LenderAuthProvider({ children }: { children: React.ReactNode }) 
         lender,
         isLoading: !authChecked || isLoading,
         isAuthenticated: !!lender,
+        isAdminPreview: !!lender?.isAdminPreview,
         login,
         logout,
         refetchLender,
