@@ -3251,6 +3251,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasFreeTrial: data.hasFreeTrial ?? false,
         isActive: data.isActive ?? true,
         sortOrder: data.sortOrder ?? 0,
+        loginUsername: data.loginUsername || null,
+        loginPassword: data.loginPassword || null,
       });
       
       res.status(201).json(affiliate);
@@ -3276,6 +3278,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     hasFreeTrial: z.boolean().optional(),
     isActive: z.boolean().optional(),
     sortOrder: z.number().optional(),
+    loginUsername: z.string().nullable().optional(),
+    loginPassword: z.string().nullable().optional(),
   });
   
   app.put("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
@@ -3306,6 +3310,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (data.hasFreeTrial !== undefined) updateData.hasFreeTrial = data.hasFreeTrial;
       if (data.isActive !== undefined) updateData.isActive = data.isActive;
       if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
+      if (data.loginUsername !== undefined) updateData.loginUsername = data.loginUsername;
+      if (data.loginPassword !== undefined) updateData.loginPassword = data.loginPassword;
       
       const updated = await storage.updateAffiliate(id, updateData);
       
