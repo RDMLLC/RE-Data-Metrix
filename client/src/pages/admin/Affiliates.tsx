@@ -473,10 +473,22 @@ export default function Affiliates() {
     }
   };
 
-  const goToAffiliateDashboard = () => {
+  const goToAffiliateDashboard = async () => {
     if (credentialsAffiliate?.portalUrl) {
+      // Copy username to clipboard if available
+      if (credentialsAffiliate.loginUsername) {
+        try {
+          await navigator.clipboard.writeText(credentialsAffiliate.loginUsername);
+          toast({ 
+            title: "Username Copied!", 
+            description: "Username copied to clipboard. Paste it on the login page, then come back here to copy the password." 
+          });
+        } catch (err) {
+          // Continue even if copy fails
+        }
+      }
       window.open(credentialsAffiliate.portalUrl, '_blank', 'noopener,noreferrer');
-      setShowCredentialsDialog(false);
+      // Keep dialog open so user can copy password next
     }
   };
 
