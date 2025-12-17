@@ -3,15 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, FileText, DollarSign, Heart, MessageSquare, Loader2, Eye, ArrowLeft } from "lucide-react";
+import { Building2, FileText, DollarSign, Heart, MessageSquare, Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { LoanProduct } from "@shared/schema";
 import { useLenderAuth } from "@/contexts/LenderAuthContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LenderDashboard() {
   const [, setLocation] = useLocation();
-  const { isAdminPreview, refetchLender } = useLenderAuth();
+  const { refetchLender } = useLenderAuth();
   
   // Refetch lender data when this page mounts to ensure we have fresh data
   useEffect(() => {
@@ -54,27 +53,6 @@ export default function LenderDashboard() {
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {isAdminPreview && (
-            <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950">
-              <Eye className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-amber-800 dark:text-amber-200">
-                  You are viewing the Lender Portal as an admin. This is a preview of what lenders see.
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setLocation("/admin/dashboard")}
-                  className="ml-4"
-                  data-testid="button-return-admin"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Return to Admin
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-primary mb-4">Lender Dashboard</h1>
             <div className="h-1 w-24 bg-accent"></div>

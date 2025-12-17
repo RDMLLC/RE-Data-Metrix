@@ -13,9 +13,8 @@ import { Link, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
-import { Loader2, Eye, ArrowLeft } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useLenderAuth } from "@/contexts/LenderAuthContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Custom URL validation that accepts URLs with or without protocol
 const flexibleUrlSchema = z.string()
@@ -54,7 +53,7 @@ type CompanyInfoForm = z.infer<typeof companyInfoSchema>;
 export default function LenderCompanyInfo() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { isAdminPreview, refetchLender } = useLenderAuth();
+  const { refetchLender } = useLenderAuth();
 
   // Refetch lender data when this page mounts to ensure we have fresh data
   useEffect(() => {
@@ -181,27 +180,6 @@ export default function LenderCompanyInfo() {
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {isAdminPreview && (
-            <Alert className="mb-6 border-amber-500 bg-amber-50 dark:bg-amber-950">
-              <Eye className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="flex items-center justify-between">
-                <span className="text-amber-800 dark:text-amber-200">
-                  You are viewing the Lender Portal as an admin. This is a preview of what lenders see.
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setLocation("/admin/dashboard")}
-                  className="ml-4"
-                  data-testid="button-return-admin"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Return to Admin
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-          
           <div className="mb-8">
             <Link href="/lender-dashboard">
               <Button
