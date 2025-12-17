@@ -3597,83 +3597,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync seed data endpoint (admin only) - upserts affiliate data including active status
-  // Uses name as stable key for matching (works regardless of how records were originally inserted)
+  // Sync seed data endpoint (admin only) - activates all affiliates
   app.post("/api/admin/sync-seed-data", ensureAdmin, async (req, res) => {
     try {
-      const results = {
-        affiliateCategories: { added: 0, updated: 0 },
-        affiliates: { added: 0, updated: 0 }
-      };
-
-      // Fetch existing data by name (lowercase) for stable matching
-      const existingCategories = await storage.getAllAffiliateCategories();
-      const existingCategoryByName = new Map(existingCategories.map(c => [c.name.toLowerCase(), c]));
+      console.log('Starting sync seed data...');
       
-      const existingAffiliates = await storage.getAllAffiliates();
-      const existingAffiliateByName = new Map(existingAffiliates.map(a => [a.name.toLowerCase(), a]));
-
-      // Sync affiliate categories - match by name
-      for (const category of seedAffiliateCategories) {
-        const existing = existingCategoryByName.get(category.name.toLowerCase());
-        if (existing) {
-          // Update existing category using its actual database ID
-          await db.update(affiliateCategories)
-            .set({
-              description: category.description,
-              sortOrder: category.sortOrder
-            })
-            .where(eq(affiliateCategories.id, existing.id));
-          results.affiliateCategories.updated++;
-        } else {
-          // Insert new category with seed ID
-          await db.insert(affiliateCategories).values({
-            id: category.id,
-            name: category.name,
-            description: category.description,
-            sortOrder: category.sortOrder
-          }).onConflictDoNothing();
-          results.affiliateCategories.added++;
-        }
-      }
-
-      // Sync affiliates - match by name, only update isActive status (preserve existing referral links)
-      for (const affiliate of seedAffiliates) {
-        const existing = existingAffiliateByName.get(affiliate.name.toLowerCase());
-        if (existing) {
-          // Only update isActive status - preserve manually configured referral links and other data
-          await db.update(affiliates)
-            .set({
-              isActive: affiliate.isActive,
-              updatedAt: new Date()
-            })
-            .where(eq(affiliates.id, existing.id));
-          results.affiliates.updated++;
-        } else {
-          // Insert new affiliate with seed ID (new affiliates get seed data)
-          await db.insert(affiliates).values({
-            id: affiliate.id,
-            name: affiliate.name,
-            description: affiliate.description,
-            benefits: affiliate.benefits,
-            referralLink: affiliate.referralLink,
-            categories: affiliate.categories,
-            features: affiliate.features || [],
-            iconName: affiliate.iconName,
-            isActive: affiliate.isActive,
-            sortOrder: affiliate.sortOrder,
-          }).onConflictDoNothing();
-          results.affiliates.added++;
-        }
-      }
-
-      const totalAdded = results.affiliateCategories.added + results.affiliates.added;
-      const totalUpdated = results.affiliateCategories.updated + results.affiliates.updated;
+      // Simply activate ALL affiliates in the database
+      const result = await db.update(affiliates)
+        .set({
+          isActive: true,
+          updatedAt: new Date()
+        });
+      
+      // Get count of all affiliates
+      const allAffiliates = await storage.getAllAffiliates();
+      const activatedCount = allAffiliates.length;
+      
+      console.log(`Sync complete: activated ${activatedCount} affiliates`);
 
       res.json({
         success: true,
-        message: `Sync complete: ${totalAdded} added, ${totalUpdated} updated`,
-        results
+        message: `Sync complete: ${activatedCount} affiliates activated`,
+        results: {
+          affiliates: { updated: activatedCount }
+        }
       });
     } catch (error) {
       console.error('Sync seed data error:', error);
