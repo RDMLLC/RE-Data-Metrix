@@ -3597,29 +3597,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync seed data endpoint (admin only) - activates all affiliates
+  // Sync seed data endpoint (admin only) - updates isActive status ONLY for affiliates in seed data
+  // Affiliates not in seed data remain unchanged
   app.post("/api/admin/sync-seed-data", ensureAdmin, async (req, res) => {
     try {
       console.log('Starting sync seed data...');
       
-      // Simply activate ALL affiliates in the database
-      const result = await db.update(affiliates)
-        .set({
-          isActive: true,
-          updatedAt: new Date()
-        });
+      // Get existing affiliates and create name lookup (lowercase for matching)
+      const existingAffiliates = await storage.getAllAffiliates();
+      const existingByName = new Map(existingAffiliates.map(a => [a.name.toLowerCase().trim(), a]));
       
-      // Get count of all affiliates
-      const allAffiliates = await storage.getAllAffiliates();
-      const activatedCount = allAffiliates.length;
+      let updated = 0;
+      let skipped = 0;
+      const updatedNames: string[] = [];
       
-      console.log(`Sync complete: activated ${activatedCount} affiliates`);
+      // Only update affiliates that exist in BOTH seed data AND database
+      for (const seedAffiliate of seedAffiliates) {
+        const existing = existingByName.get(seedAffiliate.name.toLowerCase().trim());
+        
+        if (existing) {
+          // Update only the isActive field to match seed data
+          await db.update(affiliates)
+            .set({
+              isActive: seedAffiliate.isActive,
+              updatedAt: new Date()
+            })
+            .where(eq(affiliates.id, existing.id));
+          
+          updated++;
+          updatedNames.push(seedAffiliate.name);
+          console.log(`Updated "${seedAffiliate.name}" isActive=${seedAffiliate.isActive}`);
+        } else {
+          skipped++;
+          console.log(`Skipped "${seedAffiliate.name}" - not found in database`);
+        }
+      }
+      
+      console.log(`Sync complete: ${updated} updated, ${skipped} not found`);
 
       res.json({
         success: true,
-        message: `Sync complete: ${activatedCount} affiliates activated`,
+        message: `Sync complete: ${updated} affiliates updated from seed data`,
         results: {
-          affiliates: { updated: activatedCount }
+          affiliates: { updated, skipped },
+          updatedNames
         }
       });
     } catch (error) {
