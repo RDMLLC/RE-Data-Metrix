@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,119 @@ interface ToolFinderProps {
   isBlurred?: boolean;
 }
 
+const PLACEHOLDER_AFFILIATES: Affiliate[] = [
+  {
+    id: "demo-1",
+    name: "Property Research Tool",
+    description: "Find investment opportunities with this powerful property research platform. Access market data, property details, and investment analytics.",
+    benefits: ["Market Analysis", "Property Data", "Investment Insights"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["comps", "lead-generation"],
+    features: [],
+    iconName: "Search",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$29/mo",
+    costTo: "$99/mo",
+    hasFreeTrial: true,
+    isActive: true,
+    sortOrder: 1,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: "demo-2",
+    name: "Lead Generation Platform",
+    description: "Discover motivated sellers and off-market deals with advanced lead generation tools and skip tracing capabilities.",
+    benefits: ["Skip Tracing", "Motivated Sellers", "Off-Market Deals"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["lead-generation", "marketplace"],
+    features: [],
+    iconName: "Users",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$49/mo",
+    costTo: "$199/mo",
+    hasFreeTrial: false,
+    isActive: true,
+    sortOrder: 2,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: "demo-3",
+    name: "Property Management Software",
+    description: "Streamline your rental property management with automated rent collection, maintenance tracking, and tenant communication.",
+    benefits: ["Rent Collection", "Maintenance Tracking", "Tenant Portal"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["property-management"],
+    features: [],
+    iconName: "Building2",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$12/unit",
+    costTo: "$25/unit",
+    hasFreeTrial: true,
+    isActive: true,
+    sortOrder: 3,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: "demo-4",
+    name: "Project Management Hub",
+    description: "Manage your rehab projects, track budgets, coordinate contractors, and monitor timelines all in one place.",
+    benefits: ["Budget Tracking", "Contractor Management", "Timeline Monitoring"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["project-management"],
+    features: [],
+    iconName: "ClipboardList",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$39/mo",
+    costTo: "$149/mo",
+    hasFreeTrial: true,
+    isActive: true,
+    sortOrder: 4,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: "demo-5",
+    name: "Investor Community Platform",
+    description: "Connect with other investors, find partners, and access exclusive deal opportunities through this investor marketplace.",
+    benefits: ["Networking", "Deal Sharing", "Partnership Matching"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["marketplace", "lead-generation"],
+    features: [],
+    iconName: "Users",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$0",
+    costTo: "$99/mo",
+    hasFreeTrial: true,
+    isActive: true,
+    sortOrder: 5,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
 export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -23,9 +136,22 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
     queryKey: ["/api/affiliate-categories"],
   });
 
+  const { data: demoModeData } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/settings/demo-mode"],
+  });
+
+  const isDemoMode = demoModeData?.enabled === true;
+
   const isLoading = affiliatesLoading || categoriesLoading;
 
-  const toolAffiliates = affiliates?.filter(a => a.categories && a.categories.length > 0) || [];
+  const displayAffiliates = useMemo(() => {
+    if (isDemoMode) {
+      return PLACEHOLDER_AFFILIATES;
+    }
+    return affiliates?.filter(a => a.categories && a.categories.length > 0) || [];
+  }, [affiliates, isDemoMode]);
+
+  const toolAffiliates = displayAffiliates;
 
   const categoryLabels: Record<string, string> = {};
   categories?.forEach(cat => {

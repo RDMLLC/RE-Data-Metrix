@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,10 +7,17 @@ import { GlossarySection } from "@/components/GlossarySection";
 import ToolFinder from "@/components/ToolFinder";
 import { categoryInfo } from "@/data/affiliatePrograms";
 import { Button } from "@/components/ui/button";
-import { Wrench, CheckCircle, Lock } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Wrench, CheckCircle, Lock, Play, Video } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import type { Affiliate } from "@shared/schema";
+import type { Affiliate, TrainingVideo } from "@shared/schema";
 
 function SubscribeOverlay({ title = "Subscribe to View" }: { title?: string }) {
   return (
@@ -25,6 +33,144 @@ function SubscribeOverlay({ title = "Subscribe to View" }: { title?: string }) {
         </Button>
       </Link>
     </div>
+  );
+}
+
+function getYoutubeVideoId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/);
+  return match ? match[1] : null;
+}
+
+function getYoutubeThumbnail(url: string): string {
+  const videoId = getYoutubeVideoId(url);
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  }
+  return "";
+}
+
+function TrainingVideosSection() {
+  const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
+
+  const { data: videos, isLoading } = useQuery<TrainingVideo[]>({
+    queryKey: ["/api/training-videos"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!videos || videos.length === 0) {
+    return null;
+  }
+
+  const featuredVideo = videos.find(v => v.isFeatured) || videos[0];
+  const additionalVideos = videos.filter(v => v.id !== featuredVideo.id);
+
+  const featuredVideoId = getYoutubeVideoId(featuredVideo.youtubeUrl);
+
+  return (
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Video className="h-6 w-6 text-accent" />
+          <h3 className="text-xl font-semibold">Training Videos</h3>
+        </div>
+
+        <Card className="overflow-hidden" data-testid="card-featured-video">
+          <div className="aspect-video bg-muted">
+            {featuredVideoId ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${featuredVideoId}`}
+                title={featuredVideo.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                Video not available
+              </div>
+            )}
+          </div>
+          <div className="p-4">
+            <h4 className="font-semibold text-lg" data-testid="text-featured-video-title">{featuredVideo.title}</h4>
+            {featuredVideo.description && (
+              <p className="text-muted-foreground mt-1">{featuredVideo.description}</p>
+            )}
+          </div>
+        </Card>
+
+        {additionalVideos.length > 0 && (
+          <div>
+            <h4 className="font-medium text-muted-foreground mb-3">More Videos</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {additionalVideos.map((video) => {
+                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+                return (
+                  <Card
+                    key={video.id}
+                    className="overflow-hidden cursor-pointer hover-elevate"
+                    onClick={() => setSelectedVideo(video)}
+                    data-testid={`card-video-thumbnail-${video.id}`}
+                  >
+                    <div className="aspect-video bg-muted relative">
+                      {thumbnail ? (
+                        <img
+                          src={thumbnail}
+                          alt={video.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Video className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <Play className="h-12 w-12 text-white" />
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <h5 className="font-medium text-sm line-clamp-2" data-testid={`text-video-title-${video.id}`}>
+                        {video.title}
+                      </h5>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle>{selectedVideo?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video">
+            {selectedVideo && getYoutubeVideoId(selectedVideo.youtubeUrl) && (
+              <iframe
+                src={`https://www.youtube.com/embed/${getYoutubeVideoId(selectedVideo.youtubeUrl)}`}
+                title={selectedVideo.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            )}
+          </div>
+          {selectedVideo?.description && (
+            <div className="p-4 pt-0">
+              <p className="text-muted-foreground">{selectedVideo.description}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -123,74 +269,8 @@ export default function Resources() {
                 trusted platforms and services that our community of investors relies on every day.
               </p>
 
-              <h3 className="text-xl font-semibold mt-6 mb-3">What You'll Find Here</h3>
-              
-              <div className="grid gap-4 md:grid-cols-2 not-prose">
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                  <div>
-                    <h4 className="font-semibold mb-1">Vetted Partners</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Every platform in our toolbox has been carefully evaluated for quality, 
-                      reliability, and value to real estate investors.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                  <div>
-                    <h4 className="font-semibold mb-1">Time-Saving Solutions</h4>
-                    <p className="text-sm text-muted-foreground">
-                      From property management to deal analysis, these tools streamline your 
-                      workflow and help you scale your business efficiently.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                  <div>
-                    <h4 className="font-semibold mb-1">Competitive Advantage</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Access the same professional-grade tools and data that top investors use 
-                      to find deals, analyze markets, and make informed decisions.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                  <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1 shrink-0" />
-                  <div>
-                    <h4 className="font-semibold mb-1">Educational Resources</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Our glossary provides clear definitions of essential investing terms, 
-                      helping you speak the language of real estate like a pro.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <h3 className="text-xl font-semibold mt-6 mb-3">How to Use This Toolbox</h3>
-              
-              <p className="text-muted-foreground leading-relaxed">
-                Browse the categories above to explore platforms organized by function. Whether you're 
-                looking for property management software, lead generation tools, market data, or networking 
-                opportunities, we've organized everything to help you find exactly what you need.
-              </p>
-
-              <p className="text-muted-foreground leading-relaxed">
-                Each tool includes a detailed description, key benefits, and a direct link to get started. 
-                Many of these platforms offer free trials or introductory pricing, making it easy to test 
-                what works best for your investment strategy.
-              </p>
-
-              <div className="mt-8 p-6 bg-accent/10 border-l-4 border-accent rounded-r-lg">
-                <p className="font-semibold mb-2">Ready to Explore?</p>
-                <p className="text-sm text-muted-foreground">
-                  Click any category tab above to browse our curated selection of investment tools, 
-                  or visit the Glossary to master essential real estate terminology.
-                </p>
+              <div className="not-prose mt-6">
+                <TrainingVideosSection />
               </div>
             </div>
 

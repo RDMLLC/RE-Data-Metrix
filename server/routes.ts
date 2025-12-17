@@ -3428,6 +3428,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Site Settings endpoints
+  app.get("/api/admin/settings/:key", ensureAdmin, async (req, res) => {
+    try {
+      const value = await storage.getSiteSetting(req.params.key);
+      res.json({ key: req.params.key, value });
+    } catch (error) {
+      console.error('Get site setting error:', error);
+      res.status(500).json({ error: "Failed to get setting" });
+    }
+  });
+
+  app.post("/api/admin/settings", ensureAdmin, async (req, res) => {
+    try {
+      const { key, value } = req.body;
+      if (!key || value === undefined) {
+        return res.status(400).json({ error: "Key and value are required" });
+      }
+      const setting = await storage.setSiteSetting(key, String(value));
+      res.json(setting);
+    } catch (error) {
+      console.error('Set site setting error:', error);
+      res.status(500).json({ error: "Failed to save setting" });
+    }
+  });
+
+  // Public endpoint to check demo mode
+  app.get("/api/settings/demo-mode", async (req, res) => {
+    try {
+      const value = await storage.getSiteSetting("demo_mode");
+      res.json({ enabled: value === "true" });
+    } catch (error) {
+      res.json({ enabled: false });
+    }
+  });
+
+  // Training Videos endpoints
+  app.get("/api/training-videos", async (req, res) => {
+    try {
+      const videos = await storage.getActiveTrainingVideos();
+      res.json(videos);
+    } catch (error) {
+      console.error('Get training videos error:', error);
+      res.status(500).json({ error: "Failed to fetch videos" });
+    }
+  });
+
+  app.get("/api/admin/training-videos", ensureAdmin, async (req, res) => {
+    try {
+      const videos = await storage.getAllTrainingVideos();
+      res.json(videos);
+    } catch (error) {
+      console.error('Get all training videos error:', error);
+      res.status(500).json({ error: "Failed to fetch videos" });
+    }
+  });
+
+  const trainingVideoSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional(),
+    youtubeUrl: z.string().url("Must be a valid URL"),
+    thumbnailUrl: z.string().optional(),
+    isFeatured: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+    sortOrder: z.number().optional(),
+  });
+
+  app.post("/api/admin/training-videos", ensureAdmin, async (req, res) => {
+    try {
+      const validationResult = trainingVideoSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      const video = await storage.createTrainingVideo(validationResult.data);
+      res.json(video);
+    } catch (error) {
+      console.error('Create training video error:', error);
+      res.status(500).json({ error: "Failed to create video" });
+    }
+  });
+
+  app.put("/api/admin/training-videos/:id", ensureAdmin, async (req, res) => {
+    try {
+      const validationResult = trainingVideoSchema.partial().safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      const video = await storage.updateTrainingVideo(req.params.id, validationResult.data);
+      if (!video) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      res.json(video);
+    } catch (error) {
+      console.error('Update training video error:', error);
+      res.status(500).json({ error: "Failed to update video" });
+    }
+  });
+
+  app.delete("/api/admin/training-videos/:id", ensureAdmin, async (req, res) => {
+    try {
+      const deleted = await storage.deleteTrainingVideo(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Video not found" });
+      }
+      res.json({ success: true, message: "Video deleted" });
+    } catch (error) {
+      console.error('Delete training video error:', error);
+      res.status(500).json({ error: "Failed to delete video" });
+    }
+  });
+
   // Data health check endpoint (admin only) - returns counts of key data
   app.get("/api/admin/data-health", ensureAdmin, async (req, res) => {
     try {

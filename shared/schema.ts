@@ -683,3 +683,42 @@ export const insertAffiliateCategorySchema = createInsertSchema(affiliateCategor
 
 export type InsertAffiliateCategory = z.infer<typeof insertAffiliateCategorySchema>;
 export type AffiliateCategory = typeof affiliateCategories.$inferSelect;
+
+// Site Settings - global configuration options
+export const siteSettings = pgTable("site_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSiteSettingSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertSiteSetting = z.infer<typeof insertSiteSettingSchema>;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+
+// Training Videos - educational content for the Toolbox
+export const trainingVideos = pgTable("training_videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  youtubeUrl: text("youtube_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  isFeatured: boolean("is_featured").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTrainingVideoSchema = createInsertSchema(trainingVideos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTrainingVideo = z.infer<typeof insertTrainingVideoSchema>;
+export type TrainingVideo = typeof trainingVideos.$inferSelect;

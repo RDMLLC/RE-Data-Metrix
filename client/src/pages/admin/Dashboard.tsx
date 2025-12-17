@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface StripeStatus {
   configured: boolean;
@@ -32,6 +34,8 @@ export default function AdminDashboard() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [dataHealth, setDataHealth] = useState<DataHealth | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+  const [demoModeEnabled, setDemoModeEnabled] = useState(false);
+  const [isTogglingDemoMode, setIsTogglingDemoMode] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -101,10 +105,55 @@ export default function AdminDashboard() {
       }
     };
     
+    const fetchDemoMode = async () => {
+      try {
+        const response = await fetch("/api/admin/settings/demo_mode", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDemoModeEnabled(data.value === "true");
+        }
+      } catch (error) {
+        console.error("Failed to fetch demo mode status");
+      }
+    };
+
     fetchAdminInfo();
     fetchStripeStatus();
     fetchDataHealth();
+    fetchDemoMode();
   }, [setLocation, toast]);
+
+  const handleToggleDemoMode = async () => {
+    setIsTogglingDemoMode(true);
+    try {
+      const newValue = !demoModeEnabled;
+      const response = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ key: "demo_mode", value: String(newValue) }),
+      });
+      if (response.ok) {
+        setDemoModeEnabled(newValue);
+        toast({
+          title: newValue ? "Demo Mode Enabled" : "Demo Mode Disabled",
+          description: newValue 
+            ? "Tool Finder now shows placeholder affiliates" 
+            : "Tool Finder now shows real affiliates",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to toggle demo mode",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingDemoMode(false);
+    }
+  };
 
   // Show loading while checking auth
   if (isAuthChecking) {
@@ -428,6 +477,26 @@ export default function AdminDashboard() {
 
             <Card 
               className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/admin/training-videos")}
+              data-testid="card-training-videos"
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-rose-500/10 rounded-lg flex items-center justify-center">
+                    <Video className="h-5 w-5 text-rose-500" />
+                  </div>
+                  <CardTitle>Training Videos</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Manage educational videos displayed in the Toolbox
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="hover-elevate cursor-pointer" 
               onClick={() => setLocation("/admin/calculations")}
               data-testid="card-calculations"
             >
@@ -446,6 +515,43 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="mt-6" data-testid="card-demo-mode">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                    <Monitor className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      Demo Mode
+                      {demoModeEnabled && (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                          Active
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      Show placeholder affiliates in Tool Finder for marketing videos
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="demo-mode-toggle" className="text-sm text-muted-foreground">
+                    {demoModeEnabled ? "Enabled" : "Disabled"}
+                  </Label>
+                  <Switch
+                    id="demo-mode-toggle"
+                    checked={demoModeEnabled}
+                    onCheckedChange={handleToggleDemoMode}
+                    disabled={isTogglingDemoMode}
+                    data-testid="switch-demo-mode"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
 
         </div>
       </div>

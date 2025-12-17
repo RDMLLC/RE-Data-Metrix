@@ -24,6 +24,10 @@ import {
   type InsertAffiliate,
   type AffiliateCategory,
   type InsertAffiliateCategory,
+  type SiteSetting,
+  type InsertSiteSetting,
+  type TrainingVideo,
+  type InsertTrainingVideo,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -39,7 +43,9 @@ import {
   discountCodes as discountCodesTable,
   discountCodeUses as discountCodeUsesTable,
   affiliates as affiliatesTable,
-  affiliateCategories as affiliateCategoriesTable
+  affiliateCategories as affiliateCategoriesTable,
+  siteSettings as siteSettingsTable,
+  trainingVideos as trainingVideosTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -155,6 +161,18 @@ export interface IStorage {
   getAllAffiliateCategories(): Promise<AffiliateCategory[]>;
   upsertAffiliateCategory(data: InsertAffiliateCategory): Promise<AffiliateCategory>;
   deleteAffiliateCategory(id: string): Promise<boolean>;
+  
+  // Site Settings
+  getSiteSetting(key: string): Promise<string | null>;
+  setSiteSetting(key: string, value: string): Promise<SiteSetting>;
+  
+  // Training Videos
+  getAllTrainingVideos(): Promise<TrainingVideo[]>;
+  getActiveTrainingVideos(): Promise<TrainingVideo[]>;
+  getTrainingVideoById(id: string): Promise<TrainingVideo | undefined>;
+  createTrainingVideo(data: InsertTrainingVideo): Promise<TrainingVideo>;
+  updateTrainingVideo(id: string, data: Partial<InsertTrainingVideo>): Promise<TrainingVideo | undefined>;
+  deleteTrainingVideo(id: string): Promise<boolean>;
   
   // Deal Analysis Reports
   getDealAnalysisStats(): Promise<{
@@ -1868,6 +1886,59 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAffiliateCategory(id: string): Promise<boolean> {
     const result = await db.delete(affiliateCategoriesTable).where(eq(affiliateCategoriesTable.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Site Settings
+  async getSiteSetting(key: string): Promise<string | null> {
+    const result = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, key)).limit(1);
+    return result[0]?.value || null;
+  }
+
+  async setSiteSetting(key: string, value: string): Promise<SiteSetting> {
+    const existing = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, key)).limit(1);
+    if (existing.length > 0) {
+      const updated = await db.update(siteSettingsTable)
+        .set({ value, updatedAt: new Date() })
+        .where(eq(siteSettingsTable.key, key))
+        .returning();
+      return updated[0];
+    }
+    const created = await db.insert(siteSettingsTable).values({ key, value }).returning();
+    return created[0];
+  }
+
+  // Training Videos
+  async getAllTrainingVideos(): Promise<TrainingVideo[]> {
+    return await db.select().from(trainingVideosTable).orderBy(trainingVideosTable.sortOrder);
+  }
+
+  async getActiveTrainingVideos(): Promise<TrainingVideo[]> {
+    return await db.select().from(trainingVideosTable)
+      .where(eq(trainingVideosTable.isActive, true))
+      .orderBy(trainingVideosTable.sortOrder);
+  }
+
+  async getTrainingVideoById(id: string): Promise<TrainingVideo | undefined> {
+    const result = await db.select().from(trainingVideosTable).where(eq(trainingVideosTable.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createTrainingVideo(data: InsertTrainingVideo): Promise<TrainingVideo> {
+    const result = await db.insert(trainingVideosTable).values(data).returning();
+    return result[0];
+  }
+
+  async updateTrainingVideo(id: string, data: Partial<InsertTrainingVideo>): Promise<TrainingVideo | undefined> {
+    const result = await db.update(trainingVideosTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(trainingVideosTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteTrainingVideo(id: string): Promise<boolean> {
+    const result = await db.delete(trainingVideosTable).where(eq(trainingVideosTable.id, id)).returning();
     return result.length > 0;
   }
 
