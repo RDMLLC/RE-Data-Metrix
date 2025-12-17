@@ -33,7 +33,10 @@ export default function AdminDashboard() {
   const [dataHealth, setDataHealth] = useState<DataHealth | null>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncingType, setSyncingType] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -146,41 +149,74 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSyncSeedData = async () => {
-    setIsSyncing(true);
+  const handlePreviewSync = async () => {
+    setIsLoadingPreview(true);
     try {
-      const response = await fetch("/api/admin/sync-seed-data", {
-        method: "POST",
+      const response = await fetch("/api/admin/sync-preview", {
         credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
-        toast({
-          title: "Data Synced Successfully",
-          description: `Updated: ${data.results.affiliates.updated} affiliates. Added: ${data.results.affiliates.added} new affiliates.`,
-        });
-        const healthResponse = await fetch("/api/admin/data-health", {
-          credentials: "include",
-        });
-        if (healthResponse.ok) {
-          setDataHealth(await healthResponse.json());
-        }
+        setPreviewData(data.preview);
+        setShowPreview(true);
       } else {
-        const error = await response.json();
         toast({
-          title: "Sync Failed",
-          description: error.error || "Failed to sync seed data",
+          title: "Preview Failed",
+          description: "Failed to load sync preview",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to sync seed data",
+        description: "Failed to load sync preview",
         variant: "destructive",
       });
     } finally {
-      setIsSyncing(false);
+      setIsLoadingPreview(false);
+    }
+  };
+
+  const handleSync = async (type: 'affiliate-categories' | 'affiliates' | 'lenders' | 'loan-products') => {
+    setSyncingType(type);
+    try {
+      const response = await fetch(`/api/admin/sync-${type}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Sync Successful",
+          description: data.message,
+        });
+        // Refresh data health
+        const healthResponse = await fetch("/api/admin/data-health", {
+          credentials: "include",
+        });
+        if (healthResponse.ok) {
+          setDataHealth(await healthResponse.json());
+        }
+        // Refresh preview if open
+        if (showPreview) {
+          handlePreviewSync();
+        }
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Sync Failed",
+          description: error.error || `Failed to sync ${type}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to sync ${type}`,
+        variant: "destructive",
+      });
+    } finally {
+      setSyncingType(null);
     }
   };
 
@@ -366,28 +402,121 @@ export default function AdminDashboard() {
                     <div className="text-sm text-muted-foreground">Categories</div>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t flex items-center justify-between gap-4 flex-wrap">
-                  <p className="text-sm text-muted-foreground">
-                    Sync updates existing affiliate data with latest seed values
-                  </p>
-                  <Button
-                    onClick={handleSyncSeedData}
-                    disabled={isSyncing}
-                    variant="outline"
-                    data-testid="button-sync-seed-data"
-                  >
-                    {isSyncing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Syncing...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Sync Seed Data
-                      </>
-                    )}
-                  </Button>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      Sync updates existing data with seed file values (uses ID matching)
+                    </p>
+                    <Button
+                      onClick={handlePreviewSync}
+                      disabled={isLoadingPreview}
+                      variant="outline"
+                      data-testid="button-preview-sync"
+                    >
+                      {isLoadingPreview ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="h-4 w-4 mr-2" />
+                          Preview Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {showPreview && previewData && (
+                    <div className="mb-4 p-4 bg-muted/50 rounded-lg space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-medium">Sync Preview</h4>
+                        <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)}>Close</Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="font-medium mb-1">Affiliates</p>
+                          <p className="text-muted-foreground">
+                            Will update: {previewData.affiliates.toUpdate.filter((a: any) => a.willChange).length} | 
+                            Will add: {previewData.affiliates.toAdd.length} | 
+                            Not in seed: {previewData.affiliates.notInSeed.length}
+                          </p>
+                          {previewData.affiliates.toUpdate.filter((a: any) => a.willChange).length > 0 && (
+                            <ul className="mt-1 text-xs text-muted-foreground">
+                              {previewData.affiliates.toUpdate.filter((a: any) => a.willChange).map((a: any) => (
+                                <li key={a.name}>{a.name}: {a.currentActive ? 'Active' : 'Inactive'} → {a.newActive ? 'Active' : 'Inactive'}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium mb-1">Categories</p>
+                          <p className="text-muted-foreground">
+                            Will update: {previewData.affiliateCategories.toUpdate.length} | 
+                            Will add: {previewData.affiliateCategories.toAdd.length}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-medium mb-1">Lenders</p>
+                          <p className="text-muted-foreground">
+                            Will update: {previewData.lenders.toUpdate.length} | 
+                            Will add: {previewData.lenders.toAdd.length}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-medium mb-1">Loan Products</p>
+                          <p className="text-muted-foreground">
+                            Will update: {previewData.loanProducts.toUpdate.length} | 
+                            Will add: {previewData.loanProducts.toAdd.length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => handleSync('affiliate-categories')}
+                      disabled={!!syncingType}
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-sync-categories"
+                    >
+                      {syncingType === 'affiliate-categories' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Sync Categories
+                    </Button>
+                    <Button
+                      onClick={() => handleSync('affiliates')}
+                      disabled={!!syncingType}
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-sync-affiliates"
+                    >
+                      {syncingType === 'affiliates' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Sync Affiliates
+                    </Button>
+                    <Button
+                      onClick={() => handleSync('lenders')}
+                      disabled={!!syncingType}
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-sync-lenders"
+                    >
+                      {syncingType === 'lenders' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Sync Lenders
+                    </Button>
+                    <Button
+                      onClick={() => handleSync('loan-products')}
+                      disabled={!!syncingType}
+                      variant="outline"
+                      size="sm"
+                      data-testid="button-sync-loan-products"
+                    >
+                      {syncingType === 'loan-products' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                      Sync Loan Products
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
