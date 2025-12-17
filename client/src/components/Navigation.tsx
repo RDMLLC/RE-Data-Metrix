@@ -181,10 +181,18 @@ export default function Navigation() {
                         <DropdownMenuItem 
                           onClick={() => setLocation("/admin/lenders")}
                           className="cursor-pointer"
-                          data-testid="menu-item-lender-portal"
+                          data-testid="menu-item-lender-management"
                         >
                           <Building2 className="mr-2 h-4 w-4" />
                           Lender Management
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/lender-dashboard")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-lender-portal"
+                        >
+                          <Building2 className="mr-2 h-4 w-4" />
+                          Lender Portal
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => setLocation("/portal/dashboard")}
@@ -339,6 +347,13 @@ export default function Navigation() {
                       >
                         <Building2 className="mr-2 h-4 w-4" />
                         Lender Management
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setLocation("/lender-dashboard")}
+                        className="cursor-pointer"
+                      >
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Lender Portal
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => setLocation("/portal/dashboard")}
