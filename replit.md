@@ -15,6 +15,28 @@ Authentication includes user/lender tables, session management (Express sessions
 
 Key features include a 5-step Deal Analysis Wizard with Fix & Flip and Rental/DSCR tabs, supporting double close transactions and detailed loan comparison. The Fix & Flip tab includes summary metrics, editable variables, and an expandable loan comparison table with PDF generation capabilities. The Rental/DSCR tab provides property overview, DSCR calculation, and lender comparison. An Investor Inquiries system facilitates direct contact between investors and lenders. An Admin portal provides a reference for platform calculations and affiliate management. All loan calculation logic is centralized in `shared/calculations/loan-calculations.ts` for consistency.
 
+## Data Protection & Recovery
+
+### Production Database Protection
+The production database is protected by Replit's **point-in-time restore** feature:
+
+- **Automatic protection** - Replit maintains restore points for your production database
+- **Any-moment recovery** - You can restore to any specific point in time (not just scheduled backups)
+- **7-day soft delete** - Deleted databases can be recovered within 7 days
+
+### How to Restore Production Data
+1. Open the **Database pane** in your Replit workspace
+2. Select your **Production database**
+3. Go to the **Settings** tab
+4. Use the **point-in-time restore** feature to select when to restore to
+5. Note: This restores only the database, not the application code (use checkpoints for code)
+
+### Development vs Production
+- **Development database** - Used for testing changes, not backed up
+- **Production database** - Your live user data, protected by point-in-time restore
+- **Code deployments** - Only affect code; database data is preserved unless structure changes
+- **Seed data** - Only used for initial population of empty databases; production data is your source of truth
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
