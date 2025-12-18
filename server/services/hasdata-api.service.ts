@@ -335,15 +335,26 @@ export class HasDataAPIService implements IPropertyAPIService {
       imageUrl = property.photoUrl;
     }
     
-    // Extract HOA fees - Zillow uses various field names
-    // Try multiple possible field names for HOA
+    // Extract HOA fees - Zillow uses various field names in different locations
+    // Check all possible locations where HOA data might be stored
     const hoaFees = this.parseNumber(
       property.hoaFee || 
       property.monthlyHoaFee || 
       property.associationFee ||
       property.hoaDues ||
       property.hoa?.fee ||
-      property.hoa?.monthlyFee
+      property.hoa?.monthlyFee ||
+      property.resoFacts?.hoaFee ||
+      property.resoFacts?.associationFee ||
+      property.resoFacts?.associationFee2 ||
+      property.homeValues?.hoaFee ||
+      property.attributionInfo?.hoaFee
+    );
+    
+    // Look for any keys containing 'hoa' or 'association' (case insensitive) for debugging
+    const hoaRelatedKeys = Object.keys(property).filter(k => 
+      k.toLowerCase().includes('hoa') || 
+      k.toLowerCase().includes('association')
     );
     
     // Log HOA-related fields for debugging
@@ -353,8 +364,24 @@ export class HasDataAPIService implements IPropertyAPIService {
       associationFee: property.associationFee,
       hoaDues: property.hoaDues,
       hoa: property.hoa,
+      resoFactsHoaFee: property.resoFacts?.hoaFee,
+      resoFactsAssociationFee: property.resoFacts?.associationFee,
+      hoaRelatedKeys: hoaRelatedKeys,
       extractedHoaFees: hoaFees
     });
+    
+    // If we have resoFacts, log all its keys to find HOA
+    if (property.resoFacts) {
+      const resoHoaKeys = Object.keys(property.resoFacts).filter(k => 
+        k.toLowerCase().includes('hoa') || 
+        k.toLowerCase().includes('association') ||
+        k.toLowerCase().includes('fee')
+      );
+      console.log("Zillow resoFacts fee-related keys:", resoHoaKeys);
+      resoHoaKeys.forEach(key => {
+        console.log(`  resoFacts.${key}:`, property.resoFacts[key]);
+      });
+    }
     
     // Extract tax from taxHistory array (most recent entry) if available
     let taxHistoryAmount: number | undefined;
