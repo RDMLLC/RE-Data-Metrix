@@ -635,30 +635,6 @@ export default function LoanTypes() {
             </Card>
           </div>
 
-          {/* Bottom CTA */}
-          <Card className="p-8 mt-12 bg-accent/5">
-            <div className="text-center max-w-2xl mx-auto">
-              <h2 className="text-3xl font-bold text-primary mb-4">
-                Need Help Choosing the Right Loan?
-              </h2>
-              <p className="text-lg text-muted-foreground mb-6">
-                Connect with experienced lenders who specialize in real estate investment financing. 
-                Our network includes hard money lenders, DSCR specialists, and conventional lenders.
-              </p>
-              <div className="flex gap-3 justify-center flex-wrap">
-                <Link href="/lenders">
-                  <Button size="lg" data-testid="button-browse-lenders">
-                    Browse Lenders
-                  </Button>
-                </Link>
-                <Link href="/about-private-lenders">
-                  <Button variant="outline" size="lg" data-testid="button-learn-private-lending">
-                    Learn About Private Lending
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </Card>
         </div>
       </div>
     </Layout>
