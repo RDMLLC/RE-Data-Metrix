@@ -472,9 +472,18 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
 
   const isDemoMode = demoModeData?.enabled === true;
 
+  // Debug logging - remove after debugging
+  console.log('ToolFinder Debug:', {
+    demoModeData,
+    isDemoMode,
+    affiliatesCount: affiliates?.length,
+    placeholderCount: PLACEHOLDER_AFFILIATES.length
+  });
+
   const isLoading = affiliatesLoading || categoriesLoading;
 
   const displayAffiliates = useMemo(() => {
+    console.log('displayAffiliates computed - isDemoMode:', isDemoMode);
     if (isDemoMode) {
       return PLACEHOLDER_AFFILIATES;
     }
@@ -507,14 +516,23 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
   };
 
   const matchingTools = selectedCategories.length > 0
-    ? toolAffiliates.filter(affiliate => 
-        selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
-      ).sort((a, b) => {
+    ? toolAffiliates.filter(affiliate => {
+        const matches = selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId));
+        if (selectedCategories.length > 1) {
+          console.log('Filtering:', affiliate.name, 'categories:', affiliate.categories, 'selected:', selectedCategories, 'matches:', matches);
+        }
+        return matches;
+      }).sort((a, b) => {
         const aTotal = (a.categories?.length || 0);
         const bTotal = (b.categories?.length || 0);
         return bTotal - aTotal;
       })
     : [];
+
+  // Debug when categories change
+  if (selectedCategories.length > 0) {
+    console.log('Filter results:', { selectedCategories, matchingCount: matchingTools.length, usingPlaceholders: isDemoMode });
+  }
 
   const renderCategoryCheckbox = (categoryId: string) => (
     <div key={categoryId} className="flex items-center space-x-2">
