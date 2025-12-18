@@ -40,7 +40,17 @@ const US_STATES = [
 export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps) {
   const [selectedState, setSelectedState] = useState<string>("");
   const [estimatedLoanAmount, setEstimatedLoanAmount] = useState<string>("");
+  const [estimatedMarketValue, setEstimatedMarketValue] = useState<string>("");
   const [showLenders, setShowLenders] = useState(false);
+
+  const loanToValueRatio = (() => {
+    const loan = parseFloat(estimatedLoanAmount) || 0;
+    const market = parseFloat(estimatedMarketValue) || 0;
+    if (market > 0 && loan > 0) {
+      return ((loan / market) * 100).toFixed(1);
+    }
+    return null;
+  })();
 
   const { data: lenders, isLoading, refetch } = useQuery<NewConstructionLender[]>({
     queryKey: ["/api/new-construction-lenders", selectedState],
@@ -57,6 +67,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
   const handleFindLenders = () => {
     if (!selectedState) return;
     if (!estimatedLoanAmount || parseFloat(estimatedLoanAmount) <= 0) return;
+    if (!estimatedMarketValue || parseFloat(estimatedMarketValue) <= 0) return;
     setShowLenders(true);
     refetch();
   };
@@ -64,6 +75,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
   const handleClose = () => {
     setSelectedState("");
     setEstimatedLoanAmount("");
+    setEstimatedMarketValue("");
     setShowLenders(false);
     onOpenChange(false);
   };
@@ -133,10 +145,38 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
               </p>
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Estimated Market Value Upon Completion</label>
+              <Input
+                type="number"
+                placeholder="Enter estimated market value"
+                value={estimatedMarketValue}
+                onChange={(e) => setEstimatedMarketValue(e.target.value)}
+                data-testid="input-estimated-market-value"
+              />
+              <p className="text-xs text-muted-foreground">
+                The expected value of the property after construction is complete
+              </p>
+            </div>
+
+            {loanToValueRatio && (
+              <div className="rounded-lg bg-muted p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Loan-to-Value Ratio (LTV)</span>
+                  <span className="text-lg font-bold text-primary" data-testid="text-ltv-ratio">
+                    {loanToValueRatio}%
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Calculated as Loan Amount / Market Value
+                </p>
+              </div>
+            )}
+
             <div className="flex gap-3 pt-4">
               <Button
                 onClick={handleFindLenders}
-                disabled={!selectedState || !estimatedLoanAmount || parseFloat(estimatedLoanAmount) <= 0}
+                disabled={!selectedState || !estimatedLoanAmount || parseFloat(estimatedLoanAmount) <= 0 || !estimatedMarketValue || parseFloat(estimatedMarketValue) <= 0}
                 className="flex-1"
                 data-testid="button-find-lenders"
               >
@@ -156,7 +196,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
                   Showing lenders for: <span className="text-primary">{selectedState}</span>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Estimated Loan: {formatCurrency(parseFloat(estimatedLoanAmount) || 0)}
+                  Loan: {formatCurrency(parseFloat(estimatedLoanAmount) || 0)} | Market Value: {formatCurrency(parseFloat(estimatedMarketValue) || 0)} | LTV: {loanToValueRatio}%
                 </p>
               </div>
               <Button
