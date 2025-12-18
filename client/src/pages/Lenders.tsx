@@ -90,6 +90,89 @@ interface SearchResult {
   companyDescription: string;
 }
 
+const PLACEHOLDER_LENDERS: SearchResult[] = [
+  {
+    id: "demo-lender-1",
+    companyName: "Capital Bridge Funding",
+    contactName: "Michael Thompson",
+    phone: "(555) 123-4567",
+    email: "michael@capitalbridgefunding.com",
+    website: "https://capitalbridgefunding.com",
+    referralLink: "#",
+    companyDescription: "Nationwide hard money lender specializing in fix-and-flip and bridge loans. We offer competitive rates starting at 9.5% with fast closings in as little as 7 days. 100% rehab financing available for experienced investors.",
+  },
+  {
+    id: "demo-lender-2",
+    companyName: "Prime DSCR Loans",
+    contactName: "Sarah Martinez",
+    phone: "(555) 234-5678",
+    email: "sarah@primedscr.com",
+    website: "https://primedscr.com",
+    referralLink: "#",
+    companyDescription: "DSCR loan specialists offering 30-year fixed rate investment property loans. No personal income verification required. We work with LLCs and close loans in all 50 states with credit scores as low as 620.",
+  },
+  {
+    id: "demo-lender-3",
+    companyName: "Apex Transactional Funding",
+    contactName: "David Chen",
+    phone: "(555) 345-6789",
+    email: "david@apextransactional.com",
+    website: "https://apextransactional.com",
+    referralLink: "#",
+    companyDescription: "Same-day transactional funding for wholesale deals. 100% financing with flat fee pricing. No credit check required. Perfect for double closes and assignment deals.",
+  },
+  {
+    id: "demo-lender-4",
+    companyName: "Investor's Choice Capital",
+    contactName: "Jennifer Williams",
+    phone: "(555) 456-7890",
+    email: "jennifer@investorschoicecapital.com",
+    website: "https://investorschoicecapital.com",
+    referralLink: "#",
+    companyDescription: "Full-service private lending firm offering hard money, DSCR, and conventional investment property loans. New investor friendly with mentorship programs. Multi-unit specialist up to 100+ units.",
+  },
+  {
+    id: "demo-lender-5",
+    companyName: "Velocity Lending Group",
+    contactName: "Robert Anderson",
+    phone: "(555) 567-8901",
+    email: "robert@velocitylendinggroup.com",
+    website: "https://velocitylendinggroup.com",
+    referralLink: "#",
+    companyDescription: "Fast-closing bridge lender with nationwide coverage. Specializing in non-traditional lending solutions including ground-up construction, land loans, and creative financing options. Deferred payment and rolled points available.",
+  },
+  {
+    id: "demo-lender-6",
+    companyName: "Equity First Mortgage",
+    contactName: "Lisa Park",
+    phone: "(555) 678-9012",
+    email: "lisa@equityfirstmortgage.com",
+    website: "https://equityfirstmortgage.com",
+    referralLink: "#",
+    companyDescription: "Direct lender offering competitive conventional and portfolio loans for investment properties. Excellent rates for borrowers with 700+ credit scores. 15 and 30 year fixed options available.",
+  },
+  {
+    id: "demo-lender-7",
+    companyName: "FlipFund Pro",
+    contactName: "Marcus Johnson",
+    phone: "(555) 789-0123",
+    email: "marcus@flipfundpro.com",
+    website: "https://flipfundpro.com",
+    referralLink: "#",
+    companyDescription: "Hard money lender built by flippers, for flippers. Up to 90% LTV and 100% rehab financing. Fast 5-day closings with no prepayment penalties. Works with first-time investors.",
+  },
+  {
+    id: "demo-lender-8",
+    companyName: "Rental Portfolio Partners",
+    contactName: "Amanda Stevens",
+    phone: "(555) 890-1234",
+    email: "amanda@rentalportfoliopartners.com",
+    website: "https://rentalportfoliopartners.com",
+    referralLink: "#",
+    companyDescription: "DSCR and portfolio lender for buy-and-hold investors. Blanket loans for multiple properties. 5-unit to 100+ unit commercial loans available. Interest-only options and 40-year amortization.",
+  },
+];
+
 export default function Lenders() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -98,6 +181,12 @@ export default function Lenders() {
   const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const { data: demoModeData } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/settings/demo-mode"],
+  });
+
+  const isDemoMode = demoModeData?.enabled === true;
 
   interface SavedLenderData {
     lenderId: string;
@@ -213,16 +302,24 @@ export default function Lenders() {
   const onSubmit = useCallback(async (data: SearchForm) => {
     setIsSearching(true);
     try {
-      const response = await apiRequest("POST", "/api/search-lenders", data);
-      const results = await response.json();
-      setSearchResults(results);
+      if (isDemoMode) {
+        // In demo mode, return random subset of placeholder lenders
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+        const shuffled = [...PLACEHOLDER_LENDERS].sort(() => Math.random() - 0.5);
+        const numResults = Math.floor(Math.random() * 3) + 3; // Return 3-5 lenders
+        setSearchResults(shuffled.slice(0, numResults));
+      } else {
+        const response = await apiRequest("POST", "/api/search-lenders", data);
+        const results = await response.json();
+        setSearchResults(results);
+      }
     } catch (error) {
       console.error("Search failed:", error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [isDemoMode]);
 
   // Set form values from URL parameters and auto-submit when location changes
   useEffect(() => {
