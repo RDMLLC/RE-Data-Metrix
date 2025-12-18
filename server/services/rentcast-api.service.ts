@@ -73,6 +73,9 @@ interface RentCastProperty {
   features?: Record<string, any>;
   taxAssessments?: Record<string, RentCastTaxAssessment>;
   propertyTaxes?: Record<string, RentCastPropertyTax>;
+  hoa?: {
+    fee?: number;
+  };
 }
 
 interface RentCastAVMResponse {
@@ -442,6 +445,9 @@ export class RentCastAPIService implements IPropertyAPIService {
     const taxAssessedValue = this.extractLatestTaxAssessedValue(property.taxAssessments) || property.assessedValue;
     const annualTax = this.extractLatestAnnualTax(property.propertyTaxes);
 
+    // Extract HOA fee from RentCast response - it returns { hoa: { fee: number } }
+    const hoaFees = property.hoa?.fee;
+
     console.log("Transforming RentCast response:", {
       propertyType: property.propertyType,
       bedrooms: property.bedrooms,
@@ -450,7 +456,8 @@ export class RentCastAPIService implements IPropertyAPIService {
       taxAssessedValue,
       annualTax,
       estimatedValue: valueData?.price,
-      estimatedRent: rentData?.rent
+      estimatedRent: rentData?.rent,
+      hoaFees
     });
 
     return {
@@ -471,14 +478,20 @@ export class RentCastAPIService implements IPropertyAPIService {
       lastSalePrice: property.lastSalePrice,
       lastSaleDate: property.lastSaleDate,
       imageUrl: undefined,
-      hoaFees: undefined,
+      hoaFees,
     };
   }
 
-  async fetchPropertyImageFromUrl(url: string): Promise<string | undefined> {
+  // Supplemental data returned from Zillow/Redfin via HasData
+  async fetchSupplementalDataFromUrl(url: string): Promise<{
+    imageUrl?: string;
+    rentZestimate?: number;
+    zestimate?: number;
+    monthlyHoaFee?: number;
+  }> {
     if (!this.hasDataApiKey) {
       console.log("[HasData] API key not configured, returning placeholder");
-      return PLACEHOLDER_IMAGE_URL;
+      return { imageUrl: PLACEHOLDER_IMAGE_URL };
     }
 
     try {
@@ -486,18 +499,17 @@ export class RentCastAPIService implements IPropertyAPIService {
       const originalSource = this.detectPropertySource(url);
       if (!originalSource) {
         console.log(`[HasData] URL not from supported source: ${url}`);
-        return PLACEHOLDER_IMAGE_URL;
+        return { imageUrl: PLACEHOLDER_IMAGE_URL };
       }
 
       // Clean and validate URL
       const cleanUrl = this.cleanPropertyUrl(url);
       if (!cleanUrl) {
         console.log(`[HasData] Could not clean URL: ${url}`);
-        return PLACEHOLDER_IMAGE_URL;
+        return { imageUrl: PLACEHOLDER_IMAGE_URL };
       }
 
       // Try the original source first, then fallback to the other
-      // Each endpoint requires URLs from its own platform
       const sources: Array<'redfin' | 'zillow'> = originalSource === 'zillow' 
         ? ['zillow', 'redfin'] 
         : ['redfin', 'zillow'];
@@ -506,22 +518,31 @@ export class RentCastAPIService implements IPropertyAPIService {
       
       for (const source of sources) {
         console.log(`[HasData] Trying ${source} endpoint...`);
-        const imageUrl = await this.fetchImageWithRetry(source, cleanUrl);
+        const supplementalData = await this.fetchDataWithRetry(source, cleanUrl);
         
-        if (imageUrl) {
-          console.log(`[HasData] SUCCESS: Image retrieved from ${source}: ${imageUrl}`);
-          return imageUrl;
+        if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate)) {
+          console.log(`[HasData] SUCCESS: Data retrieved from ${source}:`, {
+            imageUrl: supplementalData.imageUrl ? 'present' : 'missing',
+            rentZestimate: supplementalData.rentZestimate,
+            monthlyHoaFee: supplementalData.monthlyHoaFee
+          });
+          return supplementalData;
         }
         
-        console.log(`[HasData] ${source} endpoint failed`);
+        console.log(`[HasData] ${source} endpoint failed or no useful data`);
       }
 
       console.log(`[HasData] All sources exhausted, returning placeholder`);
-      return PLACEHOLDER_IMAGE_URL;
+      return { imageUrl: PLACEHOLDER_IMAGE_URL };
     } catch (error) {
-      console.error("[HasData] Error fetching property image:", error);
-      return PLACEHOLDER_IMAGE_URL;
+      console.error("[HasData] Error fetching supplemental data:", error);
+      return { imageUrl: PLACEHOLDER_IMAGE_URL };
     }
+  }
+
+  async fetchPropertyImageFromUrl(url: string): Promise<string | undefined> {
+    const data = await this.fetchSupplementalDataFromUrl(url);
+    return data.imageUrl;
   }
 
   private detectPropertySource(url: string): 'zillow' | 'redfin' | null {
@@ -555,7 +576,12 @@ export class RentCastAPIService implements IPropertyAPIService {
     }
   }
 
-  private async fetchImageWithRetry(source: 'zillow' | 'redfin', cleanUrl: string): Promise<string | undefined> {
+  private async fetchDataWithRetry(source: 'zillow' | 'redfin', cleanUrl: string): Promise<{
+    imageUrl?: string;
+    rentZestimate?: number;
+    zestimate?: number;
+    monthlyHoaFee?: number;
+  } | undefined> {
     const endpoint = source === 'zillow'
       ? `${HASDATA_BASE_URL}/scrape/zillow/property`
       : `${HASDATA_BASE_URL}/scrape/redfin/property`;
@@ -595,7 +621,7 @@ export class RentCastAPIService implements IPropertyAPIService {
         }
 
         const data = await response.json();
-        return this.extractImageFromResponse(data, source);
+        return this.extractSupplementalDataFromResponse(data, source);
         
       } catch (error: any) {
         lastError = error;
@@ -620,6 +646,46 @@ export class RentCastAPIService implements IPropertyAPIService {
       console.log(`[HasData] All ${HASDATA_CONFIG.maxRetries} attempts failed: ${lastError.message}`);
     }
     return undefined;
+  }
+
+  private extractSupplementalDataFromResponse(data: any, source: 'zillow' | 'redfin'): {
+    imageUrl?: string;
+    rentZestimate?: number;
+    zestimate?: number;
+    monthlyHoaFee?: number;
+  } {
+    const property = data.property || data;
+    
+    console.log(`[HasData] Response keys for ${source}:`, Object.keys(property || {}).slice(0, 15));
+    
+    // Extract image URL
+    const imageUrl = this.extractImageFromResponse(data, source);
+    
+    // Extract numeric values from Zillow response
+    const parseNumber = (val: any): number | undefined => {
+      if (val === undefined || val === null || val === '') return undefined;
+      const num = typeof val === 'string' ? parseFloat(val.replace(/[^0-9.-]/g, '')) : Number(val);
+      return isNaN(num) ? undefined : num;
+    };
+    
+    // Zillow-specific fields
+    const rentZestimate = parseNumber(property.rentZestimate);
+    const zestimate = parseNumber(property.zestimate);
+    const monthlyHoaFee = parseNumber(property.monthlyHoaFee);
+    
+    console.log(`[HasData] Extracted supplemental data:`, {
+      rentZestimate,
+      zestimate,
+      monthlyHoaFee,
+      hasImage: !!imageUrl
+    });
+    
+    return {
+      imageUrl,
+      rentZestimate,
+      zestimate,
+      monthlyHoaFee
+    };
   }
 
   private extractImageFromResponse(data: any, source: 'zillow' | 'redfin'): string | undefined {

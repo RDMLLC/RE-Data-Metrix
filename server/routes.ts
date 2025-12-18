@@ -4587,8 +4587,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Fetch property image from HasData if the service supports it and no image was returned
-      if (!propertyData.imageUrl && 'fetchPropertyImageFromUrl' in propertyAPIService) {
+      // Fetch supplemental data from HasData/Zillow (image, rent Zestimate, HOA)
+      if ('fetchSupplementalDataFromUrl' in propertyAPIService) {
+        try {
+          const supplementalData = await (propertyAPIService as any).fetchSupplementalDataFromUrl(url);
+          
+          // Merge in image if not already present
+          if (!propertyData.imageUrl && supplementalData?.imageUrl) {
+            propertyData.imageUrl = supplementalData.imageUrl;
+          }
+          
+          // Use Zillow's rentZestimate if available (it's often more accurate than RentCast for specific properties)
+          if (supplementalData?.rentZestimate) {
+            console.log(`[Property Lookup] Using Zillow rentZestimate: ${supplementalData.rentZestimate} (RentCast was: ${propertyData.estimatedRent})`);
+            propertyData.estimatedRent = supplementalData.rentZestimate;
+          }
+          
+          // Use Zillow's HOA if RentCast didn't return one
+          if (!propertyData.hoaFees && supplementalData?.monthlyHoaFee) {
+            console.log(`[Property Lookup] Using Zillow monthlyHoaFee: ${supplementalData.monthlyHoaFee}`);
+            propertyData.hoaFees = supplementalData.monthlyHoaFee;
+          }
+        } catch (supplementalError) {
+          console.log("Could not fetch supplemental property data:", supplementalError);
+        }
+      } else if ('fetchPropertyImageFromUrl' in propertyAPIService) {
+        // Fallback to just image fetch if supplemental not available
         try {
           const imageUrl = await (propertyAPIService as any).fetchPropertyImageFromUrl(url);
           if (imageUrl) {
