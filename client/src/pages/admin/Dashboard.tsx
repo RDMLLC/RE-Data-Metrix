@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { queryClient } from "@/lib/queryClient";
 
 interface StripeStatus {
   configured: boolean;
@@ -137,6 +138,8 @@ export default function AdminDashboard() {
       });
       if (response.ok) {
         setDemoModeEnabled(newValue);
+        // Invalidate the demo mode cache so ToolFinder gets the new value
+        queryClient.invalidateQueries({ queryKey: ["/api/settings/demo-mode"] });
         toast({
           title: newValue ? "Demo Mode Enabled" : "Demo Mode Disabled",
           description: newValue 
