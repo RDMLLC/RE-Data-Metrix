@@ -308,7 +308,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
                         disabled={!getReferralLink(lender) || getReferralLink(lender) === "#"}
                         data-testid={`button-apply-${lender.lenderId}`}
                       >
-                        Apply Now
+                        Contact Lender
                         <ExternalLink className="h-4 w-4 ml-2" />
                       </Button>
                     </div>
