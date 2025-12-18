@@ -44,7 +44,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["lead-generation", "marketplace", "skip-tracing", "list-building"],
+    categories: ["lead-generation", "marketplace", "skip-tracing", "list-building", "direct-mail", "sms"],
     features: [],
     iconName: "Users",
     referralFee: null,
@@ -66,7 +66,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["property-management", "team-collaboration"],
+    categories: ["property-management", "team-collaboration", "crm", "mobile-app"],
     features: [],
     iconName: "Building2",
     referralFee: null,
@@ -88,7 +88,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["project-management", "rehab-cost-estimating", "team-collaboration"],
+    categories: ["project-management", "rehab-cost-estimating", "team-collaboration", "deal-analysis"],
     features: [],
     iconName: "ClipboardList",
     referralFee: null,
@@ -110,7 +110,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["marketplace", "lead-generation"],
+    categories: ["marketplace", "lead-generation", "deal-analysis", "crm"],
     features: [],
     iconName: "Users",
     referralFee: null,
@@ -132,7 +132,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["mls-access", "comps"],
+    categories: ["mls-access", "comps", "deal-analysis"],
     features: [],
     iconName: "Database",
     referralFee: null,
@@ -154,7 +154,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["legal"],
+    categories: ["legal", "deal-analysis", "project-management"],
     features: [],
     iconName: "Scale",
     referralFee: null,
@@ -176,7 +176,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     portalUrl: null,
     loginUsername: null,
     loginPassword: null,
-    categories: ["driving-for-dollars", "mobile-app", "virtual-driving"],
+    categories: ["driving-for-dollars", "mobile-app", "virtual-driving", "lead-generation", "list-building"],
     features: [],
     iconName: "Car",
     referralFee: null,
@@ -472,18 +472,9 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
 
   const isDemoMode = demoModeData?.enabled === true;
 
-  // Debug logging - remove after debugging
-  console.log('ToolFinder Debug:', {
-    demoModeData,
-    isDemoMode,
-    affiliatesCount: affiliates?.length,
-    placeholderCount: PLACEHOLDER_AFFILIATES.length
-  });
-
   const isLoading = affiliatesLoading || categoriesLoading;
 
   const displayAffiliates = useMemo(() => {
-    console.log('displayAffiliates computed - isDemoMode:', isDemoMode);
     if (isDemoMode) {
       return PLACEHOLDER_AFFILIATES;
     }
@@ -516,23 +507,14 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
   };
 
   const matchingTools = selectedCategories.length > 0
-    ? toolAffiliates.filter(affiliate => {
-        const matches = selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId));
-        if (selectedCategories.length > 1) {
-          console.log('Filtering:', affiliate.name, 'categories:', affiliate.categories, 'selected:', selectedCategories, 'matches:', matches);
-        }
-        return matches;
-      }).sort((a, b) => {
+    ? toolAffiliates.filter(affiliate => 
+        selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
+      ).sort((a, b) => {
         const aTotal = (a.categories?.length || 0);
         const bTotal = (b.categories?.length || 0);
         return bTotal - aTotal;
       })
     : [];
-
-  // Debug when categories change
-  if (selectedCategories.length > 0) {
-    console.log('Filter results:', { selectedCategories, matchingCount: matchingTools.length, usingPlaceholders: isDemoMode });
-  }
 
   const renderCategoryCheckbox = (categoryId: string) => (
     <div key={categoryId} className="flex items-center space-x-2">
