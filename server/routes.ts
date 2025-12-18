@@ -3572,12 +3572,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allCategories = await storage.getAllAffiliateCategories();
       const allLenders = await storage.getAllLenders();
       const allProducts = await storage.getAllActiveLoanProducts();
+      const allVideos = await storage.getAllTrainingVideos();
       
       const health = {
         affiliates: allAffiliates.length,
         affiliateCategories: allCategories.length,
         lenders: allLenders.length,
         loanProducts: allProducts.length,
+        trainingVideos: allVideos.length,
         hasIssues: allAffiliates.length === 0 || allCategories.length === 0 || allLenders.length === 0 || allProducts.length === 0,
         missingData: [] as string[]
       };

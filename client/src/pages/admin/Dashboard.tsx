@@ -20,6 +20,7 @@ interface DataHealth {
   affiliateCategories: number;
   lenders: number;
   loanProducts: number;
+  trainingVideos: number;
   hasIssues: boolean;
   missingData: string[];
 }
@@ -300,7 +301,7 @@ export default function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="text-center p-3 bg-muted/50 rounded-lg">
                     <div className="text-2xl font-bold">{dataHealth.lenders}</div>
                     <div className="text-sm text-muted-foreground">Lenders</div>
@@ -316,6 +317,10 @@ export default function AdminDashboard() {
                   <div className="text-center p-3 bg-muted/50 rounded-lg">
                     <div className="text-2xl font-bold">{dataHealth.affiliateCategories}</div>
                     <div className="text-sm text-muted-foreground">Categories</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold">{dataHealth.trainingVideos}</div>
+                    <div className="text-sm text-muted-foreground">Videos</div>
                   </div>
                 </div>
               </CardContent>
