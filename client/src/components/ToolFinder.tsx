@@ -10,8 +10,33 @@ import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
 const TOOL_FINDER_VIDEO_ID = "5hfQdtC42fk";
 
+export function ToolFinderTutorial() {
+  return (
+    <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+      <div className="flex items-center gap-2 mb-2">
+        <Video className="h-5 w-5 text-accent" />
+        <h3 className="font-semibold text-lg">Tool Finder Tutorial</h3>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Learn how to use the Tool Finder to discover the perfect tools for your real estate investing needs.
+      </p>
+      <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20" data-testid="video-tool-finder-tutorial">
+        <iframe
+          className="absolute inset-0 w-full h-full"
+          src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
+          title="Tool Finder Tutorial"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    </div>
+  );
+}
+
 interface ToolFinderProps {
   isBlurred?: boolean;
+  showTutorial?: boolean;
 }
 
 const PLACEHOLDER_AFFILIATES: Affiliate[] = [
@@ -457,7 +482,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
   },
 ];
 
-export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
+export default function ToolFinder({ isBlurred = false, showTutorial = true }: ToolFinderProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const { data: affiliates, isLoading: affiliatesLoading } = useQuery<Affiliate[]>({
@@ -698,31 +723,33 @@ export default function ToolFinder({ isBlurred = false }: ToolFinderProps) {
 
   return (
     <div className="space-y-6">
+      {showTutorial && (
+        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <Video className="h-5 w-5 text-accent" />
+            <h3 className="font-semibold text-lg">Tool Finder Tutorial</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Learn how to use the Tool Finder to discover the perfect tools for your real estate investing needs.
+          </p>
+          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20" data-testid="video-tool-finder-tutorial">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
+              title="Tool Finder Tutorial"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-semibold mb-2">Tool Finder</h2>
         <p className="text-muted-foreground">
           Select the categories you need and we'll show you which tools offer them.
         </p>
-      </div>
-
-      <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Video className="h-5 w-5 text-accent" />
-          <h3 className="font-semibold text-lg">Tool Finder Tutorial</h3>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Learn how to use the Tool Finder to discover the perfect tools for your real estate investing needs.
-        </p>
-        <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20" data-testid="video-tool-finder-tutorial">
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
-            title="Tool Finder Tutorial"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
       </div>
 
       <Card className="p-6">

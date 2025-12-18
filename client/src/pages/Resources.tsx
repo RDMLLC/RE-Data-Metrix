@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
-import ToolFinder from "@/components/ToolFinder";
+import ToolFinder, { ToolFinderTutorial } from "@/components/ToolFinder";
 import { categoryInfo } from "@/data/affiliatePrograms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -240,19 +240,22 @@ export default function Resources() {
           </TabsList>
 
           <TabsContent value="about" className="space-y-6">
-            {/* Tool Finder Section - Always on top */}
+            {/* 1. Tool Finder Tutorial Video - Always on top */}
+            <ToolFinderTutorial />
+
+            {/* 2. Training Videos Thumbnails */}
+            <TrainingVideosSection />
+
+            {/* 3. Tool Finder Text and Search Feature */}
             <div>
               {authLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : (
-                <ToolFinder isBlurred={!isSubscriber} />
+                <ToolFinder isBlurred={!isSubscriber} showTutorial={false} />
               )}
             </div>
-
-            {/* Training Videos Section */}
-            <TrainingVideosSection />
           </TabsContent>
 
           <TabsContent value="marketplace">
