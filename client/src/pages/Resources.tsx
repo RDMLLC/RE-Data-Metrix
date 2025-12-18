@@ -240,22 +240,8 @@ export default function Resources() {
           </TabsList>
 
           <TabsContent value="about" className="space-y-6">
-            <div className="prose prose-lg max-w-none dark:prose-invert">
-              <h2 className="text-2xl font-semibold mb-4">Your Investor Toolbox</h2>
-              
-              <p className="text-muted-foreground leading-relaxed">
-                Success in real estate investment requires more than just capital and ambition—it demands 
-                the right tools, partnerships, and knowledge. We've curated a comprehensive selection of 
-                trusted platforms and services that our community of investors relies on every day.
-              </p>
-
-              <div className="not-prose mt-6">
-                <TrainingVideosSection />
-              </div>
-            </div>
-
-            {/* Tool Finder Section */}
-            <div className="mt-8 pt-8 border-t">
+            {/* Tool Finder Section - Always on top */}
+            <div>
               {authLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -264,6 +250,9 @@ export default function Resources() {
                 <ToolFinder isBlurred={!isSubscriber} />
               )}
             </div>
+
+            {/* Training Videos Section */}
+            <TrainingVideosSection />
           </TabsContent>
 
           <TabsContent value="marketplace">
