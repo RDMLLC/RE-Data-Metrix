@@ -179,7 +179,7 @@ export default function Lenders() {
   const [location] = useLocation();
   const lastHandledQueryRef = useRef<string>('');
   const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
-  const { user } = useAuth();
+  const { user, isSubscriber } = useAuth();
   const { toast } = useToast();
 
   const { data: demoModeData } = useQuery<{ enabled: boolean }>({
@@ -918,20 +918,22 @@ export default function Lenders() {
           </div>
         </Card>
 
-        {/* Call to Action */}
-        <Card className="p-12 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-center">
-          <h2 className="text-3xl font-bold mb-4">Get Early Access to Our Lender Network</h2>
-          <p className="text-lg text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-            Be among the first to connect with our verified lenders when we launch. Lock in your discount now!
-          </p>
-          <Button 
-            className="bg-accent text-accent-foreground hover:bg-accent/90"
-            size="lg"
-            onClick={() => window.location.href = '/'}
-          >
-            Lock in my Discount
-          </Button>
-        </Card>
+        {/* Call to Action - Only show for non-subscribers */}
+        {!isSubscriber && (
+          <Card className="p-12 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-center">
+            <h2 className="text-3xl font-bold mb-4">Get Early Access to Our Lender Network</h2>
+            <p className="text-lg text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
+              Be among the first to connect with our verified lenders when we launch. Lock in your discount now!
+            </p>
+            <Button 
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              size="lg"
+              onClick={() => window.location.href = '/'}
+            >
+              Lock in my Discount
+            </Button>
+          </Card>
+        )}
       </div>
     </Layout>
   );
