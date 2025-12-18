@@ -421,6 +421,38 @@ export const seedLenders: SeedLender[] = [
   }
 ];
 
+export interface SeedTrainingVideo {
+  id: string;
+  title: string;
+  description: string;
+  youtubeUrl: string;
+  thumbnailUrl?: string;
+  isFeatured: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export const seedTrainingVideos: SeedTrainingVideo[] = [
+  {
+    id: "01d11c6e-b773-41f8-b821-50dd13b947b2",
+    title: "How to use Deal Analysis",
+    description: "Step by step tutorial",
+    youtubeUrl: "https://youtu.be/m6SjKQ3dYe4",
+    isFeatured: false,
+    isActive: true,
+    sortOrder: 0
+  },
+  {
+    id: "966cff73-bd13-4507-98ba-b21d1e76ff3f",
+    title: "D.S.C.R. Analysis Tutorial",
+    description: "How to analyze a D.S.C.R. deal and find a loan that works best for you.",
+    youtubeUrl: "https://youtu.be/K0mB1IYARKs",
+    isFeatured: false,
+    isActive: true,
+    sortOrder: 1
+  }
+];
+
 export const seedLoanProducts: SeedLoanProduct[] = [
   {
     id: "52b8cabc-ec95-4817-97b5-860abe92a68d",

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
@@ -12,7 +12,7 @@ import { emailService } from "./services/email.service";
 import crypto from "crypto";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
-import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts } from "./seed-data";
+import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts, seedTrainingVideos } from "./seed-data";
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -3601,7 +3601,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         affiliateCategories: { added: 0, skipped: 0 },
         affiliates: { added: 0, skipped: 0 },
         lenders: { added: 0, skipped: 0, id: '' },
-        loanProducts: { added: 0, skipped: 0 }
+        loanProducts: { added: 0, skipped: 0 },
+        trainingVideos: { added: 0, skipped: 0 }
       };
 
       // Fetch existing data for duplicate detection using natural keys
@@ -3724,10 +3725,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Seed training videos (natural key: title)
+      const existingVideos = await db.select().from(trainingVideos);
+      const existingVideoTitles = new Set(existingVideos.map(v => v.title.toLowerCase()));
+      
+      for (const video of seedTrainingVideos) {
+        if (existingVideoTitles.has(video.title.toLowerCase())) {
+          results.trainingVideos.skipped++;
+        } else {
+          await db.insert(trainingVideos).values({
+            id: video.id,
+            title: video.title,
+            description: video.description,
+            youtubeUrl: video.youtubeUrl,
+            thumbnailUrl: video.thumbnailUrl || null,
+            isFeatured: video.isFeatured,
+            isActive: video.isActive,
+            sortOrder: video.sortOrder,
+          }).onConflictDoNothing();
+          results.trainingVideos.added++;
+        }
+      }
+
       const totalAdded = results.affiliateCategories.added + results.affiliates.added + 
-                         results.lenders.added + results.loanProducts.added;
+                         results.lenders.added + results.loanProducts.added + results.trainingVideos.added;
       const totalSkipped = results.affiliateCategories.skipped + results.affiliates.skipped + 
-                           results.lenders.skipped + results.loanProducts.skipped;
+                           results.lenders.skipped + results.loanProducts.skipped + results.trainingVideos.skipped;
 
       res.json({
         success: true,
