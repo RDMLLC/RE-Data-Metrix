@@ -68,80 +68,63 @@ function TrainingVideosSection() {
     return null;
   }
 
-  const featuredVideo = videos.find(v => v.isFeatured) || videos[0];
-  const additionalVideos = videos.filter(v => v.id !== featuredVideo.id);
-
-  const featuredVideoId = getYoutubeVideoId(featuredVideo.youtubeUrl);
+  // Sort videos: featured first, then by sortOrder
+  const sortedVideos = [...videos].sort((a, b) => {
+    if (a.isFeatured && !b.isFeatured) return -1;
+    if (!a.isFeatured && b.isFeatured) return 1;
+    return (a.sortOrder || 0) - (b.sortOrder || 0);
+  });
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Video className="h-5 w-5 text-accent" />
-            <h3 className="font-semibold text-lg">Training Videos</h3>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            {featuredVideo.description || "Watch our training videos to learn how to use RE Data Metrix effectively."}
-          </p>
-          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-white/20" data-testid="card-featured-video">
-            {featuredVideoId ? (
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${featuredVideoId}?rel=0&modestbranding=1`}
-                title={featuredVideo.title}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                Video not available
-              </div>
-            )}
-          </div>
+      <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Video className="h-5 w-5 text-accent" />
+          <h3 className="font-semibold text-lg">Training Videos</h3>
         </div>
-
-        {additionalVideos.length > 0 && (
-          <div>
-            <h4 className="font-medium text-muted-foreground mb-3">More Videos</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {additionalVideos.map((video) => {
-                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
-                return (
-                  <Card
-                    key={video.id}
-                    className="overflow-hidden cursor-pointer hover-elevate"
-                    onClick={() => setSelectedVideo(video)}
-                    data-testid={`card-video-thumbnail-${video.id}`}
-                  >
-                    <div className="aspect-video bg-muted relative">
-                      {thumbnail ? (
-                        <img
-                          src={thumbnail}
-                          alt={video.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <Play className="h-12 w-12 text-white" />
-                      </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Watch our training videos to learn how to use RE Data Metrix effectively.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {sortedVideos.map((video) => {
+            const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+            return (
+              <Card
+                key={video.id}
+                className="overflow-hidden cursor-pointer hover-elevate"
+                onClick={() => setSelectedVideo(video)}
+                data-testid={`card-video-thumbnail-${video.id}`}
+              >
+                <div className="aspect-video bg-muted relative">
+                  {thumbnail ? (
+                    <img
+                      src={thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Video className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <div className="p-3">
-                      <h5 className="font-medium text-sm line-clamp-2" data-testid={`text-video-title-${video.id}`}>
-                        {video.title}
-                      </h5>
+                  )}
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <Play className="h-12 w-12 text-white" />
+                  </div>
+                  {video.isFeatured && (
+                    <div className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs font-medium px-2 py-0.5 rounded">
+                      Featured
                     </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        )}
+                  )}
+                </div>
+                <div className="p-3">
+                  <h5 className="font-medium text-sm line-clamp-2" data-testid={`text-video-title-${video.id}`}>
+                    {video.title}
+                  </h5>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
@@ -152,7 +135,7 @@ function TrainingVideosSection() {
           <div className="aspect-video">
             {selectedVideo && getYoutubeVideoId(selectedVideo.youtubeUrl) && (
               <iframe
-                src={`https://www.youtube.com/embed/${getYoutubeVideoId(selectedVideo.youtubeUrl)}`}
+                src={`https://www.youtube.com/embed/${getYoutubeVideoId(selectedVideo.youtubeUrl)}?autoplay=1`}
                 title={selectedVideo.title}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
