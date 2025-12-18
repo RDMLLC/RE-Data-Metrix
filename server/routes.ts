@@ -4597,10 +4597,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             propertyData.imageUrl = supplementalData.imageUrl;
           }
           
-          // Use Zillow's rentZestimate if available (it's often more accurate than RentCast for specific properties)
-          if (supplementalData?.rentZestimate) {
-            console.log(`[Property Lookup] Using Zillow rentZestimate: ${supplementalData.rentZestimate} (RentCast was: ${propertyData.estimatedRent})`);
-            propertyData.estimatedRent = supplementalData.rentZestimate;
+          // Store both rent estimates for transparency
+          const rentCastEstimate = propertyData.estimatedRent;
+          const zillowRentEstimate = supplementalData?.rentZestimate;
+          
+          // Add both estimates to the response
+          propertyData.rentCastEstimate = rentCastEstimate || null;
+          propertyData.zillowRentEstimate = zillowRentEstimate || null;
+          
+          // Use the higher of the two estimates and indicate the source
+          if (rentCastEstimate && zillowRentEstimate) {
+            if (zillowRentEstimate >= rentCastEstimate) {
+              propertyData.estimatedRent = zillowRentEstimate;
+              propertyData.estimatedRentSource = "Zillow";
+              console.log(`[Property Lookup] Using Zillow rentZestimate: $${zillowRentEstimate} (higher than RentCast: $${rentCastEstimate})`);
+            } else {
+              propertyData.estimatedRent = rentCastEstimate;
+              propertyData.estimatedRentSource = "RentCast";
+              console.log(`[Property Lookup] Using RentCast estimate: $${rentCastEstimate} (higher than Zillow: $${zillowRentEstimate})`);
+            }
+          } else if (zillowRentEstimate) {
+            propertyData.estimatedRent = zillowRentEstimate;
+            propertyData.estimatedRentSource = "Zillow";
+            console.log(`[Property Lookup] Using Zillow rentZestimate: $${zillowRentEstimate} (RentCast unavailable)`);
+          } else if (rentCastEstimate) {
+            propertyData.estimatedRentSource = "RentCast";
+            console.log(`[Property Lookup] Using RentCast estimate: $${rentCastEstimate} (Zillow unavailable)`);
           }
           
           // Use Zillow's HOA if RentCast didn't return one

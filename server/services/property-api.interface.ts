@@ -13,6 +13,9 @@ export interface PropertyData {
   annualTax?: number;
   estimatedValue?: number;
   estimatedRent?: number;
+  estimatedRentSource?: "RentCast" | "Zillow";
+  rentCastEstimate?: number | null;
+  zillowRentEstimate?: number | null;
   lastSalePrice?: number;
   lastSaleDate?: string;
   imageUrl?: string;
