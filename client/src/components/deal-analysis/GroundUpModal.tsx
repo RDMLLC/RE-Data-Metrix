@@ -26,6 +26,53 @@ interface NewConstructionLender {
   productReferralLink: string | null;
 }
 
+const PLACEHOLDER_CONSTRUCTION_LENDERS: NewConstructionLender[] = [
+  {
+    lenderId: "demo-nc-1",
+    companyName: "Premier Construction Finance",
+    referralAmount: "$500",
+    referralType: "flat",
+    referralLink: null,
+    isPreferred: true,
+    productId: "demo-nc-product-1",
+    productName: "Ground-Up Construction Loan",
+    productReferralLink: null,
+  },
+  {
+    lenderId: "demo-nc-2",
+    companyName: "BuildRight Capital Partners",
+    referralAmount: "0.25%",
+    referralType: "percentage",
+    referralLink: null,
+    isPreferred: false,
+    productId: "demo-nc-product-2",
+    productName: "New Build Financing",
+    productReferralLink: null,
+  },
+  {
+    lenderId: "demo-nc-3",
+    companyName: "Foundation Lending Group",
+    referralAmount: "$750",
+    referralType: "flat",
+    referralLink: null,
+    isPreferred: true,
+    productId: "demo-nc-product-3",
+    productName: "Residential Construction Loan",
+    productReferralLink: null,
+  },
+  {
+    lenderId: "demo-nc-4",
+    companyName: "Horizon Development Finance",
+    referralAmount: "0.5%",
+    referralType: "percentage",
+    referralLink: null,
+    isPreferred: false,
+    productId: "demo-nc-product-4",
+    productName: "Ground-Up Builder Program",
+    productReferralLink: null,
+  },
+];
+
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
   "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
@@ -52,6 +99,12 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
     return null;
   })();
 
+  // Demo Mode - fetch status to show placeholder lender names for marketing content
+  const { data: demoModeData } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/settings/demo-mode"],
+  });
+  const isDemoMode = demoModeData?.enabled || false;
+
   const { data: lenders, isLoading, refetch } = useQuery<NewConstructionLender[]>({
     queryKey: ["/api/new-construction-lenders", selectedState],
     queryFn: async () => {
@@ -61,8 +114,11 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
       if (!res.ok) throw new Error("Failed to fetch lenders");
       return res.json();
     },
-    enabled: showLenders && !!selectedState,
+    enabled: showLenders && !!selectedState && !isDemoMode,
   });
+
+  // Use placeholder lenders when in demo mode, otherwise use real lenders
+  const displayLenders = isDemoMode ? PLACEHOLDER_CONSTRUCTION_LENDERS : lenders;
 
   const handleFindLenders = () => {
     if (!selectedState) return;
@@ -208,11 +264,11 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
               </Button>
             </div>
 
-            {isLoading ? (
+            {isLoading && !isDemoMode ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : !lenders || lenders.length === 0 ? (
+            ) : !displayLenders || displayLenders.length === 0 ? (
               <Card className="p-6 text-center">
                 <AlertCircle className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-muted-foreground">
@@ -224,7 +280,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
               </Card>
             ) : (
               <div className="space-y-3">
-                {lenders.map((lender) => (
+                {displayLenders.map((lender) => (
                   <Card
                     key={`${lender.lenderId}-${lender.productId}`}
                     className="p-4 hover-elevate"
