@@ -233,6 +233,8 @@ export default function Resources() {
             <TabsTrigger value="about" data-testid="tab-about">About</TabsTrigger>
             <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
             <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>
+            <TabsTrigger value="short-term-rentals" data-testid="tab-short-term-rentals">Short-Term Rentals</TabsTrigger>
+            <TabsTrigger value="long-term-rentals" data-testid="tab-long-term-rentals">Long-Term Rentals</TabsTrigger>
             <TabsTrigger value="project-management" data-testid="tab-project-management">Project Management</TabsTrigger>
             <TabsTrigger value="lead-generation" data-testid="tab-lead-generation">Lead Generation</TabsTrigger>
             <TabsTrigger value="comps" data-testid="tab-comps">Comps & Data</TabsTrigger>
@@ -264,6 +266,14 @@ export default function Resources() {
 
           <TabsContent value="property-management">
             {renderAffiliateContent("property-management", categoryInfo["property-management"])}
+          </TabsContent>
+
+          <TabsContent value="short-term-rentals">
+            {renderAffiliateContent("short-term-rentals", categoryInfo["short-term-rentals"])}
+          </TabsContent>
+
+          <TabsContent value="long-term-rentals">
+            {renderAffiliateContent("long-term-rentals", categoryInfo["long-term-rentals"])}
           </TabsContent>
 
           <TabsContent value="project-management">

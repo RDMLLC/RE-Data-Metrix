@@ -246,6 +246,14 @@ export const categoryInfo = {
     name: "Property Management",
     description: "Tools to streamline operations, manage tenants, and maximize rental property performance."
   },
+  "short-term-rentals": {
+    name: "Short-Term Rentals",
+    description: "Tools for managing vacation rentals, Airbnb properties, and short-term rental investments."
+  },
+  "long-term-rentals": {
+    name: "Long-Term Rentals",
+    description: "Tools for managing traditional rental properties, tenant screening, and long-term lease management."
+  },
   "project-management": {
     name: "Project Management & Rehab",
     description: "Track renovation budgets, manage contractors, and control rehab timelines and costs."

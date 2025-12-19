@@ -87,34 +87,46 @@ export const seedAffiliateCategories: SeedAffiliateCategory[] = [
     sortOrder: 2
   },
   {
+    id: "short-term-rentals",
+    name: "Short-Term Rentals",
+    description: "Tools for managing vacation rentals, Airbnb properties, and short-term rental investments.",
+    sortOrder: 3
+  },
+  {
+    id: "long-term-rentals",
+    name: "Long-Term Rentals",
+    description: "Tools for managing traditional rental properties, tenant screening, and long-term lease management.",
+    sortOrder: 4
+  },
+  {
     id: "project-management",
     name: "Project Management & Rehab",
     description: "Track renovation budgets, manage contractors, and control rehab timelines and costs.",
-    sortOrder: 3
+    sortOrder: 5
   },
   {
     id: "lead-generation",
     name: "Lead Generation & Marketing",
     description: "Find off-market deals, connect with motivated sellers, and build your deal pipeline.",
-    sortOrder: 4
+    sortOrder: 6
   },
   {
     id: "comps",
     name: "Comps & Market Data",
     description: "Access comprehensive property data, comparables, and market intelligence for smarter investing.",
-    sortOrder: 5
+    sortOrder: 7
   },
   {
     id: "mls-access",
     name: "MLS Access",
     description: "Access MLS listings and data without a real estate license through investor-friendly platforms.",
-    sortOrder: 6
+    sortOrder: 8
   },
   {
     id: "legal",
     name: "Legal",
     description: "Legal services, contracts, entity formation, and compliance resources for real estate investors.",
-    sortOrder: 7
+    sortOrder: 9
   },
   // Tool capabilities (formerly "features")
   {
