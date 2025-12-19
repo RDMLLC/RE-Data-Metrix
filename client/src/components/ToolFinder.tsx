@@ -568,21 +568,46 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
     return null;
   };
 
+  const getLogoUrl = (referralLink: string): string | null => {
+    try {
+      const url = new URL(referralLink);
+      const domain = url.hostname.replace('www.', '');
+      return `https://logo.clearbit.com/${domain}`;
+    } catch {
+      return null;
+    }
+  };
+
   const renderToolCard = (affiliate: Affiliate) => {
     const affiliateCategories = affiliate.categories || [];
     const matchingCount = selectedCategories.filter(c => affiliateCategories.includes(c)).length;
     const totalCategories = affiliateCategories.length;
     const costDisplay = formatCostRange(affiliate.costFrom, affiliate.costTo);
+    const logoUrl = getLogoUrl(affiliate.referralLink);
 
     return (
       <Card key={affiliate.id} className="p-5" data-testid={`card-tool-${affiliate.id}`}>
         <div className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-foreground" data-testid={`text-tool-name-${affiliate.id}`}>
-                  {affiliate.name}
-                </h3>
+            <div className="flex gap-3">
+              {logoUrl && (
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border border-border/50 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={logoUrl} 
+                    alt={`${affiliate.name} logo`}
+                    className="w-8 h-8 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                    data-testid={`img-logo-${affiliate.id}`}
+                  />
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-foreground" data-testid={`text-tool-name-${affiliate.id}`}>
+                    {affiliate.name}
+                  </h3>
                 {affiliate.hasFreeTrial && (
                   <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs" data-testid={`badge-free-trial-${affiliate.id}`}>
                     Free Trial
@@ -608,6 +633,7 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
                   {affiliate.description}
                 </p>
               )}
+              </div>
             </div>
             <Button
               size="sm"
