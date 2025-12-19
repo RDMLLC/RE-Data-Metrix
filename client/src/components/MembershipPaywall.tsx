@@ -88,7 +88,7 @@ export default function MembershipPaywall({
               <li className="flex items-start gap-3">
                 <Check className="h-5 w-5 text-success mt-0.5" />
                 <span className="text-muted-foreground">
-                  Full access to Toolbox resources and affiliate programs
+                  Full access to Toolbox resources and Partner Tools
                 </span>
               </li>
             </ul>

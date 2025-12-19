@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CookieConsent } from "@/components/CookieConsent";
 import { WizardDataProvider } from "@/contexts/WizardDataContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LenderAuthProvider } from "@/contexts/LenderAuthContext";
@@ -169,6 +170,7 @@ function App() {
           <WizardDataProvider>
             <TooltipProvider>
               <Toaster />
+              <CookieConsent />
               <Router />
             </TooltipProvider>
           </WizardDataProvider>

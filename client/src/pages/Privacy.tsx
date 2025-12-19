@@ -9,7 +9,7 @@ export default function Privacy() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Privacy Policy</h1>
           <div className="h-0.5 w-24 bg-accent mx-auto mb-4"></div>
-          <p className="text-xs text-muted-foreground">Last Updated: December 4, 2025</p>
+          <p className="text-xs text-muted-foreground">Last Updated: December 19, 2025</p>
         </div>
 
         <Card className="p-6 prose prose-sm max-w-none dark:prose-invert prose-headings:text-base prose-headings:font-semibold prose-p:text-[13px] prose-p:leading-relaxed prose-li:text-[13px] prose-li:leading-relaxed">
@@ -37,8 +37,17 @@ export default function Privacy() {
             <li>Device and usage data (e.g., IP address, browser type, operating system, device identifiers, pages viewed, links clicked, referring/exit pages, dates and times of access, and general location based on IP).</li>
             <li>Log and analytics data related to how you interact with the Deal Analysis Tool and other features, which helps us maintain security, troubleshoot issues, and improve performance.</li>
           </ul>
+          <h3 className="text-primary/90">Cookies and tracking technologies</h3>
           <p className="text-foreground">
-            We may use cookies, pixels, and similar tracking technologies to collect some of this information. You can usually control cookies through your browser settings, but disabling cookies may limit certain features of the Services.
+            We use cookies, pixels, and similar tracking technologies to collect some of this information. The types of cookies we use include:
+          </p>
+          <ul className="text-foreground">
+            <li><strong>Essential cookies:</strong> Required for the Services to function properly, including session authentication cookies that keep you logged in and security cookies that protect against unauthorized access. These cookies cannot be disabled.</li>
+            <li><strong>Partner Tools tracking cookies:</strong> Our Toolbox features Partner Tools (affiliate programs) from third-party services. When you click on Partner Tool links, these services place tracking cookies to attribute referrals. These cookies are necessary for the Partner Tools to function and cannot be opted out of if you use those features. RDM may receive compensation when you engage with Partner Tools through our platform.</li>
+            <li><strong>Analytics cookies:</strong> Help us understand how visitors use the Services, which pages are most popular, and how to improve user experience.</li>
+          </ul>
+          <p className="text-foreground">
+            You can usually control non-essential cookies through your browser settings, but disabling cookies may limit certain features of the Services. Essential and Partner Tools cookies are required for core functionality and cannot be disabled.
           </p>
 
           <h3 className="text-primary/90">Information from third parties</h3>

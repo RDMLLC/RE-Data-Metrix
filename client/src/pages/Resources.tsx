@@ -208,7 +208,7 @@ export default function Resources() {
         </div>
         {categoryAffiliates.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            No affiliate programs available in this category yet.
+            No Partner Tools available in this category yet.
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -324,7 +324,7 @@ export default function Resources() {
                   const filteredAffiliates = getPropertyManagementAffiliates();
                   const content = filteredAffiliates.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
-                      No affiliate programs available in this category yet.
+                      No Partner Tools available in this category yet.
                     </div>
                   ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
