@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [isLoadingHealth, setIsLoadingHealth] = useState(false);
   const [demoModeEnabled, setDemoModeEnabled] = useState(false);
   const [isTogglingDemoMode, setIsTogglingDemoMode] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -156,6 +157,46 @@ export default function AdminDashboard() {
       });
     } finally {
       setIsTogglingDemoMode(false);
+    }
+  };
+
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const response = await fetch("/api/admin/seed-database", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Database Seeded",
+          description: data.message || "Baseline data has been populated",
+        });
+        // Refresh data health to show new counts
+        const healthResponse = await fetch("/api/admin/data-health", {
+          credentials: "include",
+        });
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          setDataHealth(healthData);
+        }
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Seeding Failed",
+          description: error.error || "Failed to seed database",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to seed database",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -324,6 +365,27 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </CardContent>
+              <CardFooter className="pt-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSeedDatabase}
+                  disabled={isSeeding}
+                  data-testid="button-seed-database"
+                >
+                  {isSeeding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Seeding...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Seed Database
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
             </Card>
           )}
 
