@@ -39,8 +39,7 @@ export function CookieConsent() {
                 Cookie Notice
               </p>
               <p className="text-sm text-muted-foreground">
-                We use essential cookies to keep you logged in and to enable our Partner Tools to function properly. 
-                Partner Tools use tracking cookies to attribute referrals - these cookies are required and cannot be disabled. 
+                We use essential cookies to keep you logged in and enable site features. 
                 By continuing to use this site, you consent to our use of cookies.{" "}
                 <Link href="/privacy" className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-cookie-policy">
                   Learn more
