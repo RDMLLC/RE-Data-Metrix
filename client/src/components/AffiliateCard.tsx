@@ -29,7 +29,24 @@ const iconMap: Record<string, any> = {
 function getDomainFromUrl(url: string): string | null {
   try {
     const urlObj = new URL(url);
-    return urlObj.hostname.replace(/^www\./, '');
+    const hostname = urlObj.hostname.replace(/^www\./, '');
+    const parts = hostname.split('.');
+    
+    // If only 2 parts (e.g., freedomsoft.com), return as is
+    if (parts.length <= 2) {
+      return hostname;
+    }
+    
+    // Handle country code TLDs like .co.uk, .com.au, .org.uk
+    const countryCodeTLDs = ['co.uk', 'com.au', 'org.uk', 'net.au', 'co.nz', 'com.br'];
+    const lastTwo = parts.slice(-2).join('.');
+    if (countryCodeTLDs.includes(lastTwo)) {
+      // Return last 3 parts for country code TLDs
+      return parts.slice(-3).join('.');
+    }
+    
+    // For subdomains (e.g., fkc.freedomsoft.com), return root domain (last 2 parts)
+    return parts.slice(-2).join('.');
   } catch {
     return null;
   }
