@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, CheckCircle, Lock } from "lucide-react";
@@ -25,51 +24,6 @@ const iconMap: Record<string, any> = {
   BarChart3,
   Layers,
 };
-
-function getDomainFromUrl(url: string): string | null {
-  try {
-    const urlObj = new URL(url);
-    const hostname = urlObj.hostname.replace(/^www\./, '');
-    const parts = hostname.split('.');
-    
-    // If only 2 parts (e.g., freedomsoft.com), return as is
-    if (parts.length <= 2) {
-      return hostname;
-    }
-    
-    // Handle country code TLDs like .co.uk, .com.au, .org.uk
-    const countryCodeTLDs = ['co.uk', 'com.au', 'org.uk', 'net.au', 'co.nz', 'com.br'];
-    const lastTwo = parts.slice(-2).join('.');
-    if (countryCodeTLDs.includes(lastTwo)) {
-      // Return last 3 parts for country code TLDs
-      return parts.slice(-3).join('.');
-    }
-    
-    // For subdomains (e.g., fkc.freedomsoft.com), return root domain (last 2 parts)
-    return parts.slice(-2).join('.');
-  } catch {
-    return null;
-  }
-}
-
-function CompanyLogo({ referralLink, name, size = 24, fallbackIcon: FallbackIcon }: { referralLink: string; name: string; size?: number; fallbackIcon: any }) {
-  const [hasError, setHasError] = useState(false);
-  const domain = getDomainFromUrl(referralLink);
-  
-  if (!domain || hasError) {
-    return <FallbackIcon className="h-6 w-6 text-accent" />;
-  }
-  
-  return (
-    <img
-      src={`https://logo.clearbit.com/${domain}`}
-      alt={`${name} logo`}
-      className="rounded-sm object-contain"
-      style={{ width: size, height: size }}
-      onError={() => setHasError(true)}
-    />
-  );
-}
 
 interface AffiliateCardProps {
   program: Affiliate;
@@ -147,7 +101,7 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
       <CardHeader className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-md bg-accent/10 flex items-center justify-center">
-            <CompanyLogo referralLink={program.referralLink} name={program.name} size={24} fallbackIcon={Icon} />
+            <Icon className="h-6 w-6 text-accent" />
           </div>
           <CardTitle className="text-lg">{program.name}</CardTitle>
         </div>
