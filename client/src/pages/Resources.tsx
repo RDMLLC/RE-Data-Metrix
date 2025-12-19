@@ -156,6 +156,7 @@ function TrainingVideosSection() {
 
 export default function Resources() {
   const { isSubscriber, isLoading: authLoading } = useAuth();
+  const [propertyManagementFilter, setPropertyManagementFilter] = useState<"all" | "short-term" | "long-term">("all");
   
   const { data: affiliates = [], isLoading: affiliatesLoading } = useQuery<Affiliate[]>({
     queryKey: ['/api/affiliates'],
@@ -168,6 +169,24 @@ export default function Resources() {
         if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
         return (a.sortOrder || 0) - (b.sortOrder || 0);
       });
+  };
+  
+  const getPropertyManagementAffiliates = () => {
+    let filtered = affiliates.filter(program => {
+      if (propertyManagementFilter === "all") {
+        return program.categories.includes("property-management") || 
+               program.categories.includes("short-term-rentals") || 
+               program.categories.includes("long-term-rentals");
+      } else if (propertyManagementFilter === "short-term") {
+        return program.categories.includes("short-term-rentals");
+      } else {
+        return program.categories.includes("long-term-rentals");
+      }
+    });
+    return filtered.sort((a, b) => {
+      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
   };
 
   const renderAffiliateContent = (category: string, info: { name: string; description: string }) => {
@@ -233,8 +252,6 @@ export default function Resources() {
             <TabsTrigger value="about" data-testid="tab-about">About</TabsTrigger>
             <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
             <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>
-            <TabsTrigger value="short-term-rentals" data-testid="tab-short-term-rentals">Short-Term Rentals</TabsTrigger>
-            <TabsTrigger value="long-term-rentals" data-testid="tab-long-term-rentals">Long-Term Rentals</TabsTrigger>
             <TabsTrigger value="project-management" data-testid="tab-project-management">Project Management</TabsTrigger>
             <TabsTrigger value="lead-generation" data-testid="tab-lead-generation">Lead Generation</TabsTrigger>
             <TabsTrigger value="comps" data-testid="tab-comps">Comps & Data</TabsTrigger>
@@ -265,15 +282,73 @@ export default function Resources() {
           </TabsContent>
 
           <TabsContent value="property-management">
-            {renderAffiliateContent("property-management", categoryInfo["property-management"])}
-          </TabsContent>
-
-          <TabsContent value="short-term-rentals">
-            {renderAffiliateContent("short-term-rentals", categoryInfo["short-term-rentals"])}
-          </TabsContent>
-
-          <TabsContent value="long-term-rentals">
-            {renderAffiliateContent("long-term-rentals", categoryInfo["long-term-rentals"])}
+            {authLoading || affiliatesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-semibold mb-2">{categoryInfo["property-management"].name}</h2>
+                  <p className="text-muted-foreground">{categoryInfo["property-management"].description}</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={propertyManagementFilter === "all" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPropertyManagementFilter("all")}
+                    data-testid="button-filter-all"
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={propertyManagementFilter === "short-term" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPropertyManagementFilter("short-term")}
+                    data-testid="button-filter-short-term"
+                  >
+                    Short-Term Rentals
+                  </Button>
+                  <Button
+                    variant={propertyManagementFilter === "long-term" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPropertyManagementFilter("long-term")}
+                    data-testid="button-filter-long-term"
+                  >
+                    Long-Term Rentals
+                  </Button>
+                </div>
+                
+                {(() => {
+                  const filteredAffiliates = getPropertyManagementAffiliates();
+                  const content = filteredAffiliates.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      No affiliate programs available in this category yet.
+                    </div>
+                  ) : (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {filteredAffiliates.map((program) => (
+                        <AffiliateCard key={program.id} program={program} />
+                      ))}
+                    </div>
+                  );
+                  
+                  if (!isSubscriber) {
+                    return (
+                      <div className="relative">
+                        <div className="pointer-events-none select-none">
+                          {content}
+                        </div>
+                        <SubscribeOverlay title="Subscribe to View Programs" />
+                      </div>
+                    );
+                  }
+                  
+                  return content;
+                })()}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="project-management">

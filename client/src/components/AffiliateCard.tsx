@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, CheckCircle, Lock } from "lucide-react";
@@ -24,6 +25,34 @@ const iconMap: Record<string, any> = {
   BarChart3,
   Layers,
 };
+
+function getDomainFromUrl(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+function CompanyLogo({ referralLink, name, size = 24, fallbackIcon: FallbackIcon }: { referralLink: string; name: string; size?: number; fallbackIcon: any }) {
+  const [hasError, setHasError] = useState(false);
+  const domain = getDomainFromUrl(referralLink);
+  
+  if (!domain || hasError) {
+    return <FallbackIcon className="h-6 w-6 text-accent" />;
+  }
+  
+  return (
+    <img
+      src={`https://logo.clearbit.com/${domain}`}
+      alt={`${name} logo`}
+      className="rounded-sm object-contain"
+      style={{ width: size, height: size }}
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 interface AffiliateCardProps {
   program: Affiliate;
@@ -100,8 +129,8 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
     <Card className="flex flex-col h-full hover-elevate" data-testid={`card-affiliate-${program.id}`}>
       <CardHeader className="space-y-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-md bg-accent/10">
-            <Icon className="h-6 w-6 text-accent" />
+          <div className="p-2 rounded-md bg-accent/10 flex items-center justify-center">
+            <CompanyLogo referralLink={program.referralLink} name={program.name} size={24} fallbackIcon={Icon} />
           </div>
           <CardTitle className="text-lg">{program.name}</CardTitle>
         </div>
