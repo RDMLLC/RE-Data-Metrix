@@ -37,6 +37,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -98,6 +103,7 @@ interface AffiliateFormData {
   hasFreeTrial: boolean;
   isActive: boolean;
   sortOrder: number;
+  notes: string;
 }
 
 interface CategoryFormData {
@@ -124,6 +130,7 @@ const emptyAffiliateForm: AffiliateFormData = {
   hasFreeTrial: false,
   isActive: true,
   sortOrder: 0,
+  notes: '',
 };
 
 const emptyCategoryForm: CategoryFormData = {
@@ -246,6 +253,7 @@ export default function Affiliates() {
           hasFreeTrial: data.hasFreeTrial,
           isActive: data.isActive,
           sortOrder: data.sortOrder,
+          notes: data.notes || null,
         }),
       });
       if (!response.ok) {
@@ -289,6 +297,7 @@ export default function Affiliates() {
           hasFreeTrial: data.hasFreeTrial,
           isActive: data.isActive,
           sortOrder: data.sortOrder,
+          notes: data.notes || null,
         }),
       });
       if (!response.ok) {
@@ -419,6 +428,7 @@ export default function Affiliates() {
       hasFreeTrial: affiliate.hasFreeTrial || false,
       isActive: affiliate.isActive,
       sortOrder: affiliate.sortOrder || 0,
+      notes: affiliate.notes || '',
     });
     setShowAffiliateDialog(true);
   };
@@ -595,9 +605,22 @@ export default function Affiliates() {
                             <tr key={affiliate.id} className="border-b hover-elevate" data-testid={`row-affiliate-${affiliate.id}`}>
                               <td className="py-3 px-4 align-top">
                                 <div className="flex items-start gap-3">
-                                  <div className="p-2 bg-primary/10 rounded-md mt-0.5">
-                                    <IconComponent className="h-4 w-4 text-primary" />
-                                  </div>
+                                  {affiliate.notes ? (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="p-2 bg-primary/10 rounded-md mt-0.5 cursor-help" data-testid={`icon-affiliate-${affiliate.id}`}>
+                                          <IconComponent className="h-4 w-4 text-primary" />
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-xs whitespace-pre-wrap">
+                                        <p className="text-sm">{affiliate.notes}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  ) : (
+                                    <div className="p-2 bg-primary/10 rounded-md mt-0.5" data-testid={`icon-affiliate-${affiliate.id}`}>
+                                      <IconComponent className="h-4 w-4 text-primary" />
+                                    </div>
+                                  )}
                                   <div className="max-w-xs">
                                     {affiliate.portalUrl ? (
                                       <button 
@@ -974,6 +997,19 @@ export default function Affiliates() {
                   />
                   <Label htmlFor="isActive">Active</Label>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (Internal Only)</Label>
+                <Textarea
+                  id="notes"
+                  value={affiliateForm.notes}
+                  onChange={(e) => setAffiliateForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Internal notes about commission structure, contact info, etc."
+                  rows={3}
+                  data-testid="input-notes"
+                />
+                <p className="text-xs text-muted-foreground">Shown when hovering over the icon in the table</p>
               </div>
             </div>
             <DialogFooter>

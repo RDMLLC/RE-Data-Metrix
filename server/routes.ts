@@ -3274,6 +3274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortOrder: data.sortOrder ?? 0,
         loginUsername: data.loginUsername || null,
         loginPassword: data.loginPassword || null,
+        notes: data.notes || null,
       });
       
       res.status(201).json(affiliate);
@@ -3301,6 +3302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sortOrder: z.number().optional(),
     loginUsername: z.string().nullable().optional(),
     loginPassword: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
   });
   
   app.put("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
@@ -3333,6 +3335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
       if (data.loginUsername !== undefined) updateData.loginUsername = data.loginUsername;
       if (data.loginPassword !== undefined) updateData.loginPassword = data.loginPassword;
+      if (data.notes !== undefined) updateData.notes = data.notes;
       
       const updated = await storage.updateAffiliate(id, updateData);
       
