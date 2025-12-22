@@ -658,6 +658,7 @@ export const affiliates = pgTable("affiliates", {
   hasFreeTrial: boolean("has_free_trial").default(false),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").default(0),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
