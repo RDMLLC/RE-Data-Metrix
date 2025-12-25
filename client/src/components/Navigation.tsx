@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog } from "lucide-react";
+import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -193,6 +193,87 @@ export default function Navigation() {
                         >
                           <User className="mr-2 h-4 w-4" />
                           Member Portal
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/affiliates")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-affiliates"
+                        >
+                          <Handshake className="mr-2 h-4 w-4" />
+                          Partner Tools
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/lenders")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-lenders"
+                        >
+                          <Building2 className="mr-2 h-4 w-4" />
+                          Lender Management
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/calculations")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-calculations"
+                        >
+                          <Calculator className="mr-2 h-4 w-4" />
+                          Calculations Reference
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/training-videos")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-videos"
+                        >
+                          <Video className="mr-2 h-4 w-4" />
+                          Training Videos
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/discount-codes")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-discounts"
+                        >
+                          <Gift className="mr-2 h-4 w-4" />
+                          Discount Codes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/reports")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-reports"
+                        >
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          Reports
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/users")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-users"
+                        >
+                          <Users className="mr-2 h-4 w-4" />
+                          User Management
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/integrations")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-integrations"
+                        >
+                          <Plug className="mr-2 h-4 w-4" />
+                          Integrations
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/comp-users")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-comp-users"
+                        >
+                          <Ticket className="mr-2 h-4 w-4" />
+                          Comp Users
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/lender-invite")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-admin-lender-invite"
+                        >
+                          <UserCog className="mr-2 h-4 w-4" />
+                          Lender Invite
                         </DropdownMenuItem>
                       </>
                     ) : (
