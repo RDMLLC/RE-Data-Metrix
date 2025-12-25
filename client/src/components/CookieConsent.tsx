@@ -2,13 +2,20 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Cookie, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 
 const COOKIE_CONSENT_KEY = "rdm-cookie-consent-accepted";
 
 export function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
+    // Don't show banner to admin users
+    if (isAdmin) return;
+    
     const hasAccepted = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!hasAccepted) {
       const timer = setTimeout(() => {
@@ -16,14 +23,15 @@ export function CookieConsent() {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isAdmin]);
 
   const handleAccept = () => {
     localStorage.setItem(COOKIE_CONSENT_KEY, "true");
     setShowBanner(false);
   };
 
-  if (!showBanner) return null;
+  // Hide banner for admins or if already accepted
+  if (isAdmin || !showBanner) return null;
 
   return (
     <div 
