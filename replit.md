@@ -81,6 +81,21 @@ Developer users are external CRM integrators with limited admin access:
 
 **DO NOT BREAK**: Routes using `ensureAdmin` should remain restricted. Routes using `ensureAdminOrDeveloper` allow developer access.
 
+### Demo Access Link System
+Demo access links allow potential customers to preview platform features with anonymized data:
+- **Database Table**: `demo_tokens` stores token, contact info, status, expiration, and usage tracking
+- **Admin UI**: `/admin/demo-links` for generating and managing demo links
+- **Public Entry**: `/demo/:token` validates token and sets HttpOnly session cookie
+- **Session API**: `/api/demo/session` checks if user has active demo session (server-side cookie validation)
+- **Frontend Hook**: `useDemoAccess()` in `client/src/hooks/use-demo-access.ts` queries session status
+- **Access Behavior**: 
+  - Demo users see full Step 5 Results with anonymized lenders
+  - Partner Tools show placeholder affiliate names
+  - Banner displays indicating demo mode with signup CTA
+- **Security**: Demo token cookie is HttpOnly, Secure, SameSite=Lax; validated server-side each request
+
+**DO NOT BREAK**: Demo session check uses `/api/demo/session` endpoint, not client-side cookie reading.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React

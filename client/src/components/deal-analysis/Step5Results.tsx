@@ -37,6 +37,7 @@ import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
+import { useDemoAccess } from "@/hooks/use-demo-access";
 
 // Demo lender names for Demo Mode - used when shooting marketing content
 const DEMO_LENDER_NAMES = [
@@ -270,11 +271,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
   // Track the latest request ID to prevent stale responses from overwriting newer results
   const requestIdRef = useRef(0);
 
-  // Demo Mode - fetch status to show dummy lender names for marketing content
-  const { data: demoModeData } = useQuery<{ enabled: boolean }>({
-    queryKey: ["/api/settings/demo-mode"],
-  });
-  const isDemoMode = demoModeData?.enabled || false;
+  // Demo Mode - check admin setting OR demo access token cookie
+  const { isDemoMode, hasDemoToken } = useDemoAccess();
+  
+  // Demo token users get full subscriber access (with anonymized lenders)
+  const effectiveIsSubscriber = isSubscriber || hasDemoToken;
 
   // Function to anonymize lender columns when demo mode is active
   const getDisplayLenders = (lenderColumns: LoanComparisonColumn[]): LoanComparisonColumn[] => {
@@ -1183,8 +1184,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
   // For non-subscribers, hide lender columns
   // Apply demo mode transformation to lender columns before slicing for visibility
   const displayLenderColumns = getDisplayLenders(results.lenderColumns);
-  const visibleLenders = isSubscriber ? displayLenderColumns.slice(0, visibleLenderCount) : [];
-  const hasMoreLenders = isSubscriber && visibleLenderCount < results.lenderColumns.length;
+  const visibleLenders = effectiveIsSubscriber ? displayLenderColumns.slice(0, visibleLenderCount) : [];
+  const hasMoreLenders = effectiveIsSubscriber && visibleLenderCount < results.lenderColumns.length;
 
   // Solid background color classes for sticky columns (z-index 20 for first column, 15 for Cash Sale & Your Loan)
   const stickyFirstColBase = "sticky left-0 z-20 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
@@ -1283,8 +1284,21 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
         </Alert>
       )}
 
+      {/* Demo access banner */}
+      {hasDemoToken && !isGeneratingPdf && (
+        <Alert className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20 dark:border-cyan-900">
+          <AlertDescription className="text-cyan-700 dark:text-cyan-400">
+            You're viewing this with demo access. Lender information is anonymized.{" "}
+            <Link href="/register" className="font-medium underline" data-testid="link-demo-signup">
+              Create a free account
+            </Link>{" "}
+            to get started with real lender data.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Prompt for non-authenticated users */}
-      {!isAuthenticated && !isGeneratingPdf && (
+      {!isAuthenticated && !hasDemoToken && !isGeneratingPdf && (
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
           <AlertDescription className="text-blue-700 dark:text-blue-400">
             <Link href="/register" className="font-medium underline" data-testid="link-signup-to-save">
@@ -1863,7 +1877,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                 )}
                 
                 {/* Subscribe prompt for non-subscribers - Mobile */}
-                {!isSubscriber && !isGeneratingPdf && (
+                {!effectiveIsSubscriber && !isGeneratingPdf && (
                   <div className="mt-4 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-4 text-center">
                     <h3 className="font-semibold text-base mb-2">Subscribe to Get Lender Referrals and More</h3>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -2515,7 +2529,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
           )}
 
           {/* Subscribe prompt for non-subscribers */}
-          {!isSubscriber && !isGeneratingPdf && (
+          {!effectiveIsSubscriber && !isGeneratingPdf && (
             <div className="mt-6 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
               <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -2688,7 +2702,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                 </p>
               </CardHeader>
               <CardContent>
-                {!isSubscriber ? (
+                {!effectiveIsSubscriber ? (
                   <div className="rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
                     <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
                     <p className="text-sm text-muted-foreground mb-4">

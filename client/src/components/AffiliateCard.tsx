@@ -25,16 +25,36 @@ const iconMap: Record<string, any> = {
   Layers,
 };
 
+const DEMO_AFFILIATE_NAMES = [
+  "Property Pro Tools",
+  "Investor Essentials",
+  "RealTech Solutions",
+  "Deal Finder Plus",
+  "Portfolio Manager Pro",
+  "Rental Analytics Hub",
+  "Market Research Co",
+  "Investment Tracker",
+];
+
+const DEMO_AFFILIATE_DESCRIPTIONS = [
+  "Comprehensive tools for real estate investors to streamline their property management.",
+  "All-in-one platform for investment analysis and property tracking.",
+  "Advanced analytics and reporting for rental property portfolios.",
+  "Market research and deal analysis tools for savvy investors.",
+];
+
 interface AffiliateCardProps {
   program: Affiliate;
+  isDemoMode?: boolean;
+  demoIndex?: number;
 }
 
-export function AffiliateCard({ program }: AffiliateCardProps) {
+export function AffiliateCard({ program, isDemoMode = false, demoIndex = 0 }: AffiliateCardProps) {
   const Icon = iconMap[program.iconName] || Building2;
   const isActive = program.isActive;
 
   const handleClick = async () => {
-    if (!isActive) return;
+    if (!isActive || isDemoMode) return;
     
     try {
       await apiRequest('POST', '/api/affiliate-clicks', {
@@ -46,6 +66,18 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
       console.log('Click tracking failed silently');
     }
   };
+
+  const displayName = isDemoMode 
+    ? DEMO_AFFILIATE_NAMES[demoIndex % DEMO_AFFILIATE_NAMES.length]
+    : program.name;
+  
+  const displayDescription = isDemoMode
+    ? DEMO_AFFILIATE_DESCRIPTIONS[demoIndex % DEMO_AFFILIATE_DESCRIPTIONS.length]
+    : program.description;
+  
+  const displayBenefits = isDemoMode
+    ? ["Exclusive discounts for members", "Streamlined workflow integration", "Premium support access"]
+    : program.benefits;
 
   if (!isActive) {
     return (
@@ -103,10 +135,10 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
           <div className="p-2 rounded-md bg-accent/10 flex items-center justify-center">
             <Icon className="h-6 w-6 text-accent" />
           </div>
-          <CardTitle className="text-lg">{program.name}</CardTitle>
+          <CardTitle className="text-lg">{displayName}</CardTitle>
         </div>
         <CardDescription className="text-sm leading-relaxed">
-          {program.description}
+          {displayDescription}
         </CardDescription>
       </CardHeader>
 
@@ -114,7 +146,7 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">Why this helps you:</p>
           <ul className="space-y-1.5">
-            {program.benefits.map((benefit, index) => (
+            {displayBenefits.map((benefit, index) => (
               <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
                 <span>{benefit}</span>
@@ -125,21 +157,32 @@ export function AffiliateCard({ program }: AffiliateCardProps) {
       </CardContent>
 
       <CardFooter>
-        <Button
-          asChild
-          className="w-full"
-          data-testid={`button-visit-${program.id}`}
-        >
-          <a
-            href={program.referralLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleClick}
+        {isDemoMode ? (
+          <Button
+            className="w-full"
+            data-testid={`button-visit-${program.id}`}
+            onClick={(e) => e.preventDefault()}
           >
-            Visit {program.name}
+            Visit Partner
             <ExternalLink className="h-4 w-4 ml-2" />
-          </a>
-        </Button>
+          </Button>
+        ) : (
+          <Button
+            asChild
+            className="w-full"
+            data-testid={`button-visit-${program.id}`}
+          >
+            <a
+              href={program.referralLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleClick}
+            >
+              Visit {displayName}
+              <ExternalLink className="h-4 w-4 ml-2" />
+            </a>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

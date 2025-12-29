@@ -18,6 +18,7 @@ import { Wrench, CheckCircle, Lock, Play, Video } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Affiliate, TrainingVideo } from "@shared/schema";
+import { useDemoAccess } from "@/hooks/use-demo-access";
 
 function SubscribeOverlay({ title = "Subscribe to View" }: { title?: string }) {
   return (
@@ -156,7 +157,11 @@ function TrainingVideosSection() {
 
 export default function Resources() {
   const { isSubscriber, isLoading: authLoading } = useAuth();
+  const { isDemoMode, hasDemoToken } = useDemoAccess();
   const [propertyManagementFilter, setPropertyManagementFilter] = useState<"all" | "short-term" | "long-term">("all");
+  
+  // Demo token users get access but with anonymized partner data
+  const effectiveIsSubscriber = isSubscriber || hasDemoToken;
   
   const { data: affiliates = [], isLoading: affiliatesLoading } = useQuery<Affiliate[]>({
     queryKey: ['/api/affiliates'],
@@ -212,15 +217,20 @@ export default function Resources() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {categoryAffiliates.map((program) => (
-              <AffiliateCard key={program.id} program={program} />
+            {categoryAffiliates.map((program, index) => (
+              <AffiliateCard 
+                key={program.id} 
+                program={program} 
+                isDemoMode={isDemoMode}
+                demoIndex={index}
+              />
             ))}
           </div>
         )}
       </div>
     );
 
-    if (!isSubscriber) {
+    if (!effectiveIsSubscriber) {
       return (
         <div className="relative">
           <div className="pointer-events-none select-none">
@@ -328,13 +338,18 @@ export default function Resources() {
                     </div>
                   ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {filteredAffiliates.map((program) => (
-                        <AffiliateCard key={program.id} program={program} />
+                      {filteredAffiliates.map((program, index) => (
+                        <AffiliateCard 
+                          key={program.id} 
+                          program={program} 
+                          isDemoMode={isDemoMode}
+                          demoIndex={index}
+                        />
                       ))}
                     </div>
                   );
                   
-                  if (!isSubscriber) {
+                  if (!effectiveIsSubscriber) {
                     return (
                       <div className="relative">
                         <div className="pointer-events-none select-none">
