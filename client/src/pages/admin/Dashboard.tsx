@@ -400,11 +400,7 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isAdmin && (
-              <Card 
-                className="hover-elevate cursor-pointer" 
-                onClick={() => setLocation("/admin/users")}
-                data-testid="card-user-management"
-              >
+              <Card data-testid="card-user-management">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -414,9 +410,38 @@ export default function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
+                  <CardDescription className="mb-3">
                     Manage user accounts, verify emails, and handle subscriptions
                   </CardDescription>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/users")}
+                      data-testid="button-users"
+                    >
+                      <Users className="h-3.5 w-3.5 mr-1.5" />
+                      Users
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/comp-users")}
+                      data-testid="button-comp-users"
+                    >
+                      <Gift className="h-3.5 w-3.5 mr-1.5" />
+                      Comp Users
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/discount-codes")}
+                      data-testid="button-discount-codes"
+                    >
+                      <Ticket className="h-3.5 w-3.5 mr-1.5" />
+                      Discount Codes
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -442,87 +467,41 @@ export default function AdminDashboard() {
             </Card>
 
             {isAdmin && (
-              <>
-                <Card 
-                  className="hover-elevate cursor-pointer" 
-                  onClick={() => setLocation("/admin/reports")}
-                  data-testid="card-analytics"
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                        <BarChart3 className="h-5 w-5 text-success" />
-                      </div>
-                      <CardTitle>Analytics & Reporting</CardTitle>
+              <Card data-testid="card-analytics">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-success" />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      View platform metrics, usage statistics, and performance data
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className="hover-elevate cursor-pointer" 
-                  onClick={() => setLocation("/admin/comp-users")}
-                  data-testid="card-comp-users"
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                        <Gift className="h-5 w-5 text-amber-500" />
-                      </div>
-                      <CardTitle>Comp Users</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      Invite beta testers with complimentary premium access
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className="hover-elevate cursor-pointer" 
-                  onClick={() => setLocation("/admin/discount-codes")}
-                  data-testid="card-discount-codes"
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                        <Ticket className="h-5 w-5 text-purple-500" />
-                      </div>
-                      <CardTitle>Discount Codes</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      Create and manage discount codes for partners and promotions
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className="hover-elevate cursor-pointer" 
-                  onClick={() => setLocation("/admin/demo-links")}
-                  data-testid="card-demo-links"
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
-                        <Link2 className="h-5 w-5 text-cyan-500" />
-                      </div>
-                      <CardTitle>Demo Links</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      Generate demo access links for potential customers and lenders
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </>
+                    <CardTitle>Analytics & Reporting</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="mb-3">
+                    View platform metrics, usage statistics, and performance data
+                  </CardDescription>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/reports")}
+                      data-testid="button-reports"
+                    >
+                      <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+                      Reports
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/calculations")}
+                      data-testid="button-calculations"
+                    >
+                      <Calculator className="h-3.5 w-3.5 mr-1.5" />
+                      Calculations
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             <Card 
@@ -599,32 +578,12 @@ export default function AdminDashboard() {
                 </CardDescription>
               </CardContent>
             </Card>
-
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/calculations")}
-              data-testid="card-calculations"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center">
-                    <Calculator className="h-5 w-5 text-indigo-500" />
-                  </div>
-                  <CardTitle>Calculations Reference</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Review all formulas and calculations used in deal analysis
-                </CardDescription>
-              </CardContent>
-            </Card>
           </div>
 
           {isAdmin && (
             <Card className="mt-6" data-testid="card-demo-mode">
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
                       <Monitor className="h-5 w-5 text-orange-500" />
@@ -643,17 +602,28 @@ export default function AdminDashboard() {
                       </CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Label htmlFor="demo-mode-toggle" className="text-sm text-muted-foreground">
-                      {demoModeEnabled ? "Enabled" : "Disabled"}
-                    </Label>
-                    <Switch
-                      id="demo-mode-toggle"
-                      checked={demoModeEnabled}
-                      onCheckedChange={handleToggleDemoMode}
-                      disabled={isTogglingDemoMode}
-                      data-testid="switch-demo-mode"
-                    />
+                  <div className="flex items-center gap-6">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/demo-links")}
+                      data-testid="button-demo-links"
+                    >
+                      <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                      Demo Links
+                    </Button>
+                    <div className="flex items-center gap-3">
+                      <Label htmlFor="demo-mode-toggle" className="text-sm text-muted-foreground">
+                        {demoModeEnabled ? "Enabled" : "Disabled"}
+                      </Label>
+                      <Switch
+                        id="demo-mode-toggle"
+                        checked={demoModeEnabled}
+                        onCheckedChange={handleToggleDemoMode}
+                        disabled={isTogglingDemoMode}
+                        data-testid="switch-demo-mode"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardHeader>

@@ -203,14 +203,6 @@ export default function Navigation() {
                         <DropdownMenuSeparator />
                         {/* Developer-accessible pages */}
                         <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/affiliates")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-admin-affiliates"
-                        >
-                          <Handshake className="mr-2 h-4 w-4" />
-                          Partner Tools
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
                           onClick={() => setLocation("/admin/lenders")}
                           className="cursor-pointer"
                           data-testid="menu-item-admin-lenders"
@@ -219,12 +211,12 @@ export default function Navigation() {
                           Lender Management
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/calculations")}
+                          onClick={() => setLocation("/admin/affiliates")}
                           className="cursor-pointer"
-                          data-testid="menu-item-admin-calculations"
+                          data-testid="menu-item-admin-affiliates"
                         >
-                          <Calculator className="mr-2 h-4 w-4" />
-                          Calculations Reference
+                          <Handshake className="mr-2 h-4 w-4" />
+                          Partner Tools
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => setLocation("/admin/training-videos")}
@@ -245,22 +237,7 @@ export default function Navigation() {
                         {/* Admin-only pages */}
                         {user.role === 'admin' && (
                           <>
-                            <DropdownMenuItem 
-                              onClick={() => setLocation("/admin/discount-codes")}
-                              className="cursor-pointer"
-                              data-testid="menu-item-admin-discounts"
-                            >
-                              <Gift className="mr-2 h-4 w-4" />
-                              Discount Codes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => setLocation("/admin/reports")}
-                              className="cursor-pointer"
-                              data-testid="menu-item-admin-reports"
-                            >
-                              <BarChart3 className="mr-2 h-4 w-4" />
-                              Reports
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               onClick={() => setLocation("/admin/users")}
                               className="cursor-pointer"
@@ -270,12 +247,12 @@ export default function Navigation() {
                               User Management
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => setLocation("/admin/comp-users")}
+                              onClick={() => setLocation("/admin/reports")}
                               className="cursor-pointer"
-                              data-testid="menu-item-admin-comp-users"
+                              data-testid="menu-item-admin-reports"
                             >
-                              <Ticket className="mr-2 h-4 w-4" />
-                              Comp Users
+                              <BarChart3 className="mr-2 h-4 w-4" />
+                              Analytics & Reporting
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => setLocation("/admin/lender-invite")}
@@ -284,14 +261,6 @@ export default function Navigation() {
                             >
                               <UserCog className="mr-2 h-4 w-4" />
                               Lender Invite
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => setLocation("/admin/demo-links")}
-                              className="cursor-pointer"
-                              data-testid="menu-item-admin-demo-links"
-                            >
-                              <Link2 className="mr-2 h-4 w-4" />
-                              Demo Links
                             </DropdownMenuItem>
                           </>
                         )}
