@@ -2921,7 +2921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new demo token
   app.post("/api/admin/demo-links", ensureAdmin, async (req, res) => {
     try {
-      const { contactName, contactEmail, notes, expiresInDays } = req.body;
+      const { contactName, contactEmail, notes, expiresInDays, sendEmail } = req.body;
       const adminId = (req.user as User).id;
       
       // Default to 30 days if not specified
@@ -2941,10 +2941,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = process.env.REPLIT_DEPLOYMENT_URL || process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000';
       const demoUrl = `${baseUrl}/demo/${demoToken.token}`;
       
+      // Optionally send email with the demo link
+      let emailSent = false;
+      if (sendEmail && contactEmail) {
+        emailSent = await emailService.sendDemoAccessEmail(
+          contactEmail,
+          contactName || null,
+          demoUrl,
+          expiresAt
+        );
+      }
+      
       res.json({ 
         ...demoToken,
         demoUrl,
-        message: "Demo access link created successfully"
+        emailSent,
+        message: emailSent 
+          ? "Demo access link created and emailed successfully"
+          : "Demo access link created successfully"
       });
     } catch (error) {
       console.error('Create demo token error:', error);
@@ -3795,8 +3809,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allProducts = await storage.getAllActiveLoanProducts();
       const allVideos = await storage.getAllTrainingVideos();
       
+      const activeAffiliates = allAffiliates.filter(a => a.isActive);
+      
       const health = {
         affiliates: allAffiliates.length,
+        activeAffiliates: activeAffiliates.length,
         affiliateCategories: allCategories.length,
         lenders: allLenders.length,
         loanProducts: allProducts.length,

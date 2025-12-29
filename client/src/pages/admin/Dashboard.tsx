@@ -17,6 +17,7 @@ interface StripeStatus {
 
 interface DataHealth {
   affiliates: number;
+  activeAffiliates: number;
   affiliateCategories: number;
   lenders: number;
   loanProducts: number;
@@ -359,8 +360,10 @@ export default function AdminDashboard() {
                     <div className="text-sm text-muted-foreground">Loan Products</div>
                   </div>
                   <div className="text-center p-3 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold">{dataHealth.affiliates}</div>
-                    <div className="text-sm text-muted-foreground">Affiliates</div>
+                    <div className="text-2xl font-bold">
+                      {dataHealth.activeAffiliates}/{dataHealth.affiliates}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Active/Total Affiliates</div>
                   </div>
                   <div className="text-center p-3 bg-muted/50 rounded-lg">
                     <div className="text-2xl font-bold">{dataHealth.affiliateCategories}</div>

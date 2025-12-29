@@ -836,6 +836,58 @@ class EmailService {
     });
   }
 
+  async sendDemoAccessEmail(to: string, contactName: string | null, demoUrl: string, expiresAt: Date): Promise<boolean> {
+    const displayName = contactName || 'there';
+    const expiresFormatted = expiresAt.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">RE Data Metrix Demo Access</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${displayName},</p>
+            <p>You've been granted demo access to RE Data Metrix! Use the link below to explore our platform and see how we can help with your real estate investment analysis.</p>
+            <div style="text-align: center;">
+              <a href="${demoUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Access Demo</a>
+            </div>
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${demoUrl}</p>
+            <p style="margin-top: 30px; font-weight: 500;">This demo access link expires on ${expiresFormatted}.</p>
+            <p>If you have any questions, please don't hesitate to reach out!</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Your RE Data Metrix Demo Access Link',
+      html: htmlContent,
+    });
+  }
+
   private async sendEmail(options: {
     to: string;
     subject: string;

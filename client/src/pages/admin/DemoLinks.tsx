@@ -47,6 +47,7 @@ import {
   Loader2,
   Plus,
   ExternalLink,
+  Mail,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -114,7 +115,7 @@ export default function DemoLinks() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { contactName: string; contactEmail: string; notes: string; expiresInDays: number }) => {
+    mutationFn: async (data: { contactName: string; contactEmail: string; notes: string; expiresInDays: number; sendEmail: boolean }) => {
       const response = await fetch("/api/admin/demo-links", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,19 +130,27 @@ export default function DemoLinks() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/demo-links"] });
-      toast({
-        title: "Demo Link Created",
-        description: "The demo access link has been generated.",
-      });
-      setIsCreateOpen(false);
-      resetForm();
+      
+      // Always copy to clipboard
       if (data.demoUrl) {
         navigator.clipboard.writeText(data.demoUrl);
+      }
+      
+      // Show appropriate success message
+      if (data.emailSent) {
         toast({
-          title: "Link Copied",
+          title: "Demo Link Created & Emailed",
+          description: "The demo link has been sent to the contact and copied to your clipboard.",
+        });
+      } else {
+        toast({
+          title: "Demo Link Created",
           description: "The demo link has been copied to your clipboard.",
         });
       }
+      
+      setIsCreateOpen(false);
+      resetForm();
     },
     onError: (error: Error) => {
       toast({
@@ -188,12 +197,23 @@ export default function DemoLinks() {
     setExpiresInDays("30");
   };
 
-  const handleCreate = () => {
+  const handleCreate = (sendEmail: boolean) => {
+    // Validate email if trying to send
+    if (sendEmail && !contactEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please enter a contact email to send the link.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createMutation.mutate({
       contactName,
       contactEmail,
       notes,
       expiresInDays: parseInt(expiresInDays),
+      sendEmail,
     });
   };
 
@@ -437,17 +457,34 @@ export default function DemoLinks() {
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setIsCreateOpen(false)} data-testid="button-cancel-create">
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending} data-testid="button-confirm-create">
+            <Button 
+              variant="outline"
+              onClick={() => handleCreate(false)} 
+              disabled={createMutation.isPending} 
+              data-testid="button-generate-link"
+            >
               {createMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Link2 className="h-4 w-4 mr-2" />
               )}
               Generate Link
+            </Button>
+            <Button 
+              onClick={() => handleCreate(true)} 
+              disabled={createMutation.isPending || !contactEmail} 
+              data-testid="button-email-link"
+            >
+              {createMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Mail className="h-4 w-4 mr-2" />
+              )}
+              Email Link
             </Button>
           </DialogFooter>
         </DialogContent>
