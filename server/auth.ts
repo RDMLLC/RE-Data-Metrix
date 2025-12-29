@@ -241,4 +241,35 @@ export function ensureAdmin(
   next();
 }
 
+// Allow both admin and developer roles
+export function ensureAdminOrDeveloper(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const user = req.user as any;
+  
+  if (user.role !== 'admin' && user.role !== 'developer') {
+    return res.status(403).json({ error: 'Admin or developer access required' });
+  }
+
+  next();
+}
+
+// Helper to check if user is admin (not developer)
+export function isAdminOnly(req: Request): boolean {
+  const user = req.user as any;
+  return user?.role === 'admin';
+}
+
+// Helper to check if user is developer
+export function isDeveloper(req: Request): boolean {
+  const user = req.user as any;
+  return user?.role === 'developer';
+}
+
 export default passport;
