@@ -28,6 +28,8 @@ import {
   type InsertSiteSetting,
   type TrainingVideo,
   type InsertTrainingVideo,
+  type DemoToken,
+  type InsertDemoToken,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -45,7 +47,8 @@ import {
   affiliates as affiliatesTable,
   affiliateCategories as affiliateCategoriesTable,
   siteSettings as siteSettingsTable,
-  trainingVideos as trainingVideosTable
+  trainingVideos as trainingVideosTable,
+  demoTokens as demoTokensTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -427,6 +430,14 @@ export interface IStorage {
       amountDiscounted: number;
     }>;
   }>;
+  
+  // Demo Tokens
+  createDemoToken(data: Omit<InsertDemoToken, 'token'> & { createdBy: string }): Promise<DemoToken>;
+  getDemoTokenByToken(token: string): Promise<DemoToken | undefined>;
+  getAllDemoTokens(): Promise<DemoToken[]>;
+  updateDemoToken(id: string, data: Partial<InsertDemoToken>): Promise<DemoToken | undefined>;
+  revokeDemoToken(id: string): Promise<DemoToken | undefined>;
+  recordDemoTokenUsage(token: string): Promise<DemoToken | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -2551,6 +2562,55 @@ export class DatabaseStorage implements IStorage {
       totalAmountDiscounted,
       topCodes,
     };
+  }
+
+  // Demo Token Methods
+  async createDemoToken(data: Omit<InsertDemoToken, 'token'> & { createdBy: string }): Promise<DemoToken> {
+    const token = randomBytes(24).toString('base64url');
+    const [demoToken] = await db.insert(demoTokensTable).values({
+      ...data,
+      token,
+    }).returning();
+    return demoToken;
+  }
+
+  async getDemoTokenByToken(token: string): Promise<DemoToken | undefined> {
+    const [demoToken] = await db.select().from(demoTokensTable)
+      .where(eq(demoTokensTable.token, token))
+      .limit(1);
+    return demoToken;
+  }
+
+  async getAllDemoTokens(): Promise<DemoToken[]> {
+    return await db.select().from(demoTokensTable)
+      .orderBy(desc(demoTokensTable.createdAt));
+  }
+
+  async updateDemoToken(id: string, data: Partial<InsertDemoToken>): Promise<DemoToken | undefined> {
+    const [updated] = await db.update(demoTokensTable)
+      .set(data)
+      .where(eq(demoTokensTable.id, id))
+      .returning();
+    return updated;
+  }
+
+  async revokeDemoToken(id: string): Promise<DemoToken | undefined> {
+    const [revoked] = await db.update(demoTokensTable)
+      .set({ status: 'revoked' })
+      .where(eq(demoTokensTable.id, id))
+      .returning();
+    return revoked;
+  }
+
+  async recordDemoTokenUsage(token: string): Promise<DemoToken | undefined> {
+    const [updated] = await db.update(demoTokensTable)
+      .set({ 
+        lastUsedAt: new Date(),
+        usageCount: sqlCount`${demoTokensTable.usageCount} + 1`
+      })
+      .where(eq(demoTokensTable.token, token))
+      .returning();
+    return updated;
   }
 
 }

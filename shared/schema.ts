@@ -723,3 +723,28 @@ export const insertTrainingVideoSchema = createInsertSchema(trainingVideos).omit
 
 export type InsertTrainingVideo = z.infer<typeof insertTrainingVideoSchema>;
 export type TrainingVideo = typeof trainingVideos.$inferSelect;
+
+// Demo Access Tokens - for providing demo access links to potential customers/lenders
+export const demoTokens = pgTable("demo_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: varchar("token").notNull().unique(),
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  notes: text("notes"),
+  status: text("status").notNull().default('active'), // 'active', 'revoked', 'expired'
+  expiresAt: timestamp("expires_at").notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  lastUsedAt: timestamp("last_used_at"),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDemoTokenSchema = createInsertSchema(demoTokens).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  usageCount: true,
+});
+
+export type InsertDemoToken = z.infer<typeof insertDemoTokenSchema>;
+export type DemoToken = typeof demoTokens.$inferSelect;
