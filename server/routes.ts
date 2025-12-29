@@ -7,7 +7,7 @@ import { propertyAPIService } from "./services/property-api.factory";
 import { db } from "./db";
 import { eq, inArray, desc, and, sql, count, gt } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
-import passport, { ensureAdmin, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
+import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
 import crypto from "crypto";
 import multer from "multer";
@@ -364,8 +364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Check all integrations status (admin only)
-  app.get("/api/admin/integrations/status", ensureAdmin, async (req, res) => {
+  // Check all integrations status (admin and developer)
+  app.get("/api/admin/integrations/status", ensureAdminOrDeveloper, async (req, res) => {
     try {
       // Stripe status
       const stripeConfigured = await isStripeConfigured();
@@ -1147,8 +1147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Lender Authentication Routes
-  app.post("/api/lenders/invite", async (req, res) => {
+  // Lender Authentication Routes - Admin only for creating invites
+  app.post("/api/lenders/invite", ensureAdmin, async (req, res) => {
     try {
       const { username, companyName, referralAmount, referralType } = req.body;
 
@@ -2229,8 +2229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin Lender Management Routes
-  app.get("/api/admin/lenders", ensureAdmin, async (req, res) => {
+  // Admin Lender Management Routes (GET is accessible by developers for viewing)
+  app.get("/api/admin/lenders", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const lenders = await storage.getAllLendersWithReferralCounts();
       res.json(lenders);
@@ -2297,7 +2297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/lenders/:id", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/lenders/:id", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const { id } = req.params;
       const lender = await storage.getLender(id);
@@ -2657,6 +2657,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Update subscription error:', error);
       res.status(500).json({ error: "Failed to update subscription" });
+    }
+  });
+
+  // Create developer account - admin only
+  app.post("/api/admin/users/developer", ensureAdmin, async (req, res) => {
+    try {
+      const { email, password, username } = req.body;
+      
+      if (!email || !password || !username) {
+        return res.status(400).json({ error: "Email, password, and username are required" });
+      }
+      
+      // Check if email or username already exists
+      const [existingByEmail] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      if (existingByEmail) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+      
+      const [existingByUsername] = await db.select().from(users).where(eq(users.username, username)).limit(1);
+      if (existingByUsername) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+      
+      // Create the developer user
+      const newUser = await storage.createUser({
+        email,
+        username,
+        password: hashedPassword,
+        role: 'developer',
+        subscriptionStatus: 'inactive',
+        isEmailVerified: true, // Developer accounts are pre-verified
+      });
+      
+      res.status(201).json({ 
+        message: "Developer account created successfully",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          role: newUser.role,
+        }
+      });
+    } catch (error) {
+      console.error('Create developer account error:', error);
+      res.status(500).json({ error: "Failed to create developer account" });
     }
   });
 
@@ -3204,9 +3252,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Affiliate Management Routes
-  // List all affiliates (admin only)
-  app.get("/api/admin/affiliates", ensureAdmin, async (req, res) => {
+  // Affiliate Management Routes (Partner Tools)
+  // List all affiliates (admin and developer)
+  app.get("/api/admin/affiliates", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const affiliates = await storage.getAllAffiliates();
       res.json(affiliates);
@@ -3239,13 +3287,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create affiliate (admin only) - with Zod validation
+  // Create affiliate (admin and developer) - with Zod validation
   const createAffiliateSchema = insertAffiliateSchema.extend({
     benefits: z.array(z.string()).default([]),
     categories: z.array(z.string()).min(1, "At least one category is required"),
   });
   
-  app.post("/api/admin/affiliates", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/affiliates", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const validationResult = createAffiliateSchema.safeParse(req.body);
       
@@ -3284,7 +3332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update affiliate (admin only) - with Zod validation
+  // Update affiliate (admin and developer) - with Zod validation
   const updateAffiliateSchema = z.object({
     name: z.string().min(1).optional(),
     description: z.string().min(1).optional(),
@@ -3305,7 +3353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     notes: z.string().nullable().optional(),
   });
   
-  app.put("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
+  app.put("/api/admin/affiliates/:id", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const { id } = req.params;
       const validationResult = updateAffiliateSchema.safeParse(req.body);
@@ -3350,8 +3398,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle affiliate status (admin only)
-  app.patch("/api/admin/affiliates/:id/status", ensureAdmin, async (req, res) => {
+  // Toggle affiliate status (admin and developer)
+  app.patch("/api/admin/affiliates/:id/status", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
@@ -3373,8 +3421,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete affiliate (admin only)
-  app.delete("/api/admin/affiliates/:id", ensureAdmin, async (req, res) => {
+  // Delete affiliate (admin and developer)
+  app.delete("/api/admin/affiliates/:id", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteAffiliate(id);
@@ -3390,8 +3438,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // List affiliate categories (admin only)
-  app.get("/api/admin/affiliate-categories", ensureAdmin, async (req, res) => {
+  // List affiliate categories (admin and developer)
+  app.get("/api/admin/affiliate-categories", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const categories = await storage.getAllAffiliateCategories();
       res.json(categories);
@@ -3401,7 +3449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create/update affiliate category (admin only) - with Zod validation
+  // Create/update affiliate category (admin and developer) - with Zod validation
   const upsertCategorySchema = z.object({
     id: z.string().min(1, "ID is required"),
     name: z.string().min(1, "Name is required"),
@@ -3409,7 +3457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sortOrder: z.number().optional(),
   });
   
-  app.post("/api/admin/affiliate-categories", ensureAdmin, async (req, res) => {
+  app.post("/api/admin/affiliate-categories", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const validationResult = upsertCategorySchema.safeParse(req.body);
       
@@ -3435,8 +3483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete affiliate category (admin only)
-  app.delete("/api/admin/affiliate-categories/:id", ensureAdmin, async (req, res) => {
+  // Delete affiliate category (admin and developer)
+  app.delete("/api/admin/affiliate-categories/:id", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deleteAffiliateCategory(id);
@@ -3498,7 +3546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/training-videos", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/training-videos", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const videos = await storage.getAllTrainingVideos();
       res.json(videos);
@@ -3568,8 +3616,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Data health check endpoint (admin only) - returns counts of key data
-  app.get("/api/admin/data-health", ensureAdmin, async (req, res) => {
+  // Data health check endpoint (admin and developer) - returns counts of key data
+  app.get("/api/admin/data-health", ensureAdminOrDeveloper, async (req, res) => {
     try {
       const allAffiliates = await storage.getAllAffiliates();
       const allCategories = await storage.getAllAffiliateCategories();

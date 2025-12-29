@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
@@ -39,6 +40,9 @@ export default function AdminDashboard() {
   const [demoModeEnabled, setDemoModeEnabled] = useState(false);
   const [isTogglingDemoMode, setIsTogglingDemoMode] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  
+  const isAdmin = userRole === 'admin';
+  const isDeveloper = userRole === 'developer';
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -48,17 +52,18 @@ export default function AdminDashboard() {
         });
         if (response.ok) {
           const data = await response.json();
-          // Check if user is admin - redirect if not
-          if (data.role !== 'admin') {
+          // Check if user is admin or developer - redirect if not
+          if (data.role !== 'admin' && data.role !== 'developer') {
             toast({
               title: "Access Denied",
-              description: "Admin privileges required. Please log in as admin.",
+              description: "Admin or developer privileges required.",
               variant: "destructive",
             });
             setLocation("/admin/login");
             return;
           }
-          setAdminName(data.email?.split("@")[0] || "Admin");
+          setUserRole(data.role);
+          setAdminName(data.email?.split("@")[0] || (data.role === 'developer' ? 'Developer' : 'Admin'));
           setAdminEmail(data.email || "");
         } else {
           // Not authenticated - redirect to admin login
@@ -285,7 +290,9 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-12">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+              <h1 className="text-3xl font-bold text-foreground">
+                {isDeveloper ? 'Developer Dashboard' : 'Admin Dashboard'}
+              </h1>
               <p className="text-muted-foreground mt-2">Welcome, {adminName}</p>
             </div>
             <div className="flex gap-3">
@@ -365,50 +372,54 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="pt-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSeedDatabase}
-                  disabled={isSeeding}
-                  data-testid="button-seed-database"
-                >
-                  {isSeeding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Seeding...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Seed Database
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
+              {isAdmin && (
+                <CardFooter className="pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSeedDatabase}
+                    disabled={isSeeding}
+                    data-testid="button-seed-database"
+                  >
+                    {isSeeding ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Seeding...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Seed Database
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              )}
             </Card>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/users")}
-              data-testid="card-user-management"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Users className="h-5 w-5 text-primary" />
+            {isAdmin && (
+              <Card 
+                className="hover-elevate cursor-pointer" 
+                onClick={() => setLocation("/admin/users")}
+                data-testid="card-user-management"
+              >
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <CardTitle>User Management</CardTitle>
                   </div>
-                  <CardTitle>User Management</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Manage user accounts, verify emails, and handle subscriptions
-                </CardDescription>
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Manage user accounts, verify emails, and handle subscriptions
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            )}
 
             <Card 
               className="hover-elevate cursor-pointer" 
@@ -430,65 +441,69 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/reports")}
-              data-testid="card-analytics"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="h-5 w-5 text-success" />
-                  </div>
-                  <CardTitle>Analytics & Reporting</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  View platform metrics, usage statistics, and performance data
-                </CardDescription>
-              </CardContent>
-            </Card>
+            {isAdmin && (
+              <>
+                <Card 
+                  className="hover-elevate cursor-pointer" 
+                  onClick={() => setLocation("/admin/reports")}
+                  data-testid="card-analytics"
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                        <BarChart3 className="h-5 w-5 text-success" />
+                      </div>
+                      <CardTitle>Analytics & Reporting</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      View platform metrics, usage statistics, and performance data
+                    </CardDescription>
+                  </CardContent>
+                </Card>
 
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/comp-users")}
-              data-testid="card-comp-users"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                    <Gift className="h-5 w-5 text-amber-500" />
-                  </div>
-                  <CardTitle>Comp Users</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Invite beta testers with complimentary premium access
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Card 
+                  className="hover-elevate cursor-pointer" 
+                  onClick={() => setLocation("/admin/comp-users")}
+                  data-testid="card-comp-users"
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                        <Gift className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <CardTitle>Comp Users</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      Invite beta testers with complimentary premium access
+                    </CardDescription>
+                  </CardContent>
+                </Card>
 
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/discount-codes")}
-              data-testid="card-discount-codes"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                    <Ticket className="h-5 w-5 text-purple-500" />
-                  </div>
-                  <CardTitle>Discount Codes</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Create and manage discount codes for partners and promotions
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Card 
+                  className="hover-elevate cursor-pointer" 
+                  onClick={() => setLocation("/admin/discount-codes")}
+                  data-testid="card-discount-codes"
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                        <Ticket className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <CardTitle>Discount Codes</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      Create and manage discount codes for partners and promotions
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
             <Card 
               className="hover-elevate cursor-pointer" 
@@ -586,42 +601,44 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          <Card className="mt-6" data-testid="card-demo-mode">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                    <Monitor className="h-5 w-5 text-orange-500" />
+          {isAdmin && (
+            <Card className="mt-6" data-testid="card-demo-mode">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                      <Monitor className="h-5 w-5 text-orange-500" />
+                    </div>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        Demo Mode
+                        {demoModeEnabled && (
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                            Active
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        Show placeholder affiliates in Tool Finder for marketing videos
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Demo Mode
-                      {demoModeEnabled && (
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                          Active
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>
-                      Show placeholder affiliates in Tool Finder for marketing videos
-                    </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="demo-mode-toggle" className="text-sm text-muted-foreground">
+                      {demoModeEnabled ? "Enabled" : "Disabled"}
+                    </Label>
+                    <Switch
+                      id="demo-mode-toggle"
+                      checked={demoModeEnabled}
+                      onCheckedChange={handleToggleDemoMode}
+                      disabled={isTogglingDemoMode}
+                      data-testid="switch-demo-mode"
+                    />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="demo-mode-toggle" className="text-sm text-muted-foreground">
-                    {demoModeEnabled ? "Enabled" : "Disabled"}
-                  </Label>
-                  <Switch
-                    id="demo-mode-toggle"
-                    checked={demoModeEnabled}
-                    onCheckedChange={handleToggleDemoMode}
-                    disabled={isTogglingDemoMode}
-                    data-testid="switch-demo-mode"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
+              </CardHeader>
+            </Card>
+          )}
 
         </div>
       </div>

@@ -23,7 +23,11 @@ import {
   Trash2,
   Archive,
   FileCheck,
-  FileX
+  FileX,
+  Plus,
+  Code,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import {
   Tooltip,
@@ -55,6 +59,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -110,6 +123,11 @@ export default function UserManagement() {
   const [userToUpdate, setUserToUpdate] = useState<{user: UserWithStats, status: string} | null>(null);
   const [userToResendVerification, setUserToResendVerification] = useState<UserWithStats | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
+  const [showCreateDeveloper, setShowCreateDeveloper] = useState(false);
+  const [developerEmail, setDeveloperEmail] = useState("");
+  const [developerUsername, setDeveloperUsername] = useState("");
+  const [developerPassword, setDeveloperPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: users, isLoading: usersLoading } = useQuery<UserWithStats[]>({
     queryKey: ["/api/admin/users"],
@@ -190,6 +208,59 @@ export default function UserManagement() {
     },
   });
 
+  const createDeveloperMutation = useMutation({
+    mutationFn: async (data: { email: string; username: string; password: string }) => {
+      const response = await apiRequest("POST", "/api/admin/users/developer", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/stats"] });
+      toast({
+        title: "Developer Account Created",
+        description: "The developer account has been created successfully.",
+      });
+      setShowCreateDeveloper(false);
+      setDeveloperEmail("");
+      setDeveloperUsername("");
+      setDeveloperPassword("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Creating Developer",
+        description: error.message || "Failed to create developer account",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateDeveloper = () => {
+    if (!developerEmail || !developerUsername || !developerPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    createDeveloperMutation.mutate({
+      email: developerEmail,
+      username: developerUsername,
+      password: developerPassword,
+    });
+  };
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge variant="default" className="text-xs">Admin</Badge>;
+      case 'developer':
+        return <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>;
+      default:
+        return null;
+    }
+  };
+
   const getSubscriptionBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -245,19 +316,28 @@ export default function UserManagement() {
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 mb-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLocation("/admin/dashboard")}
-              data-testid="button-back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-              <p className="text-muted-foreground mt-1">Manage users, subscriptions, and view activity</p>
+          <div className="flex items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLocation("/admin/dashboard")}
+                data-testid="button-back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">User Management</h1>
+                <p className="text-muted-foreground mt-1">Manage users, subscriptions, and view activity</p>
+              </div>
             </div>
+            <Button
+              onClick={() => setShowCreateDeveloper(true)}
+              data-testid="button-create-developer"
+            >
+              <Code className="h-4 w-4 mr-2" />
+              Create Developer
+            </Button>
           </div>
 
           {/* Stats Overview */}
@@ -396,7 +476,10 @@ export default function UserManagement() {
                             <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                               <TableCell>
                                 <div>
-                                  <p className="font-medium">{user.fullName || user.username}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">{user.fullName || user.username}</p>
+                                    {getRoleBadge(user.role)}
+                                  </div>
                                   <p className="text-sm text-muted-foreground">{user.email}</p>
                                 </div>
                               </TableCell>
@@ -861,6 +944,97 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Developer Account Dialog */}
+      <Dialog open={showCreateDeveloper} onOpenChange={setShowCreateDeveloper}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Code className="h-5 w-5 text-indigo-600" />
+              Create Developer Account
+            </DialogTitle>
+            <DialogDescription>
+              Developer accounts have limited admin access for CRM integrations. They can access Partner Tools, Lender data (view only), Calculations Reference, and Training Videos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="dev-email">Email</Label>
+              <Input
+                id="dev-email"
+                type="email"
+                placeholder="developer@example.com"
+                value={developerEmail}
+                onChange={(e) => setDeveloperEmail(e.target.value)}
+                data-testid="input-developer-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dev-username">Username</Label>
+              <Input
+                id="dev-username"
+                type="text"
+                placeholder="developer_username"
+                value={developerUsername}
+                onChange={(e) => setDeveloperUsername(e.target.value)}
+                data-testid="input-developer-username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dev-password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="dev-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Minimum 8 characters"
+                  value={developerPassword}
+                  onChange={(e) => setDeveloperPassword(e.target.value)}
+                  data-testid="input-developer-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateDeveloper(false);
+                setDeveloperEmail("");
+                setDeveloperUsername("");
+                setDeveloperPassword("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateDeveloper}
+              disabled={createDeveloperMutation.isPending}
+              data-testid="button-confirm-create-developer"
+            >
+              {createDeveloperMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Developer
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

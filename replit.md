@@ -57,6 +57,30 @@ Demo mode anonymizes real lender data in Step 5 Results:
 
 **DO NOT BREAK**: Changes to lender display logic must maintain demo mode anonymization.
 
+### Developer Role Access Control
+Developer users are external CRM integrators with limited admin access:
+- **Backend Middleware**: `ensureAdminOrDeveloper` in `server/auth.ts` for routes developers can access
+- **Allowed Access**: 
+  - Integrations page (view API status)
+  - Partner Tools (full CRUD)
+  - Lender Management (view only - no invite creation)
+  - Calculations Reference (view)
+  - Training Videos (view)
+  - Data Health endpoint (view)
+- **Restricted Access**: 
+  - User Management
+  - Reports
+  - Discount Codes
+  - Comp Users
+  - Database seed/reset
+  - Lender Invite creation
+  - Stripe/billing settings
+- **Frontend**: Navigation shows "Developer Dashboard" label; Dashboard hides restricted cards
+- **Badge Display**: Indigo colored badge with "DV" initials
+- **Creation**: Admins can create developer accounts via User Management > "Create Developer" button
+
+**DO NOT BREAK**: Routes using `ensureAdmin` should remain restricted. Routes using `ensureAdminOrDeveloper` allow developer access.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React

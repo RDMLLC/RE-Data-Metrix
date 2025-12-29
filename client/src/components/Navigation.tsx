@@ -66,7 +66,7 @@ export default function Navigation() {
   ];
 
   const userInitials = user 
-    ? (user.role === 'admin' ? 'AD' : getInitials(user.profile?.fullName, user.username, user.email))
+    ? (user.role === 'admin' ? 'AD' : user.role === 'developer' ? 'DV' : getInitials(user.profile?.fullName, user.username, user.email))
     : "";
 
   const lenderInitials = lender 
@@ -161,6 +161,8 @@ export default function Navigation() {
                           <span className="text-xs text-muted-foreground">Status:</span>
                           {user.role === 'admin' ? (
                             <Badge variant="default" className="text-xs">Admin</Badge>
+                          ) : user.role === 'developer' ? (
+                            <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
                           ) : (
                             getSubscriptionBadge(user.subscriptionStatus || "inactive")
                           )}
@@ -168,7 +170,7 @@ export default function Navigation() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {user.role === 'admin' ? (
+                    {(user.role === 'admin' || user.role === 'developer') ? (
                       <>
                         <DropdownMenuItem 
                           onClick={() => setLocation("/admin/dashboard")}
@@ -176,25 +178,30 @@ export default function Navigation() {
                           data-testid="menu-item-admin-dashboard"
                         >
                           <Settings className="mr-2 h-4 w-4" />
-                          Admin Dashboard
+                          {user.role === 'developer' ? 'Developer Dashboard' : 'Admin Dashboard'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/lender-dashboard")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-lender-portal"
-                        >
-                          <Building2 className="mr-2 h-4 w-4" />
-                          Lender Portal
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/portal/dashboard")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-member-portal"
-                        >
-                          <User className="mr-2 h-4 w-4" />
-                          Member Portal
-                        </DropdownMenuItem>
+                        {user.role === 'admin' && (
+                          <>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/lender-dashboard")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-lender-portal"
+                            >
+                              <Building2 className="mr-2 h-4 w-4" />
+                              Lender Portal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/portal/dashboard")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-member-portal"
+                            >
+                              <User className="mr-2 h-4 w-4" />
+                              Member Portal
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuSeparator />
+                        {/* Developer-accessible pages */}
                         <DropdownMenuItem 
                           onClick={() => setLocation("/admin/affiliates")}
                           className="cursor-pointer"
@@ -228,30 +235,6 @@ export default function Navigation() {
                           Training Videos
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/discount-codes")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-admin-discounts"
-                        >
-                          <Gift className="mr-2 h-4 w-4" />
-                          Discount Codes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/reports")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-admin-reports"
-                        >
-                          <BarChart3 className="mr-2 h-4 w-4" />
-                          Reports
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/users")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-admin-users"
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          User Management
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
                           onClick={() => setLocation("/admin/integrations")}
                           className="cursor-pointer"
                           data-testid="menu-item-admin-integrations"
@@ -259,22 +242,51 @@ export default function Navigation() {
                           <Plug className="mr-2 h-4 w-4" />
                           Integrations
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/comp-users")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-admin-comp-users"
-                        >
-                          <Ticket className="mr-2 h-4 w-4" />
-                          Comp Users
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/lender-invite")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-admin-lender-invite"
-                        >
-                          <UserCog className="mr-2 h-4 w-4" />
-                          Lender Invite
-                        </DropdownMenuItem>
+                        {/* Admin-only pages */}
+                        {user.role === 'admin' && (
+                          <>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/discount-codes")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-admin-discounts"
+                            >
+                              <Gift className="mr-2 h-4 w-4" />
+                              Discount Codes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/reports")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-admin-reports"
+                            >
+                              <BarChart3 className="mr-2 h-4 w-4" />
+                              Reports
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/users")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-admin-users"
+                            >
+                              <Users className="mr-2 h-4 w-4" />
+                              User Management
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/comp-users")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-admin-comp-users"
+                            >
+                              <Ticket className="mr-2 h-4 w-4" />
+                              Comp Users
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/lender-invite")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-admin-lender-invite"
+                            >
+                              <UserCog className="mr-2 h-4 w-4" />
+                              Lender Invite
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </>
                     ) : (
                       <DropdownMenuItem 
@@ -398,6 +410,8 @@ export default function Navigation() {
                         <span className="text-xs text-muted-foreground">Status:</span>
                         {user.role === 'admin' ? (
                           <Badge variant="default" className="text-xs">Admin</Badge>
+                        ) : user.role === 'developer' ? (
+                          <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
                         ) : (
                           getSubscriptionBadge(user.subscriptionStatus || "inactive")
                         )}
@@ -405,29 +419,80 @@ export default function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {user.role === 'admin' ? (
+                  {(user.role === 'admin' || user.role === 'developer') ? (
                     <>
                       <DropdownMenuItem 
                         onClick={() => setLocation("/admin/dashboard")}
                         className="cursor-pointer"
                       >
                         <Settings className="mr-2 h-4 w-4" />
-                        Admin Dashboard
+                        {user.role === 'developer' ? 'Developer Dashboard' : 'Admin Dashboard'}
+                      </DropdownMenuItem>
+                      {user.role === 'admin' && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={() => setLocation("/lender-dashboard")}
+                            className="cursor-pointer"
+                          >
+                            <Building2 className="mr-2 h-4 w-4" />
+                            Lender Portal
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setLocation("/portal/dashboard")}
+                            className="cursor-pointer"
+                          >
+                            <User className="mr-2 h-4 w-4" />
+                            Member Portal
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => setLocation("/admin/affiliates")}
+                        className="cursor-pointer"
+                      >
+                        <Handshake className="mr-2 h-4 w-4" />
+                        Partner Tools
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => setLocation("/lender-dashboard")}
+                        onClick={() => setLocation("/admin/lenders")}
                         className="cursor-pointer"
                       >
                         <Building2 className="mr-2 h-4 w-4" />
-                        Lender Portal
+                        Lender Management
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => setLocation("/portal/dashboard")}
+                        onClick={() => setLocation("/admin/integrations")}
                         className="cursor-pointer"
                       >
-                        <User className="mr-2 h-4 w-4" />
-                        Member Portal
+                        <Plug className="mr-2 h-4 w-4" />
+                        Integrations
                       </DropdownMenuItem>
+                      {user.role === 'admin' && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={() => setLocation("/admin/discount-codes")}
+                            className="cursor-pointer"
+                          >
+                            <Gift className="mr-2 h-4 w-4" />
+                            Discount Codes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setLocation("/admin/reports")}
+                            className="cursor-pointer"
+                          >
+                            <BarChart3 className="mr-2 h-4 w-4" />
+                            Reports
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setLocation("/admin/users")}
+                            className="cursor-pointer"
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            User Management
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </>
                   ) : (
                     <DropdownMenuItem 
