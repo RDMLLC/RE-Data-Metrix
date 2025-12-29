@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users } from "lucide-react";
+import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -284,6 +284,14 @@ export default function Navigation() {
                             >
                               <UserCog className="mr-2 h-4 w-4" />
                               Lender Invite
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/demo-links")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-admin-demo-links"
+                            >
+                              <Link2 className="mr-2 h-4 w-4" />
+                              Demo Links
                             </DropdownMenuItem>
                           </>
                         )}

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -499,6 +499,26 @@ export default function AdminDashboard() {
                   <CardContent>
                     <CardDescription>
                       Create and manage discount codes for partners and promotions
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+
+                <Card 
+                  className="hover-elevate cursor-pointer" 
+                  onClick={() => setLocation("/admin/demo-links")}
+                  data-testid="card-demo-links"
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center">
+                        <Link2 className="h-5 w-5 text-cyan-500" />
+                      </div>
+                      <CardTitle>Demo Links</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      Generate demo access links for potential customers and lenders
                     </CardDescription>
                   </CardContent>
                 </Card>
