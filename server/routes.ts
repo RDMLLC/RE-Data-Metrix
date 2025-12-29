@@ -2904,6 +2904,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =====================
+  // Admin Demo Access Links Routes
+  // =====================
+
+  // Get all demo tokens
+  app.get("/api/admin/demo-links", ensureAdmin, async (req, res) => {
+    try {
+      const tokens = await storage.getAllDemoTokens();
+      res.json(tokens);
+    } catch (error) {
+      console.error('Get demo tokens error:', error);
+      res.status(500).json({ error: "Failed to fetch demo links" });
+    }
+  });
+
+  // Create a new demo token
+  app.post("/api/admin/demo-links", ensureAdmin, async (req, res) => {
+    try {
+      const { contactName, contactEmail, notes, expiresInDays } = req.body;
+      const adminId = (req.user as User).id;
+      
+      // Default to 30 days if not specified
+      const days = expiresInDays || 30;
+      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      
+      const demoToken = await storage.createDemoToken({
+        contactName: contactName || null,
+        contactEmail: contactEmail || null,
+        notes: notes || null,
+        status: 'active',
+        expiresAt,
+        createdBy: adminId,
+      });
+      
+      // Generate the full demo URL
+      const baseUrl = process.env.REPLIT_DEPLOYMENT_URL || process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000';
+      const demoUrl = `${baseUrl}/demo/${demoToken.token}`;
+      
+      res.json({ 
+        ...demoToken,
+        demoUrl,
+        message: "Demo access link created successfully"
+      });
+    } catch (error) {
+      console.error('Create demo token error:', error);
+      res.status(500).json({ error: "Failed to create demo link" });
+    }
+  });
+
+  // Update a demo token (extend expiration, update notes)
+  app.patch("/api/admin/demo-links/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { contactName, contactEmail, notes, expiresAt } = req.body;
+      
+      const updateData: any = {};
+      if (contactName !== undefined) updateData.contactName = contactName;
+      if (contactEmail !== undefined) updateData.contactEmail = contactEmail;
+      if (notes !== undefined) updateData.notes = notes;
+      if (expiresAt) updateData.expiresAt = new Date(expiresAt);
+      
+      const updated = await storage.updateDemoToken(id, updateData);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Demo link not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Update demo token error:', error);
+      res.status(500).json({ error: "Failed to update demo link" });
+    }
+  });
+
+  // Revoke a demo token
+  app.post("/api/admin/demo-links/:id/revoke", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const revoked = await storage.revokeDemoToken(id);
+      
+      if (!revoked) {
+        return res.status(404).json({ error: "Demo link not found" });
+      }
+      
+      res.json({ ...revoked, message: "Demo link revoked successfully" });
+    } catch (error) {
+      console.error('Revoke demo token error:', error);
+      res.status(500).json({ error: "Failed to revoke demo link" });
+    }
+  });
+
+  // =====================
   // Admin Discount Codes Routes
   // =====================
 
@@ -3533,6 +3624,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.json({ enabled: false });
     }
+  });
+
+  // Public Demo Token Validation
+  app.post("/api/demo/validate", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ valid: false, error: "Token is required" });
+      }
+      
+      const demoToken = await storage.getDemoTokenByToken(token);
+      
+      if (!demoToken) {
+        return res.status(404).json({ valid: false, error: "Invalid demo link" });
+      }
+      
+      if (demoToken.status === 'revoked') {
+        return res.status(403).json({ valid: false, error: "This demo link has been revoked" });
+      }
+      
+      if (new Date() > new Date(demoToken.expiresAt)) {
+        return res.status(403).json({ valid: false, error: "This demo link has expired" });
+      }
+      
+      // Record usage
+      await storage.recordDemoTokenUsage(token);
+      
+      // Set a demo session cookie
+      res.cookie('demo_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      });
+      
+      res.json({ 
+        valid: true,
+        contactName: demoToken.contactName,
+        expiresAt: demoToken.expiresAt,
+      });
+    } catch (error) {
+      console.error('Demo token validation error:', error);
+      res.status(500).json({ valid: false, error: "Failed to validate demo link" });
+    }
+  });
+
+  // Check current demo session status
+  app.get("/api/demo/session", async (req, res) => {
+    try {
+      const token = req.cookies?.demo_token;
+      
+      if (!token) {
+        return res.json({ active: false });
+      }
+      
+      const demoToken = await storage.getDemoTokenByToken(token);
+      
+      if (!demoToken || demoToken.status === 'revoked' || new Date() > new Date(demoToken.expiresAt)) {
+        // Clear invalid cookie
+        res.clearCookie('demo_token');
+        return res.json({ active: false });
+      }
+      
+      res.json({ 
+        active: true,
+        contactName: demoToken.contactName,
+        expiresAt: demoToken.expiresAt,
+      });
+    } catch (error) {
+      console.error('Demo session check error:', error);
+      res.json({ active: false });
+    }
+  });
+
+  // End demo session
+  app.post("/api/demo/logout", async (req, res) => {
+    res.clearCookie('demo_token');
+    res.json({ success: true });
   });
 
   // Training Videos endpoints
