@@ -198,6 +198,14 @@ export default function Navigation() {
                               <User className="mr-2 h-4 w-4" />
                               Member Portal
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/admin/developer-integrations")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-developer-dashboard"
+                            >
+                              <Code className="mr-2 h-4 w-4" />
+                              Developer Dashboard
+                            </DropdownMenuItem>
                           </>
                         )}
                         <DropdownMenuSeparator />
@@ -233,14 +241,6 @@ export default function Navigation() {
                         >
                           <Plug className="mr-2 h-4 w-4" />
                           Integrations
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => setLocation("/admin/developer-integrations")}
-                          className="cursor-pointer"
-                          data-testid="menu-item-developer-dashboard"
-                        >
-                          <Code className="mr-2 h-4 w-4" />
-                          Developer Dashboard
                         </DropdownMenuItem>
                         {/* Admin-only pages */}
                         {user.role === 'admin' && (
