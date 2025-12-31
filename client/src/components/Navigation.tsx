@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users, Link2 } from "lucide-react";
+import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users, Link2, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -233,6 +233,14 @@ export default function Navigation() {
                         >
                           <Plug className="mr-2 h-4 w-4" />
                           Integrations
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setLocation("/admin/developer-integrations")}
+                          className="cursor-pointer"
+                          data-testid="menu-item-developer-dashboard"
+                        >
+                          <Code className="mr-2 h-4 w-4" />
+                          Developer Dashboard
                         </DropdownMenuItem>
                         {/* Admin-only pages */}
                         {user.role === 'admin' && (
