@@ -488,6 +488,7 @@ export class RentCastAPIService implements IPropertyAPIService {
     rentZestimate?: number;
     zestimate?: number;
     monthlyHoaFee?: number;
+    annualTax?: number;
   }> {
     if (!this.hasDataApiKey) {
       console.log("[HasData] API key not configured, returning placeholder");
@@ -581,6 +582,7 @@ export class RentCastAPIService implements IPropertyAPIService {
     rentZestimate?: number;
     zestimate?: number;
     monthlyHoaFee?: number;
+    annualTax?: number;
   } | undefined> {
     const endpoint = source === 'zillow'
       ? `${HASDATA_BASE_URL}/scrape/zillow/property`
@@ -653,10 +655,11 @@ export class RentCastAPIService implements IPropertyAPIService {
     rentZestimate?: number;
     zestimate?: number;
     monthlyHoaFee?: number;
+    annualTax?: number;
   } {
     const property = data.property || data;
     
-    console.log(`[HasData] Response keys for ${source}:`, Object.keys(property || {}).slice(0, 15));
+    console.log(`[HasData] Response keys for ${source}:`, Object.keys(property || {}).slice(0, 25));
     
     // Extract image URL
     const imageUrl = this.extractImageFromResponse(data, source);
@@ -673,10 +676,30 @@ export class RentCastAPIService implements IPropertyAPIService {
     const zestimate = parseNumber(property.zestimate);
     const monthlyHoaFee = parseNumber(property.monthlyHoaFee);
     
+    // Extract annual tax from various possible field names
+    let annualTax: number | undefined = undefined;
+    
+    // Try direct fields first
+    annualTax = parseNumber(property.taxAnnualAmount) ||
+                parseNumber(property.annualTax) ||
+                parseNumber(property.propertyTaxes) ||
+                parseNumber(property.yearlyTax) ||
+                parseNumber(property.tax?.annualAmount) ||
+                parseNumber(property.taxInfo?.annualTax) ||
+                parseNumber(property.resoFacts?.taxAnnualAmount);
+    
+    // If not found, try taxHistory array (most recent year)
+    if (!annualTax && property.taxHistory && Array.isArray(property.taxHistory) && property.taxHistory.length > 0) {
+      const sortedHistory = [...property.taxHistory].sort((a: any, b: any) => (b.year || 0) - (a.year || 0));
+      const mostRecent = sortedHistory[0];
+      annualTax = parseNumber(mostRecent.taxPaid || mostRecent.tax || mostRecent.amount || mostRecent.taxAmount);
+    }
+    
     console.log(`[HasData] Extracted supplemental data:`, {
       rentZestimate,
       zestimate,
       monthlyHoaFee,
+      annualTax,
       hasImage: !!imageUrl
     });
     
@@ -684,7 +707,8 @@ export class RentCastAPIService implements IPropertyAPIService {
       imageUrl,
       rentZestimate,
       zestimate,
-      monthlyHoaFee
+      monthlyHoaFee,
+      annualTax
     };
   }
 

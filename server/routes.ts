@@ -5220,6 +5220,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Property Lookup] Using Zillow monthlyHoaFee: ${supplementalData.monthlyHoaFee}`);
             propertyData.hoaFees = supplementalData.monthlyHoaFee;
           }
+          
+          // Use Zillow's annual tax if RentCast didn't return one
+          if (!propertyData.annualTax && supplementalData?.annualTax) {
+            console.log(`[Property Lookup] Using Zillow annualTax: $${supplementalData.annualTax} (RentCast unavailable)`);
+            propertyData.annualTax = supplementalData.annualTax;
+          }
         } catch (supplementalError) {
           console.log("Could not fetch supplemental property data:", supplementalError);
         }
