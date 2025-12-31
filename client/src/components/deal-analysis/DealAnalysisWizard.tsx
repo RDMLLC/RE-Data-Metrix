@@ -8,8 +8,9 @@ import WizardLayout from "./WizardLayout";
 import Step1PropertyAddress from "./Step1PropertyAddress";
 import Step2PropertyDetails from "./Step2PropertyDetails";
 import Step3PurchaseRenovation from "./Step3PurchaseRenovation";
-import Step4HoldingPeriodExit from "./Step4HoldingPeriodExit";
-import Step5Results from "./Step5Results";
+import Step4InvestorInfo from "./Step4InvestorInfo";
+import Step5HoldingPeriodExit from "./Step5HoldingPeriodExit";
+import Step6Results from "./Step6Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
 
 const wizardSchema = z.object({
@@ -130,7 +131,7 @@ export default function DealAnalysisWizard() {
       state: "",
       zipCode: "",
       addingSquareFootage: false,
-      closingTimeline: "not-selected",
+      closingTimeline: "22-30-days",
       loanPreference: "one-of-each",
       hasExistingLoan: false,
     },
@@ -213,14 +214,14 @@ export default function DealAnalysisWizard() {
 
   const handleNext = () => {
     saveCurrentStepData();
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  // Scroll to top when navigating to Step 5 so summary is visible (works for both subscribers and paywall)
+  // Scroll to top when navigating to Step 6 (Results) so summary is visible (works for both subscribers and paywall)
   useEffect(() => {
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentStep]);
@@ -241,7 +242,7 @@ export default function DealAnalysisWizard() {
       state: "",
       zipCode: "",
       addingSquareFootage: false,
-      closingTimeline: "not-selected",
+      closingTimeline: "22-30-days",
       loanPreference: "one-of-each",
       hasExistingLoan: false,
       // Clear all financial/analysis fields
@@ -323,13 +324,21 @@ export default function DealAnalysisWizard() {
         );
       case 4:
         return (
-          <Step4HoldingPeriodExit
+          <Step4InvestorInfo
             form={form}
             onNext={handleNext}
             onBack={handleBack}
           />
         );
       case 5:
+        return (
+          <Step5HoldingPeriodExit
+            form={form}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        );
+      case 6:
         if (authLoading) {
           return (
             <div className="flex items-center justify-center py-12">
@@ -337,7 +346,7 @@ export default function DealAnalysisWizard() {
             </div>
           );
         }
-        return <Step5Results form={form} onBack={handleBack} isSubscriber={isSubscriber} />;
+        return <Step6Results form={form} onBack={handleBack} isSubscriber={isSubscriber} />;
       default:
         return null;
     }
@@ -346,7 +355,7 @@ export default function DealAnalysisWizard() {
   return (
     <WizardLayout
       currentStep={currentStep}
-      totalSteps={5}
+      totalSteps={6}
       onBack={handleBack}
       onStartNew={handleStartNew}
       canGoBack={currentStep > 1}

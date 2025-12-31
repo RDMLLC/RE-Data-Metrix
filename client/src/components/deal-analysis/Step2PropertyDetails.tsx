@@ -267,27 +267,46 @@ export default function Step2PropertyDetails({
                 <FormField
                   control={form.control}
                   name="annualTax"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Annual Tax ($)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          data-testid="input-annual-tax"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const isEmpty = !field.value || field.value === 0;
+                    return (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel>Annual Tax ($)</FormLabel>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Tax data is not always accurate. Users are encouraged to fetch the data themselves from the county and enter it here if there is a discrepancy.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseFloat(e.target.value) : undefined
+                              )
+                            }
+                            className={isEmpty ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20" : ""}
+                            data-testid="input-annual-tax"
+                          />
+                        </FormControl>
+                        {isEmpty && (
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Tax data was not found. Please look up the annual property tax from your county records and enter it here.
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
 

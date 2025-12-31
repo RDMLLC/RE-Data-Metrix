@@ -69,16 +69,11 @@ export default function Step3PurchaseRenovation({
 
   const handleSubmit = form.handleSubmit(() => {
     const projectLength = form.getValues("projectLength");
-    const closingTimeline = form.getValues("closingTimeline");
     
     const errors: string[] = [];
     
     if (!projectLength || projectLength <= 0) {
       errors.push("Project Length is required");
-    }
-    
-    if (!closingTimeline || closingTimeline === "not-selected" || closingTimeline === "") {
-      errors.push("Please select how fast you need to close");
     }
     
     if (errors.length > 0) {

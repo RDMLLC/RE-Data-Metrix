@@ -68,7 +68,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         propertyDataSource: dataSource,
         // Required defaults
         addingSquareFootage: false,
-        closingTimeline: "not-selected",
+        closingTimeline: "22-30-days",
         loanPreference: "one-of-each",
         hasExistingLoan: false,
         // Explicitly clear all financial/analysis fields
@@ -481,7 +481,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 form.setValue("arv", undefined);
                 form.setValue("projectLength", undefined);
                 form.setValue("sellPrice", undefined);
-                form.setValue("closingTimeline", "not-selected");
+                form.setValue("closingTimeline", "22-30-days");
                 form.setValue("isDoubleClose", undefined);
                 form.setValue("payingForBothSides", undefined);
                 

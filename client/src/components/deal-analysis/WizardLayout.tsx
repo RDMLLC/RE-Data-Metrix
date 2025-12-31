@@ -23,6 +23,7 @@ export default function WizardLayout({
     "Property Address",
     "Property Details",
     "Purchase & Renovation",
+    "Investor Information",
     "Holding Period & Exit",
     "Results",
   ];
