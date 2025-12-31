@@ -25,7 +25,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isSubscriber: boolean;
-  login: (credentials: { identifier: string; password: string }) => Promise<void>;
+  login: (credentials: { identifier: string; password: string }) => Promise<User>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refetchUser: () => Promise<void>;
@@ -135,7 +135,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const login = async (credentials: { identifier: string; password: string }) => {
-    await loginMutation.mutateAsync(credentials);
+    const result = await loginMutation.mutateAsync(credentials);
+    return result;
   };
 
   const register = async (data: RegisterData) => {

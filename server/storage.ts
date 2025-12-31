@@ -30,6 +30,16 @@ import {
   type InsertTrainingVideo,
   type DemoToken,
   type InsertDemoToken,
+  type IntegrationConfig,
+  type InsertIntegrationConfig,
+  type IntegrationEventTrigger,
+  type InsertIntegrationEventTrigger,
+  type IntegrationFieldMapping,
+  type InsertIntegrationFieldMapping,
+  type IntegrationWebhook,
+  type InsertIntegrationWebhook,
+  type IntegrationSyncLog,
+  type InsertIntegrationSyncLog,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -48,7 +58,12 @@ import {
   affiliateCategories as affiliateCategoriesTable,
   siteSettings as siteSettingsTable,
   trainingVideos as trainingVideosTable,
-  demoTokens as demoTokensTable
+  demoTokens as demoTokensTable,
+  integrationConfigs as integrationConfigsTable,
+  integrationEventTriggers as integrationEventTriggersTable,
+  integrationFieldMappings as integrationFieldMappingsTable,
+  integrationWebhooks as integrationWebhooksTable,
+  integrationSyncLogs as integrationSyncLogsTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -2611,6 +2626,195 @@ export class DatabaseStorage implements IStorage {
       .where(eq(demoTokensTable.token, token))
       .returning();
     return updated;
+  }
+
+  // Integration Config Methods
+  async createIntegrationConfig(data: InsertIntegrationConfig): Promise<IntegrationConfig> {
+    const [config] = await db.insert(integrationConfigsTable).values(data).returning();
+    return config;
+  }
+
+  async getIntegrationConfig(id: string): Promise<IntegrationConfig | undefined> {
+    const [config] = await db.select().from(integrationConfigsTable)
+      .where(eq(integrationConfigsTable.id, id))
+      .limit(1);
+    return config;
+  }
+
+  async getIntegrationConfigByProvider(provider: string): Promise<IntegrationConfig | undefined> {
+    const [config] = await db.select().from(integrationConfigsTable)
+      .where(eq(integrationConfigsTable.provider, provider))
+      .limit(1);
+    return config;
+  }
+
+  async getAllIntegrationConfigs(): Promise<IntegrationConfig[]> {
+    return await db.select().from(integrationConfigsTable)
+      .orderBy(desc(integrationConfigsTable.createdAt));
+  }
+
+  async updateIntegrationConfig(id: string, data: Partial<InsertIntegrationConfig>): Promise<IntegrationConfig | undefined> {
+    const [updated] = await db.update(integrationConfigsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(integrationConfigsTable.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteIntegrationConfig(id: string): Promise<boolean> {
+    const result = await db.delete(integrationConfigsTable)
+      .where(eq(integrationConfigsTable.id, id));
+    return true;
+  }
+
+  // Integration Event Trigger Methods
+  async createIntegrationEventTrigger(data: InsertIntegrationEventTrigger): Promise<IntegrationEventTrigger> {
+    const [trigger] = await db.insert(integrationEventTriggersTable).values(data).returning();
+    return trigger;
+  }
+
+  async getIntegrationEventTriggers(integrationId: string): Promise<IntegrationEventTrigger[]> {
+    return await db.select().from(integrationEventTriggersTable)
+      .where(eq(integrationEventTriggersTable.integrationId, integrationId));
+  }
+
+  async updateIntegrationEventTrigger(id: string, data: Partial<InsertIntegrationEventTrigger>): Promise<IntegrationEventTrigger | undefined> {
+    const [updated] = await db.update(integrationEventTriggersTable)
+      .set(data)
+      .where(eq(integrationEventTriggersTable.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteIntegrationEventTrigger(id: string): Promise<boolean> {
+    await db.delete(integrationEventTriggersTable)
+      .where(eq(integrationEventTriggersTable.id, id));
+    return true;
+  }
+
+  // Integration Field Mapping Methods
+  async createIntegrationFieldMapping(data: InsertIntegrationFieldMapping): Promise<IntegrationFieldMapping> {
+    const [mapping] = await db.insert(integrationFieldMappingsTable).values(data).returning();
+    return mapping;
+  }
+
+  async getIntegrationFieldMappings(integrationId: string, eventType?: string): Promise<IntegrationFieldMapping[]> {
+    if (eventType) {
+      return await db.select().from(integrationFieldMappingsTable)
+        .where(and(
+          eq(integrationFieldMappingsTable.integrationId, integrationId),
+          eq(integrationFieldMappingsTable.eventType, eventType)
+        ));
+    }
+    return await db.select().from(integrationFieldMappingsTable)
+      .where(eq(integrationFieldMappingsTable.integrationId, integrationId));
+  }
+
+  async updateIntegrationFieldMapping(id: string, data: Partial<InsertIntegrationFieldMapping>): Promise<IntegrationFieldMapping | undefined> {
+    const [updated] = await db.update(integrationFieldMappingsTable)
+      .set(data)
+      .where(eq(integrationFieldMappingsTable.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteIntegrationFieldMapping(id: string): Promise<boolean> {
+    await db.delete(integrationFieldMappingsTable)
+      .where(eq(integrationFieldMappingsTable.id, id));
+    return true;
+  }
+
+  // Integration Webhook Methods
+  async createIntegrationWebhook(data: Omit<InsertIntegrationWebhook, 'endpoint' | 'secretToken'>): Promise<IntegrationWebhook> {
+    const endpoint = randomBytes(16).toString('hex');
+    const secretToken = randomBytes(32).toString('base64url');
+    const [webhook] = await db.insert(integrationWebhooksTable)
+      .values({ ...data, endpoint, secretToken })
+      .returning();
+    return webhook;
+  }
+
+  async getIntegrationWebhook(id: string): Promise<IntegrationWebhook | undefined> {
+    const [webhook] = await db.select().from(integrationWebhooksTable)
+      .where(eq(integrationWebhooksTable.id, id))
+      .limit(1);
+    return webhook;
+  }
+
+  async getIntegrationWebhookByEndpoint(endpoint: string): Promise<IntegrationWebhook | undefined> {
+    const [webhook] = await db.select().from(integrationWebhooksTable)
+      .where(eq(integrationWebhooksTable.endpoint, endpoint))
+      .limit(1);
+    return webhook;
+  }
+
+  async getIntegrationWebhooks(integrationId?: string): Promise<IntegrationWebhook[]> {
+    if (integrationId) {
+      return await db.select().from(integrationWebhooksTable)
+        .where(eq(integrationWebhooksTable.integrationId, integrationId))
+        .orderBy(desc(integrationWebhooksTable.createdAt));
+    }
+    return await db.select().from(integrationWebhooksTable)
+      .orderBy(desc(integrationWebhooksTable.createdAt));
+  }
+
+  async updateIntegrationWebhook(id: string, data: Partial<InsertIntegrationWebhook>): Promise<IntegrationWebhook | undefined> {
+    const [updated] = await db.update(integrationWebhooksTable)
+      .set(data)
+      .where(eq(integrationWebhooksTable.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteIntegrationWebhook(id: string): Promise<boolean> {
+    await db.delete(integrationWebhooksTable)
+      .where(eq(integrationWebhooksTable.id, id));
+    return true;
+  }
+
+  async recordWebhookCall(endpoint: string): Promise<IntegrationWebhook | undefined> {
+    const [updated] = await db.update(integrationWebhooksTable)
+      .set({ 
+        lastCalledAt: new Date(),
+        callCount: sqlCount`${integrationWebhooksTable.callCount} + 1`
+      })
+      .where(eq(integrationWebhooksTable.endpoint, endpoint))
+      .returning();
+    return updated;
+  }
+
+  // Integration Sync Log Methods
+  async createIntegrationSyncLog(data: InsertIntegrationSyncLog): Promise<IntegrationSyncLog> {
+    const [log] = await db.insert(integrationSyncLogsTable).values(data).returning();
+    return log;
+  }
+
+  async getIntegrationSyncLogs(filters?: { 
+    integrationId?: string; 
+    eventType?: string; 
+    status?: string;
+    limit?: number;
+  }): Promise<IntegrationSyncLog[]> {
+    let query = db.select().from(integrationSyncLogsTable);
+    
+    const conditions = [];
+    if (filters?.integrationId) {
+      conditions.push(eq(integrationSyncLogsTable.integrationId, filters.integrationId));
+    }
+    if (filters?.eventType) {
+      conditions.push(eq(integrationSyncLogsTable.eventType, filters.eventType));
+    }
+    if (filters?.status) {
+      conditions.push(eq(integrationSyncLogsTable.status, filters.status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    return await query
+      .orderBy(desc(integrationSyncLogsTable.createdAt))
+      .limit(filters?.limit || 100);
   }
 
 }

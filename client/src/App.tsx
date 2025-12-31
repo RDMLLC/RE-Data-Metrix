@@ -49,6 +49,7 @@ import AdminAffiliates from "@/pages/admin/Affiliates";
 import AdminCalculationsReference from "@/pages/admin/CalculationsReference";
 import AdminTrainingVideos from "@/pages/admin/TrainingVideos";
 import AdminDemoLinks from "@/pages/admin/DemoLinks";
+import DeveloperIntegrations from "@/pages/admin/DeveloperIntegrations";
 import DemoEntry from "@/pages/DemoEntry";
 import LenderProfile from "@/pages/LenderProfile";
 import VerifyEmail from "@/pages/VerifyEmail";
@@ -159,6 +160,7 @@ function Router() {
       <Route path="/admin/training-videos" component={AdminTrainingVideos} />
       <Route path="/admin/calculations" component={AdminCalculationsReference} />
       <Route path="/admin/demo-links" component={AdminDemoLinks} />
+      <Route path="/admin/developer-integrations" component={DeveloperIntegrations} />
       <Route path="/admin/lender-invite" component={LenderInvite} />
       <Route path="/demo/:token" component={DemoEntry} />
       <Route component={NotFound} />

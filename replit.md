@@ -62,6 +62,7 @@ Developer users are external CRM integrators with limited admin access:
 - **Backend Middleware**: `ensureAdminOrDeveloper` in `server/auth.ts` for routes developers can access
 - **Allowed Access**: 
   - Integrations page (view API status)
+  - Developer Integration Portal (CRM connections, webhooks, mappings)
   - Partner Tools (full CRUD)
   - Lender Management (view only - no invite creation)
   - Calculations Reference (view)
@@ -80,6 +81,21 @@ Developer users are external CRM integrators with limited admin access:
 - **Creation**: Admins can create developer accounts via User Management > "Create Developer" button
 
 **DO NOT BREAK**: Routes using `ensureAdmin` should remain restricted. Routes using `ensureAdminOrDeveloper` allow developer access.
+
+### Developer Integration Portal
+The Developer Integration Portal (`/admin/developer-integrations`) allows external CRM integrators to connect their systems:
+- **Database Tables**: 
+  - `integration_configs`: CRM connection credentials (Zoho, HubSpot, Salesforce)
+  - `integration_event_triggers`: Which events sync data (user_signup, payment_success, etc.)
+  - `integration_field_mappings`: Map platform fields to CRM fields with transform options
+  - `integration_webhooks`: Inbound webhook endpoints with Bearer token authentication
+  - `integration_sync_logs`: History of sync operations
+- **Security**: Credentials are NEVER exposed in API responses (only `{ configured: true }` flag)
+- **Event Types**: user_signup, lender_signup, payment_success, payment_failed, subscription_created, subscription_cancelled, deal_analysis_created, inquiry_submitted
+- **Inbound Webhooks**: External systems can POST to `/api/webhooks/inbound/:endpoint` with Bearer token auth
+- **Access**: Protected by `ensureAdminOrDeveloper` middleware
+
+**DO NOT BREAK**: API responses must never include raw credentials or secrets.
 
 ### Demo Access Link System
 Demo access links allow potential customers to preview platform features with anonymized data:

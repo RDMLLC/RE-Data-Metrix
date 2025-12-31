@@ -451,6 +451,333 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================
+  // Developer Integration Portal Routes
+  // ============================================
+
+  // Get all CRM integration configs
+  app.get("/api/integrations/configs", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const configs = await storage.getAllIntegrationConfigs();
+      // Don't expose full credentials in list view
+      const safeConfigs = configs.map(c => ({
+        ...c,
+        credentials: c.credentials ? { configured: true } : null
+      }));
+      res.json(safeConfigs);
+    } catch (error) {
+      console.error('Get integration configs error:', error);
+      res.status(500).json({ error: "Failed to get integration configs" });
+    }
+  });
+
+  // Get single integration config
+  app.get("/api/integrations/configs/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const config = await storage.getIntegrationConfig(req.params.id);
+      if (!config) {
+        return res.status(404).json({ error: "Integration config not found" });
+      }
+      // Don't expose sensitive credential values
+      res.json({
+        ...config,
+        credentials: config.credentials ? { configured: true } : null
+      });
+    } catch (error) {
+      console.error('Get integration config error:', error);
+      res.status(500).json({ error: "Failed to get integration config" });
+    }
+  });
+
+  // Create new integration config
+  app.post("/api/integrations/configs", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { provider, name, credentials, settings } = req.body;
+      const userId = (req.user as User).id;
+      
+      // Validate required fields
+      if (!provider || !name) {
+        return res.status(400).json({ error: "Provider and name are required" });
+      }
+      
+      const config = await storage.createIntegrationConfig({
+        provider,
+        name,
+        credentials,
+        settings,
+        createdBy: userId,
+        isActive: false
+      });
+      
+      // Never expose credentials in response
+      res.json({
+        ...config,
+        credentials: config.credentials ? { configured: true } : null
+      });
+    } catch (error) {
+      console.error('Create integration config error:', error);
+      res.status(500).json({ error: "Failed to create integration config" });
+    }
+  });
+
+  // Update integration config
+  app.patch("/api/integrations/configs/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { name, credentials, settings, isActive } = req.body;
+      const updated = await storage.updateIntegrationConfig(req.params.id, {
+        name,
+        credentials,
+        settings,
+        isActive
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Integration config not found" });
+      }
+      
+      res.json({
+        ...updated,
+        credentials: updated.credentials ? { configured: true } : null
+      });
+    } catch (error) {
+      console.error('Update integration config error:', error);
+      res.status(500).json({ error: "Failed to update integration config" });
+    }
+  });
+
+  // Delete integration config
+  app.delete("/api/integrations/configs/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      await storage.deleteIntegrationConfig(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete integration config error:', error);
+      res.status(500).json({ error: "Failed to delete integration config" });
+    }
+  });
+
+  // Event Triggers
+  app.get("/api/integrations/configs/:id/triggers", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const triggers = await storage.getIntegrationEventTriggers(req.params.id);
+      res.json(triggers);
+    } catch (error) {
+      console.error('Get event triggers error:', error);
+      res.status(500).json({ error: "Failed to get event triggers" });
+    }
+  });
+
+  app.post("/api/integrations/configs/:id/triggers", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { eventType, targetModule, settings } = req.body;
+      const trigger = await storage.createIntegrationEventTrigger({
+        integrationId: req.params.id,
+        eventType,
+        targetModule,
+        settings,
+        isEnabled: true
+      });
+      res.json(trigger);
+    } catch (error) {
+      console.error('Create event trigger error:', error);
+      res.status(500).json({ error: "Failed to create event trigger" });
+    }
+  });
+
+  app.patch("/api/integrations/triggers/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { isEnabled, targetModule, settings } = req.body;
+      const updated = await storage.updateIntegrationEventTrigger(req.params.id, {
+        isEnabled,
+        targetModule,
+        settings
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error('Update event trigger error:', error);
+      res.status(500).json({ error: "Failed to update event trigger" });
+    }
+  });
+
+  app.delete("/api/integrations/triggers/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      await storage.deleteIntegrationEventTrigger(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete event trigger error:', error);
+      res.status(500).json({ error: "Failed to delete event trigger" });
+    }
+  });
+
+  // Field Mappings
+  app.get("/api/integrations/configs/:id/mappings", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const eventType = req.query.eventType as string | undefined;
+      const mappings = await storage.getIntegrationFieldMappings(req.params.id, eventType);
+      res.json(mappings);
+    } catch (error) {
+      console.error('Get field mappings error:', error);
+      res.status(500).json({ error: "Failed to get field mappings" });
+    }
+  });
+
+  app.post("/api/integrations/configs/:id/mappings", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { eventType, sourceField, targetField, transformType, isRequired } = req.body;
+      const mapping = await storage.createIntegrationFieldMapping({
+        integrationId: req.params.id,
+        eventType,
+        sourceField,
+        targetField,
+        transformType,
+        isRequired
+      });
+      res.json(mapping);
+    } catch (error) {
+      console.error('Create field mapping error:', error);
+      res.status(500).json({ error: "Failed to create field mapping" });
+    }
+  });
+
+  app.patch("/api/integrations/mappings/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { sourceField, targetField, transformType, isRequired } = req.body;
+      const updated = await storage.updateIntegrationFieldMapping(req.params.id, {
+        sourceField,
+        targetField,
+        transformType,
+        isRequired
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error('Update field mapping error:', error);
+      res.status(500).json({ error: "Failed to update field mapping" });
+    }
+  });
+
+  app.delete("/api/integrations/mappings/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      await storage.deleteIntegrationFieldMapping(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete field mapping error:', error);
+      res.status(500).json({ error: "Failed to delete field mapping" });
+    }
+  });
+
+  // Webhooks
+  app.get("/api/integrations/webhooks", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const integrationId = req.query.integrationId as string | undefined;
+      const webhooks = await storage.getIntegrationWebhooks(integrationId);
+      res.json(webhooks);
+    } catch (error) {
+      console.error('Get webhooks error:', error);
+      res.status(500).json({ error: "Failed to get webhooks" });
+    }
+  });
+
+  app.post("/api/integrations/webhooks", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { integrationId, name, allowedActions } = req.body;
+      const webhook = await storage.createIntegrationWebhook({
+        integrationId,
+        name,
+        allowedActions,
+        isActive: true
+      });
+      res.json(webhook);
+    } catch (error) {
+      console.error('Create webhook error:', error);
+      res.status(500).json({ error: "Failed to create webhook" });
+    }
+  });
+
+  app.patch("/api/integrations/webhooks/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { name, isActive, allowedActions } = req.body;
+      const updated = await storage.updateIntegrationWebhook(req.params.id, {
+        name,
+        isActive,
+        allowedActions
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error('Update webhook error:', error);
+      res.status(500).json({ error: "Failed to update webhook" });
+    }
+  });
+
+  app.delete("/api/integrations/webhooks/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      await storage.deleteIntegrationWebhook(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete webhook error:', error);
+      res.status(500).json({ error: "Failed to delete webhook" });
+    }
+  });
+
+  // Inbound webhook endpoint (public - authenticated via secret token)
+  app.post("/api/webhooks/inbound/:endpoint", async (req, res) => {
+    try {
+      const { endpoint } = req.params;
+      const authHeader = req.headers.authorization;
+      
+      const webhook = await storage.getIntegrationWebhookByEndpoint(endpoint);
+      if (!webhook) {
+        return res.status(404).json({ error: "Webhook not found" });
+      }
+      
+      if (!webhook.isActive) {
+        return res.status(403).json({ error: "Webhook is disabled" });
+      }
+      
+      // Validate secret token
+      const providedToken = authHeader?.replace('Bearer ', '');
+      if (providedToken !== webhook.secretToken) {
+        return res.status(401).json({ error: "Invalid authentication" });
+      }
+      
+      // Record the call
+      await storage.recordWebhookCall(endpoint);
+      
+      // Log the incoming request
+      await storage.createIntegrationSyncLog({
+        integrationId: webhook.integrationId,
+        eventType: 'inbound_webhook',
+        status: 'success',
+        direction: 'inbound',
+        requestData: req.body,
+        responseData: { received: true }
+      });
+      
+      // TODO: Process the webhook payload based on allowedActions
+      
+      res.json({ success: true, message: "Webhook received" });
+    } catch (error) {
+      console.error('Inbound webhook error:', error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  // Sync Logs
+  app.get("/api/integrations/sync-logs", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { integrationId, eventType, status, limit } = req.query;
+      const logs = await storage.getIntegrationSyncLogs({
+        integrationId: integrationId as string,
+        eventType: eventType as string,
+        status: status as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(logs);
+    } catch (error) {
+      console.error('Get sync logs error:', error);
+      res.status(500).json({ error: "Failed to get sync logs" });
+    }
+  });
+
+  // ============================================
   // Stripe Subscription Routes
   // ============================================
 

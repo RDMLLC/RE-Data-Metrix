@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2 } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -507,11 +507,7 @@ export default function AdminDashboard() {
               </Card>
             )}
 
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/integrations")}
-              data-testid="card-integrations"
-            >
+            <Card data-testid="card-integrations">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
@@ -537,8 +533,28 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Manage Stripe Billing and other external service connections
+                  Manage external service connections and CRM integrations
                 </CardDescription>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setLocation("/admin/integrations")}
+                    data-testid="button-system-integrations"
+                  >
+                    <Plug className="h-3.5 w-3.5 mr-1.5" />
+                    System Status
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setLocation("/admin/developer-integrations")}
+                    data-testid="button-developer-integrations"
+                  >
+                    <Code className="h-3.5 w-3.5 mr-1.5" />
+                    CRM Portal
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

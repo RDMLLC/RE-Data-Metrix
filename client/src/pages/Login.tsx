@@ -40,7 +40,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 type LenderLoginFormData = z.infer<typeof lenderLoginSchema>;
 
 export default function Login() {
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading, user: currentUser } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -48,10 +48,14 @@ export default function Login() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
-      setLocation("/portal/dashboard");
+    if (!authLoading && isAuthenticated && currentUser) {
+      if (currentUser.role === 'admin' || currentUser.role === 'developer') {
+        setLocation("/admin");
+      } else {
+        setLocation("/portal/dashboard");
+      }
     }
-  }, [isAuthenticated, authLoading, setLocation]);
+  }, [isAuthenticated, authLoading, setLocation, currentUser]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -72,12 +76,18 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await login(data);
+      const user = await login(data);
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      setLocation("/portal/dashboard");
+      
+      // Redirect based on user role
+      if (user.role === 'admin' || user.role === 'developer') {
+        setLocation("/admin");
+      } else {
+        setLocation("/portal/dashboard");
+      }
     } catch (error: any) {
       const errorMessage = error.message || "Invalid credentials";
       const isVerificationError = errorMessage.includes("verify") || errorMessage.includes("Email not verified");

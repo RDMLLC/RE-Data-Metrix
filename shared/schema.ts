@@ -748,3 +748,112 @@ export const insertDemoTokenSchema = createInsertSchema(demoTokens).omit({
 
 export type InsertDemoToken = z.infer<typeof insertDemoTokenSchema>;
 export type DemoToken = typeof demoTokens.$inferSelect;
+
+// Integration Configurations - stores CRM credentials and settings
+export const integrationConfigs = pgTable("integration_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: text("provider").notNull(), // 'zoho', 'hubspot', etc.
+  name: text("name").notNull(), // display name for this integration
+  isActive: boolean("is_active").notNull().default(false),
+  credentials: jsonb("credentials"), // encrypted credentials (client_id, client_secret, access_token, refresh_token)
+  settings: jsonb("settings"), // provider-specific settings
+  lastSyncAt: timestamp("last_sync_at"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertIntegrationConfigSchema = createInsertSchema(integrationConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSyncAt: true,
+});
+
+export type InsertIntegrationConfig = z.infer<typeof insertIntegrationConfigSchema>;
+export type IntegrationConfig = typeof integrationConfigs.$inferSelect;
+
+// Integration Event Triggers - which events trigger syncs
+export const integrationEventTriggers = pgTable("integration_event_triggers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  integrationId: varchar("integration_id").notNull().references(() => integrationConfigs.id, { onDelete: 'cascade' }),
+  eventType: text("event_type").notNull(), // 'user_signup', 'lender_signup', 'payment_success', 'usage_update'
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  targetModule: text("target_module"), // Zoho module name like 'Contacts', 'Deals'
+  settings: jsonb("settings"), // event-specific settings
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertIntegrationEventTriggerSchema = createInsertSchema(integrationEventTriggers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertIntegrationEventTrigger = z.infer<typeof insertIntegrationEventTriggerSchema>;
+export type IntegrationEventTrigger = typeof integrationEventTriggers.$inferSelect;
+
+// Integration Field Mappings - map platform fields to CRM fields
+export const integrationFieldMappings = pgTable("integration_field_mappings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  integrationId: varchar("integration_id").notNull().references(() => integrationConfigs.id, { onDelete: 'cascade' }),
+  eventType: text("event_type").notNull(), // which event this mapping applies to
+  sourceField: text("source_field").notNull(), // RE Data Metrix field
+  targetField: text("target_field").notNull(), // CRM field
+  transformType: text("transform_type"), // 'none', 'date_format', 'currency_cents', etc.
+  isRequired: boolean("is_required").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertIntegrationFieldMappingSchema = createInsertSchema(integrationFieldMappings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertIntegrationFieldMapping = z.infer<typeof insertIntegrationFieldMappingSchema>;
+export type IntegrationFieldMapping = typeof integrationFieldMappings.$inferSelect;
+
+// Integration Webhooks - inbound API endpoints for external systems
+export const integrationWebhooks = pgTable("integration_webhooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  integrationId: varchar("integration_id").references(() => integrationConfigs.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  endpoint: varchar("endpoint").notNull().unique(), // unique URL path segment
+  secretToken: varchar("secret_token").notNull(), // for authenticating incoming requests
+  isActive: boolean("is_active").notNull().default(true),
+  allowedActions: text("allowed_actions").array(), // what actions this webhook can trigger
+  lastCalledAt: timestamp("last_called_at"),
+  callCount: integer("call_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertIntegrationWebhookSchema = createInsertSchema(integrationWebhooks).omit({
+  id: true,
+  createdAt: true,
+  lastCalledAt: true,
+  callCount: true,
+});
+
+export type InsertIntegrationWebhook = z.infer<typeof insertIntegrationWebhookSchema>;
+export type IntegrationWebhook = typeof integrationWebhooks.$inferSelect;
+
+// Integration Sync Logs - history of sync operations
+export const integrationSyncLogs = pgTable("integration_sync_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  integrationId: varchar("integration_id").references(() => integrationConfigs.id, { onDelete: 'cascade' }),
+  eventType: text("event_type").notNull(),
+  status: text("status").notNull(), // 'success', 'failed', 'pending'
+  direction: text("direction").notNull(), // 'outbound' or 'inbound'
+  recordId: varchar("record_id"), // the ID of the record that was synced
+  requestData: jsonb("request_data"), // what was sent
+  responseData: jsonb("response_data"), // what was received
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertIntegrationSyncLogSchema = createInsertSchema(integrationSyncLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertIntegrationSyncLog = z.infer<typeof insertIntegrationSyncLogSchema>;
+export type IntegrationSyncLog = typeof integrationSyncLogs.$inferSelect;
