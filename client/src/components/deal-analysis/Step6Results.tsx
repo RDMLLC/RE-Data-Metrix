@@ -97,6 +97,7 @@ interface LoanComparisonColumn {
   maxLtcPercent?: number;
   isLtcAdjusted?: boolean;
   effectiveBuyPercent?: number;
+  totalLoanAmount?: number;
   purchasePrice: number;
   rehabBudget: number;
   totalProjectCost: number;
@@ -773,6 +774,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
       'N/A',
       results.userLoanColumn?.points !== undefined ? results.userLoanColumn.points + '%' : '',
       visibleLendersForCSV.map(l => l.points !== undefined ? l.points + '%' : '')
+    ));
+    rows.push(buildRow('Total Loan Amount', 
+      'N/A',
+      results.userLoanColumn?.totalLoanAmount || '',
+      visibleLendersForCSV.map(l => l.totalLoanAmount || 0)
     ));
     rows.push(buildRow('Max LTV (Buy) %', 
       'N/A',
@@ -1605,6 +1611,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                             ))}
                           </TableRow>
                           <TableRow className="bg-muted/20">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">Total Loan Amount</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center text-sm">{results.userLoanColumn.totalLoanAmount ? formatCurrency(results.userLoanColumn.totalLoanAmount) : '—'}</TableCell>
+                            )}
+                            {visibleLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center text-sm">{lender.totalLoanAmount ? formatCurrency(lender.totalLoanAmount) : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow className="bg-muted/20">
                             <TableCell className="pl-8 text-sm text-muted-foreground">Max LTV (Buy)</TableCell>
                             <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
                             {results.userLoanColumn && (
@@ -1803,6 +1819,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                         <div>
                           <span className="text-muted-foreground">Time to Close</span>
                           <p className="font-medium">{lender.timeToClose} days</p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Total Loan Amount</span>
+                          <p className="font-medium">{lender.totalLoanAmount ? formatCurrency(lender.totalLoanAmount) : '—'}</p>
                         </div>
                       </div>
                       
