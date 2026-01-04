@@ -4720,7 +4720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate columns for each lender product
       const lenderColumns = filteredProducts.map(product => {
         const maxLtvBuy = parseFloat(String(product.maxLtvBuy || 0));
-        const maxLendRehab = parseFloat(String(product.maxLendRehab || 0));
+        const maxLendRehab = parseFloat(String(product.maxLendRehab || 100)); // Default 100% rehab coverage
         const maxLoanArv = parseFloat(String(product.maxLoanArv || 70));
         const interestRate = parseFloat(String(product.interestRate || 12));
         const points = parseFloat(String(product.points || 0));
@@ -4870,6 +4870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           referralLink: product.referralLink,
           interestRate,
           maxLtvBuy,
+          maxLendRehab,
           points,
           isLtcWeighted,
           maxLtcPercent,

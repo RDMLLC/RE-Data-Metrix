@@ -92,6 +92,7 @@ interface LoanComparisonColumn {
   referralLink?: string;
   interestRate?: number;
   maxLtvBuy?: number;
+  maxLendRehab?: number;
   points?: number;
   isLtcWeighted?: boolean;
   maxLtcPercent?: number;
@@ -784,6 +785,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
       'N/A',
       results.userLoanColumn?.maxLtvBuy ? results.userLoanColumn.maxLtvBuy + '%' : '',
       visibleLendersForCSV.map(l => l.maxLtvBuy ? l.maxLtvBuy + '%' : '')
+    ));
+    rows.push(buildRow('Max Loan % (Rehab)', 
+      'N/A',
+      results.userLoanColumn?.maxLendRehab ? results.userLoanColumn.maxLendRehab + '%' : '',
+      visibleLendersForCSV.map(l => l.maxLendRehab ? l.maxLendRehab + '%' : '')
     ));
     rows.push(buildRow('Max ARV %', 
       'N/A',
@@ -1631,6 +1637,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                             ))}
                           </TableRow>
                           <TableRow className="bg-muted/20">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">Max Loan % (Rehab)</TableCell>
+                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center text-sm">{results.userLoanColumn.maxLendRehab ? `${results.userLoanColumn.maxLendRehab}%` : '—'}</TableCell>
+                            )}
+                            {visibleLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center text-sm">{lender.maxLendRehab ? `${lender.maxLendRehab}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow className="bg-muted/20">
                             <TableCell className="pl-8 text-sm text-muted-foreground">Max ARV %</TableCell>
                             <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
                             {results.userLoanColumn && (
@@ -1815,6 +1831,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                         <div>
                           <span className="text-muted-foreground">Max LTV</span>
                           <p className="font-medium">{lender.maxLtvBuy}%</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Max Rehab %</span>
+                          <p className="font-medium">{lender.maxLendRehab ? `${lender.maxLendRehab}%` : '—'}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Time to Close</span>
