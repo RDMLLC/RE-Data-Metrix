@@ -112,6 +112,22 @@ Demo access links allow potential customers to preview platform features with an
 
 **DO NOT BREAK**: Demo session check uses `/api/demo/session` endpoint, not client-side cookie reading.
 
+### Mobile-Specific Pages
+Dedicated mobile pages provide touch-optimized experiences separate from responsive desktop layouts:
+- **Routes**: `/m/deal-analysis`, `/m/lenders`, `/m/toolbox`
+- **Context**: `DeviceModeContext` in `client/src/contexts/DeviceModeContext.tsx` with auto-detect (768px breakpoint) and manual override
+- **Layout Pattern**: All mobile pages follow the same structure:
+  1. Sticky header with back button, title, and desktop version toggle
+  2. Compact hero with icon, title, and subtitle
+  3. Horizontal scrollable training video gallery (from `/api/training-videos`)
+  4. Primary CTA button directly below videos
+  5. Touch-optimized card-based content
+- **Components**: `client/src/pages/mobile/MobileDealAnalysis.tsx`, `MobileLenders.tsx`, `MobileToolbox.tsx`
+- **Shared Contexts**: Mobile pages reuse existing `WizardDataContext`, `AuthContext`, `useDemoAccess()` hook
+- **Accessibility**: Quick steps use semantic `ul/li` with `aria-labelledby`, decorative icons have `aria-hidden="true"`
+
+**DO NOT BREAK**: Mobile pages are separate routes, not responsive adaptations. Each mobile page links to its desktop counterpart via the monitor icon in the header.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
