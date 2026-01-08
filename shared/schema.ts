@@ -303,7 +303,7 @@ export const insertLenderQuestionnaireSchema = createInsertSchema(lenderQuestion
 export type InsertLenderQuestionnaire = z.infer<typeof insertLenderQuestionnaireSchema>;
 export type LenderQuestionnaire = typeof lenderQuestionnaires.$inferSelect;
 
-export const loanTypeEnum = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction'] as const;
+export const loanTypeEnum = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction', 'transactional-funding'] as const;
 export type LoanTypeEnum = typeof loanTypeEnum[number];
 
 export const loanProducts = pgTable("loan_products", {
@@ -333,6 +333,7 @@ export const loanProducts = pgTable("loan_products", {
   minDscrRequired: decimal("min_dscr_required", { precision: 4, scale: 2 }),
   isLtcWeighted: boolean("is_ltc_weighted").default(false),
   maxLtcPercent: decimal("max_ltc_percent", { precision: 5, scale: 2 }),
+  transactionalFlatFee: decimal("transactional_flat_fee", { precision: 12, scale: 2 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
