@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -30,6 +30,22 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
+
+  // Check if form already has property data (e.g., when navigating back) and restore state
+  useEffect(() => {
+    const address = form.getValues("address");
+    const city = form.getValues("city");
+    const state = form.getValues("state");
+    const propertyDataSource = form.getValues("propertyDataSource");
+    
+    if (address && city && state) {
+      if (propertyDataSource === "manual") {
+        setManualEntryPreference(true);
+      } else {
+        setIsLookupComplete(true);
+      }
+    }
+  }, [form]);
 
   const propertyLookupMutation = useMutation({
     mutationFn: async (url: string) => {

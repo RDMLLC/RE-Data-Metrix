@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLoanProductSchema, loanTypeEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, X, Building2, Home, RefreshCw, HardHat } from "lucide-react";
+import { Plus, Pencil, X, Building2, Home, RefreshCw, HardHat, ArrowLeftRight } from "lucide-react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -35,6 +35,11 @@ const loanTypeLabels: Record<LoanTypeEnum, { label: string; icon: any; descripti
     label: 'New Construction / Ground-Up', 
     icon: HardHat,
     description: 'Ground-up construction and new build projects'
+  },
+  'transactional-funding': { 
+    label: 'Transactional Funding', 
+    icon: ArrowLeftRight,
+    description: 'Short-term funding for double close wholesale transactions'
   },
 };
 
@@ -207,6 +212,7 @@ export default function LenderLoanProducts() {
       minDscrRequired: null,
       isLtcWeighted: false,
       maxLtcPercent: null,
+      transactionalFlatFee: null,
     },
   });
 
@@ -249,6 +255,7 @@ export default function LenderLoanProducts() {
       minDscrRequired: product.minDscrRequired,
       isLtcWeighted: product.isLtcWeighted ?? false,
       maxLtcPercent: product.maxLtcPercent,
+      transactionalFlatFee: product.transactionalFlatFee,
     });
     setTimeout(() => {
       formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -653,7 +660,62 @@ export default function LenderLoanProducts() {
                   </div>
                 )}
 
-                {watchLoanType !== 'new-construction' && (
+                {watchLoanType === 'transactional-funding' && (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Enter your fee structure for transactional funding (double close). You can charge a flat fee, points (percentage of loan), or both.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="transactionalFlatFee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Flat Fee ($)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="500"
+                                data-testid="input-transactional-flat-fee"
+                              />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Fixed dollar amount charged per transaction
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="points"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-foreground">Points (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                type="text"
+                                placeholder="1.5"
+                                data-testid="input-transactional-points"
+                              />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Percentage of loan amount (e.g., 1.5 = 1.5%)
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {watchLoanType !== 'new-construction' && watchLoanType !== 'transactional-funding' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <FormField
