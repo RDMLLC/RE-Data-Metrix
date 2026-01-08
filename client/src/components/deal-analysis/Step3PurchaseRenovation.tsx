@@ -430,7 +430,7 @@ export default function Step3PurchaseRenovation({
                 Back
               </Button>
               <Button type="submit" data-testid="button-continue">
-                Continue to Holding Period & Exit
+                Continue to Investor Information
               </Button>
             </div>
             

@@ -333,6 +333,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get investor information from user profile (for auto-fill in deal analysis)
+  app.get("/api/profile/investor-info", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = req.user as User;
+    
+    try {
+      const [profile] = await db
+        .select({
+          isNewInvestor: userProfiles.isNewInvestor,
+          projectsLast12Months: userProfiles.projectsLast12Months,
+          projectsLast36Months: userProfiles.projectsLast36Months,
+          investorCreditScore: userProfiles.investorCreditScore,
+        })
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user.id))
+        .limit(1);
+      
+      if (!profile) {
+        return res.json({ 
+          hasSavedInfo: false,
+          investorInfo: null 
+        });
+      }
+      
+      // Check if any investor info fields are populated
+      const hasSavedInfo = profile.isNewInvestor !== null || 
+                          profile.investorCreditScore !== null ||
+                          profile.projectsLast12Months !== null ||
+                          profile.projectsLast36Months !== null;
+      
+      res.json({
+        hasSavedInfo,
+        investorInfo: hasSavedInfo ? {
+          isNewInvestor: profile.isNewInvestor,
+          projectsLast12Months: profile.projectsLast12Months,
+          projectsLast36Months: profile.projectsLast36Months,
+          creditScore: profile.investorCreditScore,
+        } : null
+      });
+    } catch (error) {
+      console.error('Get investor info error:', error);
+      res.status(500).json({ error: "Failed to get investor information" });
+    }
+  });
+
+  // Save investor information to user profile (subscribers only)
+  app.put("/api/profile/investor-info", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = req.user as User;
+    
+    // Check if user is a subscriber
+    if (user.subscriptionStatus !== 'active') {
+      return res.status(403).json({ error: "Active subscription required to save investor information" });
+    }
+    
+    const { isNewInvestor, projectsLast12Months, projectsLast36Months, creditScore } = req.body;
+    
+    try {
+      const [existingProfile] = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user.id))
+        .limit(1);
+      
+      const investorData = {
+        isNewInvestor: isNewInvestor ?? null,
+        projectsLast12Months: projectsLast12Months ?? null,
+        projectsLast36Months: projectsLast36Months ?? null,
+        investorCreditScore: creditScore ?? null,
+        updatedAt: new Date(),
+      };
+      
+      if (existingProfile) {
+        await db
+          .update(userProfiles)
+          .set(investorData)
+          .where(eq(userProfiles.userId, user.id));
+      } else {
+        await db.insert(userProfiles).values({
+          userId: user.id,
+          fullName: user.username || "",
+          ...investorData,
+        });
+      }
+      
+      res.json({ message: "Investor information saved successfully" });
+    } catch (error) {
+      console.error('Save investor info error:', error);
+      res.status(500).json({ error: "Failed to save investor information" });
+    }
+  });
+
   app.post("/api/auth/logout", (req, res) => {
     req.logout((err) => {
       if (err) {

@@ -96,6 +96,11 @@ export const userProfiles = pgTable("user_profiles", {
   phone: text("phone"),
   creditScoreRange: text("credit_score_range"),
   autoPopulateDefaults: boolean("auto_populate_defaults").default(false),
+  // Investor information fields for deal analysis auto-fill
+  isNewInvestor: boolean("is_new_investor"),
+  projectsLast12Months: text("projects_last_12_months"),
+  projectsLast36Months: text("projects_last_36_months"),
+  investorCreditScore: text("investor_credit_score"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

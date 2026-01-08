@@ -5,8 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, User } from "lucide-react";
-import { useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, User, Save, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+interface InvestorInfoResponse {
+  hasSavedInfo: boolean;
+  investorInfo: {
+    isNewInvestor: boolean | null;
+    projectsLast12Months: string | null;
+    projectsLast36Months: string | null;
+    creditScore: string | null;
+  } | null;
+}
 
 interface Step4InvestorInfoProps {
   form: UseFormReturn<WizardFormData>;
@@ -16,12 +31,78 @@ interface Step4InvestorInfoProps {
 
 export default function Step4InvestorInfo({ form, onNext, onBack }: Step4InvestorInfoProps) {
   const isNewInvestor = form.watch("isNewInvestor");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [saveToProfile, setSaveToProfile] = useState(false);
+  const [hasAutoFilled, setHasAutoFilled] = useState(false);
+  
+  const isSubscriber = user?.subscriptionStatus === 'active';
+
+  // Fetch saved investor info
+  const { data: investorInfoData } = useQuery<InvestorInfoResponse>({
+    queryKey: ['/api/profile/investor-info'],
+    enabled: !!user,
+  });
+
+  // Auto-fill form from saved profile data
+  useEffect(() => {
+    if (investorInfoData?.hasSavedInfo && investorInfoData.investorInfo && !hasAutoFilled) {
+      const info = investorInfoData.investorInfo;
+      
+      // Only set values that haven't been modified by the user
+      if (info.isNewInvestor !== null && form.getValues("isNewInvestor") === undefined) {
+        form.setValue("isNewInvestor", info.isNewInvestor);
+      }
+      if (info.projectsLast12Months && !form.getValues("projectsLast12Months")) {
+        form.setValue("projectsLast12Months", info.projectsLast12Months);
+      }
+      if (info.projectsLast36Months && !form.getValues("projectsLast36Months")) {
+        form.setValue("projectsLast36Months", info.projectsLast36Months);
+      }
+      if (info.creditScore && !form.getValues("creditScore")) {
+        form.setValue("creditScore", info.creditScore);
+      }
+      
+      setHasAutoFilled(true);
+    }
+  }, [investorInfoData, form, hasAutoFilled]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const handleSubmit = form.handleSubmit(() => {
+  // Mutation to save investor info
+  const saveInvestorInfoMutation = useMutation({
+    mutationFn: async (data: { isNewInvestor?: boolean; projectsLast12Months?: string; projectsLast36Months?: string; creditScore?: string }) => {
+      return apiRequest('PUT', '/api/profile/investor-info', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile/investor-info'] });
+      toast({
+        title: "Saved to Profile",
+        description: "Your investor information will auto-fill in future deals.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Save Failed",
+        description: "Could not save investor information to your profile.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = form.handleSubmit(async () => {
+    // Save to profile if checkbox is checked and user is a subscriber
+    if (saveToProfile && isSubscriber) {
+      const formData = {
+        isNewInvestor: form.getValues("isNewInvestor"),
+        projectsLast12Months: form.getValues("projectsLast12Months"),
+        projectsLast36Months: form.getValues("projectsLast36Months"),
+        creditScore: form.getValues("creditScore"),
+      };
+      await saveInvestorInfoMutation.mutateAsync(formData);
+    }
     onNext();
   });
 
@@ -151,6 +232,32 @@ export default function Step4InvestorInfo({ form, onNext, onBack }: Step4Investo
                   </FormItem>
                 )}
               />
+
+              {/* Auto-filled indicator */}
+              {investorInfoData?.hasSavedInfo && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md p-2">
+                  <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                  <span>Auto-filled from your saved profile</span>
+                </div>
+              )}
+
+              {/* Save to Profile option for subscribers */}
+              {isSubscriber && (
+                <div className="flex items-center space-x-2 pt-2 border-t">
+                  <Checkbox
+                    id="save-to-profile"
+                    checked={saveToProfile}
+                    onCheckedChange={(checked) => setSaveToProfile(checked === true)}
+                    data-testid="checkbox-save-to-profile"
+                  />
+                  <label
+                    htmlFor="save-to-profile"
+                    className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Save to my profile for future deals
+                  </label>
+                </div>
+              )}
             </CardContent>
           </Card>
 
