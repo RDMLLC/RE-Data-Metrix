@@ -128,6 +128,24 @@ Dedicated mobile pages provide touch-optimized experiences separate from respons
 
 **DO NOT BREAK**: Mobile pages are separate routes, not responsive adaptations. Each mobile page links to its desktop counterpart via the monitor icon in the header.
 
+### Wholesale Max Offer Calculator
+Calculates maximum offer price for wholesale deals with support for Assignment and Double Close transactions:
+- **Route**: `/deal-analysis/wholesale-calculator`
+- **Access**: Button on Step 3 of Deal Analysis wizard ("Calculate Wholesale Max Offer Price")
+- **Calculation Module**: `shared/calculations/wholesale-calculations.ts` - centralized calculation logic
+- **Transaction Types**:
+  - **Assignment**: Simple formula: ARV × Buyer's Max % - Rehab Budget - Wholesale Fee = Max Offer
+  - **Double Close**: Same minus closing costs, with optional transactional lender fees
+- **Data Pre-population**: ARV and Rehab Budget auto-populate from wizard context when navigating from Step 3
+- **Transactional Lenders**:
+  - Loan type: `transactional-funding` in `loanTypeEnum`
+  - Database: `transactional_flat_fee` column in `loan_products` table
+  - API: `GET /api/loan-products/transactional-funding` returns top 2 active lenders
+  - Referral fee: 0.5 points added to all lender rates (constant `REFERRAL_POINTS_PERCENT`)
+- **PDF Export**: Uses `react-to-pdf` with QR codes for lender referral links
+
+**DO NOT BREAK**: Calculation logic must remain centralized in `wholesale-calculations.ts`. UI components only call functions and display results.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
