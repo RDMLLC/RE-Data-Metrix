@@ -1,0 +1,423 @@
+import { useState, useMemo } from "react";
+import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDemoAccess } from "@/hooks/use-demo-access";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { 
+  Wrench, 
+  Video, 
+  Play, 
+  ExternalLink,
+  Filter,
+  X,
+  ArrowLeft,
+  Monitor,
+  Lock,
+  RotateCcw,
+  DollarSign,
+  Check
+} from "lucide-react";
+import type { TrainingVideo, Affiliate, AffiliateCategory } from "@shared/schema";
+
+function getYoutubeVideoId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/);
+  return match ? match[1] : null;
+}
+
+function getYoutubeThumbnail(url: string): string {
+  const videoId = getYoutubeVideoId(url);
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  }
+  return "";
+}
+
+const PLACEHOLDER_AFFILIATES: Affiliate[] = [
+  {
+    id: "demo-1",
+    name: "Property Research Tool",
+    description: "Find investment opportunities with powerful property research.",
+    benefits: ["Market Analysis", "Property Data"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["comps", "lead-generation"],
+    features: [],
+    iconName: "Search",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$29/mo",
+    costTo: "$99/mo",
+    hasFreeTrial: true,
+    isActive: true,
+    sortOrder: 1,
+    createdAt: null,
+    updatedAt: null,
+    notes: null,
+  },
+  {
+    id: "demo-2",
+    name: "Lead Generation Platform",
+    description: "Discover motivated sellers and off-market deals.",
+    benefits: ["Skip Tracing", "Motivated Sellers"],
+    referralLink: "#",
+    portalUrl: null,
+    loginUsername: null,
+    loginPassword: null,
+    categories: ["lead-generation", "skip-tracing"],
+    features: [],
+    iconName: "Users",
+    referralFee: null,
+    referralFeeType: null,
+    costFrom: "$49/mo",
+    costTo: "$199/mo",
+    hasFreeTrial: false,
+    isActive: true,
+    sortOrder: 2,
+    createdAt: null,
+    updatedAt: null,
+    notes: null,
+  },
+];
+
+export default function MobileToolbox() {
+  const { isSubscriber, isLoading: authLoading } = useAuth();
+  const { isDemoMode, hasDemoToken } = useDemoAccess();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const effectiveIsSubscriber = isSubscriber || hasDemoToken;
+
+  const { data: videos = [] } = useQuery<TrainingVideo[]>({
+    queryKey: ["/api/training-videos"],
+  });
+
+  const { data: affiliates = [] } = useQuery<Affiliate[]>({
+    queryKey: ["/api/affiliates"],
+  });
+
+  const { data: categories = [] } = useQuery<AffiliateCategory[]>({
+    queryKey: ["/api/affiliate-categories"],
+  });
+
+  const { data: demoModeData } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/settings/demo-mode"],
+  });
+
+  const isSystemDemoMode = demoModeData?.enabled === true;
+
+  const displayAffiliates = useMemo(() => {
+    if (isSystemDemoMode) {
+      return PLACEHOLDER_AFFILIATES;
+    }
+    return affiliates?.filter(a => a.categories && a.categories.length > 0) || [];
+  }, [affiliates, isSystemDemoMode]);
+
+  const toolboxVideos = videos.filter(v => 
+    v.title.toLowerCase().includes("tool") || 
+    v.title.toLowerCase().includes("resource") ||
+    v.isFeatured
+  ).slice(0, 3);
+
+  const categoryLabels: Record<string, string> = {};
+  categories?.forEach(cat => {
+    categoryLabels[cat.id] = cat.name;
+  });
+
+  const sortedCategories = [...categories].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(c => c !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const resetFilters = () => {
+    setSelectedCategories([]);
+  };
+
+  const matchingTools = selectedCategories.length > 0
+    ? displayAffiliates.filter(affiliate => 
+        selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
+      ).sort((a, b) => (b.categories?.length || 0) - (a.categories?.length || 0))
+    : displayAffiliates;
+
+  const formatCostRange = (costFrom: string | null | undefined, costTo: string | null | undefined): string | null => {
+    if (!costFrom && !costTo) return null;
+    if (costFrom && costTo) return `${costFrom} - ${costTo}`;
+    if (costFrom) return `From ${costFrom}`;
+    if (costTo) return `Up to ${costTo}`;
+    return null;
+  };
+
+  const getLogoUrl = (referralLink: string): string | null => {
+    try {
+      const url = new URL(referralLink);
+      const domain = url.hostname.replace('www.', '');
+      return `https://logo.clearbit.com/${domain}`;
+    } catch {
+      return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+        <div className="flex items-center justify-between p-3">
+          <Link href="/">
+            <Button variant="ghost" size="icon" data-testid="button-back-home">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-base font-semibold">Toolbox</h1>
+          <Link href="/toolbox">
+            <Button variant="ghost" size="icon" title="Desktop Version" data-testid="button-desktop-version">
+              <Monitor className="h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </header>
+
+      <main className="p-4 pb-24 space-y-4">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">
+            <Wrench className="h-6 w-6 text-primary" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground">Investor Tools</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Curated tools for real estate investing success
+          </p>
+        </div>
+
+        {toolboxVideos.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Video className="h-4 w-4 text-accent" />
+              <span className="text-xs font-medium text-muted-foreground">Training Videos</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              {toolboxVideos.map((video) => {
+                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+                return (
+                  <Card
+                    key={video.id}
+                    className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover-elevate"
+                    onClick={() => setSelectedVideo(video)}
+                    data-testid={`card-video-${video.id}`}
+                  >
+                    <div className="aspect-video bg-muted relative">
+                      {thumbnail ? (
+                        <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Video className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <Play className="h-8 w-8 text-white" />
+                      </div>
+                      {video.isFeatured && (
+                        <Badge className="absolute top-1 left-1 text-[10px] px-1 py-0">Featured</Badge>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[11px] font-medium line-clamp-2">{video.title}</p>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Sheet open={showFilters} onOpenChange={setShowFilters}>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="flex-1" data-testid="button-filter-tools">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+                {selectedCategories.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">{selectedCategories.length}</Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[70vh]">
+              <SheetHeader>
+                <SheetTitle className="flex items-center justify-between">
+                  <span>Filter by Category</span>
+                  {selectedCategories.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={resetFilters}>
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Reset
+                    </Button>
+                  )}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
+                {sortedCategories.map((category) => (
+                  <div 
+                    key={category.id} 
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <Checkbox
+                      id={category.id}
+                      checked={selectedCategories.includes(category.id)}
+                      onCheckedChange={() => toggleCategory(category.id)}
+                      data-testid={`checkbox-category-${category.id}`}
+                    />
+                    <label htmlFor={category.id} className="text-sm flex-1 cursor-pointer">
+                      {category.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <Button className="w-full" onClick={() => setShowFilters(false)} data-testid="button-apply-filters">
+                  Show {matchingTools.length} Tool{matchingTools.length !== 1 ? 's' : ''}
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {!effectiveIsSubscriber && (
+          <Card className="p-3 bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+            <div className="flex items-center gap-2 mb-1">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <p className="text-xs font-medium">Subscribe for Full Access</p>
+            </div>
+            <p className="text-[10px] text-muted-foreground mb-2">
+              Get access to all partner tools and exclusive discounts
+            </p>
+            <Link href="/pricing">
+              <Button size="sm" className="w-full" data-testid="button-view-pricing">
+                View Plans
+              </Button>
+            </Link>
+          </Card>
+        )}
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {selectedCategories.length > 0 ? `${matchingTools.length} Matching Tools` : `${matchingTools.length} Tools`}
+            </p>
+            {selectedCategories.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+          
+          {matchingTools.map((tool) => {
+            const logoUrl = getLogoUrl(tool.referralLink);
+            const costDisplay = formatCostRange(tool.costFrom, tool.costTo);
+            const matchCount = selectedCategories.filter(c => tool.categories?.includes(c)).length;
+
+            return (
+              <Card key={tool.id} className="p-3" data-testid={`card-tool-${tool.id}`}>
+                <div className="flex gap-3">
+                  {logoUrl && (
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border flex items-center justify-center overflow-hidden">
+                      <img 
+                        src={logoUrl} 
+                        alt={tool.name}
+                        className="w-8 h-8 object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold truncate">{tool.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tool.categories?.length || 0} categories
+                          {selectedCategories.length > 0 && matchCount > 0 && (
+                            <span className="text-accent ml-1">({matchCount} matched)</span>
+                          )}
+                        </p>
+                      </div>
+                      {tool.hasFreeTrial && (
+                        <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          Free Trial
+                        </Badge>
+                      )}
+                    </div>
+                    {costDisplay && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <DollarSign className="h-3 w-3 text-accent" />
+                        <span className="text-xs font-medium text-accent">{costDisplay}</span>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tool.description}</p>
+                    {tool.benefits && tool.benefits.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {tool.benefits.slice(0, 3).map((benefit, i) => (
+                          <Badge key={i} variant="outline" className="text-[10px] py-0">
+                            <Check className="h-2 w-2 mr-0.5" />
+                            {benefit}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {effectiveIsSubscriber && tool.referralLink && tool.referralLink !== "#" && (
+                      <a href={tool.referralLink} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                        <Button variant="outline" size="sm" className="w-full" data-testid={`button-visit-${tool.id}`}>
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Visit Tool
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </main>
+
+      <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
+        <DialogContent className="max-w-[95vw] p-0 overflow-hidden">
+          <DialogHeader className="p-3 pb-0">
+            <DialogTitle className="text-sm">{selectedVideo?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video">
+            {selectedVideo && getYoutubeVideoId(selectedVideo.youtubeUrl) && (
+              <iframe
+                src={`https://www.youtube.com/embed/${getYoutubeVideoId(selectedVideo.youtubeUrl)}?autoplay=1`}
+                title={selectedVideo.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

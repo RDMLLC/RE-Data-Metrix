@@ -7,8 +7,12 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { WizardDataProvider } from "@/contexts/WizardDataContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LenderAuthProvider } from "@/contexts/LenderAuthContext";
+import { DeviceModeProvider } from "@/contexts/DeviceModeContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import NotFound from "@/pages/not-found";
+import MobileDealAnalysis from "@/pages/mobile/MobileDealAnalysis";
+import MobileLenders from "@/pages/mobile/MobileLenders";
+import MobileToolbox from "@/pages/mobile/MobileToolbox";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Company from "@/pages/Company";
@@ -68,6 +72,11 @@ import CheckoutComplete from "@/pages/CheckoutComplete";
 function Router() {
   return (
     <Switch>
+      {/* Mobile-specific routes */}
+      <Route path="/m/deal-analysis" component={MobileDealAnalysis} />
+      <Route path="/m/lenders" component={MobileLenders} />
+      <Route path="/m/toolbox" component={MobileToolbox} />
+      
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
       <Route path="/company" component={Company} />
@@ -174,11 +183,13 @@ function App() {
       <AuthProvider>
         <LenderAuthProvider>
           <WizardDataProvider>
-            <TooltipProvider>
-              <Toaster />
-              <CookieConsent />
-              <Router />
-            </TooltipProvider>
+            <DeviceModeProvider>
+              <TooltipProvider>
+                <Toaster />
+                <CookieConsent />
+                <Router />
+              </TooltipProvider>
+            </DeviceModeProvider>
           </WizardDataProvider>
         </LenderAuthProvider>
       </AuthProvider>
