@@ -73,24 +73,41 @@ export default function WholesaleCalculator() {
     enabled: transactionType === "double-close" && showTransactionalLenders,
   });
 
+  // Track if we've already initialized from wizard data
+  const [initialized, setInitialized] = useState(false);
+
   useEffect(() => {
+    // Only hydrate from wizard context on initial mount, not on every render
+    if (initialized) return;
+    
+    let didHydrate = false;
+    
     // Check for arv - use !== undefined to handle 0 values
     if (wizardData.property?.arv !== undefined && wizardData.property?.arv !== null) {
       setArv(wizardData.property.arv.toString());
+      didHydrate = true;
     }
     // Check for rehabBudget - use !== undefined to handle 0 values
     if (wizardData.property?.rehabBudget !== undefined && wizardData.property?.rehabBudget !== null) {
       setRehabBudget(wizardData.property.rehabBudget.toString());
+      didHydrate = true;
     }
     // Check for purchasePrice
     if (wizardData.property?.purchasePrice !== undefined && wizardData.property?.purchasePrice !== null) {
       setPurchasePrice(wizardData.property.purchasePrice.toString());
+      didHydrate = true;
     }
     // Check for state
     if (wizardData.property?.state) {
       setPropertyState(wizardData.property.state);
+      didHydrate = true;
     }
-  }, [wizardData]);
+    
+    // Mark as initialized after first hydration attempt
+    if (didHydrate || wizardData.property) {
+      setInitialized(true);
+    }
+  }, [wizardData, initialized]);
 
   // Calculate dynamic closing costs when purchase price or state changes
   // Only auto-recalculate if user hasn't manually edited closing costs
