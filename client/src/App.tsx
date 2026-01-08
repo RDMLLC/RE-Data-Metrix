@@ -68,6 +68,7 @@ import Pricing from "@/pages/Pricing";
 import Checkout from "@/pages/Checkout";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import CheckoutComplete from "@/pages/CheckoutComplete";
+import WholesaleCalculator from "@/pages/WholesaleCalculator";
 
 function Router() {
   return (
@@ -81,6 +82,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/company" component={Company} />
       <Route path="/deal-analysis" component={DealAnalysis} />
+      <Route path="/deal-analysis/wholesale-calculator" component={WholesaleCalculator} />
       <Route path="/rental-analysis" component={RentalAnalysis} />
       <Route path="/lenders" component={Lenders} />
       <Route path="/lenders/:id" component={LenderProfile} />

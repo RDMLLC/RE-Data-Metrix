@@ -2322,6 +2322,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get transactional funding lenders (public endpoint for wholesale calculator)
+  app.get("/api/loan-products/transactional-funding", async (req, res) => {
+    try {
+      // Get all active transactional funding products with their lender info
+      const results = await db
+        .select({
+          productId: loanProducts.id,
+          lenderId: loanProducts.lenderId,
+          points: loanProducts.points,
+          flatFee: loanProducts.transactionalFlatFee,
+          fees: loanProducts.fees,
+          referralLink: loanProducts.referralLink,
+          companyName: lenders.companyName,
+        })
+        .from(loanProducts)
+        .innerJoin(lenders, eq(loanProducts.lenderId, lenders.id))
+        .where(
+          and(
+            eq(loanProducts.loanType, 'transactional-funding'),
+            eq(loanProducts.isActive, true),
+            eq(lenders.isActive, true)
+          )
+        )
+        .limit(2);
+
+      const transactionalLenders = results.map(r => ({
+        id: r.lenderId,
+        companyName: r.companyName,
+        flatFee: parseFloat(r.flatFee || r.fees || '0'),
+        points: parseFloat(r.points || '0'),
+        referralLink: r.referralLink,
+      }));
+
+      res.json(transactionalLenders);
+    } catch (error) {
+      console.error('Get transactional funding lenders error:', error);
+      res.status(500).json({ error: "Failed to get transactional funding lenders" });
+    }
+  });
+
   // Legacy combined template (kept for backwards compatibility)
   app.get("/api/loan-products/template", ensureLenderAuthenticated, async (req, res) => {
     try {

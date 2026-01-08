@@ -25,7 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DollarSign, TrendingUp, HelpCircle } from "lucide-react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -420,7 +420,7 @@ export default function Step3PurchaseRenovation({
           </Card>
 
           <div className="flex flex-col gap-4">
-            <div className="flex gap-3 justify-between">
+            <div className="flex gap-3 justify-between flex-wrap">
               <Button
                 type="button"
                 variant="outline"
@@ -429,9 +429,27 @@ export default function Step3PurchaseRenovation({
               >
                 Back
               </Button>
-              <Button type="submit" data-testid="button-continue">
-                Continue to Investor Information
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    const formData = form.getValues();
+                    updatePropertyData({
+                      arv: formData.arv,
+                      rehabBudget: formData.rehabBudget,
+                    });
+                    setLocation("/deal-analysis/wholesale-calculator");
+                  }}
+                  data-testid="button-wholesale-calculator"
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Calculate Wholesale Max Offer Price
+                </Button>
+                <Button type="submit" data-testid="button-continue">
+                  Continue to Investor Information
+                </Button>
+              </div>
             </div>
             
             {purchasePrice > 0 && arv > 0 && (
