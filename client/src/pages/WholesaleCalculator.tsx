@@ -67,10 +67,12 @@ export default function WholesaleCalculator() {
   });
 
   useEffect(() => {
-    if (wizardData.property?.arv) {
+    // Check for arv - use !== undefined to handle 0 values
+    if (wizardData.property?.arv !== undefined && wizardData.property?.arv !== null) {
       setArv(wizardData.property.arv.toString());
     }
-    if (wizardData.property?.rehabBudget) {
+    // Check for rehabBudget - use !== undefined to handle 0 values
+    if (wizardData.property?.rehabBudget !== undefined && wizardData.property?.rehabBudget !== null) {
       setRehabBudget(wizardData.property.rehabBudget.toString());
     }
   }, [wizardData]);
