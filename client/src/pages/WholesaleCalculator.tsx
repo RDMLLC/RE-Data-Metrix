@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle } from "lucide-react";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import {
   calculateAssignmentMaxOffer,
@@ -19,6 +20,7 @@ import {
   type DoubleCloseClosingCosts,
   type TransactionalLenderResult,
 } from "@shared/calculations/wholesale-calculations";
+import { getTransferTaxRate } from "@shared/data/transferTaxRates";
 import { QRCodeSVG } from "qrcode.react";
 import { usePDF } from "react-to-pdf";
 
@@ -159,6 +161,13 @@ export default function WholesaleCalculator() {
   };
 
   const result = transactionType === "assignment" ? assignmentResult : doubleCloseResult;
+
+  // Memoize transfer tax rate lookup for display
+  const transferTaxRateInfo = useMemo(() => {
+    if (!propertyState) return null;
+    const rate = getTransferTaxRate(propertyState);
+    return rate ? { ratePercent: rate.ratePercent, stateName: rate.stateName } : null;
+  }, [propertyState]);
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
@@ -335,21 +344,7 @@ export default function WholesaleCalculator() {
                         data-testid="input-title-insurance"
                       />
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="settlementFee">Settlement Fee</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="settlementFee"
-                        type="text"
-                        value={closingCosts.settlementFee.toString()}
-                        onChange={(e) => updateClosingCost("settlementFee", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-settlement-fee"
-                      />
-                    </div>
+                    <p className="text-xs text-muted-foreground">Auto-calculated at 1.2% of purchase price</p>
                   </div>
 
                   <div className="space-y-2">
@@ -368,7 +363,22 @@ export default function WholesaleCalculator() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="transferTax">Transfer Tax</Label>
+                    <Label htmlFor="transferTax" className="flex items-center gap-1">
+                      Transfer Tax/Fee
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs text-sm">
+                            Transfer taxes vary by state and may be paid by buyer, seller, or split. 
+                            This is auto-calculated based on state rates but can be edited.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </Label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -380,6 +390,11 @@ export default function WholesaleCalculator() {
                         data-testid="input-transfer-tax"
                       />
                     </div>
+                    {transferTaxRateInfo && (
+                      <p className="text-xs text-muted-foreground">
+                        Auto-calculated at {transferTaxRateInfo.ratePercent}% for {transferTaxRateInfo.stateName}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">

@@ -19,7 +19,6 @@ export interface WholesaleInputs {
 export interface DoubleCloseClosingCosts {
   titleSearch: number;
   titleInsurance: number;
-  settlementFee: number;
   recordingFees: number;
   transferTax: number;
   attorneyFees: number;
@@ -62,7 +61,6 @@ export const REFERRAL_POINTS_PERCENT = 0.5;
 export const DEFAULT_CLOSING_COSTS: DoubleCloseClosingCosts = {
   titleSearch: 250,       // Title Exam default from Step5
   titleInsurance: 0,      // Should be calculated as 1.2% of purchase price
-  settlementFee: 0,       // Not used in main deal analysis
   recordingFees: 150,     // Recording fees
   transferTax: 0,         // Should be calculated based on state
   attorneyFees: 750,      // Attorney Fees default from Step5
@@ -84,7 +82,6 @@ export function calculateDynamicClosingCosts(
   return {
     titleSearch: 250,
     titleInsurance,
-    settlementFee: 0,
     recordingFees: 150,
     transferTax,
     attorneyFees: 750,
@@ -114,7 +111,6 @@ export function calculateTotalClosingCosts(costs: DoubleCloseClosingCosts): numb
   return (
     costs.titleSearch +
     costs.titleInsurance +
-    costs.settlementFee +
     costs.recordingFees +
     costs.transferTax +
     costs.attorneyFees +
