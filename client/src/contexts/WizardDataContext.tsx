@@ -35,6 +35,7 @@ export interface WizardInvestorData {
 export interface WizardData {
   property?: WizardPropertyData;
   investor?: WizardInvestorData;
+  currentStep?: number;
   timestamp?: number;
 }
 
@@ -43,6 +44,7 @@ interface WizardDataContextType {
   setWizardData: (data: WizardData) => void;
   updatePropertyData: (data: Partial<WizardPropertyData>) => void;
   updateInvestorData: (data: Partial<WizardInvestorData>) => void;
+  setCurrentStep: (step: number) => void;
   clearWizardData: () => void;
   hasPropertyData: () => boolean;
 }
@@ -104,6 +106,14 @@ export function WizardDataProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const setCurrentStep = (step: number) => {
+    setWizardDataState((prev) => ({
+      ...prev,
+      currentStep: step,
+      timestamp: Date.now(),
+    }));
+  };
+
   const clearWizardData = () => {
     setWizardDataState({});
     if (typeof window !== 'undefined') {
@@ -126,6 +136,7 @@ export function WizardDataProvider({ children }: { children: ReactNode }) {
         setWizardData,
         updatePropertyData,
         updateInvestorData,
+        setCurrentStep,
         clearWizardData,
         hasPropertyData,
       }}

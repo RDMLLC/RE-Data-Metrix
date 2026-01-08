@@ -310,6 +310,8 @@ export default function Step2PropertyDetails({
                 />
               </div>
 
+              {/* Square footage question hidden for now - functionality preserved for future use */}
+              {/* 
               <FormField
                 control={form.control}
                 name="addingSquareFootage"
@@ -369,6 +371,7 @@ export default function Step2PropertyDetails({
                   )}
                 />
               )}
+              */}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <FormField

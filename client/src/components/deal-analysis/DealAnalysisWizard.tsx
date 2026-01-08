@@ -118,10 +118,16 @@ const wizardSchema = z.object({
 export type WizardFormData = z.infer<typeof wizardSchema>;
 
 export default function DealAnalysisWizard() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const { wizardData, updatePropertyData, updateInvestorData, clearWizardData, setCurrentStep: setContextStep } = useWizardData();
+  const [currentStep, setCurrentStep] = useState(() => wizardData.currentStep || 1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
-  const { wizardData, updatePropertyData, updateInvestorData, clearWizardData } = useWizardData();
   const { isSubscriber, isLoading: authLoading } = useAuth();
+
+  // Sync step changes to context so it persists when navigating away
+  const updateStep = (step: number) => {
+    setCurrentStep(step);
+    setContextStep(step);
+  };
 
   const form = useForm<WizardFormData>({
     resolver: zodResolver(wizardSchema),
@@ -215,7 +221,7 @@ export default function DealAnalysisWizard() {
   const handleNext = () => {
     saveCurrentStepData();
     if (currentStep < 6) {
-      setCurrentStep(currentStep + 1);
+      updateStep(currentStep + 1);
     }
   };
 
@@ -228,7 +234,7 @@ export default function DealAnalysisWizard() {
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      updateStep(currentStep - 1);
     }
   };
 
@@ -288,7 +294,7 @@ export default function DealAnalysisWizard() {
       propertyType: undefined,
       propertyDataSource: undefined,
     });
-    setCurrentStep(1);
+    updateStep(1);
   };
 
   const handlePropertyDataLoaded = (propertyData: any) => {

@@ -52,7 +52,7 @@ export default function Step3PurchaseRenovation({
 }: Step3PurchaseRenovationProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { updatePropertyData, updateInvestorData, wizardData } = useWizardData();
+  const { updatePropertyData, updateInvestorData, setCurrentStep, wizardData } = useWizardData();
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
   const arv = form.watch("arv") || 0;
@@ -438,7 +438,9 @@ export default function Step3PurchaseRenovation({
                     updatePropertyData({
                       arv: formData.arv,
                       rehabBudget: formData.rehabBudget,
+                      purchasePrice: formData.purchasePrice,
                     });
+                    setCurrentStep(3);
                     setLocation("/deal-analysis/wholesale-calculator");
                   }}
                   data-testid="button-wholesale-calculator"

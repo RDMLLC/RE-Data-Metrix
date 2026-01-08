@@ -13,7 +13,7 @@ import {
   calculateAssignmentMaxOffer,
   calculateDoubleCloseMaxOffer,
   calculateTransactionalLenderResult,
-  DEFAULT_CLOSING_COSTS,
+  calculateDynamicClosingCosts,
   REFERRAL_POINTS_PERCENT,
   type WholesaleInputs,
   type DoubleCloseClosingCosts,
@@ -47,17 +47,22 @@ interface TransactionalLender {
 
 export default function WholesaleCalculator() {
   const [, setLocation] = useLocation();
-  const { wizardData } = useWizardData();
+  const { wizardData, updatePropertyData } = useWizardData();
   const { toPDF, targetRef } = usePDF({ filename: "wholesale-deal-analysis.pdf" });
 
   const [transactionType, setTransactionType] = useState<"assignment" | "double-close">("assignment");
   
   const [arv, setArv] = useState<string>("");
   const [rehabBudget, setRehabBudget] = useState<string>("");
+  const [purchasePrice, setPurchasePrice] = useState<string>("");
+  const [propertyState, setPropertyState] = useState<string>("");
   const [buyersMaxArvPercent, setBuyersMaxArvPercent] = useState<string>("75");
   const [wholesaleFee, setWholesaleFee] = useState<string>("15000");
   
-  const [closingCosts, setClosingCosts] = useState<DoubleCloseClosingCosts>(DEFAULT_CLOSING_COSTS);
+  const [closingCosts, setClosingCosts] = useState<DoubleCloseClosingCosts>(() => 
+    calculateDynamicClosingCosts(0, "")
+  );
+  const [userEditedClosingCosts, setUserEditedClosingCosts] = useState(false);
   
   const [showTransactionalLenders, setShowTransactionalLenders] = useState(false);
 
@@ -75,7 +80,25 @@ export default function WholesaleCalculator() {
     if (wizardData.property?.rehabBudget !== undefined && wizardData.property?.rehabBudget !== null) {
       setRehabBudget(wizardData.property.rehabBudget.toString());
     }
+    // Check for purchasePrice
+    if (wizardData.property?.purchasePrice !== undefined && wizardData.property?.purchasePrice !== null) {
+      setPurchasePrice(wizardData.property.purchasePrice.toString());
+    }
+    // Check for state
+    if (wizardData.property?.state) {
+      setPropertyState(wizardData.property.state);
+    }
   }, [wizardData]);
+
+  // Calculate dynamic closing costs when purchase price or state changes
+  // Only auto-recalculate if user hasn't manually edited closing costs
+  useEffect(() => {
+    const price = parseNumericInput(purchasePrice);
+    if (price > 0 && !userEditedClosingCosts) {
+      const dynamicCosts = calculateDynamicClosingCosts(price, propertyState);
+      setClosingCosts(dynamicCosts);
+    }
+  }, [purchasePrice, propertyState, userEditedClosingCosts]);
 
   const wholesaleInputs: WholesaleInputs = useMemo(() => ({
     arv: parseNumericInput(arv),
@@ -112,13 +135,26 @@ export default function WholesaleCalculator() {
   }, [transactionalLendersData, doubleCloseResult.maxOfferPrice, wholesaleInputs.wholesaleFee]);
 
   const updateClosingCost = (field: keyof DoubleCloseClosingCosts, value: string) => {
+    setUserEditedClosingCosts(true);
     setClosingCosts(prev => ({
       ...prev,
       [field]: parseNumericInput(value),
     }));
   };
 
+  const resetClosingCostsToDefaults = () => {
+    setUserEditedClosingCosts(false);
+    const price = parseNumericInput(purchasePrice);
+    setClosingCosts(calculateDynamicClosingCosts(price, propertyState));
+  };
+
   const handleBack = () => {
+    // Save current values back to wizard context before navigating
+    updatePropertyData({
+      arv: parseNumericInput(arv) || wizardData.property?.arv,
+      rehabBudget: parseNumericInput(rehabBudget) || wizardData.property?.rehabBudget,
+      purchasePrice: parseNumericInput(purchasePrice) || wizardData.property?.purchasePrice,
+    });
     setLocation("/deal-analysis");
   };
 

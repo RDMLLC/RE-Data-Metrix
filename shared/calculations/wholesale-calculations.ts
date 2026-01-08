@@ -7,6 +7,8 @@
  * - Transactional lender fee calculations
  */
 
+import { calculateTransferTax } from '../data/transferTaxRates';
+
 export interface WholesaleInputs {
   arv: number;
   rehabBudget: number;
@@ -55,15 +57,40 @@ export interface TransactionalLenderResult {
 
 export const REFERRAL_POINTS_PERCENT = 0.5;
 
+// Default closing costs matching the main deal analysis calculations
+// Title Insurance and Transfer Tax should be calculated dynamically based on purchase price and state
 export const DEFAULT_CLOSING_COSTS: DoubleCloseClosingCosts = {
-  titleSearch: 250,
-  titleInsurance: 500,
-  settlementFee: 500,
-  recordingFees: 150,
-  transferTax: 0,
-  attorneyFees: 500,
+  titleSearch: 250,       // Title Exam default from Step5
+  titleInsurance: 0,      // Should be calculated as 1.2% of purchase price
+  settlementFee: 0,       // Not used in main deal analysis
+  recordingFees: 150,     // Recording fees
+  transferTax: 0,         // Should be calculated based on state
+  attorneyFees: 750,      // Attorney Fees default from Step5
   otherFees: 0,
 };
+
+// Calculate dynamic closing costs based on purchase price and state
+// Uses calculateTransferTax from shared/data/transferTaxRates.ts as single source of truth
+export function calculateDynamicClosingCosts(
+  purchasePrice: number,
+  stateCode: string
+): DoubleCloseClosingCosts {
+  // Title Insurance calculated as 1.2% of purchase price (matching Step5)
+  const titleInsurance = Math.round(purchasePrice * 0.012);
+  
+  // Use the canonical transfer tax calculation from shared/data/transferTaxRates.ts
+  const transferTax = calculateTransferTax(stateCode, purchasePrice);
+  
+  return {
+    titleSearch: 250,
+    titleInsurance,
+    settlementFee: 0,
+    recordingFees: 150,
+    transferTax,
+    attorneyFees: 750,
+    otherFees: 0,
+  };
+}
 
 /**
  * Calculate max offer price for an Assignment deal
