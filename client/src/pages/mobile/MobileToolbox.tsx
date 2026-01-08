@@ -319,13 +319,13 @@ export default function MobileToolbox() {
           </Card>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="section-tools-list">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium" data-testid="text-tools-count">
               {selectedCategories.length > 0 ? `${matchingTools.length} Matching Tools` : `${matchingTools.length} Tools`}
             </p>
             {selectedCategories.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={resetFilters}>
+              <Button variant="ghost" size="sm" onClick={resetFilters} data-testid="button-clear-filters">
                 <X className="h-3 w-3 mr-1" />
                 Clear
               </Button>
@@ -353,8 +353,8 @@ export default function MobileToolbox() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-semibold truncate">{tool.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-sm font-semibold truncate" data-testid={`text-tool-name-${tool.id}`}>{tool.name}</p>
+                        <p className="text-[10px] text-muted-foreground" data-testid={`text-tool-categories-${tool.id}`}>
                           {tool.categories?.length || 0} categories
                           {selectedCategories.length > 0 && matchCount > 0 && (
                             <span className="text-accent ml-1">({matchCount} matched)</span>
@@ -362,18 +362,18 @@ export default function MobileToolbox() {
                         </p>
                       </div>
                       {tool.hasFreeTrial && (
-                        <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" data-testid={`badge-free-trial-${tool.id}`}>
                           Free Trial
                         </Badge>
                       )}
                     </div>
                     {costDisplay && (
                       <div className="flex items-center gap-1 mt-1">
-                        <DollarSign className="h-3 w-3 text-accent" />
-                        <span className="text-xs font-medium text-accent">{costDisplay}</span>
+                        <DollarSign className="h-3 w-3 text-accent" aria-hidden="true" />
+                        <span className="text-xs font-medium text-accent" data-testid={`text-tool-cost-${tool.id}`}>{costDisplay}</span>
                       </div>
                     )}
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{tool.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2" data-testid={`text-tool-desc-${tool.id}`}>{tool.description}</p>
                     {tool.benefits && tool.benefits.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {tool.benefits.slice(0, 3).map((benefit, i) => (

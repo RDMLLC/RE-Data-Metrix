@@ -265,7 +265,8 @@ export default function MobileLenders() {
         )}
 
         <Button 
-          className="w-full h-12 text-base" 
+          className="w-full" 
+          size="lg"
           onClick={() => setShowFilters(true)}
           data-testid="button-search-lenders"
         >
@@ -274,10 +275,10 @@ export default function MobileLenders() {
         </Button>
 
         {searchResults.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-3" data-testid="section-search-results">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">{searchResults.length} Lender{searchResults.length !== 1 ? 's' : ''} Found</p>
-              <Button variant="ghost" size="sm" onClick={() => setSearchResults([])}>
+              <p className="text-sm font-medium" data-testid="text-results-count">{searchResults.length} Lender{searchResults.length !== 1 ? 's' : ''} Found</p>
+              <Button variant="ghost" size="sm" onClick={() => setSearchResults([])} data-testid="button-clear-results">
                 Clear
               </Button>
             </div>
@@ -294,8 +295,8 @@ export default function MobileLenders() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{lender.companyName}</p>
-                        <p className="text-xs text-muted-foreground">{lender.contactName}</p>
+                        <p className="font-semibold text-sm truncate" data-testid={`text-lender-name-${lender.id}`}>{lender.companyName}</p>
+                        <p className="text-xs text-muted-foreground" data-testid={`text-lender-contact-${lender.id}`}>{lender.contactName}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
@@ -313,8 +314,8 @@ export default function MobileLenders() {
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="px-3 pb-3 pt-0 border-t space-y-3">
-                      <p className="text-xs text-muted-foreground">{lender.companyDescription}</p>
+                    <div className="px-3 pb-3 pt-0 border-t space-y-3" data-testid={`section-lender-details-${lender.id}`}>
+                      <p className="text-xs text-muted-foreground" data-testid={`text-lender-desc-${lender.id}`}>{lender.companyDescription}</p>
                       <div className="flex flex-wrap gap-2">
                         <a href={`tel:${lender.phone}`}>
                           <Button variant="outline" size="sm" data-testid={`button-call-${lender.id}`}>

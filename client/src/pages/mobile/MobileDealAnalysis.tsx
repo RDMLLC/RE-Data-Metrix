@@ -133,7 +133,7 @@ export default function MobileDealAnalysis() {
 
         <Link href="/deal-analysis">
           <Button 
-            className="w-full h-12 text-base" 
+            className="w-full" 
             size="lg"
             data-testid="button-start-analysis"
           >
@@ -143,15 +143,15 @@ export default function MobileDealAnalysis() {
         </Link>
 
         {hasInProgressDeal && (
-          <Card className="p-3 border-accent/50 bg-accent/5">
+          <Card className="p-3 border-accent/50 bg-accent/5" data-testid="card-in-progress-deal">
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-lg bg-accent/10">
                 <Home className="h-4 w-4 text-accent" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">In Progress</p>
-                <p className="text-sm font-semibold truncate">{wizardData.property?.address}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs font-medium text-muted-foreground" data-testid="text-deal-status">In Progress</p>
+                <p className="text-sm font-semibold truncate" data-testid="text-deal-address">{wizardData.property?.address}</p>
+                <p className="text-xs text-muted-foreground" data-testid="text-deal-location">
                   {wizardData.property?.city}, {wizardData.property?.state}
                 </p>
               </div>
@@ -182,8 +182,8 @@ export default function MobileDealAnalysis() {
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold">Quick Steps</h3>
-          <div className="space-y-1.5">
+          <h3 className="text-sm font-semibold" id="quick-steps-heading">Quick Steps</h3>
+          <ul className="space-y-1.5" aria-labelledby="quick-steps-heading" role="list" data-testid="list-wizard-steps">
             {[
               { step: 1, title: "Enter Property Address", desc: "Auto-lookup or manual entry" },
               { step: 2, title: "Property Details", desc: "Beds, baths, sqft" },
@@ -192,18 +192,18 @@ export default function MobileDealAnalysis() {
               { step: 5, title: "Holding Period", desc: "Timeline & exit strategy" },
               { step: 6, title: "Results", desc: "Profit & lender comparison" },
             ].map(({ step, title, desc }) => (
-              <div key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+              <li key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50" data-testid={`step-${step}`}>
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
                   <span className="text-xs font-bold text-primary">{step}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium">{title}</p>
+                  <p className="text-xs font-medium" data-testid={`text-step-${step}-title`}>{title}</p>
                   <p className="text-[10px] text-muted-foreground">{desc}</p>
                 </div>
-                <CheckCircle className="h-4 w-4 text-muted-foreground/30" />
-              </div>
+                <CheckCircle className="h-4 w-4 text-muted-foreground/30" aria-hidden="true" />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
         {!isSubscriber && (
