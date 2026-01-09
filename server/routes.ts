@@ -5324,6 +5324,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isSubscriber: true,
           propertyLookupCount: 0,
           remainingLookups: -1, // -1 means unlimited
+          wholesaleCalcCount: 0,
+          remainingWholesaleCalcs: -1, // -1 means unlimited
           periodEnd: null
         });
       }
@@ -5334,11 +5336,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isSubscriber: false,
         propertyLookupCount: usage?.propertyLookupCount || 0,
         remainingLookups: usage?.remainingLookups ?? 2,
+        wholesaleCalcCount: usage?.wholesaleCalcCount || 0,
+        remainingWholesaleCalcs: usage?.remainingWholesaleCalcs ?? 2,
         periodEnd: usage?.periodEnd || null
       });
     } catch (error) {
       console.error("Usage check error:", error);
       res.status(500).json({ error: "Failed to check usage" });
+    }
+  });
+
+  // Wholesale Calculator Usage - increment counter for free users
+  app.post("/api/user/wholesale-calc", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      // Subscribers and admins have unlimited calculations
+      const isSubscriber = user.role === 'admin' || 
+        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+      
+      if (isSubscriber) {
+        return res.json({
+          canCalculate: true,
+          wholesaleCalcCount: 0,
+          remainingWholesaleCalcs: -1 // unlimited
+        });
+      }
+      
+      // Check and increment usage for free users
+      const usageResult = await storage.incrementUserWholesaleCalc(user.id);
+      
+      if (!usageResult.canCalculate) {
+        return res.status(403).json({ 
+          error: "You've reached your free monthly limit of 2 wholesale calculations. Upgrade to continue using the Wholesale Max Offer Calculator.",
+          code: "WHOLESALE_CALC_LIMIT_REACHED",
+          remainingWholesaleCalcs: 0
+        });
+      }
+      
+      res.json({
+        canCalculate: true,
+        wholesaleCalcCount: usageResult.wholesaleCalcCount,
+        remainingWholesaleCalcs: usageResult.remainingWholesaleCalcs
+      });
+    } catch (error) {
+      console.error("Wholesale calc usage error:", error);
+      res.status(500).json({ error: "Failed to track usage" });
     }
   });
 
