@@ -101,7 +101,7 @@ export class HasDataAPIService implements IPropertyAPIService {
           if (isRedfin) {
             return this.transformRedfinResponse(data);
           } else {
-            return this.transformZillowResponse(data);
+            return await this.transformZillowResponse(data);
           }
         } catch (parseError) {
           console.error("Failed to parse HasData API response:", responseText.substring(0, 500));
@@ -133,7 +133,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       if (isRedfin) {
         return this.transformRedfinResponse(data);
       } else {
-        return this.transformZillowResponse(data);
+        return await this.transformZillowResponse(data);
       }
     } catch (error: any) {
       console.error("Error fetching property data from HasData:", error);
@@ -319,8 +319,62 @@ export class HasDataAPIService implements IPropertyAPIService {
     };
   }
 
-  private transformZillowResponse(data: any): PropertyData {
-    const property = data.property || data;
+  private async fetchExtendedData(jsonUrl: string): Promise<any> {
+    try {
+      console.log("Fetching extended property data from:", jsonUrl);
+      const response = await fetch(jsonUrl);
+      if (!response.ok) {
+        console.log("Failed to fetch extended data:", response.status);
+        return null;
+      }
+      const extendedData = await response.json();
+      console.log("Extended data keys:", Object.keys(extendedData));
+      return extendedData;
+    } catch (error) {
+      console.error("Error fetching extended data:", error);
+      return null;
+    }
+  }
+
+  private async transformZillowResponse(data: any): Promise<PropertyData> {
+    let property = data.property || data;
+    const requestMetadata = data.requestMetadata;
+    
+    // Check if tax data is missing and we have an extended JSON URL
+    const hasTaxData = property.taxHistory || property.taxAssessedValue || property.annualTax || 
+                       property.propertyTaxes || property.taxAnnualAmount || property.resoFacts?.taxAnnualAmount;
+    
+    if (!hasTaxData && requestMetadata?.json) {
+      console.log("Tax data missing from initial response, fetching extended data...");
+      const extendedData = await this.fetchExtendedData(requestMetadata.json);
+      if (extendedData) {
+        // Merge extended data with property data
+        // Extended data might have different structure - check common patterns
+        const extendedProperty = extendedData.property || extendedData;
+        
+        // Log extended data tax-related keys
+        const extendedTaxKeys = Object.keys(extendedProperty).filter(k => 
+          k.toLowerCase().includes('tax') || k.toLowerCase().includes('assess')
+        );
+        console.log("Extended data tax-related keys:", extendedTaxKeys);
+        extendedTaxKeys.forEach(key => {
+          console.log(`  ${key}:`, JSON.stringify(extendedProperty[key]).substring(0, 200));
+        });
+        
+        // Check for resoFacts in extended data
+        if (extendedProperty.resoFacts) {
+          console.log("Extended resoFacts found, tax keys:", 
+            Object.keys(extendedProperty.resoFacts).filter(k => 
+              k.toLowerCase().includes('tax') || k.toLowerCase().includes('assess')
+            )
+          );
+        }
+        
+        // Merge extended property data, preferring extended data for missing fields
+        property = { ...property, ...extendedProperty };
+      }
+    }
+    
     const lastSale = property.priceHistory?.find((h: any) => h.event === 'sold');
     
     // Extract first photo URL from Zillow data
