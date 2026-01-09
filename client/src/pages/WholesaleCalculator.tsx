@@ -418,7 +418,7 @@ export default function WholesaleCalculator() {
           </Card>
 
           <Card>
-            <CardHeader className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <CardHeader className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
               <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
@@ -428,10 +428,12 @@ export default function WholesaleCalculator() {
                   Enter the property and deal details
                 </CardDescription>
               </div>
-              <div className="space-y-1 min-w-[220px]">
+              <div className="space-y-1 min-w-[200px]">
                 <Label htmlFor="buyPrice" className="flex items-center gap-1 text-sm">
                   Buy Price
-                  <span className="text-xs font-normal text-primary">(editable)</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    ({buyPriceManuallySet ? "edited" : "auto"})
+                  </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="cursor-help">
@@ -462,9 +464,6 @@ export default function WholesaleCalculator() {
                   />
                   <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {buyPriceManuallySet ? "Manually entered" : "Auto from Max Offer"}
-                </p>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
