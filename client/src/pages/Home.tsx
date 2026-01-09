@@ -177,7 +177,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
-                <span>Fix & Flip and DSCR calculators</span>
+                <span>Fix & Flip, DSCR, and Max Wholesale Buy Price calculators</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
