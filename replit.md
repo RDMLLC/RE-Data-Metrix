@@ -141,16 +141,37 @@ The platform offers a free tier with limited features and paid subscriptions for
   - Access to lender search tool
   - No deal storage
   - Basic toolbox resources
+  - CSV export allowed, PDF export blocked
 - **Paid Tier Features**:
   - Unlimited property lookups
   - Full lender comparisons
   - Save unlimited deals
+  - PDF and CSV export
   - Priority support
   - Full toolbox access
+- **Quota Exhaustion UX**:
+  - When free user attempts lookup after exhausting quota, `QuotaExhaustedModal` appears
+  - Modal offers: "Upgrade Your Account" (links to /pricing) or "Continue with Manual Entry"
+  - Backend returns `code: "LOOKUP_LIMIT_REACHED"` on quota exhaustion
+- **PDF Restriction**: In Step6Results.tsx, PDF download buttons only shown for `effectiveIsSubscriber`; free users see "Upgrade for PDF" button
 - **API Endpoint**: `GET /api/user/usage` returns current usage and quota status
 - **Pricing**: Free ($0), Monthly ($15), Annual ($150)
 
-**DO NOT BREAK**: Usage tracking must increment on successful property lookups and respect subscriber bypass.
+**DO NOT BREAK**: Usage tracking must increment on successful property lookups and respect subscriber bypass. QuotaExhaustedModal must offer both upgrade and manual entry options.
+
+### Features Marketing Page
+The /features page provides a comprehensive overview of platform capabilities:
+- **Route**: `/features`
+- **Access**: Hero "Learn More" button links here (not /about)
+- **Component**: `client/src/pages/Features.tsx`
+- **Sections**:
+  - Hero with "Get Started Free" and "View Pricing" CTAs
+  - Core Features: Fix & Flip, DSCR, Wholesale Calculator, Lender Referral, Toolbox
+  - Additional Benefits: PDF Export, Save Deals, State-Specific Calculations, etc.
+  - Free vs Paid comparison table
+  - Bottom CTA section
+
+**DO NOT BREAK**: Hero "Learn More" must link to /features, not /about.
 
 ### Wholesale Max Offer Calculator
 Calculates maximum offer price for wholesale deals with support for Assignment and Double Close transactions:

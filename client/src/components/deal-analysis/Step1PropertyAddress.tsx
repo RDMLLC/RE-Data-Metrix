@@ -10,6 +10,7 @@ import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
+import QuotaExhaustedModal from "./QuotaExhaustedModal";
 import { Link } from "wouter";
 
 // YouTube video for demo
@@ -30,6 +31,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
+  const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
 
   // Check if form already has property data (e.g., when navigating back) and restore state
   useEffect(() => {
@@ -163,6 +165,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     onError: (error: any) => {
       // Parse error message from API response (format: "500: {"error":"message"}")
       let errorMessage = "Unable to find property data. Please check the URL and try again, or use manual entry.";
+      let errorCode = "";
       
       try {
         const errorString = error?.message || "";
@@ -175,6 +178,9 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             const errorJson = JSON.parse(jsonMatch[0]);
             if (errorJson.error) {
               errorMessage = errorJson.error;
+            }
+            if (errorJson.code) {
+              errorCode = errorJson.code;
             }
           } catch {
             // JSON parse failed, use default message
@@ -192,6 +198,12 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         }
       } catch {
         // Keep default error message
+      }
+      
+      // Check for quota exhaustion - show modal instead of toast
+      if (errorCode === "LOOKUP_LIMIT_REACHED") {
+        setQuotaExhaustedModalOpen(true);
+        return;
       }
       
       toast({
@@ -469,6 +481,12 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       )}
 
       <GroundUpModal open={groundUpModalOpen} onOpenChange={setGroundUpModalOpen} />
+      
+      <QuotaExhaustedModal 
+        open={quotaExhaustedModalOpen} 
+        onOpenChange={setQuotaExhaustedModalOpen}
+        onContinueManual={() => setManualEntryPreference(true)}
+      />
 
       {manualEntryPreference && (
         <div className="space-y-4">

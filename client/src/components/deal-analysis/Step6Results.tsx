@@ -1234,30 +1234,44 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
             Download CSV
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {effectiveIsSubscriber ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isGeneratingPdf}
+                  data-testid="button-download-pdf"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDownloadPDF(false)} data-testid="pdf-overview">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Overview (Summary)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadPDF(true)} data-testid="pdf-detailed">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Detailed (All Expanded)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/pricing">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={isGeneratingPdf}
-                data-testid="button-download-pdf"
+                className="text-muted-foreground"
+                data-testid="button-upgrade-pdf"
               >
                 <Download className="h-4 w-4 mr-2" />
-                {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-                <ChevronDown className="h-3 w-3 ml-1" />
+                Upgrade for PDF
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleDownloadPDF(false)} data-testid="pdf-overview">
-                <FileText className="h-4 w-4 mr-2" />
-                Overview (Summary)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDownloadPDF(true)} data-testid="pdf-detailed">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Detailed (All Expanded)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Link>
+          )}
         </div>
       </div>
 

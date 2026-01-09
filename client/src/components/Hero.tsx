@@ -54,7 +54,7 @@ export default function Hero() {
                 size="lg"
                 variant="outline"
                 className="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20 text-lg px-8 py-6"
-                onClick={() => window.location.href = '/about'}
+                onClick={() => window.location.href = '/features'}
                 data-testid="button-learn-more"
               >
                 Learn More
