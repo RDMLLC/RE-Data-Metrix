@@ -123,6 +123,13 @@ export default function DealAnalysisWizard() {
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  // Reset to Step 1 when component mounts (new analysis session)
+  // This ensures users always start fresh when navigating to Deal Analysis
+  useEffect(() => {
+    setCurrentStep(1);
+    setContextStep(1);
+  }, []);
+
   // Sync step changes to context so it persists when navigating away
   const updateStep = (step: number) => {
     setCurrentStep(step);

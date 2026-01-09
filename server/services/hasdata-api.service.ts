@@ -341,8 +341,14 @@ export class HasDataAPIService implements IPropertyAPIService {
     const requestMetadata = data.requestMetadata;
     
     // Check if tax data is missing and we have an extended JSON URL
-    const hasTaxData = property.taxHistory || property.taxAssessedValue || property.annualTax || 
-                       property.propertyTaxes || property.taxAnnualAmount || property.resoFacts?.taxAnnualAmount;
+    // Be strict: empty arrays and undefined values don't count as having tax data
+    const taxHistoryHasData = Array.isArray(property.taxHistory) && property.taxHistory.length > 0;
+    const hasTaxData = taxHistoryHasData || 
+                       (property.taxAssessedValue && property.taxAssessedValue > 0) || 
+                       (property.annualTax && property.annualTax > 0) || 
+                       (property.propertyTaxes && property.propertyTaxes > 0) || 
+                       (property.taxAnnualAmount && property.taxAnnualAmount > 0) || 
+                       (property.resoFacts?.taxAnnualAmount && property.resoFacts.taxAnnualAmount > 0);
     
     if (!hasTaxData && requestMetadata?.json) {
       console.log("Tax data missing from initial response, fetching extended data...");
