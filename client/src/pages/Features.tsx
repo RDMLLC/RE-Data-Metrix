@@ -14,7 +14,6 @@ import {
   Check,
   DollarSign,
   Home,
-  BarChart3,
   Wrench
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,13 +68,7 @@ const additionalBenefits = [
     icon: Building2,
     title: "State-Specific Calculations",
     description: "Dynamic closing cost calculations with state-based transfer tax rates for accurate projections.",
-    badge: null
-  },
-  {
-    icon: BarChart3,
-    title: "Property Data Caching",
-    description: "Smart caching reduces API costs and speeds up repeat lookups for the same properties.",
-    badge: null
+    badge: "Paid"
   },
   {
     icon: Briefcase,
@@ -275,10 +268,15 @@ export default function Features() {
                     </tr>
                     <tr>
                       <td className="px-6 py-4 font-medium">CSV Export</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-6 py-4 text-center text-muted-foreground">No</td>
                       <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr className="bg-muted/30">
+                      <td className="px-6 py-4 font-medium">State-Specific Calculations</td>
+                      <td className="px-6 py-4 text-center text-muted-foreground">No</td>
+                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                    </tr>
+                    <tr>
                       <td className="px-6 py-4 font-medium">Support</td>
                       <td className="px-6 py-4 text-center">Standard</td>
                       <td className="px-6 py-4 text-center text-success font-medium">Priority</td>

@@ -14,10 +14,11 @@ const featureComparison = [
   { feature: "Lender Loan Comparisons", free: "First 2 lookups only", paid: "Unlimited" },
   { feature: "Rental/DSCR Analysis", free: "Manual entry", paid: "Full access" },
   { feature: "Lender Search Tool", free: "Yes", paid: "Yes" },
+  { feature: "State-Specific Calculations", free: "No", paid: "Yes" },
   { feature: "Save Deals", free: "No", paid: "Unlimited" },
   { feature: "Save Lenders", free: "No", paid: "Unlimited" },
   { feature: "Toolbox Resources", free: "Yes", paid: "Yes" },
-  { feature: "Export Reports", free: "CSV only", paid: "PDF & CSV reports" },
+  { feature: "Export Reports (PDF & CSV)", free: "No", paid: "Yes" },
   { feature: "Email Support", free: "Standard", paid: "Priority" },
 ];
 
@@ -143,10 +144,6 @@ export default function Pricing() {
                     <Check className="h-4 w-4 text-success" />
                     Full toolbox access
                   </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    CSV export
-                  </li>
                 </ul>
               </CardContent>
               <CardFooter>
@@ -200,6 +197,10 @@ export default function Pricing() {
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
                     Save unlimited deals
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    PDF & CSV export
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
