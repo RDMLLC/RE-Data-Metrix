@@ -418,14 +418,54 @@ export default function WholesaleCalculator() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Deal Information
-              </CardTitle>
-              <CardDescription>
-                Enter the property and deal details
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Deal Information
+                </CardTitle>
+                <CardDescription>
+                  Enter the property and deal details
+                </CardDescription>
+              </div>
+              <div className="space-y-1 min-w-[200px]">
+                <Label htmlFor="buyPrice" className="flex items-center gap-1 text-sm">
+                  Buy Price
+                  <span className="text-xs font-normal text-primary">(editable)</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help">
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-sm">
+                        Auto-populated from Max Offer Price. Edit this to calculate Transfer Tax and Title Insurance based on a different purchase price.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="buyPrice"
+                    type="text"
+                    value={buyPrice}
+                    onChange={(e) => {
+                      setBuyPrice(e.target.value);
+                      setBuyPriceManuallySet(true);
+                    }}
+                    className="pl-9 pr-9 border-primary/50 focus:border-primary"
+                    placeholder="Enter buy price"
+                    autoComplete="off"
+                    data-testid="input-buy-price"
+                  />
+                  <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {buyPriceManuallySet ? "Manually entered" : "Auto from Max Offer"}
+                </p>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
@@ -495,46 +535,6 @@ export default function WholesaleCalculator() {
                       data-testid="input-wholesale-fee"
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="buyPrice" className="flex items-center gap-1">
-                    Buy Price
-                    <span className="text-xs font-normal text-primary">(editable)</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="cursor-help">
-                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs text-sm">
-                          Auto-populated from Max Offer Price. Edit this to calculate Transfer Tax and Title Insurance based on a different purchase price.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </Label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="buyPrice"
-                      type="text"
-                      value={buyPrice}
-                      onChange={(e) => {
-                        setBuyPrice(e.target.value);
-                        setBuyPriceManuallySet(true);
-                      }}
-                      className="pl-9 border-primary/50 focus:border-primary"
-                      placeholder="Enter your buy price"
-                      autoComplete="off"
-                      data-testid="input-buy-price"
-                    />
-                    <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {buyPriceManuallySet ? "Manually entered" : "Auto-populated from Max Offer Price"}
-                    {" — used for Transfer Tax and Title Insurance calculations"}
-                  </p>
                 </div>
               </div>
             </CardContent>
