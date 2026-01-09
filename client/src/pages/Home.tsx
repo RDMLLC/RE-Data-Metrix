@@ -177,11 +177,15 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
-                <span>Fix & Flip, DSCR, and Max Wholesale Buy Price calculators</span>
+                <span>Fix & Flip and DSCR calculators</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
                 <span>Access to lender search tools</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>Max Wholesale Buy Price calculator (2 per month)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
