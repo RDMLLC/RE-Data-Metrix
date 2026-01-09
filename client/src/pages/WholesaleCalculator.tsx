@@ -79,6 +79,10 @@ export default function WholesaleCalculator() {
   const [buyersMaxArvPercent, setBuyersMaxArvPercent] = useState<string>("75");
   const [wholesaleFee, setWholesaleFee] = useState<string>("15000");
   
+  // Buy Price field - auto-populated from Max Offer Price but editable
+  const [buyPrice, setBuyPrice] = useState<string>("");
+  const [buyPriceManuallySet, setBuyPriceManuallySet] = useState(false);
+  
   const [closingCosts, setClosingCosts] = useState<DoubleCloseClosingCosts>(() => 
     calculateDynamicClosingCosts(0, "")
   );
@@ -245,9 +249,14 @@ export default function WholesaleCalculator() {
       setRehabBudget(wizardData.property.rehabBudget.toString());
       didHydrate = true;
     }
-    // Check for purchasePrice
+    // Check for purchasePrice - also use it to initialize buyPrice if available
     if (wizardData.property?.purchasePrice !== undefined && wizardData.property?.purchasePrice !== null) {
-      setPurchasePrice(wizardData.property.purchasePrice.toString());
+      const priceStr = wizardData.property.purchasePrice.toString();
+      setPurchasePrice(priceStr);
+      // If there's a purchasePrice from the wizard, use it as the initial buyPrice
+      // and mark it as manually set so it doesn't get overwritten by Max Offer Price
+      setBuyPrice(priceStr);
+      setBuyPriceManuallySet(true);
       didHydrate = true;
     }
     // Check for state
@@ -262,15 +271,15 @@ export default function WholesaleCalculator() {
     }
   }, [wizardData, initialized]);
 
-  // Calculate dynamic closing costs when purchase price or state changes
+  // Calculate dynamic closing costs when buy price or state changes
   // Only auto-recalculate if user hasn't manually edited closing costs
   useEffect(() => {
-    const price = parseNumericInput(purchasePrice);
+    const price = parseNumericInput(buyPrice);
     if (price > 0 && !userEditedClosingCosts) {
       const dynamicCosts = calculateDynamicClosingCosts(price, propertyState);
       setClosingCosts(dynamicCosts);
     }
-  }, [purchasePrice, propertyState, userEditedClosingCosts]);
+  }, [buyPrice, propertyState, userEditedClosingCosts]);
 
   const wholesaleInputs: WholesaleInputs = useMemo(() => ({
     arv: parseNumericInput(arv),
@@ -288,6 +297,19 @@ export default function WholesaleCalculator() {
     calculateDoubleCloseMaxOffer(wholesaleInputs, closingCosts),
     [wholesaleInputs, closingCosts]
   );
+
+  // Get the current result based on transaction type
+  const currentMaxOfferPrice = transactionType === "assignment" 
+    ? assignmentResult.maxOfferPrice 
+    : doubleCloseResult.maxOfferPrice;
+
+  // Auto-populate buyPrice from Max Offer Price when it changes (unless user manually set it)
+  // This only applies when no purchase price was brought from the wizard
+  useEffect(() => {
+    if (!buyPriceManuallySet && currentMaxOfferPrice > 0) {
+      setBuyPrice(Math.round(currentMaxOfferPrice).toString());
+    }
+  }, [currentMaxOfferPrice, buyPriceManuallySet]);
 
   const transactionalLenderResults: TransactionalLenderResult[] = useMemo(() => {
     if (!transactionalLendersData || transactionalLendersData.length === 0) return [];
@@ -316,7 +338,7 @@ export default function WholesaleCalculator() {
 
   const resetClosingCostsToDefaults = () => {
     setUserEditedClosingCosts(false);
-    const price = parseNumericInput(purchasePrice);
+    const price = parseNumericInput(buyPrice);
     setClosingCosts(calculateDynamicClosingCosts(price, propertyState));
   };
 
@@ -473,6 +495,44 @@ export default function WholesaleCalculator() {
                       data-testid="input-wholesale-fee"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="buyPrice" className="flex items-center gap-1">
+                    Buy Price
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-sm">
+                          Auto-populated from Max Offer Price. Edit this to calculate Transfer Tax and Title Insurance based on a different purchase price.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="buyPrice"
+                      type="text"
+                      value={buyPrice}
+                      onChange={(e) => {
+                        setBuyPrice(e.target.value);
+                        setBuyPriceManuallySet(true);
+                      }}
+                      className="pl-9"
+                      placeholder="Auto-calculated"
+                      autoComplete="off"
+                      data-testid="input-buy-price"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {buyPriceManuallySet ? "Manually entered" : "Auto-populated from Max Offer Price"}
+                    {" — used for Transfer Tax and Title Insurance calculations"}
+                  </p>
                 </div>
               </div>
             </CardContent>
