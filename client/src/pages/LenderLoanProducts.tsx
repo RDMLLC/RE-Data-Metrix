@@ -186,6 +186,7 @@ export default function LenderLoanProducts() {
       loanTermYears: insertLoanProductSchema.shape.loanTermYears.nullable().optional(),
       minDscrRequired: insertLoanProductSchema.shape.minDscrRequired.nullable().optional(),
       maxLtcPercent: insertLoanProductSchema.shape.maxLtcPercent.nullable().optional(),
+      transactionalFlatFee: insertLoanProductSchema.shape.transactionalFlatFee.nullable().optional(),
     })),
     defaultValues: {
       loanType: "bridge",
