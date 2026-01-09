@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
 import QuotaExhaustedModal from "./QuotaExhaustedModal";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 // YouTube video for demo
 const YOUTUBE_VIDEO_ID = "m6SjKQ3dYe4";
@@ -21,10 +21,12 @@ interface Step1Props {
   onNext: () => void;
   onPropertyDataLoaded: (data: any) => void;
   isSubscriber?: boolean;
+  isAuthenticated?: boolean;
 }
 
-export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false }: Step1Props) {
+export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false }: Step1Props) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { updatePropertyData, clearWizardData } = useWizardData();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
@@ -288,7 +290,13 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 <div className="flex flex-wrap gap-3 items-center">
                   <Button
                     type="button"
-                    onClick={() => setManualEntryPreference(true)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        setLocation("/register");
+                      } else {
+                        setManualEntryPreference(true);
+                      }
+                    }}
                     data-testid="button-switch-manual-entry"
                   >
                     Try it for Free

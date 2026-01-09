@@ -121,7 +121,7 @@ export default function DealAnalysisWizard() {
   const { wizardData, updatePropertyData, updateInvestorData, clearWizardData, setCurrentStep: setContextStep } = useWizardData();
   const [currentStep, setCurrentStep] = useState(() => wizardData.currentStep || 1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
-  const { isSubscriber, isLoading: authLoading } = useAuth();
+  const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Sync step changes to context so it persists when navigating away
   const updateStep = (step: number) => {
@@ -310,6 +310,7 @@ export default function DealAnalysisWizard() {
             onNext={handleNext}
             onPropertyDataLoaded={handlePropertyDataLoaded}
             isSubscriber={isSubscriber}
+            isAuthenticated={isAuthenticated}
           />
         );
       case 2:
