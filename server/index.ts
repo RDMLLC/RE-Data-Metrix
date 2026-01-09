@@ -61,7 +61,12 @@ async function initStripe() {
         console.log('Stripe data synced');
       })
       .catch((err: any) => {
-        console.error('Error syncing Stripe data:', err);
+        // Handle stale customer IDs that were deleted from Stripe but still exist in sync cache
+        if (err?.code === 'resource_missing' && err?.message?.includes('No such customer')) {
+          console.warn(`[Stripe Sync] Skipping deleted customer: ${err?.param || 'unknown'} - This customer was deleted from Stripe but still exists in the sync cache. The sync will continue for other records.`);
+        } else {
+          console.error('Error syncing Stripe data:', err);
+        }
       });
   } catch (error) {
     console.error('Failed to initialize Stripe:', error);
