@@ -1913,10 +1913,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('[LENDER RESET] Lender found:', lender.companyName, '- Generating token...');
+      console.log('[LENDER RESET] Lender found:', lender.companyName, '(ID:', lender.id, ') - Generating token...');
       const resetToken = generateVerificationToken();
       const resetExpiry = new Date();
       resetExpiry.setHours(resetExpiry.getHours() + 1);
+
+      console.log('[LENDER RESET] Generated token:', resetToken.substring(0, 20) + '...');
+      console.log('[LENDER RESET] Token expires at:', resetExpiry.toISOString());
 
       await db
         .update(lenders)
@@ -1926,7 +1929,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(lenders.id, lender.id));
 
-      console.log('[LENDER RESET] Token saved to database. Attempting to send email...');
+      // Verify the token was actually saved
+      const [verifyLender] = await db
+        .select({ token: lenders.passwordResetToken })
+        .from(lenders)
+        .where(eq(lenders.id, lender.id))
+        .limit(1);
+      console.log('[LENDER RESET] Token verified in DB:', verifyLender?.token?.substring(0, 20) + '...');
+      
+      console.log('[LENDER RESET] Sending email with token:', resetToken.substring(0, 20) + '...');
       const emailSent = await emailService.sendLenderPasswordResetEmail(
         lender.email,
         lender.companyName,
@@ -1952,6 +1963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/lenders/validate-reset-token/:token", async (req, res) => {
     try {
       const { token } = req.params;
+      console.log('[TOKEN VALIDATE] Validating token:', token?.substring(0, 20) + '...');
 
       const [lender] = await db
         .select()
@@ -1960,16 +1972,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(1);
 
       if (!lender) {
+        console.log('[TOKEN VALIDATE] No lender found with this token');
+        // Debug: Check if ANY lenders have tokens set
+        const lendersWithTokens = await db
+          .select({ 
+            email: lenders.email, 
+            tokenPrefix: sql<string>`LEFT(${lenders.passwordResetToken}, 20)`,
+            expiry: lenders.passwordResetExpiry
+          })
+          .from(lenders)
+          .where(sql`${lenders.passwordResetToken} IS NOT NULL`);
+        console.log('[TOKEN VALIDATE] Lenders with tokens:', lendersWithTokens.length);
+        if (lendersWithTokens.length > 0) {
+          lendersWithTokens.forEach(l => {
+            console.log('[TOKEN VALIDATE]   -', l.email, 'token:', l.tokenPrefix + '...', 'expires:', l.expiry);
+          });
+        }
         return res.status(400).json({ valid: false, error: "Invalid reset token" });
       }
 
+      console.log('[TOKEN VALIDATE] Found lender:', lender.email);
+      
       if (lender.passwordResetExpiry && new Date() > lender.passwordResetExpiry) {
+        console.log('[TOKEN VALIDATE] Token expired. Expiry:', lender.passwordResetExpiry, 'Now:', new Date());
         return res.status(400).json({ valid: false, error: "Reset token has expired" });
       }
 
+      console.log('[TOKEN VALIDATE] Token is valid!');
       res.json({ valid: true });
     } catch (error) {
-      console.error('Lender token validation error:', error);
+      console.error('[TOKEN VALIDATE] Error:', error);
       res.status(500).json({ valid: false, error: "Token validation failed" });
     }
   });
