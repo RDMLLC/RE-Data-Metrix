@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle } from "lucide-react";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest } from "@/lib/queryClient";
+import WholesaleQuotaModal from "@/components/deal-analysis/WholesaleQuotaModal";
 import {
   calculateAssignmentMaxOffer,
   calculateDoubleCloseMaxOffer,
@@ -51,8 +54,11 @@ export default function WholesaleCalculator() {
   const [, setLocation] = useLocation();
   const { wizardData, updatePropertyData } = useWizardData();
   const { toPDF, targetRef } = usePDF({ filename: "wholesale-deal-analysis.pdf" });
+  const { isAuthenticated, isSubscriber } = useAuth();
 
   const [transactionType, setTransactionType] = useState<"assignment" | "double-close">("assignment");
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const quotaUsedRef = useRef(false);
   
   const [arv, setArv] = useState<string>("");
   const [rehabBudget, setRehabBudget] = useState<string>("");
@@ -72,6 +78,35 @@ export default function WholesaleCalculator() {
     queryKey: ["/api/loan-products/transactional-funding"],
     enabled: transactionType === "double-close" && showTransactionalLenders,
   });
+
+  // Quota tracking for free users
+  const wholesaleCalcMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/user/wholesale-calc");
+      return await response.json();
+    },
+    onError: (error: any) => {
+      if (error?.message?.includes("403") || error?.code === "WHOLESALE_CALC_LIMIT_REACHED") {
+        setShowQuotaModal(true);
+      }
+    }
+  });
+
+  // Check and use quota on page load for authenticated free users
+  useEffect(() => {
+    if (!isAuthenticated || isSubscriber || quotaUsedRef.current) return;
+    
+    quotaUsedRef.current = true;
+    wholesaleCalcMutation.mutate(undefined, {
+      onError: () => {
+        setShowQuotaModal(true);
+      }
+    });
+  }, [isAuthenticated, isSubscriber]);
+
+  const handleGoBackFromModal = () => {
+    setLocation("/deal-analysis");
+  };
 
   // Track if we've already initialized from wizard data
   const [initialized, setInitialized] = useState(false);
@@ -593,6 +628,12 @@ export default function WholesaleCalculator() {
           </Button>
         </div>
       )}
+
+      <WholesaleQuotaModal
+        open={showQuotaModal}
+        onOpenChange={setShowQuotaModal}
+        onGoBack={handleGoBackFromModal}
+      />
     </div>
   );
 }
