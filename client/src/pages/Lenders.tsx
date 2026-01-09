@@ -923,16 +923,16 @@ export default function Lenders() {
         {/* Call to Action - Only show for non-subscribers */}
         {!isSubscriber && (
           <Card className="p-12 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-center">
-            <h2 className="text-3xl font-bold mb-4">Get Early Access to Our Lender Network</h2>
+            <h2 className="text-3xl font-bold mb-4">Ready to Connect with Our Lender Network?</h2>
             <p className="text-lg text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-              Be among the first to connect with our verified lenders when we launch. Lock in your discount now!
+              Create a free account to access deal analysis tools and connect with verified lenders.
             </p>
             <Button 
               className="bg-accent text-accent-foreground hover:bg-accent/90"
               size="lg"
-              onClick={() => window.location.href = '/'}
+              onClick={() => window.location.href = '/register'}
             >
-              Lock in my Discount
+              Create Free Account
             </Button>
           </Card>
         )}

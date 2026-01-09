@@ -5,11 +5,8 @@ import { ChevronDown } from "lucide-react";
 const YOUTUBE_VIDEO_ID = "quO8Zn_IIAY";
 
 export default function Hero() {
-  const scrollToForm = () => {
-    const formElement = document.getElementById('prelaunch-form');
-    if (formElement) {
-      formElement.scrollIntoView({ behavior: 'smooth' });
-    }
+  const handleGetStarted = () => {
+    window.location.href = '/register';
   };
 
   return (
@@ -48,10 +45,10 @@ export default function Hero() {
               <Button
                 size="lg"
                 className="bg-accent text-accent-foreground hover:bg-accent text-lg px-8 py-6"
-                onClick={scrollToForm}
+                onClick={handleGetStarted}
                 data-testid="button-get-started"
               >
-                Get Early Access
+                Get a Free Account
               </Button>
               <Button
                 size="lg"

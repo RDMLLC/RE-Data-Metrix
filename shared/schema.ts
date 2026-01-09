@@ -112,6 +112,27 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 
+// User usage counters for tracking free tier limits (e.g., 2 property lookups per month)
+export const userUsageCounters = pgTable("user_usage_counters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
+  propertyLookupCount: integer("property_lookup_count").notNull().default(0),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  lastLookupAt: timestamp("last_lookup_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserUsageCounterSchema = createInsertSchema(userUsageCounters).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertUserUsageCounter = z.infer<typeof insertUserUsageCounterSchema>;
+export type UserUsageCounter = typeof userUsageCounters.$inferSelect;
+
 export const investmentPreferences = pgTable("investment_preferences", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull().unique(),

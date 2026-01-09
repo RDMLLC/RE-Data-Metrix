@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import Hero from "@/components/Hero";
-import PrelaunchForm from "@/components/PrelaunchForm";
 import { Card } from "@/components/ui/card";
-import { Users, BarChart3, Wrench } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, BarChart3, Wrench, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
@@ -151,21 +151,47 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Prelaunch Signup Section - Hidden on mobile to reduce scrolling */}
-      <section id="prelaunch-form" className="hidden md:block py-24 bg-background">
+      {/* Signup CTA Section */}
+      <section id="signup-cta" className="hidden md:block py-24 bg-background">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold text-primary mb-4">
-              Lock in your Pre-Launch Discount Now
+              Start Analyzing Deals for Free
             </h2>
             <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
             <p className="text-xl text-muted-foreground">
-              No obligation, just a great discount and early access when we launch
+              Create your free account and start analyzing real estate deals today
             </p>
           </div>
 
-          <Card className="p-8 bg-primary text-primary-foreground">
-            <PrelaunchForm source="home_prelaunch" />
+          <Card className="p-8 bg-primary text-primary-foreground text-center">
+            <h3 className="text-2xl font-bold mb-4">What You Get with a Free Account</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left">
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>2 automated property lookups per month</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>Unlimited manual deal analysis</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>Fix & Flip and DSCR calculators</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>Access to lender search tools</span>
+              </div>
+            </div>
+            <Button 
+              size="lg" 
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              onClick={() => window.location.href = '/register'}
+              data-testid="button-signup-cta"
+            >
+              Create Your Free Account
+            </Button>
           </Card>
         </div>
       </section>

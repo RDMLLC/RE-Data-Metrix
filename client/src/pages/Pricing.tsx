@@ -7,28 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight } from "lucide-react";
 
-const memberBenefits = [
-  "Complete Deal Analysis with ROI calculations",
-  "Side-by-side lender loan comparisons",
-  "Rental Analysis with DSCR calculations",
-  "Access to curated lender network",
-  "Save and track unlimited deals",
-  "Save favorite lenders for quick access",
-  "Export loan analysis reports",
-  "Full access to Toolbox resources",
-  "Priority email support",
-];
-
-const memberFeatures = [
-  { feature: "Deal Analysis Wizard", value: "Full access" },
-  { feature: "Loan Comparisons", value: "Unlimited" },
-  { feature: "Rental Analysis", value: "Full DSCR calculations" },
-  { feature: "Lender Search", value: "Full database access" },
-  { feature: "Save Deals", value: "Unlimited" },
-  { feature: "Save Lenders", value: "Unlimited" },
-  { feature: "Toolbox Resources", value: "Complete access" },
-  { feature: "Export Reports", value: "PDF & detailed reports" },
-  { feature: "Email Support", value: "Priority response" },
+const featureComparison = [
+  { feature: "Property Lookups (Zillow/Redfin)", free: "2 per month", paid: "Unlimited" },
+  { feature: "Deal Analysis Wizard", free: "Manual entry", paid: "Full automation" },
+  { feature: "Lender Loan Comparisons", free: "First 2 lookups only", paid: "Unlimited" },
+  { feature: "Rental/DSCR Analysis", free: "Manual entry", paid: "Full access" },
+  { feature: "Lender Search Tool", free: "Yes", paid: "Yes" },
+  { feature: "Save Deals", free: "No", paid: "Unlimited" },
+  { feature: "Save Lenders", free: "No", paid: "Unlimited" },
+  { feature: "Toolbox Resources", free: "Basic", paid: "Complete access" },
+  { feature: "Export Reports", free: "No", paid: "PDF & detailed reports" },
+  { feature: "Email Support", free: "Standard", paid: "Priority" },
 ];
 
 export default function Pricing() {
@@ -120,7 +109,55 @@ export default function Pricing() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-16">
+            {/* Free Tier */}
+            <Card className="relative transition-all border">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-primary">Free</CardTitle>
+                <CardDescription>Get started with basic features</CardDescription>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-primary">$0</span>
+                  <span className="text-muted-foreground ml-2">/forever</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    2 property lookups/month
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Unlimited manual deal analysis
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Lender search tool access
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Basic toolbox resources
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                {isAuthenticated ? (
+                  <Link href="/deal-analysis" className="w-full">
+                    <Button className="w-full" variant="outline" data-testid="button-start-free">
+                      Start Analyzing
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/register" className="w-full">
+                    <Button className="w-full" variant="outline" data-testid="button-signup-free">
+                      Create Free Account
+                    </Button>
+                  </Link>
+                )}
+              </CardFooter>
+            </Card>
+
+            {/* Monthly */}
             <Card className={`relative transition-all ${billingCycle === "monthly" ? "border-2 border-accent shadow-lg" : "border"}`}>
               {billingCycle === "monthly" && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -131,7 +168,7 @@ export default function Pricing() {
               )}
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl text-primary">Monthly</CardTitle>
-                <CardDescription>Pay as you go, cancel anytime</CardDescription>
+                <CardDescription>Full access, cancel anytime</CardDescription>
                 <div className="mt-4">
                   <span className="text-4xl font-bold text-primary">${monthlyPrice}</span>
                   <span className="text-muted-foreground ml-2">/month</span>
@@ -141,15 +178,19 @@ export default function Pricing() {
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    Full access to all features
+                    Unlimited property lookups
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    Cancel anytime
+                    Full lender comparisons
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    Priority email support
+                    Save unlimited deals
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Priority support
                   </li>
                 </ul>
               </CardContent>
@@ -175,6 +216,7 @@ export default function Pricing() {
               </CardFooter>
             </Card>
 
+            {/* Annual */}
             <Card className={`relative transition-all ${billingCycle === "annual" ? "border-2 border-accent shadow-lg" : "border"}`}>
               {billingCycle === "annual" && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -186,7 +228,7 @@ export default function Pricing() {
               )}
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl text-primary">Annual</CardTitle>
-                <CardDescription>Best value - save ${annualSavings}/year</CardDescription>
+                <CardDescription>Save ${annualSavings}/year</CardDescription>
                 <div className="mt-4">
                   <span className="text-4xl font-bold text-primary">${annualPrice}</span>
                   <span className="text-muted-foreground ml-2">/year</span>
@@ -203,7 +245,7 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    Save ${annualSavings} per year
+                    2 months free
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
@@ -253,26 +295,29 @@ export default function Pricing() {
 
           <div className="mb-16">
             <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8" data-testid="text-features-title">
-              What's Included
+              Feature Comparison
             </h2>
-            <Card className="overflow-hidden max-w-2xl mx-auto">
+            <Card className="overflow-hidden max-w-3xl mx-auto">
               <div className="overflow-x-auto">
-                <table className="w-full" data-testid="table-member-features">
+                <table className="w-full" data-testid="table-feature-comparison">
                   <thead>
                     <tr className="bg-primary text-primary-foreground">
                       <th className="text-left px-6 py-4 font-semibold">Feature</th>
-                      <th className="text-left px-6 py-4 font-semibold">Included</th>
+                      <th className="text-center px-6 py-4 font-semibold">Free</th>
+                      <th className="text-center px-6 py-4 font-semibold">Paid</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {memberFeatures.map((row, index) => (
+                    {featureComparison.map((row, index) => (
                       <tr key={index} className={index % 2 === 0 ? "bg-muted/30" : ""}>
                         <td className="px-6 py-4 text-foreground font-medium">{row.feature}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Check className="h-5 w-5 text-success flex-shrink-0" />
-                            <span className="text-success font-medium text-sm">{row.value}</span>
-                          </div>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`text-sm ${row.free === "No" ? "text-muted-foreground" : "text-foreground"}`}>
+                            {row.free}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-sm text-success font-medium">{row.paid}</span>
                         </td>
                       </tr>
                     ))}

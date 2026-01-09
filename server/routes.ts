@@ -436,7 +436,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
-      res.json({ message: "Logged out successfully" });
+      // Fully destroy the session to ensure complete logout
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error("Session destroy error:", destroyErr);
+        }
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        res.json({ message: "Logged out successfully" });
+      });
     });
   });
 
@@ -1872,7 +1880,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
-      res.json({ message: "Logged out successfully" });
+      // Fully destroy the session to ensure complete logout
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error("Lender session destroy error:", destroyErr);
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: "Logged out successfully" });
+      });
     });
   });
 
@@ -5295,6 +5310,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user property lookup usage (for freemium limits)
+  app.get("/api/user/usage", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      // Subscribers and admins have unlimited lookups
+      const isSubscriber = user.role === 'admin' || 
+        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+      
+      if (isSubscriber) {
+        return res.json({
+          isSubscriber: true,
+          propertyLookupCount: 0,
+          remainingLookups: -1, // -1 means unlimited
+          periodEnd: null
+        });
+      }
+      
+      const usage = await storage.getUserUsageCounter(user.id);
+      
+      res.json({
+        isSubscriber: false,
+        propertyLookupCount: usage?.propertyLookupCount || 0,
+        remainingLookups: usage?.remainingLookups ?? 2,
+        periodEnd: usage?.periodEnd || null
+      });
+    } catch (error) {
+      console.error("Usage check error:", error);
+      res.status(500).json({ error: "Failed to check usage" });
+    }
+  });
+
   // Property Lookup Route
   app.post("/api/property/lookup", async (req, res) => {
     try {
@@ -5308,6 +5355,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           error: "Please provide a valid Zillow or Redfin property URL" 
         });
+      }
+      
+      // Check free user lookup limits
+      const user = req.user as User | undefined;
+      let usageResult: { canLookup: boolean; remainingLookups: number } | null = null;
+      
+      if (user) {
+        const isSubscriber = user.role === 'admin' || 
+          ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        
+        if (!isSubscriber) {
+          // Check and increment usage for free users
+          usageResult = await storage.incrementUserPropertyLookup(user.id);
+          
+          if (!usageResult.canLookup) {
+            return res.status(403).json({ 
+              error: "You've reached your free monthly limit of 2 property lookups. Upgrade to continue using automated lookups, or enter property information manually.",
+              code: "LOOKUP_LIMIT_REACHED",
+              remainingLookups: 0
+            });
+          }
+        }
       }
       
       const propertyData = await propertyAPIService.getPropertyByUrl(url, forceRefresh === true);
@@ -5382,7 +5451,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json(propertyData);
+      // Include remaining lookups info for free users
+      const response: any = { ...propertyData };
+      if (usageResult) {
+        response._usageInfo = {
+          remainingLookups: usageResult.remainingLookups,
+          isFreeTier: true
+        };
+      }
+      
+      res.json(response);
     } catch (error: any) {
       console.error("Property lookup error:", error);
       

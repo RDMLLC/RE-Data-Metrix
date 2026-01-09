@@ -66,7 +66,8 @@ import {
   integrationFieldMappings as integrationFieldMappingsTable,
   integrationWebhooks as integrationWebhooksTable,
   integrationSyncLogs as integrationSyncLogsTable,
-  propertyCache as propertyCacheTable
+  propertyCache as propertyCacheTable,
+  userUsageCounters as userUsageCountersTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -462,6 +463,11 @@ export interface IStorage {
   setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache>;
   incrementPropertyCacheHit(id: string): Promise<void>;
   deleteExpiredPropertyCache(): Promise<number>;
+  
+  // User Usage Counters (for freemium limits)
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; periodEnd: Date } | null>;
+  incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
+  resetUserUsageIfExpired(userId: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -2876,6 +2882,137 @@ export class DatabaseStorage implements IStorage {
       .where(sqlCount`${propertyCacheTable.expiresAt} < ${now}`)
       .returning();
     return result.length;
+  }
+
+  // User Usage Counters - for freemium property lookup limits
+  private readonly FREE_LOOKUPS_PER_MONTH = 2;
+
+  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; periodEnd: Date } | null> {
+    const [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    if (!counter) {
+      return null;
+    }
+    
+    const now = new Date();
+    // If period has expired, reset counts
+    if (counter.periodEnd < now) {
+      await this.resetUserUsageIfExpired(userId);
+      return {
+        propertyLookupCount: 0,
+        remainingLookups: this.FREE_LOOKUPS_PER_MONTH,
+        periodEnd: this.getNextMonthEnd()
+      };
+    }
+    
+    return {
+      propertyLookupCount: counter.propertyLookupCount,
+      remainingLookups: Math.max(0, this.FREE_LOOKUPS_PER_MONTH - counter.propertyLookupCount),
+      periodEnd: counter.periodEnd
+    };
+  }
+
+  async incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    // Try to get existing counter
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    // If no counter exists, create one
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          propertyLookupCount: 1,
+          periodStart,
+          periodEnd,
+          lastLookupAt: now,
+        })
+        .returning();
+      
+      return {
+        propertyLookupCount: 1,
+        remainingLookups: this.FREE_LOOKUPS_PER_MONTH - 1,
+        canLookup: true
+      };
+    }
+    
+    // If period expired, reset and increment
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 1,
+          periodStart,
+          periodEnd,
+          lastLookupAt: now,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        propertyLookupCount: 1,
+        remainingLookups: this.FREE_LOOKUPS_PER_MONTH - 1,
+        canLookup: true
+      };
+    }
+    
+    // Check if can lookup before incrementing
+    if (counter.propertyLookupCount >= this.FREE_LOOKUPS_PER_MONTH) {
+      return {
+        propertyLookupCount: counter.propertyLookupCount,
+        remainingLookups: 0,
+        canLookup: false
+      };
+    }
+    
+    // Increment the counter
+    const newCount = counter.propertyLookupCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        propertyLookupCount: newCount,
+        lastLookupAt: now,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      propertyLookupCount: newCount,
+      remainingLookups: Math.max(0, this.FREE_LOOKUPS_PER_MONTH - newCount),
+      canLookup: true
+    };
+  }
+
+  async resetUserUsageIfExpired(userId: string): Promise<void> {
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const periodEnd = this.getNextMonthEnd();
+    
+    await db.update(userUsageCountersTable)
+      .set({
+        propertyLookupCount: 0,
+        periodStart,
+        periodEnd,
+        updatedAt: now,
+      })
+      .where(and(
+        eq(userUsageCountersTable.userId, userId),
+        sqlCount`${userUsageCountersTable.periodEnd} < ${now}`
+      ));
+  }
+
+  private getNextMonthEnd(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 1);
   }
 
 }

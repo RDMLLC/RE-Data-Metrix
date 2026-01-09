@@ -128,6 +128,30 @@ Dedicated mobile pages provide touch-optimized experiences separate from respons
 
 **DO NOT BREAK**: Mobile pages are separate routes, not responsive adaptations. Each mobile page links to its desktop counterpart via the monitor icon in the header.
 
+### Freemium Model
+The platform offers a free tier with limited features and paid subscriptions for full access:
+- **Database Table**: `user_usage_counters` tracks monthly property lookups per user
+- **Usage Tracking**: 
+  - `propertyLookupCount`: Number of automated property lookups used this period
+  - `periodStart`/`periodEnd`: Current billing period (monthly reset)
+- **Free Tier Limits**:
+  - 2 automated property lookups per month (Zillow/Redfin URL parsing)
+  - Unlimited manual deal analysis (manual data entry)
+  - Lender products shown only for first 2 lookups
+  - Access to lender search tool
+  - No deal storage
+  - Basic toolbox resources
+- **Paid Tier Features**:
+  - Unlimited property lookups
+  - Full lender comparisons
+  - Save unlimited deals
+  - Priority support
+  - Full toolbox access
+- **API Endpoint**: `GET /api/user/usage` returns current usage and quota status
+- **Pricing**: Free ($0), Monthly ($15), Annual ($150)
+
+**DO NOT BREAK**: Usage tracking must increment on successful property lookups and respect subscriber bypass.
+
 ### Wholesale Max Offer Calculator
 Calculates maximum offer price for wholesale deals with support for Assignment and Double Close transactions:
 - **Route**: `/deal-analysis/wholesale-calculator`
