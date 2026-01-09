@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Users, ArrowRight, Loader2, FileText } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, FileText } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -25,7 +25,6 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TermsModal } from "@/components/TermsModal";
 
 const registerSchema = z
@@ -35,7 +34,6 @@ const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
-    referralCode: z.string().optional(),
     termsAccepted: z.literal(true, {
       errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
     }),
@@ -52,7 +50,6 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [hasReferralCode, setHasReferralCode] = useState<string>("no");
   const [compCode, setCompCode] = useState<string>("");
   const [compEmail, setCompEmail] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -103,7 +100,6 @@ export default function Register() {
       password: "",
       confirmPassword: "",
       fullName: "",
-      referralCode: "",
       termsAccepted: false as unknown as true,
     },
   });
@@ -120,9 +116,6 @@ export default function Register() {
       const { confirmPassword, ...registerData } = data;
       const finalData = {
         ...registerData,
-        referralCode: hasReferralCode === "yes" && registerData.referralCode 
-          ? registerData.referralCode 
-          : undefined,
         compCode: compCode || undefined,
       };
       const result = await register(finalData);
@@ -187,25 +180,7 @@ export default function Register() {
                   </p>
                   <p className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
-                    <span>Earn referral bonuses</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Referral Bonus CTA */}
-              <div className="border-t border-primary-foreground/20 pt-8">
-                <div className="text-center">
-                  <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 bg-accent/20 rounded-lg flex items-center justify-center">
-                      <Users className="h-8 w-8 text-accent" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3">Have a referral code?</h3>
-                  <p className="mb-6 text-primary-foreground/90">
-                    Use a referral code to get 1 month free trial and help your referrer earn bonuses
-                  </p>
-                  <p className="text-sm text-primary-foreground/80">
-                    Enter your code in the registration form
+                    <span>Access curated investor resources</span>
                   </p>
                 </div>
               </div>
@@ -323,49 +298,6 @@ export default function Register() {
                           </FormItem>
                         )}
                       />
-
-                      {/* Referral Code Option */}
-                      <div className="space-y-3">
-                        <FormLabel>Have a referral code?</FormLabel>
-                        <RadioGroup
-                          value={hasReferralCode}
-                          onValueChange={setHasReferralCode}
-                          className="flex flex-row gap-4"
-                          data-testid="radio-referral"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="no" id="no-referral" data-testid="radio-no-referral" />
-                            <label htmlFor="no-referral" className="text-sm">No</label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="yes" id="yes-referral" data-testid="radio-yes-referral" />
-                            <label htmlFor="yes-referral" className="text-sm">Yes</label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
-                      {hasReferralCode === "yes" && (
-                        <FormField
-                          control={form.control}
-                          name="referralCode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Referral Code</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="Enter referral code"
-                                  data-testid="input-referral-code"
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Get 1 month free when you use a valid referral code
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
 
                       {/* Terms and Conditions */}
                       <FormField

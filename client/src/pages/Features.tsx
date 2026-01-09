@@ -29,13 +29,13 @@ const coreFeatures = [
     icon: TrendingUp,
     title: "DSCR Rental Analysis",
     description: "Evaluate rental properties with Debt Service Coverage Ratio calculations. Compare lender products specifically designed for buy-and-hold investors.",
-    highlights: ["DSCR calculations", "Rental income analysis", "Cash flow projections", "DSCR lender comparisons"]
+    highlights: ["DSCR calculations", "Rental income analysis", "Dynamic calculations", "DSCR lender comparisons"]
   },
   {
     icon: DollarSign,
     title: "Wholesale Max Offer Calculator",
     description: "Calculate the maximum offer price for wholesale deals. Supports both Assignment and Double Close transactions with optional transactional lender fees.",
-    highlights: ["Assignment calculations", "Double close support", "Transactional lender options", "PDF export with QR codes"]
+    highlights: ["Instant max offer", "Transactional lender options", "Calculates for Assignment or Double Close", "Quick, easy, and accurate"]
   },
   {
     icon: Users,
@@ -47,7 +47,7 @@ const coreFeatures = [
     icon: Wrench,
     title: "Investor Toolbox",
     description: "Access resources to help you manage and grow your real estate investment business. Training videos, calculators, and guides designed for investors.",
-    highlights: ["Training resources", "Business tools", "Investment guides", "Continuous updates"]
+    highlights: ["20+ tool categories", "Lead gen & marketing", "Property management", "Comps & analysis", "Rehab estimating", "Legal"]
   }
 ];
 
@@ -74,6 +74,18 @@ const additionalBenefits = [
     icon: Briefcase,
     title: "Priority Support",
     description: "Get faster responses and dedicated support for your investment questions.",
+    badge: "Paid"
+  },
+  {
+    icon: TrendingUp,
+    title: "Auto-Lookup Property Details",
+    description: "Automatically fetch property data from Zillow and Redfin URLs. Save time with instant property information.",
+    badge: "Paid"
+  },
+  {
+    icon: FileText,
+    title: "CSV Export",
+    description: "Export your deal analysis data to spreadsheets for custom analysis and record keeping.",
     badge: "Paid"
   }
 ];
