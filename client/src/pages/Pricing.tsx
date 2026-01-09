@@ -9,6 +9,7 @@ import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, Arr
 
 const featureComparison = [
   { feature: "Property Lookups (Zillow/Redfin)", free: "2 per month", paid: "Unlimited" },
+  { feature: "Wholesale Calculator", free: "2 per month", paid: "Unlimited" },
   { feature: "Deal Analysis Wizard", free: "Manual entry", paid: "Full automation" },
   { feature: "Lender Loan Comparisons", free: "First 2 lookups only", paid: "Unlimited" },
   { feature: "Rental/DSCR Analysis", free: "Manual entry", paid: "Full access" },
@@ -128,6 +129,10 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
+                    2 wholesale calcs/month
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
                     Unlimited manual deal analysis
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
@@ -183,6 +188,10 @@ export default function Pricing() {
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
                     Unlimited property lookups
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Unlimited wholesale calcs
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />

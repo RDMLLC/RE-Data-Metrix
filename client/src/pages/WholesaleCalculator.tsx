@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,10 +55,11 @@ export default function WholesaleCalculator() {
   const { wizardData, updatePropertyData } = useWizardData();
   const { toPDF, targetRef } = usePDF({ filename: "wholesale-deal-analysis.pdf" });
   const { isAuthenticated, isSubscriber } = useAuth();
+  const queryClient = useQueryClient();
 
   const [transactionType, setTransactionType] = useState<"assignment" | "double-close">("assignment");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
-  const quotaUsedRef = useRef(false);
+  const [calculationUnlocked, setCalculationUnlocked] = useState(false);
   
   const [arv, setArv] = useState<string>("");
   const [rehabBudget, setRehabBudget] = useState<string>("");
@@ -79,30 +80,56 @@ export default function WholesaleCalculator() {
     enabled: transactionType === "double-close" && showTransactionalLenders,
   });
 
-  // Quota tracking for free users
+  // Check current quota status (without consuming)
+  const { data: usageData } = useQuery<{
+    isSubscriber: boolean;
+    wholesaleCalcCount: number;
+    remainingWholesaleCalcs: number;
+  }>({
+    queryKey: ["/api/user/usage"],
+    enabled: isAuthenticated && !isSubscriber,
+  });
+
+  // Quota consumption mutation for free users
   const wholesaleCalcMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/user/wholesale-calc");
       return await response.json();
     },
-    onError: (error: any) => {
-      if (error?.message?.includes("403") || error?.code === "WHOLESALE_CALC_LIMIT_REACHED") {
+    onSuccess: (data) => {
+      if (data.canCalculate) {
+        setCalculationUnlocked(true);
+        queryClient.invalidateQueries({ queryKey: ["/api/user/usage"] });
+      } else {
         setShowQuotaModal(true);
       }
+    },
+    onError: () => {
+      setShowQuotaModal(true);
     }
   });
 
-  // Check and use quota on page load for authenticated free users
-  useEffect(() => {
-    if (!isAuthenticated || isSubscriber || quotaUsedRef.current) return;
+  // Subscribers and non-authenticated users have immediate access to results
+  // (non-authenticated see results to encourage signup)
+  const hasResultsAccess = isSubscriber || !isAuthenticated || calculationUnlocked;
+  
+  // Check if free user has remaining quota
+  const hasRemainingQuota = !usageData || (usageData.remainingWholesaleCalcs ?? 2) > 0;
+
+  const handleRunCalculation = () => {
+    if (!isAuthenticated) {
+      setCalculationUnlocked(true);
+      return;
+    }
     
-    quotaUsedRef.current = true;
-    wholesaleCalcMutation.mutate(undefined, {
-      onError: () => {
-        setShowQuotaModal(true);
-      }
-    });
-  }, [isAuthenticated, isSubscriber]);
+    if (isSubscriber) {
+      setCalculationUnlocked(true);
+      return;
+    }
+    
+    // Free user - consume quota
+    wholesaleCalcMutation.mutate();
+  };
 
   const handleGoBackFromModal = () => {
     setLocation("/deal-analysis");
@@ -483,55 +510,91 @@ export default function WholesaleCalculator() {
             </Card>
           )}
 
-          <Card className="bg-primary/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-xl">Calculation Results</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3">
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">Buyer's Max Price (ARV × {buyersMaxArvPercent}%)</span>
-                  <span className="font-semibold" data-testid="text-buyers-max-price">
-                    {formatCurrency(result.buyersMaxPrice)}
-                  </span>
+          {!hasResultsAccess ? (
+            <Card className="bg-muted/30 border-dashed">
+              <CardContent className="py-8">
+                <div className="text-center space-y-4">
+                  <Calculator className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Ready to Calculate?</h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      {hasRemainingQuota 
+                        ? `You have ${usageData?.remainingWholesaleCalcs ?? 2} free calculations remaining this month.`
+                        : "You've used all your free calculations this month."}
+                    </p>
+                  </div>
+                  {hasRemainingQuota ? (
+                    <Button 
+                      size="lg" 
+                      onClick={handleRunCalculation}
+                      disabled={wholesaleCalcMutation.isPending}
+                      data-testid="button-run-calculation"
+                    >
+                      {wholesaleCalcMutation.isPending ? "Processing..." : "Run Calculation"}
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="lg" 
+                      onClick={() => setShowQuotaModal(true)}
+                      data-testid="button-upgrade-for-calculations"
+                    >
+                      Upgrade for Unlimited
+                    </Button>
+                  )}
                 </div>
-                
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">Less: Rehab Budget</span>
-                  <span className="font-semibold text-red-600" data-testid="text-less-rehab">
-                    - {formatCurrency(wholesaleInputs.rehabBudget)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">Less: Your Wholesale Fee</span>
-                  <span className="font-semibold text-red-600" data-testid="text-less-wholesale-fee">
-                    - {formatCurrency(wholesaleInputs.wholesaleFee)}
-                  </span>
-                </div>
-
-                {transactionType === "double-close" && (
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-xl">Calculation Results</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3">
                   <div className="flex justify-between items-center py-2">
-                    <span className="text-muted-foreground">Less: Closing Costs</span>
-                    <span className="font-semibold text-red-600" data-testid="text-less-closing-costs">
-                      - {formatCurrency(doubleCloseResult.totalClosingCosts)}
+                    <span className="text-muted-foreground">Buyer's Max Price (ARV × {buyersMaxArvPercent}%)</span>
+                    <span className="font-semibold" data-testid="text-buyers-max-price">
+                      {formatCurrency(result.buyersMaxPrice)}
                     </span>
                   </div>
-                )}
+                  
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-muted-foreground">Less: Rehab Budget</span>
+                    <span className="font-semibold text-red-600" data-testid="text-less-rehab">
+                      - {formatCurrency(wholesaleInputs.rehabBudget)}
+                    </span>
+                  </div>
 
-                <Separator />
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-muted-foreground">Less: Your Wholesale Fee</span>
+                    <span className="font-semibold text-red-600" data-testid="text-less-wholesale-fee">
+                      - {formatCurrency(wholesaleInputs.wholesaleFee)}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-lg font-semibold">Max Offer Price</span>
-                  <span className="text-2xl font-bold text-primary" data-testid="text-max-offer-price">
-                    {formatCurrency(result.maxOfferPrice)}
-                  </span>
+                  {transactionType === "double-close" && (
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">Less: Closing Costs</span>
+                      <span className="font-semibold text-red-600" data-testid="text-less-closing-costs">
+                        - {formatCurrency(doubleCloseResult.totalClosingCosts)}
+                      </span>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  <div className="flex justify-between items-center py-3">
+                    <span className="text-lg font-semibold">Max Offer Price</span>
+                    <span className="text-2xl font-bold text-primary" data-testid="text-max-offer-price">
+                      {formatCurrency(result.maxOfferPrice)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          {transactionType === "double-close" && !showTransactionalLenders && (
+          {hasResultsAccess && transactionType === "double-close" && !showTransactionalLenders && (
             <div className="flex justify-center">
               <Button 
                 size="lg"
@@ -543,7 +606,7 @@ export default function WholesaleCalculator() {
             </div>
           )}
 
-          {transactionType === "double-close" && showTransactionalLenders && (
+          {hasResultsAccess && transactionType === "double-close" && showTransactionalLenders && (
             <Card>
               <CardHeader>
                 <CardTitle>Transactional Funding Lenders</CardTitle>
@@ -616,7 +679,7 @@ export default function WholesaleCalculator() {
         </div>
       </div>
 
-      {transactionType === "double-close" && showTransactionalLenders && transactionalLenderResults.length > 0 && (
+      {hasResultsAccess && transactionType === "double-close" && showTransactionalLenders && transactionalLenderResults.length > 0 && (
         <div className="flex justify-center mt-6">
           <Button 
             variant="outline" 

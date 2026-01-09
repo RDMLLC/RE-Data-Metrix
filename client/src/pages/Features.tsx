@@ -250,8 +250,8 @@ export default function Features() {
                     </tr>
                     <tr className="bg-muted/30">
                       <td className="px-6 py-4 font-medium">Wholesale Calculator</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-6 py-4 text-center">2/month</td>
+                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 font-medium">Lender Search</td>
