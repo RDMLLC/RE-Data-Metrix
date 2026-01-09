@@ -220,3 +220,78 @@ export function estimateClosingCosts(
     transferTax: purchasePrice * (transferTaxRate / 100),
   };
 }
+
+/**
+ * Reverse calculation: Given a Buy Price, calculate the resulting Wholesale Fee
+ * For Assignment: Wholesale Fee = Buyer's Max Price - Rehab Budget - Buy Price
+ */
+export interface ReverseWholesaleInputs {
+  arv: number;
+  rehabBudget: number;
+  buyersMaxArvPercent: number;
+  buyPrice: number;
+}
+
+export interface ReverseWholesaleResult {
+  buyersMaxPrice: number;
+  calculatedWholesaleFee: number;
+  buyPrice: number;
+}
+
+export function calculateWholesaleFeeFromBuyPrice(inputs: ReverseWholesaleInputs): ReverseWholesaleResult {
+  const buyersMaxPrice = inputs.arv * (inputs.buyersMaxArvPercent / 100);
+  const calculatedWholesaleFee = buyersMaxPrice - inputs.rehabBudget - inputs.buyPrice;
+  
+  return {
+    buyersMaxPrice,
+    calculatedWholesaleFee: Math.max(0, calculatedWholesaleFee),
+    buyPrice: inputs.buyPrice,
+  };
+}
+
+/**
+ * Reverse calculation for Double Close: Given a Buy Price, calculate the resulting Wholesale Fee
+ * For Double Close: Wholesale Fee = Buyer's Max Price - Rehab Budget - Buy Price - Closing Costs
+ */
+export interface ReverseDoubleCloseResult extends ReverseWholesaleResult {
+  totalClosingCosts: number;
+  closingCostsBreakdown: DoubleCloseClosingCosts;
+}
+
+export function calculateDoubleCloseWholesaleFeeFromBuyPrice(
+  inputs: ReverseWholesaleInputs,
+  closingCosts: DoubleCloseClosingCosts
+): ReverseDoubleCloseResult {
+  const buyersMaxPrice = inputs.arv * (inputs.buyersMaxArvPercent / 100);
+  const totalClosingCosts = calculateTotalClosingCosts(closingCosts);
+  const calculatedWholesaleFee = buyersMaxPrice - inputs.rehabBudget - inputs.buyPrice - totalClosingCosts;
+  
+  return {
+    buyersMaxPrice,
+    calculatedWholesaleFee: Math.max(0, calculatedWholesaleFee),
+    buyPrice: inputs.buyPrice,
+    totalClosingCosts,
+    closingCostsBreakdown: closingCosts,
+  };
+}
+
+/**
+ * Compare two wholesale scenarios: Original (with entered wholesale fee) vs Adjusted (with custom buy price)
+ */
+export interface WholesaleComparison {
+  original: {
+    buyPrice: number;
+    wholesaleFee: number;
+    closingCosts?: number;
+  };
+  adjusted: {
+    buyPrice: number;
+    wholesaleFee: number;
+    closingCosts?: number;
+  };
+  delta: {
+    buyPriceDiff: number;
+    wholesaleFeeDiff: number;
+    closingCostsDiff?: number;
+  };
+}

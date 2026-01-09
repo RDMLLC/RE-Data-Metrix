@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil } from "lucide-react";
+import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,8 @@ import {
   calculateDoubleCloseMaxOffer,
   calculateTransactionalLenderResult,
   calculateDynamicClosingCosts,
+  calculateWholesaleFeeFromBuyPrice,
+  calculateDoubleCloseWholesaleFeeFromBuyPrice,
   REFERRAL_POINTS_PERCENT,
   type WholesaleInputs,
   type DoubleCloseClosingCosts,
@@ -327,6 +329,82 @@ export default function WholesaleCalculator() {
       )
     );
   }, [transactionalLendersData, doubleCloseResult.maxOfferPrice, wholesaleInputs.wholesaleFee]);
+
+  // Calculate profitability comparison when Buy Price is manually edited
+  const profitabilityComparison = useMemo(() => {
+    const currentBuyPrice = parseNumericInput(buyPrice);
+    const originalMaxOffer = transactionType === "assignment" 
+      ? assignmentResult.maxOfferPrice 
+      : doubleCloseResult.maxOfferPrice;
+    
+    // Only show comparison if user manually edited buy price and it differs from calculated max offer
+    const hasDifference = buyPriceManuallySet && Math.abs(currentBuyPrice - originalMaxOffer) > 0.01;
+    
+    if (!hasDifference) return null;
+    
+    // Calculate adjusted wholesale fee based on the user's buy price
+    const reverseInputs = {
+      arv: parseNumericInput(arv),
+      rehabBudget: parseNumericInput(rehabBudget),
+      buyersMaxArvPercent: parseNumericInput(buyersMaxArvPercent),
+      buyPrice: currentBuyPrice,
+    };
+    
+    let adjustedWholesaleFee: number;
+    let adjustedClosingCosts: number | undefined;
+    
+    if (transactionType === "assignment") {
+      const reverseResult = calculateWholesaleFeeFromBuyPrice(reverseInputs);
+      adjustedWholesaleFee = reverseResult.calculatedWholesaleFee;
+    } else {
+      // For double close, use the current closing costs state (which may be user-edited)
+      // Only recalculate dynamic portions (title insurance, transfer tax) based on new buy price
+      // if user hasn't manually edited closing costs
+      let adjustedCosts: DoubleCloseClosingCosts;
+      if (userEditedClosingCosts) {
+        // User has manually edited closing costs - use their values as-is
+        adjustedCosts = closingCosts;
+      } else {
+        // Recalculate closing costs based on the new buy price
+        adjustedCosts = calculateDynamicClosingCosts(currentBuyPrice, propertyState);
+      }
+      const reverseResult = calculateDoubleCloseWholesaleFeeFromBuyPrice(reverseInputs, adjustedCosts);
+      adjustedWholesaleFee = reverseResult.calculatedWholesaleFee;
+      adjustedClosingCosts = reverseResult.totalClosingCosts;
+    }
+    
+    const originalWholesaleFee = parseNumericInput(wholesaleFee);
+    const originalClosingCosts = transactionType === "double-close" ? doubleCloseResult.totalClosingCosts : undefined;
+    
+    return {
+      original: {
+        buyPrice: originalMaxOffer,
+        wholesaleFee: originalWholesaleFee,
+        closingCosts: originalClosingCosts,
+      },
+      adjusted: {
+        buyPrice: currentBuyPrice,
+        wholesaleFee: adjustedWholesaleFee,
+        closingCosts: adjustedClosingCosts,
+      },
+      delta: {
+        buyPriceDiff: currentBuyPrice - originalMaxOffer,
+        wholesaleFeeDiff: adjustedWholesaleFee - originalWholesaleFee,
+        closingCostsDiff: adjustedClosingCosts !== undefined && originalClosingCosts !== undefined 
+          ? adjustedClosingCosts - originalClosingCosts 
+          : undefined,
+      },
+    };
+  }, [buyPrice, buyPriceManuallySet, arv, rehabBudget, buyersMaxArvPercent, wholesaleFee, transactionType, assignmentResult, doubleCloseResult, propertyState, closingCosts, userEditedClosingCosts]);
+
+  // Reset buy price to calculated max offer
+  const handleResetBuyPrice = () => {
+    const maxOffer = transactionType === "assignment" 
+      ? assignmentResult.maxOfferPrice 
+      : doubleCloseResult.maxOfferPrice;
+    setBuyPrice(Math.round(maxOffer).toString());
+    setBuyPriceManuallySet(false);
+  };
 
   const updateClosingCost = (field: keyof DoubleCloseClosingCosts, value: string) => {
     setUserEditedClosingCosts(true);
@@ -746,6 +824,136 @@ export default function WholesaleCalculator() {
                       {formatCurrency(result.maxOfferPrice)}
                     </span>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {hasResultsAccess && profitabilityComparison && (
+            <Card className="border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Profitability Comparison
+                    </CardTitle>
+                    <CardDescription>
+                      See how your negotiated buy price affects your wholesale profit
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleResetBuyPrice}
+                    data-testid="button-reset-buy-price"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reset to Recommended
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3 p-4 rounded-lg bg-muted/50">
+                    <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      Original Plan
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Buy Price:</span>
+                        <span className="font-medium" data-testid="text-original-buy-price">
+                          {formatCurrency(profitabilityComparison.original.buyPrice)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Wholesale Fee:</span>
+                        <span className="font-semibold text-primary" data-testid="text-original-wholesale-fee">
+                          {formatCurrency(profitabilityComparison.original.wholesaleFee)}
+                        </span>
+                      </div>
+                      {profitabilityComparison.original.closingCosts !== undefined && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Closing Costs:</span>
+                          <span className="font-medium" data-testid="text-original-closing-costs">
+                            {formatCurrency(profitabilityComparison.original.closingCosts)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="text-sm font-medium text-primary uppercase tracking-wide">
+                      At Your Buy Price
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Buy Price:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium" data-testid="text-adjusted-buy-price">
+                            {formatCurrency(profitabilityComparison.adjusted.buyPrice)}
+                          </span>
+                          <span className={`text-xs flex items-center gap-0.5 ${profitabilityComparison.delta.buyPriceDiff < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {profitabilityComparison.delta.buyPriceDiff < 0 ? (
+                              <TrendingDown className="h-3 w-3" />
+                            ) : (
+                              <TrendingUp className="h-3 w-3" />
+                            )}
+                            {formatCurrency(Math.abs(profitabilityComparison.delta.buyPriceDiff))}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Wholesale Fee:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-primary text-lg" data-testid="text-adjusted-wholesale-fee">
+                            {formatCurrency(profitabilityComparison.adjusted.wholesaleFee)}
+                          </span>
+                          <span className={`text-xs flex items-center gap-0.5 font-semibold ${profitabilityComparison.delta.wholesaleFeeDiff > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {profitabilityComparison.delta.wholesaleFeeDiff > 0 ? (
+                              <TrendingUp className="h-3 w-3" />
+                            ) : (
+                              <TrendingDown className="h-3 w-3" />
+                            )}
+                            {formatCurrency(Math.abs(profitabilityComparison.delta.wholesaleFeeDiff))}
+                          </span>
+                        </div>
+                      </div>
+                      {profitabilityComparison.adjusted.closingCosts !== undefined && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Closing Costs:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium" data-testid="text-adjusted-closing-costs">
+                              {formatCurrency(profitabilityComparison.adjusted.closingCosts)}
+                            </span>
+                            {profitabilityComparison.delta.closingCostsDiff !== undefined && (
+                              <span className={`text-xs flex items-center gap-0.5 ${profitabilityComparison.delta.closingCostsDiff < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {profitabilityComparison.delta.closingCostsDiff < 0 ? (
+                                  <TrendingDown className="h-3 w-3" />
+                                ) : (
+                                  <TrendingUp className="h-3 w-3" />
+                                )}
+                                {formatCurrency(Math.abs(profitabilityComparison.delta.closingCostsDiff))}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 rounded-lg bg-muted/30 text-center">
+                  <span className="text-sm text-muted-foreground">
+                    {profitabilityComparison.delta.wholesaleFeeDiff > 0 ? (
+                      <>By negotiating a lower buy price, you'll earn <strong className="text-green-600">{formatCurrency(profitabilityComparison.delta.wholesaleFeeDiff)} more</strong> on this deal!</>
+                    ) : profitabilityComparison.delta.wholesaleFeeDiff < 0 ? (
+                      <>At this higher buy price, your profit decreases by <strong className="text-red-600">{formatCurrency(Math.abs(profitabilityComparison.delta.wholesaleFeeDiff))}</strong>.</>
+                    ) : (
+                      <>Your wholesale fee remains unchanged.</>
+                    )}
+                  </span>
                 </div>
               </CardContent>
             </Card>
