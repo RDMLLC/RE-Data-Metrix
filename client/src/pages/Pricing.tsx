@@ -280,23 +280,6 @@ export default function Pricing() {
             </Card>
           </div>
 
-          <div className="max-w-lg mx-auto mb-16">
-            <Card>
-              <CardHeader className="text-center pb-2">
-                <CardTitle className="text-lg text-primary">Have a Discount Code?</CardTitle>
-                <CardDescription>Apply it at checkout to save even more</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Link href={`/checkout?plan=${billingCycle}`}>
-                  <Button variant="outline" data-testid="button-apply-discount">
-                    Enter Code at Checkout
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-
           <div className="mb-16">
             <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8" data-testid="text-features-title">
               Feature Comparison
