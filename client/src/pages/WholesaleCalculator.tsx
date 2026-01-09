@@ -615,8 +615,7 @@ export default function WholesaleCalculator() {
               <CardHeader>
                 <CardTitle>Transactional Funding Lenders</CardTitle>
                 <CardDescription>
-                  Compare lenders who offer transactional funding for double close deals. 
-                  A {REFERRAL_POINTS_PERCENT} point referral fee is included in the displayed rates.
+                  Compare lenders who offer transactional funding for double close deals.
                 </CardDescription>
               </CardHeader>
               <CardContent>
