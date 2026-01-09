@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
 import { z } from "zod";
-import { propertyAPIService } from "./services/property-api.factory";
+import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { db } from "./db";
 import { eq, inArray, desc, and, sql, count, gt } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
@@ -5494,6 +5494,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // FALLBACK: If we still don't have tax data, fetch from RentCast using address
+      if (!propertyData.annualTax && propertyData.address && propertyData.city && propertyData.state && propertyData.zipCode) {
+        try {
+          console.log(`[Property Lookup] Tax data missing from HasData, fetching from RentCast...`);
+          const rentCastService = PropertyAPIFactory.getService("rentcast");
+          const rentCastData = await rentCastService.getPropertyByAddress(
+            propertyData.address,
+            propertyData.city,
+            propertyData.state,
+            propertyData.zipCode
+          );
+          
+          if (rentCastData?.annualTax) {
+            console.log(`[Property Lookup] Got tax data from RentCast: $${rentCastData.annualTax}`);
+            propertyData.annualTax = rentCastData.annualTax;
+          }
+          if (rentCastData?.taxAssessedValue && !propertyData.taxAssessedValue) {
+            console.log(`[Property Lookup] Got tax assessed value from RentCast: $${rentCastData.taxAssessedValue}`);
+            propertyData.taxAssessedValue = rentCastData.taxAssessedValue;
+          }
+        } catch (rentCastError) {
+          console.log("[Property Lookup] Could not fetch tax data from RentCast:", rentCastError);
+        }
+      }
+
       // Include remaining lookups info for free users
       const response: any = { ...propertyData };
       if (usageResult) {
