@@ -8,7 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle } from "lucide-react";
+import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
@@ -44,6 +54,7 @@ function parseNumericInput(value: string): number {
 
 interface TransactionalLender {
   id: string;
+  productId: string;
   companyName: string;
   flatFee: number;
   points: number;
@@ -74,6 +85,18 @@ export default function WholesaleCalculator() {
   const [userEditedClosingCosts, setUserEditedClosingCosts] = useState(false);
   
   const [showTransactionalLenders, setShowTransactionalLenders] = useState(false);
+  
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [contactMessage, setContactMessage] = useState("");
+  const [selectedLenderForContact, setSelectedLenderForContact] = useState<{
+    lenderId: string;
+    lenderName: string;
+    productId: string;
+    flatFee: number;
+    points: number;
+  } | null>(null);
+  
+  const { toast } = useToast();
 
   const { data: transactionalLendersData, isLoading: loadingLenders } = useQuery<TransactionalLender[]>({
     queryKey: ["/api/loan-products/transactional-funding"],
@@ -108,6 +131,74 @@ export default function WholesaleCalculator() {
       setShowQuotaModal(true);
     }
   });
+
+  // Contact lender mutation
+  const contactLenderMutation = useMutation({
+    mutationFn: async (data: {
+      lenderId: string;
+      loanProductId: string;
+      message: string;
+      dealDetails: {
+        propertyAddress?: string;
+        arv: number;
+        rehabBudget: number;
+        maxOfferPrice: number;
+        wholesaleFee: number;
+        transactionType: string;
+        flatFee: number;
+        points: number;
+      };
+    }) => {
+      const response = await apiRequest("POST", "/api/investor-inquiries", data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Inquiry Sent",
+        description: `Your inquiry has been sent to ${selectedLenderForContact?.lenderName}. They will contact you soon.`,
+      });
+      setContactDialogOpen(false);
+      setContactMessage("");
+      setSelectedLenderForContact(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send inquiry. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleContactLender = (lender: TransactionalLender) => {
+    setSelectedLenderForContact({
+      lenderId: lender.id,
+      lenderName: lender.companyName,
+      productId: lender.productId,
+      flatFee: lender.flatFee,
+      points: lender.points,
+    });
+    setContactDialogOpen(true);
+  };
+
+  const submitContactLender = () => {
+    if (!selectedLenderForContact || !result) return;
+
+    contactLenderMutation.mutate({
+      lenderId: selectedLenderForContact.lenderId,
+      loanProductId: selectedLenderForContact.productId,
+      message: contactMessage,
+      dealDetails: {
+        arv: parseNumericInput(arv),
+        rehabBudget: parseNumericInput(rehabBudget),
+        maxOfferPrice: result.maxOfferPrice,
+        wholesaleFee: parseNumericInput(wholesaleFee),
+        transactionType: transactionType,
+        flatFee: selectedLenderForContact.flatFee,
+        points: selectedLenderForContact.points,
+      },
+    });
+  };
 
   // Subscribers and non-authenticated users have immediate access to results
   // (non-authenticated see results to encourage signup)
@@ -670,6 +761,19 @@ export default function WholesaleCalculator() {
                                 />
                               </div>
                             )}
+                            
+                            {isAuthenticated && originalLender && (
+                              <div className="flex justify-center pt-4">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleContactLender(originalLender)}
+                                  data-testid={`button-contact-lender-${index}`}
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  Contact Lender
+                                </Button>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       );
@@ -700,6 +804,76 @@ export default function WholesaleCalculator() {
         onOpenChange={setShowQuotaModal}
         onGoBack={handleGoBackFromModal}
       />
+
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Contact {selectedLenderForContact?.lenderName}
+            </DialogTitle>
+            <DialogDescription>
+              Send an inquiry about transactional funding for your wholesale deal.
+              Your contact information and deal details will be included automatically.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="message">Message (Optional)</Label>
+              <Textarea
+                id="message"
+                placeholder="Include any questions or additional information for the lender..."
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
+                className="min-h-[100px]"
+                data-testid="textarea-contact-message"
+              />
+            </div>
+            
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <p className="font-medium mb-2">What will be shared:</p>
+              <ul className="text-muted-foreground space-y-1 text-xs">
+                <li>Your name, email, and phone number</li>
+                <li>Deal details (ARV, rehab budget, max offer)</li>
+                <li>Transaction type and wholesale fee</li>
+                <li>Selected lender product information</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setContactDialogOpen(false);
+                setContactMessage("");
+                setSelectedLenderForContact(null);
+              }}
+              data-testid="button-cancel-contact"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={submitContactLender}
+              disabled={contactLenderMutation.isPending}
+              data-testid="button-send-contact"
+            >
+              {contactLenderMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Inquiry
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

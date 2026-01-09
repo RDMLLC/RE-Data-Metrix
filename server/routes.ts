@@ -2357,6 +2357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const transactionalLenders = results.map(r => ({
         id: r.lenderId,
+        productId: r.productId,
         companyName: r.companyName,
         flatFee: parseFloat(r.flatFee || r.fees || '0'),
         points: parseFloat(r.points || '0'),
