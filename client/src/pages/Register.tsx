@@ -57,12 +57,26 @@ export default function Register() {
   const [compEmail, setCompEmail] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
-  // Check for comp code in URL params (hidden functionality for admin invite links)
+  // Validate returnTo to only allow safe relative paths (prevents open redirect)
+  const isValidReturnTo = (url: string | null): boolean => {
+    if (!url) return false;
+    // Must start with "/" and not contain protocol or double slashes
+    return url.startsWith("/") && !url.includes("//") && !url.includes(":");
+  };
+
+  // Check for comp code and returnTo in URL params
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+  
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const comp = params.get("comp");
+    const returnToParam = params.get("returnTo");
+    
     if (comp) {
       validateCompCode(comp.toUpperCase());
+    }
+    if (returnToParam && isValidReturnTo(returnToParam)) {
+      setReturnTo(returnToParam);
     }
   }, []);
 
@@ -116,24 +130,26 @@ export default function Register() {
       const requiresVerification = (result as any)?.requiresVerification;
       const isComped = (result as any)?.isComped;
       
+      const loginUrl = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login";
+      
       if (isComped && !requiresVerification) {
         toast({
           title: "Account Created!",
           description: "Your account is ready. Please log in to get started.",
         });
-        setLocation("/login");
+        setLocation(loginUrl);
       } else if (requiresVerification) {
         toast({
           title: "Check your email!",
           description: (result as any).message || "We've sent you a verification link. Please check your inbox.",
         });
-        setLocation("/login");
+        setLocation(loginUrl);
       } else {
         toast({
           title: "Welcome to RE Data Metrix!",
           description: "Your account has been created successfully. Please log in.",
         });
-        setLocation("/login");
+        setLocation(loginUrl);
       }
     } catch (error: any) {
       toast({

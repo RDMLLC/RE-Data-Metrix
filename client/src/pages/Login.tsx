@@ -45,17 +45,36 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isLenderLoading, setIsLenderLoading] = useState(false);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+
+  // Validate returnTo to only allow safe relative paths (prevents open redirect)
+  const isValidReturnTo = (url: string | null): boolean => {
+    if (!url) return false;
+    // Must start with "/" and not contain protocol or double slashes
+    return url.startsWith("/") && !url.includes("//") && !url.includes(":");
+  };
+
+  // Check for returnTo in URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returnToParam = params.get("returnTo");
+    if (returnToParam && isValidReturnTo(returnToParam)) {
+      setReturnTo(returnToParam);
+    }
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && isAuthenticated && currentUser) {
-      if (currentUser.role === 'admin' || currentUser.role === 'developer') {
+      if (returnTo) {
+        setLocation(returnTo);
+      } else if (currentUser.role === 'admin' || currentUser.role === 'developer') {
         setLocation("/admin");
       } else {
         setLocation("/portal/dashboard");
       }
     }
-  }, [isAuthenticated, authLoading, setLocation, currentUser]);
+  }, [isAuthenticated, authLoading, setLocation, currentUser, returnTo]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -82,8 +101,10 @@ export default function Login() {
         description: "You've successfully logged in.",
       });
       
-      // Redirect based on user role
-      if (user.role === 'admin' || user.role === 'developer') {
+      // Redirect to returnTo URL or based on user role
+      if (returnTo) {
+        setLocation(returnTo);
+      } else if (user.role === 'admin' || user.role === 'developer') {
         setLocation("/admin");
       } else {
         setLocation("/portal/dashboard");

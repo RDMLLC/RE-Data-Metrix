@@ -290,7 +290,13 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 <div className="flex flex-wrap gap-3 items-center">
                   <Button
                     type="button"
-                    onClick={() => setManualEntryPreference(true)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        setLocation("/register?returnTo=/deal-analysis");
+                      } else {
+                        setManualEntryPreference(true);
+                      }
+                    }}
                     data-testid="button-switch-manual-entry"
                   >
                     Try it for Free
