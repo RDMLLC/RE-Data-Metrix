@@ -123,9 +123,24 @@ export default function DealAnalysisWizard() {
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Reset to Step 1 when component mounts (new analysis session)
-  // This ensures users always start fresh when navigating to Deal Analysis
+  // Check for returnToStep URL parameter (used when returning from Wholesale Calculator)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returnToStep = params.get('returnToStep');
+    
+    if (returnToStep) {
+      const step = parseInt(returnToStep, 10);
+      if (step >= 1 && step <= 6) {
+        setCurrentStep(step);
+        setContextStep(step);
+        // Clean up URL parameter
+        window.history.replaceState({}, '', '/deal-analysis');
+        return;
+      }
+    }
+    
+    // Reset to Step 1 when component mounts (new analysis session)
+    // This ensures users always start fresh when navigating to Deal Analysis
     setCurrentStep(1);
     setContextStep(1);
   }, []);

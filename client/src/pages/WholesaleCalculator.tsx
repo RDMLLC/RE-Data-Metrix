@@ -223,7 +223,7 @@ export default function WholesaleCalculator() {
   };
 
   const handleGoBackFromModal = () => {
-    setLocation("/deal-analysis");
+    setLocation("/deal-analysis?returnToStep=3");
   };
 
   // Track if we've already initialized from wizard data
@@ -327,7 +327,8 @@ export default function WholesaleCalculator() {
       rehabBudget: parseNumericInput(rehabBudget) || wizardData.property?.rehabBudget,
       purchasePrice: parseNumericInput(purchasePrice) || wizardData.property?.purchasePrice,
     });
-    setLocation("/deal-analysis");
+    // Navigate back to Step 3 (Purchase & Renovation) where the user came from
+    setLocation("/deal-analysis?returnToStep=3");
   };
 
   const result = transactionType === "assignment" ? assignmentResult : doubleCloseResult;
