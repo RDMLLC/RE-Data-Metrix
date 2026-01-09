@@ -130,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/me"], null);
+      queryClient.setQueryData(["/api/lenders/me"], null);
       queryClient.clear();
     },
   });

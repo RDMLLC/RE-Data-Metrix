@@ -53,7 +53,7 @@ export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
-  const { lender, isAuthenticated: isLenderAuthenticated, isLoading: isLenderLoading, logout: lenderLogout } = useLenderAuth();
+  const { lender, isAuthenticated: isLenderAuthenticated, isLoading: isLenderLoading, isAdminPreview, logout: lenderLogout } = useLenderAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -342,7 +342,7 @@ export default function Navigation() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      onClick={handleLenderLogout}
+                      onClick={isAdminPreview ? handleLogout : handleLenderLogout}
                       className="cursor-pointer text-red-600 focus:text-red-600"
                       data-testid="menu-item-lender-logout"
                     >
@@ -543,7 +543,7 @@ export default function Navigation() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleLenderLogout}
+                    onClick={isAdminPreview ? handleLogout : handleLenderLogout}
                     className="cursor-pointer text-red-600 focus:text-red-600"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
