@@ -326,6 +326,7 @@ export default function WholesaleCalculator() {
                       onChange={(e) => setArv(e.target.value)}
                       className="pl-9"
                       placeholder="300,000"
+                      autoComplete="off"
                       data-testid="input-arv"
                     />
                   </div>
@@ -342,6 +343,7 @@ export default function WholesaleCalculator() {
                       onChange={(e) => setRehabBudget(e.target.value)}
                       className="pl-9"
                       placeholder="50,000"
+                      autoComplete="off"
                       data-testid="input-rehab"
                     />
                   </div>
@@ -358,6 +360,7 @@ export default function WholesaleCalculator() {
                       onChange={(e) => setBuyersMaxArvPercent(e.target.value)}
                       className="pl-9"
                       placeholder="75"
+                      autoComplete="off"
                       data-testid="input-buyers-max-percent"
                     />
                   </div>
@@ -374,6 +377,7 @@ export default function WholesaleCalculator() {
                       onChange={(e) => setWholesaleFee(e.target.value)}
                       className="pl-9"
                       placeholder="15,000"
+                      autoComplete="off"
                       data-testid="input-wholesale-fee"
                     />
                   </div>
