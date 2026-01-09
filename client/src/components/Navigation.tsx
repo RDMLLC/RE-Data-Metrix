@@ -138,7 +138,7 @@ export default function Navigation() {
               ))}
               
               {/* Login/User Avatar with Dropdown */}
-              {isLoading ? (
+              {isLoading || isLenderLoading ? (
                 <Button variant="ghost" className="text-foreground" disabled>
                   ...
                 </Button>
@@ -376,7 +376,7 @@ export default function Navigation() {
 
           <div className="flex items-center gap-2">
             {/* Show user avatar dropdown on mobile header when logged in */}
-            {!isLoading && isAuthenticated && user ? (
+            {isLoading || isLenderLoading ? null : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div 
@@ -582,7 +582,7 @@ export default function Navigation() {
             ))}
             
             {/* Login link in mobile menu (only when not authenticated) */}
-            {!isLoading && !isAuthenticated && !isLenderAuthenticated && (
+            {!isLoading && !isLenderLoading && !isAuthenticated && !isLenderAuthenticated && (
               <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant="ghost"

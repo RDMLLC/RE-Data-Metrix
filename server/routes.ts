@@ -253,6 +253,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ error: "Not authenticated" });
     }
     
+    const sessionUser = req.user as any;
+    if (sessionUser.userType === 'lender') {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
     const user = req.user as User;
     
     const [userProfile] = await db
