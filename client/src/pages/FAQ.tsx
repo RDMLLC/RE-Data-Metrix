@@ -64,7 +64,7 @@ const faqSections: FAQSection[] = [
       },
       {
         question: "What investment strategies does this support?",
-        answer: "Common strategies include buy-and-hold rentals, BRRRR deals, and fix-and-flip projects where loan structure and cash to close are critical."
+        answer: "Common strategies include buy-and-hold rentals, BRRRR deals, fix-and-flip projects, and wholesale pricing strategies. The platform helps with loan structure, cash to close calculations, DSCR analysis, and maximum offer pricing for wholesale deals."
       },
       {
         question: "Can I use this for multiple markets?",
@@ -81,8 +81,8 @@ const faqSections: FAQSection[] = [
         answer: "Our affordable pricing gives investors full access to our tools and partners for around $15 a month or $150 for an annual subscription. That's much lower than many of the tools available to investors."
       },
       {
-        question: "Do you offer a free trial?",
-        answer: "You can start the analysis of your deals to see how easy the process is, but to fully take advantage of the analysis, the lender network, the toolbox, etc., you will need either an annual or monthly subscription."
+        question: "Do you offer a free account?",
+        answer: "Yes! Free accounts include 2 automated property lookups per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited property lookups, PDF export, deal saving, deal sharing, and priority support."
       },
       {
         question: "Can I cancel my subscription?",

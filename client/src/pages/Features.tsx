@@ -270,10 +270,15 @@ export default function Features() {
                     </tr>
                     <tr className="bg-muted/30">
                       <td className="px-6 py-4 font-medium">Toolbox Resources</td>
-                      <td className="px-6 py-4 text-center">Basic</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Complete</td>
+                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr>
+                      <td className="px-6 py-4 font-medium">CSV Export</td>
+                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                    </tr>
+                    <tr className="bg-muted/30">
                       <td className="px-6 py-4 font-medium">Support</td>
                       <td className="px-6 py-4 text-center">Standard</td>
                       <td className="px-6 py-4 text-center text-success font-medium">Priority</td>

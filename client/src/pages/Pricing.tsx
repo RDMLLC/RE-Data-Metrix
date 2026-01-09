@@ -15,8 +15,8 @@ const featureComparison = [
   { feature: "Lender Search Tool", free: "Yes", paid: "Yes" },
   { feature: "Save Deals", free: "No", paid: "Unlimited" },
   { feature: "Save Lenders", free: "No", paid: "Unlimited" },
-  { feature: "Toolbox Resources", free: "Basic", paid: "Complete access" },
-  { feature: "Export Reports", free: "No", paid: "PDF & detailed reports" },
+  { feature: "Toolbox Resources", free: "Yes", paid: "Yes" },
+  { feature: "Export Reports", free: "CSV only", paid: "PDF & CSV reports" },
   { feature: "Email Support", free: "Standard", paid: "Priority" },
 ];
 
@@ -136,7 +136,11 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    Basic toolbox resources
+                    Full toolbox access
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    CSV export
                   </li>
                 </ul>
               </CardContent>
