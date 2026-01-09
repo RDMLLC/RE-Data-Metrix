@@ -465,8 +465,9 @@ export interface IStorage {
   deleteExpiredPropertyCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
-  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; periodEnd: Date } | null>;
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; periodEnd: Date } | null>;
   incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
+  incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
 }
 
@@ -2886,8 +2887,9 @@ export class DatabaseStorage implements IStorage {
 
   // User Usage Counters - for freemium property lookup limits
   private readonly FREE_LOOKUPS_PER_MONTH = 2;
+  private readonly FREE_WHOLESALE_CALCS_PER_MONTH = 2;
 
-  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; periodEnd: Date } | null> {
+  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; periodEnd: Date } | null> {
     const [counter] = await db.select()
       .from(userUsageCountersTable)
       .where(eq(userUsageCountersTable.userId, userId))
@@ -2904,6 +2906,8 @@ export class DatabaseStorage implements IStorage {
       return {
         propertyLookupCount: 0,
         remainingLookups: this.FREE_LOOKUPS_PER_MONTH,
+        wholesaleCalcCount: 0,
+        remainingWholesaleCalcs: this.FREE_WHOLESALE_CALCS_PER_MONTH,
         periodEnd: this.getNextMonthEnd()
       };
     }
@@ -2911,6 +2915,8 @@ export class DatabaseStorage implements IStorage {
     return {
       propertyLookupCount: counter.propertyLookupCount,
       remainingLookups: Math.max(0, this.FREE_LOOKUPS_PER_MONTH - counter.propertyLookupCount),
+      wholesaleCalcCount: counter.wholesaleCalcCount,
+      remainingWholesaleCalcs: Math.max(0, this.FREE_WHOLESALE_CALCS_PER_MONTH - counter.wholesaleCalcCount),
       periodEnd: counter.periodEnd
     };
   }
@@ -2992,6 +2998,82 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    // Try to get existing counter
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    // If no counter exists, create one
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 1,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      
+      return {
+        wholesaleCalcCount: 1,
+        remainingWholesaleCalcs: this.FREE_WHOLESALE_CALCS_PER_MONTH - 1,
+        canCalculate: true
+      };
+    }
+    
+    // If period expired, reset and increment
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 1,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        wholesaleCalcCount: 1,
+        remainingWholesaleCalcs: this.FREE_WHOLESALE_CALCS_PER_MONTH - 1,
+        canCalculate: true
+      };
+    }
+    
+    // Check if can calculate before incrementing
+    if (counter.wholesaleCalcCount >= this.FREE_WHOLESALE_CALCS_PER_MONTH) {
+      return {
+        wholesaleCalcCount: counter.wholesaleCalcCount,
+        remainingWholesaleCalcs: 0,
+        canCalculate: false
+      };
+    }
+    
+    // Increment the counter
+    const newCount = counter.wholesaleCalcCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        wholesaleCalcCount: newCount,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      wholesaleCalcCount: newCount,
+      remainingWholesaleCalcs: Math.max(0, this.FREE_WHOLESALE_CALCS_PER_MONTH - newCount),
+      canCalculate: true
+    };
+  }
+
   async resetUserUsageIfExpired(userId: string): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -3000,6 +3082,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(userUsageCountersTable)
       .set({
         propertyLookupCount: 0,
+        wholesaleCalcCount: 0,
         periodStart,
         periodEnd,
         updatedAt: now,

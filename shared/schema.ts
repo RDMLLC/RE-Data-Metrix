@@ -117,6 +117,7 @@ export const userUsageCounters = pgTable("user_usage_counters", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique().references(() => users.id),
   propertyLookupCount: integer("property_lookup_count").notNull().default(0),
+  wholesaleCalcCount: integer("wholesale_calc_count").notNull().default(0),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
   lastLookupAt: timestamp("last_lookup_at"),
