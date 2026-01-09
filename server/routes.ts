@@ -2389,7 +2389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           and(
             eq(loanProducts.loanType, 'transactional-funding'),
             eq(loanProducts.isActive, true),
-            eq(lenders.isActive, true)
+            eq(lenders.archived, false)
           )
         )
         .limit(2);
