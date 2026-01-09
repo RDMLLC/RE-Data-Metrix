@@ -1315,10 +1315,13 @@ export class DatabaseStorage implements IStorage {
       // If already registered, only allow password reset for registered lenders
       if (lender.inviteAccepted) {
         // This is a password reset for an already-registered lender
-        // Just update password, no token needed since they can login with temp password
+        // Update password AND referral info (admin may be updating referral terms)
         const result = await db.update(lendersTable)
           .set({
             password: hashedPassword,
+            companyName: companyName,
+            referralAmount: referralAmount.toString(),
+            referralType: referralType,
           })
           .where(eq(lendersTable.email, username))
           .returning();
