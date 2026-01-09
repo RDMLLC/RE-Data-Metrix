@@ -481,6 +481,8 @@ export default function Lenders() {
                           <SelectItem value="arm">5/1 ARM</SelectItem>
                           <SelectItem value="balloon">Balloon</SelectItem>
                           <SelectItem value="interest_only">Interest-Only</SelectItem>
+                          <SelectItem value="transactional">Transactional Funding</SelectItem>
+                          <SelectItem value="private-seller">Private/Seller Financing</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
