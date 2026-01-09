@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -500,6 +500,7 @@ export default function WholesaleCalculator() {
                 <div className="space-y-2">
                   <Label htmlFor="buyPrice" className="flex items-center gap-1">
                     Buy Price
+                    <span className="text-xs font-normal text-primary">(editable)</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="cursor-help">
@@ -523,11 +524,12 @@ export default function WholesaleCalculator() {
                         setBuyPrice(e.target.value);
                         setBuyPriceManuallySet(true);
                       }}
-                      className="pl-9"
-                      placeholder="Auto-calculated"
+                      className="pl-9 border-primary/50 focus:border-primary"
+                      placeholder="Enter your buy price"
                       autoComplete="off"
                       data-testid="input-buy-price"
                     />
+                    <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {buyPriceManuallySet ? "Manually entered" : "Auto-populated from Max Offer Price"}
