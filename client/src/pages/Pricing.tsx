@@ -322,13 +322,6 @@ export default function Pricing() {
                 </table>
               </div>
             </Card>
-            <p className="text-center text-sm text-muted-foreground mt-6">
-              Have a comp code?{" "}
-              <Link href="/register" className="text-primary hover:underline">
-                Register with your code
-              </Link>{" "}
-              for complimentary access.
-            </p>
           </div>
 
           <div className="mb-16">
