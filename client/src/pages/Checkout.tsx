@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, Ticket, ChevronDown, ChevronUp, FileText, CheckCircle } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -64,8 +64,8 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface OrderSummaryProps {
   showButton: boolean;
-  selectedPlan: "monthly" | "annual";
-  setSelectedPlan: (plan: "monthly" | "annual") => void;
+  selectedPlan: "free" | "monthly" | "annual";
+  setSelectedPlan: (plan: "free" | "monthly" | "annual") => void;
   appliedDiscount: { code: string; percentOff: number; amountOff: number } | null;
   setAppliedDiscount: (discount: { code: string; percentOff: number; amountOff: number } | null) => void;
   discountCode: string;
@@ -110,7 +110,7 @@ const OrderSummary = memo(function OrderSummary({
           <RadioGroup
             value={selectedPlan}
             onValueChange={(value) => {
-              setSelectedPlan(value as "monthly" | "annual");
+              setSelectedPlan(value as "free" | "monthly" | "annual");
               if (appliedDiscount) {
                 setAppliedDiscount(null);
                 setDiscountCode("");
@@ -119,6 +119,16 @@ const OrderSummary = memo(function OrderSummary({
             className="space-y-2"
             data-testid="radio-plan-selection"
           >
+            <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "free" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="free" id="plan-free" data-testid="radio-plan-free" />
+                <Label htmlFor="plan-free" className="cursor-pointer">
+                  <div className="font-medium">Free</div>
+                  <div className="text-sm text-muted-foreground">2 property lookups/month</div>
+                </Label>
+              </div>
+              <span className="font-semibold">$0</span>
+            </div>
             <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedPlan === "monthly" ? "border-accent bg-accent/5" : "border-border hover:border-muted-foreground/50"}`}>
               <div className="flex items-center space-x-3">
                 <RadioGroupItem value="monthly" id="plan-monthly" data-testid="radio-plan-monthly" />
@@ -147,88 +157,105 @@ const OrderSummary = memo(function OrderSummary({
           </RadioGroup>
         </div>
 
-        <Separator />
+        {selectedPlan !== "free" && (
+          <>
+            <Separator />
 
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Discount Code
-          </Label>
-          {appliedDiscount ? (
-            <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/30">
-              <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-success" />
-                <span className="font-medium text-success">{appliedDiscount.code}</span>
-                <span className="text-sm text-muted-foreground">
-                  ({appliedDiscount.percentOff ? `${appliedDiscount.percentOff}% off` : `$${appliedDiscount.amountOff} off`})
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Discount Code
+              </Label>
+              {appliedDiscount ? (
+                <div className="flex items-center justify-between p-3 bg-success/10 rounded-lg border border-success/30">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="font-medium text-success">{appliedDiscount.code}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({appliedDiscount.percentOff ? `${appliedDiscount.percentOff}% off` : `$${appliedDiscount.amountOff} off`})
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRemoveDiscount}
+                    className="text-muted-foreground hover:text-foreground"
+                    data-testid="button-remove-discount"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter code"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                    className="flex-1"
+                    data-testid="input-discount-code"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={onApplyDiscount}
+                    disabled={!discountCode.trim() || isValidatingDiscount}
+                    data-testid="button-apply-discount"
+                  >
+                    {isValidatingDiscount ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Apply"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">
+                  {selectedPlan === "monthly" ? "Monthly" : "Annual"} Membership
+                </span>
+                <span className={appliedDiscount ? "line-through text-muted-foreground" : "font-medium"}>
+                  ${basePrice.toFixed(2)}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemoveDiscount}
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="button-remove-discount"
-              >
-                Remove
-              </Button>
+              {appliedDiscount && (
+                <div className="flex justify-between items-center text-sm text-success">
+                  <span>Discount ({appliedDiscount.code})</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter code"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                className="flex-1"
-                data-testid="input-discount-code"
-              />
-              <Button
-                variant="outline"
-                onClick={onApplyDiscount}
-                disabled={!discountCode.trim() || isValidatingDiscount}
-                data-testid="button-apply-discount"
-              >
-                {isValidatingDiscount ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Apply"
-                )}
-              </Button>
+            
+            <Separator />
+            
+            <div className="flex justify-between items-center text-lg font-semibold">
+              <span>Total Today</span>
+              <span className="text-primary">${finalPrice.toFixed(2)}</span>
             </div>
-          )}
-        </div>
+            <p className="text-xs text-muted-foreground">
+              {selectedPlan === "monthly" 
+                ? `Billed $${finalPrice.toFixed(2)}/month. Cancel anytime.`
+                : `Billed $${finalPrice.toFixed(2)}/year. Cancel anytime.`
+              }
+            </p>
+          </>
+        )}
 
-        <Separator />
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">
-              {selectedPlan === "monthly" ? "Monthly" : "Annual"} Membership
-            </span>
-            <span className={appliedDiscount ? "line-through text-muted-foreground" : "font-medium"}>
-              ${basePrice.toFixed(2)}
-            </span>
-          </div>
-          {appliedDiscount && (
-            <div className="flex justify-between items-center text-sm text-success">
-              <span>Discount ({appliedDiscount.code})</span>
-              <span>-${discountAmount.toFixed(2)}</span>
+        {selectedPlan === "free" && (
+          <>
+            <Separator />
+            <div className="flex justify-between items-center text-lg font-semibold">
+              <span>Total Today</span>
+              <span className="text-success">$0.00</span>
             </div>
-          )}
-        </div>
-        
-        <Separator />
-        
-        <div className="flex justify-between items-center text-lg font-semibold">
-          <span>Total Today</span>
-          <span className="text-primary">${finalPrice.toFixed(2)}</span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {selectedPlan === "monthly" 
-            ? `Billed $${finalPrice.toFixed(2)}/month. Cancel anytime.`
-            : `Billed $${finalPrice.toFixed(2)}/year. Cancel anytime.`
-          }
-        </p>
+            <p className="text-xs text-muted-foreground">
+              Free account with 2 automated property lookups per month. Upgrade anytime.
+            </p>
+          </>
+        )}
 
         {showButton && (
           <>
@@ -290,16 +317,13 @@ export default function Checkout() {
   
   // Plan and discount state
   const urlParams = new URLSearchParams(searchString);
-  const initialPlan = urlParams.get("plan") === "monthly" ? "monthly" : "annual";
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">(initialPlan);
+  const urlPlan = urlParams.get("plan");
+  const initialPlan = urlPlan === "monthly" ? "monthly" : urlPlan === "free" ? "free" : "annual";
+  const [selectedPlan, setSelectedPlan] = useState<"free" | "monthly" | "annual">(initialPlan);
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number } | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   
-  // Comp code state
-  const [showCompCodeSection, setShowCompCodeSection] = useState(false);
-  const [compCodeInput, setCompCodeInput] = useState("");
-  const [isValidatingCompCode, setIsValidatingCompCode] = useState(false);
   
   // Terms modal state
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -373,32 +397,6 @@ export default function Checkout() {
   const removeDiscount = () => {
     setAppliedDiscount(null);
     setDiscountCode("");
-  };
-
-  const handleCompCodeValidation = async () => {
-    if (!compCodeInput.trim()) return;
-    setIsValidatingCompCode(true);
-    try {
-      const response = await fetch(`/api/comp-invites/validate/${compCodeInput.trim().toUpperCase()}`);
-      const data = await response.json();
-      if (data.valid) {
-        setLocation(`/register?comp=${compCodeInput.trim().toUpperCase()}`);
-      } else {
-        toast({
-          title: "Invalid Comp Code",
-          description: "This code is invalid or has expired. Please check and try again.",
-          variant: "destructive",
-        });
-      }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Unable to validate comp code. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsValidatingCompCode(false);
-    }
   };
 
   const [stripePrices, setStripePrices] = useState<{ monthly?: string; annual?: string }>({});
@@ -491,7 +489,45 @@ export default function Checkout() {
   const onRegisterSubmit = async (data: RegisterFormData) => {
     setIsRegistering(true);
     try {
-      // Get the price ID for the selected plan
+      // For free plan, just register the user without Stripe
+      if (selectedPlan === "free") {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            username: data.username,
+            email: data.email,
+            password: data.password,
+            fullName: data.fullName,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Registration failed");
+        }
+
+        // Check if email verification is required
+        if (result.requiresVerification) {
+          setJustRegistered(true);
+          toast({
+            title: "Account Created!",
+            description: "Please check your email to verify your account.",
+          });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          toast({
+            title: "Welcome to RE Data Metrix!",
+            description: "Your free account has been created successfully.",
+          });
+          setLocation("/portal/dashboard");
+        }
+        return;
+      }
+
+      // For paid plans, proceed with Stripe checkout
       const priceId = selectedPlan === "monthly" ? stripePrices.monthly : stripePrices.annual;
       if (!priceId) {
         toast({
@@ -801,6 +837,11 @@ export default function Checkout() {
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Creating Account...
                             </>
+                          ) : selectedPlan === "free" ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Create Free Account
+                            </>
                           ) : (
                             <>
                               <CreditCard className="h-4 w-4 mr-2" />
@@ -820,53 +861,6 @@ export default function Checkout() {
                   </Link>
                 </p>
 
-                {/* Comp Code Section */}
-                <div className="mt-6 border-t pt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowCompCodeSection(!showCompCodeSection)}
-                    className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    data-testid="button-toggle-comp-code"
-                  >
-                    <Ticket className="h-4 w-4" />
-                    Have a comp code instead?
-                    {showCompCodeSection ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </button>
-                  
-                  {showCompCodeSection && (
-                    <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
-                      <p className="text-xs text-muted-foreground">
-                        Enter your complimentary access code to register for free.
-                      </p>
-                      <div className="flex gap-2">
-                        <Input
-                          value={compCodeInput}
-                          onChange={(e) => setCompCodeInput(e.target.value.toUpperCase())}
-                          placeholder="Enter comp code"
-                          className="flex-1"
-                          data-testid="input-checkout-comp-code"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleCompCodeValidation}
-                          disabled={!compCodeInput.trim() || isValidatingCompCode}
-                          data-testid="button-validate-comp-code"
-                        >
-                          {isValidatingCompCode ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Apply"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
 
               {/* Order Summary */}
