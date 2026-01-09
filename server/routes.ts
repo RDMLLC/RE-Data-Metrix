@@ -5298,7 +5298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Property Lookup Route
   app.post("/api/property/lookup", async (req, res) => {
     try {
-      const { url } = req.body;
+      const { url, forceRefresh } = req.body;
       
       if (!url) {
         return res.status(400).json({ error: "Property URL is required" });
@@ -5310,7 +5310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const propertyData = await propertyAPIService.getPropertyByUrl(url);
+      const propertyData = await propertyAPIService.getPropertyByUrl(url, forceRefresh === true);
       
       if (!propertyData) {
         return res.status(404).json({ 

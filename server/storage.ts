@@ -40,6 +40,8 @@ import {
   type InsertIntegrationWebhook,
   type IntegrationSyncLog,
   type InsertIntegrationSyncLog,
+  type PropertyCache,
+  type InsertPropertyCache,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -63,7 +65,8 @@ import {
   integrationEventTriggers as integrationEventTriggersTable,
   integrationFieldMappings as integrationFieldMappingsTable,
   integrationWebhooks as integrationWebhooksTable,
-  integrationSyncLogs as integrationSyncLogsTable
+  integrationSyncLogs as integrationSyncLogsTable,
+  propertyCache as propertyCacheTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -453,6 +456,12 @@ export interface IStorage {
   updateDemoToken(id: string, data: Partial<InsertDemoToken>): Promise<DemoToken | undefined>;
   revokeDemoToken(id: string): Promise<DemoToken | undefined>;
   recordDemoTokenUsage(token: string): Promise<DemoToken | undefined>;
+  
+  // Property Cache
+  getPropertyCache(normalizedAddress: string, provider?: string): Promise<PropertyCache | undefined>;
+  setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache>;
+  incrementPropertyCacheHit(id: string): Promise<void>;
+  deleteExpiredPropertyCache(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -2815,6 +2824,58 @@ export class DatabaseStorage implements IStorage {
     return await query
       .orderBy(desc(integrationSyncLogsTable.createdAt))
       .limit(filters?.limit || 100);
+  }
+
+  // Property Cache Methods
+  async getPropertyCache(normalizedAddress: string, provider: string = 'hasdata'): Promise<PropertyCache | undefined> {
+    const now = new Date();
+    const [cached] = await db.select()
+      .from(propertyCacheTable)
+      .where(
+        and(
+          eq(propertyCacheTable.normalizedAddress, normalizedAddress),
+          eq(propertyCacheTable.provider, provider),
+          gt(propertyCacheTable.expiresAt, now)
+        )
+      )
+      .limit(1);
+    return cached;
+  }
+
+  async setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache> {
+    // Use upsert - update if exists, insert if not
+    const [result] = await db.insert(propertyCacheTable)
+      .values(data)
+      .onConflictDoUpdate({
+        target: propertyCacheTable.normalizedAddress,
+        set: {
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          postalCode: data.postalCode,
+          provider: data.provider,
+          payload: data.payload,
+          fetchedAt: new Date(),
+          expiresAt: data.expiresAt,
+          hitCount: 0,
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async incrementPropertyCacheHit(id: string): Promise<void> {
+    await db.update(propertyCacheTable)
+      .set({ hitCount: sqlCount`${propertyCacheTable.hitCount} + 1` })
+      .where(eq(propertyCacheTable.id, id));
+  }
+
+  async deleteExpiredPropertyCache(): Promise<number> {
+    const now = new Date();
+    const result = await db.delete(propertyCacheTable)
+      .where(sqlCount`${propertyCacheTable.expiresAt} < ${now}`)
+      .returning();
+    return result.length;
   }
 
 }

@@ -30,5 +30,5 @@ export interface IPropertyAPIService {
     zipCode: string
   ): Promise<PropertyData | null>;
   
-  getPropertyByUrl(url: string): Promise<PropertyData | null>;
+  getPropertyByUrl(url: string, forceRefresh?: boolean): Promise<PropertyData | null>;
 }

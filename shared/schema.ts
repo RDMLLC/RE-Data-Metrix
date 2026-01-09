@@ -863,3 +863,28 @@ export const insertIntegrationSyncLogSchema = createInsertSchema(integrationSync
 
 export type InsertIntegrationSyncLog = z.infer<typeof insertIntegrationSyncLogSchema>;
 export type IntegrationSyncLog = typeof integrationSyncLogs.$inferSelect;
+
+// Property Cache - caches Zillow/HasData API responses to reduce API calls
+export const propertyCache = pgTable("property_cache", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  normalizedAddress: text("normalized_address").notNull().unique(), // lowercase, trimmed address for matching
+  street: text("street"),
+  city: text("city"),
+  state: text("state"),
+  postalCode: text("postal_code"),
+  provider: text("provider").notNull().default('hasdata'), // 'hasdata', 'rentcast', etc.
+  payload: jsonb("payload").notNull(), // full API response data
+  fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(), // cache TTL
+  hitCount: integer("hit_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPropertyCacheSchema = createInsertSchema(propertyCache).omit({
+  id: true,
+  createdAt: true,
+  hitCount: true,
+});
+
+export type InsertPropertyCache = z.infer<typeof insertPropertyCacheSchema>;
+export type PropertyCache = typeof propertyCache.$inferSelect;

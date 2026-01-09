@@ -1,29 +1,42 @@
 import type { IPropertyAPIService } from "./property-api.interface";
 import { RentCastAPIService } from "./rentcast-api.service";
 import { HasDataAPIService } from "./hasdata-api.service";
+import { CachedPropertyAPIService } from "./property-cache.service";
 
 export class PropertyAPIFactory {
-  private static instance: IPropertyAPIService | null = null;
+  private static instances: Map<string, IPropertyAPIService> = new Map();
 
-  static getService(provider: string = "rentcast"): IPropertyAPIService {
-    if (!this.instance) {
-      switch (provider.toLowerCase()) {
+  static getService(provider: string = "hasdata"): IPropertyAPIService {
+    const key = provider.toLowerCase();
+    
+    if (!this.instances.has(key)) {
+      let baseService: IPropertyAPIService;
+      
+      switch (key) {
         case "rentcast":
-          this.instance = new RentCastAPIService();
+          baseService = new RentCastAPIService();
           break;
         case "hasdata":
-          this.instance = new HasDataAPIService();
+          baseService = new HasDataAPIService();
           break;
         default:
           throw new Error(`Unknown property API provider: ${provider}`);
       }
+      
+      // Wrap with caching layer
+      this.instances.set(key, new CachedPropertyAPIService(baseService, key));
     }
-    return this.instance;
+    return this.instances.get(key)!;
   }
 
-  static resetInstance(): void {
-    this.instance = null;
+  static resetInstance(provider?: string): void {
+    if (provider) {
+      this.instances.delete(provider.toLowerCase());
+    } else {
+      this.instances.clear();
+    }
   }
 }
 
-export const propertyAPIService = PropertyAPIFactory.getService();
+// Default to HasData for URL-based lookups (Zillow/Redfin URLs)
+export const propertyAPIService = PropertyAPIFactory.getService("hasdata");
