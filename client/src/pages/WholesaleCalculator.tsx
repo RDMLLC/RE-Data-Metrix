@@ -418,8 +418,8 @@ export default function WholesaleCalculator() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div>
+            <CardHeader className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+              <div className="space-y-1">
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
                   Deal Information
@@ -428,7 +428,7 @@ export default function WholesaleCalculator() {
                   Enter the property and deal details
                 </CardDescription>
               </div>
-              <div className="space-y-1 min-w-[200px]">
+              <div className="space-y-1 min-w-[220px]">
                 <Label htmlFor="buyPrice" className="flex items-center gap-1 text-sm">
                   Buy Price
                   <span className="text-xs font-normal text-primary">(editable)</span>
