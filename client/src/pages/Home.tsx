@@ -183,6 +183,10 @@ export default function Home() {
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
                 <span>Access to lender search tools</span>
               </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>Full Toolbox access</span>
+              </div>
             </div>
             <Button 
               size="lg" 

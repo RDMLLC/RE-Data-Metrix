@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
 
 // YouTube video for landing page
 const YOUTUBE_VIDEO_ID = "quO8Zn_IIAY";
@@ -63,9 +62,6 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="mt-16 text-center animate-bounce">
-          <ChevronDown className="h-8 w-8 text-accent mx-auto" />
-        </div>
       </div>
     </div>
   );
