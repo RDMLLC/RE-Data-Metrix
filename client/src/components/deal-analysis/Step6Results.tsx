@@ -952,21 +952,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
     // For authenticated free users (not paid subscribers), check PDF download limits
     if (isAuthenticated && !effectiveIsSubscriber) {
       try {
-        const response = await apiRequest('/api/user/pdf-download', {
-          method: 'POST',
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          if (data.code === 'PDF_DOWNLOAD_LIMIT_REACHED') {
-            setShowPdfQuotaModal(true);
-            return;
-          }
-          throw new Error(data.error || 'Failed to check PDF download limit');
+        await apiRequest('POST', '/api/user/pdf-download');
+      } catch (error: any) {
+        // Check if the error message contains the PDF limit reached code
+        const errorMessage = error?.message || '';
+        if (errorMessage.includes('PDF_DOWNLOAD_LIMIT_REACHED')) {
+          setShowPdfQuotaModal(true);
+          return;
         }
-      } catch (error) {
         console.error('PDF limit check error:', error);
-        // Continue with download on error - don't block the user
+        // Continue with download on other errors - don't block the user
       }
     }
     
