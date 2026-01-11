@@ -5014,7 +5014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           productName: product.productName,
           timeToClose: product.timeToClose,
           maxLoanArv,
-          referralLink: product.referralLink,
+          referralLink: product.referralLink || lender?.referralLink || null,
           interestRate,
           maxLtvBuy,
           maxLendRehab,
