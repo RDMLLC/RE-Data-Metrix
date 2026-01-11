@@ -66,7 +66,16 @@ interface TransactionalLender {
 export default function WholesaleCalculator() {
   const [, setLocation] = useLocation();
   const { wizardData, updatePropertyData } = useWizardData();
-  const { toPDF, targetRef } = usePDF({ filename: "wholesale-deal-analysis.pdf" });
+  const { toPDF, targetRef } = usePDF({ 
+    filename: "wholesale-deal-analysis.pdf",
+    page: {
+      format: "letter",
+      margin: 20,
+    },
+    canvas: {
+      qualityRatio: 1,
+    },
+  });
   const { isAuthenticated, isSubscriber } = useAuth();
   const queryClient = useQueryClient();
 
@@ -993,37 +1002,38 @@ export default function WholesaleCalculator() {
                     {transactionalLenderResults.map((lender, index) => {
                       const originalLender = transactionalLendersData?.[index];
                       return (
-                        <Card key={lender.lenderId} className="border-2">
+                        <Card key={lender.lenderId} className="border-2 min-w-0">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-lg">{lender.lenderName}</CardTitle>
+                            <CardTitle className="text-lg break-words">{lender.lenderName}</CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-3">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Flat Fee:</span>
-                              <span className="font-semibold">{formatCurrency(lender.flatFee)}</span>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground shrink-0">Flat Fee:</span>
+                              <span className="font-semibold text-right">{formatCurrency(lender.flatFee)}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Points:</span>
-                              <span className="font-semibold">{lender.totalPointsWithReferral.toFixed(2)}%</span>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground shrink-0">Points:</span>
+                              <span className="font-semibold text-right">{lender.totalPointsWithReferral.toFixed(2)}%</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Points Cost:</span>
-                              <span className="font-semibold">{formatCurrency(lender.pointsCost)}</span>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground shrink-0">Points Cost:</span>
+                              <span className="font-semibold text-right">{formatCurrency(lender.pointsCost)}</span>
                             </div>
                             <Separator />
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Total Lender Fees:</span>
-                              <span className="font-semibold text-red-600">{formatCurrency(lender.totalLenderFees)}</span>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground shrink-0">Total Lender Fees:</span>
+                              <span className="font-semibold text-red-600 text-right">{formatCurrency(lender.totalLenderFees)}</span>
                             </div>
-                            <div className="flex justify-between items-center pt-2 bg-primary/5 -mx-6 px-6 py-3">
-                              <span className="font-semibold">Adjusted Max Offer:</span>
-                              <span className="text-xl font-bold text-primary" data-testid={`text-adjusted-max-offer-${index}`}>
+                            <div className="flex justify-between items-center gap-2 pt-2 bg-primary/5 -mx-6 px-6 py-3">
+                              <span className="font-semibold shrink-0">Adjusted Max Offer:</span>
+                              <span className="text-xl font-bold text-primary text-right" data-testid={`text-adjusted-max-offer-${index}`}>
                                 {formatCurrency(lender.adjustedMaxOfferPrice)}
                               </span>
                             </div>
                             
                             {originalLender?.referralLink && (
-                              <div className="flex justify-center pt-4">
+                              <div className="flex flex-col items-center pt-4 gap-2">
+                                <span className="text-sm text-muted-foreground">Scan to contact lender:</span>
                                 <QRCodeSVG 
                                   value={originalLender.referralLink} 
                                   size={100}
@@ -1033,7 +1043,7 @@ export default function WholesaleCalculator() {
                             )}
                             
                             {isAuthenticated && originalLender && (
-                              <div className="flex justify-center pt-4">
+                              <div className="flex justify-center pt-4 print:hidden">
                                 <Button
                                   variant="outline"
                                   onClick={() => handleContactLender(originalLender)}
