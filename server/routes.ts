@@ -436,6 +436,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get wholesale fee preference from user profile
+  app.get("/api/profile/wholesale-fee", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = req.user as User;
+    
+    try {
+      const [profile] = await db
+        .select({
+          defaultWholesaleFee: userProfiles.defaultWholesaleFee,
+        })
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user.id))
+        .limit(1);
+      
+      res.json({
+        hasSavedFee: profile?.defaultWholesaleFee != null,
+        defaultWholesaleFee: profile?.defaultWholesaleFee ?? null,
+      });
+    } catch (error) {
+      console.error('Get wholesale fee error:', error);
+      res.status(500).json({ error: "Failed to get wholesale fee preference" });
+    }
+  });
+
+  // Save wholesale fee preference to user profile
+  app.put("/api/profile/wholesale-fee", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = req.user as User;
+    const { defaultWholesaleFee } = req.body;
+    
+    // Validate the wholesale fee is a positive number
+    if (defaultWholesaleFee !== null && (typeof defaultWholesaleFee !== 'number' || defaultWholesaleFee < 0)) {
+      return res.status(400).json({ error: "Invalid wholesale fee value" });
+    }
+    
+    try {
+      const [existingProfile] = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user.id))
+        .limit(1);
+      
+      if (existingProfile) {
+        await db
+          .update(userProfiles)
+          .set({ 
+            defaultWholesaleFee: defaultWholesaleFee,
+            updatedAt: new Date(),
+          })
+          .where(eq(userProfiles.userId, user.id));
+      } else {
+        await db.insert(userProfiles).values({
+          userId: user.id,
+          fullName: user.username || "",
+          defaultWholesaleFee: defaultWholesaleFee,
+        });
+      }
+      
+      res.json({ message: "Wholesale fee preference saved successfully" });
+    } catch (error) {
+      console.error('Save wholesale fee error:', error);
+      res.status(500).json({ error: "Failed to save wholesale fee preference" });
+    }
+  });
+
   app.post("/api/auth/logout", (req, res) => {
     req.logout((err) => {
       if (err) {

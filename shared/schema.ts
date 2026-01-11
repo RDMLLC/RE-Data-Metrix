@@ -101,6 +101,8 @@ export const userProfiles = pgTable("user_profiles", {
   projectsLast12Months: text("projects_last_12_months"),
   projectsLast36Months: text("projects_last_36_months"),
   investorCreditScore: text("investor_credit_score"),
+  // Wholesale calculator default values
+  defaultWholesaleFee: integer("default_wholesale_fee"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
