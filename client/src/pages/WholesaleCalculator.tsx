@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw } from "lucide-react";
+import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -120,6 +120,8 @@ export default function WholesaleCalculator() {
   const [propertyState, setPropertyState] = useState<string>("");
   const [buyersMaxArvPercent, setBuyersMaxArvPercent] = useState<string>("75");
   const [wholesaleFee, setWholesaleFee] = useState<string>("15000");
+  const [wholesaleFeeManuallyEdited, setWholesaleFeeManuallyEdited] = useState(false);
+  const [hasSavedWholesaleFee, setHasSavedWholesaleFee] = useState(false);
   
   // Buy Price field - auto-populated from Max Offer Price but editable
   const [buyPrice, setBuyPrice] = useState<string>("");
@@ -157,6 +159,47 @@ export default function WholesaleCalculator() {
   }>({
     queryKey: ["/api/user/usage"],
     enabled: isAuthenticated && !isSubscriber,
+  });
+
+  // Fetch saved wholesale fee preference
+  const { data: wholesaleFeeData } = useQuery<{
+    hasSavedFee: boolean;
+    defaultWholesaleFee: number | null;
+  }>({
+    queryKey: ["/api/profile/wholesale-fee"],
+    enabled: isAuthenticated,
+  });
+
+  // Auto-fill wholesale fee from saved profile data
+  useEffect(() => {
+    if (wholesaleFeeData?.hasSavedFee && wholesaleFeeData.defaultWholesaleFee != null && !wholesaleFeeManuallyEdited) {
+      setWholesaleFee(wholesaleFeeData.defaultWholesaleFee.toString());
+      setHasSavedWholesaleFee(true);
+    }
+  }, [wholesaleFeeData, wholesaleFeeManuallyEdited]);
+
+  // Save wholesale fee mutation
+  const saveWholesaleFeeMutation = useMutation({
+    mutationFn: async (fee: number) => {
+      const response = await apiRequest("PUT", "/api/profile/wholesale-fee", { defaultWholesaleFee: fee });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profile/wholesale-fee"] });
+      setHasSavedWholesaleFee(true);
+      setWholesaleFeeManuallyEdited(false);
+      toast({
+        title: "Saved to Profile",
+        description: "Your wholesale fee preference will auto-fill in future deals.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Save Failed",
+        description: "Could not save wholesale fee to your profile.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Quota consumption mutation for free users
@@ -678,7 +721,15 @@ export default function WholesaleCalculator() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="wholesaleFee">Your Wholesale Fee</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="wholesaleFee">Your Wholesale Fee</Label>
+                    {hasSavedWholesaleFee && !wholesaleFeeManuallyEdited && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Check className="h-3 w-3 text-green-600" />
+                        Saved
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     {isPdfMode ? (
                       <PrintableInput 
@@ -693,7 +744,10 @@ export default function WholesaleCalculator() {
                           id="wholesaleFee"
                           type="text"
                           value={wholesaleFee}
-                          onChange={(e) => setWholesaleFee(e.target.value)}
+                          onChange={(e) => {
+                            setWholesaleFee(e.target.value);
+                            setWholesaleFeeManuallyEdited(true);
+                          }}
                           className="pl-9"
                           placeholder="15,000"
                           autoComplete="off"
@@ -702,6 +756,32 @@ export default function WholesaleCalculator() {
                       </>
                     )}
                   </div>
+                  {/* Save to Profile option when value is manually edited */}
+                  {isAuthenticated && wholesaleFeeManuallyEdited && !isPdfMode && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary/80"
+                        onClick={() => {
+                          const feeValue = parseNumericInput(wholesaleFee);
+                          if (feeValue >= 0) {
+                            saveWholesaleFeeMutation.mutate(feeValue);
+                          }
+                        }}
+                        disabled={saveWholesaleFeeMutation.isPending}
+                        data-testid="button-save-wholesale-fee"
+                      >
+                        {saveWholesaleFeeMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Save className="h-3 w-3 mr-1" />
+                        )}
+                        Save to Profile
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
