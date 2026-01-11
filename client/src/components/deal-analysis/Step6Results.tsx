@@ -1443,9 +1443,6 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                               {lender.productName && (
                                 <span className="text-muted-foreground font-normal">{lender.productName}</span>
                               )}
-                              {lender.isPreferred && (
-                                <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-accent text-accent-foreground">Preferred</Badge>
-                              )}
                             </div>
                           </TableHead>
                         ))}
@@ -1808,9 +1805,6 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                           <p className="text-sm text-muted-foreground">{lender.productName}</p>
                         )}
                       </div>
-                      {lender.isPreferred && (
-                        <Badge variant="default" className="text-xs bg-accent text-accent-foreground">Preferred</Badge>
-                      )}
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
@@ -1977,9 +1971,6 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                         <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
                         {lender.productName && (
                           <span className="text-muted-foreground font-normal">{lender.productName}</span>
-                        )}
-                        {lender.isPreferred && (
-                          <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-accent text-accent-foreground">Preferred</Badge>
                         )}
                       </div>
                     </TableHead>
@@ -2798,9 +2789,6 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                                 <h3 className="text-xl font-semibold text-primary">{lender.lenderName}</h3>
                                 <p className="text-muted-foreground">{lender.productName}</p>
                               </div>
-                              {lender.isPreferred && (
-                                <Badge variant="default" className="bg-accent text-accent-foreground">Preferred</Badge>
-                              )}
                               <Badge variant="secondary">{getLoanTypeLabel(lender.loanType)}</Badge>
                             </div>
                             
