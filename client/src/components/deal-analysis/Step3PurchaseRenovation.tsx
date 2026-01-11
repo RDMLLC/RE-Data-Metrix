@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -219,30 +220,22 @@ export default function Step3PurchaseRenovation({
                   control={form.control}
                   name="isDoubleClose"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Is this a double close?</FormLabel>
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                       <FormControl>
-                        <RadioGroup
-                          onValueChange={(value) => {
-                            field.onChange(value === "yes");
-                            if (value === "no") {
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked === true);
+                            if (checked !== true) {
                               form.setValue("payingForBothSides", false);
                             }
                           }}
-                          value={field.value === true ? "yes" : field.value === false ? "no" : ""}
-                          className="flex gap-4"
-                          data-testid="radio-double-close"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="yes" id="double-close-yes" data-testid="radio-double-close-yes" />
-                            <Label htmlFor="double-close-yes">Yes</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="no" id="double-close-no" data-testid="radio-double-close-no" />
-                            <Label htmlFor="double-close-no">No</Label>
-                          </div>
-                        </RadioGroup>
+                          data-testid="checkbox-double-close"
+                        />
                       </FormControl>
+                      <FormLabel className="font-normal cursor-pointer">
+                        Click Here if Double Close
+                      </FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}

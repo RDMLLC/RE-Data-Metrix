@@ -6,6 +6,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, DollarSign, BookOpen, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 
@@ -199,28 +200,27 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                 control={form.control}
                 name="isDoubleClose"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Is this a double close?</FormLabel>
-                    <FormDescription className="text-xs">
-                      Are you purchasing the property during the same closing session as you are selling?
-                    </FormDescription>
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={(value) => field.onChange(value === "true")}
-                        value={field.value === undefined ? undefined : field.value.toString()}
-                        className="flex gap-4"
-                        data-testid="radio-double-close"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="true" id="double-yes" data-testid="radio-double-close-yes" />
-                          <label htmlFor="double-yes" className="cursor-pointer">Yes</label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="false" id="double-no" data-testid="radio-double-close-no" />
-                          <label htmlFor="double-no" className="cursor-pointer">No</label>
-                        </div>
-                      </RadioGroup>
+                      <Checkbox
+                        checked={field.value === true}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true);
+                          if (checked !== true) {
+                            form.setValue("payingForBothSides", false);
+                          }
+                        }}
+                        data-testid="checkbox-double-close"
+                      />
                     </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="font-normal cursor-pointer">
+                        Click Here if Double Close
+                      </FormLabel>
+                      <FormDescription className="text-xs">
+                        Are you purchasing the property during the same closing session as you are selling?
+                      </FormDescription>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
