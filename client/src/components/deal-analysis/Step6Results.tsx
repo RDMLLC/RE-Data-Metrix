@@ -30,7 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { usePDF } from "react-to-pdf";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import type { LoanCriteria } from "@shared/schema";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
@@ -2483,18 +2483,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                     <TableCell key={index} className="text-center">
                       <div className="flex flex-col items-center" data-testid={`qrcode-lender${index + 1}`}>
                         {lender.referralLink ? (
-                          <QRCodeSVG 
+                          <QRCodeCanvas 
                             value={lender.referralLink} 
                             size={64}
                             level="M"
                             bgColor="white"
                             fgColor="black"
-                            className="mx-auto"
+                            style={{ margin: '0 auto' }}
                           />
                         ) : (
-                          <div className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-muted-foreground/30 rounded bg-muted/20">
-                            <span className="text-xs text-muted-foreground text-center px-1">Visit Lenders Page</span>
-                          </div>
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </div>
                     </TableCell>
