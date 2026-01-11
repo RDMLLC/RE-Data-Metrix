@@ -1003,7 +1003,7 @@ export default function WholesaleCalculator() {
                               <span className="font-semibold">{formatCurrency(lender.flatFee)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Points (incl. {REFERRAL_POINTS_PERCENT}pt referral):</span>
+                              <span className="text-muted-foreground">Points:</span>
                               <span className="font-semibold">{lender.totalPointsWithReferral.toFixed(2)}%</span>
                             </div>
                             <div className="flex justify-between">
