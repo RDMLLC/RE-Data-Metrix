@@ -47,29 +47,30 @@ export interface SeedLoanProduct {
   lenderId: string;
   productName: string;
   loanType: string;
-  newInvestorOk: boolean;
+  newInvestorOk?: boolean;
   minCreditScore?: number;
   maxLtvBuy?: string;
   maxLendRehab?: string;
   interestRate?: string;
-  interestDeferred: boolean;
-  drawnFundsOnly: boolean;
+  interestDeferred?: boolean;
+  drawnFundsOnly?: boolean;
   points?: string;
-  pointsDeferred: boolean;
+  pointsDeferred?: boolean;
   maxLoanArv?: string;
-  appraisalRequired: boolean;
+  appraisalRequired?: boolean;
   estimatedAppraisalCost?: string;
   fees?: string;
   costPerDraw?: string;
   isActive: boolean;
   timeToClose?: number;
-  cashOutOk: boolean;
+  cashOutOk?: boolean;
   cashOutMaxLtv?: string;
   referralLink?: string;
   loanTermYears?: number;
   minDscrRequired?: string;
-  isLtcWeighted: boolean;
+  isLtcWeighted?: boolean;
   maxLtcPercent?: string;
+  transactionalFlatFee?: string;
 }
 
 export const seedAffiliateCategories: SeedAffiliateCategory[] = [
@@ -578,5 +579,15 @@ export const seedLoanProducts: SeedLoanProduct[] = [
     isActive: true,
     cashOutOk: false,
     isLtcWeighted: false
+  },
+  {
+    id: "e0cb015b-f68a-4821-881a-5b0f7081df4f",
+    lenderId: "fc534287-a125-43ee-88e4-f671000819c7",
+    productName: "Transactional Funding",
+    loanType: "transactional-funding",
+    points: "1.50",
+    transactionalFlatFee: "750.00",
+    isActive: true,
+    referralLink: "https://facolending.com/james-gallagher/"
   }
 ];
