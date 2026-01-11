@@ -5309,29 +5309,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as User;
       
-      // Subscribers and admins have unlimited lookups
-      const isSubscriber = user.role === 'admin' || 
+      // Paid subscribers and admins have unlimited access
+      const isPaidSubscriber = user.role === 'admin' || 
         ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
-      if (isSubscriber) {
+      if (isPaidSubscriber) {
         return res.json({
           isSubscriber: true,
+          isPaidSubscriber: true,
           propertyLookupCount: 0,
           remainingLookups: -1, // -1 means unlimited
           wholesaleCalcCount: 0,
           remainingWholesaleCalcs: -1, // -1 means unlimited
+          pdfDownloadCount: 0,
+          remainingPdfDownloads: -1, // -1 means unlimited
           periodEnd: null
         });
       }
       
       const usage = await storage.getUserUsageCounter(user.id);
+      const FREE_PDF_LIMIT = 2;
+      const pdfCount = usage?.pdfDownloadCount || 0;
       
       res.json({
         isSubscriber: false,
+        isPaidSubscriber: false,
         propertyLookupCount: usage?.propertyLookupCount || 0,
         remainingLookups: usage?.remainingLookups ?? 2,
         wholesaleCalcCount: usage?.wholesaleCalcCount || 0,
         remainingWholesaleCalcs: usage?.remainingWholesaleCalcs ?? 2,
+        pdfDownloadCount: pdfCount,
+        remainingPdfDownloads: Math.max(0, FREE_PDF_LIMIT - pdfCount),
         periodEnd: usage?.periodEnd || null
       });
     } catch (error) {
@@ -5375,6 +5383,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Wholesale calc usage error:", error);
+      res.status(500).json({ error: "Failed to track usage" });
+    }
+  });
+
+  // PDF Download Usage - check and increment counter for free users
+  app.post("/api/user/pdf-download", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      const FREE_PDF_LIMIT = 2;
+      
+      // Paid subscribers and admins have unlimited downloads
+      const isPaidSubscriber = user.role === 'admin' || 
+        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+      
+      if (isPaidSubscriber) {
+        return res.json({
+          canDownload: true,
+          pdfDownloadCount: 0,
+          remainingPdfDownloads: -1 // unlimited
+        });
+      }
+      
+      // Check and increment usage for free users
+      const usageResult = await storage.incrementUserPdfDownload(user.id);
+      
+      if (!usageResult.canDownload) {
+        return res.status(403).json({ 
+          error: "You've reached your free monthly limit of 2 PDF downloads. Upgrade to continue downloading PDFs.",
+          code: "PDF_DOWNLOAD_LIMIT_REACHED",
+          remainingPdfDownloads: 0
+        });
+      }
+      
+      res.json({
+        canDownload: true,
+        pdfDownloadCount: usageResult.pdfDownloadCount,
+        remainingPdfDownloads: usageResult.remainingPdfDownloads
+      });
+    } catch (error) {
+      console.error("PDF download usage error:", error);
       res.status(500).json({ error: "Failed to track usage" });
     }
   });

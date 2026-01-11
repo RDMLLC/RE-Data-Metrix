@@ -465,9 +465,10 @@ export interface IStorage {
   deleteExpiredPropertyCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
-  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; periodEnd: Date } | null>;
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; periodEnd: Date } | null>;
   incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
   incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
+  incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
 }
 
@@ -2891,8 +2892,9 @@ export class DatabaseStorage implements IStorage {
   // User Usage Counters - for freemium property lookup limits
   private readonly FREE_LOOKUPS_PER_MONTH = 2;
   private readonly FREE_WHOLESALE_CALCS_PER_MONTH = 2;
+  private readonly FREE_PDF_DOWNLOADS_PER_MONTH = 2;
 
-  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; periodEnd: Date } | null> {
+  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; periodEnd: Date } | null> {
     const [counter] = await db.select()
       .from(userUsageCountersTable)
       .where(eq(userUsageCountersTable.userId, userId))
@@ -2911,6 +2913,8 @@ export class DatabaseStorage implements IStorage {
         remainingLookups: this.FREE_LOOKUPS_PER_MONTH,
         wholesaleCalcCount: 0,
         remainingWholesaleCalcs: this.FREE_WHOLESALE_CALCS_PER_MONTH,
+        pdfDownloadCount: 0,
+        remainingPdfDownloads: this.FREE_PDF_DOWNLOADS_PER_MONTH,
         periodEnd: this.getNextMonthEnd()
       };
     }
@@ -2920,6 +2924,8 @@ export class DatabaseStorage implements IStorage {
       remainingLookups: Math.max(0, this.FREE_LOOKUPS_PER_MONTH - counter.propertyLookupCount),
       wholesaleCalcCount: counter.wholesaleCalcCount,
       remainingWholesaleCalcs: Math.max(0, this.FREE_WHOLESALE_CALCS_PER_MONTH - counter.wholesaleCalcCount),
+      pdfDownloadCount: counter.pdfDownloadCount,
+      remainingPdfDownloads: Math.max(0, this.FREE_PDF_DOWNLOADS_PER_MONTH - counter.pdfDownloadCount),
       periodEnd: counter.periodEnd
     };
   }
@@ -3077,6 +3083,84 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    // Try to get existing counter
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    // If no counter exists, create one
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          pdfDownloadCount: 1,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      
+      return {
+        pdfDownloadCount: 1,
+        remainingPdfDownloads: this.FREE_PDF_DOWNLOADS_PER_MONTH - 1,
+        canDownload: true
+      };
+    }
+    
+    // If period expired, reset and increment
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          pdfDownloadCount: 1,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        pdfDownloadCount: 1,
+        remainingPdfDownloads: this.FREE_PDF_DOWNLOADS_PER_MONTH - 1,
+        canDownload: true
+      };
+    }
+    
+    // Check if can download before incrementing
+    if (counter.pdfDownloadCount >= this.FREE_PDF_DOWNLOADS_PER_MONTH) {
+      return {
+        pdfDownloadCount: counter.pdfDownloadCount,
+        remainingPdfDownloads: 0,
+        canDownload: false
+      };
+    }
+    
+    // Increment the counter
+    const newCount = counter.pdfDownloadCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        pdfDownloadCount: newCount,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      pdfDownloadCount: newCount,
+      remainingPdfDownloads: Math.max(0, this.FREE_PDF_DOWNLOADS_PER_MONTH - newCount),
+      canDownload: true
+    };
+  }
+
   async resetUserUsageIfExpired(userId: string): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -3086,6 +3170,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         propertyLookupCount: 0,
         wholesaleCalcCount: 0,
+        pdfDownloadCount: 0,
         periodStart,
         periodEnd,
         updatedAt: now,
