@@ -48,6 +48,28 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+function PrintableInput({ 
+  value, 
+  isPdfMode, 
+  prefix,
+  className = ""
+}: { 
+  value: string; 
+  isPdfMode: boolean;
+  prefix?: React.ReactNode;
+  className?: string;
+}) {
+  if (isPdfMode) {
+    return (
+      <div className={`flex h-9 w-full items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm ${className}`}>
+        {prefix}
+        <span className="ml-1">{value || "-"}</span>
+      </div>
+    );
+  }
+  return null;
+}
+
 function parseNumericInput(value: string): number {
   const cleaned = value.replace(/[^0-9.-]/g, "");
   const num = parseFloat(cleaned);
@@ -66,6 +88,8 @@ interface TransactionalLender {
 export default function WholesaleCalculator() {
   const [, setLocation] = useLocation();
   const { wizardData, updatePropertyData } = useWizardData();
+  const [isPdfMode, setIsPdfMode] = useState(false);
+  
   const { toPDF, targetRef } = usePDF({ 
     filename: "wholesale-deal-analysis.pdf",
     page: {
@@ -76,6 +100,13 @@ export default function WholesaleCalculator() {
       qualityRatio: 1,
     },
   });
+
+  const handleDownloadPdf = async () => {
+    setIsPdfMode(true);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await toPDF();
+    setIsPdfMode(false);
+  };
   const { isAuthenticated, isSubscriber } = useAuth();
   const queryClient = useQueryClient();
 
@@ -535,21 +566,31 @@ export default function WholesaleCalculator() {
                   </Tooltip>
                 </Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="buyPrice"
-                    type="text"
-                    value={buyPrice}
-                    onChange={(e) => {
-                      setBuyPrice(e.target.value);
-                      setBuyPriceManuallySet(true);
-                    }}
-                    className="pl-9 pr-9 border-primary/50 focus:border-primary"
-                    placeholder="Enter buy price"
-                    autoComplete="off"
-                    data-testid="input-buy-price"
-                  />
-                  <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  {isPdfMode ? (
+                    <PrintableInput 
+                      value={buyPrice ? formatCurrency(parseNumericInput(buyPrice)) : "-"} 
+                      isPdfMode={isPdfMode}
+                      prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                    />
+                  ) : (
+                    <>
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="buyPrice"
+                        type="text"
+                        value={buyPrice}
+                        onChange={(e) => {
+                          setBuyPrice(e.target.value);
+                          setBuyPriceManuallySet(true);
+                        }}
+                        className="pl-9 pr-9 border-primary/50 focus:border-primary"
+                        placeholder="Enter buy price"
+                        autoComplete="off"
+                        data-testid="input-buy-price"
+                      />
+                      <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    </>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -558,68 +599,108 @@ export default function WholesaleCalculator() {
                 <div className="space-y-2">
                   <Label htmlFor="arv">After Repair Value (ARV)</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="arv"
-                      type="text"
-                      value={arv}
-                      onChange={(e) => setArv(e.target.value)}
-                      className="pl-9"
-                      placeholder="300,000"
-                      autoComplete="off"
-                      data-testid="input-arv"
-                    />
+                    {isPdfMode ? (
+                      <PrintableInput 
+                        value={arv ? formatCurrency(parseNumericInput(arv)) : "-"} 
+                        isPdfMode={isPdfMode}
+                        prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      />
+                    ) : (
+                      <>
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="arv"
+                          type="text"
+                          value={arv}
+                          onChange={(e) => setArv(e.target.value)}
+                          className="pl-9"
+                          placeholder="300,000"
+                          autoComplete="off"
+                          data-testid="input-arv"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="rehab">Estimated Rehab Budget</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="rehab"
-                      type="text"
-                      value={rehabBudget}
-                      onChange={(e) => setRehabBudget(e.target.value)}
-                      className="pl-9"
-                      placeholder="50,000"
-                      autoComplete="off"
-                      data-testid="input-rehab"
-                    />
+                    {isPdfMode ? (
+                      <PrintableInput 
+                        value={rehabBudget ? formatCurrency(parseNumericInput(rehabBudget)) : "-"} 
+                        isPdfMode={isPdfMode}
+                        prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      />
+                    ) : (
+                      <>
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="rehab"
+                          type="text"
+                          value={rehabBudget}
+                          onChange={(e) => setRehabBudget(e.target.value)}
+                          className="pl-9"
+                          placeholder="50,000"
+                          autoComplete="off"
+                          data-testid="input-rehab"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="buyersMaxPercent">Buyer's Max Buy Price % of ARV</Label>
                   <div className="relative">
-                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="buyersMaxPercent"
-                      type="text"
-                      value={buyersMaxArvPercent}
-                      onChange={(e) => setBuyersMaxArvPercent(e.target.value)}
-                      className="pl-9"
-                      placeholder="75"
-                      autoComplete="off"
-                      data-testid="input-buyers-max-percent"
-                    />
+                    {isPdfMode ? (
+                      <PrintableInput 
+                        value={buyersMaxArvPercent ? `${buyersMaxArvPercent}%` : "-"} 
+                        isPdfMode={isPdfMode}
+                        prefix={<Percent className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      />
+                    ) : (
+                      <>
+                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="buyersMaxPercent"
+                          type="text"
+                          value={buyersMaxArvPercent}
+                          onChange={(e) => setBuyersMaxArvPercent(e.target.value)}
+                          className="pl-9"
+                          placeholder="75"
+                          autoComplete="off"
+                          data-testid="input-buyers-max-percent"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="wholesaleFee">Your Wholesale Fee</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="wholesaleFee"
-                      type="text"
-                      value={wholesaleFee}
-                      onChange={(e) => setWholesaleFee(e.target.value)}
-                      className="pl-9"
-                      placeholder="15,000"
-                      autoComplete="off"
-                      data-testid="input-wholesale-fee"
-                    />
+                    {isPdfMode ? (
+                      <PrintableInput 
+                        value={wholesaleFee ? formatCurrency(parseNumericInput(wholesaleFee)) : "-"} 
+                        isPdfMode={isPdfMode}
+                        prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      />
+                    ) : (
+                      <>
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="wholesaleFee"
+                          type="text"
+                          value={wholesaleFee}
+                          onChange={(e) => setWholesaleFee(e.target.value)}
+                          className="pl-9"
+                          placeholder="15,000"
+                          autoComplete="off"
+                          data-testid="input-wholesale-fee"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -642,78 +723,120 @@ export default function WholesaleCalculator() {
                   <div className="space-y-2">
                     <Label htmlFor="titleSearch">Title Search</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="titleSearch"
-                        type="text"
-                        value={closingCosts.titleSearch.toString()}
-                        onChange={(e) => updateClosingCost("titleSearch", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-title-search"
-                      />
+                      {isPdfMode ? (
+                        <PrintableInput 
+                          value={formatCurrency(closingCosts.titleSearch)} 
+                          isPdfMode={isPdfMode}
+                          prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        />
+                      ) : (
+                        <>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="titleSearch"
+                            type="text"
+                            value={closingCosts.titleSearch.toString()}
+                            onChange={(e) => updateClosingCost("titleSearch", e.target.value)}
+                            className="pl-9"
+                            data-testid="input-title-search"
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="titleInsurance">Title Insurance</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="titleInsurance"
-                        type="text"
-                        value={closingCosts.titleInsurance.toString()}
-                        onChange={(e) => updateClosingCost("titleInsurance", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-title-insurance"
-                      />
+                      {isPdfMode ? (
+                        <PrintableInput 
+                          value={formatCurrency(closingCosts.titleInsurance)} 
+                          isPdfMode={isPdfMode}
+                          prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        />
+                      ) : (
+                        <>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="titleInsurance"
+                            type="text"
+                            value={closingCosts.titleInsurance.toString()}
+                            onChange={(e) => updateClosingCost("titleInsurance", e.target.value)}
+                            className="pl-9"
+                            data-testid="input-title-insurance"
+                          />
+                        </>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">Auto-calculated at 1.2% of purchase price</p>
+                    {!isPdfMode && <p className="text-xs text-muted-foreground">Auto-calculated at 1.2% of purchase price</p>}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="recordingFees">Recording Fees</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="recordingFees"
-                        type="text"
-                        value={closingCosts.recordingFees.toString()}
-                        onChange={(e) => updateClosingCost("recordingFees", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-recording-fees"
-                      />
+                      {isPdfMode ? (
+                        <PrintableInput 
+                          value={formatCurrency(closingCosts.recordingFees)} 
+                          isPdfMode={isPdfMode}
+                          prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        />
+                      ) : (
+                        <>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="recordingFees"
+                            type="text"
+                            value={closingCosts.recordingFees.toString()}
+                            onChange={(e) => updateClosingCost("recordingFees", e.target.value)}
+                            className="pl-9"
+                            data-testid="input-recording-fees"
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="transferTax" className="flex items-center gap-1">
                       Transfer Tax/Fee
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="cursor-help">
-                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-sm">
-                            Transfer taxes vary by state and may be paid by buyer, seller, or split. 
-                            This is auto-calculated based on state rates but can be edited.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
+                      {!isPdfMode && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">
+                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs text-sm">
+                              Transfer taxes vary by state and may be paid by buyer, seller, or split. 
+                              This is auto-calculated based on state rates but can be edited.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="transferTax"
-                        type="text"
-                        value={closingCosts.transferTax.toString()}
-                        onChange={(e) => updateClosingCost("transferTax", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-transfer-tax"
-                      />
+                      {isPdfMode ? (
+                        <PrintableInput 
+                          value={formatCurrency(closingCosts.transferTax)} 
+                          isPdfMode={isPdfMode}
+                          prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        />
+                      ) : (
+                        <>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="transferTax"
+                            type="text"
+                            value={closingCosts.transferTax.toString()}
+                            onChange={(e) => updateClosingCost("transferTax", e.target.value)}
+                            className="pl-9"
+                            data-testid="input-transfer-tax"
+                          />
+                        </>
+                      )}
                     </div>
-                    {transferTaxRateInfo && (
+                    {!isPdfMode && transferTaxRateInfo && (
                       <p className="text-xs text-muted-foreground">
                         Auto-calculated at {transferTaxRateInfo.ratePercent}% for {transferTaxRateInfo.stateName}
                       </p>
@@ -723,30 +846,50 @@ export default function WholesaleCalculator() {
                   <div className="space-y-2">
                     <Label htmlFor="attorneyFees">Attorney Fees</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="attorneyFees"
-                        type="text"
-                        value={closingCosts.attorneyFees.toString()}
-                        onChange={(e) => updateClosingCost("attorneyFees", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-attorney-fees"
-                      />
+                      {isPdfMode ? (
+                        <PrintableInput 
+                          value={formatCurrency(closingCosts.attorneyFees)} 
+                          isPdfMode={isPdfMode}
+                          prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        />
+                      ) : (
+                        <>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="attorneyFees"
+                            type="text"
+                            value={closingCosts.attorneyFees.toString()}
+                            onChange={(e) => updateClosingCost("attorneyFees", e.target.value)}
+                            className="pl-9"
+                            data-testid="input-attorney-fees"
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="otherFees">Other Fees</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="otherFees"
-                        type="text"
-                        value={closingCosts.otherFees.toString()}
-                        onChange={(e) => updateClosingCost("otherFees", e.target.value)}
-                        className="pl-9"
-                        data-testid="input-other-fees"
-                      />
+                      {isPdfMode ? (
+                        <PrintableInput 
+                          value={formatCurrency(closingCosts.otherFees)} 
+                          isPdfMode={isPdfMode}
+                          prefix={<DollarSign className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        />
+                      ) : (
+                        <>
+                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="otherFees"
+                            type="text"
+                            value={closingCosts.otherFees.toString()}
+                            onChange={(e) => updateClosingCost("otherFees", e.target.value)}
+                            className="pl-9"
+                            data-testid="input-other-fees"
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1070,11 +1213,12 @@ export default function WholesaleCalculator() {
         <div className="flex justify-center mt-6">
           <Button 
             variant="outline" 
-            onClick={() => toPDF()}
+            onClick={handleDownloadPdf}
+            disabled={isPdfMode}
             data-testid="button-download-pdf"
           >
             <Download className="mr-2 h-4 w-4" />
-            Download PDF with QR Codes
+            {isPdfMode ? "Generating PDF..." : "Download PDF with QR Codes"}
           </Button>
         </div>
       )}
