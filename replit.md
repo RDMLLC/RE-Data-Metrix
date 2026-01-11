@@ -130,20 +130,23 @@ Dedicated mobile pages provide touch-optimized experiences separate from respons
 
 ### Freemium Model
 The platform offers a free tier with limited features and paid subscriptions for full access:
-- **Database Table**: `user_usage_counters` tracks monthly property lookups per user
+- **Database Table**: `user_usage_counters` tracks monthly usage per user
 - **Usage Tracking**: 
   - `propertyLookupCount`: Number of automated property lookups used this period
+  - `pdfDownloadCount`: Number of PDF downloads used this period
   - `periodStart`/`periodEnd`: Current billing period (monthly reset)
 - **Free Tier Limits**:
   - 2 automated property lookups per month (Zillow/Redfin URL parsing)
+  - 2 PDF downloads per month
   - Unlimited manual deal analysis (manual data entry)
   - Lender products shown only for first 2 lookups
   - Access to lender search tool
   - No deal storage
   - Basic toolbox resources
-  - CSV export allowed, PDF export blocked
+  - CSV export allowed
 - **Paid Tier Features**:
   - Unlimited property lookups
+  - Unlimited PDF downloads
   - Full lender comparisons
   - Save unlimited deals
   - PDF and CSV export
@@ -151,13 +154,19 @@ The platform offers a free tier with limited features and paid subscriptions for
   - Full toolbox access
 - **Quota Exhaustion UX**:
   - When free user attempts lookup after exhausting quota, `QuotaExhaustedModal` appears
-  - Modal offers: "Upgrade Your Account" (links to /pricing) or "Continue with Manual Entry"
-  - Backend returns `code: "LOOKUP_LIMIT_REACHED"` on quota exhaustion
-- **PDF Restriction**: In Step6Results.tsx, PDF download buttons only shown for `effectiveIsSubscriber`; free users see "Upgrade for PDF" button
-- **API Endpoint**: `GET /api/user/usage` returns current usage and quota status
+  - When free user attempts PDF download after exhausting quota, `PdfQuotaExhaustedModal` appears
+  - Modals offer: "Upgrade Your Account" (links to /pricing) or continue with alternative
+  - Backend returns `code: "LOOKUP_LIMIT_REACHED"` or `code: "PDF_DOWNLOAD_LIMIT_REACHED"` on quota exhaustion
+- **PDF Access**: 
+  - Authenticated users see PDF download buttons; unauthenticated see "Upgrade for PDF" link
+  - Free users POST to `/api/user/pdf-download` before downloading (increments counter, enforces limit)
+  - Paid subscribers (`effectiveIsSubscriber` = true) bypass the limit check
+- **API Endpoints**: 
+  - `GET /api/user/usage` returns current usage and quota status
+  - `POST /api/user/pdf-download` increments PDF download count (returns 403 with code when limit reached)
 - **Pricing**: Free ($0), Monthly ($15), Annual ($150)
 
-**DO NOT BREAK**: Usage tracking must increment on successful property lookups and respect subscriber bypass. QuotaExhaustedModal must offer both upgrade and manual entry options.
+**DO NOT BREAK**: Usage tracking must increment on successful property lookups/PDF downloads and respect subscriber bypass. Quota modals must offer upgrade options.
 
 ### Features Marketing Page
 The /features page provides a comprehensive overview of platform capabilities:
