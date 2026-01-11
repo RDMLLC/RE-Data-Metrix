@@ -1254,7 +1254,8 @@ export default function WholesaleCalculator() {
                               </span>
                             </div>
                             
-                            {originalLender?.referralLink && (
+                            {/* QR codes only in PDF mode */}
+                            {isPdfMode && originalLender?.referralLink && (
                               <div className="flex flex-col items-center pt-4 gap-2">
                                 <span className="text-sm text-muted-foreground">Scan to contact lender:</span>
                                 <QRCodeSVG 
@@ -1265,8 +1266,9 @@ export default function WholesaleCalculator() {
                               </div>
                             )}
                             
-                            {isAuthenticated && originalLender && (
-                              <div className="flex justify-center pt-4 print:hidden">
+                            {/* Contact button only on website (not in PDF) */}
+                            {!isPdfMode && isAuthenticated && originalLender && (
+                              <div className="flex justify-center pt-4">
                                 <Button
                                   variant="outline"
                                   onClick={() => handleContactLender(originalLender)}
