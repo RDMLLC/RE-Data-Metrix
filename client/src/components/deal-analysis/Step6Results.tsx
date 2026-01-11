@@ -38,6 +38,7 @@ import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useDemoAccess } from "@/hooks/use-demo-access";
+import PdfQuotaExhaustedModal from "./PdfQuotaExhaustedModal";
 
 // Demo lender names for Demo Mode - used when shooting marketing content
 const DEMO_LENDER_NAMES = [
@@ -220,6 +221,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
 
   // PDF generation state - controls visibility of elements during PDF capture
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showPdfQuotaModal, setShowPdfQuotaModal] = useState(false);
 
   // Contact lender state
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -947,6 +949,27 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
 
   // PDF generation with detailed mode
   const handleDownloadPDF = async (detailed: boolean) => {
+    // For authenticated free users (not paid subscribers), check PDF download limits
+    if (isAuthenticated && !effectiveIsSubscriber) {
+      try {
+        const response = await apiRequest('/api/user/pdf-download', {
+          method: 'POST',
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          if (data.code === 'PDF_DOWNLOAD_LIMIT_REACHED') {
+            setShowPdfQuotaModal(true);
+            return;
+          }
+          throw new Error(data.error || 'Failed to check PDF download limit');
+        }
+      } catch (error) {
+        console.error('PDF limit check error:', error);
+        // Continue with download on error - don't block the user
+      }
+    }
+    
     if (detailed) {
       // Expand all sections for detailed PDF
       setShowProjectCosts(true);
@@ -1234,7 +1257,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
             Download CSV
           </Button>
           
-          {effectiveIsSubscriber ? (
+          {isAuthenticated || effectiveIsSubscriber ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -2948,6 +2971,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PdfQuotaExhaustedModal
+        open={showPdfQuotaModal}
+        onOpenChange={setShowPdfQuotaModal}
+      />
     </div>
   );
 }
