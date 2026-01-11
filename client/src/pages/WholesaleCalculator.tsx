@@ -1198,7 +1198,7 @@ export default function WholesaleCalculator() {
                 onClick={() => setShowTransactionalLenders(true)}
                 data-testid="button-find-transactional-lenders"
               >
-                Find Transactional Lenders
+                Calculate Lender Costs / Find Lenders
               </Button>
             </div>
           )}
