@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1703,6 +1703,32 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
                       )}
                     </TableBody>
                   </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Upgrade CTA for non-subscribers */}
+          {!effectiveIsSubscriber && !isGeneratingPdf && (
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+              <CardContent className="py-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                      <Sparkles className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Upgrade for Loan Referrals</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Compare multiple lender options and get connected with lenders who can fund your deals.
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/pricing">
+                    <Button data-testid="button-upgrade-loan-referrals">
+                      Upgrade Now
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
