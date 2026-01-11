@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -123,8 +123,17 @@ export default function DealAnalysisWizard() {
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
 
+  // Track if we've already handled the initial navigation
+  const hasHandledInitialNav = useRef(false);
+  
   // Check for returnToStep URL parameter (used when returning from Wholesale Calculator)
   useEffect(() => {
+    // Only handle navigation once to prevent React StrictMode double-run issues
+    if (hasHandledInitialNav.current) {
+      return;
+    }
+    hasHandledInitialNav.current = true;
+    
     const params = new URLSearchParams(window.location.search);
     const returnToStep = params.get('returnToStep');
     

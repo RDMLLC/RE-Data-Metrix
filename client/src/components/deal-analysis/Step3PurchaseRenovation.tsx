@@ -435,10 +435,31 @@ export default function Step3PurchaseRenovation({
                   variant="secondary"
                   onClick={() => {
                     const formData = form.getValues();
+                    // Save ALL form data to context before navigating
                     updatePropertyData({
+                      address: formData.address,
+                      city: formData.city,
+                      state: formData.state,
+                      zip: formData.zipCode,
+                      bedrooms: formData.bedrooms,
+                      bathrooms: formData.bathrooms,
+                      squareFootage: formData.sqft,
+                      purchasePrice: formData.purchasePrice,
                       arv: formData.arv,
                       rehabBudget: formData.rehabBudget,
-                      purchasePrice: formData.purchasePrice,
+                      taxAssessedValue: formData.taxAssessedValue,
+                      annualInsurance: formData.annualInsurance,
+                      monthlyUtilities: formData.monthlyUtilities,
+                      hoaFees: formData.hoaFees,
+                      hoaTransferFee: formData.hoaTransferFee,
+                      projectLength: formData.projectLength,
+                      sellPrice: formData.sellPrice,
+                      closingCostsSellPercent: formData.closingCostsSellPercent,
+                      realEstateCommissionPercent: formData.realEstateCommissionPercent,
+                      attorneyFees: formData.attorneyFees,
+                      docPrepFees: formData.docPrepFees,
+                      titleExam: formData.titleExam,
+                      titleInsurance: formData.titleInsurance,
                     });
                     setCurrentStep(3);
                     setLocation("/deal-analysis/wholesale-calculator");
