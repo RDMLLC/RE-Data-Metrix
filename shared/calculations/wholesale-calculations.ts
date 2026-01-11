@@ -157,15 +157,15 @@ export function calculateTransactionalLenderFees(
 } {
   const totalPointsWithReferral = lenderPointsPercent + REFERRAL_POINTS_PERCENT;
   
-  // Points are calculated on the loan amount (which equals the purchase price in transactional funding)
-  // We need to solve for the price where: price + (price * points%) + flatFee = baseMaxOfferPrice
-  // price * (1 + points%) = baseMaxOfferPrice - flatFee
-  // price = (baseMaxOfferPrice - flatFee) / (1 + points%)
-  const pointsMultiplier = 1 + (totalPointsWithReferral / 100);
-  const adjustedMaxOfferPrice = (baseMaxOfferPrice - lenderFlatFee) / pointsMultiplier;
+  // Points cost is calculated on the base max offer price (before any lender fees)
+  // This ensures lenders with the same points rate show the same points cost
+  const pointsCost = baseMaxOfferPrice * (totalPointsWithReferral / 100);
   
-  const pointsCost = adjustedMaxOfferPrice * (totalPointsWithReferral / 100);
+  // Total lender fees = flat fee + points cost
   const totalLenderFees = lenderFlatFee + pointsCost;
+  
+  // Adjusted max offer = base max offer - total lender fees
+  const adjustedMaxOfferPrice = baseMaxOfferPrice - totalLenderFees;
   
   return {
     totalPointsWithReferral,
