@@ -9,12 +9,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -24,7 +18,6 @@ import {
 import { 
   Wrench, 
   Video, 
-  Play, 
   ExternalLink,
   Filter,
   X,
@@ -35,20 +28,11 @@ import {
   DollarSign,
   Check
 } from "lucide-react";
-import type { TrainingVideo, Affiliate, AffiliateCategory } from "@shared/schema";
+import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
-function getYoutubeVideoId(url: string): string | null {
-  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/);
-  return match ? match[1] : null;
-}
-
-function getYoutubeThumbnail(url: string): string {
-  const videoId = getYoutubeVideoId(url);
-  if (videoId) {
-    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-  }
-  return "";
-}
+// Tool Finder Tutorial video - shown on toolbox landing page
+const TOOL_FINDER_VIDEO_ID = "5hfQdtC42fk";
+const TOOL_FINDER_VIDEO_TITLE = "Tool Finder Tutorial";
 
 const PLACEHOLDER_AFFILIATES: Affiliate[] = [
   {
@@ -105,7 +89,6 @@ export default function MobileToolbox() {
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
   
   const handleViewDesktop = () => {
     setDeviceMode("desktop");
@@ -114,10 +97,6 @@ export default function MobileToolbox() {
   const [showFilters, setShowFilters] = useState(false);
 
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
-
-  const { data: videos = [] } = useQuery<TrainingVideo[]>({
-    queryKey: ["/api/training-videos"],
-  });
 
   const { data: affiliates = [] } = useQuery<Affiliate[]>({
     queryKey: ["/api/affiliates"],
@@ -139,12 +118,6 @@ export default function MobileToolbox() {
     }
     return affiliates?.filter(a => a.categories && a.categories.length > 0) || [];
   }, [affiliates, isSystemDemoMode]);
-
-  const toolboxVideos = videos.filter(v => 
-    v.title.toLowerCase().includes("tool") || 
-    v.title.toLowerCase().includes("resource") ||
-    v.isFeatured
-  ).slice(0, 3);
 
   const categoryLabels: Record<string, string> = {};
   categories?.forEach(cat => {
@@ -222,62 +195,31 @@ export default function MobileToolbox() {
           </p>
         </div>
 
-        {toolboxVideos.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Video className="h-4 w-4 text-accent" />
-              <span className="text-xs font-medium text-muted-foreground">Training Videos</span>
-            </div>
-            {/* Full-width main video matching home page style */}
-            <div className="w-full">
-              <div 
-                className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border cursor-pointer"
-                onClick={() => toolboxVideos[0] && setSelectedVideo(toolboxVideos[0])}
-                data-testid="card-video-main"
-              >
-                {toolboxVideos[0] && (
-                  <>
-                    <img
-                      src={toolboxVideos[0].thumbnailUrl || getYoutubeThumbnail(toolboxVideos[0].youtubeUrl)}
-                      alt={toolboxVideos[0].title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <Play className="h-12 w-12 text-white" />
-                    </div>
-                  </>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-2">{toolboxVideos[0]?.title}</p>
-            </div>
-            {/* Additional videos in smaller row */}
-            {toolboxVideos.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {toolboxVideos.slice(1).map((video) => {
-                  const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
-                  return (
-                    <div
-                      key={video.id}
-                      className="flex-shrink-0 w-24 cursor-pointer"
-                      onClick={() => setSelectedVideo(video)}
-                      data-testid={`card-video-${video.id}`}
-                    >
-                      <div className="aspect-video bg-muted rounded-lg relative overflow-hidden">
-                        {thumbnail && (
-                          <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
-                        )}
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <Play className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{video.title}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        {/* Tool Finder Tutorial Video - always shown */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Video className="h-4 w-4 text-accent" />
+            <span className="text-xs font-medium text-muted-foreground">{TOOL_FINDER_VIDEO_TITLE}</span>
           </div>
-        )}
+          <div className="w-full">
+            <div 
+              className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border"
+              data-testid="video-tool-finder-tutorial"
+            >
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
+                title={TOOL_FINDER_VIDEO_TITLE}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Learn how to use the Tool Finder
+            </p>
+          </div>
+        </div>
 
         {/* Only show filter/categories for subscribers */}
         {effectiveIsSubscriber && (
@@ -433,25 +375,6 @@ export default function MobileToolbox() {
           </div>
         )}
       </main>
-
-      <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
-        <DialogContent className="max-w-[95vw] p-0 overflow-hidden">
-          <DialogHeader className="p-3 pb-0">
-            <DialogTitle className="text-sm">{selectedVideo?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video">
-            {selectedVideo && getYoutubeVideoId(selectedVideo.youtubeUrl) && (
-              <iframe
-                src={`https://www.youtube.com/embed/${getYoutubeVideoId(selectedVideo.youtubeUrl)}?autoplay=1`}
-                title={selectedVideo.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
