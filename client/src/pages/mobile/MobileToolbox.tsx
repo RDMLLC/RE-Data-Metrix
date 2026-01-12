@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDemoAccess } from "@/hooks/use-demo-access";
+import { useDeviceMode } from "@/contexts/DeviceModeContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,8 +102,15 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
 export default function MobileToolbox() {
   const { isSubscriber, isLoading: authLoading } = useAuth();
   const { isDemoMode, hasDemoToken } = useDemoAccess();
+  const { setDeviceMode } = useDeviceMode();
+  const [, setLocation] = useLocation();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
+  
+  const handleViewDesktop = () => {
+    setDeviceMode("desktop");
+    setLocation("/toolbox");
+  };
   const [showFilters, setShowFilters] = useState(false);
 
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
@@ -191,11 +199,15 @@ export default function MobileToolbox() {
             </Button>
           </Link>
           <h1 className="text-base font-semibold">Toolbox</h1>
-          <Link href="/toolbox">
-            <Button variant="ghost" size="icon" title="Desktop Version" data-testid="button-desktop-version">
-              <Monitor className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            title="Desktop Version" 
+            onClick={handleViewDesktop}
+            data-testid="button-desktop-version"
+          >
+            <Monitor className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 

@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDeviceMode } from "@/contexts/DeviceModeContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -90,12 +91,19 @@ const PLACEHOLDER_LENDERS: SearchResult[] = [
 export default function MobileLenders() {
   const { user, isSubscriber } = useAuth();
   const { toast } = useToast();
+  const { setDeviceMode } = useDeviceMode();
+  const [, setLocation] = useLocation();
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
   const [expandedLender, setExpandedLender] = useState<string | null>(null);
   const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
+  
+  const handleViewDesktop = () => {
+    setDeviceMode("desktop");
+    setLocation("/lenders");
+  };
 
   const [filters, setFilters] = useState({
     state: "any",
@@ -207,11 +215,15 @@ export default function MobileLenders() {
             </Button>
           </Link>
           <h1 className="text-base font-semibold">Lender Search</h1>
-          <Link href="/lenders">
-            <Button variant="ghost" size="icon" title="Desktop Version" data-testid="button-desktop-version">
-              <Monitor className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            title="Desktop Version" 
+            onClick={handleViewDesktop}
+            data-testid="button-desktop-version"
+          >
+            <Monitor className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 

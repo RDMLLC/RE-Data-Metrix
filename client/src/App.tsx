@@ -8,6 +8,7 @@ import { WizardDataProvider } from "@/contexts/WizardDataContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LenderAuthProvider } from "@/contexts/LenderAuthContext";
 import { DeviceModeProvider } from "@/contexts/DeviceModeContext";
+import { MobileRedirectHandler } from "@/components/MobileRedirectHandler";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import MobileDealAnalysis from "@/pages/mobile/MobileDealAnalysis";
@@ -191,6 +192,7 @@ function App() {
               <TooltipProvider>
                 <Toaster />
                 <CookieConsent />
+                <MobileRedirectHandler />
                 <Router />
               </TooltipProvider>
             </DeviceModeProvider>

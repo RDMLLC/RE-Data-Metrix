@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import { useDeviceMode } from "@/contexts/DeviceModeContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +43,14 @@ function getYoutubeThumbnail(url: string): string {
 export default function MobileDealAnalysis() {
   const { user, isSubscriber } = useAuth();
   const { wizardData } = useWizardData();
+  const { setDeviceMode } = useDeviceMode();
+  const [, setLocation] = useLocation();
   const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
+  
+  const handleViewDesktop = () => {
+    setDeviceMode("desktop");
+    setLocation("/deal-analysis");
+  };
 
   const { data: videos = [] } = useQuery<TrainingVideo[]>({
     queryKey: ["/api/training-videos"],
@@ -67,11 +75,15 @@ export default function MobileDealAnalysis() {
             </Button>
           </Link>
           <h1 className="text-base font-semibold">Deal Analysis</h1>
-          <Link href="/deal-analysis">
-            <Button variant="ghost" size="icon" title="Desktop Version" data-testid="button-desktop-version">
-              <Monitor className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            title="Desktop Version" 
+            onClick={handleViewDesktop}
+            data-testid="button-desktop-version"
+          >
+            <Monitor className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
