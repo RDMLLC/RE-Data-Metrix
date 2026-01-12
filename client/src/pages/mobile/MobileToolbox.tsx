@@ -216,91 +216,110 @@ export default function MobileToolbox() {
               <Video className="h-4 w-4 text-accent" />
               <span className="text-xs font-medium text-muted-foreground">Training Videos</span>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-              {toolboxVideos.map((video) => {
-                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
-                return (
-                  <Card
-                    key={video.id}
-                    className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover-elevate"
-                    onClick={() => setSelectedVideo(video)}
-                    data-testid={`card-video-${video.id}`}
-                  >
-                    <div className="aspect-video bg-muted relative">
-                      {thumbnail ? (
-                        <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <Play className="h-8 w-8 text-white" />
-                      </div>
-                      {video.isFeatured && (
-                        <Badge className="absolute top-1 left-1 text-[10px] px-1 py-0">Featured</Badge>
-                      )}
+            {/* Full-width main video matching home page style */}
+            <div className="w-full">
+              <div 
+                className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border cursor-pointer"
+                onClick={() => toolboxVideos[0] && setSelectedVideo(toolboxVideos[0])}
+                data-testid="card-video-main"
+              >
+                {toolboxVideos[0] && (
+                  <>
+                    <img
+                      src={toolboxVideos[0].thumbnailUrl || getYoutubeThumbnail(toolboxVideos[0].youtubeUrl)}
+                      alt={toolboxVideos[0].title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <Play className="h-12 w-12 text-white" />
                     </div>
-                    <div className="p-2">
-                      <p className="text-[11px] font-medium line-clamp-2">{video.title}</p>
-                    </div>
-                  </Card>
-                );
-              })}
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-2">{toolboxVideos[0]?.title}</p>
             </div>
+            {/* Additional videos in smaller row */}
+            {toolboxVideos.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {toolboxVideos.slice(1).map((video) => {
+                  const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+                  return (
+                    <div
+                      key={video.id}
+                      className="flex-shrink-0 w-24 cursor-pointer"
+                      onClick={() => setSelectedVideo(video)}
+                      data-testid={`card-video-${video.id}`}
+                    >
+                      <div className="aspect-video bg-muted rounded-lg relative overflow-hidden">
+                        {thumbnail && (
+                          <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                        )}
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <Play className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{video.title}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        <div className="flex gap-2">
-          <Sheet open={showFilters} onOpenChange={setShowFilters}>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="flex-1" data-testid="button-filter-tools">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-                {selectedCategories.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">{selectedCategories.length}</Badge>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[70vh]">
-              <SheetHeader>
-                <SheetTitle className="flex items-center justify-between">
-                  <span>Filter by Category</span>
+        {/* Only show filter/categories for subscribers */}
+        {effectiveIsSubscriber && (
+          <div className="flex gap-2">
+            <Sheet open={showFilters} onOpenChange={setShowFilters}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="flex-1" data-testid="button-filter-tools">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
                   {selectedCategories.length > 0 && (
-                    <Button variant="ghost" size="sm" onClick={resetFilters}>
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Reset
-                    </Button>
+                    <Badge variant="secondary" className="ml-2">{selectedCategories.length}</Badge>
                   )}
-                </SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
-                {sortedCategories.map((category) => (
-                  <div 
-                    key={category.id} 
-                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <Checkbox
-                      id={category.id}
-                      checked={selectedCategories.includes(category.id)}
-                      onCheckedChange={() => toggleCategory(category.id)}
-                      data-testid={`checkbox-category-${category.id}`}
-                    />
-                    <label htmlFor={category.id} className="text-sm flex-1 cursor-pointer">
-                      {category.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4">
-                <Button className="w-full" onClick={() => setShowFilters(false)} data-testid="button-apply-filters">
-                  Show {matchingTools.length} Tool{matchingTools.length !== 1 ? 's' : ''}
                 </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[70vh]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center justify-between">
+                    <span>Filter by Category</span>
+                    {selectedCategories.length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={resetFilters}>
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Reset
+                      </Button>
+                    )}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
+                  {sortedCategories.map((category) => (
+                    <div 
+                      key={category.id} 
+                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50"
+                      onClick={() => toggleCategory(category.id)}
+                    >
+                      <Checkbox
+                        id={category.id}
+                        checked={selectedCategories.includes(category.id)}
+                        onCheckedChange={() => toggleCategory(category.id)}
+                        data-testid={`checkbox-category-${category.id}`}
+                      />
+                      <label htmlFor={category.id} className="text-sm flex-1 cursor-pointer">
+                        {category.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <Button className="w-full" onClick={() => setShowFilters(false)} data-testid="button-apply-filters">
+                    Show {matchingTools.length} Tool{matchingTools.length !== 1 ? 's' : ''}
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
 
         {!effectiveIsSubscriber && (
           <Card className="p-3 bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">

@@ -92,55 +92,70 @@ export default function MobileDealAnalysis() {
               <Video className="h-4 w-4 text-accent" />
               <span className="text-xs font-medium text-muted-foreground">How It Works</span>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-              {dealAnalysisVideos.map((video) => {
-                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
-                return (
-                  <Card
-                    key={video.id}
-                    className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover-elevate"
-                    onClick={() => setSelectedVideo(video)}
-                    data-testid={`card-video-${video.id}`}
-                  >
-                    <div className="aspect-video bg-muted relative">
-                      {thumbnail ? (
-                        <img
-                          src={thumbnail}
-                          alt={video.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <Play className="h-8 w-8 text-white" />
-                      </div>
-                      {video.isFeatured && (
-                        <Badge className="absolute top-1 left-1 text-[10px] px-1 py-0">Featured</Badge>
-                      )}
+            {/* Full-width main video matching home page style */}
+            <div className="w-full">
+              <div 
+                className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border cursor-pointer"
+                onClick={() => dealAnalysisVideos[0] && setSelectedVideo(dealAnalysisVideos[0])}
+                data-testid="card-video-main"
+              >
+                {dealAnalysisVideos[0] && (
+                  <>
+                    <img
+                      src={dealAnalysisVideos[0].thumbnailUrl || getYoutubeThumbnail(dealAnalysisVideos[0].youtubeUrl)}
+                      alt={dealAnalysisVideos[0].title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <Play className="h-12 w-12 text-white" />
                     </div>
-                    <div className="p-2">
-                      <p className="text-[11px] font-medium line-clamp-2">{video.title}</p>
-                    </div>
-                  </Card>
-                );
-              })}
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-2">{dealAnalysisVideos[0]?.title}</p>
             </div>
+            {/* Additional videos in smaller row */}
+            {dealAnalysisVideos.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {dealAnalysisVideos.slice(1).map((video) => {
+                  const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+                  return (
+                    <div
+                      key={video.id}
+                      className="flex-shrink-0 w-24 cursor-pointer"
+                      onClick={() => setSelectedVideo(video)}
+                      data-testid={`card-video-${video.id}`}
+                    >
+                      <div className="aspect-video bg-muted rounded-lg relative overflow-hidden">
+                        {thumbnail && (
+                          <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                        )}
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <Play className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{video.title}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        <Link href="/deal-analysis">
-          <Button 
-            className="w-full" 
-            size="lg"
-            data-testid="button-start-analysis"
-          >
-            <Calculator className="h-5 w-5 mr-2" />
-            {hasInProgressDeal ? "Continue Analysis" : "Start New Analysis"}
-          </Button>
-        </Link>
+        {/* Only show Start/Continue Analysis for subscribers or users with in-progress deals */}
+        {(isSubscriber || hasInProgressDeal) && (
+          <Link href="/deal-analysis">
+            <Button 
+              className="w-full" 
+              size="lg"
+              data-testid="button-start-analysis"
+            >
+              <Calculator className="h-5 w-5 mr-2" />
+              {hasInProgressDeal ? "Continue Analysis" : "Start New Analysis"}
+            </Button>
+          </Link>
+        )}
 
         {hasInProgressDeal && (
           <Card className="p-3 border-accent/50 bg-accent/5" data-testid="card-in-progress-deal">
@@ -181,30 +196,33 @@ export default function MobileDealAnalysis() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold" id="quick-steps-heading">Quick Steps</h3>
-          <ul className="space-y-1.5" aria-labelledby="quick-steps-heading" role="list" data-testid="list-wizard-steps">
-            {[
-              { step: 1, title: "Enter Property Address", desc: "Auto-lookup or manual entry" },
-              { step: 2, title: "Property Details", desc: "Beds, baths, sqft" },
-              { step: 3, title: "Purchase & Renovation", desc: "Price, rehab budget, ARV" },
-              { step: 4, title: "Your Info", desc: "Experience & credit" },
-              { step: 5, title: "Holding Period", desc: "Timeline & exit strategy" },
-              { step: 6, title: "Results", desc: "Profit & lender comparison" },
-            ].map(({ step, title, desc }) => (
-              <li key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50" data-testid={`step-${step}`}>
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
-                  <span className="text-xs font-bold text-primary">{step}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium" data-testid={`text-step-${step}-title`}>{title}</p>
-                  <p className="text-[10px] text-muted-foreground">{desc}</p>
-                </div>
-                <CheckCircle className="h-4 w-4 text-muted-foreground/30" aria-hidden="true" />
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Only show Quick Steps for subscribers */}
+        {isSubscriber && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold" id="quick-steps-heading">Quick Steps</h3>
+            <ul className="space-y-1.5" aria-labelledby="quick-steps-heading" role="list" data-testid="list-wizard-steps">
+              {[
+                { step: 1, title: "Enter Property Address", desc: "Auto-lookup or manual entry" },
+                { step: 2, title: "Property Details", desc: "Beds, baths, sqft" },
+                { step: 3, title: "Purchase & Renovation", desc: "Price, rehab budget, ARV" },
+                { step: 4, title: "Your Info", desc: "Experience & credit" },
+                { step: 5, title: "Holding Period", desc: "Timeline & exit strategy" },
+                { step: 6, title: "Results", desc: "Profit & lender comparison" },
+              ].map(({ step, title, desc }) => (
+                <li key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50" data-testid={`step-${step}`}>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
+                    <span className="text-xs font-bold text-primary">{step}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium" data-testid={`text-step-${step}-title`}>{title}</p>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
+                  </div>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground/30" aria-hidden="true" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {!isSubscriber && (
           <Card className="p-3 bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
