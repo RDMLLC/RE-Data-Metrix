@@ -350,85 +350,88 @@ export default function MobileToolbox() {
           </Card>
         )}
 
-        <div className="space-y-3" data-testid="section-tools-list">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium" data-testid="text-tools-count">
-              {selectedCategories.length > 0 ? `${matchingTools.length} Matching Tools` : `${matchingTools.length} Tools`}
-            </p>
-            {selectedCategories.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={resetFilters} data-testid="button-clear-filters">
-                <X className="h-3 w-3 mr-1" />
-                Clear
-              </Button>
-            )}
-          </div>
-          
-          {matchingTools.map((tool) => {
-            const logoUrl = getLogoUrl(tool.referralLink);
-            const costDisplay = formatCostRange(tool.costFrom, tool.costTo);
-            const matchCount = selectedCategories.filter(c => tool.categories?.includes(c)).length;
+        {/* Only show tools list for subscribers */}
+        {effectiveIsSubscriber && (
+          <div className="space-y-3" data-testid="section-tools-list">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium" data-testid="text-tools-count">
+                {selectedCategories.length > 0 ? `${matchingTools.length} Matching Tools` : `${matchingTools.length} Tools`}
+              </p>
+              {selectedCategories.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={resetFilters} data-testid="button-clear-filters">
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
+            
+            {matchingTools.map((tool) => {
+              const logoUrl = getLogoUrl(tool.referralLink);
+              const costDisplay = formatCostRange(tool.costFrom, tool.costTo);
+              const matchCount = selectedCategories.filter(c => tool.categories?.includes(c)).length;
 
-            return (
-              <Card key={tool.id} className="p-3" data-testid={`card-tool-${tool.id}`}>
-                <div className="flex gap-3">
-                  {logoUrl && (
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border flex items-center justify-center overflow-hidden">
-                      <img 
-                        src={logoUrl} 
-                        alt={tool.name}
-                        className="w-8 h-8 object-contain"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold truncate" data-testid={`text-tool-name-${tool.id}`}>{tool.name}</p>
-                        <p className="text-[10px] text-muted-foreground" data-testid={`text-tool-categories-${tool.id}`}>
-                          {tool.categories?.length || 0} categories
-                          {selectedCategories.length > 0 && matchCount > 0 && (
-                            <span className="text-accent ml-1">({matchCount} matched)</span>
-                          )}
-                        </p>
+              return (
+                <Card key={tool.id} className="p-3" data-testid={`card-tool-${tool.id}`}>
+                  <div className="flex gap-3">
+                    {logoUrl && (
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={logoUrl} 
+                          alt={tool.name}
+                          className="w-8 h-8 object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
                       </div>
-                      {tool.hasFreeTrial && (
-                        <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" data-testid={`badge-free-trial-${tool.id}`}>
-                          Free Trial
-                        </Badge>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold truncate" data-testid={`text-tool-name-${tool.id}`}>{tool.name}</p>
+                          <p className="text-[10px] text-muted-foreground" data-testid={`text-tool-categories-${tool.id}`}>
+                            {tool.categories?.length || 0} categories
+                            {selectedCategories.length > 0 && matchCount > 0 && (
+                              <span className="text-accent ml-1">({matchCount} matched)</span>
+                            )}
+                          </p>
+                        </div>
+                        {tool.hasFreeTrial && (
+                          <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" data-testid={`badge-free-trial-${tool.id}`}>
+                            Free Trial
+                          </Badge>
+                        )}
+                      </div>
+                      {costDisplay && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <DollarSign className="h-3 w-3 text-accent" aria-hidden="true" />
+                          <span className="text-xs font-medium text-accent" data-testid={`text-tool-cost-${tool.id}`}>{costDisplay}</span>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2" data-testid={`text-tool-desc-${tool.id}`}>{tool.description}</p>
+                      {tool.benefits && tool.benefits.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {tool.benefits.slice(0, 3).map((benefit, i) => (
+                            <Badge key={i} variant="outline" className="text-[10px] py-0">
+                              <Check className="h-2 w-2 mr-0.5" />
+                              {benefit}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {tool.referralLink && tool.referralLink !== "#" && (
+                        <a href={tool.referralLink} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                          <Button variant="outline" size="sm" className="w-full" data-testid={`button-visit-${tool.id}`}>
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Visit Tool
+                          </Button>
+                        </a>
                       )}
                     </div>
-                    {costDisplay && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <DollarSign className="h-3 w-3 text-accent" aria-hidden="true" />
-                        <span className="text-xs font-medium text-accent" data-testid={`text-tool-cost-${tool.id}`}>{costDisplay}</span>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2" data-testid={`text-tool-desc-${tool.id}`}>{tool.description}</p>
-                    {tool.benefits && tool.benefits.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {tool.benefits.slice(0, 3).map((benefit, i) => (
-                          <Badge key={i} variant="outline" className="text-[10px] py-0">
-                            <Check className="h-2 w-2 mr-0.5" />
-                            {benefit}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {effectiveIsSubscriber && tool.referralLink && tool.referralLink !== "#" && (
-                      <a href={tool.referralLink} target="_blank" rel="noopener noreferrer" className="mt-2 block">
-                        <Button variant="outline" size="sm" className="w-full" data-testid={`button-visit-${tool.id}`}>
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Visit Tool
-                        </Button>
-                      </a>
-                    )}
                   </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
