@@ -258,7 +258,8 @@ export default function Resources() {
         </div>
 
         <Tabs defaultValue="about" className="space-y-6">
-          <TabsList className="flex flex-wrap h-auto gap-2 bg-muted/50 p-2" data-testid="tabs-toolbox">
+          {/* Hide category tabs on mobile for non-subscribers */}
+          <TabsList className={`flex flex-wrap h-auto gap-2 bg-muted/50 p-2 ${!effectiveIsSubscriber ? "hidden sm:flex" : ""}`} data-testid="tabs-toolbox">
             <TabsTrigger value="about" data-testid="tab-about">About</TabsTrigger>
             <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
             <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>

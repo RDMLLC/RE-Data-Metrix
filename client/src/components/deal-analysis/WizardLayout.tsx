@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, RotateCcw } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface WizardLayoutProps {
   currentStep: number;
@@ -19,6 +20,7 @@ export default function WizardLayout({
   canGoBack,
   children,
 }: WizardLayoutProps) {
+  const { isSubscriber } = useAuth();
   const stepTitles = [
     "Property Address",
     "Property Details",
@@ -54,19 +56,20 @@ export default function WizardLayout({
                   variant="outline"
                   size="sm"
                   onClick={onStartNew}
+                  className={!isSubscriber ? "hidden sm:inline-flex" : ""}
                   data-testid="button-start-new-analysis"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Start New Analysis
                 </Button>
               )}
-              <span className="text-sm text-muted-foreground">
+              <span className={`text-sm text-muted-foreground ${!isSubscriber ? "hidden sm:inline" : ""}`}>
                 Step {currentStep} of {totalSteps}
               </span>
             </div>
           </div>
           
-          <div className="flex gap-2 mb-6">
+          <div className={`flex gap-2 mb-6 ${!isSubscriber ? "hidden sm:flex" : ""}`}>
             {Array.from({ length: totalSteps }).map((_, index) => (
               <div
                 key={index}
