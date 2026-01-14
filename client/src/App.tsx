@@ -51,6 +51,7 @@ import AdminRequestPasswordReset from "@/pages/admin/RequestPasswordReset";
 import AdminResetPassword from "@/pages/admin/ResetPassword";
 import AdminIntegrations from "@/pages/admin/Integrations";
 import AdminAffiliates from "@/pages/admin/Affiliates";
+import AdminContractors from "@/pages/admin/Contractors";
 import AdminCalculationsReference from "@/pages/admin/CalculationsReference";
 import AdminTrainingVideos from "@/pages/admin/TrainingVideos";
 import AdminDemoLinks from "@/pages/admin/DemoLinks";
@@ -171,6 +172,7 @@ function Router() {
       <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route path="/admin/affiliates" component={AdminAffiliates} />
+      <Route path="/admin/contractors" component={AdminContractors} />
       <Route path="/admin/training-videos" component={AdminTrainingVideos} />
       <Route path="/admin/calculations" component={AdminCalculationsReference} />
       <Route path="/admin/demo-links" component={AdminDemoLinks} />

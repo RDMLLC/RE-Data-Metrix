@@ -21,7 +21,7 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
   const [selectedRegion, setSelectedRegion] = useState<string>("");
 
   const { data: regions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
-    queryKey: ["/api/service-regions", selectedState],
+    queryKey: ["/api/service-regions", { state: selectedState }],
     enabled: !!selectedState,
   });
 
