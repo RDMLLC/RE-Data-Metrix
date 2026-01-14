@@ -48,6 +48,10 @@ import {
   Globe,
   Loader2,
   Shield,
+  Send,
+  Copy,
+  CheckCircle,
+  Clock,
 } from "lucide-react";
 import type { Contractor, ServiceRegion } from "@shared/schema";
 
@@ -116,6 +120,9 @@ export default function Contractors() {
   const [regionToDelete, setRegionToDelete] = useState<ServiceRegion | null>(null);
   const [showContractorDialog, setShowContractorDialog] = useState(false);
   const [showRegionDialog, setShowRegionDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: '', companyName: '' });
+  const [inviteResult, setInviteResult] = useState<{ inviteUrl?: string; message?: string } | null>(null);
   const [editingContractor, setEditingContractor] = useState<ContractorWithRegions | null>(null);
   const [editingRegion, setEditingRegion] = useState<ServiceRegion | null>(null);
   const [contractorForm, setContractorForm] = useState<ContractorFormData>(emptyContractorForm);
@@ -208,6 +215,50 @@ export default function Contractors() {
       toast({ title: "Failed to delete service region", variant: "destructive" });
     },
   });
+
+  const inviteContractorMutation = useMutation({
+    mutationFn: async (data: { email: string; companyName: string }) => {
+      const response = await fetch("/api/contractors/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to send invitation");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/contractors"] });
+      setInviteResult({ inviteUrl: data.inviteUrl, message: data.message });
+      toast({ title: data.message || "Invitation sent successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: error.message || "Failed to send invitation", variant: "destructive" });
+    },
+  });
+
+  const handleSendInvite = () => {
+    if (!inviteForm.email || !inviteForm.companyName) {
+      toast({ title: "Email and company name are required", variant: "destructive" });
+      return;
+    }
+    inviteContractorMutation.mutate(inviteForm);
+  };
+
+  const openInviteDialog = () => {
+    setInviteForm({ email: '', companyName: '' });
+    setInviteResult(null);
+    setShowInviteDialog(true);
+  };
+
+  const copyInviteLink = () => {
+    if (inviteResult?.inviteUrl) {
+      navigator.clipboard.writeText(inviteResult.inviteUrl);
+      toast({ title: "Invite link copied to clipboard" });
+    }
+  };
 
   const openEditContractor = (contractor: ContractorWithRegions) => {
     setEditingContractor(contractor);
@@ -334,9 +385,9 @@ export default function Contractors() {
                     data-testid="input-search-contractors"
                   />
                 </div>
-                <Button onClick={openNewContractor} data-testid="button-add-contractor">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Contractor
+                <Button onClick={openInviteDialog} data-testid="button-invite-contractor">
+                  <Send className="h-4 w-4 mr-2" />
+                  Invite Contractor
                 </Button>
               </div>
             </CardHeader>
@@ -363,6 +414,18 @@ export default function Contractors() {
                             <Badge variant={contractor.isActive ? "default" : "secondary"}>
                               {contractor.isActive ? "Active" : "Inactive"}
                             </Badge>
+                            {contractor.inviteAccepted === false && (
+                              <Badge variant="outline" className="text-yellow-600 border-yellow-400">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Invite Pending
+                              </Badge>
+                            )}
+                            {contractor.inviteAccepted === true && (
+                              <Badge variant="outline" className="text-green-600 border-green-400">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Profile Complete
+                              </Badge>
+                            )}
                           </div>
                           {contractor.description && (
                             <p className="text-sm text-muted-foreground mb-2">{contractor.description}</p>
@@ -775,6 +838,108 @@ export default function Contractors() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              <div className="flex items-center gap-2">
+                <Send className="h-5 w-5 text-accent" />
+                Invite Contractor
+              </div>
+            </DialogTitle>
+            <DialogDescription>
+              Send an email invitation to a contractor. They'll receive a link to complete their profile and select their service regions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!inviteResult ? (
+            <>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">Email Address *</Label>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="contractor@example.com"
+                    data-testid="input-invite-email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-company">Company Name *</Label>
+                  <Input
+                    id="invite-company"
+                    value={inviteForm.companyName}
+                    onChange={(e) => setInviteForm(prev => ({ ...prev, companyName: e.target.value }))}
+                    placeholder="ABC Construction"
+                    data-testid="input-invite-company"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSendInvite} 
+                  disabled={!inviteForm.email || !inviteForm.companyName || inviteContractorMutation.isPending}
+                  data-testid="button-send-invite"
+                >
+                  {inviteContractorMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  Send Invitation
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">{inviteResult.message}</span>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Invite Link</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={inviteResult.inviteUrl} 
+                    readOnly 
+                    className="text-xs"
+                    data-testid="input-invite-url"
+                  />
+                  <Button variant="outline" size="icon" onClick={copyInviteLink} data-testid="button-copy-invite">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This link will expire in 7 days. The contractor will receive an email with this link.
+                </p>
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setInviteResult(null);
+                    setInviteForm({ email: '', companyName: '' });
+                  }}
+                  data-testid="button-invite-another"
+                >
+                  Invite Another
+                </Button>
+                <Button onClick={() => setShowInviteDialog(false)} data-testid="button-close-invite">
+                  Done
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

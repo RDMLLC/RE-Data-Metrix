@@ -218,6 +218,24 @@ export interface IStorage {
   getContractorServiceRegions(contractorId: string): Promise<ServiceRegion[]>;
   setContractorServiceRegions(contractorId: string, regionIds: string[]): Promise<void>;
   
+  // Contractor Invitation
+  createContractorInvite(email: string, companyName: string): Promise<{token: string, contractor: Contractor, isNewInvite: boolean}>;
+  validateContractorInvite(token: string): Promise<Contractor | undefined>;
+  completeContractorSignup(contractorId: string, data: {
+    password: string;
+    name: string;
+    companyName?: string;
+    phone?: string;
+    website?: string;
+    description?: string;
+    specialties?: string[];
+    licenseNumber?: string;
+    isInsured?: boolean;
+    isBonded?: boolean;
+    serviceRegionIds: string[];
+  }): Promise<Contractor>;
+  getContractorByEmail(email: string): Promise<Contractor | undefined>;
+  
   // Training Videos
   getAllTrainingVideos(): Promise<TrainingVideo[]>;
   getActiveTrainingVideos(): Promise<TrainingVideo[]>;
@@ -3284,7 +3302,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createContractor(data: InsertContractor): Promise<Contractor> {
-    const result = await db.insert(contractorsTable).values(data).returning();
+    const tempPassword = await hashPassword(randomBytes(16).toString('hex'));
+    const result = await db.insert(contractorsTable).values({
+      ...data,
+      password: tempPassword,
+    }).returning();
     return result[0];
   }
 
@@ -3330,6 +3352,115 @@ export class DatabaseStorage implements IStorage {
         }))
       );
     }
+  }
+
+  // Contractor Invitation Methods
+  async createContractorInvite(email: string, companyName: string): Promise<{token: string, contractor: Contractor, isNewInvite: boolean}> {
+    const token = randomBytes(32).toString('base64url');
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 7);
+    
+    const tempPassword = await hashPassword(randomBytes(16).toString('hex'));
+    
+    // Check if contractor already exists with this email
+    const existing = await db.select().from(contractorsTable).where(eq(contractorsTable.email, email)).limit(1);
+    
+    if (existing.length > 0) {
+      const contractor = existing[0];
+      if (contractor.inviteAccepted) {
+        // Already registered, return existing
+        return { token, contractor, isNewInvite: false };
+      } else {
+        // Not yet accepted, update invite token
+        const result = await db.update(contractorsTable)
+          .set({
+            companyName: companyName,
+            inviteToken: token,
+            inviteExpiry: expiry,
+            updatedAt: new Date()
+          })
+          .where(eq(contractorsTable.email, email))
+          .returning();
+        return { token, contractor: result[0], isNewInvite: false };
+      }
+    }
+    
+    // Create new contractor with pending invite
+    const result = await db.insert(contractorsTable).values({
+      name: companyName,
+      email,
+      password: tempPassword,
+      companyName: companyName,
+      inviteToken: token,
+      inviteExpiry: expiry,
+      inviteAccepted: false,
+      isActive: false,
+    }).returning();
+    
+    return { token, contractor: result[0], isNewInvite: true };
+  }
+
+  async validateContractorInvite(token: string): Promise<Contractor | undefined> {
+    const result = await db.select().from(contractorsTable)
+      .where(and(
+        eq(contractorsTable.inviteToken, token),
+        gt(contractorsTable.inviteExpiry, new Date()),
+        eq(contractorsTable.inviteAccepted, false)
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async completeContractorSignup(contractorId: string, data: {
+    password: string;
+    name: string;
+    companyName?: string;
+    phone?: string;
+    website?: string;
+    description?: string;
+    specialties?: string[];
+    licenseNumber?: string;
+    isInsured?: boolean;
+    isBonded?: boolean;
+    serviceRegionIds: string[];
+  }): Promise<Contractor> {
+    const hashedPassword = await hashPassword(data.password);
+    
+    const updateData: any = {
+      password: hashedPassword,
+      name: data.name,
+      inviteAccepted: true,
+      inviteToken: null,
+      inviteExpiry: null,
+      isActive: true,
+      updatedAt: new Date()
+    };
+    
+    if (data.companyName) updateData.companyName = data.companyName;
+    if (data.phone) updateData.phone = data.phone;
+    if (data.website) updateData.website = data.website;
+    if (data.description) updateData.description = data.description;
+    if (data.specialties) updateData.specialties = data.specialties;
+    if (data.licenseNumber) updateData.licenseNumber = data.licenseNumber;
+    if (data.isInsured !== undefined) updateData.isInsured = data.isInsured;
+    if (data.isBonded !== undefined) updateData.isBonded = data.isBonded;
+    
+    const result = await db.update(contractorsTable)
+      .set(updateData)
+      .where(eq(contractorsTable.id, contractorId))
+      .returning();
+    
+    // Set service regions
+    await this.setContractorServiceRegions(contractorId, data.serviceRegionIds);
+    
+    return result[0];
+  }
+
+  async getContractorByEmail(email: string): Promise<Contractor | undefined> {
+    const result = await db.select().from(contractorsTable)
+      .where(eq(contractorsTable.email, email))
+      .limit(1);
+    return result[0];
   }
 
 }

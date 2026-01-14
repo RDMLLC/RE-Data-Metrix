@@ -939,7 +939,8 @@ export const contractors = pgTable("contractors", {
   name: text("name").notNull(),
   companyName: text("company_name"),
   phone: text("phone"),
-  email: text("email"),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
   website: text("website"),
   description: text("description"),
   specialties: text("specialties").array().default([]), // e.g., ["Rehabs", "New Construction", "Renovations"]
@@ -950,6 +951,11 @@ export const contractors = pgTable("contractors", {
   notes: text("notes"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").default(0),
+  inviteToken: varchar("invite_token").unique(),
+  inviteExpiry: timestamp("invite_expiry"),
+  inviteAccepted: boolean("invite_accepted").default(false),
+  passwordResetToken: varchar("password_reset_token").unique(),
+  passwordResetExpiry: timestamp("password_reset_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -958,6 +964,12 @@ export const insertContractorSchema = createInsertSchema(contractors).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  password: true,
+  inviteToken: true,
+  inviteExpiry: true,
+  inviteAccepted: true,
+  passwordResetToken: true,
+  passwordResetExpiry: true,
 });
 
 export type InsertContractor = z.infer<typeof insertContractorSchema>;

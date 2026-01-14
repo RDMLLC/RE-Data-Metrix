@@ -4185,6 +4185,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================
+  // Contractor Invitation Routes
+  // =====================================
+
+  // Admin: Send contractor invitation
+  app.post("/api/contractors/invite", ensureAdmin, async (req, res) => {
+    try {
+      const { email, companyName } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      if (!companyName) {
+        return res.status(400).json({ error: "Company name is required" });
+      }
+
+      const result = await storage.createContractorInvite(email, companyName);
+      
+      // Send email with invitation link
+      const protocol = req.protocol || "https";
+      const host = req.get("host") || "localhost:5000";
+      const inviteUrl = `${protocol}://${host}/contractor-signup/${result.token}`;
+      
+      const emailSent = await emailService.sendContractorInvitation(email, companyName, inviteUrl);
+      
+      res.json({
+        message: result.isNewInvite ? "Invitation sent successfully" : "Invitation resent successfully",
+        token: result.token,
+        inviteUrl: inviteUrl,
+        isNewInvite: result.isNewInvite,
+        emailSent
+      });
+    } catch (error) {
+      console.error('Contractor invite error:', error);
+      res.status(500).json({ error: "Failed to send contractor invitation" });
+    }
+  });
+
+  // Public: Validate contractor invite token
+  app.get("/api/contractors/validate-invite/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const contractor = await storage.validateContractorInvite(token);
+
+      if (!contractor) {
+        return res.status(400).json({ error: "Invalid or expired invite" });
+      }
+
+      res.json({
+        valid: true,
+        contractorId: contractor.id,
+        email: contractor.email,
+        companyName: contractor.companyName,
+      });
+    } catch (error) {
+      console.error('Validate contractor invite error:', error);
+      res.status(500).json({ error: "Validation failed" });
+    }
+  });
+
+  // Public: Accept contractor invite and complete profile
+  app.post("/api/contractors/accept-invite/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { 
+        password, 
+        name, 
+        companyName, 
+        phone, 
+        website, 
+        description, 
+        specialties, 
+        licenseNumber, 
+        isInsured, 
+        isBonded,
+        serviceRegionIds 
+      } = req.body;
+
+      if (!password || password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      if (!name) {
+        return res.status(400).json({ error: "Contact name is required" });
+      }
+
+      if (!serviceRegionIds || !Array.isArray(serviceRegionIds) || serviceRegionIds.length === 0) {
+        return res.status(400).json({ error: "At least one service region is required" });
+      }
+
+      const contractor = await storage.validateContractorInvite(token);
+      if (!contractor) {
+        return res.status(400).json({ error: "Invalid or expired invite" });
+      }
+
+      const updatedContractor = await storage.completeContractorSignup(contractor.id, {
+        password,
+        name,
+        companyName,
+        phone,
+        website,
+        description,
+        specialties: specialties || [],
+        licenseNumber,
+        isInsured: isInsured || false,
+        isBonded: isBonded || false,
+        serviceRegionIds
+      });
+
+      res.json({
+        message: "Contractor profile created successfully",
+        contractor: {
+          id: updatedContractor.id,
+          name: updatedContractor.name,
+          companyName: updatedContractor.companyName,
+          email: updatedContractor.email
+        },
+      });
+    } catch (error) {
+      console.error('Accept contractor invite error:', error);
+      res.status(500).json({ error: "Failed to complete signup" });
+    }
+  });
+
   // Admin: List all service regions
   app.get("/api/admin/service-regions", ensureAdminOrDeveloper, async (req, res) => {
     try {

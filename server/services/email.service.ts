@@ -484,6 +484,80 @@ class EmailService {
     });
   }
 
+  async sendContractorInvitation(to: string, companyName: string, inviteLink: string): Promise<boolean> {
+    console.log('[CONTRACTOR EMAIL] sendContractorInvitation called');
+    console.log('[CONTRACTOR EMAIL] To:', to);
+    console.log('[CONTRACTOR EMAIL] Invite link:', inviteLink);
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .info-box { background: #F9FAFB; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #0F7B49; }
+          .button { display: inline-block; padding: 12px 24px; background: #D4AF37; color: #1E3A8A; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Welcome to RE Data Metrix</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Contractor Partner Invitation</p>
+          </div>
+          <div class="content">
+            <p>Hello ${companyName},</p>
+            <p>You've been invited to join RE Data Metrix as a contractor partner! Our platform connects real estate investors with trusted contractors like you.</p>
+            
+            <p style="margin-top: 25px;">Click the button below to complete your contractor profile:</p>
+            
+            <div style="text-align: center;">
+              <a href="${inviteLink}" class="button">Complete Your Profile</a>
+            </div>
+            
+            <div class="info-box">
+              <h3 style="margin-top: 0; color: #1E3A8A;">Your Invite Link</h3>
+              <p style="margin: 0; font-size: 14px; color: #6b7280; word-break: break-all;">${inviteLink}</p>
+            </div>
+            
+            <p style="margin-top: 30px;"><strong>What you'll need to complete your profile:</strong></p>
+            <ul style="color: #555;">
+              <li>Your contact information</li>
+              <li>Company details and description</li>
+              <li>Service specialties (rehabs, new construction, etc.)</li>
+              <li>License number (if applicable)</li>
+              <li>Insurance and bonding information</li>
+              <li>Service regions you work in</li>
+            </ul>
+            
+            <p style="margin-top: 30px;"><strong>Benefits of being listed:</strong></p>
+            <ul style="color: #555;">
+              <li>Connect with active real estate investors</li>
+              <li>Showcase your work to our subscriber base</li>
+              <li>Receive leads for projects in your service area</li>
+            </ul>
+            
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">This invite link will expire in 7 days. If you didn't expect this email or have questions, please contact our support team.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Join RE Data Metrix as a Contractor Partner',
+      html: htmlContent,
+    });
+  }
+
   async sendCompInviteEmail(to: string, compCode: string, expiresAt: Date): Promise<boolean> {
     const registerUrl = `${this.getBaseUrl()}/register?comp=${compCode}`;
     const expiryFormatted = expiresAt.toLocaleDateString('en-US', { 
