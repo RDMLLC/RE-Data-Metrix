@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
 import ToolFinder, { ToolFinderTutorial } from "@/components/ToolFinder";
+import ContractorSearch from "@/components/ContractorSearch";
 import { categoryInfo } from "@/data/affiliatePrograms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wrench, CheckCircle, Lock, Play, Video } from "lucide-react";
+import { Wrench, CheckCircle, Lock, Play, Video, HardHat } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Affiliate, TrainingVideo } from "@shared/schema";
@@ -261,6 +262,10 @@ export default function Resources() {
           {/* Hide category tabs on mobile for non-subscribers */}
           <TabsList className={`flex flex-wrap h-auto gap-2 bg-muted/50 p-2 ${!effectiveIsSubscriber ? "hidden sm:flex" : ""}`} data-testid="tabs-toolbox">
             <TabsTrigger value="about" data-testid="tab-about">About</TabsTrigger>
+            <TabsTrigger value="contractors" data-testid="tab-contractors" className="flex items-center gap-1">
+              <HardHat className="h-4 w-4" />
+              Contractors
+            </TabsTrigger>
             <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
             <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>
             <TabsTrigger value="project-management" data-testid="tab-project-management">Project Management</TabsTrigger>
@@ -286,6 +291,23 @@ export default function Resources() {
                 <ToolFinder isBlurred={!isSubscriber} showTutorial={false} />
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="contractors" className="space-y-6">
+            {authLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : effectiveIsSubscriber ? (
+              <ContractorSearch />
+            ) : (
+              <div className="relative">
+                <div className="pointer-events-none select-none">
+                  <ContractorSearch isBlurred />
+                </div>
+                <SubscribeOverlay title="Subscribe to Find Contractors" />
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="marketplace">
