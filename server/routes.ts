@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { db } from "./db";
@@ -4147,6 +4147,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete affiliate category error:', error);
       res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  // =====================================
+  // Service Regions and Contractors API
+  // =====================================
+  
+  // Public: Get service regions by state
+  app.get("/api/service-regions", async (req, res) => {
+    try {
+      const { state } = req.query;
+      if (state && typeof state === 'string') {
+        const regions = await storage.getServiceRegionsByState(state.toUpperCase());
+        return res.json(regions);
+      }
+      const regions = await storage.getAllServiceRegions();
+      res.json(regions);
+    } catch (error) {
+      console.error('Get service regions error:', error);
+      res.status(500).json({ error: "Failed to fetch service regions" });
+    }
+  });
+
+  // Public: Search contractors by region
+  app.get("/api/contractors/search", async (req, res) => {
+    try {
+      const { regionId } = req.query;
+      if (!regionId || typeof regionId !== 'string') {
+        return res.status(400).json({ error: "regionId is required" });
+      }
+      const contractors = await storage.getContractorsByRegion(regionId);
+      res.json(contractors);
+    } catch (error) {
+      console.error('Search contractors error:', error);
+      res.status(500).json({ error: "Failed to search contractors" });
+    }
+  });
+
+  // Admin: List all service regions
+  app.get("/api/admin/service-regions", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const regions = await storage.getAllServiceRegions();
+      res.json(regions);
+    } catch (error) {
+      console.error('Get all service regions error:', error);
+      res.status(500).json({ error: "Failed to fetch service regions" });
+    }
+  });
+
+  // Admin: Create service region
+  app.post("/api/admin/service-regions", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const validationResult = insertServiceRegionSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      const region = await storage.createServiceRegion(validationResult.data);
+      res.status(201).json(region);
+    } catch (error) {
+      console.error('Create service region error:', error);
+      res.status(500).json({ error: "Failed to create service region" });
+    }
+  });
+
+  // Admin: Update service region
+  app.put("/api/admin/service-regions/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updateServiceRegion(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Service region not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error('Update service region error:', error);
+      res.status(500).json({ error: "Failed to update service region" });
+    }
+  });
+
+  // Admin: Delete service region
+  app.delete("/api/admin/service-regions/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteServiceRegion(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Service region not found" });
+      }
+      res.json({ success: true, message: "Service region deleted" });
+    } catch (error) {
+      console.error('Delete service region error:', error);
+      res.status(500).json({ error: "Failed to delete service region" });
+    }
+  });
+
+  // Admin: List all contractors
+  app.get("/api/admin/contractors", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const contractors = await storage.getAllContractors();
+      // Also get service regions for each contractor
+      const contractorsWithRegions = await Promise.all(
+        contractors.map(async (contractor) => {
+          const regions = await storage.getContractorServiceRegions(contractor.id);
+          return { ...contractor, serviceRegions: regions };
+        })
+      );
+      res.json(contractorsWithRegions);
+    } catch (error) {
+      console.error('Get all contractors error:', error);
+      res.status(500).json({ error: "Failed to fetch contractors" });
+    }
+  });
+
+  // Admin: Get single contractor
+  app.get("/api/admin/contractors/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const contractor = await storage.getContractorById(id);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor not found" });
+      }
+      const regions = await storage.getContractorServiceRegions(id);
+      res.json({ ...contractor, serviceRegions: regions });
+    } catch (error) {
+      console.error('Get contractor error:', error);
+      res.status(500).json({ error: "Failed to fetch contractor" });
+    }
+  });
+
+  // Admin: Create contractor
+  app.post("/api/admin/contractors", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { serviceRegionIds, ...contractorData } = req.body;
+      const validationResult = insertContractorSchema.safeParse(contractorData);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: validationResult.error.flatten().fieldErrors 
+        });
+      }
+      const contractor = await storage.createContractor(validationResult.data);
+      
+      // Set service regions if provided
+      if (serviceRegionIds && Array.isArray(serviceRegionIds)) {
+        await storage.setContractorServiceRegions(contractor.id, serviceRegionIds);
+      }
+      
+      const regions = await storage.getContractorServiceRegions(contractor.id);
+      res.status(201).json({ ...contractor, serviceRegions: regions });
+    } catch (error) {
+      console.error('Create contractor error:', error);
+      res.status(500).json({ error: "Failed to create contractor" });
+    }
+  });
+
+  // Admin: Update contractor
+  app.put("/api/admin/contractors/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { serviceRegionIds, ...contractorData } = req.body;
+      
+      const updated = await storage.updateContractor(id, contractorData);
+      if (!updated) {
+        return res.status(404).json({ error: "Contractor not found" });
+      }
+      
+      // Update service regions if provided
+      if (serviceRegionIds && Array.isArray(serviceRegionIds)) {
+        await storage.setContractorServiceRegions(id, serviceRegionIds);
+      }
+      
+      const regions = await storage.getContractorServiceRegions(id);
+      res.json({ ...updated, serviceRegions: regions });
+    } catch (error) {
+      console.error('Update contractor error:', error);
+      res.status(500).json({ error: "Failed to update contractor" });
+    }
+  });
+
+  // Admin: Delete contractor
+  app.delete("/api/admin/contractors/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteContractor(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Contractor not found" });
+      }
+      res.json({ success: true, message: "Contractor deleted" });
+    } catch (error) {
+      console.error('Delete contractor error:', error);
+      res.status(500).json({ error: "Failed to delete contractor" });
     }
   });
 

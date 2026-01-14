@@ -42,6 +42,12 @@ import {
   type InsertIntegrationSyncLog,
   type PropertyCache,
   type InsertPropertyCache,
+  type ServiceRegion,
+  type InsertServiceRegion,
+  type Contractor,
+  type InsertContractor,
+  type ContractorServiceRegion,
+  type InsertContractorServiceRegion,
   users as usersTable,
   lenders as lendersTable,
   lenderQuestionnaires as lenderQuestionnairesTable,
@@ -67,7 +73,10 @@ import {
   integrationWebhooks as integrationWebhooksTable,
   integrationSyncLogs as integrationSyncLogsTable,
   propertyCache as propertyCacheTable,
-  userUsageCounters as userUsageCountersTable
+  userUsageCounters as userUsageCountersTable,
+  serviceRegions as serviceRegionsTable,
+  contractors as contractorsTable,
+  contractorServiceRegions as contractorServiceRegionsTable
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -187,6 +196,27 @@ export interface IStorage {
   // Site Settings
   getSiteSetting(key: string): Promise<string | null>;
   setSiteSetting(key: string, value: string): Promise<SiteSetting>;
+  
+  // Service Regions
+  getAllServiceRegions(): Promise<ServiceRegion[]>;
+  getServiceRegionsByState(state: string): Promise<ServiceRegion[]>;
+  getServiceRegionById(id: string): Promise<ServiceRegion | undefined>;
+  createServiceRegion(data: InsertServiceRegion): Promise<ServiceRegion>;
+  updateServiceRegion(id: string, data: Partial<InsertServiceRegion>): Promise<ServiceRegion | undefined>;
+  deleteServiceRegion(id: string): Promise<boolean>;
+  
+  // Contractors
+  getAllContractors(): Promise<Contractor[]>;
+  getActiveContractors(): Promise<Contractor[]>;
+  getContractorById(id: string): Promise<Contractor | undefined>;
+  getContractorsByRegion(regionId: string): Promise<Contractor[]>;
+  createContractor(data: InsertContractor): Promise<Contractor>;
+  updateContractor(id: string, data: Partial<InsertContractor>): Promise<Contractor | undefined>;
+  deleteContractor(id: string): Promise<boolean>;
+  
+  // Contractor Service Regions
+  getContractorServiceRegions(contractorId: string): Promise<ServiceRegion[]>;
+  setContractorServiceRegions(contractorId: string, regionIds: string[]): Promise<void>;
   
   // Training Videos
   getAllTrainingVideos(): Promise<TrainingVideo[]>;
@@ -3184,6 +3214,122 @@ export class DatabaseStorage implements IStorage {
   private getNextMonthEnd(): Date {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  // Service Region Methods
+  async getAllServiceRegions(): Promise<ServiceRegion[]> {
+    return await db.select().from(serviceRegionsTable).orderBy(serviceRegionsTable.state, serviceRegionsTable.sortOrder);
+  }
+
+  async getServiceRegionsByState(state: string): Promise<ServiceRegion[]> {
+    return await db.select().from(serviceRegionsTable)
+      .where(and(eq(serviceRegionsTable.state, state), eq(serviceRegionsTable.isActive, true)))
+      .orderBy(serviceRegionsTable.sortOrder);
+  }
+
+  async getServiceRegionById(id: string): Promise<ServiceRegion | undefined> {
+    const [region] = await db.select().from(serviceRegionsTable).where(eq(serviceRegionsTable.id, id));
+    return region;
+  }
+
+  async createServiceRegion(data: InsertServiceRegion): Promise<ServiceRegion> {
+    const result = await db.insert(serviceRegionsTable).values(data).returning();
+    return result[0];
+  }
+
+  async updateServiceRegion(id: string, data: Partial<InsertServiceRegion>): Promise<ServiceRegion | undefined> {
+    const result = await db.update(serviceRegionsTable)
+      .set(data)
+      .where(eq(serviceRegionsTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteServiceRegion(id: string): Promise<boolean> {
+    const result = await db.delete(serviceRegionsTable).where(eq(serviceRegionsTable.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Contractor Methods
+  async getAllContractors(): Promise<Contractor[]> {
+    return await db.select().from(contractorsTable).orderBy(contractorsTable.sortOrder);
+  }
+
+  async getActiveContractors(): Promise<Contractor[]> {
+    return await db.select().from(contractorsTable)
+      .where(eq(contractorsTable.isActive, true))
+      .orderBy(contractorsTable.sortOrder);
+  }
+
+  async getContractorById(id: string): Promise<Contractor | undefined> {
+    const [contractor] = await db.select().from(contractorsTable).where(eq(contractorsTable.id, id));
+    return contractor;
+  }
+
+  async getContractorsByRegion(regionId: string): Promise<Contractor[]> {
+    const result = await db
+      .select({ contractor: contractorsTable })
+      .from(contractorsTable)
+      .innerJoin(
+        contractorServiceRegionsTable,
+        eq(contractorsTable.id, contractorServiceRegionsTable.contractorId)
+      )
+      .where(and(
+        eq(contractorServiceRegionsTable.serviceRegionId, regionId),
+        eq(contractorsTable.isActive, true)
+      ))
+      .orderBy(contractorsTable.sortOrder);
+    
+    return result.map(r => r.contractor);
+  }
+
+  async createContractor(data: InsertContractor): Promise<Contractor> {
+    const result = await db.insert(contractorsTable).values(data).returning();
+    return result[0];
+  }
+
+  async updateContractor(id: string, data: Partial<InsertContractor>): Promise<Contractor | undefined> {
+    const result = await db.update(contractorsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(contractorsTable.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteContractor(id: string): Promise<boolean> {
+    const result = await db.delete(contractorsTable).where(eq(contractorsTable.id, id)).returning();
+    return result.length > 0;
+  }
+
+  // Contractor Service Region Methods
+  async getContractorServiceRegions(contractorId: string): Promise<ServiceRegion[]> {
+    const result = await db
+      .select({ region: serviceRegionsTable })
+      .from(serviceRegionsTable)
+      .innerJoin(
+        contractorServiceRegionsTable,
+        eq(serviceRegionsTable.id, contractorServiceRegionsTable.serviceRegionId)
+      )
+      .where(eq(contractorServiceRegionsTable.contractorId, contractorId))
+      .orderBy(serviceRegionsTable.state, serviceRegionsTable.sortOrder);
+    
+    return result.map(r => r.region);
+  }
+
+  async setContractorServiceRegions(contractorId: string, regionIds: string[]): Promise<void> {
+    // Delete existing associations
+    await db.delete(contractorServiceRegionsTable)
+      .where(eq(contractorServiceRegionsTable.contractorId, contractorId));
+    
+    // Insert new associations
+    if (regionIds.length > 0) {
+      await db.insert(contractorServiceRegionsTable).values(
+        regionIds.map(regionId => ({
+          contractorId,
+          serviceRegionId: regionId
+        }))
+      );
+    }
   }
 
 }
