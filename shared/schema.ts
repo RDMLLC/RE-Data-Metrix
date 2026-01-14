@@ -913,3 +913,68 @@ export const insertPropertyCacheSchema = createInsertSchema(propertyCache).omit(
 
 export type InsertPropertyCache = z.infer<typeof insertPropertyCacheSchema>;
 export type PropertyCache = typeof propertyCache.$inferSelect;
+
+// Service Regions - geographic areas for contractor coverage
+export const serviceRegions = pgTable("service_regions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  state: text("state").notNull(), // e.g., "GA", "FL"
+  name: text("name").notNull(), // e.g., "Atlanta Metro", "North Georgia Mountains"
+  keyCities: text("key_cities").array().notNull(), // Cities shown in tooltip
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertServiceRegionSchema = createInsertSchema(serviceRegions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertServiceRegion = z.infer<typeof insertServiceRegionSchema>;
+export type ServiceRegion = typeof serviceRegions.$inferSelect;
+
+// Contractors - general contractors with service area coverage
+export const contractors = pgTable("contractors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  companyName: text("company_name"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  description: text("description"),
+  specialties: text("specialties").array().default([]), // e.g., ["Rehabs", "New Construction", "Renovations"]
+  licenseNumber: text("license_number"),
+  isInsured: boolean("is_insured").default(false),
+  isBonded: boolean("is_bonded").default(false),
+  referralLink: text("referral_link"), // Affiliate link if applicable
+  notes: text("notes"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertContractorSchema = createInsertSchema(contractors).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertContractor = z.infer<typeof insertContractorSchema>;
+export type Contractor = typeof contractors.$inferSelect;
+
+// Contractor Service Regions - junction table linking contractors to their service areas
+export const contractorServiceRegions = pgTable("contractor_service_regions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractorId: varchar("contractor_id").notNull().references(() => contractors.id, { onDelete: 'cascade' }),
+  serviceRegionId: varchar("service_region_id").notNull().references(() => serviceRegions.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertContractorServiceRegionSchema = createInsertSchema(contractorServiceRegions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertContractorServiceRegion = z.infer<typeof insertContractorServiceRegionSchema>;
+export type ContractorServiceRegion = typeof contractorServiceRegions.$inferSelect;
