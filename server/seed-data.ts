@@ -73,6 +73,14 @@ export interface SeedLoanProduct {
   transactionalFlatFee?: string;
 }
 
+export interface SeedServiceRegion {
+  state: string;
+  name: string;
+  keyCities: string[];
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export const seedAffiliateCategories: SeedAffiliateCategory[] = [
   // Primary business categories
   {
@@ -590,4 +598,40 @@ export const seedLoanProducts: SeedLoanProduct[] = [
     isActive: true,
     referralLink: "https://facolending.com/james-gallagher/"
   }
+];
+
+export const seedServiceRegions: SeedServiceRegion[] = [
+  // Georgia Service Regions
+  { state: 'GA', name: 'Atlanta Metro', keyCities: ['Atlanta', 'Marietta', 'Alpharetta', 'Roswell', 'Sandy Springs', 'Johns Creek', 'Duluth', 'Lawrenceville', 'Decatur', 'Smyrna', 'Kennesaw'], sortOrder: 1, isActive: true },
+  { state: 'GA', name: 'North Georgia Mountains', keyCities: ['Blue Ridge', 'Dahlonega', 'Helen', 'Ellijay', 'Blairsville', 'Clayton', 'Hiawassee'], sortOrder: 2, isActive: true },
+  { state: 'GA', name: 'Athens Area', keyCities: ['Athens', 'Watkinsville', 'Winterville', 'Bogart'], sortOrder: 3, isActive: true },
+  { state: 'GA', name: 'Augusta Area', keyCities: ['Augusta', 'Evans', 'Martinez', 'Grovetown'], sortOrder: 4, isActive: true },
+  { state: 'GA', name: 'Macon Area', keyCities: ['Macon', 'Warner Robins', 'Byron', 'Forsyth'], sortOrder: 5, isActive: true },
+  { state: 'GA', name: 'Savannah Area', keyCities: ['Savannah', 'Pooler', 'Richmond Hill', 'Hinesville'], sortOrder: 6, isActive: true },
+  { state: 'GA', name: 'Columbus Area', keyCities: ['Columbus', 'Phenix City'], sortOrder: 7, isActive: true },
+  { state: 'GA', name: 'Albany Area', keyCities: ['Albany', 'Leesburg', 'Dawson'], sortOrder: 8, isActive: true },
+  { state: 'GA', name: 'Gainesville/Lake Lanier', keyCities: ['Gainesville', 'Flowery Branch', 'Buford', 'Cumming'], sortOrder: 9, isActive: true },
+  { state: 'GA', name: 'Valdosta Area', keyCities: ['Valdosta', 'Lake Park', 'Hahira'], sortOrder: 10, isActive: true },
+  { state: 'GA', name: 'Northwest Georgia', keyCities: ['Rome', 'Dalton', 'Cartersville', 'Calhoun'], sortOrder: 11, isActive: true },
+  { state: 'GA', name: 'Brunswick/Golden Isles', keyCities: ['Brunswick', 'St. Simons', 'Jekyll Island'], sortOrder: 12, isActive: true },
+  { state: 'GA', name: 'South Metro Atlanta', keyCities: ['Newnan', 'Peachtree City', 'Fayetteville', 'Griffin', 'McDonough'], sortOrder: 13, isActive: true },
+  { state: 'GA', name: 'Middle Georgia', keyCities: ['Milledgeville', 'Dublin', 'Vidalia'], sortOrder: 14, isActive: true },
+  { state: 'GA', name: 'Southwest Georgia', keyCities: ['Americus', 'Thomasville', 'Bainbridge', 'Moultrie'], sortOrder: 15, isActive: true },
+  
+  // Alabama Service Regions
+  { state: 'AL', name: 'Birmingham Metro', keyCities: ['Birmingham', 'Hoover', 'Vestavia Hills', 'Mountain Brook', 'Bessemer', 'Homewood', 'Trussville'], sortOrder: 1, isActive: true },
+  { state: 'AL', name: 'Huntsville Metro', keyCities: ['Huntsville', 'Madison', 'Decatur', 'Athens'], sortOrder: 2, isActive: true },
+  { state: 'AL', name: 'Mobile Metro', keyCities: ['Mobile', 'Prichard', 'Saraland', 'Daphne'], sortOrder: 3, isActive: true },
+  { state: 'AL', name: 'Montgomery Metro', keyCities: ['Montgomery', 'Prattville', 'Wetumpka', 'Millbrook'], sortOrder: 4, isActive: true },
+  { state: 'AL', name: 'Tuscaloosa Metro', keyCities: ['Tuscaloosa', 'Northport'], sortOrder: 5, isActive: true },
+  { state: 'AL', name: 'Auburn-Opelika', keyCities: ['Auburn', 'Opelika'], sortOrder: 6, isActive: true },
+  { state: 'AL', name: 'Dothan/Wiregrass', keyCities: ['Dothan', 'Enterprise', 'Ozark', 'Troy'], sortOrder: 7, isActive: true },
+  { state: 'AL', name: 'Florence-Muscle Shoals', keyCities: ['Florence', 'Sheffield', 'Muscle Shoals', 'Tuscumbia'], sortOrder: 8, isActive: true },
+  { state: 'AL', name: 'Gadsden Area', keyCities: ['Gadsden', 'Attalla', 'Rainbow City'], sortOrder: 9, isActive: true },
+  { state: 'AL', name: 'Anniston-Oxford', keyCities: ['Anniston', 'Oxford', 'Jacksonville'], sortOrder: 10, isActive: true },
+  { state: 'AL', name: 'Gulf Coast/Baldwin County', keyCities: ['Gulf Shores', 'Orange Beach', 'Fairhope', 'Foley', 'Daphne'], sortOrder: 11, isActive: true },
+  { state: 'AL', name: 'North Alabama', keyCities: ['Cullman', 'Albertville', 'Fort Payne'], sortOrder: 12, isActive: true },
+  { state: 'AL', name: 'Central Alabama', keyCities: ['Selma', 'Clanton', 'Alexander City'], sortOrder: 13, isActive: true },
+  { state: 'AL', name: 'East Alabama', keyCities: ['Talladega', 'Sylacauga', 'Pell City'], sortOrder: 14, isActive: true },
+  { state: 'AL', name: 'West Alabama', keyCities: ['Demopolis', 'Livingston', 'Greensboro'], sortOrder: 15, isActive: true },
 ];

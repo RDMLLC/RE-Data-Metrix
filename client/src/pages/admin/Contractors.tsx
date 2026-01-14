@@ -111,6 +111,22 @@ const emptyRegionForm: ServiceRegionFormData = {
   sortOrder: 0,
 };
 
+const stateNames: Record<string, string> = {
+  AL: 'Alabama',
+  GA: 'Georgia',
+  FL: 'Florida',
+  TN: 'Tennessee',
+  SC: 'South Carolina',
+  NC: 'North Carolina',
+  MS: 'Mississippi',
+  LA: 'Louisiana',
+  TX: 'Texas',
+};
+
+function getStateName(abbrev: string): string {
+  return stateNames[abbrev] || abbrev;
+}
+
 export default function Contractors() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -502,32 +518,54 @@ export default function Contractors() {
                   No service regions found. Add your first region.
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {serviceRegions.map(region => (
-                    <Card key={region.id} className="p-4" data-testid={`card-region-${region.id}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold">{region.name}</h3>
-                            <Badge variant="outline" className="text-xs">{region.state}</Badge>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {region.keyCities?.map(city => (
-                              <Badge key={city} variant="secondary" className="text-xs">{city}</Badge>
-                            ))}
-                          </div>
+                <div className="space-y-8">
+                  {/* Group regions by state */}
+                  {Object.entries(
+                    serviceRegions.reduce((acc, region) => {
+                      const state = region.state || 'Unknown';
+                      if (!acc[state]) acc[state] = [];
+                      acc[state].push(region);
+                      return acc;
+                    }, {} as Record<string, typeof serviceRegions>)
+                  )
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([state, regions]) => (
+                      <div key={state}>
+                        <div className="flex items-center gap-2 mb-4">
+                          <MapPin className="h-5 w-5 text-accent" />
+                          <h3 className="text-lg font-semibold">{getStateName(state)}</h3>
+                          <Badge variant="outline">{regions.length} regions</Badge>
                         </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEditRegion(region)} data-testid={`button-edit-region-${region.id}`}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setRegionToDelete(region)} data-testid={`button-delete-region-${region.id}`}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {regions
+                            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                            .map(region => (
+                              <Card key={region.id} className="p-4" data-testid={`card-region-${region.id}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="font-semibold">{region.name}</h3>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {region.keyCities?.map(city => (
+                                        <Badge key={city} variant="secondary" className="text-xs">{city}</Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" onClick={() => openEditRegion(region)} data-testid={`button-edit-region-${region.id}`}>
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" onClick={() => setRegionToDelete(region)} data-testid={`button-delete-region-${region.id}`}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
                         </div>
                       </div>
-                    </Card>
-                  ))}
+                    ))}
                 </div>
               )}
             </CardContent>
