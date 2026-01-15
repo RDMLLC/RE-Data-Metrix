@@ -43,7 +43,7 @@ export interface DoubleCloseResult extends WholesaleResult {
   lenderFee: number;
 }
 
-// Straight Line Funding lender fee constants
+// Straightline Funding lender fee constants
 export const LENDER_FEE_RATE = 0.0125; // 1.25%
 export const LENDER_FEE_MINIMUM = 1000; // $1,000 minimum fee
 

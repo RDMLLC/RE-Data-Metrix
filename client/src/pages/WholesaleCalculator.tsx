@@ -1140,7 +1140,7 @@ export default function WholesaleCalculator() {
             </Card>
           )}
 
-          {/* Apply for Transactional Lending - Straight Line Funding (Exclusive Partner) */}
+          {/* Apply for Transactional Lending - Straightline Funding (Exclusive Partner) */}
           {hasResultsAccess && transactionType === "double-close" && (
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
@@ -1151,7 +1151,7 @@ export default function WholesaleCalculator() {
                       Apply for Transactional Funding
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Get funded quickly through Straight Line Funding
+                      Get funded quickly through Straightline Funding
                     </CardDescription>
                   </div>
                   <Button
@@ -1294,7 +1294,7 @@ export default function WholesaleCalculator() {
                   </div>
                   <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <ExternalLink className="h-4 w-4" />
-                    <span>Powered by Straight Line Funding</span>
+                    <span>Powered by Straightline Funding</span>
                   </div>
                 </CardContent>
               )}
