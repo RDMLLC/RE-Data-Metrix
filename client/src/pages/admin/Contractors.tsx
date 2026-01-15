@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ import {
   Copy,
   CheckCircle,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 import type { Contractor, ServiceRegion } from "@shared/schema";
 
@@ -139,6 +141,7 @@ export default function Contractors() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', companyName: '' });
   const [inviteResult, setInviteResult] = useState<{ inviteUrl?: string; message?: string } | null>(null);
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
   const [editingContractor, setEditingContractor] = useState<ContractorWithRegions | null>(null);
   const [editingRegion, setEditingRegion] = useState<ServiceRegion | null>(null);
   const [contractorForm, setContractorForm] = useState<ContractorFormData>(emptyContractorForm);
@@ -530,41 +533,50 @@ export default function Contractors() {
                   )
                     .sort(([a], [b]) => a.localeCompare(b))
                     .map(([state, regions]) => (
-                      <div key={state}>
-                        <div className="flex items-center gap-2 mb-4">
-                          <MapPin className="h-5 w-5 text-accent" />
-                          <h3 className="text-lg font-semibold">{getStateName(state)}</h3>
-                          <Badge variant="outline">{regions.length} regions</Badge>
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                          {regions
-                            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                            .map(region => (
-                              <Card key={region.id} className="p-4" data-testid={`card-region-${region.id}`}>
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h3 className="font-semibold">{region.name}</h3>
+                      <Collapsible
+                        key={state}
+                        open={expandedStates[state] ?? false}
+                        onOpenChange={(open) => setExpandedStates(prev => ({ ...prev, [state]: open }))}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center gap-2 mb-4 cursor-pointer hover-elevate p-2 rounded-md" data-testid={`trigger-state-${state}`}>
+                            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedStates[state] ? 'rotate-0' : '-rotate-90'}`} />
+                            <MapPin className="h-5 w-5 text-accent" />
+                            <h3 className="text-lg font-semibold">{getStateName(state)}</h3>
+                            <Badge variant="outline">{regions.length} regions</Badge>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ml-7">
+                            {regions
+                              .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                              .map(region => (
+                                <Card key={region.id} className="p-4" data-testid={`card-region-${region.id}`}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="font-semibold">{region.name}</h3>
+                                      </div>
+                                      <div className="flex flex-wrap gap-1">
+                                        {region.keyCities?.map(city => (
+                                          <Badge key={city} variant="secondary" className="text-xs">{city}</Badge>
+                                        ))}
+                                      </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-1">
-                                      {region.keyCities?.map(city => (
-                                        <Badge key={city} variant="secondary" className="text-xs">{city}</Badge>
-                                      ))}
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="icon" onClick={() => openEditRegion(region)} data-testid={`button-edit-region-${region.id}`}>
+                                        <Edit2 className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" onClick={() => setRegionToDelete(region)} data-testid={`button-delete-region-${region.id}`}>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   </div>
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" onClick={() => openEditRegion(region)} data-testid={`button-edit-region-${region.id}`}>
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => setRegionToDelete(region)} data-testid={`button-delete-region-${region.id}`}>
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </Card>
-                            ))}
-                        </div>
-                      </div>
+                                </Card>
+                              ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
                     ))}
                 </div>
               )}
