@@ -11,7 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +59,6 @@ import {
   Copy,
   CheckCircle,
   Clock,
-  ChevronDown,
 } from "lucide-react";
 import type { Contractor, ServiceRegion } from "@shared/schema";
 
@@ -141,7 +146,7 @@ export default function Contractors() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', companyName: '' });
   const [inviteResult, setInviteResult] = useState<{ inviteUrl?: string; message?: string } | null>(null);
-  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
+  const [selectedState, setSelectedState] = useState<string>("all");
   const [editingContractor, setEditingContractor] = useState<ContractorWithRegions | null>(null);
   const [editingRegion, setEditingRegion] = useState<ServiceRegion | null>(null);
   const [contractorForm, setContractorForm] = useState<ContractorFormData>(emptyContractorForm);
@@ -505,7 +510,20 @@ export default function Contractors() {
         <TabsContent value="regions" className="space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
-              <CardTitle>Service Regions ({serviceRegions.length})</CardTitle>
+              <div className="flex items-center gap-4">
+                <CardTitle>Service Regions</CardTitle>
+                <Select value={selectedState} onValueChange={setSelectedState}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-state-filter">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    {Array.from(new Set(serviceRegions.map(r => r.state))).sort().map(state => (
+                      <SelectItem key={state} value={state}>{getStateName(state)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={openNewRegion} data-testid="button-add-region">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Region
@@ -521,33 +539,29 @@ export default function Contractors() {
                   No service regions found. Add your first region.
                 </div>
               ) : (
-                <div className="space-y-8">
-                  {/* Group regions by state */}
-                  {Object.entries(
-                    serviceRegions.reduce((acc, region) => {
+                <div className="space-y-6">
+                  {(() => {
+                    const filteredRegions = selectedState === "all" 
+                      ? serviceRegions 
+                      : serviceRegions.filter(r => r.state === selectedState);
+                    
+                    const groupedByState = filteredRegions.reduce((acc, region) => {
                       const state = region.state || 'Unknown';
                       if (!acc[state]) acc[state] = [];
                       acc[state].push(region);
                       return acc;
-                    }, {} as Record<string, typeof serviceRegions>)
-                  )
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([state, regions]) => (
-                      <Collapsible
-                        key={state}
-                        open={expandedStates[state] ?? false}
-                        onOpenChange={(open) => setExpandedStates(prev => ({ ...prev, [state]: open }))}
-                      >
-                        <CollapsibleTrigger asChild>
-                          <div className="flex items-center gap-2 mb-4 cursor-pointer hover-elevate p-2 rounded-md" data-testid={`trigger-state-${state}`}>
-                            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${expandedStates[state] ? 'rotate-0' : '-rotate-90'}`} />
+                    }, {} as Record<string, typeof serviceRegions>);
+
+                    return Object.entries(groupedByState)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([state, regions]) => (
+                        <div key={state}>
+                          <div className="flex items-center gap-2 mb-4">
                             <MapPin className="h-5 w-5 text-accent" />
                             <h3 className="text-lg font-semibold">{getStateName(state)}</h3>
                             <Badge variant="outline">{regions.length} regions</Badge>
                           </div>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ml-7">
+                          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {regions
                               .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
                               .map(region => (
@@ -575,9 +589,9 @@ export default function Contractors() {
                                 </Card>
                               ))}
                           </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ))}
+                        </div>
+                      ));
+                  })()}
                 </div>
               )}
             </CardContent>
