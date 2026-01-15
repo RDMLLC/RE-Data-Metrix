@@ -1223,14 +1223,21 @@ export default function WholesaleCalculator() {
                         const baseUrl = "https://forms.straightlinefunding.com/straightlinefunding/form/TransactionalFundingSubmissionFormREDataMetrix/formperma/mHsvTfwLV7T8fYveRFzlpbECm1HeV3cMWA7cRoGCTRU";
                         const params = new URLSearchParams();
                         
-                        // Pre-fill A-to-B Purchase Price
-                        const atoBPrice = parseNumericInput(buyPrice);
+                        // Helper to round to nearest $50
+                        const roundToNearest50 = (value: number) => Math.round(value / 50) * 50;
+                        
+                        // Pre-fill A-to-B Purchase Price (investor's buy price, rounded to nearest $50)
+                        const atoBPrice = roundToNearest50(parseNumericInput(buyPrice));
                         if (atoBPrice > 0) {
                           params.set("Currency", atoBPrice.toString());
                         }
                         
-                        // Pre-fill B-to-C Sales Price (A-to-B + Wholesale Fee)
-                        const bToCPrice = atoBPrice + parseNumericInput(wholesaleFee);
+                        // Pre-fill B-to-C Sales Price (what end buyer pays)
+                        // Formula: ARV × Buyer's Max % - Rehab Budget, rounded to nearest $50
+                        const arvValue = parseNumericInput(arv);
+                        const maxPercent = parseNumericInput(buyersMaxArvPercent) / 100;
+                        const rehabValue = parseNumericInput(rehabBudget);
+                        const bToCPrice = roundToNearest50(arvValue * maxPercent - rehabValue);
                         if (bToCPrice > 0) {
                           params.set("Currency1", bToCPrice.toString());
                         }
