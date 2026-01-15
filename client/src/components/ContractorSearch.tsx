@@ -38,12 +38,26 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
 
   const { data: regions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
-    queryKey: ["/api/service-regions", { state: selectedState }],
+    queryKey: ["/api/service-regions", selectedState],
+    queryFn: async () => {
+      const res = await fetch(`/api/service-regions?state=${selectedState}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch regions");
+      return res.json();
+    },
     enabled: !!selectedState,
   });
 
   const { data: contractors, isLoading: contractorsLoading } = useQuery<Contractor[]>({
-    queryKey: ["/api/contractors/search", { regionId: selectedRegion }],
+    queryKey: ["/api/contractors/search", selectedRegion],
+    queryFn: async () => {
+      const res = await fetch(`/api/contractors/search?regionId=${selectedRegion}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch contractors");
+      return res.json();
+    },
     enabled: !!selectedRegion,
   });
 
