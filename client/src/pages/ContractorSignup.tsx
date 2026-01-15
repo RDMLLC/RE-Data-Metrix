@@ -15,7 +15,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 import { useParams, useLocation } from "wouter";
 import { useState } from "react";
-import { Loader2, Eye, EyeOff, X, Plus, CheckCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, X, Plus, CheckCircle, ChevronDown } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { ServiceRegion } from "@shared/schema";
 
 const US_STATES = [
@@ -68,9 +73,11 @@ export default function ContractorSignup() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([...SPECIALTY_OPTIONS]);
+  const [isAllSpecialties, setIsAllSpecialties] = useState(true);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [specialtySelectKey, setSpecialtySelectKey] = useState(0); // Force re-render to clear selection
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [selectedState, setSelectedState] = useState<string>("GA");
+  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
   const [signupComplete, setSignupComplete] = useState(false);
 
   const { data: inviteData, isLoading: validating, error: validateError } = useQuery<{
@@ -87,15 +94,22 @@ export default function ContractorSignup() {
     retry: false,
   });
 
-  const { data: regions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
-    queryKey: ["/api/service-regions", selectedState],
+  const { data: allRegions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
+    queryKey: ["/api/service-regions"],
     queryFn: async () => {
-      const response = await fetch(`/api/service-regions?state=${encodeURIComponent(selectedState)}`);
+      const response = await fetch(`/api/service-regions`);
       if (!response.ok) throw new Error("Failed to fetch regions");
       return response.json();
     },
-    enabled: !!selectedState,
   });
+
+  // Group regions by state
+  const regionsByState = allRegions?.reduce((acc, region) => {
+    const state = region.state;
+    if (!acc[state]) acc[state] = [];
+    acc[state].push(region);
+    return acc;
+  }, {} as Record<string, ServiceRegion[]>) || {};
 
   const form = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
@@ -115,6 +129,8 @@ export default function ContractorSignup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
+      // If "ALL" is selected, send all specialties; otherwise send selected ones
+      const specialtiesToSend = isAllSpecialties ? SPECIALTY_OPTIONS : selectedSpecialties;
       const res = await apiRequest("POST", `/api/contractors/accept-invite/${token}`, {
         password: data.password,
         name: data.name,
@@ -122,7 +138,7 @@ export default function ContractorSignup() {
         phone: data.phone,
         website: data.website,
         description: data.description,
-        specialties: selectedSpecialties,
+        specialties: specialtiesToSend,
         licenseNumber: data.licenseNumber,
         isInsured: data.isInsured,
         isBonded: data.isBonded,
@@ -146,14 +162,29 @@ export default function ContractorSignup() {
     },
   });
 
-  const handleAddSpecialty = (specialty: string) => {
-    if (!selectedSpecialties.includes(specialty)) {
-      setSelectedSpecialties([...selectedSpecialties, specialty]);
+  const handleSpecialtyChange = (value: string) => {
+    if (value === "ALL") {
+      setIsAllSpecialties(true);
+      setSelectedSpecialties([]);
+      setSpecialtySelectKey(prev => prev + 1); // Force re-render to show "ALL"
+    } else {
+      // When selecting a specific specialty, deselect ALL
+      setIsAllSpecialties(false);
+      if (!selectedSpecialties.includes(value)) {
+        setSelectedSpecialties([...selectedSpecialties, value]);
+      }
+      // Force Select to re-render so user can pick another specialty
+      setSpecialtySelectKey(prev => prev + 1);
     }
   };
 
   const handleRemoveSpecialty = (specialty: string) => {
-    setSelectedSpecialties(selectedSpecialties.filter((s) => s !== specialty));
+    const newSpecialties = selectedSpecialties.filter((s) => s !== specialty);
+    setSelectedSpecialties(newSpecialties);
+    // If no specialties remain, default back to ALL
+    if (newSpecialties.length === 0) {
+      setIsAllSpecialties(true);
+    }
   };
 
   const handleToggleRegion = (regionId: string) => {
@@ -500,39 +531,48 @@ export default function ContractorSignup() {
                   <CardTitle className="text-lg">Specialties</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedSpecialties.map((specialty) => (
-                      <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
-                        {specialty}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSpecialty(specialty)}
-                          className="ml-1 hover:text-destructive"
-                          data-testid={`button-remove-specialty-${specialty}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
+                  {/* Show badges only when specific specialties are selected (not ALL) */}
+                  {!isAllSpecialties && selectedSpecialties.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {selectedSpecialties.map((specialty) => (
+                        <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
+                          {specialty}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSpecialty(specialty)}
+                            className="ml-1 hover:text-destructive"
+                            data-testid={`button-remove-specialty-${specialty}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <div>
-                    <FormLabel>Add Specialties</FormLabel>
-                    <Select onValueChange={handleAddSpecialty}>
+                    <FormLabel>Specialties</FormLabel>
+                    <Select 
+                      key={specialtySelectKey}
+                      value={isAllSpecialties ? "ALL" : undefined} 
+                      onValueChange={handleSpecialtyChange}
+                    >
                       <SelectTrigger data-testid="select-specialty">
-                        <SelectValue placeholder="Select a specialty to add" />
+                        <SelectValue placeholder={isAllSpecialties ? "ALL" : "Select a specialty to add"} />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="ALL">ALL</SelectItem>
                         {SPECIALTY_OPTIONS.filter((s) => !selectedSpecialties.includes(s)).map((specialty) => (
                           <SelectItem key={specialty} value={specialty}>
-                            <div className="flex items-center gap-2">
-                              <Plus className="h-4 w-4" />
-                              {specialty}
-                            </div>
+                            {specialty}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>Select all areas of work you specialize in</FormDescription>
+                    <FormDescription>
+                      {isAllSpecialties 
+                        ? "You offer all specialty services" 
+                        : "Select specific areas of work you specialize in"}
+                    </FormDescription>
                   </div>
                 </CardContent>
               </Card>
@@ -543,82 +583,95 @@ export default function ContractorSignup() {
                   <p className="text-sm text-muted-foreground">Select the areas where you provide services</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <FormLabel>State</FormLabel>
-                    <Select value={selectedState} onValueChange={setSelectedState}>
-                      <SelectTrigger data-testid="select-state">
-                        <SelectValue placeholder="Select your state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {US_STATES.map((state) => (
-                          <SelectItem key={state.value} value={state.value}>
-                            {state.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {selectedState && (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <FormLabel className="mb-0">Select Regions (click to toggle)</FormLabel>
-                        {regions && regions.length > 0 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const allRegionIds = regions.map(r => r.id);
-                              const allSelected = allRegionIds.every(id => selectedRegions.includes(id));
-                              if (allSelected) {
-                                setSelectedRegions(selectedRegions.filter(id => !allRegionIds.includes(id)));
-                              } else {
-                                setSelectedRegions(Array.from(new Set([...selectedRegions, ...allRegionIds])));
-                              }
-                            }}
-                            data-testid="button-select-all-regions"
+                  {regionsLoading ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading regions...
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {US_STATES.map((state) => {
+                        const stateRegions = regionsByState[state.value] || [];
+                        const stateSelectedCount = stateRegions.filter(r => selectedRegions.includes(r.id)).length;
+                        
+                        return (
+                          <Collapsible
+                            key={state.value}
+                            open={expandedStates[state.value] ?? false}
+                            onOpenChange={(open) => setExpandedStates(prev => ({ ...prev, [state.value]: open }))}
                           >
-                            {regions.every(r => selectedRegions.includes(r.id)) ? "Deselect All" : "Select All"}
-                          </Button>
-                        )}
-                      </div>
-                      {regionsLoading ? (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading regions...
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          {regions?.map((region) => (
-                            <button
-                              key={region.id}
-                              type="button"
-                              onClick={() => handleToggleRegion(region.id)}
-                              className={`p-3 rounded-lg border text-left transition-colors ${
-                                selectedRegions.includes(region.id)
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border hover:border-primary/50"
-                              }`}
-                              data-testid={`button-region-${region.id}`}
-                            >
-                              <div className="font-medium text-sm">{region.name}</div>
-                              <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                {region.keyCities?.slice(0, 3).join(", ")}
+                            <CollapsibleTrigger asChild>
+                              <div className="flex items-center justify-between gap-2 p-3 rounded-lg border cursor-pointer hover-elevate">
+                                <div className="flex items-center gap-2">
+                                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedStates[state.value] ? 'rotate-0' : '-rotate-90'}`} />
+                                  <span className="font-medium">{state.label}</span>
+                                  {stateSelectedCount > 0 && (
+                                    <Badge variant="secondary">{stateSelectedCount} selected</Badge>
+                                  )}
+                                </div>
+                                <span className="text-sm text-muted-foreground">
+                                  {stateSelectedCount === 0 ? "SELECT" : `${stateSelectedCount}/${stateRegions.length}`}
+                                </span>
                               </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {selectedRegions.length > 0 && (
-                        <p className="text-sm text-muted-foreground mt-3">
-                          {selectedRegions.length} region(s) selected
-                        </p>
-                      )}
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="pt-3 pl-6 space-y-3">
+                                {stateRegions.length > 0 && (
+                                  <div className="flex justify-end">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const allStateRegionIds = stateRegions.map(r => r.id);
+                                        const allSelected = allStateRegionIds.every(id => selectedRegions.includes(id));
+                                        if (allSelected) {
+                                          setSelectedRegions(selectedRegions.filter(id => !allStateRegionIds.includes(id)));
+                                        } else {
+                                          setSelectedRegions(Array.from(new Set([...selectedRegions, ...allStateRegionIds])));
+                                        }
+                                      }}
+                                      data-testid={`button-select-all-${state.value}`}
+                                    >
+                                      {stateRegions.every(r => selectedRegions.includes(r.id)) ? "Deselect All" : "Select All"}
+                                    </Button>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                  {stateRegions.map((region) => (
+                                    <button
+                                      key={region.id}
+                                      type="button"
+                                      onClick={() => handleToggleRegion(region.id)}
+                                      className={`p-3 rounded-lg border text-left transition-colors ${
+                                        selectedRegions.includes(region.id)
+                                          ? "border-primary bg-primary/10 text-primary"
+                                          : "border-border hover:border-primary/50"
+                                      }`}
+                                      data-testid={`button-region-${region.id}`}
+                                    >
+                                      <div className="font-medium text-sm">{region.name}</div>
+                                      <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                        {region.keyCities?.slice(0, 3).join(", ")}
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
                     </div>
                   )}
 
-                  {selectedRegions.length === 0 && selectedState && (
+                  {selectedRegions.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedRegions.length} region(s) selected total
+                    </p>
+                  )}
+
+                  {selectedRegions.length === 0 && (
                     <p className="text-sm text-destructive">Please select at least one service region</p>
                   )}
                 </CardContent>
