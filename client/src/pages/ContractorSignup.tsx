@@ -67,9 +67,9 @@ export default function ContractorSignup() {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([...SPECIALTY_OPTIONS]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [selectedState, setSelectedState] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>("GA");
   const [signupComplete, setSignupComplete] = useState(false);
 
   const { data: inviteData, isLoading: validating, error: validateError } = useQuery<{
@@ -87,7 +87,12 @@ export default function ContractorSignup() {
   });
 
   const { data: regions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
-    queryKey: ["/api/service-regions", { state: selectedState }],
+    queryKey: ["/api/service-regions", selectedState],
+    queryFn: async () => {
+      const response = await fetch(`/api/service-regions?state=${encodeURIComponent(selectedState)}`);
+      if (!response.ok) throw new Error("Failed to fetch regions");
+      return response.json();
+    },
     enabled: !!selectedState,
   });
 
