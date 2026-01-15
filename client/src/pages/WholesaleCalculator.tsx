@@ -976,7 +976,7 @@ export default function WholesaleCalculator() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-3 p-4 rounded-lg bg-muted/50">
                     <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                      Original Plan
+                      Recommended Price
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
@@ -1004,7 +1004,7 @@ export default function WholesaleCalculator() {
                   
                   <div className="space-y-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
                     <div className="text-sm font-medium text-primary uppercase tracking-wide">
-                      At Your Buy Price
+                      Your Offer
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
