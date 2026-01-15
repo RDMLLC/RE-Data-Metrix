@@ -281,6 +281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: userProfile.fullName || "",
         creditScoreRange: userProfile.creditScoreRange || "",
         state: userProfile.state || "",
+        street: userProfile.street || "",
+        city: userProfile.city || "",
+        zipCode: userProfile.zipCode || "",
+        phone: userProfile.phone || "",
       } : null,
     });
   });
@@ -335,6 +339,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Profile update error:', error);
       res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Update user home address (for transactional funding form pre-fill)
+  app.patch("/api/user/profile/address", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const currentUser = req.user as User;
+    const { street, city, state, zipCode, phone } = req.body;
+    
+    // Basic validation - at least one field should be provided
+    if (!street && !city && !state && !zipCode && !phone) {
+      return res.status(400).json({ error: "At least one address field is required" });
+    }
+    
+    try {
+      const [existingProfile] = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, currentUser.id))
+        .limit(1);
+        
+      if (existingProfile) {
+        await db
+          .update(userProfiles)
+          .set({ 
+            street: street !== undefined ? (street || null) : existingProfile.street,
+            city: city !== undefined ? (city || null) : existingProfile.city,
+            state: state !== undefined ? (state || null) : existingProfile.state,
+            zipCode: zipCode !== undefined ? (zipCode || null) : existingProfile.zipCode,
+            phone: phone !== undefined ? (phone || null) : existingProfile.phone,
+            updatedAt: new Date()
+          })
+          .where(eq(userProfiles.userId, currentUser.id));
+      } else {
+        // Create a new profile with the address, using username as fallback for fullName
+        await db.insert(userProfiles).values({
+          userId: currentUser.id,
+          fullName: currentUser.username || "User",
+          street: street || null,
+          city: city || null,
+          state: state || null,
+          zipCode: zipCode || null,
+          phone: phone || null,
+        });
+      }
+      
+      res.json({ message: "Address updated successfully" });
+    } catch (error) {
+      console.error('Address update error:', error);
+      res.status(500).json({ error: "Failed to update address" });
     }
   });
 

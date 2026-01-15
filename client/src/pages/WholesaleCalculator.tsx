@@ -1173,18 +1173,32 @@ export default function WholesaleCalculator() {
                           params.set("Currency1", bToCPrice.toString());
                         }
                         
-                        // Pre-fill Subject Property Address from wizard data
+                        // Pre-fill Subject Property Address from wizard data (Address1 = Subject Property)
                         if (wizardData.property?.address) {
-                          params.set("Address_AddressLine1", wizardData.property.address);
+                          params.set("Address1_AddressLine1", wizardData.property.address);
                         }
                         if (wizardData.property?.city) {
-                          params.set("Address_City", wizardData.property.city);
+                          params.set("Address1_City", wizardData.property.city);
                         }
                         if (wizardData.property?.state) {
-                          params.set("Address_Region", wizardData.property.state);
+                          params.set("Address1_Region", wizardData.property.state);
                         }
                         if (wizardData.property?.zip) {
-                          params.set("Address_ZipCode", wizardData.property.zip);
+                          params.set("Address1_ZipCode", wizardData.property.zip);
+                        }
+                        
+                        // Pre-fill Home Address from saved user profile (Address = Home Address)
+                        if (user?.profile?.street) {
+                          params.set("Address_AddressLine1", user.profile.street);
+                        }
+                        if (user?.profile?.city) {
+                          params.set("Address_City", user.profile.city);
+                        }
+                        if (user?.profile?.state) {
+                          params.set("Address_Region", user.profile.state);
+                        }
+                        if (user?.profile?.zipCode) {
+                          params.set("Address_ZipCode", user.profile.zipCode);
                         }
                         
                         // Pre-fill user info if available
@@ -1194,6 +1208,9 @@ export default function WholesaleCalculator() {
                         }
                         if (user?.email) {
                           params.set("Email", user.email);
+                        }
+                        if (user?.profile?.phone) {
+                          params.set("PhoneNumber_countrycode", user.profile.phone);
                         }
                         
                         const queryString = params.toString();

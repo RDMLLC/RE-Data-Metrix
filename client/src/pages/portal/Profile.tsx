@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { 
   Pencil, Check, X, CreditCard, Crown, AlertCircle, 
-  Loader2, ExternalLink, Calendar, Shield, FileText, Scale 
+  Loader2, ExternalLink, Calendar, Shield, FileText, Scale, Home, Phone 
 } from "lucide-react";
 import {
   AlertDialog,
@@ -37,6 +37,16 @@ export default function Profile() {
   const [editForm, setEditForm] = useState({
     username: "",
     fullName: "",
+  });
+  
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
   });
 
   const cancelSubscriptionMutation = useMutation({
@@ -147,6 +157,44 @@ export default function Profile() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const startEditingAddress = () => {
+    setAddressForm({
+      street: user?.profile?.street || "",
+      city: user?.profile?.city || "",
+      state: user?.profile?.state || "",
+      zipCode: user?.profile?.zipCode || "",
+      phone: user?.profile?.phone || "",
+    });
+    setIsEditingAddress(true);
+  };
+
+  const cancelEditingAddress = () => {
+    setIsEditingAddress(false);
+    setAddressForm({ street: "", city: "", state: "", zipCode: "", phone: "" });
+  };
+
+  const saveAddressChanges = async () => {
+    setIsSavingAddress(true);
+    try {
+      await apiRequest("PATCH", "/api/user/profile/address", addressForm);
+      
+      await refetchUser();
+      setIsEditingAddress(false);
+      toast({
+        title: "Address Saved",
+        description: "Your home address has been saved and will be auto-filled on future transactional funding applications.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save address",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingAddress(false);
     }
   };
 
@@ -263,6 +311,145 @@ export default function Profile() {
                         {(user.subscriptionStatus || "inactive").replace(/_/g, " ")}
                       </p>
                     </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-home-address">
+              <CardHeader className="flex flex-row items-start justify-between gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Home className="h-5 w-5" />
+                    Home Address
+                  </CardTitle>
+                  <CardDescription>
+                    Save your home address to auto-fill transactional funding applications
+                  </CardDescription>
+                </div>
+                {!isEditingAddress ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={startEditingAddress}
+                    data-testid="button-edit-address"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={saveAddressChanges}
+                      disabled={isSavingAddress}
+                      data-testid="button-save-address"
+                    >
+                      <Check className="h-4 w-4 text-green-600" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={cancelEditingAddress}
+                      disabled={isSavingAddress}
+                      data-testid="button-cancel-address"
+                    >
+                      <X className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isEditingAddress ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="street">Street Address</Label>
+                      <Input
+                        id="street"
+                        value={addressForm.street}
+                        onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                        placeholder="123 Main Street"
+                        data-testid="input-street"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <div className="col-span-2 sm:col-span-1">
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          value={addressForm.city}
+                          onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                          placeholder="Atlanta"
+                          data-testid="input-city"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="state">State</Label>
+                        <Input
+                          id="state"
+                          value={addressForm.state}
+                          onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                          placeholder="GA"
+                          maxLength={2}
+                          data-testid="input-state"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="zipCode">ZIP Code</Label>
+                        <Input
+                          id="zipCode"
+                          value={addressForm.zipCode}
+                          onChange={(e) => setAddressForm({ ...addressForm, zipCode: e.target.value })}
+                          placeholder="30301"
+                          data-testid="input-zipcode"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        value={addressForm.phone}
+                        onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                        placeholder="(555) 123-4567"
+                        data-testid="input-phone"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {user.profile?.street || user.profile?.city || user.profile?.state || user.profile?.zipCode ? (
+                      <>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Address</p>
+                          <p className="text-base" data-testid="text-full-address">
+                            {user.profile?.street || ""}
+                            {user.profile?.street && (user.profile?.city || user.profile?.state || user.profile?.zipCode) ? ", " : ""}
+                            {user.profile?.city || ""}{user.profile?.city && user.profile?.state ? ", " : " "}
+                            {user.profile?.state || ""} {user.profile?.zipCode || ""}
+                          </p>
+                        </div>
+                        {user.profile?.phone && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                            <p className="text-base flex items-center gap-2" data-testid="text-phone">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              {user.profile.phone}
+                            </p>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          This address will be pre-filled on transactional funding applications.
+                        </p>
+                      </>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground">No home address saved</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Click the edit button to add your address for faster form submissions.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

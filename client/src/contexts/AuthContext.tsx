@@ -17,6 +17,10 @@ interface User {
     fullName: string;
     creditScoreRange?: string;
     state?: string;
+    street?: string;
+    city?: string;
+    zipCode?: string;
+    phone?: string;
   };
 }
 
