@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, DollarSign, Building2, Percent, HelpCircle, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ArrowLeft, Calculator, DollarSign, Building2, Percent, HelpCircle, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check, ChevronDown, ChevronUp, ExternalLink, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
