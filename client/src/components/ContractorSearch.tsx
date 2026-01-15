@@ -8,9 +8,59 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { MapPin, Phone, Globe, Mail, Loader2, HardHat, Info, Search, Building2 } from "lucide-react";
 import type { ServiceRegion, Contractor } from "@shared/schema";
 
-const US_STATES = [
-  { code: "GA", name: "Georgia" },
-];
+// US States - will be filtered to only show those with service regions
+const ALL_US_STATES: Record<string, string> = {
+  "AL": "Alabama",
+  "AK": "Alaska",
+  "AZ": "Arizona",
+  "AR": "Arkansas",
+  "CA": "California",
+  "CO": "Colorado",
+  "CT": "Connecticut",
+  "DE": "Delaware",
+  "FL": "Florida",
+  "GA": "Georgia",
+  "HI": "Hawaii",
+  "ID": "Idaho",
+  "IL": "Illinois",
+  "IN": "Indiana",
+  "IA": "Iowa",
+  "KS": "Kansas",
+  "KY": "Kentucky",
+  "LA": "Louisiana",
+  "ME": "Maine",
+  "MD": "Maryland",
+  "MA": "Massachusetts",
+  "MI": "Michigan",
+  "MN": "Minnesota",
+  "MS": "Mississippi",
+  "MO": "Missouri",
+  "MT": "Montana",
+  "NE": "Nebraska",
+  "NV": "Nevada",
+  "NH": "New Hampshire",
+  "NJ": "New Jersey",
+  "NM": "New Mexico",
+  "NY": "New York",
+  "NC": "North Carolina",
+  "ND": "North Dakota",
+  "OH": "Ohio",
+  "OK": "Oklahoma",
+  "OR": "Oregon",
+  "PA": "Pennsylvania",
+  "RI": "Rhode Island",
+  "SC": "South Carolina",
+  "SD": "South Dakota",
+  "TN": "Tennessee",
+  "TX": "Texas",
+  "UT": "Utah",
+  "VT": "Vermont",
+  "VA": "Virginia",
+  "WA": "Washington",
+  "WV": "West Virginia",
+  "WI": "Wisconsin",
+  "WY": "Wyoming",
+};
 
 const SPECIALTY_OPTIONS = [
   { value: "all", label: "All Specialties" },
@@ -36,6 +86,19 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
   const [selectedState, setSelectedState] = useState<string>("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
+
+  // Fetch all service regions to determine which states are available
+  const { data: allRegions } = useQuery<ServiceRegion[]>({
+    queryKey: ["/api/service-regions"],
+  });
+
+  // Get unique states that have service regions
+  const availableStates = allRegions 
+    ? Array.from(new Set(allRegions.map(r => r.state))).sort().map(code => ({
+        code,
+        name: ALL_US_STATES[code] || code
+      }))
+    : [];
 
   const { data: regions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
     queryKey: ["/api/service-regions", selectedState],
@@ -87,10 +150,10 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-2 mb-2">
           <HardHat className="h-6 w-6 text-accent" />
-          <h2 className="text-2xl font-bold">Find General Contractors</h2>
+          <h2 className="text-2xl font-bold">Find Contractors</h2>
         </div>
         <p className="text-muted-foreground">
-          Search for vetted general contractors by your property location
+          Search for contractors by your property location
         </p>
       </div>
 
@@ -110,7 +173,7 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
                   <SelectValue placeholder="Select a state" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map(state => (
+                  {availableStates.map(state => (
                     <SelectItem key={state.code} value={state.code}>
                       {state.name}
                     </SelectItem>
