@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check } from "lucide-react";
+import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -107,7 +107,7 @@ export default function WholesaleCalculator() {
     await toPDF();
     setIsPdfMode(false);
   };
-  const { isAuthenticated, isSubscriber } = useAuth();
+  const { isAuthenticated, isSubscriber, user } = useAuth();
   const queryClient = useQueryClient();
 
   const [transactionType, setTransactionType] = useState<"assignment" | "double-close">("assignment");
@@ -133,6 +133,7 @@ export default function WholesaleCalculator() {
   const [userEditedClosingCosts, setUserEditedClosingCosts] = useState(false);
   
   const [showTransactionalLenders, setShowTransactionalLenders] = useState(false);
+  const [showTransactionalLendingForm, setShowTransactionalLendingForm] = useState(false);
   
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [contactMessage, setContactMessage] = useState("");
@@ -1191,14 +1192,110 @@ export default function WholesaleCalculator() {
             </Card>
           )}
 
+          {/* Apply for Transactional Lending - Preferred Method */}
+          {hasResultsAccess && transactionType === "double-close" && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      Apply for Transactional Funding
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Get funded quickly through our preferred transactional lending partner
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setShowTransactionalLendingForm(!showTransactionalLendingForm)}
+                    data-testid="button-apply-transactional-lending"
+                  >
+                    {showTransactionalLendingForm ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-2" />
+                        Hide Application
+                      </>
+                    ) : (
+                      <>
+                        Apply Now
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              
+              {showTransactionalLendingForm && (
+                <CardContent className="pt-0">
+                  <Separator className="mb-4" />
+                  <div className="bg-background rounded-lg border overflow-hidden">
+                    <iframe
+                      src={(() => {
+                        const baseUrl = "https://forms.straightlinefunding.com/straightlinefunding/form/TransactionalFundingSubmissionFormREDataMetrix/formperma/mHsvTfwLV7T8fYveRFzlpbECm1HeV3cMWA7cRoGCTRU";
+                        const params = new URLSearchParams();
+                        
+                        // Pre-fill A-to-B Purchase Price
+                        const atoBPrice = parseNumericInput(buyPrice);
+                        if (atoBPrice > 0) {
+                          params.set("Currency", atoBPrice.toString());
+                        }
+                        
+                        // Pre-fill B-to-C Sales Price (A-to-B + Wholesale Fee)
+                        const bToCPrice = atoBPrice + parseNumericInput(wholesaleFee);
+                        if (bToCPrice > 0) {
+                          params.set("Currency1", bToCPrice.toString());
+                        }
+                        
+                        // Pre-fill Subject Property Address from wizard data
+                        if (wizardData.property?.address) {
+                          params.set("Address_AddressLine1", wizardData.property.address);
+                        }
+                        if (wizardData.property?.city) {
+                          params.set("Address_City", wizardData.property.city);
+                        }
+                        if (wizardData.property?.state) {
+                          params.set("Address_Region", wizardData.property.state);
+                        }
+                        if (wizardData.property?.zip) {
+                          params.set("Address_ZipCode", wizardData.property.zip);
+                        }
+                        
+                        // Pre-fill user info if available
+                        if (user?.profile?.fullName) {
+                          params.set("Name_First", user.profile.fullName.split(" ")[0] || "");
+                          params.set("Name_Last", user.profile.fullName.split(" ").slice(1).join(" ") || "");
+                        }
+                        if (user?.email) {
+                          params.set("Email", user.email);
+                        }
+                        
+                        const queryString = params.toString();
+                        return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+                      })()}
+                      width="100%"
+                      height="800"
+                      style={{ border: "none", minHeight: "800px" }}
+                      title="Transactional Funding Application"
+                      data-testid="iframe-transactional-lending-form"
+                    />
+                  </div>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Powered by Straight Line Funding</span>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          )}
+
           {hasResultsAccess && transactionType === "double-close" && !showTransactionalLenders && (
             <div className="flex justify-center">
               <Button 
-                size="lg"
+                variant="outline"
                 onClick={() => setShowTransactionalLenders(true)}
                 data-testid="button-find-transactional-lenders"
               >
-                Calculate Lender Costs / Find Lenders
+                Compare Other Lenders
               </Button>
             </div>
           )}
