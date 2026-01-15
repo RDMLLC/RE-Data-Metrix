@@ -561,7 +561,28 @@ export default function ContractorSignup() {
 
                   {selectedState && (
                     <div>
-                      <FormLabel className="mb-3 block">Select Regions (click to toggle)</FormLabel>
+                      <div className="flex items-center justify-between mb-3">
+                        <FormLabel className="mb-0">Select Regions (click to toggle)</FormLabel>
+                        {regions && regions.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const allRegionIds = regions.map(r => r.id);
+                              const allSelected = allRegionIds.every(id => selectedRegions.includes(id));
+                              if (allSelected) {
+                                setSelectedRegions(selectedRegions.filter(id => !allRegionIds.includes(id)));
+                              } else {
+                                setSelectedRegions(Array.from(new Set([...selectedRegions, ...allRegionIds])));
+                              }
+                            }}
+                            data-testid="button-select-all-regions"
+                          >
+                            {regions.every(r => selectedRegions.includes(r.id)) ? "Deselect All" : "Select All"}
+                          </Button>
+                        )}
+                      </div>
                       {regionsLoading ? (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
