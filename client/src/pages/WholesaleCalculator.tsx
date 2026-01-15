@@ -8,16 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Calculator, FileText, DollarSign, Building2, Percent, Download, HelpCircle, Mail, Send, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Calculator, DollarSign, Building2, Percent, HelpCircle, Loader2, Pencil, TrendingUp, TrendingDown, RotateCcw, Save, Check, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,17 +17,13 @@ import WholesaleQuotaModal from "@/components/deal-analysis/WholesaleQuotaModal"
 import {
   calculateAssignmentMaxOffer,
   calculateDoubleCloseMaxOffer,
-  calculateTransactionalLenderResult,
   calculateDynamicClosingCosts,
   calculateWholesaleFeeFromBuyPrice,
   calculateDoubleCloseWholesaleFeeFromBuyPrice,
-  REFERRAL_POINTS_PERCENT,
   type WholesaleInputs,
   type DoubleCloseClosingCosts,
-  type TransactionalLenderResult,
 } from "@shared/calculations/wholesale-calculations";
 import { getTransferTaxRate } from "@shared/data/transferTaxRates";
-import { QRCodeSVG } from "qrcode.react";
 import { usePDF } from "react-to-pdf";
 
 function formatCurrency(amount: number): string {
@@ -132,25 +119,9 @@ export default function WholesaleCalculator() {
   );
   const [userEditedClosingCosts, setUserEditedClosingCosts] = useState(false);
   
-  const [showTransactionalLenders, setShowTransactionalLenders] = useState(false);
   const [showTransactionalLendingForm, setShowTransactionalLendingForm] = useState(false);
   
-  const [contactDialogOpen, setContactDialogOpen] = useState(false);
-  const [contactMessage, setContactMessage] = useState("");
-  const [selectedLenderForContact, setSelectedLenderForContact] = useState<{
-    lenderId: string;
-    lenderName: string;
-    productId: string;
-    flatFee: number;
-    points: number;
-  } | null>(null);
-  
   const { toast } = useToast();
-
-  const { data: transactionalLendersData, isLoading: loadingLenders } = useQuery<TransactionalLender[]>({
-    queryKey: ["/api/loan-products/transactional-funding"],
-    enabled: transactionType === "double-close" && showTransactionalLenders,
-  });
 
   // Check current quota status (without consuming)
   const { data: usageData } = useQuery<{
@@ -221,74 +192,6 @@ export default function WholesaleCalculator() {
       setShowQuotaModal(true);
     }
   });
-
-  // Contact lender mutation
-  const contactLenderMutation = useMutation({
-    mutationFn: async (data: {
-      lenderId: string;
-      loanProductId: string;
-      message: string;
-      dealDetails: {
-        propertyAddress?: string;
-        arv: number;
-        rehabBudget: number;
-        maxOfferPrice: number;
-        wholesaleFee: number;
-        transactionType: string;
-        flatFee: number;
-        points: number;
-      };
-    }) => {
-      const response = await apiRequest("POST", "/api/investor-inquiries", data);
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Inquiry Sent",
-        description: `Your inquiry has been sent to ${selectedLenderForContact?.lenderName}. They will contact you soon.`,
-      });
-      setContactDialogOpen(false);
-      setContactMessage("");
-      setSelectedLenderForContact(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send inquiry. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleContactLender = (lender: TransactionalLender) => {
-    setSelectedLenderForContact({
-      lenderId: lender.id,
-      lenderName: lender.companyName,
-      productId: lender.productId,
-      flatFee: lender.flatFee,
-      points: lender.points,
-    });
-    setContactDialogOpen(true);
-  };
-
-  const submitContactLender = () => {
-    if (!selectedLenderForContact || !result) return;
-
-    contactLenderMutation.mutate({
-      lenderId: selectedLenderForContact.lenderId,
-      loanProductId: selectedLenderForContact.productId,
-      message: contactMessage,
-      dealDetails: {
-        arv: parseNumericInput(arv),
-        rehabBudget: parseNumericInput(rehabBudget),
-        maxOfferPrice: result.maxOfferPrice,
-        wholesaleFee: parseNumericInput(wholesaleFee),
-        transactionType: transactionType,
-        flatFee: selectedLenderForContact.flatFee,
-        points: selectedLenderForContact.points,
-      },
-    });
-  };
 
   // Subscribers and non-authenticated users have immediate access to results
   // (non-authenticated see results to encourage signup)
@@ -396,23 +299,6 @@ export default function WholesaleCalculator() {
       setBuyPrice(Math.round(currentMaxOfferPrice).toString());
     }
   }, [currentMaxOfferPrice, buyPriceManuallySet]);
-
-  const transactionalLenderResults: TransactionalLenderResult[] = useMemo(() => {
-    if (!transactionalLendersData || transactionalLendersData.length === 0) return [];
-    
-    const baseMaxOffer = doubleCloseResult.maxOfferPrice;
-    
-    return transactionalLendersData.slice(0, 2).map(lender => 
-      calculateTransactionalLenderResult(
-        lender.id,
-        lender.companyName,
-        baseMaxOffer,
-        lender.flatFee,
-        lender.points,
-        wholesaleInputs.wholesaleFee
-      )
-    );
-  }, [transactionalLendersData, doubleCloseResult.maxOfferPrice, wholesaleInputs.wholesaleFee]);
 
   // Calculate profitability comparison when Buy Price is manually edited
   const profitabilityComparison = useMemo(() => {
@@ -563,7 +449,7 @@ export default function WholesaleCalculator() {
                 value={transactionType}
                 onValueChange={(value) => {
                   setTransactionType(value as "assignment" | "double-close");
-                  setShowTransactionalLenders(false);
+                  setShowTransactionalLendingForm(false);
                 }}
                 className="flex gap-6"
               >
@@ -1192,7 +1078,7 @@ export default function WholesaleCalculator() {
             </Card>
           )}
 
-          {/* Apply for Transactional Lending - Preferred Method */}
+          {/* Apply for Transactional Lending - Straight Line Funding (Exclusive Partner) */}
           {hasResultsAccess && transactionType === "double-close" && (
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
@@ -1203,7 +1089,7 @@ export default function WholesaleCalculator() {
                       Apply for Transactional Funding
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Get funded quickly through our preferred transactional lending partner
+                      Get funded quickly through Straight Line Funding
                     </CardDescription>
                   </div>
                   <Button
@@ -1224,6 +1110,47 @@ export default function WholesaleCalculator() {
                   </Button>
                 </div>
               </CardHeader>
+              
+              <CardContent className="pt-0">
+                {/* Estimated Costs Display */}
+                {(() => {
+                  const purchasePrice = parseNumericInput(buyPrice);
+                  const totalClosingCosts = doubleCloseResult.totalClosingCosts;
+                  const fundedAmount = purchasePrice + totalClosingCosts;
+                  const lenderFee = Math.max(purchasePrice * 0.0125, 1000);
+                  const payoffAmount = fundedAmount + lenderFee;
+                  
+                  return (
+                    <div className="bg-background rounded-lg border p-4 mb-4">
+                      <h4 className="font-semibold mb-3">Estimated Costs</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground">Purchase Price (A-to-B):</span>
+                          <span className="font-medium" data-testid="text-slf-purchase-price">{formatCurrency(purchasePrice)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground">Closing Costs:</span>
+                          <span className="font-medium" data-testid="text-slf-closing-costs">{formatCurrency(totalClosingCosts)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground">Funded Amount:</span>
+                          <span className="font-semibold" data-testid="text-slf-funded-amount">{formatCurrency(fundedAmount)}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground">Lender Fee (1.25%):</span>
+                          <span className="font-medium text-red-600" data-testid="text-slf-lender-fee">{formatCurrency(lenderFee)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between gap-2 pt-1">
+                          <span className="font-semibold">Payoff Amount:</span>
+                          <span className="font-bold text-primary" data-testid="text-slf-payoff-amount">{formatCurrency(payoffAmount)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
               
               {showTransactionalLendingForm && (
                 <CardContent className="pt-0">
@@ -1287,196 +1214,14 @@ export default function WholesaleCalculator() {
               )}
             </Card>
           )}
-
-          {hasResultsAccess && transactionType === "double-close" && !showTransactionalLenders && (
-            <div className="flex justify-center">
-              <Button 
-                variant="outline"
-                onClick={() => setShowTransactionalLenders(true)}
-                data-testid="button-find-transactional-lenders"
-              >
-                Compare Other Lenders
-              </Button>
-            </div>
-          )}
-
-          {hasResultsAccess && transactionType === "double-close" && showTransactionalLenders && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Transactional Funding Lenders</CardTitle>
-                <CardDescription>
-                  Compare lenders who offer transactional funding for double close deals.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingLenders ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Loading transactional lenders...
-                  </div>
-                ) : transactionalLenderResults.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No transactional funding lenders available at this time.
-                  </div>
-                ) : (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {transactionalLenderResults.map((lender, index) => {
-                      const originalLender = transactionalLendersData?.[index];
-                      return (
-                        <Card key={lender.lenderId} className="border-2 min-w-0">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-lg break-words">{lender.lenderName}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="flex justify-between gap-2">
-                              <span className="text-muted-foreground shrink-0">Flat Fee:</span>
-                              <span className="font-semibold text-right">{formatCurrency(lender.flatFee)}</span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                              <span className="text-muted-foreground shrink-0">Points:</span>
-                              <span className="font-semibold text-right">{lender.totalPointsWithReferral.toFixed(2)}%</span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                              <span className="text-muted-foreground shrink-0">Points Cost:</span>
-                              <span className="font-semibold text-right">{formatCurrency(lender.pointsCost)}</span>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between gap-2">
-                              <span className="text-muted-foreground shrink-0">Total Lender Fees:</span>
-                              <span className="font-semibold text-red-600 text-right">{formatCurrency(lender.totalLenderFees)}</span>
-                            </div>
-                            <div className="flex justify-between items-center gap-2 pt-2 bg-primary/5 -mx-6 px-6 py-3">
-                              <span className="font-semibold shrink-0">Adjusted Max Offer:</span>
-                              <span className="text-xl font-bold text-primary text-right" data-testid={`text-adjusted-max-offer-${index}`}>
-                                {formatCurrency(lender.adjustedMaxOfferPrice)}
-                              </span>
-                            </div>
-                            
-                            {/* QR codes only in PDF mode */}
-                            {isPdfMode && originalLender?.referralLink && (
-                              <div className="flex flex-col items-center pt-4 gap-2">
-                                <span className="text-sm text-muted-foreground">Scan to contact lender:</span>
-                                <QRCodeSVG 
-                                  value={originalLender.referralLink} 
-                                  size={100}
-                                  level="M"
-                                />
-                              </div>
-                            )}
-                            
-                            {/* Contact button only on website (not in PDF) */}
-                            {!isPdfMode && isAuthenticated && originalLender && (
-                              <div className="flex justify-center pt-4">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleContactLender(originalLender)}
-                                  data-testid={`button-contact-lender-${index}`}
-                                >
-                                  <Mail className="h-4 w-4 mr-2" />
-                                  Contact Lender
-                                </Button>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
-
-      {hasResultsAccess && transactionType === "double-close" && showTransactionalLenders && transactionalLenderResults.length > 0 && (
-        <div className="flex justify-center mt-6">
-          <Button 
-            variant="outline" 
-            onClick={handleDownloadPdf}
-            disabled={isPdfMode}
-            data-testid="button-download-pdf"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {isPdfMode ? "Generating PDF..." : "Download PDF with QR Codes"}
-          </Button>
-        </div>
-      )}
 
       <WholesaleQuotaModal
         open={showQuotaModal}
         onOpenChange={setShowQuotaModal}
         onGoBack={handleGoBackFromModal}
       />
-
-      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Contact {selectedLenderForContact?.lenderName}
-            </DialogTitle>
-            <DialogDescription>
-              Send an inquiry about transactional funding for your wholesale deal.
-              Your contact information and deal details will be included automatically.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="message">Message (Optional)</Label>
-              <Textarea
-                id="message"
-                placeholder="Include any questions or additional information for the lender..."
-                value={contactMessage}
-                onChange={(e) => setContactMessage(e.target.value)}
-                className="min-h-[100px]"
-                data-testid="textarea-contact-message"
-              />
-            </div>
-            
-            <div className="bg-muted/50 rounded-lg p-3 text-sm">
-              <p className="font-medium mb-2">What will be shared:</p>
-              <ul className="text-muted-foreground space-y-1 text-xs">
-                <li>Your name, email, and phone number</li>
-                <li>Deal details (ARV, rehab budget, max offer)</li>
-                <li>Transaction type and wholesale fee</li>
-                <li>Selected lender product information</li>
-              </ul>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setContactDialogOpen(false);
-                setContactMessage("");
-                setSelectedLenderForContact(null);
-              }}
-              data-testid="button-cancel-contact"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={submitContactLender}
-              disabled={contactLenderMutation.isPending}
-              data-testid="button-send-contact"
-            >
-              {contactLenderMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Inquiry
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
