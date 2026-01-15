@@ -120,6 +120,10 @@ export default function WholesaleCalculator() {
     calculateDynamicClosingCosts(0, "")
   );
   const [userEditedClosingCosts, setUserEditedClosingCosts] = useState(false);
+  // Track if closing costs have been initialized (calculated based on initial buy price)
+  // This is separate from buyPriceManuallySet because we need to calculate closing costs once
+  // on initial load, but then freeze them when user changes buy price for comparison
+  const [closingCostsInitialized, setClosingCostsInitialized] = useState(false);
   
   const [showTransactionalLendingForm, setShowTransactionalLendingForm] = useState(false);
   
@@ -263,15 +267,21 @@ export default function WholesaleCalculator() {
   }, [wizardData, initialized]);
 
   // Calculate dynamic closing costs when buy price or state changes
-  // Only auto-recalculate if user hasn't manually edited closing costs
-  // Also don't recalculate when user manually sets buy price (preserves original baseline for comparison)
+  // Only auto-recalculate if:
+  // 1. User hasn't manually edited closing costs, AND
+  // 2. Either closing costs haven't been initialized yet, OR user hasn't manually set buy price
+  // This ensures closing costs are calculated once on initial load, then frozen for comparison
   useEffect(() => {
     const price = parseNumericInput(buyPrice);
-    if (price > 0 && !userEditedClosingCosts && !buyPriceManuallySet) {
-      const dynamicCosts = calculateDynamicClosingCosts(price, propertyState);
-      setClosingCosts(dynamicCosts);
+    if (price > 0 && !userEditedClosingCosts) {
+      // Calculate if not initialized yet, or if buy price hasn't been manually set (auto-updating scenario)
+      if (!closingCostsInitialized || !buyPriceManuallySet) {
+        const dynamicCosts = calculateDynamicClosingCosts(price, propertyState);
+        setClosingCosts(dynamicCosts);
+        setClosingCostsInitialized(true);
+      }
     }
-  }, [buyPrice, propertyState, userEditedClosingCosts, buyPriceManuallySet]);
+  }, [buyPrice, propertyState, userEditedClosingCosts, buyPriceManuallySet, closingCostsInitialized]);
 
   const wholesaleInputs: WholesaleInputs = useMemo(() => ({
     arv: parseNumericInput(arv),
@@ -388,6 +398,7 @@ export default function WholesaleCalculator() {
     // Recalculate closing costs based on the recommended max offer price
     if (!userEditedClosingCosts) {
       setClosingCosts(calculateDynamicClosingCosts(maxOffer, propertyState));
+      setClosingCostsInitialized(true);
     }
   };
 
