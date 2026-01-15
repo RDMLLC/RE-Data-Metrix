@@ -12,6 +12,22 @@ const US_STATES = [
   { code: "GA", name: "Georgia" },
 ];
 
+const SPECIALTY_OPTIONS = [
+  { value: "all", label: "All Specialties" },
+  { value: "Rehabs", label: "Rehabs" },
+  { value: "New Construction", label: "New Construction" },
+  { value: "Renovations", label: "Renovations" },
+  { value: "Kitchens", label: "Kitchens" },
+  { value: "Bathrooms", label: "Bathrooms" },
+  { value: "Roofing", label: "Roofing" },
+  { value: "HVAC", label: "HVAC" },
+  { value: "Electrical", label: "Electrical" },
+  { value: "Plumbing", label: "Plumbing" },
+  { value: "Flooring", label: "Flooring" },
+  { value: "Foundation", label: "Foundation" },
+  { value: "Additions", label: "Additions" },
+];
+
 interface ContractorSearchProps {
   isBlurred?: boolean;
 }
@@ -19,6 +35,7 @@ interface ContractorSearchProps {
 export default function ContractorSearch({ isBlurred = false }: ContractorSearchProps) {
   const [selectedState, setSelectedState] = useState<string>("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
 
   const { data: regions, isLoading: regionsLoading } = useQuery<ServiceRegion[]>({
     queryKey: ["/api/service-regions", { state: selectedState }],
@@ -30,6 +47,12 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
     enabled: !!selectedRegion,
   });
 
+  // Filter contractors by specialty (client-side)
+  const filteredContractors = contractors?.filter(contractor => {
+    if (selectedSpecialty === "all") return true;
+    return contractor.specialties?.includes(selectedSpecialty);
+  });
+
   const handleStateChange = (value: string) => {
     setSelectedState(value);
     setSelectedRegion("");
@@ -39,7 +62,11 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
     setSelectedRegion(value);
   };
 
-  const selectedRegionData = regions?.find(r => r.id === selectedRegion);
+  const handleSpecialtyChange = (value: string) => {
+    setSelectedSpecialty(value);
+  };
+
+  const selectedRegionData = regions?.find(r => String(r.id) === selectedRegion);
 
   return (
     <div className={`space-y-6 ${isBlurred ? 'blur-sm pointer-events-none select-none' : ''}`}>
@@ -61,7 +88,7 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">State</label>
               <Select value={selectedState} onValueChange={handleStateChange}>
@@ -106,7 +133,7 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
                 </SelectTrigger>
                 <SelectContent>
                   {regions?.map(region => (
-                    <SelectItem key={region.id} value={region.id}>
+                    <SelectItem key={region.id} value={String(region.id)}>
                       <div className="flex items-center gap-2">
                         <span>{region.name}</span>
                         {region.keyCities && region.keyCities.length > 0 && (
@@ -120,6 +147,22 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
                           </Tooltip>
                         )}
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Specialty</label>
+              <Select value={selectedSpecialty} onValueChange={handleSpecialtyChange}>
+                <SelectTrigger data-testid="select-specialty">
+                  <SelectValue placeholder="All Specialties" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SPECIALTY_OPTIONS.map(specialty => (
+                    <SelectItem key={specialty.value} value={specialty.value}>
+                      {specialty.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -160,14 +203,27 @@ export default function ContractorSearch({ isBlurred = false }: ContractorSearch
         </Card>
       )}
 
-      {selectedRegion && !contractorsLoading && contractors && contractors.length > 0 && (
+      {selectedRegion && !contractorsLoading && contractors && contractors.length > 0 && filteredContractors && filteredContractors.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <HardHat className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Matching Contractors</h3>
+            <p className="text-muted-foreground">
+              No contractors found with the selected specialty.
+              Try selecting "All Specialties" to see all available contractors.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedRegion && !contractorsLoading && filteredContractors && filteredContractors.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <HardHat className="h-5 w-5 text-accent" />
-            Available Contractors ({contractors.length})
+            Available Contractors ({filteredContractors.length})
           </h3>
           <div className="grid gap-4">
-            {contractors.map(contractor => (
+            {filteredContractors.map(contractor => (
               <ContractorCard key={contractor.id} contractor={contractor} />
             ))}
           </div>
