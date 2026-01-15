@@ -19,6 +19,7 @@ import { Loader2, Eye, EyeOff, X, Plus, CheckCircle } from "lucide-react";
 import type { ServiceRegion } from "@shared/schema";
 
 const US_STATES = [
+  { value: "AL", label: "Alabama" },
   { value: "GA", label: "Georgia" },
 ];
 
