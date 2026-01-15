@@ -40,7 +40,12 @@ export interface WholesaleResult {
 export interface DoubleCloseResult extends WholesaleResult {
   totalClosingCosts: number;
   closingCostsBreakdown: DoubleCloseClosingCosts;
+  lenderFee: number;
 }
+
+// Straight Line Funding lender fee constants
+export const LENDER_FEE_RATE = 0.0125; // 1.25%
+export const LENDER_FEE_MINIMUM = 1000; // $1,000 minimum fee
 
 export interface TransactionalLenderResult {
   lenderId: string;
@@ -119,8 +124,18 @@ export function calculateTotalClosingCosts(costs: DoubleCloseClosingCosts): numb
 }
 
 /**
+ * Calculate the lender fee for a given purchase price
+ * Fee is 1.25% of purchase price with a $1,000 minimum
+ */
+export function calculateLenderFee(purchasePrice: number): number {
+  const calculatedFee = purchasePrice * LENDER_FEE_RATE;
+  return Math.max(calculatedFee, LENDER_FEE_MINIMUM);
+}
+
+/**
  * Calculate max offer price for a Double Close deal
- * Formula: ARV × Buyer's Max % - Rehab Budget - Wholesale Fee - Closing Costs = Max Offer Price
+ * Formula accounts for lender fee: P = (BuyersMaxPrice - Rehab - WholesaleFee - ClosingCosts) / 1.0125
+ * The lender fee is 1.25% of purchase price with a $1,000 minimum
  */
 export function calculateDoubleCloseMaxOffer(
   inputs: WholesaleInputs,
@@ -128,15 +143,42 @@ export function calculateDoubleCloseMaxOffer(
 ): DoubleCloseResult {
   const buyersMaxPrice = inputs.arv * (inputs.buyersMaxArvPercent / 100);
   const totalClosingCosts = calculateTotalClosingCosts(closingCosts);
-  const maxOfferPrice = buyersMaxPrice - inputs.rehabBudget - inputs.wholesaleFee - totalClosingCosts;
   
-  return {
-    buyersMaxPrice,
-    maxOfferPrice: Math.max(0, maxOfferPrice),
-    wholesaleProfit: inputs.wholesaleFee,
-    totalClosingCosts,
-    closingCostsBreakdown: closingCosts,
-  };
+  // Available funds after deducting rehab, wholesale fee, and closing costs
+  const availableForPurchaseAndFee = buyersMaxPrice - inputs.rehabBudget - inputs.wholesaleFee - totalClosingCosts;
+  
+  // The lender fee creates a circular dependency: fee = max(P * 0.0125, 1000)
+  // Case 1: If P >= $80,000, fee = P * 0.0125, so P + P * 0.0125 = available
+  //         P = available / 1.0125
+  // Case 2: If P < $80,000, fee = $1,000 (minimum), so P = available - 1000
+  
+  // First, calculate assuming the percentage applies (P >= $80,000)
+  const maxOfferWithPercentFee = availableForPurchaseAndFee / (1 + LENDER_FEE_RATE);
+  
+  // Check if this results in a purchase price where the percentage fee >= minimum
+  if (maxOfferWithPercentFee >= (LENDER_FEE_MINIMUM / LENDER_FEE_RATE)) {
+    // Percentage fee applies (>= $1,000)
+    const lenderFee = maxOfferWithPercentFee * LENDER_FEE_RATE;
+    return {
+      buyersMaxPrice,
+      maxOfferPrice: Math.max(0, Math.round(maxOfferWithPercentFee)),
+      wholesaleProfit: inputs.wholesaleFee,
+      totalClosingCosts,
+      closingCostsBreakdown: closingCosts,
+      lenderFee: Math.round(lenderFee),
+    };
+  } else {
+    // Minimum fee applies ($1,000)
+    const maxOfferWithMinFee = availableForPurchaseAndFee - LENDER_FEE_MINIMUM;
+    return {
+      buyersMaxPrice,
+      maxOfferPrice: Math.max(0, Math.round(maxOfferWithMinFee)),
+      wholesaleProfit: inputs.wholesaleFee,
+      totalClosingCosts,
+      closingCostsBreakdown: closingCosts,
+      lenderFee: LENDER_FEE_MINIMUM,
+    };
+  }
 }
 
 /**
@@ -251,11 +293,12 @@ export function calculateWholesaleFeeFromBuyPrice(inputs: ReverseWholesaleInputs
 
 /**
  * Reverse calculation for Double Close: Given a Buy Price, calculate the resulting Wholesale Fee
- * For Double Close: Wholesale Fee = Buyer's Max Price - Rehab Budget - Buy Price - Closing Costs
+ * For Double Close: Wholesale Fee = Buyer's Max Price - Rehab Budget - Buy Price - Closing Costs - Lender Fee
  */
 export interface ReverseDoubleCloseResult extends ReverseWholesaleResult {
   totalClosingCosts: number;
   closingCostsBreakdown: DoubleCloseClosingCosts;
+  lenderFee: number;
 }
 
 export function calculateDoubleCloseWholesaleFeeFromBuyPrice(
@@ -264,7 +307,8 @@ export function calculateDoubleCloseWholesaleFeeFromBuyPrice(
 ): ReverseDoubleCloseResult {
   const buyersMaxPrice = inputs.arv * (inputs.buyersMaxArvPercent / 100);
   const totalClosingCosts = calculateTotalClosingCosts(closingCosts);
-  const calculatedWholesaleFee = buyersMaxPrice - inputs.rehabBudget - inputs.buyPrice - totalClosingCosts;
+  const lenderFee = calculateLenderFee(inputs.buyPrice);
+  const calculatedWholesaleFee = buyersMaxPrice - inputs.rehabBudget - inputs.buyPrice - totalClosingCosts - lenderFee;
   
   return {
     buyersMaxPrice,
@@ -272,6 +316,7 @@ export function calculateDoubleCloseWholesaleFeeFromBuyPrice(
     buyPrice: inputs.buyPrice,
     totalClosingCosts,
     closingCostsBreakdown: closingCosts,
+    lenderFee,
   };
 }
 
@@ -283,15 +328,18 @@ export interface WholesaleComparison {
     buyPrice: number;
     wholesaleFee: number;
     closingCosts?: number;
+    lenderFee?: number;
   };
   adjusted: {
     buyPrice: number;
     wholesaleFee: number;
     closingCosts?: number;
+    lenderFee?: number;
   };
   delta: {
     buyPriceDiff: number;
     wholesaleFeeDiff: number;
     closingCostsDiff?: number;
+    lenderFeeDiff?: number;
   };
 }

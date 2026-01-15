@@ -20,6 +20,8 @@ import {
   calculateDynamicClosingCosts,
   calculateWholesaleFeeFromBuyPrice,
   calculateDoubleCloseWholesaleFeeFromBuyPrice,
+  calculateLenderFee,
+  LENDER_FEE_RATE,
   type WholesaleInputs,
   type DoubleCloseClosingCosts,
 } from "@shared/calculations/wholesale-calculations";
@@ -262,13 +264,14 @@ export default function WholesaleCalculator() {
 
   // Calculate dynamic closing costs when buy price or state changes
   // Only auto-recalculate if user hasn't manually edited closing costs
+  // Also don't recalculate when user manually sets buy price (preserves original baseline for comparison)
   useEffect(() => {
     const price = parseNumericInput(buyPrice);
-    if (price > 0 && !userEditedClosingCosts) {
+    if (price > 0 && !userEditedClosingCosts && !buyPriceManuallySet) {
       const dynamicCosts = calculateDynamicClosingCosts(price, propertyState);
       setClosingCosts(dynamicCosts);
     }
-  }, [buyPrice, propertyState, userEditedClosingCosts]);
+  }, [buyPrice, propertyState, userEditedClosingCosts, buyPriceManuallySet]);
 
   const wholesaleInputs: WholesaleInputs = useMemo(() => ({
     arv: parseNumericInput(arv),
@@ -322,6 +325,7 @@ export default function WholesaleCalculator() {
     
     let adjustedWholesaleFee: number;
     let adjustedClosingCosts: number | undefined;
+    let adjustedLenderFee: number | undefined;
     
     if (transactionType === "assignment") {
       const reverseResult = calculateWholesaleFeeFromBuyPrice(reverseInputs);
@@ -341,27 +345,34 @@ export default function WholesaleCalculator() {
       const reverseResult = calculateDoubleCloseWholesaleFeeFromBuyPrice(reverseInputs, adjustedCosts);
       adjustedWholesaleFee = reverseResult.calculatedWholesaleFee;
       adjustedClosingCosts = reverseResult.totalClosingCosts;
+      adjustedLenderFee = reverseResult.lenderFee;
     }
     
     const originalWholesaleFee = parseNumericInput(wholesaleFee);
     const originalClosingCosts = transactionType === "double-close" ? doubleCloseResult.totalClosingCosts : undefined;
+    const originalLenderFee = transactionType === "double-close" ? doubleCloseResult.lenderFee : undefined;
     
     return {
       original: {
         buyPrice: originalMaxOffer,
         wholesaleFee: originalWholesaleFee,
         closingCosts: originalClosingCosts,
+        lenderFee: originalLenderFee,
       },
       adjusted: {
         buyPrice: currentBuyPrice,
         wholesaleFee: adjustedWholesaleFee,
         closingCosts: adjustedClosingCosts,
+        lenderFee: adjustedLenderFee,
       },
       delta: {
         buyPriceDiff: currentBuyPrice - originalMaxOffer,
         wholesaleFeeDiff: adjustedWholesaleFee - originalWholesaleFee,
         closingCostsDiff: adjustedClosingCosts !== undefined && originalClosingCosts !== undefined 
           ? adjustedClosingCosts - originalClosingCosts 
+          : undefined,
+        lenderFeeDiff: adjustedLenderFee !== undefined && originalLenderFee !== undefined
+          ? adjustedLenderFee - originalLenderFee
           : undefined,
       },
     };
@@ -374,6 +385,10 @@ export default function WholesaleCalculator() {
       : doubleCloseResult.maxOfferPrice;
     setBuyPrice(Math.round(maxOffer).toString());
     setBuyPriceManuallySet(false);
+    // Recalculate closing costs based on the recommended max offer price
+    if (!userEditedClosingCosts) {
+      setClosingCosts(calculateDynamicClosingCosts(maxOffer, propertyState));
+    }
   };
 
   const updateClosingCost = (field: keyof DoubleCloseClosingCosts, value: string) => {
@@ -927,12 +942,20 @@ export default function WholesaleCalculator() {
                   </div>
 
                   {transactionType === "double-close" && (
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-muted-foreground">Less: Closing Costs</span>
-                      <span className="font-semibold text-red-600" data-testid="text-less-closing-costs">
-                        - {formatCurrency(doubleCloseResult.totalClosingCosts)}
-                      </span>
-                    </div>
+                    <>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground">Less: Closing Costs</span>
+                        <span className="font-semibold text-red-600" data-testid="text-less-closing-costs">
+                          - {formatCurrency(doubleCloseResult.totalClosingCosts)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground">Less: Lender Fee (1.25%)</span>
+                        <span className="font-semibold text-red-600" data-testid="text-less-lender-fee">
+                          - {formatCurrency(doubleCloseResult.lenderFee)}
+                        </span>
+                      </div>
+                    </>
                   )}
 
                   <Separator />
@@ -999,6 +1022,14 @@ export default function WholesaleCalculator() {
                           </span>
                         </div>
                       )}
+                      {profitabilityComparison.original.lenderFee !== undefined && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Lender Fee:</span>
+                          <span className="font-medium" data-testid="text-original-lender-fee">
+                            {formatCurrency(profitabilityComparison.original.lenderFee)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1046,7 +1077,7 @@ export default function WholesaleCalculator() {
                             <span className="font-medium" data-testid="text-adjusted-closing-costs">
                               {formatCurrency(profitabilityComparison.adjusted.closingCosts)}
                             </span>
-                            {profitabilityComparison.delta.closingCostsDiff !== undefined && (
+                            {profitabilityComparison.delta.closingCostsDiff !== undefined && profitabilityComparison.delta.closingCostsDiff !== 0 && (
                               <span className={`text-xs flex items-center gap-0.5 ${profitabilityComparison.delta.closingCostsDiff < 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {profitabilityComparison.delta.closingCostsDiff < 0 ? (
                                   <TrendingDown className="h-3 w-3" />
@@ -1054,6 +1085,26 @@ export default function WholesaleCalculator() {
                                   <TrendingUp className="h-3 w-3" />
                                 )}
                                 {formatCurrency(Math.abs(profitabilityComparison.delta.closingCostsDiff))}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {profitabilityComparison.adjusted.lenderFee !== undefined && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Lender Fee:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium" data-testid="text-adjusted-lender-fee">
+                              {formatCurrency(profitabilityComparison.adjusted.lenderFee)}
+                            </span>
+                            {profitabilityComparison.delta.lenderFeeDiff !== undefined && profitabilityComparison.delta.lenderFeeDiff !== 0 && (
+                              <span className={`text-xs flex items-center gap-0.5 ${profitabilityComparison.delta.lenderFeeDiff < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {profitabilityComparison.delta.lenderFeeDiff < 0 ? (
+                                  <TrendingDown className="h-3 w-3" />
+                                ) : (
+                                  <TrendingUp className="h-3 w-3" />
+                                )}
+                                {formatCurrency(Math.abs(profitabilityComparison.delta.lenderFeeDiff))}
                               </span>
                             )}
                           </div>
@@ -1117,7 +1168,7 @@ export default function WholesaleCalculator() {
                   const purchasePrice = parseNumericInput(buyPrice);
                   const totalClosingCosts = doubleCloseResult.totalClosingCosts;
                   const fundedAmount = purchasePrice + totalClosingCosts;
-                  const lenderFee = Math.max(purchasePrice * 0.0125, 1000);
+                  const lenderFee = calculateLenderFee(purchasePrice);
                   const payoffAmount = fundedAmount + lenderFee;
                   
                   return (
