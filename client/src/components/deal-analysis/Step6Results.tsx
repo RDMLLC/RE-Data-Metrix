@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText, Sparkles, Pencil } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +66,8 @@ interface Step5ResultsProps {
   form: UseFormReturn<WizardFormData>;
   onBack: () => void;
   isSubscriber?: boolean;
+  viewingDealId?: string;
+  onEditDeal?: () => void;
 }
 
 interface OutOfPocketBreakdown {
@@ -183,8 +185,9 @@ interface DSCRProductWithCalculation {
   };
 }
 
-export default function Step5Results({ form, onBack, isSubscriber = false }: Step5ResultsProps) {
+export default function Step5Results({ form, onBack, isSubscriber = false, viewingDealId, onEditDeal }: Step5ResultsProps) {
   const { toast } = useToast();
+  const isViewingDeal = !!viewingDealId;
   const [, setLocation] = useLocation();
   const { updatePropertyData, wizardData } = useWizardData();
   const { isAuthenticated, user } = useAuth();
@@ -1231,15 +1234,43 @@ export default function Step5Results({ form, onBack, isSubscriber = false }: Ste
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onBack}
-          data-testid="button-back"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+        <div className="flex gap-2">
+          {isViewingDeal ? (
+            <>
+              <Link href="/portal/dashboard">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  data-testid="button-back-to-deals"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Deals
+                </Button>
+              </Link>
+              {onEditDeal && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onEditDeal}
+                  data-testid="button-edit-deal"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit Deal
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onBack}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          )}
+        </div>
         
         <div className="flex gap-2">
           <Button

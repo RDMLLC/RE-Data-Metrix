@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import WizardLayout from "./WizardLayout";
@@ -12,6 +13,7 @@ import Step4InvestorInfo from "./Step4InvestorInfo";
 import Step5HoldingPeriodExit from "./Step5HoldingPeriodExit";
 import Step6Results from "./Step6Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
+import type { SavedDeal } from "@shared/schema";
 
 const wizardSchema = z.object({
   address: z.string(),
@@ -122,11 +124,36 @@ export default function DealAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(() => wizardData.currentStep || 1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // State for viewing saved deals
+  const [viewingDealId, setViewingDealId] = useState<string | null>(null);
+  const [isEditingDeal, setIsEditingDeal] = useState(false);
 
   // Track if we've already handled the initial navigation
   const hasHandledInitialNav = useRef(false);
   
-  // Check for returnToStep URL parameter (used when returning from Wholesale Calculator)
+  // Fetch saved deal data when viewing a deal
+  const { data: savedDeal, isLoading: isDealLoading, error: dealError } = useQuery<SavedDeal>({
+    queryKey: ["/api/member/deals", viewingDealId],
+    queryFn: async () => {
+      const res = await fetch(`/api/member/deals/${viewingDealId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch deal");
+      return res.json();
+    },
+    enabled: !!viewingDealId,
+    retry: false,
+  });
+  
+  // Handle deal fetch error - redirect to dashboard
+  useEffect(() => {
+    if (dealError && viewingDealId) {
+      console.error("Failed to load deal:", dealError);
+      // Redirect back to dashboard on error
+      window.location.href = "/portal/dashboard";
+    }
+  }, [dealError, viewingDealId]);
+  
+  // Check for dealId or returnToStep URL parameter
   useEffect(() => {
     // Only handle navigation once to prevent React StrictMode double-run issues
     if (hasHandledInitialNav.current) {
@@ -135,7 +162,15 @@ export default function DealAnalysisWizard() {
     hasHandledInitialNav.current = true;
     
     const params = new URLSearchParams(window.location.search);
+    const dealId = params.get('dealId');
     const returnToStep = params.get('returnToStep');
+    
+    // Check for dealId first (viewing a saved deal)
+    if (dealId) {
+      setViewingDealId(dealId);
+      // Will jump to Step 6 once deal data loads
+      return;
+    }
     
     if (returnToStep) {
       const step = parseInt(returnToStep, 10);
@@ -211,6 +246,88 @@ export default function DealAnalysisWizard() {
       form.setValue("isNewInvestor", investor.experienceLevel === "new");
     }
   }, []);
+  
+  // Load saved deal data into form when viewing a saved deal
+  useEffect(() => {
+    if (savedDeal?.dealSnapshot && !isEditingDeal) {
+      const snapshot = savedDeal.dealSnapshot as any;
+      
+      // Populate form with saved deal data
+      form.reset({
+        address: snapshot.address || "",
+        city: snapshot.city || "",
+        state: snapshot.state || "",
+        zipCode: snapshot.zipCode || snapshot.zip || "",
+        propertyType: snapshot.propertyType,
+        bedrooms: snapshot.bedrooms,
+        bathrooms: snapshot.bathrooms,
+        sqft: snapshot.sqft || snapshot.squareFootage,
+        lotSize: snapshot.lotSize,
+        yearBuilt: snapshot.yearBuilt,
+        taxAssessedValue: snapshot.taxAssessedValue,
+        annualTax: snapshot.annualTax,
+        estimatedValue: snapshot.estimatedValue,
+        propertyDataSource: snapshot.propertyDataSource || "manual",
+        addingSquareFootage: snapshot.addingSquareFootage || false,
+        newSquareFootage: snapshot.newSquareFootage,
+        purchasePrice: snapshot.purchasePrice,
+        rehabBudget: snapshot.rehabBudget,
+        arv: snapshot.arv,
+        projectLength: snapshot.projectLength,
+        attorneyFees: snapshot.attorneyFees,
+        docPrepFees: snapshot.docPrepFees,
+        titleExam: snapshot.titleExam,
+        titleInsurance: snapshot.titleInsurance,
+        transferFee: snapshot.transferFee,
+        attorneyFees2: snapshot.attorneyFees2,
+        docPrepFees2: snapshot.docPrepFees2,
+        titleExam2: snapshot.titleExam2,
+        titleInsurance2: snapshot.titleInsurance2,
+        hoaFees: snapshot.hoaFees,
+        hoaTransferFee: snapshot.hoaTransferFee,
+        monthlyUtilities: snapshot.monthlyUtilities,
+        annualInsurance: snapshot.annualInsurance,
+        otherCarryingCosts: snapshot.otherCarryingCosts,
+        sellPrice: snapshot.sellPrice,
+        closingCostsSellPercent: snapshot.closingCostsSellPercent,
+        realEstateCommissionPercent: snapshot.realEstateCommissionPercent,
+        isNewInvestor: snapshot.isNewInvestor,
+        projectsLast12Months: snapshot.projectsLast12Months,
+        projectsLast36Months: snapshot.projectsLast36Months,
+        creditScore: snapshot.creditScore,
+        isDoubleClose: snapshot.isDoubleClose,
+        payingForBothSides: snapshot.payingForBothSides,
+        hasExistingLoan: snapshot.hasExistingLoan || false,
+        maxLendBuy: snapshot.maxLendBuy,
+        maxLendRehab: snapshot.maxLendRehab,
+        loanInterestRate: snapshot.loanInterestRate,
+        interestDeferred: snapshot.interestDeferred,
+        drawnFundsOnly: snapshot.drawnFundsOnly,
+        loanPoints: snapshot.loanPoints,
+        pointsDeferred: snapshot.pointsDeferred,
+        maxLoanToArv: snapshot.maxLoanToArv,
+        appraisalRequired: snapshot.appraisalRequired,
+        appraisalFee: snapshot.appraisalFee,
+        drawFees: snapshot.drawFees,
+        loanDocPrepFees: snapshot.loanDocPrepFees,
+        closingTimeline: snapshot.closingTimeline || "22-30-days",
+        loanPreference: snapshot.loanPreference || "one-of-each",
+      });
+      
+      // Jump directly to Step 6 (Results)
+      setCurrentStep(6);
+      setContextStep(6);
+    }
+  }, [savedDeal, isEditingDeal]);
+  
+  // Handler to enter edit mode for a saved deal
+  const handleEditDeal = () => {
+    setIsEditingDeal(true);
+    setCurrentStep(1);
+    setContextStep(1);
+    // Clean up URL so user can navigate normally
+    window.history.replaceState({}, '', '/deal-analysis');
+  };
 
   const saveCurrentStepData = () => {
     const formData = form.getValues();
@@ -377,14 +494,25 @@ export default function DealAnalysisWizard() {
           />
         );
       case 6:
-        if (authLoading) {
+        if (authLoading || (viewingDealId && isDealLoading)) {
           return (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3 text-muted-foreground">
+                {viewingDealId ? "Loading deal..." : "Loading..."}
+              </span>
             </div>
           );
         }
-        return <Step6Results form={form} onBack={handleBack} isSubscriber={isSubscriber} />;
+        return (
+          <Step6Results 
+            form={form} 
+            onBack={handleBack} 
+            isSubscriber={isSubscriber}
+            viewingDealId={viewingDealId || undefined}
+            onEditDeal={viewingDealId ? handleEditDeal : undefined}
+          />
+        );
       default:
         return null;
     }

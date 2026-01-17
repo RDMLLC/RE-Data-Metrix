@@ -6253,6 +6253,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get single deal by ID
+  app.get("/api/member/deals/:dealId", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealId } = req.params;
+      
+      const [deal] = await db
+        .select()
+        .from(savedDeals)
+        .where(and(eq(savedDeals.id, dealId), eq(savedDeals.userId, userId)));
+      
+      if (!deal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      res.json(deal);
+    } catch (error) {
+      console.error("Error fetching deal:", error);
+      res.status(500).json({ error: "Failed to fetch deal" });
+    }
+  });
+  
   // Update deal status
   app.patch("/api/member/deals/:dealId", ensureAuthenticated, async (req, res) => {
     try {
