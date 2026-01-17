@@ -1594,7 +1594,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCompInviteByCode(compCode: string): Promise<{id: string; email: string; status: string; expiresAt: Date} | undefined> {
     const result = await db.select().from(compInvitesTable)
-      .where(eq(compInvitesTable.compCode, compCode))
+      .where(sqlCount`UPPER(${compInvitesTable.compCode}) = UPPER(${compCode})`)
       .limit(1);
     
     if (!result[0]) return undefined;
@@ -1609,7 +1609,7 @@ export class DatabaseStorage implements IStorage {
 
   async acceptCompInvite(compCode: string, userId: string): Promise<boolean> {
     const invite = await db.select().from(compInvitesTable)
-      .where(eq(compInvitesTable.compCode, compCode))
+      .where(sqlCount`UPPER(${compInvitesTable.compCode}) = UPPER(${compCode})`)
       .limit(1);
     
     if (!invite[0]) return false;

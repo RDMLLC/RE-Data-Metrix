@@ -9,6 +9,7 @@ import { eq, inArray, desc, and, sql, count, gt } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
+import { authService, registrationSchema } from "./services/auth.service";
 import crypto from "crypto";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
@@ -37,187 +38,57 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Authentication Routes
-  const registerSchema = z.object({
-    username: z.string().min(3),
-    email: z.string().email(),
-    password: z.string().min(8),
-    fullName: z.string().min(1),
-    referralCode: z.string().optional(),
-    compCode: z.string().optional(),
-    termsAccepted: z.boolean().optional(),
-  });
-
+  // Authentication Routes - Using authService for centralized logic
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const validatedData = registerSchema.parse(req.body);
-      
-      const existingUser = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, validatedData.email))
-        .limit(1);
+      const result = await authService.registerUser(req.body);
 
-      if (existingUser.length > 0) {
-        return res.status(400).json({ error: "Email already in use" });
-      }
-
-      const hashedPassword = await hashPassword(validatedData.password);
-      const userReferralCode = generateReferralCode();
-      const verificationToken = generateVerificationToken();
-      const verificationExpiry = new Date();
-      verificationExpiry.setHours(verificationExpiry.getHours() + 24);
-      
-      let referredByUserId = null;
-      let subscriptionStatus = 'inactive';
-      let compInviteToAccept: {id: string; email: string; status: string; expiresAt: Date} | undefined = undefined;
-      
-      // Check for comp code first (highest priority)
-      if (validatedData.compCode) {
-        console.log('[Registration] Comp code provided:', validatedData.compCode.toUpperCase());
-        const invite = await storage.getCompInviteByCode(validatedData.compCode.toUpperCase());
-        console.log('[Registration] Comp invite found:', invite ? { 
-          id: invite.id, 
-          email: invite.email, 
-          status: invite.status, 
-          expiresAt: invite.expiresAt 
-        } : 'null');
-        if (invite && invite.status === 'pending' && new Date() <= invite.expiresAt) {
-          compInviteToAccept = invite;
-          subscriptionStatus = 'comped';
-          console.log('[Registration] Comp code valid - setting status to comped');
-        } else if (invite) {
-          console.log('[Registration] Comp code invalid - status:', invite.status, 'expired:', new Date() > invite.expiresAt);
-        }
-      } else {
-        console.log('[Registration] No comp code provided');
-      }
-      
-      // If no valid comp code, check for referral code
-      if (!compInviteToAccept && validatedData.referralCode) {
-        const [referrer] = await db
-          .select()
-          .from(users)
-          .where(eq(users.referralCode, validatedData.referralCode))
-          .limit(1);
-        
-        if (referrer) {
-          referredByUserId = referrer.id;
-          subscriptionStatus = 'referral_trial';
-        }
-      }
-
-      // Comp users are auto-verified since they clicked a link sent to their email
-      const isAutoVerified = !!compInviteToAccept;
-      
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          username: validatedData.username,
-          email: validatedData.email,
-          password: hashedPassword,
-          role: 'user',
-          subscriptionStatus,
-          referralCode: userReferralCode,
-          referredBy: referredByUserId,
-          isEmailVerified: isAutoVerified,
-          verificationToken: isAutoVerified ? null : verificationToken,
-          verificationExpiry: isAutoVerified ? null : verificationExpiry,
-          termsAcceptedAt: validatedData.termsAccepted ? new Date() : null,
-          termsVersion: validatedData.termsAccepted ? "1.0" : null,
-          privacyVersion: validatedData.termsAccepted ? "1.0" : null,
-        })
-        .returning();
-
-      await db.insert(userProfiles).values({
-        userId: newUser.id,
-        fullName: validatedData.fullName,
-      });
-
-      // Accept the comp invite if there was one
-      if (compInviteToAccept) {
-        await storage.acceptCompInvite(validatedData.compCode!.toUpperCase(), newUser.id);
-      }
-
-      // Only send verification email for non-comp users
-      let emailSent = false;
-      if (!isAutoVerified) {
-        emailSent = await emailService.sendVerificationEmail(
-          newUser.email,
-          newUser.username,
-          verificationToken
-        );
-
-        if (!emailSent) {
-          console.error('Failed to send verification email to:', newUser.email);
-        }
+      if (!result.success) {
+        return res.status(400).json({ error: result.error || result.message });
       }
 
       // For comp users, log them in automatically
-      if (compInviteToAccept) {
-        req.login(newUser, (loginErr) => {
-          if (loginErr) {
-            console.error('[Comp Login Error]', loginErr);
-            // Still return success but they'll need to log in manually
+      if (result.isComped && result.user) {
+        const user = await authService.getUserById(result.user.id);
+        if (user) {
+          req.login(user, (loginErr) => {
+            if (loginErr) {
+              console.error('[Comp Login Error]', loginErr);
+              return res.json({
+                id: result.user!.id,
+                username: result.user!.username,
+                email: result.user!.email,
+                message: "Registration successful! Your complimentary access is ready. Please log in.",
+                requiresVerification: false,
+                isComped: true,
+                user: result.user,
+              });
+            }
+
             return res.json({
-              id: newUser.id,
-              username: newUser.username,
-              email: newUser.email,
-              message: "Registration successful! Your complimentary access is ready. Please log in.",
+              id: result.user!.id,
+              username: result.user!.username,
+              email: result.user!.email,
+              message: result.message,
               requiresVerification: false,
               isComped: true,
-              user: {
-                id: newUser.id,
-                username: newUser.username,
-                email: newUser.email,
-                subscriptionStatus: newUser.subscriptionStatus,
-              },
+              user: result.user,
             });
-          }
-          
-          return res.json({
-            id: newUser.id,
-            username: newUser.username,
-            email: newUser.email,
-            message: "Registration successful! Your complimentary access is ready.",
-            requiresVerification: false,
-            isComped: true,
-            user: {
-              id: newUser.id,
-              username: newUser.username,
-              email: newUser.email,
-              subscriptionStatus: newUser.subscriptionStatus,
-            },
           });
-        });
-        return;
+          return;
+        }
       }
-      
+
       res.json({
-        id: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-        message: emailSent 
-            ? "Registration successful! Please check your email to verify your account before logging in." 
-            : "Registration successful! Please contact support to verify your account.",
-        requiresVerification: !isAutoVerified,
-        isComped: false,
+        id: result.user?.id,
+        username: result.user?.username,
+        email: result.user?.email,
+        message: result.message,
+        requiresVerification: result.requiresVerification,
+        isComped: result.isComped,
       });
     } catch (error: any) {
-      console.error('[Registration Error]', error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid registration data", details: error.errors });
-      }
-      // Handle database unique constraint violations
-      if (error.code === '23505') {
-        if (error.constraint?.includes('username')) {
-          return res.status(400).json({ error: "Username already taken" });
-        }
-        if (error.constraint?.includes('email')) {
-          return res.status(400).json({ error: "Email already in use" });
-        }
-        return res.status(400).json({ error: "Account already exists" });
-      }
+      console.error('[Registration Route Error]', error);
       res.status(500).json({ error: "Registration failed" });
     }
   });
@@ -1603,51 +1474,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/verify-email/:token", async (req, res) => {
     try {
       const { token } = req.params;
+      const result = await authService.verifyEmail(token);
 
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.verificationToken, token))
-        .limit(1);
-
-      if (!user) {
-        return res.status(400).json({ error: "Invalid verification token" });
+      if (!result.success) {
+        return res.status(400).json({ error: result.error || result.message });
       }
 
-      if (user.verificationExpiry && new Date() > user.verificationExpiry) {
-        return res.status(400).json({ error: "Verification token has expired" });
-      }
-
-      if (user.isEmailVerified) {
-        return res.json({ message: "Email already verified" });
-      }
-
-      await db
-        .update(users)
-        .set({
-          isEmailVerified: true,
-          verificationToken: null,
-          verificationExpiry: null,
-        })
-        .where(eq(users.id, user.id));
-
-      const emailSent = await emailService.sendWelcomeEmail(user.email, user.username);
-      
-      if (!emailSent) {
-        console.error('Failed to send welcome email to:', user.email);
-      }
-
-      // Check if user has an active subscription or is comped
-      const hasSubscription = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'comped';
-
-      res.json({ 
-        message: "Email verified successfully! Welcome to RE Data Metrix.",
-        username: user.username,
-        hasSubscription,
-        isComped: user.subscriptionStatus === 'comped',
+      res.json({
+        message: result.message,
+        username: result.username,
+        hasSubscription: result.hasSubscription,
+        isComped: result.isComped,
       });
     } catch (error) {
-      console.error('Email verification error:', error);
+      console.error('Email verification route error:', error);
       res.status(500).json({ error: "Email verification failed" });
     }
   });
@@ -1655,57 +1495,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/request-password-reset", async (req, res) => {
     try {
       const { email } = req.body;
-      console.log('[PASSWORD RESET] Request received for email:', email);
 
       if (!email) {
         return res.status(400).json({ error: "Email is required" });
       }
 
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(sql`LOWER(${users.email}) = LOWER(${email})`)
-        .limit(1);
+      const result = await authService.requestPasswordReset(email);
 
-      if (!user) {
-        console.log('[PASSWORD RESET] No user found for email:', email);
-        return res.json({ 
-          message: "If an account exists with this email, a password reset link will be sent." 
-        });
+      if (!result.success) {
+        return res.status(500).json({ error: result.error || result.message });
       }
 
-      console.log('[PASSWORD RESET] User found:', user.username, '- Generating token...');
-      const resetToken = generateVerificationToken();
-      const resetExpiry = new Date();
-      resetExpiry.setHours(resetExpiry.getHours() + 1);
-
-      await db
-        .update(users)
-        .set({
-          passwordResetToken: resetToken,
-          passwordResetExpiry: resetExpiry,
-        })
-        .where(eq(users.id, user.id));
-
-      console.log('[PASSWORD RESET] Token saved to database. Attempting to send email...');
-      const emailSent = await emailService.sendPasswordResetEmail(
-        user.email,
-        user.username,
-        resetToken
-      );
-
-      console.log('[PASSWORD RESET] Email service returned:', emailSent);
-      if (!emailSent) {
-        console.error('[PASSWORD RESET] WARNING: Email service reported failure for:', user.email);
-      } else {
-        console.log('[PASSWORD RESET] Email sent successfully to:', user.email);
-      }
-
-      res.json({ 
-        message: "If an account exists with this email, a password reset link will be sent." 
-      });
+      res.json({ message: result.message });
     } catch (error) {
-      console.error('[PASSWORD RESET] Error:', error);
+      console.error('[Password Reset Route] Error:', error);
       res.status(500).json({ error: "Password reset request failed" });
     }
   });
@@ -1719,34 +1522,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Password is required" });
       }
 
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(eq(users.passwordResetToken, token))
-        .limit(1);
+      const result = await authService.resetPassword(token, password);
 
-      if (!user) {
-        return res.status(400).json({ error: "Invalid reset token" });
+      if (!result.success) {
+        return res.status(400).json({ error: result.error || result.message });
       }
 
-      if (user.passwordResetExpiry && new Date() > user.passwordResetExpiry) {
-        return res.status(400).json({ error: "Reset token has expired" });
-      }
-
-      const hashedPassword = await hashPassword(password);
-
-      await db
-        .update(users)
-        .set({
-          password: hashedPassword,
-          passwordResetToken: null,
-          passwordResetExpiry: null,
-        })
-        .where(eq(users.id, user.id));
-
-      res.json({ message: "Password reset successfully" });
+      res.json({ message: result.message });
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error('[Password Reset Route] Error:', error);
       res.status(500).json({ error: "Password reset failed" });
     }
   });
