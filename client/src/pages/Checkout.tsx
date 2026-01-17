@@ -324,6 +324,9 @@ export default function Checkout() {
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number } | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   
+  // Comp code state
+  const [compCode, setCompCode] = useState("");
+  const [showCompCodeField, setShowCompCodeField] = useState(false);
   
   // Terms modal state
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -489,8 +492,9 @@ export default function Checkout() {
   const onRegisterSubmit = async (data: RegisterFormData) => {
     setIsRegistering(true);
     try {
-      // For free plan, just register the user without Stripe
-      if (selectedPlan === "free") {
+      // For free plan OR if a comp code is provided, register without Stripe
+      // Comp codes give premium access, so no payment is needed
+      if (selectedPlan === "free" || compCode.trim()) {
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -500,6 +504,7 @@ export default function Checkout() {
             email: data.email,
             password: data.password,
             fullName: data.fullName,
+            compCode: compCode.trim() || undefined,
           }),
         });
 
@@ -507,6 +512,17 @@ export default function Checkout() {
 
         if (!response.ok) {
           throw new Error(result.error || "Registration failed");
+        }
+
+        // Check if this is a comp user (they get immediate access)
+        if (result.user?.subscriptionStatus === 'comped') {
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          toast({
+            title: "Welcome to RE Data Metrix!",
+            description: "Your complimentary account has been activated.",
+          });
+          setLocation("/portal/dashboard");
+          return;
         }
 
         // Check if email verification is required
@@ -757,6 +773,51 @@ export default function Checkout() {
                               </FormItem>
                             )}
                           />
+                        </div>
+
+                        {/* Comp Code Section */}
+                        <div className="border-t pt-4 mt-2">
+                          <div className="space-y-2">
+                            {!showCompCodeField ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-auto p-0 text-sm text-muted-foreground hover:text-primary"
+                                onClick={() => setShowCompCodeField(true)}
+                                data-testid="button-show-comp-code"
+                              >
+                                Have a comp code?
+                              </Button>
+                            ) : (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium">Comp Code</Label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    value={compCode}
+                                    onChange={(e) => setCompCode(e.target.value.toUpperCase())}
+                                    placeholder="Enter comp code"
+                                    className="uppercase"
+                                    data-testid="input-checkout-comp-code"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setShowCompCodeField(false);
+                                      setCompCode("");
+                                    }}
+                                    data-testid="button-hide-comp-code"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Enter your complimentary access code if you have one
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Terms Agreement Section */}

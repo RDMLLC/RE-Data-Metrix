@@ -153,17 +153,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // For comp users, log them in automatically
+      if (compInviteToAccept) {
+        req.login(newUser, (loginErr) => {
+          if (loginErr) {
+            console.error('[Comp Login Error]', loginErr);
+            // Still return success but they'll need to log in manually
+            return res.json({
+              id: newUser.id,
+              username: newUser.username,
+              email: newUser.email,
+              message: "Registration successful! Your complimentary access is ready. Please log in.",
+              requiresVerification: false,
+              isComped: true,
+              user: {
+                id: newUser.id,
+                username: newUser.username,
+                email: newUser.email,
+                subscriptionStatus: newUser.subscriptionStatus,
+              },
+            });
+          }
+          
+          return res.json({
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            message: "Registration successful! Your complimentary access is ready.",
+            requiresVerification: false,
+            isComped: true,
+            user: {
+              id: newUser.id,
+              username: newUser.username,
+              email: newUser.email,
+              subscriptionStatus: newUser.subscriptionStatus,
+            },
+          });
+        });
+        return;
+      }
+      
       res.json({
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        message: isAutoVerified
-          ? "Registration successful! Your premium access is ready. You can now log in."
-          : (emailSent 
-              ? "Registration successful! Please check your email to verify your account before logging in." 
-              : "Registration successful! Please contact support to verify your account."),
+        message: emailSent 
+            ? "Registration successful! Please check your email to verify your account before logging in." 
+            : "Registration successful! Please contact support to verify your account.",
         requiresVerification: !isAutoVerified,
-        isComped: !!compInviteToAccept,
+        isComped: false,
       });
     } catch (error: any) {
       console.error('[Registration Error]', error);
