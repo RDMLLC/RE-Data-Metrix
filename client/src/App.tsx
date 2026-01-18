@@ -30,6 +30,8 @@ import SavedLenders from "@/pages/portal/SavedLenders";
 import Contact from "@/pages/Contact";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
+import Disclaimer from "@/pages/Disclaimer";
+import AffiliateDisclosure from "@/pages/AffiliateDisclosure";
 import LenderDashboard from "@/pages/LenderDashboard";
 import LenderQuestionnaire from "@/pages/LenderQuestionnaire";
 import LenderLoanProducts from "@/pages/LenderLoanProducts";
@@ -151,6 +153,8 @@ function Router() {
       <Route path="/checkout/complete" component={CheckoutComplete} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/disclaimer" component={Disclaimer} />
+      <Route path="/affiliate-disclosure" component={AffiliateDisclosure} />
       <Route path="/lender-portal" component={LenderDashboard} />
       <Route path="/lender-dashboard" component={LenderDashboard} />
       <Route path="/lender-company-info" component={LenderCompanyInfo} />
