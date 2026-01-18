@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users } from "lucide-react";
+import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users, Shield, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Affiliate, TrainingVideo } from "@shared/schema";
@@ -157,79 +157,106 @@ function TrainingVideosSection() {
 }
 
 function LegalSection() {
+  const [iframeError, setIframeError] = useState(false);
+  const legalShieldUrl = "https://132034141.legalshieldassociate.com";
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold mb-2">Legal Information</h2>
+        <div className="flex items-center gap-3 mb-2">
+          <Shield className="h-7 w-7 text-primary" />
+          <h2 className="text-2xl font-semibold">Legal Services</h2>
+        </div>
         <p className="text-muted-foreground">
-          Important legal documents and disclosures for using RE Data Metrix
+          Protect yourself and your real estate investments with affordable legal services
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Link href="/terms">
-          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-terms-of-service">
+      <Card className="overflow-hidden" data-testid="card-legalshield">
+        <div className="p-6 bg-gradient-to-r from-primary/5 to-accent/5 border-b">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-primary/10">
-                <Scale className="h-6 w-6 text-primary" />
+              <div className="p-3 rounded-lg bg-primary/10 shrink-0">
+                <Shield className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-2">Terms of Service</h3>
+                <h3 className="font-semibold text-xl mb-1">LegalShield</h3>
                 <p className="text-sm text-muted-foreground">
-                  Review our terms and conditions for using RE Data Metrix services and platform.
+                  Affordable legal protection for real estate investors. Get access to attorneys for contract reviews, 
+                  legal consultations, and document preparation at a fraction of traditional costs.
                 </p>
               </div>
             </div>
-          </Card>
-        </Link>
+            <a 
+              href={legalShieldUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0"
+            >
+              <Button className="gap-2" data-testid="button-legalshield-visit">
+                <ExternalLink className="h-4 w-4" />
+                Visit LegalShield
+              </Button>
+            </a>
+          </div>
+        </div>
 
-        <Link href="/privacy">
-          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-privacy-policy">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-accent/10">
-                <Lock className="h-6 w-6 text-accent" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Privacy Policy</h3>
-                <p className="text-sm text-muted-foreground">
-                  Learn how we collect, use, and protect your personal information.
-                </p>
-              </div>
-            </div>
-          </Card>
-        </Link>
+        {!iframeError ? (
+          <div className="aspect-[16/10] md:aspect-[16/8] w-full">
+            <iframe
+              src={legalShieldUrl}
+              title="LegalShield"
+              className="w-full h-full border-0"
+              onError={() => setIframeError(true)}
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              data-testid="iframe-legalshield"
+            />
+          </div>
+        ) : (
+          <div className="p-12 text-center bg-muted/30">
+            <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h4 className="text-lg font-medium mb-2">Visit LegalShield</h4>
+            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+              Click the button above to explore LegalShield's legal protection plans and services.
+            </p>
+          </div>
+        )}
+      </Card>
 
-        <Link href="/disclaimer">
-          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-disclaimer">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-muted">
-                <BookOpen className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Investment Disclaimer</h3>
-                <p className="text-sm text-muted-foreground">
-                  Important disclosures about the nature of our investment tools and analysis.
-                </p>
-              </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <Scale className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-sm mb-1">Contract Reviews</h4>
+              <p className="text-xs text-muted-foreground">
+                Have attorneys review purchase agreements, leases, and contracts
+              </p>
             </div>
-          </Card>
-        </Link>
-
-        <Link href="/affiliate-disclosure">
-          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-affiliate-disclosure">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-muted">
-                <Users className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Affiliate Disclosure</h3>
-                <p className="text-sm text-muted-foreground">
-                  Information about our affiliate relationships and how they may affect recommendations.
-                </p>
-              </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <Users className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-sm mb-1">Legal Consultations</h4>
+              <p className="text-xs text-muted-foreground">
+                Unlimited phone consultations with experienced attorneys
+              </p>
             </div>
-          </Card>
-        </Link>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <BookOpen className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-sm mb-1">Document Preparation</h4>
+              <p className="text-xs text-muted-foreground">
+                Get legal documents prepared and reviewed by professionals
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );
