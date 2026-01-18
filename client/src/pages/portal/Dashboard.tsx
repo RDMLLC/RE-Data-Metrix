@@ -92,8 +92,29 @@ export default function MemberDashboard() {
 
           {/* 2x3 Grid of Dashboard Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Row 1: Deals Analyzed | Start Deal Analysis | Saved Lenders */}
+            {/* Row 1: Start Deal Analysis | Deals Analyzed | Tools & Resources */}
             
+            {/* Start Deal Analysis */}
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/deal-analysis")}
+              data-testid="card-start-deal-analysis"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                    <Calculator className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-base">Start Deal Analysis</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Analyze a new investment property with detailed projections
+                </CardDescription>
+              </CardContent>
+            </Card>
+
             {/* Deals Analyzed - Clickable */}
             <Card 
               className="hover-elevate cursor-pointer" 
@@ -116,23 +137,46 @@ export default function MemberDashboard() {
               </CardContent>
             </Card>
 
-            {/* Start Deal Analysis */}
+            {/* Tools & Resources */}
             <Card 
               className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/deal-analysis")}
-              data-testid="card-start-deal-analysis"
+              onClick={() => setLocation("/toolbox")}
+              data-testid="card-tools-resources"
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <Calculator className="h-5 w-5 text-blue-600" />
+                  <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                    <Wrench className="h-5 w-5 text-purple-600" />
                   </div>
-                  <CardTitle className="text-base">Start Deal Analysis</CardTitle>
+                  <CardTitle className="text-base">Tools & Resources</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Analyze a new investment property with detailed projections
+                  Access calculators, guides, and educational content
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            {/* Row 2: Search Lenders | Saved Lenders | Refer a Friend */}
+
+            {/* Search Lenders */}
+            <Card 
+              className="hover-elevate cursor-pointer" 
+              onClick={() => setLocation("/lenders")}
+              data-testid="card-search-lenders"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                    <Search className="h-5 w-5 text-green-600" />
+                  </div>
+                  <CardTitle className="text-base">Search Lenders</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Find and compare financing options from our lender network
                 </CardDescription>
               </CardContent>
             </Card>
@@ -156,50 +200,6 @@ export default function MemberDashboard() {
                   {statsLoading ? "..." : stats?.savedLenders || 0}
                 </p>
                 <CardDescription>Lenders you've bookmarked</CardDescription>
-              </CardContent>
-            </Card>
-
-            {/* Row 2: Search Lenders | Tools & Resources | Refer & Earn */}
-
-            {/* Search Lenders */}
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/lenders")}
-              data-testid="card-search-lenders"
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <Search className="h-5 w-5 text-green-600" />
-                  </div>
-                  <CardTitle className="text-base">Search Lenders</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Find and compare financing options from our lender network
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            {/* Tools & Resources */}
-            <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/toolbox")}
-              data-testid="card-tools-resources"
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                    <Wrench className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <CardTitle className="text-base">Tools & Resources</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Access calculators, guides, and educational content
-                </CardDescription>
               </CardContent>
             </Card>
 
