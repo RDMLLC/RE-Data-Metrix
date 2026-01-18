@@ -71,6 +71,7 @@ import LenderInquiries from "@/pages/LenderInquiries";
 import FAQ from "@/pages/FAQ";
 import Pricing from "@/pages/Pricing";
 import Upgrade from "@/pages/Upgrade";
+import Signup from "@/pages/Signup";
 import Features from "@/pages/Features";
 import Checkout from "@/pages/Checkout";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
@@ -97,6 +98,7 @@ function Router() {
       <Route path="/about-private-lenders" component={AboutPrivateLenders} />
       <Route path="/toolbox" component={Resources} />
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       <Route path="/register" component={Register} />
       <Route path="/verify-email/:token" component={VerifyEmail} />
       <Route path="/request-password-reset" component={RequestPasswordReset} />

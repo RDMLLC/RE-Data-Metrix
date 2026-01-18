@@ -1364,8 +1364,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         <Alert className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20 dark:border-cyan-900">
           <AlertDescription className="text-cyan-700 dark:text-cyan-400">
             You're viewing this with demo access. Lender information is anonymized.{" "}
-            <Link href="/register" className="font-medium underline" data-testid="link-demo-signup">
-              Create a free account
+            <Link href="/signup" className="font-medium underline" data-testid="link-demo-signup">
+              Create an account
             </Link>{" "}
             to get started with real lender data.
           </AlertDescription>
@@ -1376,8 +1376,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       {!isAuthenticated && !hasDemoToken && !isGeneratingPdf && (
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
           <AlertDescription className="text-blue-700 dark:text-blue-400">
-            <Link href="/register" className="font-medium underline" data-testid="link-signup-to-save">
-              Create a free account
+            <Link href="/signup" className="font-medium underline" data-testid="link-signup-to-save">
+              Create an account
             </Link>{" "}
             to save your analyses and access them from your dashboard.
           </AlertDescription>

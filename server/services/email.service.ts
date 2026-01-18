@@ -84,8 +84,12 @@ class EmailService {
     }
   }
 
-  async sendVerificationEmail(to: string, username: string, token: string): Promise<boolean> {
+  async sendVerificationEmail(to: string, username: string, token: string, pendingPlan?: string): Promise<boolean> {
     const verificationUrl = `${this.getBaseUrl()}/verify-email/${token}`;
+    const baseUrl = this.getBaseUrl();
+    
+    const isPremiumSignup = !!pendingPlan;
+    const planText = pendingPlan === 'annual' ? 'Annual Plan' : 'Monthly Plan';
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -96,25 +100,113 @@ class EmailService {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
-          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .feature-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+          .feature-title { font-weight: 600; color: #1E3A8A; margin-bottom: 4px; font-size: 16px; }
+          .feature-desc { color: #64748b; font-size: 14px; margin: 0; }
+          .comparison-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+          .comparison-table th, .comparison-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+          .comparison-table th { background: #f1f5f9; font-weight: 600; }
+          .check { color: #22c55e; }
+          .x { color: #9ca3af; }
+          .btn-primary { display: inline-block; padding: 12px 24px; background-color: #0F7B49; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 10px; }
+          .btn-secondary { display: inline-block; padding: 12px 24px; background-color: #ffffff; color: #1E3A8A !important; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid #1E3A8A; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
             <h1 style="margin: 0; font-size: 28px;">Welcome to RE Data Metrix</h1>
+            ${isPremiumSignup ? `<p style="margin: 10px 0 0 0; opacity: 0.9;">You're signing up for the ${planText}</p>` : ''}
           </div>
           <div class="content">
             <p>Hi ${username},</p>
-            <p>Thank you for signing up! To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
-            <div style="text-align: center;">
-              <a href="${verificationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Verify Email Address</a>
+            <p>Thank you for signing up for RE Data Metrix - your complete solution for real estate investment analysis and private lending connections.</p>
+            <p>Please click the button below to verify your email address and activate your account:</p>
+            
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify My Email Address</a>
             </div>
+            
+            <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Get Started:</h2>
+            
+            <div class="feature-card">
+              <a href="${baseUrl}/deal-analysis" style="text-decoration: none;">
+                <p class="feature-title">Deal Analysis</p>
+              </a>
+              <p class="feature-desc">Run comprehensive flip or rental analysis on any property. Compare financing options side-by-side to maximize your ROI.</p>
+            </div>
+            
+            <div class="feature-card">
+              <a href="${baseUrl}/lenders" style="text-decoration: none;">
+                <p class="feature-title">Lender Directory</p>
+              </a>
+              <p class="feature-desc">Browse our network of vetted private lenders. Filter by loan type, state, credit requirements, and more.</p>
+            </div>
+            
+            <div class="feature-card">
+              <a href="${baseUrl}/toolbox" style="text-decoration: none;">
+                <p class="feature-title">Toolbox & Resources</p>
+              </a>
+              <p class="feature-desc">Access our investment glossary, affiliate programs, and educational content to level up your investing game.</p>
+            </div>
+            
+            ${!isPremiumSignup ? `
+            <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Free vs Premium:</h2>
+            
+            <table class="comparison-table">
+              <tr>
+                <th>Feature</th>
+                <th>Free</th>
+                <th>Premium</th>
+              </tr>
+              <tr>
+                <td>Property Lookups</td>
+                <td>2/month</td>
+                <td><span class="check">Unlimited</span></td>
+              </tr>
+              <tr>
+                <td>Wholesale Calculator</td>
+                <td>2/month</td>
+                <td><span class="check">Unlimited</span></td>
+              </tr>
+              <tr>
+                <td>Save Deals</td>
+                <td><span class="x">No</span></td>
+                <td><span class="check">Unlimited</span></td>
+              </tr>
+              <tr>
+                <td>PDF/CSV Export</td>
+                <td><span class="x">No</span></td>
+                <td><span class="check">Yes</span></td>
+              </tr>
+              <tr>
+                <td>Lender Search</td>
+                <td><span class="check">Yes</span></td>
+                <td><span class="check">Yes</span></td>
+              </tr>
+            </table>
+            
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${baseUrl}/upgrade" class="btn-primary">Upgrade to Premium</a>
+              <a href="${baseUrl}/portal/dashboard" class="btn-secondary">Go to My Free Account</a>
+            </div>
+            ` : `
+            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-top: 24px;">
+              <p style="margin: 0; color: #065f46; font-weight: 600;">Next Step: Complete Your Subscription</p>
+              <p style="margin: 8px 0 0 0; color: #047857; font-size: 14px;">After verifying your email, you'll be directed to complete payment for your ${planText} subscription.</p>
+            </div>
+            `}
+            
             <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
             <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${verificationUrl}</p>
-            <p style="margin-top: 30px; font-weight: 500;">This verification link will expire in 24 hours.</p>
-            <p>If you didn't create an account with RE Data Metrix, you can safely ignore this email.</p>
+            <p style="margin-top: 20px; font-weight: 500;">This verification link will expire in 24 hours.</p>
+            
+            <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">Have questions? Our team is here to help. Just reply to this email or use our <a href="${baseUrl}/contact" style="color: #1E3A8A;">contact form</a>.</p>
+            
+            <p>Happy investing!</p>
+            <p style="margin-bottom: 0;">Best regards,<br>The RE Data Metrix Team</p>
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
@@ -126,7 +218,7 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: 'Verify Your Email Address - RE Data Metrix',
+      subject: isPremiumSignup ? 'Complete Your Premium Registration - RE Data Metrix' : 'Welcome! Verify Your Email - RE Data Metrix',
       html: htmlContent,
     });
   }

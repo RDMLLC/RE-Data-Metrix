@@ -61,19 +61,24 @@ export default function Register() {
     return url.startsWith("/") && !url.includes("//") && !url.includes(":");
   };
 
-  // Check for comp code and returnTo in URL params
+  // Check for comp code, returnTo, and plan in URL params
   const [returnTo, setReturnTo] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const comp = params.get("comp");
     const returnToParam = params.get("returnTo");
+    const planParam = params.get("plan");
     
     if (comp) {
       validateCompCode(comp.toUpperCase());
     }
     if (returnToParam && isValidReturnTo(returnToParam)) {
       setReturnTo(returnToParam);
+    }
+    if (planParam && (planParam === "monthly" || planParam === "annual")) {
+      setSelectedPlan(planParam);
     }
   }, []);
 
@@ -117,6 +122,7 @@ export default function Register() {
       const finalData = {
         ...registerData,
         compCode: compCode || undefined,
+        pendingPlan: selectedPlan || undefined,
       };
       const result = await register(finalData);
       

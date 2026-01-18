@@ -5,7 +5,7 @@ const YOUTUBE_VIDEO_ID = "quO8Zn_IIAY";
 
 export default function Hero() {
   const handleGetStarted = () => {
-    window.location.href = '/register';
+    window.location.href = '/signup';
   };
 
   return (

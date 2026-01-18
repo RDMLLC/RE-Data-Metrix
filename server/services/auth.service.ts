@@ -15,6 +15,7 @@ export const registrationSchema = z.object({
   referralCode: z.string().optional(),
   compCode: z.string().optional(),
   termsAccepted: z.boolean().optional(),
+  pendingPlan: z.enum(["monthly", "annual"]).optional(),
 });
 
 export type RegistrationInput = z.infer<typeof registrationSchema>;
@@ -197,6 +198,7 @@ class AuthService {
           termsAcceptedAt: validatedData.termsAccepted ? new Date() : null,
           termsVersion: validatedData.termsAccepted ? "1.0" : null,
           privacyVersion: validatedData.termsAccepted ? "1.0" : null,
+          pendingPlan: validatedData.pendingPlan || null,
         })
         .returning();
 
@@ -214,7 +216,8 @@ class AuthService {
         emailSent = await emailService.sendVerificationEmail(
           newUser.email,
           newUser.username,
-          verificationToken
+          verificationToken,
+          validatedData.pendingPlan
         );
 
         if (!emailSent) {

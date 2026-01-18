@@ -182,6 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       role: user.role,
       subscriptionStatus: user.subscriptionStatus,
       referralCode: user.referralCode,
+      pendingPlan: user.pendingPlan,
       createdAt: user.createdAt,
       termsAcceptedAt: user.termsAcceptedAt,
       termsVersion: user.termsVersion,

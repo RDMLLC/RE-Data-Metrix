@@ -116,7 +116,7 @@ export default function Features() {
                 </Link>
               ) : (
                 <>
-                  <Link href="/register">
+                  <Link href="/signup">
                     <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-get-started">
                       Get Started Free
                       <ArrowRight className="h-4 w-4 ml-2" />
@@ -335,9 +335,9 @@ export default function Features() {
                 )
               ) : (
                 <>
-                  <Link href="/register">
+                  <Link href="/signup">
                     <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-signup">
-                      Create Free Account
+                      Get Started
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>

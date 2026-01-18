@@ -195,10 +195,10 @@ export default function Home() {
             <Button 
               size="lg" 
               className="bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => window.location.href = '/register'}
+              onClick={() => window.location.href = '/signup'}
               data-testid="button-signup-cta"
             >
-              Create Your Free Account
+              Get Started Free
             </Button>
           </Card>
         </div>

@@ -930,9 +930,9 @@ export default function Lenders() {
             <Button 
               className="bg-accent text-accent-foreground hover:bg-accent/90"
               size="lg"
-              onClick={() => window.location.href = '/register'}
+              onClick={() => window.location.href = '/signup'}
             >
-              Create Free Account
+              Get Started Free
             </Button>
           </Card>
         )}

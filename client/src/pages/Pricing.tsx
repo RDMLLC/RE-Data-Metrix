@@ -154,9 +154,9 @@ export default function Pricing() {
                     </Button>
                   </Link>
                 ) : (
-                  <Link href="/register" className="w-full">
+                  <Link href="/signup" className="w-full">
                     <Button className="w-full" variant="outline" data-testid="button-signup-free">
-                      Create Free Account
+                      Get Started
                     </Button>
                   </Link>
                 )}

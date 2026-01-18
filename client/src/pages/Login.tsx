@@ -74,8 +74,11 @@ export default function Login() {
         if (isSubscriber) {
           // Subscribers can use returnTo or go to dashboard
           setLocation(returnTo || "/portal/dashboard");
+        } else if ((currentUser as any).pendingPlan) {
+          // User signed up for premium - go straight to checkout
+          setLocation(`/checkout?plan=${(currentUser as any).pendingPlan}`);
         } else {
-          // Free users always see the upgrade comparison page first
+          // Free users see the upgrade comparison page
           setLocation("/upgrade");
         }
       }
@@ -116,8 +119,11 @@ export default function Login() {
         if (isSubscriber) {
           // Subscribers can use returnTo or go to dashboard
           setLocation(returnTo || "/portal/dashboard");
+        } else if ((user as any).pendingPlan) {
+          // User signed up for premium - go straight to checkout
+          setLocation(`/checkout?plan=${(user as any).pendingPlan}`);
         } else {
-          // Free users always see the upgrade comparison page first
+          // Free users see the upgrade comparison page
           setLocation("/upgrade");
         }
       }
