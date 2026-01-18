@@ -36,10 +36,17 @@ function getInitials(fullName: string | undefined, username: string, email: stri
   return "U";
 }
 
-function getSubscriptionBadge(status: string) {
+function getSubscriptionBadge(status: string, plan?: string | null, hasStripeSubscription?: boolean) {
   switch (status) {
     case "active":
-      return <Badge className="bg-green-500/10 text-green-600 border-green-200 text-xs">Active</Badge>;
+      // Show plan type: Free (no Stripe subscription), Monthly, or Annual
+      if (hasStripeSubscription) {
+        if (plan === 'annual') {
+          return <Badge className="bg-green-500/10 text-green-600 border-green-200 text-xs">Annual</Badge>;
+        }
+        return <Badge className="bg-green-500/10 text-green-600 border-green-200 text-xs">Monthly</Badge>;
+      }
+      return <Badge className="bg-gray-500/10 text-gray-600 border-gray-200 text-xs">Free</Badge>;
     case "comped":
       return <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs">Comped</Badge>;
     case "referral_trial":
@@ -164,7 +171,7 @@ export default function Navigation() {
                           ) : user.role === 'developer' ? (
                             <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
                           ) : (
-                            getSubscriptionBadge(user.subscriptionStatus || "inactive")
+                            getSubscriptionBadge(user.subscriptionStatus || "inactive", user.subscriptionPlan, !!user.stripeSubscriptionId)
                           )}
                         </div>
                       </div>
@@ -398,7 +405,7 @@ export default function Navigation() {
                         ) : user.role === 'developer' ? (
                           <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
                         ) : (
-                          getSubscriptionBadge(user.subscriptionStatus || "inactive")
+                          getSubscriptionBadge(user.subscriptionStatus || "inactive", user.subscriptionPlan, !!user.stripeSubscriptionId)
                         )}
                       </div>
                     </div>

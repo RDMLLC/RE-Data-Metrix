@@ -8,6 +8,8 @@ interface User {
   email: string;
   role: string;
   subscriptionStatus: string;
+  subscriptionPlan?: string | null;
+  stripeSubscriptionId?: string | null;
   referralCode: string;
   createdAt: string;
   termsAcceptedAt?: string | null;

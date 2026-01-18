@@ -61,14 +61,19 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
   if (existingUser.length > 0) {
     const user = existingUser[0];
     if (!user.stripeSubscriptionId || user.stripeSubscriptionId !== subscription.id) {
+      // Determine plan type from subscription interval
+      const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+      const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
+      
       await db
         .update(users)
         .set({
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: 'active',
+          subscriptionPlan,
         })
         .where(eq(users.id, user.id));
-      console.log(`[CHECKOUT] Updated subscription for existing user ${user.email}`);
+      console.log(`[CHECKOUT] Updated subscription for existing user ${user.email} (plan: ${subscriptionPlan})`);
     }
     return {
       success: true,
@@ -86,15 +91,20 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
 
   if (existingByEmail.length > 0) {
     const user = existingByEmail[0];
+    // Determine plan type from subscription interval
+    const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+    const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
+    
     await db
       .update(users)
       .set({
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: 'active',
+        subscriptionPlan,
       })
       .where(eq(users.id, user.id));
-    console.log(`[CHECKOUT] Linked subscription to existing user ${user.email}`);
+    console.log(`[CHECKOUT] Linked subscription to existing user ${user.email} (plan: ${subscriptionPlan})`);
     return {
       success: true,
       message: 'Subscription linked to existing account. Please log in.',
@@ -139,12 +149,17 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
       .limit(1);
     
     if (completedUser) {
+      // Determine plan type from subscription interval
+      const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+      const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
+      
       await db
         .update(users)
         .set({
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscription.id,
           subscriptionStatus: 'active',
+          subscriptionPlan,
         })
         .where(eq(users.id, completedUser.id));
       
@@ -189,6 +204,15 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
 
   const passwordResetToken = needsPasswordReset ? generateVerificationToken() : null;
   const passwordResetExpiry = needsPasswordReset ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
+  
+  // Determine plan type from pending registration or subscription interval
+  let subscriptionPlan = 'monthly';
+  if (pending?.selectedPlan) {
+    subscriptionPlan = pending.selectedPlan;
+  } else {
+    const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+    subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
+  }
 
   const [newUser] = await db
     .insert(users)
@@ -198,6 +222,7 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
       password: passwordHash,
       role: 'user',
       subscriptionStatus: 'active',
+      subscriptionPlan,
       referralCode,
       isEmailVerified: needsPasswordReset ? true : false,
       verificationToken: needsPasswordReset ? null : verificationToken,

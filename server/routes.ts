@@ -181,6 +181,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: user.email,
       role: user.role,
       subscriptionStatus: user.subscriptionStatus,
+      subscriptionPlan: user.subscriptionPlan,
+      stripeSubscriptionId: user.stripeSubscriptionId,
       referralCode: user.referralCode,
       pendingPlan: user.pendingPlan,
       createdAt: user.createdAt,

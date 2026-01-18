@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   privacyVersion: text("privacy_version"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionPlan: text("subscription_plan"), // 'free', 'monthly', 'annual'
   pendingPlan: text("pending_plan"),
   createdAt: timestamp("created_at").defaultNow(),
 });
