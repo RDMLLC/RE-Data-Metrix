@@ -1142,8 +1142,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Price ID is required" });
       }
 
-      // Check if user already has an active subscription
-      if (['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus)) {
+      // Check if user already has an active PAID subscription (has Stripe subscription OR is comped/trial)
+      // Free users with 'active' status but no stripeSubscriptionId should be allowed to upgrade
+      const hasPaidSubscription = user.stripeSubscriptionId || ['comped', 'referral_trial'].includes(user.subscriptionStatus);
+      if (hasPaidSubscription) {
         return res.status(400).json({ 
           error: "You already have an active subscription",
           currentStatus: user.subscriptionStatus 
