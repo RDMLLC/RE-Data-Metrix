@@ -6178,6 +6178,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Archive all deals for a property
+  app.post("/api/member/deals/archive-property", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { propertyAddress, status, lostDate } = req.body;
+      
+      if (!propertyAddress) {
+        return res.status(400).json({ error: "Property address is required" });
+      }
+      
+      const updatedDeals = await db
+        .update(savedDeals)
+        .set({
+          status: status || "lost",
+          lostDate: lostDate ? new Date(lostDate) : new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(savedDeals.userId, userId),
+          eq(savedDeals.propertyAddress, propertyAddress)
+        ))
+        .returning();
+      
+      res.json({ 
+        message: `${updatedDeals.length} deals archived for ${propertyAddress}`,
+        count: updatedDeals.length 
+      });
+    } catch (error) {
+      console.error("Error archiving property deals:", error);
+      res.status(500).json({ error: "Failed to archive property deals" });
+    }
+  });
+  
   // Get saved lenders
   app.get("/api/member/saved-lenders", ensureAuthenticated, async (req, res) => {
     try {
