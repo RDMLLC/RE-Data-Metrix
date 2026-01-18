@@ -1053,6 +1053,113 @@ class EmailService {
     });
   }
 
+  async sendClosingReminderEmail(
+    to: string, 
+    username: string, 
+    propertyAddress: string,
+    estimatedClosingDate: Date,
+    daysUntilClosing: number,
+    dealId: string
+  ): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const closingDateFormatted = estimatedClosingDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    let urgencyMessage = '';
+    let urgencyColor = '#1E3A8A';
+    
+    if (daysUntilClosing === 0) {
+      urgencyMessage = 'Your closing is scheduled for TODAY!';
+      urgencyColor = '#DC2626';
+    } else if (daysUntilClosing === 1) {
+      urgencyMessage = 'Your closing is TOMORROW!';
+      urgencyColor = '#EA580C';
+    } else if (daysUntilClosing <= 3) {
+      urgencyMessage = `Only ${daysUntilClosing} days until closing!`;
+      urgencyColor = '#D97706';
+    } else {
+      urgencyMessage = `${daysUntilClosing} days until your scheduled closing`;
+      urgencyColor = '#0F7B49';
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .urgency-box { padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+          .property-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+          .btn-primary { display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 10px; }
+          .btn-secondary { display: inline-block; padding: 12px 24px; background-color: #ffffff; color: #6b7280 !important; text-decoration: none; border-radius: 6px; font-weight: 400; border: 1px solid #d1d5db; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Closing Reminder</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your deal is progressing!</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            
+            <div class="urgency-box" style="background: ${urgencyColor}15; border: 2px solid ${urgencyColor};">
+              <p style="margin: 0; font-size: 18px; color: ${urgencyColor}; font-weight: 600;">${urgencyMessage}</p>
+              <p style="margin: 8px 0 0 0; color: #64748b;">Closing Date: ${closingDateFormatted}</p>
+            </div>
+            
+            <div class="property-box">
+              <p style="margin: 0 0 4px 0; color: #64748b; font-size: 14px;">Property Address:</p>
+              <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1E3A8A;">${propertyAddress}</p>
+            </div>
+            
+            <p>Make sure you have everything ready for closing day:</p>
+            <ul style="color: #475569;">
+              <li>Final walkthrough scheduled</li>
+              <li>Funds ready for transfer</li>
+              <li>All required documents prepared</li>
+              <li>Insurance and title in order</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${baseUrl}/portal/deals" class="btn-primary">View Deal Details</a>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px;">Once your deal closes, don't forget to update your deal status in RE Data Metrix to track your success!</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <a href="${baseUrl}/portal/deals" class="btn-secondary">Stop receiving reminders for this deal</a>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const subjectLine = daysUntilClosing === 0 
+      ? `TODAY: Closing Day - ${propertyAddress}`
+      : daysUntilClosing === 1 
+        ? `TOMORROW: Closing Reminder - ${propertyAddress}`
+        : `${daysUntilClosing} Days Until Closing - ${propertyAddress}`;
+
+    return this.sendEmail({
+      to,
+      subject: subjectLine,
+      html: htmlContent,
+    });
+  }
+
   private async sendEmail(options: {
     to: string;
     subject: string;

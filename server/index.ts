@@ -9,6 +9,7 @@ import passport from "./auth";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, isStripeConfigured } from './services/stripeClient';
 import { WebhookHandlers } from './services/webhookHandlers';
+import { closingRemindersService } from './services/closingReminders.service';
 
 const app = express();
 
@@ -227,5 +228,8 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start the closing reminders service
+    closingRemindersService.start();
   });
 })();

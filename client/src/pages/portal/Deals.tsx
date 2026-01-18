@@ -47,7 +47,9 @@ import {
   Clock,
   Archive,
   RotateCcw,
-  Building2
+  Building2,
+  BellOff,
+  Bell
 } from "lucide-react";
 import type { SavedDeal, Lender, LoanProduct } from "@shared/schema";
 
@@ -172,6 +174,27 @@ export default function ViewDeals() {
       toast({
         title: "Error",
         description: "Failed to delete deal.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const stopRemindersMutation = useMutation({
+    mutationFn: async (dealId: string) => {
+      const response = await apiRequest("POST", `/api/member/deals/${dealId}/stop-reminders`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/member/deals"] });
+      toast({
+        title: "Reminders Stopped",
+        description: "You will no longer receive closing reminders for this deal.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to stop reminders.",
         variant: "destructive",
       });
     },
@@ -573,6 +596,23 @@ export default function ViewDeals() {
                                       <TrendingDown className="h-4 w-4 mr-1" />
                                       Lost
                                     </Button>
+                                    {!deal.stopAutomatedReminders && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => stopRemindersMutation.mutate(deal.id)}
+                                        data-testid={`button-stop-reminders-${deal.id}`}
+                                        title="Stop email reminders for this deal"
+                                      >
+                                        <BellOff className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    {deal.stopAutomatedReminders && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <BellOff className="h-3 w-3 mr-1" />
+                                        Reminders Off
+                                      </Badge>
+                                    )}
                                   </>
                                 )}
                                 {deal.status === "lost" && (

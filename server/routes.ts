@@ -6211,6 +6211,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Stop reminders for a deal
+  app.post("/api/member/deals/:dealId/stop-reminders", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealId } = req.params;
+      
+      const [existingDeal] = await db
+        .select()
+        .from(savedDeals)
+        .where(and(eq(savedDeals.id, dealId), eq(savedDeals.userId, userId)));
+      
+      if (!existingDeal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      const [updatedDeal] = await db
+        .update(savedDeals)
+        .set({
+          stopAutomatedReminders: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(savedDeals.id, dealId))
+        .returning();
+      
+      res.json({ 
+        message: "Reminders stopped for this deal",
+        deal: updatedDeal 
+      });
+    } catch (error) {
+      console.error("Error stopping deal reminders:", error);
+      res.status(500).json({ error: "Failed to stop reminders" });
+    }
+  });
+  
   // Get saved lenders
   app.get("/api/member/saved-lenders", ensureAuthenticated, async (req, res) => {
     try {
