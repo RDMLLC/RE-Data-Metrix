@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wrench, CheckCircle, Lock, Play, Video, HardHat } from "lucide-react";
+import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Affiliate, TrainingVideo } from "@shared/schema";
@@ -156,6 +156,85 @@ function TrainingVideosSection() {
   );
 }
 
+function LegalSection() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Legal Information</h2>
+        <p className="text-muted-foreground">
+          Important legal documents and disclosures for using RE Data Metrix
+        </p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Link href="/terms">
+          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-terms-of-service">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <Scale className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Terms of Service</h3>
+                <p className="text-sm text-muted-foreground">
+                  Review our terms and conditions for using RE Data Metrix services and platform.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+
+        <Link href="/privacy">
+          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-privacy-policy">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-accent/10">
+                <Lock className="h-6 w-6 text-accent" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Privacy Policy</h3>
+                <p className="text-sm text-muted-foreground">
+                  Learn how we collect, use, and protect your personal information.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+
+        <Link href="/disclaimer">
+          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-disclaimer">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-muted">
+                <BookOpen className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Investment Disclaimer</h3>
+                <p className="text-sm text-muted-foreground">
+                  Important disclosures about the nature of our investment tools and analysis.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+
+        <Link href="/affiliate-disclosure">
+          <Card className="p-6 hover-elevate cursor-pointer h-full" data-testid="card-affiliate-disclosure">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-muted">
+                <Users className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Affiliate Disclosure</h3>
+                <p className="text-sm text-muted-foreground">
+                  Information about our affiliate relationships and how they may affect recommendations.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function Resources() {
   const { isSubscriber, isLoading: authLoading } = useAuth();
   const { isDemoMode, hasDemoToken } = useDemoAccess();
@@ -266,12 +345,14 @@ export default function Resources() {
               <HardHat className="h-4 w-4" />
               Contractors
             </TabsTrigger>
-            <TabsTrigger value="marketplace" data-testid="tab-marketplace">Marketplace & Community</TabsTrigger>
             <TabsTrigger value="property-management" data-testid="tab-property-management">Property Management</TabsTrigger>
             <TabsTrigger value="project-management" data-testid="tab-project-management">Project Management</TabsTrigger>
             <TabsTrigger value="lead-generation" data-testid="tab-lead-generation">Lead Generation</TabsTrigger>
             <TabsTrigger value="comps" data-testid="tab-comps">Comps & Data</TabsTrigger>
-            <TabsTrigger value="glossary" data-testid="tab-glossary">Glossary</TabsTrigger>
+            <TabsTrigger value="resources" data-testid="tab-resources" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              Resources
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="about" className="space-y-6">
@@ -310,8 +391,35 @@ export default function Resources() {
             )}
           </TabsContent>
 
-          <TabsContent value="marketplace">
-            {renderAffiliateContent("marketplace", categoryInfo.marketplace)}
+          <TabsContent value="resources" className="space-y-6">
+            <Tabs defaultValue="marketplace" className="space-y-4">
+              <TabsList className="bg-muted/50 p-1" data-testid="tabs-resources">
+                <TabsTrigger value="marketplace" data-testid="tab-resources-marketplace" className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  Marketplace & Community
+                </TabsTrigger>
+                <TabsTrigger value="glossary" data-testid="tab-resources-glossary" className="flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  Glossary
+                </TabsTrigger>
+                <TabsTrigger value="legal" data-testid="tab-resources-legal" className="flex items-center gap-1">
+                  <Scale className="h-4 w-4" />
+                  Legal
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="marketplace">
+                {renderAffiliateContent("marketplace", categoryInfo.marketplace)}
+              </TabsContent>
+
+              <TabsContent value="glossary">
+                <GlossarySection />
+              </TabsContent>
+
+              <TabsContent value="legal">
+                <LegalSection />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="property-management">
@@ -399,10 +507,6 @@ export default function Resources() {
 
           <TabsContent value="comps">
             {renderAffiliateContent("comps", categoryInfo.comps)}
-          </TabsContent>
-
-          <TabsContent value="glossary">
-            <GlossarySection />
           </TabsContent>
         </Tabs>
       </div>
