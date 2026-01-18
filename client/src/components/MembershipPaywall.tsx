@@ -95,9 +95,9 @@ export default function MembershipPaywall({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/pricing">
+            <Link href="/upgrade">
               <Button className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-view-pricing-paywall">
-                View Membership Plans
+                View Membership Options
               </Button>
             </Link>
             <Link href="/login">
@@ -113,8 +113,8 @@ export default function MembershipPaywall({
               Sign in
             </Link>{" "}
             to access your full benefits. Or{" "}
-            <Link href="/pricing" className="text-primary hover:underline">
-              view our plans
+            <Link href="/upgrade" className="text-primary hover:underline">
+              compare plans
             </Link>.
           </p>
         </div>

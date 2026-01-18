@@ -66,12 +66,18 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && isAuthenticated && currentUser) {
-      if (returnTo) {
-        setLocation(returnTo);
-      } else if (currentUser.role === 'admin' || currentUser.role === 'developer') {
-        setLocation("/admin");
+      if (currentUser.role === 'admin' || currentUser.role === 'developer') {
+        setLocation(returnTo || "/admin");
       } else {
-        setLocation("/portal/dashboard");
+        // Check if user is a subscriber
+        const isSubscriber = ['active', 'referral_trial', 'comped'].includes(currentUser.subscriptionStatus);
+        if (isSubscriber) {
+          // Subscribers can use returnTo or go to dashboard
+          setLocation(returnTo || "/portal/dashboard");
+        } else {
+          // Free users always see the upgrade comparison page first
+          setLocation("/upgrade");
+        }
       }
     }
   }, [isAuthenticated, authLoading, setLocation, currentUser, returnTo]);
@@ -101,13 +107,19 @@ export default function Login() {
         description: "You've successfully logged in.",
       });
       
-      // Redirect to returnTo URL or based on user role
-      if (returnTo) {
-        setLocation(returnTo);
-      } else if (user.role === 'admin' || user.role === 'developer') {
-        setLocation("/admin");
+      // Redirect based on user role and subscription status
+      if (user.role === 'admin' || user.role === 'developer') {
+        setLocation(returnTo || "/admin");
       } else {
-        setLocation("/portal/dashboard");
+        // Check if user is a subscriber (active, comped, or referral_trial)
+        const isSubscriber = ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        if (isSubscriber) {
+          // Subscribers can use returnTo or go to dashboard
+          setLocation(returnTo || "/portal/dashboard");
+        } else {
+          // Free users always see the upgrade comparison page first
+          setLocation("/upgrade");
+        }
       }
     } catch (error: any) {
       const errorMessage = error.message || "Invalid credentials";

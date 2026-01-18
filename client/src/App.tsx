@@ -70,6 +70,7 @@ import LenderSavedBy from "@/pages/LenderSavedBy";
 import LenderInquiries from "@/pages/LenderInquiries";
 import FAQ from "@/pages/FAQ";
 import Pricing from "@/pages/Pricing";
+import Upgrade from "@/pages/Upgrade";
 import Features from "@/pages/Features";
 import Checkout from "@/pages/Checkout";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
@@ -148,6 +149,7 @@ function Router() {
       <Route path="/faq" component={FAQ} />
       <Route path="/features" component={Features} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/upgrade" component={Upgrade} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/complete" component={CheckoutComplete} />

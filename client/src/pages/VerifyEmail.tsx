@@ -3,7 +3,7 @@ import { useRoute } from "wouter";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Loader2, CreditCard } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 export default function VerifyEmail() {
   const [, params] = useRoute("/verify-email/:token");
@@ -72,21 +72,16 @@ export default function VerifyEmail() {
               ) : (
                 <div className="space-y-4">
                   <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 text-sm">
-                    <p className="text-foreground font-medium mb-1">Complete Your Subscription</p>
+                    <p className="text-foreground font-medium mb-1">Account Ready!</p>
                     <p className="text-muted-foreground">
-                      Your email is verified! Complete payment to unlock all premium features.
+                      Your email is verified. Continue to explore your account options.
                     </p>
                   </div>
                   <Button asChild data-testid="button-complete-subscription">
-                    <a href="/checkout">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Complete Subscription
+                    <a href="/upgrade">
+                      Continue
                     </a>
                   </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Already subscribed?{" "}
-                    <a href="/login" className="text-accent hover:underline">Sign in</a>
-                  </p>
                 </div>
               )}
             </div>
