@@ -157,7 +157,6 @@ function TrainingVideosSection() {
 }
 
 function LegalSection() {
-  const [iframeError, setIframeError] = useState(false);
   const legalShieldUrl = "https://132034141.legalshieldassociate.com";
 
   return (
@@ -173,91 +172,59 @@ function LegalSection() {
       </div>
 
       <Card className="overflow-hidden" data-testid="card-legalshield">
-        <div className="p-6 bg-gradient-to-r from-primary/5 to-accent/5 border-b">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-primary/10 shrink-0">
-                <Shield className="h-8 w-8 text-primary" />
+        <div className="p-8 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/10">
+          <div className="flex flex-col lg:flex-row gap-8 items-center">
+            <div className="flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-3 mb-4">
+                <div className="p-4 rounded-xl bg-primary/10">
+                  <Shield className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="font-bold text-2xl">LegalShield</h3>
               </div>
-              <div>
-                <h3 className="font-semibold text-xl mb-1">LegalShield</h3>
-                <p className="text-sm text-muted-foreground">
-                  Affordable legal protection for real estate investors. Get access to attorneys for contract reviews, 
-                  legal consultations, and document preparation at a fraction of traditional costs.
-                </p>
+              <p className="text-muted-foreground mb-6 max-w-xl">
+                As a real estate investor, having access to legal protection is essential. LegalShield provides 
+                affordable legal services that give you peace of mind when reviewing contracts, handling disputes, 
+                or navigating complex transactions.
+              </p>
+              <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+                <a 
+                  href={legalShieldUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button size="lg" className="gap-2" data-testid="button-legalshield-visit">
+                    <ExternalLink className="h-4 w-4" />
+                    Learn More at LegalShield
+                  </Button>
+                </a>
               </div>
             </div>
-            <a 
-              href={legalShieldUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0"
-            >
-              <Button className="gap-2" data-testid="button-legalshield-visit">
-                <ExternalLink className="h-4 w-4" />
-                Visit LegalShield
-              </Button>
-            </a>
+            <div className="grid grid-cols-1 gap-3 w-full lg:w-auto lg:min-w-[280px]">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-background/80 border">
+                <Scale className="h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-sm">Contract Reviews</p>
+                  <p className="text-xs text-muted-foreground">Attorney review of agreements</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-background/80 border">
+                <Users className="h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-sm">Legal Consultations</p>
+                  <p className="text-xs text-muted-foreground">Unlimited phone access</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-background/80 border">
+                <BookOpen className="h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-sm">Document Preparation</p>
+                  <p className="text-xs text-muted-foreground">Professional legal documents</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        {!iframeError ? (
-          <div className="aspect-[16/10] md:aspect-[16/8] w-full">
-            <iframe
-              src={legalShieldUrl}
-              title="LegalShield"
-              className="w-full h-full border-0"
-              onError={() => setIframeError(true)}
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              data-testid="iframe-legalshield"
-            />
-          </div>
-        ) : (
-          <div className="p-12 text-center bg-muted/30">
-            <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h4 className="text-lg font-medium mb-2">Visit LegalShield</h4>
-            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-              Click the button above to explore LegalShield's legal protection plans and services.
-            </p>
-          </div>
-        )}
       </Card>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-4">
-          <div className="flex items-start gap-3">
-            <Scale className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-sm mb-1">Contract Reviews</h4>
-              <p className="text-xs text-muted-foreground">
-                Have attorneys review purchase agreements, leases, and contracts
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-start gap-3">
-            <Users className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-sm mb-1">Legal Consultations</h4>
-              <p className="text-xs text-muted-foreground">
-                Unlimited phone consultations with experienced attorneys
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-start gap-3">
-            <BookOpen className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-sm mb-1">Document Preparation</h4>
-              <p className="text-xs text-muted-foreground">
-                Get legal documents prepared and reviewed by professionals
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }
