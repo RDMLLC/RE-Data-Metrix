@@ -29,7 +29,7 @@ const ANNUAL_SAVINGS = (MONTHLY_PRICE * 12) - ANNUAL_PRICE;
 export default function Upgrade() {
   const { isAuthenticated, isSubscriber, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   // Redirect subscribers to dashboard
   useEffect(() => {
