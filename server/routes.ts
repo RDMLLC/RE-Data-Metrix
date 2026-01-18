@@ -3692,13 +3692,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete discount code
+  // Delete discount code (also deletes Stripe coupon if synced)
   app.delete("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       
       if (!id || typeof id !== 'string') {
         return res.status(400).json({ error: "Invalid discount code ID" });
+      }
+      
+      // Get the discount code first to check for Stripe coupon
+      const discountCode = await storage.getDiscountCode(id);
+      if (!discountCode) {
+        return res.status(404).json({ error: "Discount code not found" });
+      }
+      
+      // Delete Stripe coupon if one exists
+      if (discountCode.stripeCouponId) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          await stripe.coupons.del(discountCode.stripeCouponId);
+          console.log(`[STRIPE] Deleted coupon ${discountCode.stripeCouponId} for discount code ${discountCode.code}`);
+        } catch (stripeError: any) {
+          // Log but don't fail if Stripe coupon already deleted or not found
+          console.warn(`[STRIPE] Could not delete coupon ${discountCode.stripeCouponId}: ${stripeError.message}`);
+        }
       }
       
       const deleted = await storage.deleteDiscountCode(id);
