@@ -107,7 +107,13 @@ export default function Profile() {
   const getSubscriptionBadge = () => {
     switch (user?.subscriptionStatus) {
       case 'active':
-        return <Badge className="bg-success/10 text-success border-success/20">Active Member</Badge>;
+        if (user?.stripeSubscriptionId) {
+          if (user?.subscriptionPlan === 'annual') {
+            return <Badge className="bg-green-500/10 text-green-600 border-green-200">Annual Member</Badge>;
+          }
+          return <Badge className="bg-green-500/10 text-green-600 border-green-200">Monthly Member</Badge>;
+        }
+        return <Badge className="bg-gray-500/10 text-gray-600 border-gray-200">Free Account</Badge>;
       case 'comped':
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Complimentary</Badge>;
       case 'referral_trial':
