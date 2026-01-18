@@ -122,11 +122,10 @@ class EmailService {
           </div>
           <div class="content">
             <p>Hi ${username},</p>
-            <p>Thank you for signing up for RE Data Metrix - your complete solution for real estate investment analysis and private lending connections.</p>
-            <p>Please click the button below to verify your email address and activate your account:</p>
+            <p>Your email has been verified successfully! Welcome to the RE Data Metrix platform - your complete solution for real estate investment analysis and private lending connections.</p>
             
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify My Email Address</a>
+              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify Email & Get Started</a>
             </div>
             
             <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Get Started:</h2>
