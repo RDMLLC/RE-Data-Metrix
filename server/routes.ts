@@ -5752,6 +5752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { HasDataAPIService } = await import("./services/hasdata-api.service");
       const hasDataService = new HasDataAPIService();
 
+      console.log(`[Comps Search] Subject property type: "${propertyType}"`);
+      
       const comps = await hasDataService.searchSoldComps({
         address: address || '',
         city,
