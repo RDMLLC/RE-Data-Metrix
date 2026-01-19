@@ -604,6 +604,7 @@ export default function Step3PurchaseRenovation({
                             <TableHead className="text-center">Bed/Bath</TableHead>
                             <TableHead className="text-right">Sqft</TableHead>
                             <TableHead className="text-right">$/Sqft</TableHead>
+                            <TableHead className="text-center">Year Built</TableHead>
                             <TableHead className="text-right">Distance</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -658,6 +659,9 @@ export default function Step3PurchaseRenovation({
                                 <TableCell className="text-right text-sm">
                                   ${comp.pricePerSqft}
                                 </TableCell>
+                                <TableCell className="text-center text-sm text-muted-foreground">
+                                  {comp.yearBuilt || '—'}
+                                </TableCell>
                                 <TableCell className="text-right text-sm text-muted-foreground">
                                   {comp.distanceFromSubject !== undefined 
                                     ? `${comp.distanceFromSubject.toFixed(1)} mi`
@@ -666,7 +670,7 @@ export default function Step3PurchaseRenovation({
                               </TableRow>
                               {expandedCompIndex === index && (
                                 <TableRow key={`${index}-details`}>
-                                  <TableCell colSpan={8} className="bg-muted/50 p-4">
+                                  <TableCell colSpan={9} className="bg-muted/50 p-4">
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                                       <div>
                                         <span className="text-muted-foreground">Sale Date:</span>
