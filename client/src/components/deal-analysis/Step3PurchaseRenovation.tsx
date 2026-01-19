@@ -66,11 +66,19 @@ export default function Step3PurchaseRenovation({
   // Max Offer Calculator state
   const [showMaxOfferCalc, setShowMaxOfferCalc] = useState(false);
   const [maxArvPercent, setMaxArvPercent] = useState(70);
+  const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
 
   // Max Offer Calculator calculations
-  const maxProjectCost = arv * (maxArvPercent / 100);
+  const maxProjectCost = calcArv * (maxArvPercent / 100);
   const maxOfferPrice = Math.max(0, maxProjectCost - calcRehabBudget);
+
+  // Sync ARV from form when it changes (only if calc hasn't been customized)
+  useEffect(() => {
+    if (arv > 0 && calcArv === 0) {
+      setCalcArv(arv);
+    }
+  }, [arv]);
 
   // Sync rehab budget from form when it changes
   useEffect(() => {
@@ -198,10 +206,18 @@ export default function Step3PurchaseRenovation({
 
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-xs font-medium">ARV (from above)</Label>
-                          <div className="mt-1 p-2 bg-muted rounded-md text-sm font-semibold" data-testid="text-calc-arv">
-                            {formatCurrency(arv)}
-                          </div>
+                          <Label htmlFor="calcArv" className="text-xs font-medium">ARV</Label>
+                          <Input
+                            id="calcArv"
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={calcArv || ""}
+                            onChange={(e) => setCalcArv(parseFloat(e.target.value) || 0)}
+                            placeholder="Enter ARV"
+                            className="mt-1"
+                            data-testid="input-calc-arv"
+                          />
                         </div>
                         <div>
                           <Label htmlFor="maxArvPercent" className="text-xs font-medium flex items-center gap-1">
@@ -274,12 +290,15 @@ export default function Step3PurchaseRenovation({
                           size="sm"
                           onClick={() => {
                             form.setValue("purchasePrice", maxOfferPrice);
+                            if (calcArv > 0) {
+                              form.setValue("arv", calcArv);
+                            }
                             if (calcRehabBudget > 0) {
                               form.setValue("rehabBudget", calcRehabBudget);
                             }
                             toast({
                               title: "Values Applied",
-                              description: `Purchase price set to ${formatCurrency(maxOfferPrice)}`,
+                              description: `ARV: ${formatCurrency(calcArv)}, Rehab: ${formatCurrency(calcRehabBudget)}, Purchase: ${formatCurrency(maxOfferPrice)}`,
                             });
                             setShowMaxOfferCalc(false);
                           }}
