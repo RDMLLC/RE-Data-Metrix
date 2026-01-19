@@ -436,7 +436,10 @@ export class HasDataAPIService implements IPropertyAPIService {
     
     // Extract first photo URL from Zillow data
     let imageUrl: string | undefined;
-    if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
+    if (property.image) {
+      // Zillow API returns main image as 'image' field
+      imageUrl = property.image;
+    } else if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
       imageUrl = property.photos[0];
     } else if (property.images && Array.isArray(property.images) && property.images.length > 0) {
       imageUrl = property.images[0];
