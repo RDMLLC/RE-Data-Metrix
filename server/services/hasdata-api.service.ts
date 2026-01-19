@@ -45,10 +45,46 @@ export interface CompsSearchParams {
   bedrooms: number;
   bathrooms: number;
   sqft: number;
+  propertyType?: string; // Subject property type for matching
   minResults?: number; // Default 3
   maxResults?: number; // Default 5
   subjectLat?: number; // Subject property latitude for distance calculation
   subjectLng?: number; // Subject property longitude for distance calculation
+}
+
+// Helper to check if property types are compatible for comps
+function arePropertyTypesCompatible(subjectType: string | undefined, compType: string | undefined): boolean {
+  if (!subjectType || !compType) return true; // No filtering if types unknown
+  
+  const normalize = (t: string) => t.toLowerCase().replace(/[_\s-]/g, '');
+  const subject = normalize(subjectType);
+  const comp = normalize(compType);
+  
+  // Condo/Townhome/Attached group - these are comparable to each other
+  const attachedTypes = ['condo', 'condominium', 'townhouse', 'townhome', 'attached', 'coop', 'cooperative'];
+  const isSubjectAttached = attachedTypes.some(t => subject.includes(t));
+  const isCompAttached = attachedTypes.some(t => comp.includes(t));
+  
+  if (isSubjectAttached && isCompAttached) return true;
+  
+  // Single family group
+  const sfTypes = ['singlefamily', 'single', 'detached', 'house'];
+  const isSubjectSF = sfTypes.some(t => subject.includes(t));
+  const isCompSF = sfTypes.some(t => comp.includes(t));
+  
+  if (isSubjectSF && isCompSF) return true;
+  
+  // Multi-family group
+  const mfTypes = ['multifamily', 'multi', 'duplex', 'triplex', 'fourplex', 'apartment'];
+  const isSubjectMF = mfTypes.some(t => subject.includes(t));
+  const isCompMF = mfTypes.some(t => comp.includes(t));
+  
+  if (isSubjectMF && isCompMF) return true;
+  
+  // If subject is unknown type, allow all
+  if (!isSubjectAttached && !isSubjectSF && !isSubjectMF) return true;
+  
+  return false;
 }
 
 export class HasDataAPIService implements IPropertyAPIService {
@@ -660,11 +696,19 @@ export class HasDataAPIService implements IPropertyAPIService {
             continue;
           }
 
-          // Apply filters
+          // Apply sqft filter
           if (sqft < sqftMin || sqft > sqftMax) {
             continue;
           }
+          // Apply bedroom filter
           if (beds && (beds < bedsMin || beds > bedsMax)) {
+            continue;
+          }
+          
+          // Apply property type filter - match condos with condos, SF with SF
+          const compPropertyType = listing.homeType || listing.propertyType;
+          if (!arePropertyTypesCompatible(params.propertyType, compPropertyType)) {
+            console.log(`[Comps Search] Skipping incompatible property type: ${compPropertyType} (subject: ${params.propertyType})`);
             continue;
           }
 
@@ -710,6 +754,11 @@ export class HasDataAPIService implements IPropertyAPIService {
               lat, 
               lng
             );
+            
+            // Filter by distance based on current search config radius
+            if (distanceFromSubject > config.radiusMiles) {
+              continue; // Skip comps outside the current radius
+            }
           }
 
           comps.push({

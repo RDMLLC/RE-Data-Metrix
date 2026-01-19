@@ -122,6 +122,7 @@ export default function Step3PurchaseRenovation({
   const bedrooms = form.watch("bedrooms") || 3;
   const bathrooms = form.watch("bathrooms") || 2;
   const sqft = form.watch("sqft") || 1500;
+  const propertyType = form.watch("propertyType") || "";
   const propertyLatitude = form.watch("propertyLatitude");
   const propertyLongitude = form.watch("propertyLongitude");
 
@@ -175,6 +176,7 @@ export default function Step3PurchaseRenovation({
         bedrooms,
         bathrooms,
         sqft,
+        propertyType,
         subjectLat: propertyLatitude,
         subjectLng: propertyLongitude,
       });
