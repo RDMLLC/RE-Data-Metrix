@@ -64,6 +64,7 @@ interface SoldPropertyComp {
   propertyType?: string;
   daysOnMarket?: number;
   imageUrl?: string;
+  distanceFromSubject?: number; // Distance in miles from subject property
 }
 
 interface CompsSearchResponse {
@@ -119,6 +120,39 @@ export default function Step3PurchaseRenovation({
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
+  const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
+
+  // Calculate ARV based on selected comps only
+  const calculateSelectedArv = () => {
+    if (!compsData || compsData.comps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0 };
+    
+    const selectedComps = compsData.comps.filter((_, index) => selectedCompIndices.has(index));
+    if (selectedComps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0 };
+
+    // Weighted average: total sale prices / total sqft * subject sqft
+    const totalSalePrice = selectedComps.reduce((sum, comp) => sum + comp.salePrice, 0);
+    const totalSqft = selectedComps.reduce((sum, comp) => sum + comp.sqft, 0);
+    const avgPricePerSqft = Math.round(totalSalePrice / totalSqft);
+    const calculatedArv = Math.round(avgPricePerSqft * sqft);
+
+    return { arv: calculatedArv, avgPricePerSqft, count: selectedComps.length };
+  };
+
+  const selectedArvData = calculateSelectedArv();
+
+  // Toggle comp selection
+  const toggleCompSelection = (index: number, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent row expansion when clicking checkbox
+    setSelectedCompIndices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
 
   // Get form values for comp search
   const city = form.watch("city") || "";
@@ -161,6 +195,10 @@ export default function Step3PurchaseRenovation({
         setCompsError(data.error);
       } else {
         setCompsData(data);
+        // Pre-select all comps
+        if (data.comps && data.comps.length > 0) {
+          setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
+        }
       }
     } catch (error: any) {
       console.error("Comps search error:", error);
@@ -556,12 +594,14 @@ export default function Step3PurchaseRenovation({
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-10"></TableHead>
                             <TableHead className="w-8"></TableHead>
                             <TableHead>Address</TableHead>
                             <TableHead className="text-right">Sale Price</TableHead>
                             <TableHead className="text-center">Bed/Bath</TableHead>
                             <TableHead className="text-right">Sqft</TableHead>
                             <TableHead className="text-right">$/Sqft</TableHead>
+                            <TableHead className="text-right">Distance</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -573,6 +613,23 @@ export default function Step3PurchaseRenovation({
                                 onClick={() => setExpandedCompIndex(expandedCompIndex === index ? null : index)}
                                 data-testid={`row-comp-${index}`}
                               >
+                                <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={selectedCompIndices.has(index)}
+                                    onCheckedChange={() => {
+                                      setSelectedCompIndices(prev => {
+                                        const newSet = new Set(prev);
+                                        if (newSet.has(index)) {
+                                          newSet.delete(index);
+                                        } else {
+                                          newSet.add(index);
+                                        }
+                                        return newSet;
+                                      });
+                                    }}
+                                    data-testid={`checkbox-comp-${index}`}
+                                  />
+                                </TableCell>
                                 <TableCell className="w-8">
                                   {expandedCompIndex === index ? (
                                     <ChevronUp className="h-4 w-4" />
@@ -598,10 +655,15 @@ export default function Step3PurchaseRenovation({
                                 <TableCell className="text-right text-sm">
                                   ${comp.pricePerSqft}
                                 </TableCell>
+                                <TableCell className="text-right text-sm text-muted-foreground">
+                                  {comp.distanceFromSubject !== undefined 
+                                    ? `${comp.distanceFromSubject.toFixed(1)} mi`
+                                    : '—'}
+                                </TableCell>
                               </TableRow>
                               {expandedCompIndex === index && (
                                 <TableRow key={`${index}-details`}>
-                                  <TableCell colSpan={6} className="bg-muted/50 p-4">
+                                  <TableCell colSpan={8} className="bg-muted/50 p-4">
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                                       <div>
                                         <span className="text-muted-foreground">Sale Date:</span>
@@ -645,16 +707,16 @@ export default function Step3PurchaseRenovation({
                         <div className="flex items-center justify-between flex-wrap gap-4">
                           <div>
                             <div className="text-sm text-muted-foreground">
-                              Based on {compsData.comps.length} comparable sales
+                              Based on {selectedArvData.count} comparable sale{selectedArvData.count !== 1 ? 's' : ''}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              Weighted Avg: ${compsData.weightedAvgPricePerSqft}/sqft × {sqft.toLocaleString()} sqft
+                              Weighted Avg: ${selectedArvData.avgPricePerSqft || 0}/sqft × {sqft.toLocaleString()} sqft
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-xs text-muted-foreground">Suggested ARV</div>
                             <div className="text-2xl font-bold text-primary" data-testid="text-suggested-arv">
-                              {compsData.suggestedArv ? formatCurrency(compsData.suggestedArv) : 'N/A'}
+                              {selectedArvData.arv ? formatCurrency(selectedArvData.arv) : 'N/A'}
                             </div>
                           </div>
                         </div>
@@ -663,17 +725,17 @@ export default function Step3PurchaseRenovation({
                             type="button"
                             size="sm"
                             onClick={() => {
-                              if (compsData.suggestedArv) {
-                                form.setValue("arv", compsData.suggestedArv);
-                                setCalcArv(compsData.suggestedArv);
+                              if (selectedArvData.arv) {
+                                form.setValue("arv", selectedArvData.arv);
+                                setCalcArv(selectedArvData.arv);
                                 toast({
                                   title: "ARV Applied",
-                                  description: `Est. Market Value set to ${formatCurrency(compsData.suggestedArv)}`,
+                                  description: `Est. Market Value set to ${formatCurrency(selectedArvData.arv)}`,
                                 });
                                 setShowArvHelper(false);
                               }
                             }}
-                            disabled={!compsData.suggestedArv}
+                            disabled={!selectedArvData.arv}
                             data-testid="button-use-suggested-arv"
                           >
                             Use This ARV

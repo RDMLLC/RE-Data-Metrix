@@ -5721,7 +5721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/comps/search", async (req, res) => {
     try {
-      const { address, city, state, zipCode, bedrooms, bathrooms, sqft } = req.body;
+      const { address, city, state, zipCode, bedrooms, bathrooms, sqft, subjectLat, subjectLng } = req.body;
       
       // Validate required fields
       if (!city || !state || !sqft) {
@@ -5762,6 +5762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sqft: sqft || 1500,
         minResults: 3,
         maxResults: 5,
+        subjectLat: subjectLat || undefined,
+        subjectLng: subjectLng || undefined,
       });
 
       // Calculate suggested ARV using weighted average

@@ -19,6 +19,22 @@ export interface SoldPropertyComp {
   propertyType?: string;
   daysOnMarket?: number;
   imageUrl?: string;
+  distanceFromSubject?: number; // Distance in miles from subject property
+  latitude?: number;
+  longitude?: number;
+}
+
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 export interface CompsSearchParams {
@@ -31,6 +47,8 @@ export interface CompsSearchParams {
   sqft: number;
   minResults?: number; // Default 3
   maxResults?: number; // Default 5
+  subjectLat?: number; // Subject property latitude for distance calculation
+  subjectLng?: number; // Subject property longitude for distance calculation
 }
 
 export class HasDataAPIService implements IPropertyAPIService {
@@ -644,6 +662,21 @@ export class HasDataAPIService implements IPropertyAPIService {
           }
 
           const pricePerSqft = salePrice / sqft;
+          
+          // Extract coordinates for distance calculation
+          const lat = this.parseNumber(listing.latitude || listing.lat);
+          const lng = this.parseNumber(listing.longitude || listing.lng || listing.lon);
+          
+          // Calculate distance from subject property if coordinates available
+          let distanceFromSubject: number | undefined;
+          if (lat && lng && params.subjectLat && params.subjectLng) {
+            distanceFromSubject = calculateDistanceMiles(
+              params.subjectLat, 
+              params.subjectLng, 
+              lat, 
+              lng
+            );
+          }
 
           comps.push({
             address: listing.address?.street || listing.streetAddress || listing.addressLine1 || '',
@@ -661,6 +694,9 @@ export class HasDataAPIService implements IPropertyAPIService {
             propertyType: listing.homeType || listing.propertyType,
             daysOnMarket: this.parseNumber(listing.daysOnZillow || listing.daysOnMarket),
             imageUrl: listing.imgSrc || listing.image || listing.photos?.[0],
+            latitude: lat,
+            longitude: lng,
+            distanceFromSubject,
           });
         }
 
