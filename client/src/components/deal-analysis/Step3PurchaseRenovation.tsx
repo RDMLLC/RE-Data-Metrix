@@ -745,6 +745,23 @@ export default function Step3PurchaseRenovation({
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* PropStream Affiliate Promotion */}
+                      <div className="mt-4 p-3 bg-muted/50 rounded-md border border-border">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Our quick comps search is perfect for initial analysis. For full MLS data, skip tracing, and the tools top investors rely on, try <span className="font-medium text-foreground">PropStream</span> — trusted by over 100,000 real estate professionals.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="default"
+                          className="gap-1.5"
+                          onClick={() => window.open("https://trial.propstreampro.com/redatametrix/", "_blank")}
+                          data-testid="button-propstream-trial"
+                        >
+                          Get 7 Days Free
+                        </Button>
+                      </div>
                     </div>
                   )}
 
