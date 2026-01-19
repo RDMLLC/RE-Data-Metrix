@@ -584,13 +584,16 @@ export class HasDataAPIService implements IPropertyAPIService {
       try {
         console.log(`[Comps Search] Trying radius=${config.radiusMiles}mi, days=${config.daysBack}`);
         
+        // Build search parameters with filtering
         const searchParams = new URLSearchParams({
           keyword: location,
           type: "sold",
+          beds_min: String(bedsMin),
+          beds_max: String(bedsMax),
         });
 
-        // Build the request URL
-        const endpoint = `${this.baseUrl}/scrape/zillow/search`;
+        // Build the request URL - correct endpoint is /scrape/zillow/listing
+        const endpoint = `${this.baseUrl}/scrape/zillow/listing`;
         
         console.log(`[Comps Search] Fetching from: ${endpoint}?${searchParams.toString()}`);
 
