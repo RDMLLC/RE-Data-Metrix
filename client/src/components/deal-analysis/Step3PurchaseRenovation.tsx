@@ -26,9 +26,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DollarSign, TrendingUp, HelpCircle, Calculator } from "lucide-react";
-import { useEffect } from "react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -61,6 +62,22 @@ export default function Step3PurchaseRenovation({
   const totalProjectCost = purchasePrice + rehabBudget;
   const grossProfit = arv - totalProjectCost;
   const percentageOfArv = arv > 0 ? (totalProjectCost / arv) * 100 : 0;
+
+  // Max Offer Calculator state
+  const [showMaxOfferCalc, setShowMaxOfferCalc] = useState(false);
+  const [maxArvPercent, setMaxArvPercent] = useState(70);
+  const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
+
+  // Max Offer Calculator calculations
+  const maxProjectCost = arv * (maxArvPercent / 100);
+  const maxOfferPrice = Math.max(0, maxProjectCost - calcRehabBudget);
+
+  // Sync rehab budget from form when it changes
+  useEffect(() => {
+    if (rehabBudget > 0 && calcRehabBudget === 0) {
+      setCalcRehabBudget(rehabBudget);
+    }
+  }, [rehabBudget]);
 
   useEffect(() => {
     if (form.getValues("estimatedValue") && !form.getValues("arv")) {
@@ -373,6 +390,136 @@ export default function Step3PurchaseRenovation({
               </div>
             </CardContent>
           </Card>
+
+          {/* Max Offer Calculator - Collapsible Section */}
+          <Collapsible open={showMaxOfferCalc} onOpenChange={setShowMaxOfferCalc}>
+            <Card className="border-primary/20">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover-elevate rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Help Determine Max Offer Price</CardTitle>
+                    </div>
+                    {showMaxOfferCalc ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <CardDescription>
+                    Calculate your maximum purchase price based on ARV percentage and rehab costs
+                  </CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4 pt-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium">ARV (from above)</Label>
+                      <div className="mt-1.5 p-2.5 bg-muted rounded-md text-sm font-semibold" data-testid="text-calc-arv">
+                        {formatCurrency(arv)}
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="maxArvPercent" className="text-sm font-medium flex items-center gap-1">
+                        Max % of ARV
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>The 70% rule is common for fix & flip. Your total project cost (purchase + rehab) should not exceed this percentage of ARV.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Input
+                          id="maxArvPercent"
+                          type="number"
+                          min="1"
+                          max="100"
+                          step="1"
+                          value={maxArvPercent}
+                          onChange={(e) => setMaxArvPercent(parseFloat(e.target.value) || 70)}
+                          className="w-24"
+                          data-testid="input-max-arv-percent"
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-medium">Max Project Cost:</span>
+                      <span className="text-lg font-semibold text-primary" data-testid="text-max-project-cost">
+                        {formatCurrency(maxProjectCost)}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="calcRehabBudget" className="text-sm font-medium">Rehab Budget</Label>
+                        <Input
+                          id="calcRehabBudget"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={calcRehabBudget || ""}
+                          onChange={(e) => setCalcRehabBudget(parseFloat(e.target.value) || 0)}
+                          placeholder="Enter rehab budget"
+                          className="mt-1.5"
+                          data-testid="input-calc-rehab-budget"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Max Offer/Purchase Price</Label>
+                        <div 
+                          className="mt-1.5 p-2.5 bg-primary/10 border-2 border-primary rounded-md text-lg font-bold text-primary"
+                          data-testid="text-max-offer-price"
+                        >
+                          {formatCurrency(maxOfferPrice)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        form.setValue("purchasePrice", maxOfferPrice);
+                        if (calcRehabBudget > 0) {
+                          form.setValue("rehabBudget", calcRehabBudget);
+                        }
+                        toast({
+                          title: "Values Applied",
+                          description: `Purchase price set to ${formatCurrency(maxOfferPrice)}`,
+                        });
+                        setShowMaxOfferCalc(false);
+                      }}
+                      disabled={maxOfferPrice <= 0}
+                      data-testid="button-use-max-offer"
+                    >
+                      Use This Offer Price
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMaxOfferCalc(false)}
+                      data-testid="button-close-calc"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           <Card className="bg-muted/50">
             <CardHeader>
