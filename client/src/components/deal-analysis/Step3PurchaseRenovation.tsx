@@ -114,6 +114,15 @@ export default function Step3PurchaseRenovation({
   const maxProjectCost = calcArv * (maxArvPercent / 100);
   const maxOfferPrice = Math.max(0, maxProjectCost - calcRehabBudget);
 
+  // Get form values for comp search (must be declared before calculateSelectedArv)
+  const city = form.watch("city") || "";
+  const state = form.watch("state") || "";
+  const zipCode = form.watch("zipCode") || "";
+  const address = form.watch("address") || "";
+  const bedrooms = form.watch("bedrooms") || 3;
+  const bathrooms = form.watch("bathrooms") || 2;
+  const sqft = form.watch("sqft") || 1500;
+
   // Help with ARV state
   const [showArvHelper, setShowArvHelper] = useState(false);
   const [isSearchingComps, setIsSearchingComps] = useState(false);
@@ -139,29 +148,6 @@ export default function Step3PurchaseRenovation({
   };
 
   const selectedArvData = calculateSelectedArv();
-
-  // Toggle comp selection
-  const toggleCompSelection = (index: number, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent row expansion when clicking checkbox
-    setSelectedCompIndices(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
-      } else {
-        newSet.add(index);
-      }
-      return newSet;
-    });
-  };
-
-  // Get form values for comp search
-  const city = form.watch("city") || "";
-  const state = form.watch("state") || "";
-  const zipCode = form.watch("zipCode") || "";
-  const address = form.watch("address") || "";
-  const bedrooms = form.watch("bedrooms") || 3;
-  const bathrooms = form.watch("bathrooms") || 2;
-  const sqft = form.watch("sqft") || 1500;
 
   // Search for comparable sales
   const searchComps = async () => {
