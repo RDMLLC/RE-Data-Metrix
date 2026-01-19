@@ -365,6 +365,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       lastSaleDate: property.lastSoldDate,
       imageUrl,
       hoaFees,
+      latitude: this.parseNumber(property.latitude),
+      longitude: this.parseNumber(property.longitude),
     };
   }
 
@@ -568,6 +570,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       lastSaleDate: lastSale?.date,
       imageUrl,
       hoaFees,
+      latitude: this.parseNumber(property.latitude),
+      longitude: this.parseNumber(property.longitude),
     };
   }
 

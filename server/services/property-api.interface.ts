@@ -20,6 +20,8 @@ export interface PropertyData {
   lastSaleDate?: string;
   imageUrl?: string;
   hoaFees?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface IPropertyAPIService {
