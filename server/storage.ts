@@ -513,10 +513,11 @@ export interface IStorage {
   deleteExpiredPropertyCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
-  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; periodEnd: Date } | null>;
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; periodEnd: Date } | null>;
   incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
   incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
   incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }>;
+  incrementUserArvHelper(userId: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
 }
 
@@ -2941,8 +2942,9 @@ export class DatabaseStorage implements IStorage {
   private readonly FREE_LOOKUPS_PER_MONTH = 2;
   private readonly FREE_WHOLESALE_CALCS_PER_MONTH = 2;
   private readonly FREE_PDF_DOWNLOADS_PER_MONTH = 2;
+  private readonly FREE_ARV_HELPERS_PER_MONTH = 2;
 
-  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; periodEnd: Date } | null> {
+  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; periodEnd: Date } | null> {
     const [counter] = await db.select()
       .from(userUsageCountersTable)
       .where(eq(userUsageCountersTable.userId, userId))
@@ -2963,6 +2965,8 @@ export class DatabaseStorage implements IStorage {
         remainingWholesaleCalcs: this.FREE_WHOLESALE_CALCS_PER_MONTH,
         pdfDownloadCount: 0,
         remainingPdfDownloads: this.FREE_PDF_DOWNLOADS_PER_MONTH,
+        arvHelperCount: 0,
+        remainingArvHelpers: this.FREE_ARV_HELPERS_PER_MONTH,
         periodEnd: this.getNextMonthEnd()
       };
     }
@@ -2974,6 +2978,8 @@ export class DatabaseStorage implements IStorage {
       remainingWholesaleCalcs: Math.max(0, this.FREE_WHOLESALE_CALCS_PER_MONTH - counter.wholesaleCalcCount),
       pdfDownloadCount: counter.pdfDownloadCount,
       remainingPdfDownloads: Math.max(0, this.FREE_PDF_DOWNLOADS_PER_MONTH - counter.pdfDownloadCount),
+      arvHelperCount: counter.arvHelperCount,
+      remainingArvHelpers: Math.max(0, this.FREE_ARV_HELPERS_PER_MONTH - counter.arvHelperCount),
       periodEnd: counter.periodEnd
     };
   }
@@ -3209,6 +3215,83 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async incrementUserArvHelper(userId: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    // Try to get existing counter
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    // If no counter exists, create one
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          arvHelperCount: 1,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      
+      return {
+        arvHelperCount: 1,
+        remainingArvHelpers: this.FREE_ARV_HELPERS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+    
+    // If period expired, reset and increment
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          pdfDownloadCount: 0,
+          arvHelperCount: 1,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        arvHelperCount: 1,
+        remainingArvHelpers: this.FREE_ARV_HELPERS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+    
+    // Check if can use before incrementing
+    if (counter.arvHelperCount >= this.FREE_ARV_HELPERS_PER_MONTH) {
+      return {
+        arvHelperCount: counter.arvHelperCount,
+        remainingArvHelpers: 0,
+        canUse: false
+      };
+    }
+    
+    // Increment the counter
+    const newCount = counter.arvHelperCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        arvHelperCount: newCount,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      arvHelperCount: newCount,
+      remainingArvHelpers: Math.max(0, this.FREE_ARV_HELPERS_PER_MONTH - newCount),
+      canUse: true
+    };
+  }
+
   async resetUserUsageIfExpired(userId: string): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -3219,6 +3302,7 @@ export class DatabaseStorage implements IStorage {
         propertyLookupCount: 0,
         wholesaleCalcCount: 0,
         pdfDownloadCount: 0,
+        arvHelperCount: 0,
         periodStart,
         periodEnd,
         updatedAt: now,
