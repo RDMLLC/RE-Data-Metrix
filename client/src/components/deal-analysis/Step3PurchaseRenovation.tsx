@@ -337,7 +337,13 @@ export default function Step3PurchaseRenovation({
                     Help with ARV
                     {showArvHelper ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
-                  <Popover open={showMaxOfferCalc} onOpenChange={setShowMaxOfferCalc}>
+                  <Popover open={showMaxOfferCalc} onOpenChange={(open) => {
+                    if (open) {
+                      setCalcArv(arv || 0);
+                      setCalcRehabBudget(rehabBudget || 0);
+                    }
+                    setShowMaxOfferCalc(open);
+                  }}>
                   <PopoverTrigger asChild>
                     <Button
                       type="button"
