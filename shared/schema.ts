@@ -123,6 +123,7 @@ export const userUsageCounters = pgTable("user_usage_counters", {
   propertyLookupCount: integer("property_lookup_count").notNull().default(0),
   wholesaleCalcCount: integer("wholesale_calc_count").notNull().default(0),
   pdfDownloadCount: integer("pdf_download_count").notNull().default(0),
+  arvHelperCount: integer("arv_helper_count").notNull().default(0),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
   lastLookupAt: timestamp("last_lookup_at"),
