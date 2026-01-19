@@ -5614,13 +5614,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           remainingWholesaleCalcs: -1, // -1 means unlimited
           pdfDownloadCount: 0,
           remainingPdfDownloads: -1, // -1 means unlimited
+          arvHelperCount: 0,
+          remainingArvHelpers: -1, // -1 means unlimited
           periodEnd: null
         });
       }
       
       const usage = await storage.getUserUsageCounter(user.id);
       const FREE_PDF_LIMIT = 2;
+      const FREE_ARV_LIMIT = 2;
       const pdfCount = usage?.pdfDownloadCount || 0;
+      const arvCount = usage?.arvHelperCount || 0;
       
       res.json({
         isSubscriber: false,
@@ -5631,6 +5635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingWholesaleCalcs: usage?.remainingWholesaleCalcs ?? 2,
         pdfDownloadCount: pdfCount,
         remainingPdfDownloads: Math.max(0, FREE_PDF_LIMIT - pdfCount),
+        arvHelperCount: arvCount,
+        remainingArvHelpers: Math.max(0, FREE_ARV_LIMIT - arvCount),
         periodEnd: usage?.periodEnd || null
       });
     } catch (error) {
@@ -5737,15 +5743,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Check subscription status (comps require premium)
-      const isSubscriber = user.role === 'admin' || 
+      // Check subscription status - paid subscribers get unlimited access
+      const isPaidSubscriber = user.role === 'admin' || 
         ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
-      if (!isSubscriber) {
-        return res.status(403).json({ 
-          error: "Comparable search requires a premium subscription",
-          code: "SUBSCRIPTION_REQUIRED"
-        });
+      // For free users, check ARV helper usage
+      let usageResult = null;
+      if (!isPaidSubscriber) {
+        usageResult = await storage.incrementUserArvHelper(user.id);
+        if (!usageResult.canUse) {
+          return res.status(403).json({ 
+            error: "You've used your 2 free ARV searches this month. Upgrade to get unlimited access.",
+            code: "ARV_QUOTA_EXCEEDED",
+            remainingArvHelpers: 0,
+            arvHelperCount: usageResult.arvHelperCount
+          });
+        }
       }
 
       // Import and use HasData service for comps search
