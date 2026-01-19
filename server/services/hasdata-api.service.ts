@@ -732,7 +732,7 @@ export class HasDataAPIService implements IPropertyAPIService {
             listing.coordinates?.lon
           );
           
-          // Log first listing's coordinate structure for debugging
+          // Log first listing's structure for debugging
           if (comps.length === 0) {
             console.log(`[Comps Search] Sample listing coordinate fields:`, {
               latitude: listing.latitude,
@@ -743,6 +743,8 @@ export class HasDataAPIService implements IPropertyAPIService {
               geo: listing.geo,
               coordinates: listing.coordinates,
             });
+            console.log(`[Comps Search] Sample listing all keys:`, Object.keys(listing));
+            console.log(`[Comps Search] Sample yearBuilt field:`, listing.yearBuilt);
           }
           
           // Calculate distance from subject property if coordinates available
