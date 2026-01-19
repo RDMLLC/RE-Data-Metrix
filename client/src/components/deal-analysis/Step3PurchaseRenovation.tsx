@@ -571,6 +571,11 @@ export default function Step3PurchaseRenovation({
                     <span className="bg-muted px-2 py-1 rounded">
                       {sqft.toLocaleString()} sqft (±20%)
                     </span>
+                    {propertyType && (
+                      <span className="bg-muted px-2 py-1 rounded">
+                        {propertyType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    )}
                   </div>
 
                   {/* Error message */}
@@ -801,6 +806,11 @@ export default function Step3PurchaseRenovation({
                         />
                       </FormControl>
                       <FormMessage />
+                      {rehabBudget > 0 && sqft > 0 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Rehab $/SqFt: ${(rehabBudget / sqft).toFixed(2)}
+                        </p>
+                      )}
                     </FormItem>
                   )}
                 />
