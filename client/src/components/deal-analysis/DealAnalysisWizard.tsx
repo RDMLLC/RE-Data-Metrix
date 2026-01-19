@@ -518,6 +518,11 @@ export default function DealAnalysisWizard() {
     }
   };
 
+  const formValues = form.getValues();
+  const propertyAddress = formValues.address && formValues.city && formValues.state
+    ? `${formValues.address}, ${formValues.city}, ${formValues.state} ${formValues.zipCode || ""}`.trim()
+    : undefined;
+
   return (
     <WizardLayout
       currentStep={currentStep}
@@ -525,6 +530,7 @@ export default function DealAnalysisWizard() {
       onBack={handleBack}
       onStartNew={handleStartNew}
       canGoBack={currentStep > 1}
+      propertyAddress={propertyAddress}
     >
       {renderStep()}
     </WizardLayout>

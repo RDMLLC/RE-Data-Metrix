@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, RotateCcw } from "lucide-react";
+import { ChevronLeft, RotateCcw, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface WizardLayoutProps {
@@ -10,6 +10,7 @@ interface WizardLayoutProps {
   onStartNew?: () => void;
   canGoBack: boolean;
   children: React.ReactNode;
+  propertyAddress?: string;
 }
 
 export default function WizardLayout({
@@ -19,6 +20,7 @@ export default function WizardLayout({
   onStartNew,
   canGoBack,
   children,
+  propertyAddress,
 }: WizardLayoutProps) {
   const { isSubscriber } = useAuth();
   const stepTitles = [
@@ -88,6 +90,13 @@ export default function WizardLayout({
           <h2 className="text-xl font-semibold text-foreground mb-2">
             {stepTitles[currentStep - 1]}
           </h2>
+          
+          {propertyAddress && currentStep > 1 && (
+            <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 rounded-md px-3 py-2 mt-2">
+              <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="text-sm font-medium">{propertyAddress}</span>
+            </div>
+          )}
         </div>
 
         <Card className="p-8">{children}</Card>
