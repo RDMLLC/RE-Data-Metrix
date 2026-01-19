@@ -216,10 +216,6 @@ export default function ViewDeals() {
     setActualRehabBudget("");
   };
 
-  const handleMarkActive = (deal: DealWithLender) => {
-    updateDealMutation.mutate({ dealId: deal.id, updates: { status: "active" } });
-  };
-
   const handleMarkUnderContract = (deal: DealWithLender) => {
     setSelectedDeal(deal);
     setUnderContractModalOpen(true);
@@ -297,11 +293,11 @@ export default function ViewDeals() {
     });
   };
 
-  const handleRevertToActive = (deal: DealWithLender) => {
+  const handleRevertToDraft = (deal: DealWithLender) => {
     updateDealMutation.mutate({
       dealId: deal.id,
       updates: {
-        status: "active",
+        status: "draft",
         lostDate: null,
         wonDate: null,
       },
@@ -554,18 +550,7 @@ export default function ViewDeals() {
                               </div>
 
                               <div className="flex flex-wrap gap-2">
-                                {deal.status === "draft" && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleMarkActive(deal)}
-                                    data-testid={`button-mark-active-${deal.id}`}
-                                  >
-                                    <TrendingUp className="h-4 w-4 mr-1" />
-                                    Mark Active
-                                  </Button>
-                                )}
-                                {deal.status === "active" && (
+                                {(deal.status === "draft" || deal.status === "active") && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -619,7 +604,7 @@ export default function ViewDeals() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleRevertToActive(deal)}
+                                    onClick={() => handleRevertToDraft(deal)}
                                     data-testid={`button-revert-${deal.id}`}
                                   >
                                     <RotateCcw className="h-4 w-4 mr-1" />
