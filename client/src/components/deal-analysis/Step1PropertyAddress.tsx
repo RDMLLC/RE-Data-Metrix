@@ -86,6 +86,9 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         estimatedValue: data.estimatedValue,
         hoaFees: data.hoaFees,
         propertyDataSource: dataSource,
+        // Store coordinates for comps distance calculation
+        propertyLatitude: data.latitude,
+        propertyLongitude: data.longitude,
         // Required defaults
         addingSquareFootage: false,
         closingTimeline: "22-30-days",

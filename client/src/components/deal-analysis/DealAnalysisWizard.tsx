@@ -30,6 +30,8 @@ const wizardSchema = z.object({
   annualTax: z.number().optional(),
   estimatedValue: z.number().optional(),
   propertyDataSource: z.string().optional(),
+  propertyLatitude: z.number().optional(),
+  propertyLongitude: z.number().optional(),
   addingSquareFootage: z.boolean().optional(),
   newSquareFootage: z.number().optional(),
   
