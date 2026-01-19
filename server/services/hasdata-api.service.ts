@@ -663,9 +663,36 @@ export class HasDataAPIService implements IPropertyAPIService {
 
           const pricePerSqft = salePrice / sqft;
           
-          // Extract coordinates for distance calculation
-          const lat = this.parseNumber(listing.latitude || listing.lat);
-          const lng = this.parseNumber(listing.longitude || listing.lng || listing.lon);
+          // Extract coordinates for distance calculation (Zillow uses various nested structures)
+          const lat = this.parseNumber(
+            listing.latitude || 
+            listing.lat || 
+            listing.latLong?.latitude ||
+            listing.geo?.latitude ||
+            listing.coordinates?.lat
+          );
+          const lng = this.parseNumber(
+            listing.longitude || 
+            listing.lng || 
+            listing.lon ||
+            listing.latLong?.longitude ||
+            listing.geo?.longitude ||
+            listing.coordinates?.lng ||
+            listing.coordinates?.lon
+          );
+          
+          // Log first listing's coordinate structure for debugging
+          if (comps.length === 0) {
+            console.log(`[Comps Search] Sample listing coordinate fields:`, {
+              latitude: listing.latitude,
+              lat: listing.lat,
+              longitude: listing.longitude,
+              lng: listing.lng,
+              latLong: listing.latLong,
+              geo: listing.geo,
+              coordinates: listing.coordinates,
+            });
+          }
           
           // Calculate distance from subject property if coordinates available
           let distanceFromSubject: number | undefined;
