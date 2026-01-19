@@ -26,10 +26,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -172,7 +172,136 @@ export default function Step3PurchaseRenovation({
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Investment Details</CardTitle>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <CardTitle className="text-lg">Investment Details</CardTitle>
+                <Popover open={showMaxOfferCalc} onOpenChange={setShowMaxOfferCalc}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      data-testid="button-max-offer-calc"
+                    >
+                      <Lightbulb className="h-4 w-4" />
+                      Max Offer Calculator
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 sm:w-96" align="end">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-sm mb-1">Help Determine Max Offer Price</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Calculate your maximum purchase price based on ARV percentage and rehab costs
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-xs font-medium">ARV (from above)</Label>
+                          <div className="mt-1 p-2 bg-muted rounded-md text-sm font-semibold" data-testid="text-calc-arv">
+                            {formatCurrency(arv)}
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="maxArvPercent" className="text-xs font-medium flex items-center gap-1">
+                            Max % of ARV
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p>The 70% rule is common for fix & flip. Your total project cost (purchase + rehab) should not exceed this percentage of ARV.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Input
+                              id="maxArvPercent"
+                              type="number"
+                              min="1"
+                              max="100"
+                              step="1"
+                              value={maxArvPercent}
+                              onChange={(e) => setMaxArvPercent(parseFloat(e.target.value) || 70)}
+                              className="w-20"
+                              data-testid="input-max-arv-percent"
+                            />
+                            <span className="text-sm text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-medium">Max Project Cost:</span>
+                          <span className="text-sm font-semibold text-primary" data-testid="text-max-project-cost">
+                            {formatCurrency(maxProjectCost)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor="calcRehabBudget" className="text-xs font-medium">Rehab Budget</Label>
+                            <Input
+                              id="calcRehabBudget"
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={calcRehabBudget || ""}
+                              onChange={(e) => setCalcRehabBudget(parseFloat(e.target.value) || 0)}
+                              placeholder="Enter rehab budget"
+                              className="mt-1"
+                              data-testid="input-calc-rehab-budget"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs font-medium">Max Offer/Purchase Price</Label>
+                            <div 
+                              className="mt-1 p-2 bg-primary/10 border-2 border-primary rounded-md text-base font-bold text-primary"
+                              data-testid="text-max-offer-price"
+                            >
+                              {formatCurrency(maxOfferPrice)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            form.setValue("purchasePrice", maxOfferPrice);
+                            if (calcRehabBudget > 0) {
+                              form.setValue("rehabBudget", calcRehabBudget);
+                            }
+                            toast({
+                              title: "Values Applied",
+                              description: `Purchase price set to ${formatCurrency(maxOfferPrice)}`,
+                            });
+                            setShowMaxOfferCalc(false);
+                          }}
+                          disabled={maxOfferPrice <= 0}
+                          data-testid="button-use-max-offer"
+                        >
+                          Use This Offer Price
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowMaxOfferCalc(false)}
+                          data-testid="button-close-calc"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <CardDescription>
                 Enter the key financial details for this deal
               </CardDescription>
@@ -390,136 +519,6 @@ export default function Step3PurchaseRenovation({
               </div>
             </CardContent>
           </Card>
-
-          {/* Max Offer Calculator - Collapsible Section */}
-          <Collapsible open={showMaxOfferCalc} onOpenChange={setShowMaxOfferCalc}>
-            <Card className="border-primary/20">
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover-elevate rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Lightbulb className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Help Determine Max Offer Price</CardTitle>
-                    </div>
-                    {showMaxOfferCalc ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <CardDescription>
-                    Calculate your maximum purchase price based on ARV percentage and rehab costs
-                  </CardDescription>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm font-medium">ARV (from above)</Label>
-                      <div className="mt-1.5 p-2.5 bg-muted rounded-md text-sm font-semibold" data-testid="text-calc-arv">
-                        {formatCurrency(arv)}
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="maxArvPercent" className="text-sm font-medium flex items-center gap-1">
-                        Max % of ARV
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>The 70% rule is common for fix & flip. Your total project cost (purchase + rehab) should not exceed this percentage of ARV.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </Label>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Input
-                          id="maxArvPercent"
-                          type="number"
-                          min="1"
-                          max="100"
-                          step="1"
-                          value={maxArvPercent}
-                          onChange={(e) => setMaxArvPercent(parseFloat(e.target.value) || 70)}
-                          className="w-24"
-                          data-testid="input-max-arv-percent"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-medium">Max Project Cost:</span>
-                      <span className="text-lg font-semibold text-primary" data-testid="text-max-project-cost">
-                        {formatCurrency(maxProjectCost)}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="calcRehabBudget" className="text-sm font-medium">Rehab Budget</Label>
-                        <Input
-                          id="calcRehabBudget"
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={calcRehabBudget || ""}
-                          onChange={(e) => setCalcRehabBudget(parseFloat(e.target.value) || 0)}
-                          placeholder="Enter rehab budget"
-                          className="mt-1.5"
-                          data-testid="input-calc-rehab-budget"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Max Offer/Purchase Price</Label>
-                        <div 
-                          className="mt-1.5 p-2.5 bg-primary/10 border-2 border-primary rounded-md text-lg font-bold text-primary"
-                          data-testid="text-max-offer-price"
-                        >
-                          {formatCurrency(maxOfferPrice)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      onClick={() => {
-                        form.setValue("purchasePrice", maxOfferPrice);
-                        if (calcRehabBudget > 0) {
-                          form.setValue("rehabBudget", calcRehabBudget);
-                        }
-                        toast({
-                          title: "Values Applied",
-                          description: `Purchase price set to ${formatCurrency(maxOfferPrice)}`,
-                        });
-                        setShowMaxOfferCalc(false);
-                      }}
-                      disabled={maxOfferPrice <= 0}
-                      data-testid="button-use-max-offer"
-                    >
-                      Use This Offer Price
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowMaxOfferCalc(false)}
-                      data-testid="button-close-calc"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
 
           <Card className="bg-muted/50">
             <CardHeader>
