@@ -2,6 +2,37 @@ import type { IPropertyAPIService, PropertyData } from "./property-api.interface
 
 const HASDATA_BASE_URL = "https://api.hasdata.com";
 
+// Interface for sold property comparables
+export interface SoldPropertyComp {
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  salePrice: number;
+  saleDate: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  pricePerSqft: number;
+  yearBuilt?: number;
+  lotSize?: number;
+  propertyType?: string;
+  daysOnMarket?: number;
+  imageUrl?: string;
+}
+
+export interface CompsSearchParams {
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  minResults?: number; // Default 3
+  maxResults?: number; // Default 5
+}
+
 export class HasDataAPIService implements IPropertyAPIService {
   private apiKey: string;
   private baseUrl: string;
@@ -520,5 +551,137 @@ export class HasDataAPIService implements IPropertyAPIService {
       imageUrl,
       hoaFees,
     };
+  }
+
+  /**
+   * Search for recently sold properties as comparables
+   * Uses Zillow Search API with type=sold
+   * Auto-expands search if fewer than minResults found
+   */
+  async searchSoldComps(params: CompsSearchParams): Promise<SoldPropertyComp[]> {
+    const minResults = params.minResults || 3;
+    const maxResults = params.maxResults || 5;
+    
+    if (!this.apiKey) {
+      throw new Error("HasData API key not configured. Cannot search for comparables.");
+    }
+
+    // Search parameters - start with tight criteria, expand if needed
+    const searchConfigs = [
+      { radiusMiles: 1, daysBack: 180 },    // 1 mile, 6 months
+      { radiusMiles: 2, daysBack: 180 },    // 2 miles, 6 months
+      { radiusMiles: 3, daysBack: 270 },    // 3 miles, 9 months
+      { radiusMiles: 5, daysBack: 365 },    // 5 miles, 12 months
+    ];
+
+    const location = `${params.city}, ${params.state} ${params.zipCode}`;
+    const sqftMin = Math.round(params.sqft * 0.8);
+    const sqftMax = Math.round(params.sqft * 1.2);
+    const bedsMin = Math.max(1, params.bedrooms - 1);
+    const bedsMax = params.bedrooms + 1;
+
+    for (const config of searchConfigs) {
+      try {
+        console.log(`[Comps Search] Trying radius=${config.radiusMiles}mi, days=${config.daysBack}`);
+        
+        const searchParams = new URLSearchParams({
+          keyword: location,
+          type: "sold",
+        });
+
+        // Build the request URL
+        const endpoint = `${this.baseUrl}/scrape/zillow/search`;
+        
+        console.log(`[Comps Search] Fetching from: ${endpoint}?${searchParams.toString()}`);
+
+        const response = await fetch(`${endpoint}?${searchParams.toString()}`, {
+          method: "GET",
+          headers: {
+            "x-api-key": this.apiKey,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          console.error(`[Comps Search] API error: ${response.status}`);
+          continue;
+        }
+
+        const data = await response.json();
+        console.log(`[Comps Search] Raw response keys:`, Object.keys(data));
+        
+        // Extract listings from response
+        const listings = data.listings || data.searchResults || data.properties || data.results || [];
+        console.log(`[Comps Search] Found ${listings.length} raw listings`);
+
+        if (!Array.isArray(listings) || listings.length === 0) {
+          continue;
+        }
+
+        // Filter and transform listings
+        const comps: SoldPropertyComp[] = [];
+        
+        for (const listing of listings) {
+          const sqft = this.parseNumber(listing.area || listing.sqft || listing.squareFeet || listing.livingArea);
+          const beds = this.parseNumber(listing.beds || listing.bedrooms);
+          const baths = this.parseNumber(listing.baths || listing.bathrooms);
+          const salePrice = this.parseNumber(listing.price || listing.soldPrice || listing.lastSoldPrice);
+          
+          // Skip if missing essential data
+          if (!sqft || !salePrice || sqft === 0) {
+            continue;
+          }
+
+          // Apply filters
+          if (sqft < sqftMin || sqft > sqftMax) {
+            continue;
+          }
+          if (beds && (beds < bedsMin || beds > bedsMax)) {
+            continue;
+          }
+
+          const pricePerSqft = salePrice / sqft;
+
+          comps.push({
+            address: listing.address?.street || listing.streetAddress || listing.addressLine1 || '',
+            city: listing.address?.city || listing.city || params.city,
+            state: listing.address?.state || listing.state || params.state,
+            zipCode: listing.address?.zipcode || listing.zipCode || listing.postalCode || '',
+            salePrice,
+            saleDate: listing.dateSold || listing.lastSoldDate || listing.soldDate || '',
+            bedrooms: beds || 0,
+            bathrooms: baths || 0,
+            sqft,
+            pricePerSqft: Math.round(pricePerSqft),
+            yearBuilt: this.parseNumber(listing.yearBuilt),
+            lotSize: this.parseNumber(listing.lotSize || listing.lotAreaValue),
+            propertyType: listing.homeType || listing.propertyType,
+            daysOnMarket: this.parseNumber(listing.daysOnZillow || listing.daysOnMarket),
+            imageUrl: listing.imgSrc || listing.image || listing.photos?.[0],
+          });
+        }
+
+        // Sort by highest price (for ARV, we want top sales)
+        comps.sort((a, b) => b.salePrice - a.salePrice);
+
+        console.log(`[Comps Search] Filtered to ${comps.length} comps after criteria`);
+
+        // If we have enough results, return them
+        if (comps.length >= minResults) {
+          return comps.slice(0, maxResults);
+        }
+
+        // Otherwise continue to next search config
+        console.log(`[Comps Search] Only ${comps.length} comps, need ${minResults}, expanding search...`);
+
+      } catch (error) {
+        console.error(`[Comps Search] Error with config:`, config, error);
+        continue;
+      }
+    }
+
+    // Return whatever we found, even if less than minResults
+    console.log(`[Comps Search] Exhausted all search configs, returning best available`);
+    return [];
   }
 }

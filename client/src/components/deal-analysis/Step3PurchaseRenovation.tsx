@@ -26,12 +26,52 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+
+// Interface for comparable property
+interface SoldPropertyComp {
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  salePrice: number;
+  saleDate: string;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number;
+  pricePerSqft: number;
+  yearBuilt?: number;
+  lotSize?: number;
+  propertyType?: string;
+  daysOnMarket?: number;
+  imageUrl?: string;
+}
+
+interface CompsSearchResponse {
+  comps: SoldPropertyComp[];
+  suggestedArv: number | null;
+  weightedAvgPricePerSqft?: number;
+  message?: string;
+}
 
 const closingTimelineOptions = [
   { value: "7-days", label: "7 days or less" },
@@ -72,6 +112,87 @@ export default function Step3PurchaseRenovation({
   // Max Offer Calculator calculations
   const maxProjectCost = calcArv * (maxArvPercent / 100);
   const maxOfferPrice = Math.max(0, maxProjectCost - calcRehabBudget);
+
+  // Help with ARV state
+  const [showArvHelper, setShowArvHelper] = useState(false);
+  const [isSearchingComps, setIsSearchingComps] = useState(false);
+  const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
+  const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
+  const [compsError, setCompsError] = useState<string | null>(null);
+
+  // Get form values for comp search
+  const city = form.watch("city") || "";
+  const state = form.watch("state") || "";
+  const zipCode = form.watch("zipCode") || "";
+  const address = form.watch("address") || "";
+  const bedrooms = form.watch("bedrooms") || 3;
+  const bathrooms = form.watch("bathrooms") || 2;
+  const sqft = form.watch("sqft") || 1500;
+
+  // Search for comparable sales
+  const searchComps = async () => {
+    if (!city || !state) {
+      toast({
+        title: "Missing Location",
+        description: "City and state are required to search for comparables. Please complete Step 1 first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSearchingComps(true);
+    setCompsError(null);
+    setCompsData(null);
+
+    try {
+      const response = await apiRequest("POST", "/api/comps/search", {
+        address,
+        city,
+        state,
+        zipCode,
+        bedrooms,
+        bathrooms,
+        sqft,
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setCompsError(data.error);
+      } else {
+        setCompsData(data);
+      }
+    } catch (error: any) {
+      console.error("Comps search error:", error);
+      setCompsError(error.message || "Failed to search for comparable sales");
+    } finally {
+      setIsSearchingComps(false);
+    }
+  };
+
+  // Format currency helper
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  // Format date helper
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    try {
+      return new Date(dateStr).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   // Sync ARV from form when it changes (only if calc hasn't been customized)
   useEffect(() => {
@@ -155,15 +276,6 @@ export default function Step3PurchaseRenovation({
     setLocation("/rental-analysis");
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -182,7 +294,20 @@ export default function Step3PurchaseRenovation({
             <CardHeader>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <CardTitle className="text-lg">Investment Details</CardTitle>
-                <Popover open={showMaxOfferCalc} onOpenChange={setShowMaxOfferCalc}>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setShowArvHelper(!showArvHelper)}
+                    data-testid="button-help-with-arv"
+                  >
+                    <Search className="h-4 w-4" />
+                    Help with ARV
+                    {showArvHelper ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  </Button>
+                  <Popover open={showMaxOfferCalc} onOpenChange={setShowMaxOfferCalc}>
                   <PopoverTrigger asChild>
                     <Button
                       type="button"
@@ -317,14 +442,259 @@ export default function Step3PurchaseRenovation({
                           Close
                         </Button>
                       </div>
+                      <div className="border-t pt-2 mt-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="p-0 h-auto text-xs text-primary hover:text-primary/80"
+                          onClick={() => {
+                            setShowMaxOfferCalc(false);
+                            setShowArvHelper(true);
+                          }}
+                          data-testid="button-open-arv-from-calc"
+                        >
+                          Need help determining ARV? Search for comps
+                        </Button>
+                      </div>
                     </div>
                   </PopoverContent>
                 </Popover>
+                </div>
               </div>
               <CardDescription>
                 Enter the key financial details for this deal
               </CardDescription>
             </CardHeader>
+
+            {/* Help with ARV Collapsible Section */}
+            <Collapsible open={showArvHelper} onOpenChange={setShowArvHelper}>
+              <CollapsibleContent className="px-6 pb-4">
+                <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-sm">Find Comparable Sales</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Search for recently sold properties similar to yours to estimate ARV
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={searchComps}
+                        disabled={isSearchingComps || !city || !state}
+                        data-testid="button-search-comps"
+                      >
+                        {isSearchingComps ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="h-4 w-4 mr-1.5" />
+                            Search Comps
+                          </>
+                        )}
+                      </Button>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            data-testid="button-max-offer-from-arv"
+                          >
+                            <Calculator className="h-4 w-4" />
+                            Max Offer Calculator
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72" align="end">
+                          <p className="text-sm mb-2">Open Max Offer Calculator to calculate your maximum purchase price.</p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              setShowArvHelper(false);
+                              setShowMaxOfferCalc(true);
+                            }}
+                          >
+                            Open Calculator
+                          </Button>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* Search criteria summary */}
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="bg-muted px-2 py-1 rounded">
+                      <MapPin className="h-3 w-3 inline mr-1" />
+                      {city}, {state} {zipCode}
+                    </span>
+                    <span className="bg-muted px-2 py-1 rounded">
+                      <Home className="h-3 w-3 inline mr-1" />
+                      {bedrooms} bed, {bathrooms} bath
+                    </span>
+                    <span className="bg-muted px-2 py-1 rounded">
+                      {sqft.toLocaleString()} sqft (±20%)
+                    </span>
+                  </div>
+
+                  {/* Error message */}
+                  {compsError && (
+                    <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+                      {compsError}
+                    </div>
+                  )}
+
+                  {/* Comps Results */}
+                  {compsData && compsData.comps.length > 0 && (
+                    <div className="space-y-3">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-8"></TableHead>
+                            <TableHead>Address</TableHead>
+                            <TableHead className="text-right">Sale Price</TableHead>
+                            <TableHead className="text-center">Bed/Bath</TableHead>
+                            <TableHead className="text-right">Sqft</TableHead>
+                            <TableHead className="text-right">$/Sqft</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {compsData.comps.map((comp, index) => (
+                            <>
+                              <TableRow 
+                                key={index}
+                                className="cursor-pointer hover-elevate"
+                                onClick={() => setExpandedCompIndex(expandedCompIndex === index ? null : index)}
+                                data-testid={`row-comp-${index}`}
+                              >
+                                <TableCell className="w-8">
+                                  {expandedCompIndex === index ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </TableCell>
+                                <TableCell className="font-medium text-sm">
+                                  {comp.address}
+                                  <div className="text-xs text-muted-foreground">
+                                    {comp.city}, {comp.state}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-semibold text-primary">
+                                  {formatCurrency(comp.salePrice)}
+                                </TableCell>
+                                <TableCell className="text-center text-sm">
+                                  {comp.bedrooms}/{comp.bathrooms}
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {comp.sqft.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  ${comp.pricePerSqft}
+                                </TableCell>
+                              </TableRow>
+                              {expandedCompIndex === index && (
+                                <TableRow key={`${index}-details`}>
+                                  <TableCell colSpan={6} className="bg-muted/50 p-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-muted-foreground">Sale Date:</span>
+                                        <div className="font-medium">{formatDate(comp.saleDate)}</div>
+                                      </div>
+                                      {comp.yearBuilt && (
+                                        <div>
+                                          <span className="text-muted-foreground">Year Built:</span>
+                                          <div className="font-medium">{comp.yearBuilt}</div>
+                                        </div>
+                                      )}
+                                      {comp.lotSize && (
+                                        <div>
+                                          <span className="text-muted-foreground">Lot Size:</span>
+                                          <div className="font-medium">{comp.lotSize.toLocaleString()} sqft</div>
+                                        </div>
+                                      )}
+                                      {comp.propertyType && (
+                                        <div>
+                                          <span className="text-muted-foreground">Type:</span>
+                                          <div className="font-medium">{comp.propertyType}</div>
+                                        </div>
+                                      )}
+                                      {comp.daysOnMarket && (
+                                        <div>
+                                          <span className="text-muted-foreground">Days on Market:</span>
+                                          <div className="font-medium">{comp.daysOnMarket}</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </>
+                          ))}
+                        </TableBody>
+                      </Table>
+
+                      {/* Suggested ARV */}
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                          <div>
+                            <div className="text-sm text-muted-foreground">
+                              Based on {compsData.comps.length} comparable sales
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Weighted Avg: ${compsData.weightedAvgPricePerSqft}/sqft × {sqft.toLocaleString()} sqft
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-muted-foreground">Suggested ARV</div>
+                            <div className="text-2xl font-bold text-primary" data-testid="text-suggested-arv">
+                              {compsData.suggestedArv ? formatCurrency(compsData.suggestedArv) : 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              if (compsData.suggestedArv) {
+                                form.setValue("arv", compsData.suggestedArv);
+                                setCalcArv(compsData.suggestedArv);
+                                toast({
+                                  title: "ARV Applied",
+                                  description: `Est. Market Value set to ${formatCurrency(compsData.suggestedArv)}`,
+                                });
+                                setShowArvHelper(false);
+                              }
+                            }}
+                            disabled={!compsData.suggestedArv}
+                            data-testid="button-use-suggested-arv"
+                          >
+                            Use This ARV
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No results message */}
+                  {compsData && compsData.comps.length === 0 && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Home className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">{compsData.message || "No comparable sales found in this area."}</p>
+                      <p className="text-xs mt-1">Try adjusting the property details or search in a nearby area.</p>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField

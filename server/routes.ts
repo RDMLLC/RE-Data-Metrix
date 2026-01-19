@@ -5718,6 +5718,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comparable Sales Search Route (for ARV help)
+  app.post("/api/comps/search", async (req, res) => {
+    try {
+      const { address, city, state, zipCode, bedrooms, bathrooms, sqft } = req.body;
+      
+      // Validate required fields
+      if (!city || !state || !sqft) {
+        return res.status(400).json({ 
+          error: "City, state, and square footage are required for comp search" 
+        });
+      }
+
+      // Check if user is authenticated and has access
+      const user = req.user as User | undefined;
+      
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Check subscription status (comps require premium)
+      const isSubscriber = user.role === 'admin' || 
+        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+      
+      if (!isSubscriber) {
+        return res.status(403).json({ 
+          error: "Comparable search requires a premium subscription",
+          code: "SUBSCRIPTION_REQUIRED"
+        });
+      }
+
+      // Import and use HasData service for comps search
+      const { HasDataAPIService } = await import("./services/hasdata-api.service");
+      const hasDataService = new HasDataAPIService();
+
+      const comps = await hasDataService.searchSoldComps({
+        address: address || '',
+        city,
+        state,
+        zipCode: zipCode || '',
+        bedrooms: bedrooms || 3,
+        bathrooms: bathrooms || 2,
+        sqft: sqft || 1500,
+        minResults: 3,
+        maxResults: 5,
+      });
+
+      // Calculate suggested ARV using weighted average
+      if (comps.length > 0) {
+        const totalSalePrice = comps.reduce((sum, c) => sum + c.salePrice, 0);
+        const totalSqft = comps.reduce((sum, c) => sum + c.sqft, 0);
+        const weightedAvgPricePerSqft = totalSqft > 0 ? totalSalePrice / totalSqft : 0;
+        const suggestedArv = Math.round(weightedAvgPricePerSqft * sqft);
+
+        return res.json({
+          comps,
+          suggestedArv,
+          weightedAvgPricePerSqft: Math.round(weightedAvgPricePerSqft),
+          searchCriteria: {
+            city,
+            state,
+            zipCode,
+            bedrooms,
+            bathrooms,
+            sqft,
+          }
+        });
+      }
+
+      return res.json({
+        comps: [],
+        suggestedArv: null,
+        message: "No comparable sales found in this area. Try expanding your search manually."
+      });
+
+    } catch (error: any) {
+      console.error("Comps search error:", error);
+      res.status(500).json({ 
+        error: error.message || "Failed to search for comparable sales" 
+      });
+    }
+  });
+
   // Property Lookup Route
   app.post("/api/property/lookup", async (req, res) => {
     try {
