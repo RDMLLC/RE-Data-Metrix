@@ -745,6 +745,7 @@ export class HasDataAPIService implements IPropertyAPIService {
             });
             console.log(`[Comps Search] Sample listing all keys:`, Object.keys(listing));
             console.log(`[Comps Search] Sample yearBuilt field:`, listing.yearBuilt);
+            console.log(`[Comps Search] Sample listingDetails:`, JSON.stringify(listing.listingDetails, null, 2));
           }
           
           // Calculate distance from subject property if coordinates available
