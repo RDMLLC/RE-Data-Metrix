@@ -69,6 +69,7 @@ export default function Navigation() {
     { href: "/lenders", label: "Lenders" },
     { href: "/toolbox", label: "Toolbox" },
     { href: "/pricing", label: "Pricing" },
+    { href: "/webinar", label: "Free Webinar", highlight: true },
     { href: "/contact", label: "Contact" },
   ];
 
@@ -134,11 +135,15 @@ export default function Navigation() {
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <Button
-                    variant="ghost"
-                    className={`text-foreground hover:text-primary ${
-                      location === link.href ? "text-primary font-semibold" : ""
-                    }`}
+                    variant={(link as any).highlight ? "default" : "ghost"}
+                    className={(link as any).highlight 
+                      ? "bg-accent text-accent-foreground"
+                      : `text-foreground hover:text-primary ${
+                          location === link.href ? "text-primary font-semibold" : ""
+                        }`
+                    }
                   >
+                    {(link as any).highlight && <Video className="h-4 w-4 mr-1" />}
                     {link.label}
                   </Button>
                 </Link>
@@ -578,11 +583,15 @@ export default function Navigation() {
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
-                  variant="ghost"
-                  className={`w-full justify-start text-foreground hover:text-primary ${
-                    location === link.href ? "text-primary font-semibold" : ""
-                  }`}
+                  variant={(link as any).highlight ? "default" : "ghost"}
+                  className={(link as any).highlight 
+                    ? "w-full justify-start bg-accent text-accent-foreground"
+                    : `w-full justify-start text-foreground hover:text-primary ${
+                        location === link.href ? "text-primary font-semibold" : ""
+                      }`
+                  }
                 >
+                  {(link as any).highlight && <Video className="h-4 w-4 mr-1" />}
                   {link.label}
                 </Button>
               </Link>

@@ -77,6 +77,7 @@ import Checkout from "@/pages/Checkout";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import CheckoutComplete from "@/pages/CheckoutComplete";
 import WholesaleCalculator from "@/pages/WholesaleCalculator";
+import Webinar from "@/pages/Webinar";
 
 function Router() {
   return (
@@ -97,6 +98,7 @@ function Router() {
       <Route path="/loan-types" component={LoanTypes} />
       <Route path="/about-private-lenders" component={AboutPrivateLenders} />
       <Route path="/toolbox" component={Resources} />
+      <Route path="/webinar" component={Webinar} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/register" component={Register} />
