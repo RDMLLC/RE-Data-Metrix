@@ -46,6 +46,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -133,6 +134,7 @@ export default function Step3PurchaseRenovation({
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
+  const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
 
   // Calculate ARV based on selected comps only
   const calculateSelectedArv = () => {
@@ -183,18 +185,34 @@ export default function Step3PurchaseRenovation({
 
       const data = await response.json();
       
-      if (data.error) {
-        setCompsError(data.error);
-      } else {
-        setCompsData(data);
-        // Pre-select all comps
-        if (data.comps && data.comps.length > 0) {
-          setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
-        }
+      setCompsData(data);
+      // Pre-select all comps
+      if (data.comps && data.comps.length > 0) {
+        setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
       }
     } catch (error: any) {
       console.error("Comps search error:", error);
-      setCompsError(error.message || "Failed to search for comparable sales");
+      // Handle the error response from the API
+      // apiRequest throws on non-2xx, so check if error message contains quota exceeded code
+      if (error.message && error.message.includes("ARV_QUOTA_EXCEEDED")) {
+        setShowArvQuotaModal(true);
+      } else {
+        // Try to extract a user-friendly error message
+        let errorMessage = "Failed to search for comparable sales";
+        try {
+          // Error message format is "status: {json}"
+          const jsonMatch = error.message.match(/\d+:\s*(.+)/);
+          if (jsonMatch) {
+            const errorData = JSON.parse(jsonMatch[1]);
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          }
+        } catch {
+          // Use default message if parsing fails
+        }
+        setCompsError(errorMessage);
+      }
     } finally {
       setIsSearchingComps(false);
     }
@@ -1127,6 +1145,11 @@ export default function Step3PurchaseRenovation({
           </div>
         </form>
       </Form>
+      
+      <ArvQuotaExhaustedModal
+        open={showArvQuotaModal}
+        onOpenChange={setShowArvQuotaModal}
+      />
     </div>
   );
 }
