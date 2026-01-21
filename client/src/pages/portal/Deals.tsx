@@ -482,7 +482,14 @@ export default function ViewDeals() {
       };
     }
 
-    updateDealMutation.mutate({ dealId: selectedDeal.id, updates });
+    updateDealMutation.mutate({ dealId: selectedDeal.id, updates }, {
+      onSuccess: () => {
+        // Hide other analyses if user opted to do so
+        if (hideOtherAnalyses && selectedDeal) {
+          hideOtherAnalysesMutation.mutate(selectedDeal.id);
+        }
+      }
+    });
   };
 
   const handleMarkLost = (deal: DealWithLender) => {
@@ -1691,6 +1698,26 @@ export default function ViewDeals() {
                 )}
               </div>
             )}
+
+            {/* Archive other analyses option */}
+            <div className="border-t pt-4">
+              <div className="flex items-start gap-3 p-3 rounded-md bg-muted/50">
+                <Checkbox
+                  id="hideOtherAnalysesWon"
+                  checked={hideOtherAnalyses}
+                  onCheckedChange={(checked) => setHideOtherAnalyses(!!checked)}
+                  data-testid="checkbox-hide-analyses-purchased"
+                />
+                <div>
+                  <label htmlFor="hideOtherAnalysesWon" className="text-sm font-medium cursor-pointer">
+                    Archive other analyses
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Other analyses for this property will be archived. They can be recovered if needed.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
