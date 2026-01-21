@@ -25,20 +25,38 @@ A Contractor Search feature allows subscribers to find general contractors by se
 
 Contractor onboarding follows an invitation-based workflow (mirroring lenders): admin sends email invitation with company name → contractor receives link → completes profile (name, phone, password, company details, specialties, insurance/bonding) → selects service regions from state-based grid → profile is activated. Key endpoints: `POST /api/contractors/invite` (admin), `GET /api/contractors/validate-invite/:token`, `POST /api/contractors/accept-invite/:token`. Contractor signup page at `/contractor-signup/:token`. Admin panel shows invite status badges (Pending/Complete).
 
-A Deal Tracking System allows users to manage their investment deals through a complete lifecycle. The Deals page (`/portal/deals`) groups saved deals by property address with collapsible sections showing all analyses per property. Deal status flow: Draft → Active → Under Contract (with exit strategy + closing date) → Won/Purchased or Lost. The system tracks:
-- **Status Transitions**: Draft (new analyses) → Active (pursuing) → Under Contract (with exit strategy + closing date) → Won (purchased) or Lost (archived)
-- **Exit Strategy**: Captured when marking Under Contract - Wholesale, Rehab (Fix & Flip), or Wholetail
-- **Under Contract**: Captures estimated closing date, exit strategy, and triggers automated email reminders
-- **Won/Purchased**: Dynamic fields based on exit strategy:
-  - All deals: actual purchase price, sell price, closing costs, lender info
-  - Wholesale: assignment fee, transactional funding costs (auto-populated from analysis if available)
-  - Rehab/Wholetail: actual rehab budget, rehab level (Light/Medium/Heavy/Full), optional detailed cost breakdown by category (paint, flooring, kitchen, bathrooms, roof, HVAC, windows/doors, electrical, plumbing, exterior, other)
-  - **Wholesale Auto-Populate**: For wholesale deals, the Won modal pre-fills sell price (B-C resale price), assignment fee (wholesale fee), and transactional funding costs from the original analysis. If the user clicked "Apply Now" for Straightline Funding, the "Used RE Data Metrix lender" is pre-selected to "Yes"
-- **Lost**: Archives all analyses for that property address with option to revert
-- **Closing Reminders**: Automated emails sent at 7, 5, 3, 1, and 0 days before estimated closing date via `closingReminders.service.ts`
-- **Stop Reminders**: Users can stop automated reminders per deal via button in the UI
+A Deal Tracking System allows users to manage their investment deals through a complete lifecycle. The Deals page (`/portal/deals`) groups saved deals by property address with collapsible sections showing all analyses per property.
 
-Key database fields on `saved_deals`: underContractDate, estimatedClosingDate, actualClosingDate, purchaseDate, actualPurchasePrice, actualRehabBudget, sellDate, customLenderInfo (jsonb), stopAutomatedReminders, exitStrategy, sellPrice, assignmentFee, closingCosts, transactionalFundingCosts, rehabLevel, rehabCostBreakdown (jsonb). Key endpoints: `POST /api/member/deals/archive-property`, `POST /api/member/deals/:dealId/stop-reminders`.
+**Deal Status Flow (Updated January 2026):**
+- **Analyzing** → Under Contract → Purchased → Sold (sequential flow)
+- **Lost** = archived deals (shown in separate Archive section at bottom of page)
+
+**Status Transitions:**
+- **Analyzing**: New deals start here (replaces draft/active). Can mark as "Under Contract" or "Lost"
+- **Under Contract**: Deal is under contract with the SELLER. Collects exit strategy (Wholesale/Wholetail/Fix & Flip) and estimated closing date. Can mark as "Purchased" or "Lost"
+- **Purchased**: Deal closed - bought from seller. Collects actual purchase price, closing costs, lender info. Can mark as "Sold" or "Lost"
+- **Sold**: Property sold to investor (wholesale/wholetail) or end buyer (rehab). Collects selling price, actual rehab budget, rehab level, closing/holding/selling costs
+- **Lost**: Deal archived - moved to Archive section. Can be reactivated
+
+**Soft Delete System:**
+- When marking a deal as "Under Contract" or "Sold", user can choose to archive other analyses for that property
+- Uses `isHidden` boolean field - archived analyses remain in database but are hidden from main view
+- Hidden deals can be recovered if needed (soft delete, not hard delete)
+- API endpoint: `POST /api/member/deals/:dealId/hide-other-analyses`
+
+**Data Collection by Status:**
+- **Under Contract**: Exit strategy, estimated closing date
+- **Purchased**: Actual purchase price, closing costs, lender used (auto-filled for wholesale if applied for Straightline Funding)
+- **Sold**: Selling price, actual rehab budget, rehab level (Light/Medium/Heavy/Full), closing costs, holding costs, selling costs
+
+**Pre-population:**
+- Purchased modal pre-fills from deal analysis (purchase price, rehab budget)
+- For wholesale deals: sell price (B-C resale price), assignment fee, transactional funding costs auto-populate
+- Sold modal pre-fills from analysis (ARV as sell price, rehab budget, estimated costs)
+
+**Archive Section:** Lost deals appear in a separate Archive section at the bottom of the Deals page with options to reactivate or permanently delete.
+
+Key database fields on `saved_deals`: underContractDate, estimatedClosingDate, actualClosingDate, purchaseDate, actualPurchasePrice, actualRehabBudget, sellDate, soldDate, customLenderInfo (jsonb), stopAutomatedReminders, exitStrategy, sellPrice, assignmentFee, closingCosts, transactionalFundingCosts, actualClosingCosts, actualHoldingCosts, actualSellingCosts, rehabLevel, rehabCostBreakdown (jsonb), isHidden (soft delete). Key endpoints: `POST /api/member/deals/archive-property`, `POST /api/member/deals/:dealId/stop-reminders`, `POST /api/member/deals/:dealId/hide-other-analyses`.
 
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL

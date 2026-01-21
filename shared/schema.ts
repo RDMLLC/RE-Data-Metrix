@@ -201,6 +201,13 @@ export const savedDeals = pgTable("saved_deals", {
   transactionalFundingCosts: decimal("transactional_funding_costs", { precision: 12, scale: 2 }),
   rehabLevel: text("rehab_level"),
   rehabCostBreakdown: jsonb("rehab_cost_breakdown"),
+  // New fields for the updated status system
+  soldDate: timestamp("sold_date"),
+  actualClosingCosts: decimal("actual_closing_costs", { precision: 12, scale: 2 }),
+  actualHoldingCosts: decimal("actual_holding_costs", { precision: 12, scale: 2 }),
+  actualSellingCosts: decimal("actual_selling_costs", { precision: 12, scale: 2 }),
+  // Soft delete field - hidden deals are archived but kept in database
+  isHidden: boolean("is_hidden").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({

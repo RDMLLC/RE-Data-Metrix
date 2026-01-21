@@ -49,7 +49,8 @@ import {
   RotateCcw,
   Building2,
   BellOff,
-  Bell
+  Bell,
+  EyeOff
 } from "lucide-react";
 import type { SavedDeal, Lender, LoanProduct } from "@shared/schema";
 
@@ -76,7 +77,14 @@ export default function ViewDeals() {
   const [selectedDeal, setSelectedDeal] = useState<DealWithLender | null>(null);
   const [underContractModalOpen, setUnderContractModalOpen] = useState(false);
   const [wonModalOpen, setWonModalOpen] = useState(false);
+  const [soldModalOpen, setSoldModalOpen] = useState(false);
   const [lostModalOpen, setLostModalOpen] = useState(false);
+  const [hideOtherAnalyses, setHideOtherAnalyses] = useState(true);
+  const [showHiddenAnalyses, setShowHiddenAnalyses] = useState(false);
+  
+  // Additional sold modal fields
+  const [actualHoldingCosts, setActualHoldingCosts] = useState("");
+  const [actualSellingCosts, setActualSellingCosts] = useState("");
   
   const [estimatedClosingDate, setEstimatedClosingDate] = useState("");
   const [usedReDMxLender, setUsedReDMxLender] = useState<boolean | null>(null);
@@ -110,6 +118,19 @@ export default function ViewDeals() {
 
   const { data: deals, isLoading } = useQuery<DealWithLender[]>({
     queryKey: ["/api/member/deals"],
+  });
+
+  // Fetch hidden analyses when toggle is enabled
+  const { data: hiddenDeals } = useQuery<DealWithLender[]>({
+    queryKey: ["/api/member/deals", "includeHidden"],
+    queryFn: async () => {
+      const response = await fetch("/api/member/deals?includeHidden=true");
+      if (!response.ok) throw new Error("Failed to fetch hidden deals");
+      const allDeals = await response.json();
+      // Filter to only hidden ones
+      return allDeals.filter((d: DealWithLender) => d.isHidden);
+    },
+    enabled: showHiddenAnalyses,
   });
 
   const { data: availableLenders } = useQuery<Lender[]>({
@@ -220,9 +241,55 @@ export default function ViewDeals() {
     },
   });
 
+  const hideOtherAnalysesMutation = useMutation({
+    mutationFn: async (dealId: string) => {
+      const response = await apiRequest("POST", `/api/member/deals/${dealId}/hide-other-analyses`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/member/deals"] });
+      if (data.count > 0) {
+        toast({
+          title: "Previous Analyses Archived",
+          description: `${data.count} other analyses have been archived for this property.`,
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to archive other analyses.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unhideDealMutation = useMutation({
+    mutationFn: async (dealId: string) => {
+      const response = await apiRequest("POST", `/api/member/deals/${dealId}/unhide`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/member/deals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/member/deals", "includeHidden"] });
+      toast({
+        title: "Analysis Recovered",
+        description: "The analysis has been restored and is now visible.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to recover the analysis.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const closeAllModals = () => {
     setUnderContractModalOpen(false);
     setWonModalOpen(false);
+    setSoldModalOpen(false);
     setLostModalOpen(false);
     setSelectedDeal(null);
     setUsedReDMxLender(null);
@@ -241,6 +308,9 @@ export default function ViewDeals() {
     setAssignmentFee("");
     setRehabLevel("");
     setShowDetailedBreakdown(false);
+    setHideOtherAnalyses(true);
+    setActualHoldingCosts("");
+    setActualSellingCosts("");
     setRehabCostBreakdown({
       paint: "",
       flooring: "",
@@ -272,6 +342,13 @@ export default function ViewDeals() {
         estimatedClosingDate: new Date(estimatedClosingDate),
         exitStrategy,
       },
+    }, {
+      onSuccess: () => {
+        // Hide other analyses if user opted to do so
+        if (hideOtherAnalyses && selectedDeal) {
+          hideOtherAnalysesMutation.mutate(selectedDeal.id);
+        }
+      }
     });
   };
 
@@ -345,7 +422,7 @@ export default function ViewDeals() {
     }
 
     const updates: Partial<SavedDeal> = {
-      status: "won",
+      status: "purchased",
       wonDate: new Date(),
       actualClosingDate: new Date(),
       purchaseDate: new Date(),
@@ -427,10 +504,107 @@ export default function ViewDeals() {
     updateDealMutation.mutate({
       dealId: deal.id,
       updates: {
-        status: "draft",
+        status: "analyzing",
         lostDate: null,
         wonDate: null,
       },
+    });
+  };
+
+  const handleMarkSold = (deal: DealWithLender) => {
+    setSelectedDeal(deal);
+    const snapshot = deal.dealSnapshot as any;
+    const results = deal.resultsSnapshot as any;
+    
+    // Pre-populate from analysis or deal data
+    if (deal.exitStrategy) {
+      setExitStrategy(deal.exitStrategy);
+    }
+    if (deal.sellPrice) {
+      setSellPrice(deal.sellPrice.toString());
+    } else if (snapshot?.arv) {
+      setSellPrice(snapshot.arv.toString());
+    }
+    if (deal.actualRehabBudget) {
+      setActualRehabBudget(deal.actualRehabBudget.toString());
+    } else if (snapshot?.rehabBudget) {
+      setActualRehabBudget(snapshot.rehabBudget.toString());
+    }
+    if (deal.rehabLevel) {
+      setRehabLevel(deal.rehabLevel);
+    }
+    // Pre-fill costs from analysis if available
+    if (snapshot?.closingCosts) {
+      setClosingCosts(snapshot.closingCosts.toString());
+    }
+    if (results?.holdingCosts) {
+      setActualHoldingCosts(results.holdingCosts.toString());
+    }
+    if (results?.sellingCosts) {
+      setActualSellingCosts(results.sellingCosts.toString());
+    }
+    
+    setSoldModalOpen(true);
+  };
+
+  const handleConfirmSold = () => {
+    if (!selectedDeal) return;
+    
+    // Validate required field
+    if (!sellPrice) {
+      toast({
+        title: "Selling Price Required",
+        description: "Please enter the selling price before marking as sold.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updates: Partial<SavedDeal> = {
+      status: "sold",
+      soldDate: new Date(),
+      sellDate: new Date(),
+    };
+
+    // Convert string values to proper format for decimal fields
+    if (sellPrice) {
+      updates.sellPrice = parseFloat(sellPrice).toString();
+    }
+    if (actualRehabBudget) {
+      updates.actualRehabBudget = parseFloat(actualRehabBudget).toString();
+    }
+    if (rehabLevel) {
+      updates.rehabLevel = rehabLevel;
+    }
+    if (closingCosts) {
+      updates.actualClosingCosts = parseFloat(closingCosts).toString();
+    }
+    if (actualHoldingCosts) {
+      updates.actualHoldingCosts = parseFloat(actualHoldingCosts).toString();
+    }
+    if (actualSellingCosts) {
+      updates.actualSellingCosts = parseFloat(actualSellingCosts).toString();
+    }
+    
+    // Handle detailed rehab breakdown
+    const hasBreakdownValues = Object.values(rehabCostBreakdown).some(v => v && v.trim() !== "");
+    if (showDetailedBreakdown && hasBreakdownValues) {
+      const breakdown: Record<string, number> = {};
+      for (const [key, value] of Object.entries(rehabCostBreakdown)) {
+        if (value && value.trim() !== "") {
+          breakdown[key] = parseFloat(value);
+        }
+      }
+      updates.rehabCostBreakdown = breakdown;
+    }
+
+    updateDealMutation.mutate({ dealId: selectedDeal.id, updates }, {
+      onSuccess: () => {
+        // Hide other analyses if user opted to do so
+        if (hideOtherAnalyses && selectedDeal) {
+          hideOtherAnalysesMutation.mutate(selectedDeal.id);
+        }
+      }
     });
   };
 
@@ -449,13 +623,16 @@ export default function ViewDeals() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
       case "active":
-        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200">Active</Badge>;
+      case "analyzing":
+        return <Badge variant="secondary">Analyzing</Badge>;
       case "under_contract":
         return <Badge className="bg-amber-500/10 text-amber-600 border-amber-200">Under Contract</Badge>;
+      case "purchased":
       case "won":
-        return <Badge className="bg-success text-success-foreground">Won</Badge>;
+        return <Badge className="bg-success text-success-foreground">Purchased</Badge>;
+      case "sold":
+        return <Badge className="bg-emerald-600 text-white">Sold</Badge>;
       case "lost":
         return <Badge variant="destructive">Lost</Badge>;
       default:
@@ -523,15 +700,59 @@ export default function ViewDeals() {
   }, [deals]);
 
   const filteredGroups = useMemo(() => {
-    if (statusFilter === "all") return groupedDeals;
+    if (statusFilter === "all") {
+      // Filter out lost deals from "All Deals" - they go in Archive section
+      return groupedDeals
+        .map(group => ({
+          ...group,
+          deals: group.deals.filter(deal => deal.status !== "lost"),
+        }))
+        .filter(group => group.deals.length > 0);
+    }
+    
+    // Map "analyzing" filter to match draft/active/analyzing statuses
+    const matchesFilter = (status: string) => {
+      if (statusFilter === "analyzing") {
+        return status === "draft" || status === "active" || status === "analyzing";
+      }
+      if (statusFilter === "purchased") {
+        return status === "purchased" || status === "won";
+      }
+      return status === statusFilter;
+    };
     
     return groupedDeals
       .map(group => ({
         ...group,
-        deals: group.deals.filter(deal => deal.status === statusFilter),
+        deals: group.deals.filter(deal => matchesFilter(deal.status)),
       }))
       .filter(group => group.deals.length > 0);
   }, [groupedDeals, statusFilter]);
+
+  // Get lost/archived deals for the Archive section
+  const archivedGroups = useMemo(() => {
+    if (!deals) return [];
+    
+    const lostDeals = deals.filter(deal => deal.status === "lost");
+    if (lostDeals.length === 0) return [];
+    
+    const groups: Record<string, PropertyGroup> = {};
+    lostDeals.forEach(deal => {
+      const address = deal.propertyAddress || "No Address";
+      if (!groups[address]) {
+        groups[address] = {
+          address,
+          deals: [],
+          bestROI: null,
+          latestStatus: deal.status,
+          latestDate: deal.lostDate ? new Date(deal.lostDate) : null,
+        };
+      }
+      groups[address].deals.push(deal);
+    });
+    
+    return Object.values(groups);
+  }, [deals]);
 
   const totalDealsCount = filteredGroups.reduce((sum, group) => sum + group.deals.length, 0);
 
@@ -566,11 +787,10 @@ export default function ViewDeals() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Deals</SelectItem>
-                  <SelectItem value="draft">Drafts</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="analyzing">Analyzing</SelectItem>
                   <SelectItem value="under_contract">Under Contract</SelectItem>
-                  <SelectItem value="won">Won</SelectItem>
-                  <SelectItem value="lost">Lost</SelectItem>
+                  <SelectItem value="purchased">Purchased</SelectItem>
+                  <SelectItem value="sold">Sold</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -671,10 +891,10 @@ export default function ViewDeals() {
                                   </div>
                                 </div>
 
-                                {deal.status === "won" && (
-                                  <div className="mt-3 p-2 bg-success/10 rounded-md space-y-2">
+                                {(deal.status === "won" || deal.status === "purchased" || deal.status === "sold") && (
+                                  <div className={`mt-3 p-2 rounded-md space-y-2 ${deal.status === "sold" ? "bg-emerald-500/10" : "bg-success/10"}`}>
                                     {deal.closedWithLender && (
-                                      <div className="text-sm text-success flex items-center gap-2">
+                                      <div className={`text-sm flex items-center gap-2 ${deal.status === "sold" ? "text-emerald-600" : "text-success"}`}>
                                         <Check className="h-4 w-4" />
                                         Closed with: <span className="font-medium">{deal.closedWithLender.companyName}</span>
                                         {deal.closedWithProduct && (
@@ -731,24 +951,37 @@ export default function ViewDeals() {
                               </div>
 
                               <div className="flex flex-wrap gap-2">
-                                {(deal.status === "draft" || deal.status === "active") && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleMarkUnderContract(deal)}
-                                    data-testid={`button-under-contract-${deal.id}`}
-                                  >
-                                    <Building2 className="h-4 w-4 mr-1" />
-                                    Under Contract
-                                  </Button>
+                                {/* Analyzing → Under Contract or Lost */}
+                                {(deal.status === "draft" || deal.status === "active" || deal.status === "analyzing") && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleMarkUnderContract(deal)}
+                                      data-testid={`button-under-contract-${deal.id}`}
+                                    >
+                                      <Building2 className="h-4 w-4 mr-1" />
+                                      Under Contract
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleMarkLost(deal)}
+                                      data-testid={`button-mark-lost-${deal.id}`}
+                                    >
+                                      <TrendingDown className="h-4 w-4 mr-1" />
+                                      Lost
+                                    </Button>
+                                  </>
                                 )}
+                                {/* Under Contract → Purchased or Lost */}
                                 {deal.status === "under_contract" && (
                                   <>
                                     <Button
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleMarkWon(deal)}
-                                      data-testid={`button-mark-won-${deal.id}`}
+                                      data-testid={`button-mark-purchased-${deal.id}`}
                                     >
                                       <TrendingUp className="h-4 w-4 mr-1" />
                                       Purchased
@@ -781,6 +1014,30 @@ export default function ViewDeals() {
                                     )}
                                   </>
                                 )}
+                                {/* Purchased → Sold or Lost */}
+                                {(deal.status === "purchased" || deal.status === "won") && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleMarkSold(deal)}
+                                      data-testid={`button-mark-sold-${deal.id}`}
+                                    >
+                                      <DollarSign className="h-4 w-4 mr-1" />
+                                      Sold
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleMarkLost(deal)}
+                                      data-testid={`button-mark-lost-${deal.id}`}
+                                    >
+                                      <TrendingDown className="h-4 w-4 mr-1" />
+                                      Lost
+                                    </Button>
+                                  </>
+                                )}
+                                {/* Lost → Reactivate */}
                                 {deal.status === "lost" && (
                                   <Button
                                     variant="outline"
@@ -834,6 +1091,136 @@ export default function ViewDeals() {
               </Button>
             </Card>
           )}
+
+          {/* Archive Section for Lost Deals and Hidden Analyses */}
+          {(archivedGroups.length > 0 || showHiddenAnalyses) && (
+            <div className="mt-12">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Archive className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="text-xl font-semibold text-muted-foreground">Archive</h2>
+                  <Badge variant="secondary" className="text-xs">
+                    {archivedGroups.reduce((sum, g) => sum + g.deals.length, 0)} lost + {hiddenDeals?.length || 0} hidden
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-hidden"
+                    checked={showHiddenAnalyses}
+                    onCheckedChange={(checked) => setShowHiddenAnalyses(!!checked)}
+                    data-testid="checkbox-show-hidden"
+                  />
+                  <label htmlFor="show-hidden" className="text-sm text-muted-foreground cursor-pointer">
+                    Show hidden analyses
+                  </label>
+                </div>
+              </div>
+              <div className="grid gap-4">
+                {archivedGroups.map((group) => (
+                  <Card key={group.address} className="overflow-hidden opacity-60 hover:opacity-100 transition-opacity" data-testid={`card-archived-${group.address}`}>
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <div className="p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <h3 className="font-medium text-muted-foreground">
+                                {group.address}
+                              </h3>
+                              <Badge variant="destructive" className="text-xs">Lost</Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {group.deals.length} {group.deals.length === 1 ? "analysis" : "analyses"}
+                              </Badge>
+                            </div>
+                            <span className="text-sm text-muted-foreground">{formatDate(group.latestDate)}</span>
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="border-t px-4 py-2">
+                          {group.deals.map((deal, index) => (
+                            <div key={deal.id} className={`py-3 ${index > 0 ? "border-t" : ""}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <FileText className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">Analysis #{index + 1}</span>
+                                  {deal.exitStrategy && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {deal.exitStrategy === "rehab" ? "Fix & Flip" : deal.exitStrategy === "wholetail" ? "Wholetail" : "Wholesale"}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleRevertToDraft(deal)}
+                                    data-testid={`button-reactivate-${deal.id}`}
+                                  >
+                                    <RotateCcw className="h-4 w-4 mr-1" />
+                                    Reactivate
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => deleteDealMutation.mutate(deal.id)}
+                                    data-testid={`button-delete-archived-${deal.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Hidden Analyses Section */}
+              {showHiddenAnalyses && hiddenDeals && hiddenDeals.length > 0 && (
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium text-muted-foreground">Hidden Analyses</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {hiddenDeals.map((deal) => (
+                      <Card key={deal.id} className="p-3 opacity-60 hover:opacity-100 transition-opacity" data-testid={`card-hidden-${deal.id}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{deal.propertyAddress}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {deal.exitStrategy === "rehab" ? "Fix & Flip" : deal.exitStrategy === "wholetail" ? "Wholetail" : deal.exitStrategy === "wholesale" ? "Wholesale" : "No Strategy"}
+                            </Badge>
+                            {getStatusBadge(deal.status as DealWithLender['status'])}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{formatDate(deal.createdAt || "")}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => unhideDealMutation.mutate(deal.id)}
+                              disabled={unhideDealMutation.isPending}
+                              data-testid={`button-recover-${deal.id}`}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Recover
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -877,6 +1264,24 @@ export default function ViewDeals() {
             <p className="text-sm text-muted-foreground">
               We'll send you reminders as your closing date approaches.
             </p>
+            
+            {/* Soft delete other analyses option */}
+            <div className="flex items-start space-x-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
+              <Checkbox
+                id="hideOtherAnalyses"
+                checked={hideOtherAnalyses}
+                onCheckedChange={(checked) => setHideOtherAnalyses(checked === true)}
+                data-testid="checkbox-hide-analyses"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="hideOtherAnalyses" className="font-medium cursor-pointer">
+                  Archive previous analyses
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Other analyses for this property will be archived. They can be recovered if needed.
+                </p>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
@@ -1298,6 +1703,148 @@ export default function ViewDeals() {
               data-testid="button-confirm-won"
             >
               {updateDealMutation.isPending ? "Saving..." : "Mark as Purchased"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sold Modal */}
+      <Dialog open={soldModalOpen} onOpenChange={setSoldModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+              Property Sold
+            </DialogTitle>
+            <DialogDescription>
+              {selectedDeal?.propertyAddress}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <p className="text-sm text-muted-foreground">
+                Exit Strategy: <span className="font-medium text-foreground capitalize">{exitStrategy === "rehab" ? "Rehab (Fix & Flip)" : exitStrategy}</span>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="soldSellPrice">Selling Price</Label>
+                <Input
+                  id="soldSellPrice"
+                  type="number"
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  placeholder="Enter amount"
+                  className="mt-2"
+                  data-testid="input-sold-sell-price"
+                />
+              </div>
+              <div>
+                <Label htmlFor="soldClosingCosts">Closing Costs</Label>
+                <Input
+                  id="soldClosingCosts"
+                  type="number"
+                  value={closingCosts}
+                  onChange={(e) => setClosingCosts(e.target.value)}
+                  placeholder="Enter amount"
+                  className="mt-2"
+                  data-testid="input-sold-closing-costs"
+                />
+              </div>
+            </div>
+
+            {(exitStrategy === "rehab" || exitStrategy === "wholetail") && (
+              <div className="space-y-4 border-t pt-4">
+                <h4 className="font-medium">Rehab Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="soldRehabBudget">Actual Rehab Budget</Label>
+                    <Input
+                      id="soldRehabBudget"
+                      type="number"
+                      value={actualRehabBudget}
+                      onChange={(e) => setActualRehabBudget(e.target.value)}
+                      placeholder="Enter amount"
+                      className="mt-2"
+                      data-testid="input-sold-rehab-budget"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="soldRehabLevel">Rehab Level</Label>
+                    <Select value={rehabLevel} onValueChange={setRehabLevel}>
+                      <SelectTrigger className="mt-2" data-testid="select-sold-rehab-level">
+                        <SelectValue placeholder="Select rehab level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="heavy">Heavy</SelectItem>
+                        <SelectItem value="full">Full Gut</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="soldHoldingCosts">Holding Costs</Label>
+                <Input
+                  id="soldHoldingCosts"
+                  type="number"
+                  value={actualHoldingCosts}
+                  onChange={(e) => setActualHoldingCosts(e.target.value)}
+                  placeholder="Enter amount"
+                  className="mt-2"
+                  data-testid="input-sold-holding-costs"
+                />
+              </div>
+              <div>
+                <Label htmlFor="soldSellingCosts">Selling Costs</Label>
+                <Input
+                  id="soldSellingCosts"
+                  type="number"
+                  value={actualSellingCosts}
+                  onChange={(e) => setActualSellingCosts(e.target.value)}
+                  placeholder="Enter amount"
+                  className="mt-2"
+                  data-testid="input-sold-selling-costs"
+                />
+              </div>
+            </div>
+
+            {/* Soft delete other analyses option */}
+            <div className="flex items-start space-x-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-md border border-emerald-200 dark:border-emerald-800">
+              <Checkbox
+                id="hideOtherAnalysesSold"
+                checked={hideOtherAnalyses}
+                onCheckedChange={(checked) => setHideOtherAnalyses(checked === true)}
+                data-testid="checkbox-hide-analyses-sold"
+              />
+              <div className="space-y-1">
+                <Label htmlFor="hideOtherAnalysesSold" className="font-medium cursor-pointer">
+                  Archive other analyses
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Other analyses for this property will be archived. They can be recovered if needed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSoldModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmSold}
+              disabled={!sellPrice || updateDealMutation.isPending}
+              data-testid="button-confirm-sold"
+            >
+              {updateDealMutation.isPending ? "Saving..." : "Mark as Sold"}
             </Button>
           </DialogFooter>
         </DialogContent>

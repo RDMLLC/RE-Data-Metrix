@@ -5,7 +5,7 @@ import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropert
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { db } from "./db";
-import { eq, inArray, desc, and, sql, count, gt } from "drizzle-orm";
+import { eq, inArray, desc, and, sql, count, gt, or, ne } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
@@ -6157,14 +6157,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as User).id;
       const statusFilter = req.query.status as string | undefined;
+      const includeHidden = req.query.includeHidden === "true";
       
-      let query = db
+      // Build query - filter out hidden deals by default
+      const whereConditions = includeHidden
+        ? eq(savedDeals.userId, userId)
+        : and(eq(savedDeals.userId, userId), or(eq(savedDeals.isHidden, false), sql`${savedDeals.isHidden} IS NULL`));
+      
+      const deals = await db
         .select()
         .from(savedDeals)
-        .where(eq(savedDeals.userId, userId))
+        .where(whereConditions)
         .orderBy(desc(savedDeals.createdAt));
-      
-      const deals = await query;
       
       // Fetch lender/product info for won deals
       const dealsWithLenders = await Promise.all(
@@ -6326,6 +6330,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Soft delete (hide) other analyses for a property when marking one as the active deal
+  app.post("/api/member/deals/:dealId/hide-other-analyses", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealId } = req.params;
+      
+      // Get the deal being marked
+      const [targetDeal] = await db
+        .select()
+        .from(savedDeals)
+        .where(and(eq(savedDeals.id, dealId), eq(savedDeals.userId, userId)));
+      
+      if (!targetDeal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      if (!targetDeal.propertyAddress) {
+        return res.status(400).json({ error: "Deal has no property address" });
+      }
+      
+      // Hide all other deals for this property address (soft delete)
+      const hiddenDeals = await db
+        .update(savedDeals)
+        .set({
+          isHidden: true,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(savedDeals.userId, userId),
+          eq(savedDeals.propertyAddress, targetDeal.propertyAddress),
+          ne(savedDeals.id, dealId)
+        ))
+        .returning();
+      
+      res.json({ 
+        message: `${hiddenDeals.length} other analyses hidden for ${targetDeal.propertyAddress}`,
+        count: hiddenDeals.length 
+      });
+    } catch (error) {
+      console.error("Error hiding other analyses:", error);
+      res.status(500).json({ error: "Failed to hide other analyses" });
+    }
+  });
+  
+  // Recover (unhide) a hidden analysis
+  app.post("/api/member/deals/:dealId/unhide", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as User).id;
+      const { dealId } = req.params;
+      
+      const [existingDeal] = await db
+        .select()
+        .from(savedDeals)
+        .where(and(eq(savedDeals.id, dealId), eq(savedDeals.userId, userId)));
+      
+      if (!existingDeal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      
+      const [updatedDeal] = await db
+        .update(savedDeals)
+        .set({
+          isHidden: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(savedDeals.id, dealId))
+        .returning();
+      
+      res.json({ 
+        message: "Analysis recovered successfully",
+        deal: updatedDeal 
+      });
+    } catch (error) {
+      console.error("Error recovering hidden analysis:", error);
+      res.status(500).json({ error: "Failed to recover analysis" });
+    }
+  });
+
   // Stop reminders for a deal
   app.post("/api/member/deals/:dealId/stop-reminders", ensureAuthenticated, async (req, res) => {
     try {
