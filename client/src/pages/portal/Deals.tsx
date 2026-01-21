@@ -87,6 +87,26 @@ export default function ViewDeals() {
   const [customLoanType, setCustomLoanType] = useState("");
   const [actualPurchasePrice, setActualPurchasePrice] = useState("");
   const [actualRehabBudget, setActualRehabBudget] = useState("");
+  const [exitStrategy, setExitStrategy] = useState<string>("");
+  const [sellPrice, setSellPrice] = useState("");
+  const [closingCosts, setClosingCosts] = useState("");
+  const [transactionalFundingCosts, setTransactionalFundingCosts] = useState("");
+  const [assignmentFee, setAssignmentFee] = useState("");
+  const [rehabLevel, setRehabLevel] = useState<string>("");
+  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+  const [rehabCostBreakdown, setRehabCostBreakdown] = useState<Record<string, string>>({
+    paint: "",
+    flooring: "",
+    kitchen: "",
+    bathrooms: "",
+    roof: "",
+    hvac: "",
+    windowsDoors: "",
+    electrical: "",
+    plumbing: "",
+    exterior: "",
+    other: "",
+  });
 
   const { data: deals, isLoading } = useQuery<DealWithLender[]>({
     queryKey: ["/api/member/deals"],
@@ -214,6 +234,26 @@ export default function ViewDeals() {
     setCustomLoanType("");
     setActualPurchasePrice("");
     setActualRehabBudget("");
+    setExitStrategy("");
+    setSellPrice("");
+    setClosingCosts("");
+    setTransactionalFundingCosts("");
+    setAssignmentFee("");
+    setRehabLevel("");
+    setShowDetailedBreakdown(false);
+    setRehabCostBreakdown({
+      paint: "",
+      flooring: "",
+      kitchen: "",
+      bathrooms: "",
+      roof: "",
+      hvac: "",
+      windowsDoors: "",
+      electrical: "",
+      plumbing: "",
+      exterior: "",
+      other: "",
+    });
   };
 
   const handleMarkUnderContract = (deal: DealWithLender) => {
@@ -222,7 +262,7 @@ export default function ViewDeals() {
   };
 
   const handleConfirmUnderContract = () => {
-    if (!selectedDeal || !estimatedClosingDate) return;
+    if (!selectedDeal || !estimatedClosingDate || !exitStrategy) return;
 
     updateDealMutation.mutate({
       dealId: selectedDeal.id,
@@ -230,6 +270,7 @@ export default function ViewDeals() {
         status: "under_contract",
         underContractDate: new Date(),
         estimatedClosingDate: new Date(estimatedClosingDate),
+        exitStrategy,
       },
     });
   };
@@ -243,24 +284,72 @@ export default function ViewDeals() {
     if (snapshot?.rehabBudget) {
       setActualRehabBudget(snapshot.rehabBudget.toString());
     }
+    if (deal.exitStrategy) {
+      setExitStrategy(deal.exitStrategy);
+    }
     setWonModalOpen(true);
   };
 
   const handleConfirmWon = () => {
     if (!selectedDeal) return;
+    
+    const effectiveExitStrategy = selectedDeal.exitStrategy || exitStrategy;
+    if (!effectiveExitStrategy) {
+      toast({
+        title: "Exit Strategy Required",
+        description: "Please select an exit strategy before completing the deal.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const updates: Partial<SavedDeal> = {
       status: "won",
       wonDate: new Date(),
       actualClosingDate: new Date(),
+      purchaseDate: new Date(),
       usedReDMxLender: usedReDMxLender ?? false,
     };
+
+    if (exitStrategy && !selectedDeal?.exitStrategy) {
+      updates.exitStrategy = exitStrategy;
+    }
 
     if (actualPurchasePrice) {
       updates.actualPurchasePrice = actualPurchasePrice;
     }
-    if (actualRehabBudget) {
-      updates.actualRehabBudget = actualRehabBudget;
+    if (sellPrice) {
+      updates.sellPrice = sellPrice;
+    }
+    if (closingCosts) {
+      updates.closingCosts = closingCosts;
+    }
+    
+    if (exitStrategy === "wholesale") {
+      if (assignmentFee) {
+        updates.assignmentFee = assignmentFee;
+      }
+      if (transactionalFundingCosts) {
+        updates.transactionalFundingCosts = transactionalFundingCosts;
+      }
+      updates.sellDate = new Date();
+    } else {
+      if (actualRehabBudget) {
+        updates.actualRehabBudget = actualRehabBudget;
+      }
+      if (rehabLevel) {
+        updates.rehabLevel = rehabLevel;
+      }
+      const hasBreakdownValues = Object.values(rehabCostBreakdown).some(v => v && v.trim() !== "");
+      if (showDetailedBreakdown && hasBreakdownValues) {
+        const breakdown: Record<string, number> = {};
+        for (const [key, value] of Object.entries(rehabCostBreakdown)) {
+          if (value && value.trim() !== "") {
+            breakdown[key] = parseFloat(value);
+          }
+        }
+        updates.rehabCostBreakdown = breakdown;
+      }
     }
 
     if (usedReDMxLender && selectedLenderId) {
@@ -509,6 +598,11 @@ export default function ViewDeals() {
                                     Analysis #{index + 1}
                                   </span>
                                   {getStatusBadge(deal.status)}
+                                  {deal.exitStrategy && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {deal.exitStrategy === "rehab" ? "Fix & Flip" : deal.exitStrategy === "wholetail" ? "Wholetail" : "Wholesale"}
+                                    </Badge>
+                                  )}
                                   {deal.status === "under_contract" && deal.estimatedClosingDate && (
                                     <span className="text-xs text-amber-600 flex items-center gap-1">
                                       <Clock className="h-3 w-3" />
@@ -536,13 +630,59 @@ export default function ViewDeals() {
                                   </div>
                                 </div>
 
-                                {deal.status === "won" && deal.closedWithLender && (
-                                  <div className="mt-3 p-2 bg-success/10 rounded-md">
-                                    <div className="text-sm text-success flex items-center gap-2">
-                                      <Check className="h-4 w-4" />
-                                      Closed with: <span className="font-medium">{deal.closedWithLender.companyName}</span>
-                                      {deal.closedWithProduct && (
-                                        <span className="text-muted-foreground">({deal.closedWithProduct.productName})</span>
+                                {deal.status === "won" && (
+                                  <div className="mt-3 p-2 bg-success/10 rounded-md space-y-2">
+                                    {deal.closedWithLender && (
+                                      <div className="text-sm text-success flex items-center gap-2">
+                                        <Check className="h-4 w-4" />
+                                        Closed with: <span className="font-medium">{deal.closedWithLender.companyName}</span>
+                                        {deal.closedWithProduct && (
+                                          <span className="text-muted-foreground">({deal.closedWithProduct.productName})</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                      {deal.actualPurchasePrice && (
+                                        <div>
+                                          <span className="text-muted-foreground">Purchase:</span>{" "}
+                                          <span className="font-medium">{formatCurrency(deal.actualPurchasePrice)}</span>
+                                        </div>
+                                      )}
+                                      {deal.sellPrice && (
+                                        <div>
+                                          <span className="text-muted-foreground">Sell:</span>{" "}
+                                          <span className="font-medium">{formatCurrency(deal.sellPrice)}</span>
+                                        </div>
+                                      )}
+                                      {deal.rehabLevel && (
+                                        <div>
+                                          <span className="text-muted-foreground">Rehab:</span>{" "}
+                                          <span className="font-medium capitalize">{deal.rehabLevel}</span>
+                                        </div>
+                                      )}
+                                      {deal.actualRehabBudget && (
+                                        <div>
+                                          <span className="text-muted-foreground">Rehab Cost:</span>{" "}
+                                          <span className="font-medium">{formatCurrency(deal.actualRehabBudget)}</span>
+                                        </div>
+                                      )}
+                                      {deal.assignmentFee && (
+                                        <div>
+                                          <span className="text-muted-foreground">Assignment:</span>{" "}
+                                          <span className="font-medium">{formatCurrency(deal.assignmentFee)}</span>
+                                        </div>
+                                      )}
+                                      {deal.closingCosts && (
+                                        <div>
+                                          <span className="text-muted-foreground">Closing:</span>{" "}
+                                          <span className="font-medium">{formatCurrency(deal.closingCosts)}</span>
+                                        </div>
+                                      )}
+                                      {deal.transactionalFundingCosts && (
+                                        <div>
+                                          <span className="text-muted-foreground">Trans. Funding:</span>{" "}
+                                          <span className="font-medium">{formatCurrency(deal.transactionalFundingCosts)}</span>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
@@ -670,6 +810,19 @@ export default function ViewDeals() {
 
           <div className="space-y-4 py-4">
             <div>
+              <Label htmlFor="exitStrategy">Exit Strategy</Label>
+              <Select value={exitStrategy} onValueChange={setExitStrategy}>
+                <SelectTrigger className="mt-2" data-testid="select-exit-strategy">
+                  <SelectValue placeholder="Select your exit strategy" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="wholesale">Wholesale</SelectItem>
+                  <SelectItem value="rehab">Rehab (Fix & Flip)</SelectItem>
+                  <SelectItem value="wholetail">Wholetail</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label htmlFor="closingDate">Estimated Closing Date</Label>
               <Input
                 id="closingDate"
@@ -691,7 +844,7 @@ export default function ViewDeals() {
             </Button>
             <Button
               onClick={handleConfirmUnderContract}
-              disabled={!estimatedClosingDate || updateDealMutation.isPending}
+              disabled={!estimatedClosingDate || !exitStrategy || updateDealMutation.isPending}
               data-testid="button-confirm-under-contract"
             >
               {updateDealMutation.isPending ? "Saving..." : "Confirm"}
@@ -713,6 +866,28 @@ export default function ViewDeals() {
           </DialogHeader>
 
           <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto">
+            {selectedDeal?.exitStrategy ? (
+              <div className="bg-muted/50 p-3 rounded-md">
+                <p className="text-sm text-muted-foreground">
+                  Exit Strategy: <span className="font-medium text-foreground capitalize">{exitStrategy === "rehab" ? "Rehab (Fix & Flip)" : exitStrategy}</span>
+                </p>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="wonExitStrategy">Exit Strategy</Label>
+                <Select value={exitStrategy} onValueChange={setExitStrategy}>
+                  <SelectTrigger className="mt-2" data-testid="select-won-exit-strategy">
+                    <SelectValue placeholder="Select your exit strategy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="wholesale">Wholesale</SelectItem>
+                    <SelectItem value="rehab">Rehab (Fix & Flip)</SelectItem>
+                    <SelectItem value="wholetail">Wholetail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="purchasePrice">Actual Purchase Price</Label>
@@ -727,20 +902,239 @@ export default function ViewDeals() {
                 />
               </div>
               <div>
-                <Label htmlFor="rehabBudget">Rehab Budget</Label>
+                <Label htmlFor="sellPrice">Sell Price</Label>
                 <Input
-                  id="rehabBudget"
+                  id="sellPrice"
                   type="number"
-                  value={actualRehabBudget}
-                  onChange={(e) => setActualRehabBudget(e.target.value)}
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
                   placeholder="Enter amount"
                   className="mt-2"
-                  data-testid="input-rehab-budget"
+                  data-testid="input-sell-price"
                 />
               </div>
             </div>
 
             <div>
+              <Label htmlFor="closingCosts">Closing Costs</Label>
+              <Input
+                id="closingCosts"
+                type="number"
+                value={closingCosts}
+                onChange={(e) => setClosingCosts(e.target.value)}
+                placeholder="Enter amount"
+                className="mt-2"
+                data-testid="input-closing-costs"
+              />
+            </div>
+
+            {exitStrategy === "wholesale" && (
+              <div className="space-y-4 border-t pt-4">
+                <h4 className="font-medium">Wholesale Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="assignmentFee">Assignment Fee</Label>
+                    <Input
+                      id="assignmentFee"
+                      type="number"
+                      value={assignmentFee}
+                      onChange={(e) => setAssignmentFee(e.target.value)}
+                      placeholder="Enter amount"
+                      className="mt-2"
+                      data-testid="input-assignment-fee"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="transactionalFunding">Transactional Funding Costs</Label>
+                    <Input
+                      id="transactionalFunding"
+                      type="number"
+                      value={transactionalFundingCosts}
+                      onChange={(e) => setTransactionalFundingCosts(e.target.value)}
+                      placeholder="If double close"
+                      className="mt-2"
+                      data-testid="input-transactional-funding"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(exitStrategy === "rehab" || exitStrategy === "wholetail") && (
+              <div className="space-y-4 border-t pt-4">
+                <h4 className="font-medium">{exitStrategy === "rehab" ? "Rehab Details" : "Wholetail Details"}</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="rehabBudget">Actual Rehab Budget</Label>
+                    <Input
+                      id="rehabBudget"
+                      type="number"
+                      value={actualRehabBudget}
+                      onChange={(e) => setActualRehabBudget(e.target.value)}
+                      placeholder="Enter amount"
+                      className="mt-2"
+                      data-testid="input-rehab-budget"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="rehabLevel">Rehab Level</Label>
+                    <Select value={rehabLevel} onValueChange={setRehabLevel}>
+                      <SelectTrigger className="mt-2" data-testid="select-rehab-level">
+                        <SelectValue placeholder="Select level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">Light (Cosmetic)</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="heavy">Heavy</SelectItem>
+                        <SelectItem value="full">Full (Gut Rehab)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showBreakdown"
+                    checked={showDetailedBreakdown}
+                    onCheckedChange={(checked) => setShowDetailedBreakdown(checked === true)}
+                    data-testid="checkbox-show-breakdown"
+                  />
+                  <Label htmlFor="showBreakdown" className="text-sm font-normal cursor-pointer">
+                    Add detailed cost breakdown (helps with future estimates)
+                  </Label>
+                </div>
+
+                {showDetailedBreakdown && (
+                  <div className="space-y-3 pl-6 border-l-2 border-muted">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Paint/Interior</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.paint}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, paint: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-paint"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Flooring</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.flooring}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, flooring: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-flooring"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Kitchen</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.kitchen}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, kitchen: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-kitchen"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Bathrooms</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.bathrooms}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, bathrooms: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-bathrooms"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Roof</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.roof}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, roof: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-roof"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">HVAC</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.hvac}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, hvac: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-hvac"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Windows/Doors</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.windowsDoors}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, windowsDoors: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-windows"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Electrical</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.electrical}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, electrical: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-electrical"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Plumbing</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.plumbing}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, plumbing: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-plumbing"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Exterior</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.exterior}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, exterior: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-exterior"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">Other</Label>
+                        <Input
+                          type="number"
+                          value={rehabCostBreakdown.other}
+                          onChange={(e) => setRehabCostBreakdown(prev => ({ ...prev, other: e.target.value }))}
+                          placeholder="$"
+                          className="mt-1 h-8"
+                          data-testid="input-breakdown-other"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="border-t pt-4">
               <Label className="text-base">Did you use an RE Data Metrix lender?</Label>
               <div className="flex gap-3 mt-2">
                 <Button

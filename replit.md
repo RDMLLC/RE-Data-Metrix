@@ -25,15 +25,19 @@ A Contractor Search feature allows subscribers to find general contractors by se
 
 Contractor onboarding follows an invitation-based workflow (mirroring lenders): admin sends email invitation with company name → contractor receives link → completes profile (name, phone, password, company details, specialties, insurance/bonding) → selects service regions from state-based grid → profile is activated. Key endpoints: `POST /api/contractors/invite` (admin), `GET /api/contractors/validate-invite/:token`, `POST /api/contractors/accept-invite/:token`. Contractor signup page at `/contractor-signup/:token`. Admin panel shows invite status badges (Pending/Complete).
 
-A Deal Tracking System allows users to manage their investment deals through a complete lifecycle. The Deals page (`/portal/deals`) groups saved deals by property address with collapsible sections showing all analyses per property. Deal status flow: Draft → Active → Under Contract (with estimated closing date) → Won/Purchased or Lost. The system tracks:
-- **Status Transitions**: Draft (new analyses) → Active (pursuing) → Under Contract (with closing date) → Won (purchased) or Lost (archived)
-- **Under Contract**: Captures estimated closing date and triggers automated email reminders
-- **Won/Purchased**: Captures actual purchase price, rehab budget, lender used (from directory or custom), loan product
+A Deal Tracking System allows users to manage their investment deals through a complete lifecycle. The Deals page (`/portal/deals`) groups saved deals by property address with collapsible sections showing all analyses per property. Deal status flow: Draft → Active → Under Contract (with exit strategy + closing date) → Won/Purchased or Lost. The system tracks:
+- **Status Transitions**: Draft (new analyses) → Active (pursuing) → Under Contract (with exit strategy + closing date) → Won (purchased) or Lost (archived)
+- **Exit Strategy**: Captured when marking Under Contract - Wholesale, Rehab (Fix & Flip), or Wholetail
+- **Under Contract**: Captures estimated closing date, exit strategy, and triggers automated email reminders
+- **Won/Purchased**: Dynamic fields based on exit strategy:
+  - All deals: actual purchase price, sell price, closing costs, lender info
+  - Wholesale: assignment fee, transactional funding costs
+  - Rehab/Wholetail: actual rehab budget, rehab level (Light/Medium/Heavy/Full), optional detailed cost breakdown by category (paint, flooring, kitchen, bathrooms, roof, HVAC, windows/doors, electrical, plumbing, exterior, other)
 - **Lost**: Archives all analyses for that property address with option to revert
 - **Closing Reminders**: Automated emails sent at 7, 5, 3, 1, and 0 days before estimated closing date via `closingReminders.service.ts`
 - **Stop Reminders**: Users can stop automated reminders per deal via button in the UI
 
-Key database fields on `saved_deals`: underContractDate, estimatedClosingDate, actualClosingDate, purchaseDate, actualPurchasePrice, actualRehabBudget, sellDate, customLenderInfo (jsonb), stopAutomatedReminders. Key endpoints: `POST /api/member/deals/archive-property`, `POST /api/member/deals/:dealId/stop-reminders`.
+Key database fields on `saved_deals`: underContractDate, estimatedClosingDate, actualClosingDate, purchaseDate, actualPurchasePrice, actualRehabBudget, sellDate, customLenderInfo (jsonb), stopAutomatedReminders, exitStrategy, sellPrice, assignmentFee, closingCosts, transactionalFundingCosts, rehabLevel, rehabCostBreakdown (jsonb). Key endpoints: `POST /api/member/deals/archive-property`, `POST /api/member/deals/:dealId/stop-reminders`.
 
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL

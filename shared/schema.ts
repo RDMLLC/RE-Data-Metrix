@@ -194,6 +194,13 @@ export const savedDeals = pgTable("saved_deals", {
   stopAutomatedReminders: boolean("stop_automated_reminders").default(false),
   wonDate: timestamp("won_date"),
   lostDate: timestamp("lost_date"),
+  exitStrategy: text("exit_strategy"),
+  sellPrice: decimal("sell_price", { precision: 12, scale: 2 }),
+  assignmentFee: decimal("assignment_fee", { precision: 12, scale: 2 }),
+  closingCosts: decimal("closing_costs", { precision: 12, scale: 2 }),
+  transactionalFundingCosts: decimal("transactional_funding_costs", { precision: 12, scale: 2 }),
+  rehabLevel: text("rehab_level"),
+  rehabCostBreakdown: jsonb("rehab_cost_breakdown"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({

@@ -6240,10 +6240,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Deal not found" });
       }
       
+      // Parse date strings into Date objects for timestamp fields
+      const dateFields = [
+        'underContractDate', 'estimatedClosingDate', 'actualClosingDate',
+        'purchaseDate', 'sellDate', 'wonDate', 'lostDate'
+      ];
+      const parsedUpdates = { ...updates };
+      for (const field of dateFields) {
+        if (parsedUpdates[field] && typeof parsedUpdates[field] === 'string') {
+          parsedUpdates[field] = new Date(parsedUpdates[field]);
+        }
+      }
+      
       const [updatedDeal] = await db
         .update(savedDeals)
         .set({
-          ...updates,
+          ...parsedUpdates,
           updatedAt: new Date(),
         })
         .where(eq(savedDeals.id, dealId))
