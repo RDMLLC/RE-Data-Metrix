@@ -40,4 +40,17 @@ Key database fields on `saved_deals`: underContractDate, estimatedClosingDate, a
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
 - **Frontend Libraries**: React Query, Wouter, React Hook Form, Zod, date-fns, Tailwind CSS, class-variance-authority, Stripe (for billing and subscription management)
 - **Email Service**: Zoho Mail SMTP
-- **Property Data APIs**: RentCast API (primary for property details, tax info, estimated values, and rent), HasData API (for property images from Zillow/Redfin)
+- **Property Data APIs**: RentCast API (primary for property details, tax info, estimated values, rent, and comparable sales search), HasData API (for property images from Zillow/Redfin)
+
+## Comparable Sales (Comps) Search
+The ARV Helper feature uses RentCast's `/properties` endpoint with `saleDateRange=365` to search for comparable sales. Key features:
+- **Sale Date Filtering**: Only returns sales within the last 365 days - sales older than 1 year are excluded
+- **Property Type Matching**: Single family homes only return single family comps; condos/townhouses return attached-type comps
+- **Search Parameters**: Filters by bedroom range (±1), sqft range (±25%), and radius (3 miles default)
+- **Sorting**: Results sorted by distance (closest first), then by sale date (most recent first)
+- **Actual Sale Dates**: RentCast provides real sale dates in lastSaleDate field, displayed in "MMM D, YYYY" format
+
+Implementation files:
+- `server/services/rentcast-api.service.ts` - `searchComparableSales()` method
+- `server/routes.ts` - `/api/comps/search` endpoint
+- `client/src/components/deal-analysis/Step3PurchaseRenovation.tsx` - ARV Helper UI
