@@ -17,7 +17,7 @@ import {
 
 export default function Webinar() {
   const webinarDate = "Friday, January 30, 2026";
-  const webinarTime = "2:00 PM EST";
+  const webinarTime = "12:00 PM (Noon) EST";
   const registrationLink = "https://meet.zoho.com/nyok-eid-buf";
 
   const features = [
