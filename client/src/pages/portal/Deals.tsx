@@ -278,6 +278,9 @@ export default function ViewDeals() {
   const handleMarkWon = (deal: DealWithLender) => {
     setSelectedDeal(deal);
     const snapshot = deal.dealSnapshot as any;
+    const results = deal.resultsSnapshot as any;
+    
+    // Pre-populate purchase price from analysis
     if (snapshot?.purchasePrice) {
       setActualPurchasePrice(snapshot.purchasePrice.toString());
     }
@@ -287,6 +290,44 @@ export default function ViewDeals() {
     if (deal.exitStrategy) {
       setExitStrategy(deal.exitStrategy);
     }
+    
+    // For wholesale deals, auto-populate wholesale-specific fields from analysis
+    if (deal.exitStrategy === "wholesale") {
+      // Sell price (B-C resale price) - check various sources
+      if (snapshot?.sellPrice) {
+        setSellPrice(snapshot.sellPrice.toString());
+      } else if (snapshot?.resalePrice) {
+        setSellPrice(snapshot.resalePrice.toString());
+      } else if (results?.bToCPrice) {
+        setSellPrice(results.bToCPrice.toString());
+      }
+      
+      // Assignment fee / wholesale fee
+      if (snapshot?.assignmentFee) {
+        setAssignmentFee(snapshot.assignmentFee.toString());
+      } else if (snapshot?.wholesaleFee) {
+        setAssignmentFee(snapshot.wholesaleFee.toString());
+      } else if (results?.profit) {
+        // Use profit from results as the assignment fee
+        setAssignmentFee(results.profit.toString());
+      }
+      
+      // Transactional funding costs for double close
+      if (snapshot?.transactionalFundingCosts) {
+        setTransactionalFundingCosts(snapshot.transactionalFundingCosts.toString());
+      } else if (results?.lenderFee) {
+        // For double close deals, lender fee represents transactional funding cost
+        setTransactionalFundingCosts(results.lenderFee.toString());
+      }
+      
+      // Check if they applied for Straightline Funding (tracked in analysis)
+      if (snapshot?.appliedForStraightline || results?.usedTransactionalFunding) {
+        setUsedReDMxLender(true);
+        // Note: lender selection will need to be done manually since availableLenders 
+        // is only fetched when modal is open with usedReDMxLender === true
+      }
+    }
+    
     setWonModalOpen(true);
   };
 

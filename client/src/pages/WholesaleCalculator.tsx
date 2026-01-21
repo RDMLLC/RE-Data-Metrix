@@ -417,11 +417,21 @@ export default function WholesaleCalculator() {
   };
 
   const handleBack = () => {
+    // Calculate resale price (B-C price) for saving
+    const arvValue = parseNumericInput(arv);
+    const maxPercent = parseNumericInput(buyersMaxArvPercent) / 100;
+    const rehabValue = parseNumericInput(rehabBudget);
+    const calculatedResalePrice = arvValue * maxPercent - rehabValue;
+    
     // Save current values back to wizard context before navigating
     updatePropertyData({
       arv: parseNumericInput(arv) || wizardData.property?.arv,
       rehabBudget: parseNumericInput(rehabBudget) || wizardData.property?.rehabBudget,
       purchasePrice: parseNumericInput(purchasePrice) || wizardData.property?.purchasePrice,
+      // Save wholesale-specific data for later use in Won modal
+      wholesaleTransactionType: transactionType,
+      wholesaleFee: parseNumericInput(wholesaleFee),
+      resalePrice: calculatedResalePrice > 0 ? calculatedResalePrice : undefined,
     });
     // Navigate back to Step 3 (Purchase & Renovation) where the user came from
     setLocation("/deal-analysis?returnToStep=3");
@@ -1155,7 +1165,14 @@ export default function WholesaleCalculator() {
                     </CardDescription>
                   </div>
                   <Button
-                    onClick={() => setShowTransactionalLendingForm(!showTransactionalLendingForm)}
+                    onClick={() => {
+                      const newValue = !showTransactionalLendingForm;
+                      setShowTransactionalLendingForm(newValue);
+                      // Track when user opens the Straightline form
+                      if (newValue) {
+                        updatePropertyData({ appliedForStraightline: true });
+                      }
+                    }}
                     data-testid="button-apply-transactional-lending"
                   >
                     {showTransactionalLendingForm ? (

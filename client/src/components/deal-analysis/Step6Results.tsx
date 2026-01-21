@@ -523,8 +523,18 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     // Get summary metrics from best available column
     const bestColumn = results.userLoanColumn || results.cashSaleColumn;
     
+    // Merge wholesale-specific data from wizard context into dealSnapshot
+    const enrichedDealSnapshot = {
+      ...formData,
+      // Include wholesale tracking fields if available
+      appliedForStraightline: wizardData.property?.appliedForStraightline,
+      wholesaleTransactionType: wizardData.property?.wholesaleTransactionType,
+      wholesaleFee: wizardData.property?.wholesaleFee,
+      resalePrice: wizardData.property?.resalePrice,
+    };
+    
     saveDealMutation.mutate({
-      dealSnapshot: formData,
+      dealSnapshot: enrichedDealSnapshot,
       resultsSnapshot: results,
       propertyAddress,
       arv: formData.arv || editArv,

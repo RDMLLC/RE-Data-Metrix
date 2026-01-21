@@ -25,6 +25,11 @@ export interface WizardPropertyData {
   titleExam?: number;
   titleInsurance?: number;
   estimatedRent?: number;
+  // Wholesale-specific tracking
+  appliedForStraightline?: boolean;
+  wholesaleTransactionType?: "assignment" | "double-close";
+  wholesaleFee?: number;
+  resalePrice?: number;
 }
 
 export interface WizardInvestorData {

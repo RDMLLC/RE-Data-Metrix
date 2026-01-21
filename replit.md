@@ -31,8 +31,9 @@ A Deal Tracking System allows users to manage their investment deals through a c
 - **Under Contract**: Captures estimated closing date, exit strategy, and triggers automated email reminders
 - **Won/Purchased**: Dynamic fields based on exit strategy:
   - All deals: actual purchase price, sell price, closing costs, lender info
-  - Wholesale: assignment fee, transactional funding costs
+  - Wholesale: assignment fee, transactional funding costs (auto-populated from analysis if available)
   - Rehab/Wholetail: actual rehab budget, rehab level (Light/Medium/Heavy/Full), optional detailed cost breakdown by category (paint, flooring, kitchen, bathrooms, roof, HVAC, windows/doors, electrical, plumbing, exterior, other)
+  - **Wholesale Auto-Populate**: For wholesale deals, the Won modal pre-fills sell price (B-C resale price), assignment fee (wholesale fee), and transactional funding costs from the original analysis. If the user clicked "Apply Now" for Straightline Funding, the "Used RE Data Metrix lender" is pre-selected to "Yes"
 - **Lost**: Archives all analyses for that property address with option to revert
 - **Closing Reminders**: Automated emails sent at 7, 5, 3, 1, and 0 days before estimated closing date via `closingReminders.service.ts`
 - **Stop Reminders**: Users can stop automated reminders per deal via button in the UI
