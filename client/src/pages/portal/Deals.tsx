@@ -825,6 +825,7 @@ export default function ViewDeals() {
                   <SelectItem value="under_contract">Under Contract</SelectItem>
                   <SelectItem value="purchased">Purchased</SelectItem>
                   <SelectItem value="sold">Sold</SelectItem>
+                  <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
 
