@@ -5761,13 +5761,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Import and use HasData service for comps search
-      const { HasDataAPIService } = await import("./services/hasdata-api.service");
-      const hasDataService = new HasDataAPIService();
+      // Use RentCast service for comps search (provides actual sale dates)
+      const { RentCastAPIService } = await import("./services/rentcast-api.service");
+      const rentCastService = new RentCastAPIService();
 
       console.log(`[Comps Search] Subject property type: "${propertyType}"`);
       
-      const comps = await hasDataService.searchSoldComps({
+      const result = await rentCastService.searchComparableSales({
         address: address || '',
         city,
         state,
@@ -5776,11 +5776,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bathrooms: bathrooms || 2,
         sqft: sqft || 1500,
         propertyType: propertyType || undefined,
-        minResults: 3,
-        maxResults: 5,
+        radiusMiles: 3,
+        saleDateRangeDays: 365, // Only sales within last year
+        maxResults: 10,
         subjectLat: subjectLat || undefined,
         subjectLng: subjectLng || undefined,
       });
+      
+      const comps = result.comps;
 
       // Calculate suggested ARV using weighted average
       if (comps.length > 0) {

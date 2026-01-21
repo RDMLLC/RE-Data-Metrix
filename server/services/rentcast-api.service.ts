@@ -807,4 +807,298 @@ export class RentCastAPIService implements IPropertyAPIService {
       return false;
     }
   }
+
+  /**
+   * Search for comparable sales using RentCast's /properties endpoint
+   * Returns recently sold properties with actual sale dates
+   */
+  async searchComparableSales(params: {
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    bedrooms: number;
+    bathrooms: number;
+    sqft: number;
+    propertyType?: string;
+    radiusMiles?: number;
+    saleDateRangeDays?: number;
+    maxResults?: number;
+    subjectLat?: number;
+    subjectLng?: number;
+  }): Promise<{
+    comps: Array<{
+      address: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      salePrice: number;
+      saleDate: string;
+      bedrooms: number;
+      bathrooms: number;
+      sqft: number;
+      pricePerSqft: number;
+      yearBuilt?: number;
+      lotSize?: number;
+      propertyType?: string;
+      distanceFromSubject?: number;
+      latitude?: number;
+      longitude?: number;
+    }>;
+    searchRadius: number;
+    totalFound: number;
+  }> {
+    if (!this.apiKey) {
+      throw new Error("RentCast API key not configured");
+    }
+
+    const {
+      address,
+      city,
+      state,
+      zipCode,
+      bedrooms,
+      sqft,
+      propertyType,
+      radiusMiles = 3,
+      saleDateRangeDays = 365, // Default to 1 year
+      maxResults = 10,
+      subjectLat,
+      subjectLng,
+    } = params;
+
+    // Build search parameters
+    const searchAddress = `${address}, ${city}, ${state} ${zipCode}`;
+    const bedsMin = Math.max(1, bedrooms - 1);
+    const bedsMax = bedrooms + 1;
+    const sqftMin = Math.floor(sqft * 0.75);
+    const sqftMax = Math.ceil(sqft * 1.25);
+
+    // Map property type to RentCast format
+    const rentCastPropertyType = this.mapPropertyTypeToRentCast(propertyType);
+
+    const queryParams = new URLSearchParams({
+      address: searchAddress,
+      radius: radiusMiles.toString(),
+      saleDateRange: saleDateRangeDays.toString(),
+      limit: Math.min(maxResults * 2, 25).toString(), // Fetch extra for filtering
+    });
+
+    // Add property type filter if available
+    if (rentCastPropertyType) {
+      queryParams.append('propertyType', rentCastPropertyType);
+    }
+
+    // Add bedroom range
+    queryParams.append('bedrooms', `${bedsMin}:${bedsMax}`);
+
+    console.log(`[RentCast Comps] Searching: ${this.baseUrl}/properties?${queryParams.toString()}`);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/properties?${queryParams.toString()}`, {
+        method: "GET",
+        headers: {
+          "X-Api-Key": this.apiKey,
+          "Accept": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error(`[RentCast Comps] API error (${response.status}):`, errorText);
+        throw new Error(`RentCast API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`[RentCast Comps] Raw response count:`, Array.isArray(data) ? data.length : 'not array');
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return { comps: [], searchRadius: radiusMiles, totalFound: 0 };
+      }
+
+      // Filter and transform results
+      const comps: Array<{
+        address: string;
+        city: string;
+        state: string;
+        zipCode: string;
+        salePrice: number;
+        saleDate: string;
+        bedrooms: number;
+        bathrooms: number;
+        sqft: number;
+        pricePerSqft: number;
+        yearBuilt?: number;
+        lotSize?: number;
+        propertyType?: string;
+        distanceFromSubject?: number;
+        latitude?: number;
+        longitude?: number;
+      }> = [];
+
+      for (const prop of data) {
+        // Must have sale price and sale date
+        const salePrice = prop.lastSalePrice;
+        const saleDate = prop.lastSaleDate;
+        const propSqft = prop.squareFootage;
+
+        if (!salePrice || !saleDate || !propSqft) {
+          continue;
+        }
+
+        // Apply sqft filter
+        if (propSqft < sqftMin || propSqft > sqftMax) {
+          continue;
+        }
+
+        // Check property type compatibility
+        if (propertyType && prop.propertyType) {
+          if (!this.arePropertyTypesCompatibleForComps(propertyType, prop.propertyType)) {
+            continue;
+          }
+        }
+
+        const pricePerSqft = salePrice / propSqft;
+
+        // Calculate distance if coordinates available
+        let distanceFromSubject: number | undefined;
+        if (subjectLat && subjectLng && prop.latitude && prop.longitude) {
+          distanceFromSubject = this.calculateDistanceMiles(
+            subjectLat,
+            subjectLng,
+            prop.latitude,
+            prop.longitude
+          );
+        }
+
+        comps.push({
+          address: prop.addressLine1 || prop.formattedAddress?.split(',')[0] || '',
+          city: prop.city || '',
+          state: prop.state || '',
+          zipCode: prop.zipCode || '',
+          salePrice,
+          saleDate: this.formatSaleDate(saleDate),
+          bedrooms: prop.bedrooms || 0,
+          bathrooms: prop.bathrooms || 0,
+          sqft: propSqft,
+          pricePerSqft: Math.round(pricePerSqft),
+          yearBuilt: prop.yearBuilt,
+          lotSize: prop.lotSize,
+          propertyType: prop.propertyType,
+          distanceFromSubject,
+          latitude: prop.latitude,
+          longitude: prop.longitude,
+        });
+      }
+
+      // Sort by distance (closest first) then by sale date (most recent first)
+      comps.sort((a, b) => {
+        // First by distance
+        if (a.distanceFromSubject !== undefined && b.distanceFromSubject !== undefined) {
+          const distDiff = a.distanceFromSubject - b.distanceFromSubject;
+          if (Math.abs(distDiff) > 0.1) return distDiff;
+        }
+        // Then by sale date (most recent first)
+        return new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime();
+      });
+
+      // Limit results
+      const limitedComps = comps.slice(0, maxResults);
+
+      console.log(`[RentCast Comps] Returning ${limitedComps.length} comps after filtering`);
+
+      return {
+        comps: limitedComps,
+        searchRadius: radiusMiles,
+        totalFound: comps.length,
+      };
+    } catch (error: any) {
+      console.error(`[RentCast Comps] Error:`, error);
+      throw error;
+    }
+  }
+
+  private mapPropertyTypeToRentCast(propertyType?: string): string | null {
+    if (!propertyType) return null;
+
+    const normalized = propertyType.toLowerCase().replace(/[_\s-]/g, '');
+
+    if (normalized.includes('single') || normalized === 'sfr' || normalized.includes('house')) {
+      return 'Single Family';
+    }
+    if (normalized.includes('condo') || normalized.includes('coop')) {
+      return 'Condo';
+    }
+    if (normalized.includes('townhouse') || normalized.includes('townhome')) {
+      return 'Townhouse';
+    }
+    if (normalized.includes('multi') || normalized.includes('duplex') || normalized.includes('triplex')) {
+      return 'Multi-Family';
+    }
+
+    return null;
+  }
+
+  private arePropertyTypesCompatibleForComps(subjectType: string, compType: string): boolean {
+    const normalize = (t: string) => t.toLowerCase().replace(/[_\s-]/g, '');
+    const subject = normalize(subjectType);
+    const comp = normalize(compType);
+
+    // Attached types (condos, townhouses)
+    const attachedTypes = ['condo', 'condominium', 'townhouse', 'townhome', 'attached', 'coop'];
+    const isSubjectAttached = attachedTypes.some(t => subject.includes(t));
+    const isCompAttached = attachedTypes.some(t => comp.includes(t));
+
+    // If comp is attached but subject is not, incompatible
+    if (isCompAttached && !isSubjectAttached) {
+      return false;
+    }
+
+    // If both attached, compatible
+    if (isSubjectAttached && isCompAttached) return true;
+
+    // Single family types
+    const sfTypes = ['singlefamily', 'single', 'detached', 'sfr'];
+    const isSubjectSF = !isSubjectAttached && (sfTypes.some(t => subject.includes(t)) || subject.includes('house'));
+    const isCompSF = !isCompAttached && (sfTypes.some(t => comp.includes(t)) || comp.includes('house'));
+
+    if (isSubjectSF && isCompSF) return true;
+
+    // Multi-family types
+    const mfTypes = ['multi', 'duplex', 'triplex', 'quadplex', 'fourplex'];
+    const isSubjectMF = mfTypes.some(t => subject.includes(t));
+    const isCompMF = mfTypes.some(t => comp.includes(t));
+
+    if (isSubjectMF && isCompMF) return true;
+
+    // Unknown type - allow
+    if (!isSubjectAttached && !isSubjectSF && !isSubjectMF) return true;
+
+    return false;
+  }
+
+  private calculateDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10; // Round to 1 decimal
+  }
+
+  private formatSaleDate(dateStr: string): string {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return dateStr; // Return as-is if can't parse
+      }
+      // Format as MM/DD/YYYY
+      return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
+    } catch {
+      return dateStr;
+    }
+  }
 }
