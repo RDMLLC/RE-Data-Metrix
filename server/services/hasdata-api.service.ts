@@ -61,17 +61,25 @@ function arePropertyTypesCompatible(subjectType: string | undefined, compType: s
   const subject = normalize(subjectType);
   const comp = normalize(compType);
   
+  // IMPORTANT: Check attached types FIRST since "townhouse" contains "house"
   // Condo/Townhome/Attached group - these are comparable to each other
-  const attachedTypes = ['condo', 'condominium', 'townhouse', 'townhome', 'attached', 'coop', 'cooperative'];
+  const attachedTypes = ['condo', 'condominium', 'townhouse', 'townhome', 'attached', 'coop', 'cooperative', 'rowhome', 'rowhouse'];
   const isSubjectAttached = attachedTypes.some(t => subject.includes(t));
   const isCompAttached = attachedTypes.some(t => comp.includes(t));
   
+  // If comp is attached type but subject is NOT attached, incompatible
+  if (isCompAttached && !isSubjectAttached) {
+    return false;
+  }
+  
+  // If subject is attached and comp is attached, compatible
   if (isSubjectAttached && isCompAttached) return true;
   
-  // Single family group
-  const sfTypes = ['singlefamily', 'single', 'detached', 'house'];
-  const isSubjectSF = sfTypes.some(t => subject.includes(t));
-  const isCompSF = sfTypes.some(t => comp.includes(t));
+  // Single family group - but ONLY if not already classified as attached
+  // Note: "house" is checked but "townhouse" would have already been caught above
+  const sfTypes = ['singlefamily', 'single', 'detached'];
+  const isSubjectSF = !isSubjectAttached && (sfTypes.some(t => subject.includes(t)) || subject.includes('house'));
+  const isCompSF = !isCompAttached && (sfTypes.some(t => comp.includes(t)) || comp.includes('house'));
   
   if (isSubjectSF && isCompSF) return true;
   
@@ -709,7 +717,6 @@ export class HasDataAPIService implements IPropertyAPIService {
           // Apply property type filter - match condos with condos, SF with SF
           const compPropertyType = listing.homeType || listing.propertyType;
           if (!arePropertyTypesCompatible(params.propertyType, compPropertyType)) {
-            console.log(`[Comps Search] Skipping incompatible property type: ${compPropertyType} (subject: ${params.propertyType})`);
             continue;
           }
 
@@ -744,9 +751,6 @@ export class HasDataAPIService implements IPropertyAPIService {
               geo: listing.geo,
               coordinates: listing.coordinates,
             });
-            console.log(`[Comps Search] Sample listing all keys:`, Object.keys(listing));
-            console.log(`[Comps Search] Sample yearBuilt field:`, listing.yearBuilt);
-            console.log(`[Comps Search] Sample listingDetails:`, JSON.stringify(listing.listingDetails, null, 2));
           }
           
           // Calculate distance from subject property if coordinates available
