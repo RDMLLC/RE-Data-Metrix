@@ -2101,7 +2101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bridge/Fix & Flip CSV Template - focused fields for bridge loans only
-  app.get("/api/loan-products/template/bridge", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/loan-products/template/bridge", ensureLenderOrAdmin, async (req, res) => {
     try {
       const instructionRow = '# LOAN TYPE: This template is for Bridge/Fix & Flip loans only. Leave loanType as 1.';
       const headers = [
@@ -2192,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DSCR & New Construction CSV Template - for rental and new construction loans
-  app.get("/api/loan-products/template/dscr", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/loan-products/template/dscr", ensureLenderOrAdmin, async (req, res) => {
     try {
       const instructionRow = '# LOAN TYPE: Enter 1 for DSCR Purchase | Enter 2 for DSCR Refi | Enter 3 for New Construction';
       const headers = [
@@ -2327,7 +2327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Legacy combined template (kept for backwards compatibility)
-  app.get("/api/loan-products/template", ensureLenderAuthenticated, async (req, res) => {
+  app.get("/api/loan-products/template", ensureLenderOrAdmin, async (req, res) => {
     try {
       const headers = [
         'productName',
