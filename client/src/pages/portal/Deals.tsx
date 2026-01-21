@@ -18,6 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -957,51 +964,108 @@ export default function ViewDeals() {
                                 )}
                               </div>
 
-                              <div className="flex flex-wrap gap-2">
-                                {/* Analyzing → Under Contract or Lost */}
-                                {(deal.status === "draft" || deal.status === "active" || deal.status === "analyzing") && (
-                                  <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleMarkUnderContract(deal)}
-                                      data-testid={`button-under-contract-${deal.id}`}
-                                    >
-                                      <Building2 className="h-4 w-4 mr-1" />
-                                      Under Contract
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleMarkLost(deal)}
-                                      data-testid={`button-mark-lost-${deal.id}`}
-                                    >
-                                      <TrendingDown className="h-4 w-4 mr-1" />
-                                      Lost
-                                    </Button>
-                                  </>
+                              <div className="flex flex-wrap gap-2 items-center">
+                                {/* Status Dropdown - shows valid transitions based on current status and exit strategy */}
+                                {deal.status !== "lost" && deal.status !== "sold" && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        data-testid={`dropdown-status-${deal.id}`}
+                                      >
+                                        Update Status
+                                        <ChevronDown className="h-4 w-4 ml-1" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                      {/* Analyzing → Under Contract, Purchased, or Lost */}
+                                      {(deal.status === "draft" || deal.status === "active" || deal.status === "analyzing") && (
+                                        <>
+                                          <DropdownMenuItem 
+                                            onClick={() => handleMarkUnderContract(deal)}
+                                            data-testid={`menu-under-contract-${deal.id}`}
+                                          >
+                                            <Building2 className="h-4 w-4 mr-2" />
+                                            Under Contract
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem 
+                                            onClick={() => handleMarkWon(deal)}
+                                            data-testid={`menu-purchased-${deal.id}`}
+                                          >
+                                            <TrendingUp className="h-4 w-4 mr-2" />
+                                            Purchased
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem 
+                                            onClick={() => handleMarkLost(deal)}
+                                            className="text-destructive"
+                                            data-testid={`menu-lost-${deal.id}`}
+                                          >
+                                            <TrendingDown className="h-4 w-4 mr-2" />
+                                            Lost
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                      {/* Under Contract: Wholesale → Sold; Wholetail/Rehab → Purchased */}
+                                      {deal.status === "under_contract" && (
+                                        <>
+                                          {deal.exitStrategy === "wholesale" ? (
+                                            <DropdownMenuItem 
+                                              onClick={() => handleMarkSold(deal)}
+                                              data-testid={`menu-sold-${deal.id}`}
+                                            >
+                                              <DollarSign className="h-4 w-4 mr-2" />
+                                              Sold
+                                            </DropdownMenuItem>
+                                          ) : (
+                                            <DropdownMenuItem 
+                                              onClick={() => handleMarkWon(deal)}
+                                              data-testid={`menu-purchased-${deal.id}`}
+                                            >
+                                              <TrendingUp className="h-4 w-4 mr-2" />
+                                              Purchased
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem 
+                                            onClick={() => handleMarkLost(deal)}
+                                            className="text-destructive"
+                                            data-testid={`menu-lost-${deal.id}`}
+                                          >
+                                            <TrendingDown className="h-4 w-4 mr-2" />
+                                            Lost
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                      {/* Purchased → Sold or Lost */}
+                                      {(deal.status === "purchased" || deal.status === "won") && (
+                                        <>
+                                          <DropdownMenuItem 
+                                            onClick={() => handleMarkSold(deal)}
+                                            data-testid={`menu-sold-${deal.id}`}
+                                          >
+                                            <DollarSign className="h-4 w-4 mr-2" />
+                                            Sold
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem 
+                                            onClick={() => handleMarkLost(deal)}
+                                            className="text-destructive"
+                                            data-testid={`menu-lost-${deal.id}`}
+                                          >
+                                            <TrendingDown className="h-4 w-4 mr-2" />
+                                            Lost
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 )}
-                                {/* Under Contract → Purchased or Lost */}
+                                
+                                {/* Under Contract additional controls */}
                                 {deal.status === "under_contract" && (
                                   <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleMarkWon(deal)}
-                                      data-testid={`button-mark-purchased-${deal.id}`}
-                                    >
-                                      <TrendingUp className="h-4 w-4 mr-1" />
-                                      Purchased
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleMarkLost(deal)}
-                                      data-testid={`button-mark-lost-${deal.id}`}
-                                    >
-                                      <TrendingDown className="h-4 w-4 mr-1" />
-                                      Lost
-                                    </Button>
                                     {!deal.stopAutomatedReminders && (
                                       <Button
                                         variant="ghost"
@@ -1019,29 +1083,6 @@ export default function ViewDeals() {
                                         Reminders Off
                                       </Badge>
                                     )}
-                                  </>
-                                )}
-                                {/* Purchased → Sold or Lost */}
-                                {(deal.status === "purchased" || deal.status === "won") && (
-                                  <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleMarkSold(deal)}
-                                      data-testid={`button-mark-sold-${deal.id}`}
-                                    >
-                                      <DollarSign className="h-4 w-4 mr-1" />
-                                      Sold
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleMarkLost(deal)}
-                                      data-testid={`button-mark-lost-${deal.id}`}
-                                    >
-                                      <TrendingDown className="h-4 w-4 mr-1" />
-                                      Lost
-                                    </Button>
                                   </>
                                 )}
                                 {/* Lost → Reactivate */}
@@ -1782,39 +1823,81 @@ export default function ViewDeals() {
               </div>
             </div>
 
-            {(exitStrategy === "rehab" || exitStrategy === "wholetail") && (
-              <div className="space-y-4 border-t pt-4">
-                <h4 className="font-medium">Rehab Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="soldRehabBudget">Actual Rehab Budget</Label>
-                    <Input
-                      id="soldRehabBudget"
-                      type="number"
-                      value={actualRehabBudget}
-                      onChange={(e) => setActualRehabBudget(e.target.value)}
-                      placeholder="Enter amount"
-                      className="mt-2"
-                      data-testid="input-sold-rehab-budget"
-                    />
+            {(exitStrategy === "rehab" || exitStrategy === "wholetail") && (() => {
+              const snapshot = selectedDeal?.dealSnapshot as any;
+              const originalRehabBudget = snapshot?.rehabBudget;
+              const squareFootage = snapshot?.squareFootage;
+              
+              return (
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="font-medium">Rehab Details</h4>
+                  
+                  {/* Show original budgeted amount for comparison */}
+                  {originalRehabBudget && !isNaN(parseFloat(originalRehabBudget)) && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Original Budgeted Rehab:</span>
+                        <span className="font-medium">${parseFloat(originalRehabBudget).toLocaleString()}</span>
+                      </div>
+                      {squareFootage && !isNaN(parseFloat(originalRehabBudget)) && !isNaN(parseFloat(squareFootage)) && parseFloat(squareFootage) > 0 && (
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-sm text-muted-foreground">Budgeted $/SqFt:</span>
+                          <span className="font-medium">${(parseFloat(originalRehabBudget) / parseFloat(squareFootage)).toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="soldRehabBudget">Final Rehab Budget</Label>
+                      <Input
+                        id="soldRehabBudget"
+                        type="number"
+                        value={actualRehabBudget}
+                        onChange={(e) => setActualRehabBudget(e.target.value)}
+                        placeholder="Enter actual amount"
+                        className="mt-2"
+                        data-testid="input-sold-rehab-budget"
+                      />
+                      {actualRehabBudget && originalRehabBudget && !isNaN(parseFloat(actualRehabBudget)) && !isNaN(parseFloat(originalRehabBudget)) && (
+                        <p className={`text-xs mt-1 ${parseFloat(actualRehabBudget) > parseFloat(originalRehabBudget) ? 'text-destructive' : 'text-emerald-600'}`}>
+                          {parseFloat(actualRehabBudget) > parseFloat(originalRehabBudget) 
+                            ? `$${(parseFloat(actualRehabBudget) - parseFloat(originalRehabBudget)).toLocaleString()} over budget`
+                            : parseFloat(actualRehabBudget) < parseFloat(originalRehabBudget)
+                              ? `$${(parseFloat(originalRehabBudget) - parseFloat(actualRehabBudget)).toLocaleString()} under budget`
+                              : 'On budget'}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="soldRehabLevel">Rehab Level</Label>
+                      <Select value={rehabLevel} onValueChange={setRehabLevel}>
+                        <SelectTrigger className="mt-2" data-testid="select-sold-rehab-level">
+                          <SelectValue placeholder="Select rehab level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="light">Light</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="heavy">Heavy</SelectItem>
+                          <SelectItem value="full">Full Gut</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="soldRehabLevel">Rehab Level</Label>
-                    <Select value={rehabLevel} onValueChange={setRehabLevel}>
-                      <SelectTrigger className="mt-2" data-testid="select-sold-rehab-level">
-                        <SelectValue placeholder="Select rehab level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="heavy">Heavy</SelectItem>
-                        <SelectItem value="full">Full Gut</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  
+                  {/* Show actual $/SqFt when final budget is entered */}
+                  {actualRehabBudget && squareFootage && !isNaN(parseFloat(actualRehabBudget)) && !isNaN(parseFloat(squareFootage)) && parseFloat(squareFootage) > 0 && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Actual $/SqFt:</span>
+                        <span className="font-medium">${(parseFloat(actualRehabBudget) / parseFloat(squareFootage)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
