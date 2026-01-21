@@ -6056,7 +6056,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const [dealStats] = await db
         .select({
-          totalDeals: sql<number>`count(*)::int`,
+          // Count unique properties (addresses) instead of total analyses
+          totalDeals: sql<number>`count(distinct ${savedDeals.propertyAddress})::int`,
           draftDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'draft')::int`,
           finalDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'final')::int`,
           activeDeals: sql<number>`count(*) filter (where ${savedDeals.status} = 'active')::int`,

@@ -706,7 +706,27 @@ export default function ViewDeals() {
       }
     });
 
+    // Status priority: Sold > Purchased/Won > Under Contract > Analyzing
+    const statusPriority = (status: string): number => {
+      switch (status) {
+        case "sold": return 1;
+        case "purchased":
+        case "won": return 2;
+        case "under_contract": return 3;
+        case "analyzing":
+        case "active":
+        case "draft": return 4;
+        case "lost": return 5;
+        default: return 6;
+      }
+    };
+
     return Object.values(groups).sort((a, b) => {
+      // First sort by status priority
+      const statusDiff = statusPriority(a.latestStatus) - statusPriority(b.latestStatus);
+      if (statusDiff !== 0) return statusDiff;
+      
+      // Then by date within same status (newest first)
       if (!a.latestDate) return 1;
       if (!b.latestDate) return -1;
       return b.latestDate.getTime() - a.latestDate.getTime();
