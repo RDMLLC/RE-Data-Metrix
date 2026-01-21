@@ -22,6 +22,7 @@ export interface SoldPropertyComp {
   distanceFromSubject?: number; // Distance in miles from subject property
   latitude?: number;
   longitude?: number;
+  listingUrl?: string; // URL to view the property listing
 }
 
 // Calculate distance between two coordinates using Haversine formula
@@ -783,6 +784,7 @@ export class HasDataAPIService implements IPropertyAPIService {
             latitude: lat,
             longitude: lng,
             distanceFromSubject,
+            listingUrl: listing.detailUrl || listing.url || listing.hdpUrl || listing.homeDetailsUrl || listing.link || '',
           });
         }
 

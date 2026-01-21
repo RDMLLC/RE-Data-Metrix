@@ -39,7 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin } from "lucide-react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -66,6 +66,7 @@ interface SoldPropertyComp {
   daysOnMarket?: number;
   imageUrl?: string;
   distanceFromSubject?: number; // Distance in miles from subject property
+  listingUrl?: string; // URL to view the property listing
 }
 
 interface CompsSearchResponse {
@@ -717,6 +718,23 @@ export default function Step3PurchaseRenovation({
                                         <div>
                                           <span className="text-muted-foreground">Days on Market:</span>
                                           <div className="font-medium">{comp.daysOnMarket}</div>
+                                        </div>
+                                      )}
+                                      {comp.listingUrl && (
+                                        <div>
+                                          <span className="text-muted-foreground">View Listing:</span>
+                                          <div className="font-medium">
+                                            <a 
+                                              href={comp.listingUrl} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              className="text-primary hover:underline inline-flex items-center gap-1"
+                                              data-testid={`link-comp-listing-${index}`}
+                                            >
+                                              View Property
+                                              <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                          </div>
                                         </div>
                                       )}
                                     </div>
