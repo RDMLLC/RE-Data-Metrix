@@ -125,15 +125,8 @@ const emptyRegionForm: ServiceRegionFormData = {
 };
 
 const stateNames: Record<string, string> = {
-  AL: 'Alabama',
   GA: 'Georgia',
-  FL: 'Florida',
-  TN: 'Tennessee',
-  SC: 'South Carolina',
-  NC: 'North Carolina',
-  MS: 'Mississippi',
-  LA: 'Louisiana',
-  TX: 'Texas',
+  AL: 'Alabama',
 };
 
 function getStateName(abbrev: string): string {
