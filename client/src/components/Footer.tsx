@@ -17,7 +17,7 @@ export default function Footer() {
                 <img src={logoImg} alt="RE Data Metrix" className="h-12 w-12" />
               </div>
               <div>
-                <div className="font-bold text-xl">RE Data Metrix</div>
+                <div className="font-bold text-xl">RE Data Metrix™</div>
                 <div className="text-accent text-sm italic">Turning Terms into Returns</div>
               </div>
             </div>

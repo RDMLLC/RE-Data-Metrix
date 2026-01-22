@@ -158,7 +158,7 @@ function TermsContent() {
       </div>
 
       <p className="text-[11px] leading-relaxed">
-        This User Agreement outlines the terms and conditions governing your access to and use of the RE Data Metrix ("RDM") platform and its associated services.
+        This User Agreement outlines the terms and conditions governing your access to and use of the RE Data Metrix™ ("RDM") platform and its associated services.
       </p>
 
       <h3 className="text-xs font-semibold mt-3">1. Agreement Overview</h3>
@@ -308,7 +308,7 @@ function PrivacyContent() {
       </div>
 
       <p className="text-[11px] leading-relaxed">
-        This Privacy Policy explains how RE Data Metrix ("RDM," "we," "us," or "our") collects, uses, discloses, and safeguards information about you when you visit our website, use the RE Data Metrix platform, or otherwise interact with us (collectively, the "Services"). It is separate from, and incorporated by reference into, our User Agreement, which governs your use of the Services. If you do not agree with this Privacy Policy, you should not use the Services.
+        This Privacy Policy explains how RE Data Metrix™ ("RDM," "we," "us," or "our") collects, uses, discloses, and safeguards information about you when you visit our website, use the RE Data Metrix™ platform, or otherwise interact with us (collectively, the "Services"). It is separate from, and incorporated by reference into, our User Agreement, which governs your use of the Services. If you do not agree with this Privacy Policy, you should not use the Services.
       </p>
       <p className="text-[11px] leading-relaxed">
         By accessing or using the Services, you acknowledge that you have read and understood this Privacy Policy and our User Agreement.

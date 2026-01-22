@@ -26,7 +26,7 @@ export default function About() {
               <h2 className="text-3xl font-bold text-primary mb-2">Who We Are</h2>
               <div className="h-1 w-16 bg-accent mb-6"></div>
               <p className="text-lg text-foreground mb-4">
-                RE Data Metrix, LLC is a technology-driven real estate analytics platform headquartered in Atlanta, Georgia. We specialize in providing investors with sophisticated deal analysis tools and direct connections to funding sources.
+                RE Data Metrix™, LLC is a technology-driven real estate analytics platform headquartered in Atlanta, Georgia. We specialize in providing investors with sophisticated deal analysis tools and direct connections to funding sources.
               </p>
               <p className="text-lg text-foreground mb-6">
                 Our platform combines cutting-edge financial modeling with a curated network of lenders, creating a comprehensive solution for real estate investment success.

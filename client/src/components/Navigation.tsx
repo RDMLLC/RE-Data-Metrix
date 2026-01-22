@@ -125,7 +125,7 @@ export default function Navigation() {
           <div className="flex items-center justify-center py-3 border-b border-border">
             <Link href="/" className="flex items-center gap-4 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">
               <img src={logoImg} alt="RE Data Metrix" className="h-28 w-28" />
-              <span className="font-bold text-4xl text-primary">RE Data Metrix</span>
+              <span className="font-bold text-4xl text-primary">RE Data Metrix<sup className="text-lg">™</sup></span>
             </Link>
           </div>
 
@@ -383,7 +383,7 @@ export default function Navigation() {
         <div className="md:hidden flex items-center justify-between h-24">
           <Link href="/" className="flex items-center gap-3 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home-mobile">
             <img src={logoImg} alt="RE Data Metrix" className="h-16 w-16" />
-            <span className="font-bold text-2xl text-primary">RE Data Metrix</span>
+            <span className="font-bold text-2xl text-primary">RE Data Metrix<sup className="text-sm">™</sup></span>
           </Link>
 
           <div className="flex items-center gap-2">
