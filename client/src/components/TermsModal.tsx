@@ -53,7 +53,7 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col" data-testid="dialog-terms-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -135,18 +135,13 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
               </span>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-terms">
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAccept} 
-              disabled={!canAccept}
-              data-testid="button-accept-terms"
-            >
-              I Accept
-            </Button>
-          </div>
+          <Button 
+            onClick={handleAccept} 
+            disabled={!canAccept}
+            data-testid="button-accept-terms"
+          >
+            I Accept
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
