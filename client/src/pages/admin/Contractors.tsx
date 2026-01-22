@@ -819,14 +819,19 @@ export default function Contractors() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="state">State *</Label>
-                <Input
-                  id="state"
+                <Select
                   value={regionForm.state}
-                  onChange={(e) => setRegionForm(prev => ({ ...prev, state: e.target.value.toUpperCase() }))}
-                  placeholder="GA"
-                  maxLength={2}
-                  data-testid="input-region-state"
-                />
+                  onValueChange={(value) => setRegionForm(prev => ({ ...prev, state: value }))}
+                >
+                  <SelectTrigger id="state" data-testid="select-region-state">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(stateNames).map(([abbrev, name]) => (
+                      <SelectItem key={abbrev} value={abbrev}>{name} ({abbrev})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
