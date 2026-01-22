@@ -136,9 +136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
       
-      if (user.role !== 'admin') {
-        console.log('[Admin Login] Non-admin user attempted login:', user.email, user.role);
-        return res.status(403).json({ error: "Access denied. Admin privileges required." });
+      if (user.role !== 'admin' && user.role !== 'developer') {
+        console.log('[Admin Login] Non-admin/developer user attempted login:', user.email, user.role);
+        return res.status(403).json({ error: "Access denied. Admin or developer privileges required." });
       }
       
       req.login(user, (err) => {
