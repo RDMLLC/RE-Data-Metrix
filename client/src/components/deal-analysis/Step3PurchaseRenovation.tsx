@@ -937,6 +937,14 @@ export default function Step3PurchaseRenovation({
                           placeholder="https://www.zillow.com/homedetails/..."
                           value={customCompUrl}
                           onChange={(e) => setCustomCompUrl(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (customCompUrl.trim() && !isAddingCustomComp) {
+                                addCustomComp();
+                              }
+                            }
+                          }}
                           className="flex-1"
                           data-testid="input-custom-comp-url"
                         />
