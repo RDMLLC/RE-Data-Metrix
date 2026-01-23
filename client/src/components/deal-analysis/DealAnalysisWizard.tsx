@@ -524,6 +524,14 @@ export default function DealAnalysisWizard() {
   const propertyAddress = formValues.address && formValues.city && formValues.state
     ? `${formValues.address}, ${formValues.city}, ${formValues.state} ${formValues.zipCode || ""}`.trim()
     : undefined;
+  
+  const propertyDetails = {
+    bedrooms: formValues.bedrooms,
+    bathrooms: formValues.bathrooms,
+    sqft: formValues.sqft,
+    yearBuilt: formValues.yearBuilt,
+    lotSize: formValues.lotSize,
+  };
 
   return (
     <WizardLayout
@@ -533,6 +541,7 @@ export default function DealAnalysisWizard() {
       onStartNew={handleStartNew}
       canGoBack={currentStep > 1}
       propertyAddress={propertyAddress}
+      propertyDetails={propertyDetails}
     >
       {renderStep()}
     </WizardLayout>

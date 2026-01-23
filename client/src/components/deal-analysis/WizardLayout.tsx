@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, RotateCcw, MapPin } from "lucide-react";
+import { ChevronLeft, RotateCcw, MapPin, Bed, Bath, Ruler, Calendar, LandPlot } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+interface PropertyDetails {
+  bedrooms?: number;
+  bathrooms?: number;
+  sqft?: number;
+  yearBuilt?: number;
+  lotSize?: number;
+}
 
 interface WizardLayoutProps {
   currentStep: number;
@@ -11,6 +19,7 @@ interface WizardLayoutProps {
   canGoBack: boolean;
   children: React.ReactNode;
   propertyAddress?: string;
+  propertyDetails?: PropertyDetails;
 }
 
 export default function WizardLayout({
@@ -21,6 +30,7 @@ export default function WizardLayout({
   canGoBack,
   children,
   propertyAddress,
+  propertyDetails,
 }: WizardLayoutProps) {
   const { isSubscriber } = useAuth();
   const stepTitles = [
@@ -92,9 +102,39 @@ export default function WizardLayout({
           </h2>
           
           {propertyAddress && currentStep > 1 && (
-            <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 rounded-md px-3 py-2 mt-2">
-              <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-              <span className="text-sm font-medium">{propertyAddress}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground bg-muted/50 rounded-md px-3 py-2 mt-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-sm font-medium">{propertyAddress}</span>
+              </div>
+              {propertyDetails && (propertyDetails.bedrooms || propertyDetails.sqft || propertyDetails.yearBuilt || propertyDetails.lotSize) && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  {propertyDetails.bedrooms && propertyDetails.bathrooms && (
+                    <span className="flex items-center gap-1">
+                      <Bed className="h-3 w-3" />
+                      {propertyDetails.bedrooms}/{propertyDetails.bathrooms}
+                    </span>
+                  )}
+                  {propertyDetails.sqft && (
+                    <span className="flex items-center gap-1">
+                      <Ruler className="h-3 w-3" />
+                      {propertyDetails.sqft.toLocaleString()} sqft
+                    </span>
+                  )}
+                  {propertyDetails.yearBuilt && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {propertyDetails.yearBuilt}
+                    </span>
+                  )}
+                  {propertyDetails.lotSize && (
+                    <span className="flex items-center gap-1">
+                      <LandPlot className="h-3 w-3" />
+                      {propertyDetails.lotSize.toLocaleString()} sqft lot
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
