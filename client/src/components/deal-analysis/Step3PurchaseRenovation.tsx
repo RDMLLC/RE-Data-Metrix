@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Plus, X } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -68,6 +68,7 @@ interface SoldPropertyComp {
   imageUrl?: string;
   distanceFromSubject?: number; // Distance in miles from subject property
   listingUrl?: string; // URL to view the property listing
+  isManuallyAdded?: boolean; // Flag for user-added comps
 }
 
 interface CompsSearchResponse {
@@ -139,6 +140,12 @@ export default function Step3PurchaseRenovation({
   const [searchRadius, setSearchRadius] = useState<RadiusOption>(0.5);
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
+  
+  // Custom comp adding state
+  const [showAddCompForm, setShowAddCompForm] = useState(false);
+  const [customCompUrl, setCustomCompUrl] = useState("");
+  const [isAddingCustomComp, setIsAddingCustomComp] = useState(false);
+  const [customCompError, setCustomCompError] = useState<string | null>(null);
   
   // Flip detection state - tracks which comps are flipped properties
   interface FlipData {
@@ -459,6 +466,82 @@ export default function Step3PurchaseRenovation({
       });
     } catch {
       return dateStr;
+    }
+  };
+
+  // Add custom comp from Zillow URL
+  const addCustomComp = async () => {
+    if (!customCompUrl.trim()) {
+      setCustomCompError("Please enter a Zillow URL");
+      return;
+    }
+
+    if (!customCompUrl.includes('zillow.com')) {
+      setCustomCompError("Please enter a valid Zillow URL");
+      return;
+    }
+
+    setIsAddingCustomComp(true);
+    setCustomCompError(null);
+
+    try {
+      const response = await apiRequest("POST", "/api/comps/fetch-from-url", {
+        url: customCompUrl,
+        subjectLat: propertyLatitude,
+        subjectLng: propertyLongitude,
+      });
+
+      const data = await response.json();
+
+      if (data.comp) {
+        // Add the new comp to the existing comps list
+        setCompsData(prev => {
+          if (!prev) {
+            return {
+              comps: [data.comp],
+              suggestedArv: null,
+            };
+          }
+          return {
+            ...prev,
+            comps: [...prev.comps, data.comp],
+          };
+        });
+
+        // Auto-select the new comp
+        setSelectedCompIndices(prev => {
+          const newSet = new Set(prev);
+          const newIndex = compsData ? compsData.comps.length : 0;
+          newSet.add(newIndex);
+          return newSet;
+        });
+
+        // Reset form
+        setCustomCompUrl("");
+        setShowAddCompForm(false);
+
+        toast({
+          title: "Comp Added",
+          description: `${data.comp.address} has been added to your comps list.`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error adding custom comp:", error);
+      let errorMessage = "Failed to fetch property data";
+      try {
+        const jsonMatch = error.message.match(/\d+:\s*(.+)/);
+        if (jsonMatch) {
+          const errorData = JSON.parse(jsonMatch[1]);
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        }
+      } catch {
+        // Use default message
+      }
+      setCustomCompError(errorMessage);
+    } finally {
+      setIsAddingCustomComp(false);
     }
   };
 
@@ -896,8 +979,69 @@ export default function Step3PurchaseRenovation({
                           </>
                         )}
                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowAddCompForm(!showAddCompForm)}
+                        data-testid="button-add-comp"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Comp
+                      </Button>
                     </div>
                   </div>
+
+                  {/* Add Custom Comp Form */}
+                  {showAddCompForm && (
+                    <div className="p-3 bg-muted/50 rounded-md border border-border space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium">Add Comp from Zillow</h4>
+                          <p className="text-xs text-muted-foreground">Paste a Zillow property URL to add it as a comparable</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setShowAddCompForm(false);
+                            setCustomCompUrl("");
+                            setCustomCompError(null);
+                          }}
+                          data-testid="button-close-add-comp-form"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          type="url"
+                          placeholder="https://www.zillow.com/homedetails/..."
+                          value={customCompUrl}
+                          onChange={(e) => setCustomCompUrl(e.target.value)}
+                          className="flex-1"
+                          data-testid="input-custom-comp-url"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={addCustomComp}
+                          disabled={isAddingCustomComp || !customCompUrl.trim()}
+                          data-testid="button-add-comp-submit"
+                        >
+                          {isAddingCustomComp ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Add"
+                          )}
+                        </Button>
+                      </div>
+                      {customCompError && (
+                        <p className="text-xs text-destructive">{customCompError}</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Search criteria summary */}
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">

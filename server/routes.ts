@@ -5868,6 +5868,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fetch Comp from Zillow URL - allows users to manually add a comp via Zillow link
+  app.post("/api/comps/fetch-from-url", async (req, res) => {
+    try {
+      const { url, subjectLat, subjectLng } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: "Zillow URL is required" });
+      }
+      
+      if (!url.includes('zillow.com')) {
+        return res.status(400).json({ 
+          error: "Please provide a valid Zillow property URL" 
+        });
+      }
+
+      // Check authentication
+      const user = req.user as User | undefined;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      console.log(`[Comp From URL] Fetching from: ${url}`);
+      
+      const hasDataService = new HasDataAPIService();
+      const propertyData = await hasDataService.getPropertyByUrl(url);
+      
+      if (!propertyData || !propertyData.address) {
+        return res.status(400).json({ 
+          error: "Could not fetch property data from this URL. Please check the link and try again." 
+        });
+      }
+
+      // Get most recent sale from property data
+      let salePrice = propertyData.lastSalePrice;
+      let saleDate = propertyData.lastSaleDate;
+      
+      // Fall back to estimated value if no sale data
+      if (!salePrice && propertyData.estimatedValue) {
+        salePrice = propertyData.estimatedValue;
+        saleDate = new Date().toISOString().split('T')[0]; // Use today's date
+      }
+
+      if (!salePrice) {
+        return res.status(400).json({ 
+          error: "Could not determine property sale price from this URL." 
+        });
+      }
+
+      const sqft = propertyData.sqft || 1500;
+      const pricePerSqft = Math.round(salePrice / sqft);
+
+      // Calculate distance from subject if coordinates provided
+      let distanceFromSubject: number | undefined;
+      if (subjectLat && subjectLng && propertyData.latitude && propertyData.longitude) {
+        const lat1 = subjectLat;
+        const lon1 = subjectLng;
+        const lat2 = propertyData.latitude;
+        const lon2 = propertyData.longitude;
+        const R = 3958.8; // Radius of Earth in miles
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        distanceFromSubject = Math.round(R * c * 100) / 100; // Round to 2 decimals
+      }
+
+      // Build comp object in the same format as search results
+      const comp = {
+        address: propertyData.address || '',
+        city: propertyData.city || '',
+        state: propertyData.state || '',
+        zipCode: propertyData.zipCode || '',
+        salePrice,
+        saleDate: saleDate || new Date().toISOString().split('T')[0],
+        bedrooms: propertyData.bedrooms || 3,
+        bathrooms: propertyData.bathrooms || 2,
+        sqft,
+        pricePerSqft,
+        yearBuilt: propertyData.yearBuilt,
+        lotSize: propertyData.lotSize,
+        propertyType: propertyData.propertyType || 'Single Family',
+        imageUrl: propertyData.imageUrl,
+        distanceFromSubject,
+        listingUrl: url,
+        isManuallyAdded: true, // Flag to identify user-added comps
+      };
+
+      console.log(`[Comp From URL] Successfully fetched: ${comp.address} - $${comp.salePrice?.toLocaleString()}`);
+
+      return res.json({ comp });
+    } catch (error: any) {
+      console.error("[Comp From URL] Error:", error);
+      res.status(500).json({ 
+        error: error.message || "Failed to fetch property data from URL" 
+      });
+    }
+  });
+
   // Property Lookup Route
   app.post("/api/property/lookup", async (req, res) => {
     try {
