@@ -761,9 +761,25 @@ export default function Step3PurchaseRenovation({
                         Search for recently sold properties similar to yours to estimate ARV
                       </p>
                       {address && (
-                        <p className="text-xs font-medium text-foreground mt-1">
-                          Subject Property: {address}, {city}, {state} {zipCode}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <p className="text-xs font-medium text-foreground">
+                            Subject Property: {address}, {city}, {state} {zipCode}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => {
+                              const zillowAddress = `${address} ${city} ${state} ${zipCode}`.replace(/\s+/g, '-').replace(/[,#]/g, '');
+                              window.open(`https://www.zillow.com/homes/${encodeURIComponent(zillowAddress)}_rb/`, "_blank");
+                            }}
+                            data-testid="button-view-subject-zillow"
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            View on Zillow
+                          </Button>
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
