@@ -132,6 +132,11 @@ try {
   process.exit(1);
 }
 
+// In Replit's environment, we need 'none' for cross-origin webview, but it requires secure: true
+// Replit provides HTTPS even in development, so we can use secure: true
+const isReplit = !!process.env.REPLIT_DOMAINS;
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(
   session({
     store: sessionStore,
@@ -141,8 +146,10 @@ app.use(
     cookie: {
       maxAge: 30 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      // Use 'none' for Replit webview (cross-origin iframe), 'lax' otherwise
+      sameSite: isReplit ? 'none' : 'lax',
+      // Secure must be true when sameSite is 'none', and Replit provides HTTPS
+      secure: isReplit || isProduction,
     },
   })
 );
