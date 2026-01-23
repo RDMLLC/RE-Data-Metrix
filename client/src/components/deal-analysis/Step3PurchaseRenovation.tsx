@@ -337,6 +337,62 @@ export default function Step3PurchaseRenovation({
     }
   };
 
+  // Search comps with a specific radius (for auto-search when radius changes)
+  const searchCompsWithRadius = async (radius: RadiusOption) => {
+    if (!city || !state) {
+      return;
+    }
+
+    setIsSearchingComps(true);
+    setCompsError(null);
+    setCompsData(null);
+    setFlipDataByAddress({});
+
+    try {
+      const response = await apiRequest("POST", "/api/comps/search", {
+        address,
+        city,
+        state,
+        zipCode,
+        bedrooms,
+        bathrooms,
+        sqft,
+        propertyType,
+        subjectLat: propertyLatitude,
+        subjectLng: propertyLongitude,
+        radiusMiles: radius,
+      });
+
+      const data = await response.json();
+      
+      setCompsData(data);
+      if (data.comps && data.comps.length > 0) {
+        setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
+      }
+    } catch (error: any) {
+      console.error("Comps search error:", error);
+      if (error.message && error.message.includes("ARV_QUOTA_EXCEEDED")) {
+        setShowArvQuotaModal(true);
+      } else {
+        let errorMessage = "Failed to search for comparable sales";
+        try {
+          const jsonMatch = error.message.match(/\d+:\s*(.+)/);
+          if (jsonMatch) {
+            const errorData = JSON.parse(jsonMatch[1]);
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          }
+        } catch {
+          // Use default message
+        }
+        setCompsError(errorMessage);
+      }
+    } finally {
+      setIsSearchingComps(false);
+    }
+  };
+
   // Format currency helper
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -720,7 +776,19 @@ export default function Step3PurchaseRenovation({
                             type="button"
                             size="sm"
                             variant={searchRadius === radius ? "default" : "outline"}
-                            onClick={() => setSearchRadius(radius)}
+                            onClick={() => {
+                              if (radius !== searchRadius) {
+                                setSearchRadius(radius);
+                                // Auto-search with new radius if we already have results
+                                if (compsData) {
+                                  setTimeout(() => {
+                                    // Trigger search with new radius
+                                    searchCompsWithRadius(radius);
+                                  }, 0);
+                                }
+                              }
+                            }}
+                            disabled={isSearchingComps}
                             data-testid={`button-radius-${radius}`}
                           >
                             {radius === 0.5 ? "½" : radius} mi
