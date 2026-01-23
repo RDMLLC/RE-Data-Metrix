@@ -140,6 +140,8 @@ export default function Step3PurchaseRenovation({
   const [compsError, setCompsError] = useState<string | null>(null);
   type RadiusOption = 0.5 | 1 | 2 | 3;
   const [searchRadius, setSearchRadius] = useState<RadiusOption>(0.5);
+  type DateRangeOption = 180 | 270 | 365; // 6, 9, or 12 months
+  const [searchDateRange, setSearchDateRange] = useState<DateRangeOption>(180);
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
   
@@ -326,6 +328,7 @@ export default function Step3PurchaseRenovation({
         subjectLat: propertyLatitude,
         subjectLng: propertyLongitude,
         radiusMiles: searchRadius,
+        saleDateRangeDays: searchDateRange,
       });
 
       const data = await response.json();
@@ -363,8 +366,8 @@ export default function Step3PurchaseRenovation({
     }
   };
 
-  // Search comps with a specific radius (for auto-search when radius changes)
-  const searchCompsWithRadius = async (radius: RadiusOption) => {
+  // Search comps with specific radius and/or date range (for auto-search when options change)
+  const searchCompsWithOptions = async (radius: RadiusOption, dateRange: DateRangeOption) => {
     if (!city || !state) {
       return;
     }
@@ -386,6 +389,7 @@ export default function Step3PurchaseRenovation({
         subjectLat: propertyLatitude,
         subjectLng: propertyLongitude,
         radiusMiles: radius,
+        saleDateRangeDays: dateRange,
       });
 
       const data = await response.json();
@@ -899,8 +903,7 @@ export default function Step3PurchaseRenovation({
                                 // Auto-search with new radius if we already have results
                                 if (compsData) {
                                   setTimeout(() => {
-                                    // Trigger search with new radius
-                                    searchCompsWithRadius(radius);
+                                    searchCompsWithOptions(radius, searchDateRange);
                                   }, 0);
                                 }
                               }
@@ -909,6 +912,33 @@ export default function Step3PurchaseRenovation({
                             data-testid={`button-radius-${radius}`}
                           >
                             {radius === 0.5 ? "½" : radius} mi
+                          </Button>
+                        ))}
+                      </div>
+                      {/* Date range selector */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground" data-testid="label-date-range">Sales:</span>
+                        {([180, 270, 365] as DateRangeOption[]).map((days) => (
+                          <Button
+                            key={days}
+                            type="button"
+                            size="sm"
+                            variant={searchDateRange === days ? "default" : "outline"}
+                            onClick={() => {
+                              if (days !== searchDateRange) {
+                                setSearchDateRange(days);
+                                // Auto-search with new date range if we already have results
+                                if (compsData) {
+                                  setTimeout(() => {
+                                    searchCompsWithOptions(searchRadius, days);
+                                  }, 0);
+                                }
+                              }
+                            }}
+                            disabled={isSearchingComps}
+                            data-testid={`button-date-range-${days}`}
+                          >
+                            {days === 180 ? "6" : days === 270 ? "9" : "12"} mo
                           </Button>
                         ))}
                       </div>

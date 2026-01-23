@@ -861,7 +861,7 @@ export class RentCastAPIService implements IPropertyAPIService {
       sqft,
       propertyType,
       radiusMiles = 3,
-      saleDateRangeDays = 365, // Default to 1 year
+      saleDateRangeDays = 180, // Default to 6 months
       maxResults = 10,
       subjectLat,
       subjectLng,
@@ -991,15 +991,16 @@ export class RentCastAPIService implements IPropertyAPIService {
         });
       }
 
-      // Sort by distance (closest first) then by sale date (most recent first)
+      // Sort by sale date (most recent first) then by distance (closest first)
       comps.sort((a, b) => {
-        // First by distance
+        // First by sale date (most recent first)
+        const dateDiff = new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        // Then by distance
         if (a.distanceFromSubject !== undefined && b.distanceFromSubject !== undefined) {
-          const distDiff = a.distanceFromSubject - b.distanceFromSubject;
-          if (Math.abs(distDiff) > 0.1) return distDiff;
+          return a.distanceFromSubject - b.distanceFromSubject;
         }
-        // Then by sale date (most recent first)
-        return new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime();
+        return 0;
       });
 
       // Limit results
