@@ -754,7 +754,7 @@ export default function Step3PurchaseRenovation({
             {compsData && compsData.comps.length > 0 && (
               <div className="mx-6 mb-4 p-3 bg-muted/50 rounded-md border border-border">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-semibold text-foreground">
                     Our quick comps search is perfect for initial analysis. For full MLS data, skip tracing, and the tools top investors rely on, try PropStream — trusted by over 100,000 real estate professionals.
                   </p>
                   <Button
@@ -851,33 +851,6 @@ export default function Step3PurchaseRenovation({
                           </>
                         )}
                       </Button>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1"
-                            data-testid="button-max-offer-from-arv"
-                          >
-                            <Calculator className="h-4 w-4" />
-                            Max Offer Calculator
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-72" align="end">
-                          <p className="text-sm mb-2">Open Max Offer Calculator to calculate your maximum purchase price.</p>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => {
-                              setShowArvHelper(false);
-                              setShowMaxOfferCalc(true);
-                            }}
-                          >
-                            Open Calculator
-                          </Button>
-                        </PopoverContent>
-                      </Popover>
                     </div>
                   </div>
 
