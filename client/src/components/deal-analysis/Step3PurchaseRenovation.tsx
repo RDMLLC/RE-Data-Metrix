@@ -725,6 +725,7 @@ export default function Step3PurchaseRenovation({
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-2">
                           <Button
+                            type="button"
                             variant={filterLast6Months ? "default" : "outline"}
                             size="sm"
                             onClick={() => setFilterLast6Months(!filterLast6Months)}
