@@ -116,7 +116,7 @@ export default function Step3PurchaseRenovation({
 
   // Max Offer Calculator calculations
   const maxProjectCost = calcArv * (maxArvPercent / 100);
-  const maxOfferPrice = Math.max(0, maxProjectCost - calcRehabBudget);
+  const maxOfferPrice = Math.round(Math.max(0, maxProjectCost - calcRehabBudget));
 
   // Get form values for comp search (must be declared before calculateSelectedArv)
   const city = form.watch("city") || "";
