@@ -615,6 +615,27 @@ export default function Step3PurchaseRenovation({
                     </div>
                   )}
 
+                  {/* PropStream Affiliate Promotion - shown above comps */}
+                  {compsData && compsData.comps.length > 0 && (
+                    <div className="p-3 bg-muted/50 rounded-md border border-border">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-sm font-medium text-muted-foreground">
+                          Our quick comps search is perfect for initial analysis. For full MLS data, skip tracing, and the tools top investors rely on, try PropStream — trusted by over 100,000 real estate professionals.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="default"
+                          className="shrink-0"
+                          onClick={() => window.open("https://trial.propstreampro.com/redatametrix/", "_blank")}
+                          data-testid="button-propstream-trial"
+                        >
+                          Get 7 Days Free
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Comps Results */}
                   {compsData && compsData.comps.length > 0 && (
                     <div className="space-y-3">
@@ -720,23 +741,21 @@ export default function Step3PurchaseRenovation({
                                           <div className="font-medium">{comp.daysOnMarket}</div>
                                         </div>
                                       )}
-                                      {comp.listingUrl && (
-                                        <div>
-                                          <span className="text-muted-foreground">View Listing:</span>
-                                          <div className="font-medium">
-                                            <a 
-                                              href={comp.listingUrl} 
-                                              target="_blank" 
-                                              rel="noopener noreferrer"
-                                              className="text-primary hover:underline inline-flex items-center gap-1"
-                                              data-testid={`link-comp-listing-${index}`}
-                                            >
-                                              View Property
-                                              <ExternalLink className="h-3 w-3" />
-                                            </a>
-                                          </div>
+                                      <div>
+                                        <span className="text-muted-foreground">View on Zillow:</span>
+                                        <div className="font-medium">
+                                          <a 
+                                            href={`https://www.zillow.com/homes/${encodeURIComponent(`${comp.address} ${comp.city} ${comp.state}`.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, ''))}_rb/`}
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline inline-flex items-center gap-1"
+                                            data-testid={`link-comp-zillow-${index}`}
+                                          >
+                                            View Property
+                                            <ExternalLink className="h-3 w-3" />
+                                          </a>
                                         </div>
-                                      )}
+                                      </div>
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -783,25 +802,6 @@ export default function Step3PurchaseRenovation({
                             data-testid="button-use-suggested-arv"
                           >
                             Use This ARV
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* PropStream Affiliate Promotion */}
-                      <div className="mt-4 p-3 bg-muted/50 rounded-md border border-border">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <p className="text-sm font-medium text-muted-foreground">
-                            Our quick comps search is perfect for initial analysis. For full MLS data, skip tracing, and the tools top investors rely on, try PropStream — trusted by over 100,000 real estate professionals.
-                          </p>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="default"
-                            className="shrink-0"
-                            onClick={() => window.open("https://trial.propstreampro.com/redatametrix/", "_blank")}
-                            data-testid="button-propstream-trial"
-                          >
-                            Get 7 Days Free
                           </Button>
                         </div>
                       </div>

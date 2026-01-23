@@ -17,6 +17,7 @@ import WholesaleQuotaModal from "@/components/deal-analysis/WholesaleQuotaModal"
 import {
   calculateAssignmentMaxOffer,
   calculateDoubleCloseMaxOffer,
+  calculateDoubleCloseMaxOfferOwnCash,
   calculateDynamicClosingCosts,
   calculateWholesaleFeeFromBuyPrice,
   calculateDoubleCloseWholesaleFeeFromBuyPrice,
@@ -100,6 +101,7 @@ export default function WholesaleCalculator() {
   const queryClient = useQueryClient();
 
   const [transactionType, setTransactionType] = useState<"assignment" | "double-close">("assignment");
+  const [fundingSource, setFundingSource] = useState<"transactional" | "own-cash">("transactional");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [calculationUnlocked, setCalculationUnlocked] = useState(false);
   
@@ -296,8 +298,10 @@ export default function WholesaleCalculator() {
   );
 
   const doubleCloseResult = useMemo(() => 
-    calculateDoubleCloseMaxOffer(wholesaleInputs, closingCosts),
-    [wholesaleInputs, closingCosts]
+    fundingSource === "own-cash"
+      ? calculateDoubleCloseMaxOfferOwnCash(wholesaleInputs, closingCosts)
+      : calculateDoubleCloseMaxOffer(wholesaleInputs, closingCosts),
+    [wholesaleInputs, closingCosts, fundingSource]
   );
 
   // Get the current result based on transaction type
@@ -498,6 +502,31 @@ export default function WholesaleCalculator() {
                   <Label htmlFor="double-close" className="cursor-pointer">Double Close</Label>
                 </div>
               </RadioGroup>
+              
+              {transactionType === "double-close" && (
+                <div className="mt-4 pt-4 border-t">
+                  <Label className="text-sm font-medium mb-3 block">Funding Source</Label>
+                  <RadioGroup
+                    value={fundingSource}
+                    onValueChange={(value) => setFundingSource(value as "transactional" | "own-cash")}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="transactional" id="transactional" data-testid="radio-transactional" />
+                      <Label htmlFor="transactional" className="cursor-pointer">Transactional Lender</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="own-cash" id="own-cash" data-testid="radio-own-cash" />
+                      <Label htmlFor="own-cash" className="cursor-pointer">Using Own Cash</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {fundingSource === "own-cash" 
+                      ? "No lender fees - only closing costs apply" 
+                      : "Includes transactional lender fee (1.25%, min $1,000)"}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -970,12 +999,22 @@ export default function WholesaleCalculator() {
                           - {formatCurrency(doubleCloseResult.totalClosingCosts)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-muted-foreground">Less: Lender Fee (1.25%)</span>
-                        <span className="font-semibold text-red-600" data-testid="text-less-lender-fee">
-                          - {formatCurrency(doubleCloseResult.lenderFee)}
-                        </span>
-                      </div>
+                      {fundingSource === "transactional" && (
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-muted-foreground">Less: Lender Fee (1.25%)</span>
+                          <span className="font-semibold text-red-600" data-testid="text-less-lender-fee">
+                            - {formatCurrency(doubleCloseResult.lenderFee)}
+                          </span>
+                        </div>
+                      )}
+                      {fundingSource === "own-cash" && (
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-muted-foreground">Lender Fee</span>
+                          <span className="font-semibold text-green-600" data-testid="text-no-lender-fee">
+                            $0 (Using Own Cash)
+                          </span>
+                        </div>
+                      )}
                     </>
                   )}
 

@@ -971,6 +971,7 @@ export const contractors = pgTable("contractors", {
   description: text("description"),
   specialties: text("specialties").array().default([]), // e.g., ["Rehabs", "New Construction", "Renovations"]
   licenseNumber: text("license_number"),
+  licensedStates: text("licensed_states").array().default([]), // States where contractor is licensed (e.g., ["GA", "AL"])
   isInsured: boolean("is_insured").default(false),
   isBonded: boolean("is_bonded").default(false),
   referralLink: text("referral_link"), // Affiliate link if applicable

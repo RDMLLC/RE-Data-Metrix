@@ -182,6 +182,30 @@ export function calculateDoubleCloseMaxOffer(
 }
 
 /**
+ * Calculate max offer price for a Double Close deal using own cash (no lender fees)
+ * Formula: ARV × Buyer's Max % - Rehab Budget - Wholesale Fee - Closing Costs = Max Offer Price
+ */
+export function calculateDoubleCloseMaxOfferOwnCash(
+  inputs: WholesaleInputs,
+  closingCosts: DoubleCloseClosingCosts
+): DoubleCloseResult {
+  const buyersMaxPrice = inputs.arv * (inputs.buyersMaxArvPercent / 100);
+  const totalClosingCosts = calculateTotalClosingCosts(closingCosts);
+  
+  // No lender fee when using own cash - just subtract closing costs
+  const maxOfferPrice = buyersMaxPrice - inputs.rehabBudget - inputs.wholesaleFee - totalClosingCosts;
+  
+  return {
+    buyersMaxPrice,
+    maxOfferPrice: Math.max(0, Math.round(maxOfferPrice)),
+    wholesaleProfit: inputs.wholesaleFee,
+    totalClosingCosts,
+    closingCostsBreakdown: closingCosts,
+    lenderFee: 0, // No lender fee when using own cash
+  };
+}
+
+/**
  * Calculate transactional lender fees and adjusted max offer price
  * Points cost is calculated on the purchase price (max offer price before lender fees)
  */

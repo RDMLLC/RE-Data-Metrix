@@ -4161,6 +4161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description, 
         specialties, 
         licenseNumber, 
+        licensedStates,
         isInsured, 
         isBonded,
         serviceRegionIds 
@@ -4192,6 +4193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         specialties: specialties || [],
         licenseNumber,
+        licensedStates: licensedStates || [],
         isInsured: isInsured || false,
         isBonded: isBonded || false,
         serviceRegionIds

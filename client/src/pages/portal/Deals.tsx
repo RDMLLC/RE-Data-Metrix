@@ -57,7 +57,8 @@ import {
   Building2,
   BellOff,
   Bell,
-  EyeOff
+  EyeOff,
+  Download
 } from "lucide-react";
 import type { SavedDeal, Lender, LoanProduct } from "@shared/schema";
 
@@ -790,6 +791,96 @@ export default function ViewDeals() {
 
   const totalDealsCount = filteredGroups.reduce((sum, group) => sum + group.deals.length, 0);
 
+  // CSV Download function
+  const handleDownloadCSV = () => {
+    if (!deals || deals.length === 0) {
+      toast({ title: "No deals to export", variant: "destructive" });
+      return;
+    }
+
+    // Get deals based on current filter
+    const dealsToExport = statusFilter === "all" 
+      ? deals.filter(d => d.status !== "lost")
+      : deals.filter(d => {
+          if (statusFilter === "analyzing") {
+            return d.status === "draft" || d.status === "active" || d.status === "analyzing";
+          }
+          if (statusFilter === "purchased") {
+            return d.status === "purchased" || d.status === "won";
+          }
+          return d.status === statusFilter;
+        });
+
+    if (dealsToExport.length === 0) {
+      toast({ title: "No deals match the current filter", variant: "destructive" });
+      return;
+    }
+
+    // CSV headers
+    const headers = [
+      "Property Address",
+      "Status",
+      "Deal Type",
+      "Purchase Price",
+      "ARV",
+      "Rehab Budget",
+      "ROI",
+      "Cash on Cash",
+      "Exit Strategy",
+      "Created Date",
+      "Under Contract Date",
+      "Purchased Date",
+      "Sold Date",
+      "Sell Price",
+      "Actual Rehab Budget",
+      "Lender Used"
+    ];
+
+    // Convert deals to CSV rows
+    const rows = dealsToExport.map(deal => {
+      const snapshot = (deal.dealSnapshot || {}) as Record<string, unknown>;
+      const results = (deal.resultsSnapshot || {}) as Record<string, unknown>;
+      const lenderInfo = (deal.customLenderInfo || {}) as Record<string, unknown>;
+      return [
+        deal.propertyAddress || "",
+        deal.status || "",
+        snapshot.dealType || "",
+        snapshot.purchasePrice || "",
+        deal.arv || "",
+        snapshot.rehabBudget || "",
+        deal.roi ? `${parseFloat(deal.roi.toString()).toFixed(2)}%` : "",
+        results.cashOnCashRoi ? `${parseFloat(String(results.cashOnCashRoi)).toFixed(2)}%` : "",
+        deal.exitStrategy || "",
+        deal.createdAt ? new Date(deal.createdAt).toLocaleDateString() : "",
+        deal.underContractDate ? new Date(deal.underContractDate).toLocaleDateString() : "",
+        deal.purchaseDate ? new Date(deal.purchaseDate).toLocaleDateString() : "",
+        deal.soldDate ? new Date(deal.soldDate).toLocaleDateString() : "",
+        deal.sellPrice || "",
+        deal.actualRehabBudget || "",
+        (deal as DealWithLender).closedWithLender?.companyName || lenderInfo.name || ""
+      ];
+    });
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    // Download file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `deals_${statusFilter}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({ title: `Exported ${dealsToExport.length} deals to CSV` });
+  };
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-12">
@@ -828,6 +919,15 @@ export default function ViewDeals() {
                   <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Button
+                variant="outline"
+                onClick={handleDownloadCSV}
+                data-testid="button-download-csv"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
 
               <Button
                 onClick={() => setLocation("/deal-analysis")}
@@ -1737,6 +1837,16 @@ export default function ViewDeals() {
                           <span className="font-medium">${(parseFloat(originalRehabBudget) / parseFloat(squareFootage)).toFixed(2)}</span>
                         </div>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* Original Budget Display */}
+                  {originalRehabBudget && !isNaN(parseFloat(originalRehabBudget)) && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Original Budget:</span>
+                        <span className="font-medium">${parseFloat(originalRehabBudget).toLocaleString()}</span>
+                      </div>
                     </div>
                   )}
                   

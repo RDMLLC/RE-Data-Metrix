@@ -58,6 +58,7 @@ const signupSchema = z.object({
   website: z.string().optional(),
   description: z.string().optional(),
   licenseNumber: z.string().optional(),
+  licensedStates: z.array(z.string()).default([]),
   isInsured: z.boolean().default(false),
   isBonded: z.boolean().default(false),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -122,6 +123,7 @@ export default function ContractorSignup() {
       website: "",
       description: "",
       licenseNumber: "",
+      licensedStates: [],
       isInsured: false,
       isBonded: false,
     },
@@ -140,6 +142,7 @@ export default function ContractorSignup() {
         description: data.description,
         specialties: specialtiesToSend,
         licenseNumber: data.licenseNumber,
+        licensedStates: data.licensedStates,
         isInsured: data.isInsured,
         isBonded: data.isBonded,
         serviceRegionIds: selectedRegions,
@@ -477,6 +480,39 @@ export default function ContractorSignup() {
                           />
                         </FormControl>
                         <FormDescription>Your contractor license number (if applicable)</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="licensedStates"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Licensed States</FormLabel>
+                        <div className="flex flex-wrap gap-2">
+                          {US_STATES.map((state) => (
+                            <div
+                              key={state.value}
+                              className={`px-3 py-2 rounded-md border cursor-pointer transition-colors ${
+                                field.value?.includes(state.value)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background hover:bg-muted"
+                              }`}
+                              onClick={() => {
+                                const newValue = field.value?.includes(state.value)
+                                  ? field.value.filter((s: string) => s !== state.value)
+                                  : [...(field.value || []), state.value];
+                                field.onChange(newValue);
+                              }}
+                              data-testid={`toggle-license-state-${state.value}`}
+                            >
+                              {state.label}
+                            </div>
+                          ))}
+                        </div>
+                        <FormDescription>Select all states where you hold a contractor license</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
