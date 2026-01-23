@@ -5750,7 +5750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/comps/search", async (req, res) => {
     try {
-      const { address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng } = req.body;
+      const { address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng, radiusMiles } = req.body;
       
       // Validate required fields
       if (!city || !state || !sqft) {
@@ -5799,7 +5799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bathrooms: bathrooms || 2,
         sqft: sqft || 1500,
         propertyType: propertyType || undefined,
-        radiusMiles: 3,
+        radiusMiles: radiusMiles ?? 0.5, // Default to 0.5 miles for better comp quality
         saleDateRangeDays: 365, // Only sales within last year
         maxResults: 10,
         subjectLat: subjectLat || undefined,

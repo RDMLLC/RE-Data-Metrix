@@ -134,6 +134,8 @@ export default function Step3PurchaseRenovation({
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
+  type RadiusOption = 0.5 | 1 | 2 | 3;
+  const [searchRadius, setSearchRadius] = useState<RadiusOption>(0.5);
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
   
@@ -269,6 +271,7 @@ export default function Step3PurchaseRenovation({
         propertyType,
         subjectLat: propertyLatitude,
         subjectLng: propertyLongitude,
+        radiusMiles: searchRadius,
       });
 
       const data = await response.json();
@@ -613,7 +616,7 @@ export default function Step3PurchaseRenovation({
             <Collapsible open={showArvHelper} onOpenChange={setShowArvHelper}>
               <CollapsibleContent className="px-6 pb-4">
                 <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
                       <h4 className="font-semibold text-sm">Find Comparable Sales</h4>
                       <p className="text-xs text-muted-foreground">
@@ -625,7 +628,23 @@ export default function Step3PurchaseRenovation({
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Radius selector */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground" data-testid="label-radius">Radius:</span>
+                        {([0.5, 1, 2, 3] as RadiusOption[]).map((radius) => (
+                          <Button
+                            key={radius}
+                            type="button"
+                            size="sm"
+                            variant={searchRadius === radius ? "default" : "outline"}
+                            onClick={() => setSearchRadius(radius)}
+                            data-testid={`button-radius-${radius}`}
+                          >
+                            {radius === 0.5 ? "½" : radius} mi
+                          </Button>
+                        ))}
+                      </div>
                       <Button
                         type="button"
                         size="sm"
@@ -997,10 +1016,16 @@ export default function Step3PurchaseRenovation({
 
                   {/* No results message */}
                   {compsData && compsData.comps.length === 0 && (
-                    <div className="text-center py-6 text-muted-foreground">
+                    <div className="text-center py-6 text-muted-foreground" data-testid="text-no-comps-message">
                       <Home className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">{compsData.message || "No comparable sales found in this area."}</p>
-                      <p className="text-xs mt-1">Try adjusting the property details or search in a nearby area.</p>
+                      {searchRadius < 3 ? (
+                        <p className="text-xs mt-1">
+                          Try expanding the search radius to {searchRadius === 0.5 ? "1 mile" : searchRadius === 1 ? "2 miles" : "3 miles"} to find more comps.
+                        </p>
+                      ) : (
+                        <p className="text-xs mt-1">Try adjusting the property details or search in a nearby area.</p>
+                      )}
                     </div>
                   )}
                 </div>
