@@ -114,12 +114,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (err) {
           return res.status(500).json({ error: "Login failed" });
         }
-        res.json({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          referralCode: user.referralCode,
+        // Explicitly save session to ensure cookie is set before response
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('[Login] Session save failed:', saveErr);
+            return res.status(500).json({ error: "Login failed" });
+          }
+          res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            referralCode: user.referralCode,
+          });
         });
       });
     })(req, res, next);
@@ -146,12 +153,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('[Admin Login] Session creation failed:', err);
           return res.status(500).json({ error: "Login failed" });
         }
-        console.log('[Admin Login] Success for:', user.email, 'Session ID:', req.sessionID);
-        res.json({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
+        // Explicitly save session to ensure cookie is set before response
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('[Admin Login] Session save failed:', saveErr);
+            return res.status(500).json({ error: "Login failed" });
+          }
+          console.log('[Admin Login] Success for:', user.email, 'Session ID:', req.sessionID);
+          res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+          });
         });
       });
     })(req, res, next);
