@@ -471,25 +471,46 @@ export default function Step3PurchaseRenovation({
       const data = await response.json();
 
       if (data.comp) {
-        // Add the new comp to the existing comps list
+        const newComp = data.comp;
+        const newCompAddress = newComp.address.toLowerCase().trim();
+        
+        // Compute duplicate indices from current state snapshot (synchronous read)
+        const existingComps = compsData?.comps || [];
+        const duplicateIndices: number[] = [];
+        existingComps.forEach((comp, index) => {
+          if (comp.address.toLowerCase().trim() === newCompAddress) {
+            duplicateIndices.push(index);
+          }
+        });
+
+        // Add the new comp to the BEGINNING of the list (appears on top)
         setCompsData(prev => {
           if (!prev) {
             return {
-              comps: [data.comp],
+              comps: [newComp],
               suggestedArv: null,
             };
           }
           return {
             ...prev,
-            comps: [...prev.comps, data.comp],
+            comps: [newComp, ...prev.comps],
           };
         });
 
-        // Auto-select the new comp
+        // Update selection synchronously: select new comp (index 0), deselect duplicates
         setSelectedCompIndices(prev => {
-          const newSet = new Set(prev);
-          const newIndex = compsData ? compsData.comps.length : 0;
-          newSet.add(newIndex);
+          const newSet = new Set<number>();
+          // Add the new comp at index 0
+          newSet.add(0);
+          // Shift all existing selections by 1 (since new comp is at the beginning)
+          // But exclude any duplicates with the same address
+          prev.forEach(oldIndex => {
+            const shiftedIndex = oldIndex + 1;
+            // Only keep selection if it's not a duplicate of the new comp
+            if (!duplicateIndices.includes(oldIndex)) {
+              newSet.add(shiftedIndex);
+            }
+          });
           return newSet;
         });
 
@@ -499,7 +520,9 @@ export default function Step3PurchaseRenovation({
 
         toast({
           title: "Comp Added",
-          description: `${data.comp.address} has been added to your comps list.`,
+          description: duplicateIndices.length > 0
+            ? `${newComp.address} added. Older sale${duplicateIndices.length > 1 ? 's' : ''} for this address deselected.`
+            : `${newComp.address} has been added to your comps list.`,
         });
       }
     } catch (error: any) {
