@@ -356,7 +356,7 @@ export default function WholesaleCalculator() {
         // Recalculate closing costs based on the new buy price
         adjustedCosts = calculateDynamicClosingCosts(currentBuyPrice, propertyState);
       }
-      const reverseResult = calculateDoubleCloseWholesaleFeeFromBuyPrice(reverseInputs, adjustedCosts);
+      const reverseResult = calculateDoubleCloseWholesaleFeeFromBuyPrice(reverseInputs, adjustedCosts, fundingSource);
       adjustedWholesaleFee = reverseResult.calculatedWholesaleFee;
       adjustedClosingCosts = reverseResult.totalClosingCosts;
       adjustedLenderFee = reverseResult.lenderFee;
@@ -390,7 +390,7 @@ export default function WholesaleCalculator() {
           : undefined,
       },
     };
-  }, [buyPrice, buyPriceManuallySet, arv, rehabBudget, buyersMaxArvPercent, wholesaleFee, transactionType, assignmentResult, doubleCloseResult, propertyState, closingCosts, userEditedClosingCosts]);
+  }, [buyPrice, buyPriceManuallySet, arv, rehabBudget, buyersMaxArvPercent, wholesaleFee, transactionType, assignmentResult, doubleCloseResult, propertyState, closingCosts, userEditedClosingCosts, fundingSource]);
 
   // Reset buy price to calculated max offer
   const handleResetBuyPrice = () => {
@@ -1015,6 +1015,20 @@ export default function WholesaleCalculator() {
                           </span>
                         </div>
                       )}
+                      <div className="py-1">
+                        <Button
+                          type="button"
+                          variant={fundingSource === "own-cash" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setFundingSource(fundingSource === "own-cash" ? "transactional" : "own-cash")}
+                          className="text-xs"
+                          data-testid="button-toggle-funding-source"
+                        >
+                          {fundingSource === "own-cash" 
+                            ? "Using transactional funding" 
+                            : "I'm using my cash, or passthrough funding"}
+                        </Button>
+                      </div>
                     </>
                   )}
 

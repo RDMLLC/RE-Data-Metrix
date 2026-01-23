@@ -327,11 +327,13 @@ export interface ReverseDoubleCloseResult extends ReverseWholesaleResult {
 
 export function calculateDoubleCloseWholesaleFeeFromBuyPrice(
   inputs: ReverseWholesaleInputs,
-  closingCosts: DoubleCloseClosingCosts
+  closingCosts: DoubleCloseClosingCosts,
+  fundingSource: "transactional" | "own-cash" = "transactional"
 ): ReverseDoubleCloseResult {
   const buyersMaxPrice = inputs.arv * (inputs.buyersMaxArvPercent / 100);
   const totalClosingCosts = calculateTotalClosingCosts(closingCosts);
-  const lenderFee = calculateLenderFee(inputs.buyPrice);
+  // When using own cash or passthrough funding, no lender fee applies
+  const lenderFee = fundingSource === "own-cash" ? 0 : calculateLenderFee(inputs.buyPrice);
   const calculatedWholesaleFee = buyersMaxPrice - inputs.rehabBudget - inputs.buyPrice - totalClosingCosts - lenderFee;
   
   return {
