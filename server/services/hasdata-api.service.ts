@@ -878,6 +878,15 @@ export class HasDataAPIService implements IPropertyAPIService {
       const data = await response.json();
       const property = data.property || data;
 
+      // Log what we got back for debugging
+      console.log(`[Sale History] Response for ${address}:`, {
+        hasPriceHistory: !!property.priceHistory,
+        priceHistoryLength: property.priceHistory?.length || 0,
+        hasData: !!property.zpid || !!property.address,
+        zpid: property.zpid,
+        priceHistoryRaw: property.priceHistory?.slice(0, 3) // Log first 3 entries for debugging
+      });
+
       // Extract price history - looking for sale events
       const priceHistory = property.priceHistory || [];
       
