@@ -126,6 +126,8 @@ export default function Step3PurchaseRenovation({
   const bedrooms = form.watch("bedrooms") || 3;
   const bathrooms = form.watch("bathrooms") || 2;
   const sqft = form.watch("sqft") || 1500;
+  const yearBuilt = form.watch("yearBuilt");
+  const lotSize = form.watch("lotSize");
   const propertyType = form.watch("propertyType") || "";
   const propertyLatitude = form.watch("propertyLatitude");
   const propertyLongitude = form.watch("propertyLongitude");
@@ -812,6 +814,39 @@ export default function Step3PurchaseRenovation({
                   >
                     Get 7 Days Free
                   </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Property Details Bar - moved here from header */}
+            {address && (
+              <div className="mx-6 mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">{address}, {city}, {state} {zipCode}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  {bedrooms && bathrooms && (
+                    <span className="flex items-center gap-1">
+                      <Home className="h-3 w-3" />
+                      {bedrooms}/{bathrooms}
+                    </span>
+                  )}
+                  {sqft && (
+                    <span className="flex items-center gap-1">
+                      {sqft.toLocaleString()} sqft
+                    </span>
+                  )}
+                  {yearBuilt && (
+                    <span className="flex items-center gap-1">
+                      {yearBuilt}
+                    </span>
+                  )}
+                  {lotSize && (
+                    <span className="flex items-center gap-1">
+                      {lotSize.toLocaleString()} sqft lot
+                    </span>
+                  )}
                 </div>
               </div>
             )}

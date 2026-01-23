@@ -101,7 +101,8 @@ export default function WizardLayout({
             {stepTitles[currentStep - 1]}
           </h2>
           
-          {propertyAddress && currentStep > 1 && (
+          {/* Property details bar - hidden on step 3 where it's shown inline in the form */}
+          {propertyAddress && currentStep > 1 && currentStep !== 3 && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground bg-muted/50 rounded-md px-3 py-2 mt-2">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
