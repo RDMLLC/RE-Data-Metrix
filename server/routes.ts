@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
+import { HasDataAPIService } from "./services/hasdata-api.service";
 import { db } from "./db";
 import { eq, inArray, desc, and, sql, count, gt, or, ne } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
@@ -5840,6 +5841,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Comps search error:", error);
       res.status(500).json({ 
         error: error.message || "Failed to search for comparable sales" 
+      });
+    }
+  });
+
+  // Property Sale History Route - Fetches sale history from Zillow to detect flips
+  app.post("/api/property/sale-history", async (req, res) => {
+    try {
+      const { address, city, state, zipCode } = req.body;
+      
+      if (!address || !city || !state) {
+        return res.status(400).json({ 
+          error: "Address, city, and state are required" 
+        });
+      }
+
+      const hasDataService = new HasDataAPIService();
+      const result = await hasDataService.getPropertySaleHistory(address, city, state, zipCode || '');
+      
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Sale history error:", error);
+      res.status(500).json({ 
+        error: error.message || "Failed to fetch sale history" 
       });
     }
   });

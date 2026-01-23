@@ -2,6 +2,23 @@ import type { IPropertyAPIService, PropertyData } from "./property-api.interface
 
 const HASDATA_BASE_URL = "https://api.hasdata.com";
 
+// Interface for property sale history entry
+export interface PropertySaleEntry {
+  date: string;
+  price: number;
+  event: string; // 'sold', 'listed', etc.
+}
+
+// Interface for flip detection result
+export interface FlipDetectionResult {
+  isFlip: boolean;
+  sales: PropertySaleEntry[];
+  originalSale?: PropertySaleEntry;  // Earlier sale (pre-renovation)
+  flippedSale?: PropertySaleEntry;   // Later sale (post-renovation)
+  priceIncrease?: number;            // Dollar amount increase
+  priceIncreasePercent?: number;     // Percentage increase
+}
+
 // Interface for sold property comparables
 export interface SoldPropertyComp {
   address: string;
@@ -814,5 +831,108 @@ export class HasDataAPIService implements IPropertyAPIService {
     // Return whatever we found, even if less than minResults
     console.log(`[Comps Search] Exhausted all search configs, returning best available`);
     return [];
+  }
+
+  /**
+   * Fetch property sale history from Zillow to detect flip properties
+   * A flip is detected when the same property sold 2+ times within 12 months
+   */
+  async getPropertySaleHistory(
+    address: string,
+    city: string,
+    state: string,
+    zipCode: string
+  ): Promise<FlipDetectionResult> {
+    try {
+      if (!this.apiKey) {
+        return { isFlip: false, sales: [] };
+      }
+
+      // Build a Zillow search URL from the address
+      // Format: street-address-city-state-zip
+      const formattedAddress = address
+        .toLowerCase()
+        .replace(/[#.,]/g, '')
+        .replace(/\s+/g, '-');
+      const formattedCity = city.toLowerCase().replace(/\s+/g, '-');
+      const zillowUrl = `https://www.zillow.com/homedetails/${formattedAddress}-${formattedCity}-${state.toLowerCase()}-${zipCode}`;
+
+      console.log(`[Sale History] Fetching from Zillow: ${zillowUrl}`);
+
+      const endpoint = `${this.baseUrl}/scrape/zillow/property`;
+      const params = new URLSearchParams({ url: zillowUrl });
+
+      const response = await fetch(`${endpoint}?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "x-api-key": this.apiKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        console.log(`[Sale History] API returned ${response.status}`);
+        return { isFlip: false, sales: [] };
+      }
+
+      const data = await response.json();
+      const property = data.property || data;
+
+      // Extract price history - looking for sale events
+      const priceHistory = property.priceHistory || [];
+      
+      // Filter for actual sales (not listings)
+      const sales: PropertySaleEntry[] = priceHistory
+        .filter((entry: any) => {
+          const event = (entry.event || '').toLowerCase();
+          return event === 'sold' || event.includes('sold');
+        })
+        .map((entry: any) => ({
+          date: entry.date || '',
+          price: this.parseNumber(entry.price) || 0,
+          event: entry.event || 'sold',
+        }))
+        .filter((sale: PropertySaleEntry) => sale.price > 0 && sale.date)
+        .sort((a: PropertySaleEntry, b: PropertySaleEntry) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+      console.log(`[Sale History] Found ${sales.length} sale(s) for ${address}`);
+
+      // Detect flip: 2+ sales within 12 months
+      if (sales.length >= 2) {
+        // Check the two most recent sales
+        const recentSales = sales.slice(-2);
+        const [firstSale, secondSale] = recentSales;
+        
+        const firstDate = new Date(firstSale.date);
+        const secondDate = new Date(secondSale.date);
+        const monthsDiff = Math.abs(
+          (secondDate.getFullYear() - firstDate.getFullYear()) * 12 +
+          (secondDate.getMonth() - firstDate.getMonth())
+        );
+
+        if (monthsDiff <= 12) {
+          const priceIncrease = secondSale.price - firstSale.price;
+          const priceIncreasePercent = (priceIncrease / firstSale.price) * 100;
+
+          console.log(`[Sale History] FLIP DETECTED: $${firstSale.price.toLocaleString()} -> $${secondSale.price.toLocaleString()} (${monthsDiff} months)`);
+
+          return {
+            isFlip: true,
+            sales,
+            originalSale: firstSale,
+            flippedSale: secondSale,
+            priceIncrease,
+            priceIncreasePercent,
+          };
+        }
+      }
+
+      return { isFlip: false, sales };
+    } catch (error) {
+      console.error(`[Sale History] Error fetching for ${address}:`, error);
+      return { isFlip: false, sales: [] };
+    }
   }
 }
