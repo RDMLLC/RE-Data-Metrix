@@ -147,19 +147,6 @@ export default function Step3PurchaseRenovation({
   const [isAddingCustomComp, setIsAddingCustomComp] = useState(false);
   const [customCompError, setCustomCompError] = useState<string | null>(null);
   
-  // Flip detection state - tracks which comps are flipped properties
-  interface FlipData {
-    isFlip: boolean;
-    originalPrice?: number;
-    originalDate?: string;
-    flippedPrice?: number;
-    flippedDate?: string;
-    priceIncrease?: number;
-    priceIncreasePercent?: number;
-    isLoading?: boolean;
-  }
-  const [flipDataByAddress, setFlipDataByAddress] = useState<Record<string, FlipData>>({});
-  
   // Comps sorting state
   type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
   type SortDirection = "asc" | "desc";
@@ -286,10 +273,9 @@ export default function Step3PurchaseRenovation({
   };
 
   // Calculate ARV based on selected comps only
-  // Uses flip-corrected prices when flip detection data is available
   // Only includes comps that are BOTH selected AND visible (pass date filter)
   const calculateSelectedArv = () => {
-    if (!compsData || compsData.comps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0, flipsUsed: 0 };
+    if (!compsData || compsData.comps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0 };
     
     // Get the set of currently visible original indices (those passing date filter)
     const visibleOriginalIndices = new Set(sortedCompsWithIndices.map(item => item.originalIndex));
@@ -298,27 +284,15 @@ export default function Step3PurchaseRenovation({
     const selectedComps = compsData.comps.filter((_, index) => 
       selectedCompIndices.has(index) && visibleOriginalIndices.has(index)
     );
-    if (selectedComps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0, flipsUsed: 0 };
+    if (selectedComps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0 };
 
     // Weighted average: total sale prices / total sqft * subject sqft
-    // Use flip-corrected prices when available
-    let flipsUsed = 0;
-    const totalSalePrice = selectedComps.reduce((sum, comp) => {
-      const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-      const flipData = flipDataByAddress[addressKey];
-      
-      // If flip detected and we have the flipped price, use it
-      if (flipData?.isFlip && flipData.flippedPrice) {
-        flipsUsed++;
-        return sum + flipData.flippedPrice;
-      }
-      return sum + comp.salePrice;
-    }, 0);
+    const totalSalePrice = selectedComps.reduce((sum, comp) => sum + comp.salePrice, 0);
     const totalSqft = selectedComps.reduce((sum, comp) => sum + comp.sqft, 0);
     const avgPricePerSqft = Math.round(totalSalePrice / totalSqft);
     const calculatedArv = Math.round(avgPricePerSqft * sqft);
 
-    return { arv: calculatedArv, avgPricePerSqft, count: selectedComps.length, flipsUsed };
+    return { arv: calculatedArv, avgPricePerSqft, count: selectedComps.length };
   };
 
   const selectedArvData = calculateSelectedArv();
@@ -337,8 +311,6 @@ export default function Step3PurchaseRenovation({
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
-    setFlipDataByAddress({}); // Clear flip data for new search
-
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
         address,
@@ -398,7 +370,6 @@ export default function Step3PurchaseRenovation({
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
-    setFlipDataByAddress({});
 
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
@@ -564,60 +535,6 @@ export default function Step3PurchaseRenovation({
       form.setValue("arv", form.getValues("estimatedValue"));
     }
   }, [form]);
-
-  // Fetch flip detection data for all comps when they're loaded
-  useEffect(() => {
-    if (!compsData?.comps?.length) return;
-    
-    const fetchFlipData = async (comp: SoldPropertyComp) => {
-      const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-      
-      // Skip if we already have data for this address
-      if (flipDataByAddress[addressKey] && !flipDataByAddress[addressKey].isLoading) {
-        return;
-      }
-      
-      // Mark as loading
-      setFlipDataByAddress(prev => ({
-        ...prev,
-        [addressKey]: { isFlip: false, isLoading: true }
-      }));
-      
-      try {
-        const response = await apiRequest("POST", "/api/property/sale-history", {
-          address: comp.address,
-          city: comp.city,
-          state: comp.state,
-          zipCode: comp.zipCode,
-        });
-        
-        const data = await response.json();
-        
-        setFlipDataByAddress(prev => ({
-          ...prev,
-          [addressKey]: {
-            isFlip: data.isFlip,
-            originalPrice: data.originalSale?.price,
-            originalDate: data.originalSale?.date,
-            flippedPrice: data.flippedSale?.price,
-            flippedDate: data.flippedSale?.date,
-            priceIncrease: data.priceIncrease,
-            priceIncreasePercent: data.priceIncreasePercent,
-            isLoading: false,
-          }
-        }));
-      } catch (error) {
-        console.error("Error fetching flip data for", addressKey, error);
-        setFlipDataByAddress(prev => ({
-          ...prev,
-          [addressKey]: { isFlip: false, isLoading: false }
-        }));
-      }
-    };
-    
-    // Fetch flip data for all comps in parallel
-    compsData.comps.forEach(comp => fetchFlipData(comp));
-  }, [compsData]);
 
   const handleSubmit = form.handleSubmit(() => {
     const projectLength = form.getValues("projectLength");
@@ -1240,61 +1157,16 @@ export default function Step3PurchaseRenovation({
                                   )}
                                 </TableCell>
                                 <TableCell className="font-medium text-sm">
-                                  <div className="flex items-center gap-2">
-                                    <span>{comp.address}</span>
-                                    {(() => {
-                                      const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-                                      const flipData = flipDataByAddress[addressKey];
-                                      if (flipData?.isLoading) {
-                                        return <span className="text-xs text-muted-foreground animate-pulse">Checking...</span>;
-                                      }
-                                      if (flipData?.isFlip) {
-                                        return (
-                                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
-                                            🔄 Flip
-                                          </Badge>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
+                                  <div>{comp.address}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {comp.city}, {comp.state}
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-right font-semibold text-primary">
-                                  {(() => {
-                                    const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-                                    const flipData = flipDataByAddress[addressKey];
-                                    if (flipData?.isFlip && flipData.flippedPrice) {
-                                      return (
-                                        <div>
-                                          <span>{formatCurrency(flipData.flippedPrice)}</span>
-                                          <div className="text-xs text-muted-foreground line-through">
-                                            {formatCurrency(comp.salePrice)}
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    return formatCurrency(comp.salePrice);
-                                  })()}
+                                  {formatCurrency(comp.salePrice)}
                                 </TableCell>
                                 <TableCell className="text-right text-sm text-muted-foreground">
-                                  {(() => {
-                                    const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-                                    const flipData = flipDataByAddress[addressKey];
-                                    if (flipData?.isFlip && flipData.flippedDate) {
-                                      return (
-                                        <div>
-                                          <span>{formatDate(flipData.flippedDate)}</span>
-                                          <div className="text-xs line-through">
-                                            {formatDate(comp.saleDate)}
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    return formatDate(comp.saleDate);
-                                  })()}
+                                  {formatDate(comp.saleDate)}
                                 </TableCell>
                                 <TableCell className="text-center text-sm">
                                   {comp.bedrooms}/{comp.bathrooms}
@@ -1303,22 +1175,7 @@ export default function Step3PurchaseRenovation({
                                   {comp.sqft.toLocaleString()}
                                 </TableCell>
                                 <TableCell className="text-right text-sm">
-                                  {(() => {
-                                    const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-                                    const flipData = flipDataByAddress[addressKey];
-                                    if (flipData?.isFlip && flipData.flippedPrice && comp.sqft) {
-                                      const correctedPricePerSqft = Math.round(flipData.flippedPrice / comp.sqft);
-                                      return (
-                                        <div>
-                                          <span>${correctedPricePerSqft}</span>
-                                          <div className="text-xs text-muted-foreground line-through">
-                                            ${comp.pricePerSqft}
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    return `$${comp.pricePerSqft}`;
-                                  })()}
+                                  ${comp.pricePerSqft}
                                 </TableCell>
                                 <TableCell className="text-right text-sm text-muted-foreground">
                                   {comp.distanceFromSubject !== undefined 
@@ -1329,41 +1186,6 @@ export default function Step3PurchaseRenovation({
                               {expandedCompIndex === originalIndex && (
                                 <TableRow key={`${originalIndex}-details`}>
                                   <TableCell colSpan={9} className="bg-muted/50 p-4">
-                                    {/* Flip property banner */}
-                                    {(() => {
-                                      const addressKey = `${comp.address}-${comp.city}-${comp.state}`;
-                                      const flipData = flipDataByAddress[addressKey];
-                                      if (flipData?.isFlip) {
-                                        return (
-                                          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
-                                            <div className="flex items-center gap-2 mb-2">
-                                              <Badge className="bg-amber-500 text-white">🔄 Flip Property Detected</Badge>
-                                            </div>
-                                            <div className="text-sm">
-                                              <span className="text-muted-foreground">Pre-renovation sale:</span>{' '}
-                                              <span className="font-medium">{formatCurrency(flipData.originalPrice || 0)}</span>
-                                              <span className="text-muted-foreground"> on </span>
-                                              <span>{formatDate(flipData.originalDate || '')}</span>
-                                            </div>
-                                            <div className="text-sm">
-                                              <span className="text-muted-foreground">Post-renovation sale:</span>{' '}
-                                              <span className="font-semibold text-primary">{formatCurrency(flipData.flippedPrice || 0)}</span>
-                                              <span className="text-muted-foreground"> on </span>
-                                              <span>{formatDate(flipData.flippedDate || '')}</span>
-                                              {flipData.priceIncreasePercent !== undefined && (
-                                                <span className="ml-2 text-green-600 dark:text-green-400">
-                                                  (+{flipData.priceIncreasePercent.toFixed(0)}%)
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground mt-1">
-                                              Using post-renovation price for ARV calculation
-                                            </div>
-                                          </div>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                                       <div>
                                         <span className="text-muted-foreground">Sale Date:</span>
@@ -1423,11 +1245,6 @@ export default function Step3PurchaseRenovation({
                           <div>
                             <div className="text-sm text-muted-foreground">
                               Based on {selectedArvData.count} comparable sale{selectedArvData.count !== 1 ? 's' : ''}
-                              {selectedArvData.flipsUsed > 0 && (
-                                <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
-                                  {selectedArvData.flipsUsed} flip{selectedArvData.flipsUsed !== 1 ? 's' : ''} corrected
-                                </Badge>
-                              )}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
                               Weighted Avg: ${selectedArvData.avgPricePerSqft || 0}/sqft × {sqft.toLocaleString()} sqft

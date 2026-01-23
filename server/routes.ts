@@ -5845,29 +5845,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Property Sale History Route - Fetches sale history from Zillow to detect flips
-  app.post("/api/property/sale-history", async (req, res) => {
-    try {
-      const { address, city, state, zipCode } = req.body;
-      
-      if (!address || !city || !state) {
-        return res.status(400).json({ 
-          error: "Address, city, and state are required" 
-        });
-      }
-
-      const hasDataService = new HasDataAPIService();
-      const result = await hasDataService.getPropertySaleHistory(address, city, state, zipCode || '');
-      
-      return res.json(result);
-    } catch (error: any) {
-      console.error("Sale history error:", error);
-      res.status(500).json({ 
-        error: error.message || "Failed to fetch sale history" 
-      });
-    }
-  });
-
   // Fetch Comp from Zillow URL - allows users to manually add a comp via Zillow link
   app.post("/api/comps/fetch-from-url", async (req, res) => {
     try {
