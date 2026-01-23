@@ -766,6 +766,17 @@ export default function Step3PurchaseRenovation({
                           >
                             Last 9 Months
                           </Button>
+                          {compsDateFilter !== "all" && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCompsDateFilter("all")}
+                              data-testid="button-filter-all"
+                            >
+                              Show All
+                            </Button>
+                          )}
                           {compsDateFilter !== "all" && sortedCompsWithIndices.length === 0 && (
                             <span className="text-sm text-amber-600">
                               No comps in selected range - try a longer timeframe
