@@ -142,15 +142,31 @@ export default function Step3PurchaseRenovation({
   type SortDirection = "asc" | "desc";
   const [compsSortField, setCompsSortField] = useState<SortField>("distance");
   const [compsSortDirection, setCompsSortDirection] = useState<SortDirection>("asc");
+  const [filterLast6Months, setFilterLast6Months] = useState(false);
   
-  // Sorted comps with original indices preserved for selection tracking
+  // Calculate 6 months ago date
+  const sixMonthsAgo = useMemo(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 6);
+    return date.getTime();
+  }, []);
+  
+  // Filtered and sorted comps with original indices preserved for selection tracking
   const sortedCompsWithIndices = useMemo(() => {
     if (!compsData || !compsData.comps.length) return [];
     
-    const compsWithIndices = compsData.comps.map((comp, originalIndex) => ({
+    let compsWithIndices = compsData.comps.map((comp, originalIndex) => ({
       comp,
       originalIndex
     }));
+    
+    // Apply 6-month filter if enabled
+    if (filterLast6Months) {
+      compsWithIndices = compsWithIndices.filter(({ comp }) => {
+        const saleDate = new Date(comp.saleDate).getTime();
+        return saleDate >= sixMonthsAgo;
+      });
+    }
     
     return compsWithIndices.sort((a, b) => {
       let aVal: number, bVal: number;
@@ -190,7 +206,7 @@ export default function Step3PurchaseRenovation({
       
       return compsSortDirection === "asc" ? diff : -diff;
     });
-  }, [compsData, compsSortField, compsSortDirection]);
+  }, [compsData, compsSortField, compsSortDirection, filterLast6Months, sixMonthsAgo]);
   
   // Toggle sort - if same field, toggle direction; if different field, set new field with default direction
   const toggleSort = (field: SortField) => {
@@ -705,6 +721,27 @@ export default function Step3PurchaseRenovation({
                   {/* Comps Results */}
                   {compsData && compsData.comps.length > 0 && (
                     <div className="space-y-3">
+                      {/* Filter controls */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={filterLast6Months ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFilterLast6Months(!filterLast6Months)}
+                            data-testid="button-filter-6-months"
+                          >
+                            Last 6 Months
+                          </Button>
+                          {filterLast6Months && sortedCompsWithIndices.length === 0 && (
+                            <span className="text-sm text-amber-600">
+                              No comps in last 6 months - try disabling filter
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          Showing {sortedCompsWithIndices.length} of {compsData.comps.length} comps
+                        </span>
+                      </div>
                       <Table>
                         <TableHeader>
                           <TableRow>
