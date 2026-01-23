@@ -39,8 +39,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -136,6 +136,72 @@ export default function Step3PurchaseRenovation({
   const [compsError, setCompsError] = useState<string | null>(null);
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
+  
+  // Comps sorting state
+  type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
+  type SortDirection = "asc" | "desc";
+  const [compsSortField, setCompsSortField] = useState<SortField>("distance");
+  const [compsSortDirection, setCompsSortDirection] = useState<SortDirection>("asc");
+  
+  // Sorted comps with original indices preserved for selection tracking
+  const sortedCompsWithIndices = useMemo(() => {
+    if (!compsData || !compsData.comps.length) return [];
+    
+    const compsWithIndices = compsData.comps.map((comp, originalIndex) => ({
+      comp,
+      originalIndex
+    }));
+    
+    return compsWithIndices.sort((a, b) => {
+      let aVal: number, bVal: number;
+      
+      switch (compsSortField) {
+        case "salePrice":
+          aVal = a.comp.salePrice;
+          bVal = b.comp.salePrice;
+          break;
+        case "saleDate":
+          aVal = new Date(a.comp.saleDate).getTime();
+          bVal = new Date(b.comp.saleDate).getTime();
+          break;
+        case "pricePerSqft":
+          aVal = a.comp.pricePerSqft;
+          bVal = b.comp.pricePerSqft;
+          break;
+        case "sqft":
+          aVal = a.comp.sqft;
+          bVal = b.comp.sqft;
+          break;
+        case "distance":
+        default:
+          aVal = a.comp.distanceFromSubject ?? 999;
+          bVal = b.comp.distanceFromSubject ?? 999;
+          break;
+      }
+      
+      let diff = aVal - bVal;
+      
+      // Secondary sort by sale date (most recent first) when primary values are equal
+      if (diff === 0) {
+        const aDate = new Date(a.comp.saleDate).getTime();
+        const bDate = new Date(b.comp.saleDate).getTime();
+        diff = bDate - aDate; // Most recent first
+      }
+      
+      return compsSortDirection === "asc" ? diff : -diff;
+    });
+  }, [compsData, compsSortField, compsSortDirection]);
+  
+  // Toggle sort - if same field, toggle direction; if different field, set new field with default direction
+  const toggleSort = (field: SortField) => {
+    if (compsSortField === field) {
+      setCompsSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setCompsSortField(field);
+      // Default directions: distance asc, others desc (most recent, highest price first)
+      setCompsSortDirection(field === "distance" ? "asc" : "desc");
+    }
+  };
 
   // Calculate ARV based on selected comps only
   const calculateSelectedArv = () => {
@@ -645,41 +711,107 @@ export default function Step3PurchaseRenovation({
                             <TableHead className="w-10"></TableHead>
                             <TableHead className="w-8"></TableHead>
                             <TableHead>Address</TableHead>
-                            <TableHead className="text-right">Sale Price</TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer select-none hover:bg-muted/50"
+                              onClick={() => toggleSort("salePrice")}
+                              data-testid="sort-sale-price"
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                Sale Price
+                                {compsSortField === "salePrice" ? (
+                                  compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer select-none hover:bg-muted/50"
+                              onClick={() => toggleSort("saleDate")}
+                              data-testid="sort-sale-date"
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                Sold
+                                {compsSortField === "saleDate" ? (
+                                  compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                            </TableHead>
                             <TableHead className="text-center">Bed/Bath</TableHead>
-                            <TableHead className="text-right">Sqft</TableHead>
-                            <TableHead className="text-right">$/Sqft</TableHead>
-                            <TableHead className="text-right">Distance</TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer select-none hover:bg-muted/50"
+                              onClick={() => toggleSort("sqft")}
+                              data-testid="sort-sqft"
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                Sqft
+                                {compsSortField === "sqft" ? (
+                                  compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer select-none hover:bg-muted/50"
+                              onClick={() => toggleSort("pricePerSqft")}
+                              data-testid="sort-price-per-sqft"
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                $/Sqft
+                                {compsSortField === "pricePerSqft" ? (
+                                  compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                            </TableHead>
+                            <TableHead 
+                              className="text-right cursor-pointer select-none hover:bg-muted/50"
+                              onClick={() => toggleSort("distance")}
+                              data-testid="sort-distance"
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                Distance
+                                {compsSortField === "distance" ? (
+                                  compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {compsData.comps.map((comp, index) => (
+                          {sortedCompsWithIndices.map(({ comp, originalIndex }) => (
                             <>
                               <TableRow 
-                                key={index}
+                                key={originalIndex}
                                 className="cursor-pointer hover-elevate"
-                                onClick={() => setExpandedCompIndex(expandedCompIndex === index ? null : index)}
-                                data-testid={`row-comp-${index}`}
+                                onClick={() => setExpandedCompIndex(expandedCompIndex === originalIndex ? null : originalIndex)}
+                                data-testid={`row-comp-${originalIndex}`}
                               >
                                 <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
                                   <Checkbox
-                                    checked={selectedCompIndices.has(index)}
+                                    checked={selectedCompIndices.has(originalIndex)}
                                     onCheckedChange={() => {
                                       setSelectedCompIndices(prev => {
                                         const newSet = new Set(prev);
-                                        if (newSet.has(index)) {
-                                          newSet.delete(index);
+                                        if (newSet.has(originalIndex)) {
+                                          newSet.delete(originalIndex);
                                         } else {
-                                          newSet.add(index);
+                                          newSet.add(originalIndex);
                                         }
                                         return newSet;
                                       });
                                     }}
-                                    data-testid={`checkbox-comp-${index}`}
+                                    data-testid={`checkbox-comp-${originalIndex}`}
                                   />
                                 </TableCell>
                                 <TableCell className="w-8">
-                                  {expandedCompIndex === index ? (
+                                  {expandedCompIndex === originalIndex ? (
                                     <ChevronUp className="h-4 w-4" />
                                   ) : (
                                     <ChevronDown className="h-4 w-4" />
@@ -693,6 +825,9 @@ export default function Step3PurchaseRenovation({
                                 </TableCell>
                                 <TableCell className="text-right font-semibold text-primary">
                                   {formatCurrency(comp.salePrice)}
+                                </TableCell>
+                                <TableCell className="text-right text-sm text-muted-foreground">
+                                  {formatDate(comp.saleDate)}
                                 </TableCell>
                                 <TableCell className="text-center text-sm">
                                   {comp.bedrooms}/{comp.bathrooms}
@@ -709,9 +844,9 @@ export default function Step3PurchaseRenovation({
                                     : '—'}
                                 </TableCell>
                               </TableRow>
-                              {expandedCompIndex === index && (
-                                <TableRow key={`${index}-details`}>
-                                  <TableCell colSpan={8} className="bg-muted/50 p-4">
+                              {expandedCompIndex === originalIndex && (
+                                <TableRow key={`${originalIndex}-details`}>
+                                  <TableCell colSpan={9} className="bg-muted/50 p-4">
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                                       <div>
                                         <span className="text-muted-foreground">Sale Date:</span>
@@ -749,7 +884,7 @@ export default function Step3PurchaseRenovation({
                                             target="_blank" 
                                             rel="noopener noreferrer"
                                             className="text-primary hover:underline inline-flex items-center gap-1"
-                                            data-testid={`link-comp-zillow-${index}`}
+                                            data-testid={`link-comp-zillow-${originalIndex}`}
                                           >
                                             View Property
                                             <ExternalLink className="h-3 w-3" />
