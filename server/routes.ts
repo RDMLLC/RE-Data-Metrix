@@ -160,6 +160,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(500).json({ error: "Login failed" });
           }
           console.log('[Admin Login] Success for:', user.email, 'Session ID:', req.sessionID);
+          console.log('[Admin Login] Cookie settings:', {
+            sameSite: req.session.cookie.sameSite,
+            secure: req.session.cookie.secure,
+            httpOnly: req.session.cookie.httpOnly,
+            domain: req.session.cookie.domain,
+            path: req.session.cookie.path
+          });
           res.json({
             id: user.id,
             username: user.username,
