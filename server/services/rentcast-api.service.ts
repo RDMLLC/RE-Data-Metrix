@@ -1003,10 +1003,22 @@ export class RentCastAPIService implements IPropertyAPIService {
         return 0;
       });
 
-      // Limit results
-      const limitedComps = comps.slice(0, maxResults);
+      // Deduplicate by address - keep only the most recent sale for each property
+      // This eliminates older sales for flipped properties
+      const seenAddresses = new Set<string>();
+      const deduplicatedComps = comps.filter(comp => {
+        const normalizedAddress = comp.address.toLowerCase().trim();
+        if (seenAddresses.has(normalizedAddress)) {
+          return false; // Skip duplicate address (older sale)
+        }
+        seenAddresses.add(normalizedAddress);
+        return true;
+      });
 
-      console.log(`[RentCast Comps] Returning ${limitedComps.length} comps after filtering`);
+      // Limit results
+      const limitedComps = deduplicatedComps.slice(0, maxResults);
+
+      console.log(`[RentCast Comps] Returning ${limitedComps.length} comps (${comps.length} total, ${deduplicatedComps.length} after dedup)`);
 
       return {
         comps: limitedComps,
