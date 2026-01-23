@@ -113,17 +113,18 @@ export default function Webinar() {
               </Button>
             </div>
 
-            {/* Video Placeholder */}
-            <div className="hidden lg:block">
-              <div className="aspect-video bg-black/20 rounded-xl border border-white/10 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/50 to-primary/80" />
-                <div className="relative text-center z-10">
-                  <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                    <Play className="h-10 w-10 text-accent ml-1" />
-                  </div>
-                  <p className="text-white/80 text-lg">Platform Overview Video</p>
-                  <p className="text-white/60 text-sm mt-1">Coming Soon</p>
-                </div>
+            {/* YouTube Video */}
+            <div>
+              <div className="aspect-video rounded-xl border border-white/10 overflow-hidden shadow-2xl">
+                <iframe
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/z9qAazJhWhI"
+                  title="RE Data Metrix Platform Overview"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  data-testid="video-platform-overview"
+                />
               </div>
             </div>
           </div>
