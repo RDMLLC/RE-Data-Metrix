@@ -750,6 +750,27 @@ export default function Step3PurchaseRenovation({
               </CardDescription>
             </CardHeader>
 
+            {/* PropStream Affiliate Promotion - shown at top when comps are found */}
+            {compsData && compsData.comps.length > 0 && (
+              <div className="mx-6 mb-4 p-3 bg-muted/50 rounded-md border border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Our quick comps search is perfect for initial analysis. For full MLS data, skip tracing, and the tools top investors rely on, try PropStream — trusted by over 100,000 real estate professionals.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="default"
+                    className="shrink-0"
+                    onClick={() => window.open("https://trial.propstreampro.com/redatametrix/", "_blank")}
+                    data-testid="button-propstream-trial"
+                  >
+                    Get 7 Days Free
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Help with ARV Collapsible Section */}
             <Collapsible open={showArvHelper} onOpenChange={setShowArvHelper}>
               <CollapsibleContent className="px-6 pb-4">
@@ -887,26 +908,6 @@ export default function Step3PurchaseRenovation({
                     </div>
                   )}
 
-                  {/* PropStream Affiliate Promotion - shown above comps */}
-                  {compsData && compsData.comps.length > 0 && (
-                    <div className="p-3 bg-muted/50 rounded-md border border-border">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Our quick comps search is perfect for initial analysis. For full MLS data, skip tracing, and the tools top investors rely on, try PropStream — trusted by over 100,000 real estate professionals.
-                        </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="default"
-                          className="shrink-0"
-                          onClick={() => window.open("https://trial.propstreampro.com/redatametrix/", "_blank")}
-                          data-testid="button-propstream-trial"
-                        >
-                          Get 7 Days Free
-                        </Button>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Comps Results */}
                   {compsData && compsData.comps.length > 0 && (
