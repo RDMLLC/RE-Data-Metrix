@@ -172,6 +172,39 @@ export default function Step3PurchaseRenovation({
     return date.getTime();
   }, [compsDateFilter]);
   
+  // Detect outliers based on $/sqft - properties with extreme values are likely data errors
+  // Uses 5x median threshold to identify obvious anomalies (multi-parcel sales, data glitches)
+  const outlierDetection = useMemo(() => {
+    if (!compsData || compsData.comps.length < 2) {
+      return { outlierIndices: new Set<number>(), excludedComps: [] as { comp: SoldPropertyComp; originalIndex: number; reason: string }[] };
+    }
+    
+    // Calculate median $/sqft from all comps
+    const pricesPerSqft = compsData.comps.map(comp => comp.pricePerSqft).sort((a, b) => a - b);
+    const midIndex = Math.floor(pricesPerSqft.length / 2);
+    const medianPricePerSqft = pricesPerSqft.length % 2 === 0
+      ? (pricesPerSqft[midIndex - 1] + pricesPerSqft[midIndex]) / 2
+      : pricesPerSqft[midIndex];
+    
+    // Identify outliers: $/sqft > 5x median (obvious data errors like multi-parcel sales)
+    const outlierThreshold = medianPricePerSqft * 5;
+    const outlierIndices = new Set<number>();
+    const excludedComps: { comp: SoldPropertyComp; originalIndex: number; reason: string }[] = [];
+    
+    compsData.comps.forEach((comp, index) => {
+      if (comp.pricePerSqft > outlierThreshold) {
+        outlierIndices.add(index);
+        excludedComps.push({
+          comp,
+          originalIndex: index,
+          reason: `$${comp.pricePerSqft.toLocaleString()}/sqft exceeds normal range (median: $${Math.round(medianPricePerSqft).toLocaleString()}/sqft)`
+        });
+      }
+    });
+    
+    return { outlierIndices, excludedComps, medianPricePerSqft };
+  }, [compsData]);
+
   // Filtered and sorted comps with original indices preserved for selection tracking
   const sortedCompsWithIndices = useMemo(() => {
     if (!compsData || !compsData.comps.length) return [];
@@ -180,6 +213,11 @@ export default function Step3PurchaseRenovation({
       comp,
       originalIndex
     }));
+    
+    // Filter out outliers first
+    compsWithIndices = compsWithIndices.filter(({ originalIndex }) => 
+      !outlierDetection.outlierIndices.has(originalIndex)
+    );
     
     // Apply date filter if not "all"
     if (compsDateFilter !== "all") {
@@ -227,7 +265,7 @@ export default function Step3PurchaseRenovation({
       
       return compsSortDirection === "asc" ? diff : -diff;
     });
-  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate]);
+  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate, outlierDetection]);
   
   // Toggle sort - if same field, toggle direction; if different field, set new field with default direction
   const toggleSort = (field: SortField) => {
@@ -242,10 +280,17 @@ export default function Step3PurchaseRenovation({
 
   // Calculate ARV based on selected comps only
   // Uses flip-corrected prices when flip detection data is available
+  // Only includes comps that are BOTH selected AND visible (pass date filter)
   const calculateSelectedArv = () => {
     if (!compsData || compsData.comps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0, flipsUsed: 0 };
     
-    const selectedComps = compsData.comps.filter((_, index) => selectedCompIndices.has(index));
+    // Get the set of currently visible original indices (those passing date filter)
+    const visibleOriginalIndices = new Set(sortedCompsWithIndices.map(item => item.originalIndex));
+    
+    // Only include comps that are BOTH selected AND visible
+    const selectedComps = compsData.comps.filter((_, index) => 
+      selectedCompIndices.has(index) && visibleOriginalIndices.has(index)
+    );
     if (selectedComps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0, flipsUsed: 0 };
 
     // Weighted average: total sale prices / total sqft * subject sqft
@@ -923,9 +968,20 @@ export default function Step3PurchaseRenovation({
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          Showing {sortedCompsWithIndices.length} of {compsData.comps.length} comps
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-sm text-muted-foreground">
+                            Showing {sortedCompsWithIndices.length} of {compsData.comps.length} comps
+                            {outlierDetection.excludedComps.length > 0 && (
+                              <span className="text-amber-600"> ({outlierDetection.excludedComps.length} excluded)</span>
+                            )}
+                          </span>
+                          {outlierDetection.excludedComps.length > 0 && (
+                            <span className="text-xs text-amber-600" data-testid="text-outliers-excluded">
+                              Data anomaly: {outlierDetection.excludedComps[0].comp.address.split(',')[0]}
+                              {outlierDetection.excludedComps.length > 1 && ` +${outlierDetection.excludedComps.length - 1} more`}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <Table>
                         <TableHeader>
