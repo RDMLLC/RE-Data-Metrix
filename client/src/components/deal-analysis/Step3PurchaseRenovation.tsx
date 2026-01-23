@@ -142,14 +142,19 @@ export default function Step3PurchaseRenovation({
   type SortDirection = "asc" | "desc";
   const [compsSortField, setCompsSortField] = useState<SortField>("distance");
   const [compsSortDirection, setCompsSortDirection] = useState<SortDirection>("asc");
-  const [filterLast6Months, setFilterLast6Months] = useState(false);
+  type DateFilter = "all" | "6" | "9";
+  const [compsDateFilter, setCompsDateFilter] = useState<DateFilter>("all");
   
-  // Calculate 6 months ago date
-  const sixMonthsAgo = useMemo(() => {
+  // Calculate filter cutoff dates
+  const filterCutoffDate = useMemo(() => {
     const date = new Date();
-    date.setMonth(date.getMonth() - 6);
+    if (compsDateFilter === "6") {
+      date.setMonth(date.getMonth() - 6);
+    } else if (compsDateFilter === "9") {
+      date.setMonth(date.getMonth() - 9);
+    }
     return date.getTime();
-  }, []);
+  }, [compsDateFilter]);
   
   // Filtered and sorted comps with original indices preserved for selection tracking
   const sortedCompsWithIndices = useMemo(() => {
@@ -160,11 +165,11 @@ export default function Step3PurchaseRenovation({
       originalIndex
     }));
     
-    // Apply 6-month filter if enabled
-    if (filterLast6Months) {
+    // Apply date filter if not "all"
+    if (compsDateFilter !== "all") {
       compsWithIndices = compsWithIndices.filter(({ comp }) => {
         const saleDate = new Date(comp.saleDate).getTime();
-        return saleDate >= sixMonthsAgo;
+        return saleDate >= filterCutoffDate;
       });
     }
     
@@ -206,7 +211,7 @@ export default function Step3PurchaseRenovation({
       
       return compsSortDirection === "asc" ? diff : -diff;
     });
-  }, [compsData, compsSortField, compsSortDirection, filterLast6Months, sixMonthsAgo]);
+  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate]);
   
   // Toggle sort - if same field, toggle direction; if different field, set new field with default direction
   const toggleSort = (field: SortField) => {
@@ -726,16 +731,25 @@ export default function Step3PurchaseRenovation({
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
-                            variant={filterLast6Months ? "default" : "outline"}
+                            variant={compsDateFilter === "6" ? "default" : "outline"}
                             size="sm"
-                            onClick={() => setFilterLast6Months(!filterLast6Months)}
+                            onClick={() => setCompsDateFilter(compsDateFilter === "6" ? "all" : "6")}
                             data-testid="button-filter-6-months"
                           >
                             Last 6 Months
                           </Button>
-                          {filterLast6Months && sortedCompsWithIndices.length === 0 && (
+                          <Button
+                            type="button"
+                            variant={compsDateFilter === "9" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCompsDateFilter(compsDateFilter === "9" ? "all" : "9")}
+                            data-testid="button-filter-9-months"
+                          >
+                            Last 9 Months
+                          </Button>
+                          {compsDateFilter !== "all" && sortedCompsWithIndices.length === 0 && (
                             <span className="text-sm text-amber-600">
-                              No comps in last 6 months - try disabling filter
+                              No comps in selected range - try a longer timeframe
                             </span>
                           )}
                         </div>
