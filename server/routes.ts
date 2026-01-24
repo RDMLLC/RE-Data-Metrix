@@ -6276,7 +6276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sqft: sqft || 1500,
         propertyType: propertyType || undefined,
         radiusMiles: radiusMiles ?? 0.5, // Default to 0.5 miles for better comp quality
-        saleDateRangeDays: 365, // Only sales within last year
+        saleDateRangeDays: 180, // Only sales within last 6 months
         maxResults: 10,
         subjectLat: subjectLat || undefined,
         subjectLng: subjectLng || undefined,

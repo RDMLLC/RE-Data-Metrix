@@ -573,7 +573,14 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     projectCosts?: number;
     costsAndCarrying?: number;
     exitSale?: number;
+    referralLink?: string;
   }) => {
+    // If referral link exists and is a valid URL (not "#"), open it
+    if (lenderData.referralLink && lenderData.referralLink !== '#' && lenderData.referralLink.startsWith('http')) {
+      window.open(lenderData.referralLink, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    // Otherwise, open the email contact modal
     setSelectedLenderForContact(lenderData);
     setContactDialogOpen(true);
   };
@@ -902,9 +909,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     ));
     rows.push(['']);
     
-    // Total Investment & Exit
-    rows.push(['--- TOTAL INVESTMENT & EXIT ---']);
-    rows.push(buildRow('Total Investment', 
+    // Est Out-of-Pocket & Exit
+    rows.push(['--- EST OUT-OF-POCKET & EXIT ---']);
+    rows.push(buildRow('Est Out-of-Pocket', 
       results.cashSaleColumn.totalInvestment,
       results.userLoanColumn?.totalInvestment || '',
       visibleLendersForCSV.map(l => l.totalInvestment)
@@ -1958,7 +1965,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           <span>{formatCurrency(lender.carryingCosts)}</span>
                         </div>
                         <div className="flex justify-between text-sm font-medium border-t pt-1 mt-1">
-                          <span>Total Investment</span>
+                          <span>Est Out-of-Pocket</span>
                           <span>{formatCurrency(lender.totalInvestment)}</span>
                         </div>
                       </div>
@@ -1986,6 +1993,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             projectCosts: lender.totalProjectCost,
                             costsAndCarrying: lender.carryingCosts + lender.closingCostsBuy,
                             exitSale: lender.sellPrice - lender.closingCostsSell - lender.commission,
+                            referralLink: lender.referralLink,
                           })}
                           data-testid={`button-contact-lender-mobile-${index + 1}`}
                         >
@@ -2425,9 +2433,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </>
                 )}
 
-                {/* 5. TOTAL INVESTMENT Row */}
+                {/* 5. EST OUT-OF-POCKET Row */}
                 <TableRow className="bg-muted">
-                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Total Investment</TableCell>
+                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Est Out-of-Pocket</TableCell>
                   <TableCell className="text-center font-bold sticky z-10 bg-muted" style={{ left: `${metricColWidth}px` }}>
                     {formatCurrency(results.cashSaleColumn.totalInvestment)}
                   </TableCell>
@@ -2458,18 +2466,19 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 </TableRow>
 
                 {/* 7. GROSS PROFIT Row */}
+                {/* Gross Profit = Sale Price - Project Cost - Closing Costs (Buy) - Lender Fees - Carrying Costs */}
                 <TableRow className="bg-muted">
                   <TableCell className={`font-bold ${stickyFirstColMuted}`}>Gross Profit</TableCell>
                   <TableCell className="text-center font-bold sticky z-10 bg-muted" style={{ left: `${metricColWidth}px` }}>
-                    {formatCurrency(results.cashSaleColumn.sellPrice - results.cashSaleColumn.totalInvestment)}
+                    {formatCurrency(results.cashSaleColumn.sellPrice - results.cashSaleColumn.totalProjectCost - results.cashSaleColumn.closingCostsBuy - (results.cashSaleColumn.outOfPocketBreakdown?.lenderFees || 0) - results.cashSaleColumn.carryingCosts)}
                   </TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center font-bold sticky z-10 bg-muted" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
-                      {formatCurrency(results.userLoanColumn.sellPrice - results.userLoanColumn.totalInvestment)}
+                      {formatCurrency(results.userLoanColumn.sellPrice - results.userLoanColumn.totalProjectCost - results.userLoanColumn.closingCostsBuy - (results.userLoanColumn.outOfPocketBreakdown?.lenderFees || 0) - results.userLoanColumn.carryingCosts)}
                     </TableCell>
                   )}
                   {visibleLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.sellPrice - lender.totalInvestment)}</TableCell>
+                    <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.sellPrice - lender.totalProjectCost - lender.closingCostsBuy - (lender.outOfPocketBreakdown?.lenderFees || 0) - lender.carryingCosts)}</TableCell>
                   ))}
                 </TableRow>
 
@@ -2626,6 +2635,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             projectCosts: lender.totalProjectCost,
                             costsAndCarrying: lender.carryingCosts + lender.closingCostsBuy,
                             exitSale: lender.sellPrice - lender.closingCostsSell - lender.commission,
+                            referralLink: lender.referralLink,
                           })}
                           data-testid={`button-contact-lender-${index + 1}`}
                         >
