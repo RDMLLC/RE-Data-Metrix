@@ -1123,11 +1123,23 @@ export const webinarRegistrations = pgTable("webinar_registrations", {
   webinarId: text("webinar_id").notNull().default('soft-launch-2026'), // Identifier for which webinar
   source: text("source"), // Where they came from (utm_source, etc.)
   registeredAt: timestamp("registered_at").defaultNow(),
+  // RSVP tracking
+  rsvpStatus: text("rsvp_status").default('pending'), // pending, confirmed, declined
+  rsvpUpdatedAt: timestamp("rsvp_updated_at"),
+  // Email tracking
+  confirmationSentAt: timestamp("confirmation_sent_at"),
+  dayBeforeReminderSentAt: timestamp("day_before_reminder_sent_at"),
+  finalReminderSentAt: timestamp("final_reminder_sent_at"),
 });
 
 export const insertWebinarRegistrationSchema = createInsertSchema(webinarRegistrations).omit({
   id: true,
   registeredAt: true,
+  rsvpStatus: true,
+  rsvpUpdatedAt: true,
+  confirmationSentAt: true,
+  dayBeforeReminderSentAt: true,
+  finalReminderSentAt: true,
 });
 
 export type InsertWebinarRegistration = z.infer<typeof insertWebinarRegistrationSchema>;
