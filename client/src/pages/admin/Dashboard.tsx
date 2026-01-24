@@ -453,6 +453,15 @@ export default function AdminDashboard() {
                       <Key className="h-3.5 w-3.5 mr-1.5" />
                       Promo Codes
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/webinar-registrations")}
+                      data-testid="button-webinar-registrations"
+                    >
+                      <Video className="h-3.5 w-3.5 mr-1.5" />
+                      Webinar Signups
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
