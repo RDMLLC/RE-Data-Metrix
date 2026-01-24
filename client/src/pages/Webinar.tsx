@@ -1,6 +1,12 @@
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Calendar, 
   Clock, 
@@ -12,13 +18,64 @@ import {
   Check,
   Gift,
   ArrowRight,
-  Play
+  Loader2
 } from "lucide-react";
 
 export default function Webinar() {
+  const { toast } = useToast();
   const webinarDate = "Friday, January 30, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
   const registrationLink = "https://meet.zoho.com/nyok-eid-buf";
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: ""
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async (data: { name: string; email: string; phone: string }) => {
+      const response = await apiRequest("POST", "/api/webinar/register", data);
+      return response.json();
+    },
+    onSuccess: (result) => {
+      if (result.alreadyRegistered) {
+        toast({
+          title: "Already Registered",
+          description: "You're already registered! Redirecting to the meeting page...",
+        });
+      } else {
+        toast({
+          title: "Registration Successful",
+          description: "Thank you for registering! Redirecting to complete your registration...",
+        });
+      }
+      // Redirect to Zoho Meeting after a short delay
+      setTimeout(() => {
+        window.open(registrationLink, '_blank');
+      }, 1500);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) {
+      toast({ title: "Name Required", description: "Please enter your name.", variant: "destructive" });
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      toast({ title: "Valid Email Required", description: "Please enter a valid email address.", variant: "destructive" });
+      return;
+    }
+    registerMutation.mutate(formData);
+  };
 
   const features = [
     {
@@ -102,15 +159,66 @@ export default function Webinar() {
                 </div>
               </div>
 
-              <Button 
-                size="lg"
-                className="bg-accent text-accent-foreground"
-                onClick={() => window.open(registrationLink, '_blank')}
-                data-testid="button-register-webinar-hero"
-              >
-                Register Now - It's Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              {/* Registration Form */}
+              <Card className="p-6 bg-white/10 backdrop-blur border-white/20">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-white">Full Name *</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="John Smith"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      className="bg-white/90 border-0"
+                      data-testid="input-webinar-name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-white">Email Address *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-white/90 border-0"
+                      data-testid="input-webinar-email"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-white">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(555) 123-4567"
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      className="bg-white/90 border-0"
+                      data-testid="input-webinar-phone"
+                    />
+                  </div>
+                  <Button 
+                    type="submit"
+                    size="lg"
+                    className="w-full bg-accent text-accent-foreground"
+                    disabled={registerMutation.isPending}
+                    data-testid="button-register-webinar"
+                  >
+                    {registerMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Registering...
+                      </>
+                    ) : (
+                      <>
+                        Register Now - It's Free
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Card>
             </div>
 
             {/* YouTube Video */}
@@ -260,19 +368,8 @@ export default function Webinar() {
           <p className="text-xl text-white/80 mb-8">
             Join us on {webinarDate} at {webinarTime} and discover how RE Data Metrix can help you analyze deals faster and find better financing.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button 
-              size="lg"
-              className="bg-accent text-accent-foreground"
-              onClick={() => window.open(registrationLink, '_blank')}
-              data-testid="button-register-webinar-footer"
-            >
-              Register for Free Webinar
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-          <p className="text-white/60 mt-6 text-sm">
-            Seats are limited. Reserve your spot today!
+          <p className="text-white/60 text-sm">
+            Seats are limited. Reserve your spot using the form above!
           </p>
         </div>
       </section>

@@ -1113,3 +1113,22 @@ export const insertApiUsageLogSchema = createInsertSchema(apiUsageLogs).omit({
 
 export type InsertApiUsageLog = z.infer<typeof insertApiUsageLogSchema>;
 export type ApiUsageLog = typeof apiUsageLogs.$inferSelect;
+
+// Webinar Registrations - stores registrations from webinar landing page
+export const webinarRegistrations = pgTable("webinar_registrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  webinarId: text("webinar_id").notNull().default('soft-launch-2026'), // Identifier for which webinar
+  source: text("source"), // Where they came from (utm_source, etc.)
+  registeredAt: timestamp("registered_at").defaultNow(),
+});
+
+export const insertWebinarRegistrationSchema = createInsertSchema(webinarRegistrations).omit({
+  id: true,
+  registeredAt: true,
+});
+
+export type InsertWebinarRegistration = z.infer<typeof insertWebinarRegistrationSchema>;
+export type WebinarRegistration = typeof webinarRegistrations.$inferSelect;

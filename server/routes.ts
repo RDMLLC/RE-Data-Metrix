@@ -3692,6 +3692,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =====================
+  // Webinar Registration Routes
+  // =====================
+
+  // Register for webinar (public - no auth required)
+  app.post("/api/webinar/register", async (req, res) => {
+    try {
+      const { name, email, phone, webinarId, source } = req.body;
+      
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ error: "Name is required" });
+      }
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ error: "Valid email is required" });
+      }
+      
+      // Check if already registered
+      const existing = await storage.getWebinarRegistrationByEmail(email, webinarId || 'soft-launch-2026');
+      if (existing) {
+        return res.json({ 
+          success: true, 
+          message: "You're already registered! Check your email for the meeting link.",
+          alreadyRegistered: true
+        });
+      }
+      
+      const registration = await storage.createWebinarRegistration({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone?.trim() || null,
+        webinarId: webinarId || 'soft-launch-2026',
+        source: source || null
+      });
+      
+      // Trigger CRM integration event if configured
+      try {
+        const integrations = await storage.getAllIntegrationConfigs();
+        for (const integration of integrations) {
+          if (integration.isActive) {
+            const triggers = await storage.getIntegrationEventTriggers(integration.id);
+            const webinarTrigger = triggers.find(t => t.eventType === 'webinar_registration' && t.isEnabled);
+            if (webinarTrigger) {
+              await storage.createIntegrationSyncLog({
+                integrationId: integration.id,
+                eventType: 'webinar_registration',
+                status: 'pending',
+                direction: 'outbound',
+                requestData: {
+                  name: registration.name,
+                  email: registration.email,
+                  phone: registration.phone,
+                  webinarId: registration.webinarId,
+                  source: registration.source,
+                  registeredAt: registration.registeredAt
+                }
+              });
+            }
+          }
+        }
+      } catch (crmError) {
+        console.error('CRM integration trigger error:', crmError);
+        // Don't fail the registration if CRM sync fails
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Registration successful! You'll be redirected to the meeting registration.",
+        registration 
+      });
+    } catch (error) {
+      console.error('Webinar registration error:', error);
+      res.status(500).json({ error: "Failed to register for webinar" });
+    }
+  });
+
+  // Get webinar registrations (admin only)
+  app.get("/api/admin/webinar-registrations", ensureAdmin, async (req, res) => {
+    try {
+      const { webinarId } = req.query;
+      const registrations = await storage.getWebinarRegistrations(webinarId as string);
+      res.json(registrations);
+    } catch (error) {
+      console.error('Get webinar registrations error:', error);
+      res.status(500).json({ error: "Failed to fetch webinar registrations" });
+    }
+  });
+
+  // =====================
   // Admin Discount Codes Routes
   // =====================
 

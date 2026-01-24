@@ -76,7 +76,10 @@ import {
   userUsageCounters as userUsageCountersTable,
   serviceRegions as serviceRegionsTable,
   contractors as contractorsTable,
-  contractorServiceRegions as contractorServiceRegionsTable
+  contractorServiceRegions as contractorServiceRegionsTable,
+  webinarRegistrations as webinarRegistrationsTable,
+  type WebinarRegistration,
+  type InsertWebinarRegistration
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -3548,6 +3551,38 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contractorsTable.email, email))
       .limit(1);
     return result[0];
+  }
+
+  // Webinar Registration Methods
+  async createWebinarRegistration(data: InsertWebinarRegistration): Promise<WebinarRegistration> {
+    const [registration] = await db.insert(webinarRegistrationsTable).values(data).returning();
+    return registration;
+  }
+
+  async getWebinarRegistrations(webinarId?: string): Promise<WebinarRegistration[]> {
+    if (webinarId) {
+      return await db.select().from(webinarRegistrationsTable)
+        .where(eq(webinarRegistrationsTable.webinarId, webinarId))
+        .orderBy(desc(webinarRegistrationsTable.registeredAt));
+    }
+    return await db.select().from(webinarRegistrationsTable)
+      .orderBy(desc(webinarRegistrationsTable.registeredAt));
+  }
+
+  async getWebinarRegistrationByEmail(email: string, webinarId?: string): Promise<WebinarRegistration | undefined> {
+    if (webinarId) {
+      const [result] = await db.select().from(webinarRegistrationsTable)
+        .where(and(
+          eq(webinarRegistrationsTable.email, email),
+          eq(webinarRegistrationsTable.webinarId, webinarId)
+        ))
+        .limit(1);
+      return result;
+    }
+    const [result] = await db.select().from(webinarRegistrationsTable)
+      .where(eq(webinarRegistrationsTable.email, email))
+      .limit(1);
+    return result;
   }
 
 }
