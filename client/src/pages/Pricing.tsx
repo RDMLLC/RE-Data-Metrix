@@ -140,6 +140,10 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
+                    2 comp reports/month
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
                     Unlimited manual deal analysis
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
