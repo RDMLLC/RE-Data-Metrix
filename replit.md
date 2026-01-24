@@ -72,11 +72,18 @@ The ARV Helper feature uses RentCast's `/properties` endpoint with `saleDateRang
 - **Search Parameters**: Filters by bedroom range (±1), sqft range (±25%), and radius (3 miles default)
 - **Sorting**: Results sorted by distance (closest first), then by sale date (most recent first)
 - **Actual Sale Dates**: RentCast provides real sale dates in lastSaleDate field, displayed in "MMM D, YYYY" format
+- **Downloadable Comp Report**: Professional PDF with RE Data Metrix branding, subject property details, comp table (address, price, beds/baths, sqft, $/sqft, distance), suggested ARV, marketing footer, and disclaimer. Uses `react-to-pdf` library.
 
 Implementation files:
 - `server/services/rentcast-api.service.ts` - `searchComparableSales()` method
 - `server/routes.ts` - `/api/comps/search` endpoint
 - `client/src/components/deal-analysis/Step3PurchaseRenovation.tsx` - ARV Helper UI
+- `client/src/components/deal-analysis/CompReportPdf.tsx` - Downloadable comp report PDF component
+
+## Subscription Pricing (Updated January 2026)
+- **Monthly**: $25/month
+- **Annual**: $250/year (2 months free)
+- Pricing is displayed on Pricing page, FAQ, Profile page, and Stripe seed script
 
 ## Soft Launch Promo Code System (January 2026)
 A promo code system for the webinar soft launch with the following features:
