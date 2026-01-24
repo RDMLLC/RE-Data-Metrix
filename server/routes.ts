@@ -3755,9 +3755,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the registration if CRM sync fails
       }
       
+      // Send confirmation email with calendar invite
+      try {
+        await emailService.sendWebinarConfirmationEmail(registration.email, registration.name);
+        console.log(`✓ Webinar confirmation email sent to ${registration.email}`);
+      } catch (emailError) {
+        console.error('Webinar confirmation email error:', emailError);
+        // Don't fail the registration if email fails
+      }
+      
       res.json({ 
         success: true, 
-        message: "Registration successful! You'll be redirected to the meeting registration.",
+        message: "Registration successful! Check your email for confirmation and calendar invite.",
         registration 
       });
     } catch (error) {
@@ -3775,6 +3784,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get webinar registrations error:', error);
       res.status(500).json({ error: "Failed to fetch webinar registrations" });
+    }
+  });
+
+  // Send confirmation emails to existing registrants (admin only)
+  app.post("/api/admin/webinar-registrations/send-confirmations", ensureAdmin, async (req, res) => {
+    try {
+      const { webinarId, registrantIds } = req.body;
+      const registrations = await storage.getWebinarRegistrations(webinarId || 'soft-launch-2026');
+      
+      // Filter by specific IDs if provided, otherwise send to all
+      const targetRegistrations = registrantIds?.length 
+        ? registrations.filter(r => registrantIds.includes(r.id))
+        : registrations;
+      
+      const results = {
+        total: targetRegistrations.length,
+        sent: 0,
+        failed: 0,
+        errors: [] as string[]
+      };
+      
+      for (const registration of targetRegistrations) {
+        try {
+          const success = await emailService.sendWebinarConfirmationEmail(
+            registration.email,
+            registration.name
+          );
+          if (success) {
+            results.sent++;
+            console.log(`✓ Confirmation sent to ${registration.email}`);
+          } else {
+            results.failed++;
+            results.errors.push(`Failed to send to ${registration.email}`);
+          }
+        } catch (error) {
+          results.failed++;
+          results.errors.push(`Error sending to ${registration.email}: ${error}`);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Sent ${results.sent} of ${results.total} confirmation emails`,
+        results
+      });
+    } catch (error) {
+      console.error('Send confirmations error:', error);
+      res.status(500).json({ error: "Failed to send confirmation emails" });
     }
   });
 

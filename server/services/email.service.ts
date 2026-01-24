@@ -1160,10 +1160,164 @@ class EmailService {
     });
   }
 
+  async sendWebinarConfirmationEmail(
+    to: string,
+    name: string,
+    webinarDate: Date = new Date('2026-01-30T12:00:00-05:00'),
+    webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
+  ): Promise<boolean> {
+    const firstName = name.split(' ')[0];
+    const baseUrl = this.getBaseUrl();
+    
+    const dateFormatted = webinarDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const timeFormatted = webinarDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .details-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .detail-row { display: flex; margin: 8px 0; }
+          .detail-label { font-weight: 600; color: #1E3A8A; min-width: 100px; }
+          .btn-primary { display: inline-block; padding: 14px 28px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .learn-list { background: #f8fafc; border-radius: 8px; padding: 16px 16px 16px 32px; margin: 16px 0; }
+          .learn-list li { margin: 8px 0; color: #475569; }
+          .exclusive-box { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">You're Registered!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">RE Data Metrix Soft Launch Webinar</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            
+            <p>Thank you for registering for the <strong>RE Data Metrix Soft Launch Webinar</strong>!</p>
+            
+            <div class="details-box">
+              <p style="margin: 0 0 12px 0; font-weight: 600; color: #1E3A8A; font-size: 16px;">Webinar Details:</p>
+              <table style="width: 100%;">
+                <tr>
+                  <td style="padding: 4px 0; color: #64748b; width: 100px;">Date:</td>
+                  <td style="padding: 4px 0; font-weight: 600;">${dateFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #64748b;">Time:</td>
+                  <td style="padding: 4px 0; font-weight: 600;">${timeFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 4px 0; color: #64748b;">Duration:</td>
+                  <td style="padding: 4px 0; font-weight: 600;">Approximately 45-60 minutes</td>
+                </tr>
+              </table>
+            </div>
+            
+            <p style="font-weight: 600; margin-bottom: 8px;">What You'll Learn:</p>
+            <ul class="learn-list">
+              <li>How to analyze real estate deals in minutes</li>
+              <li>Using the Max Offer Calculator for wholesale deals</li>
+              <li>Finding comparable sales with ARV Helper</li>
+              <li>Connecting with hard money lenders</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${webinarLink}" class="btn-primary">Join the Webinar</a>
+            </div>
+            
+            <div class="exclusive-box">
+              <p style="margin: 0; font-weight: 600; color: #92400e;">Exclusive Offer</p>
+              <p style="margin: 8px 0 0 0; color: #78350f;">Stay until the end of the webinar for an exclusive offer available only to live attendees!</p>
+            </div>
+            
+            <p style="color: #64748b; font-size: 14px;">A calendar invite is attached to this email. Add it to your calendar so you don't miss out!</p>
+            
+            <p style="margin-top: 24px;">See you there,<br><strong>The RE Data Metrix Team</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px;">If you have any questions, reply to this email or contact us at info@redatametrix.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Generate ICS calendar file
+    const startDate = webinarDate;
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour duration
+    
+    const formatICSDate = (date: Date): string => {
+      return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    };
+    
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//RE Data Metrix//Webinar//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+DTSTART:${formatICSDate(startDate)}
+DTEND:${formatICSDate(endDate)}
+DTSTAMP:${formatICSDate(new Date())}
+UID:webinar-soft-launch-2026@redatametrix.com
+ORGANIZER;CN=RE Data Metrix:mailto:info@redatametrix.com
+SUMMARY:RE Data Metrix Soft Launch Webinar
+DESCRIPTION:Join us for the RE Data Metrix Soft Launch Webinar!\\n\\nLearn how to analyze real estate deals in minutes\\, use the Max Offer Calculator for wholesale deals\\, find comparable sales with ARV Helper\\, and connect with hard money lenders.\\n\\nJoin link: ${webinarLink}\\n\\nStay until the end for an exclusive offer!
+LOCATION:${webinarLink}
+URL:${webinarLink}
+STATUS:CONFIRMED
+SEQUENCE:0
+BEGIN:VALARM
+TRIGGER:-PT30M
+ACTION:DISPLAY
+DESCRIPTION:Reminder: RE Data Metrix Webinar starts in 30 minutes!
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-P1D
+ACTION:DISPLAY
+DESCRIPTION:Reminder: RE Data Metrix Webinar is tomorrow!
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+    return this.sendEmail({
+      to,
+      subject: "You're Registered! RE Data Metrix Soft Launch Webinar - Jan 30, 2026",
+      html: htmlContent,
+      attachments: [
+        {
+          filename: 'webinar-invite.ics',
+          content: icsContent,
+          contentType: 'text/calendar'
+        }
+      ]
+    });
+  }
+
   private async sendEmail(options: {
     to: string;
     subject: string;
     html: string;
+    attachments?: Array<{ filename: string; content: string; contentType?: string }>;
   }): Promise<boolean> {
     if (!this.transporter) {
       console.error('Email transporter not initialized');
@@ -1180,6 +1334,7 @@ class EmailService {
         to: options.to,
         subject: options.subject,
         html: options.html,
+        attachments: options.attachments,
         headers: {
           'X-Mailer': 'RE Data Metrix',
           'X-Priority': '3',

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +23,11 @@ import {
   Download,
   RefreshCw,
   Loader2,
+  Send,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface WebinarRegistration {
   id: string;
@@ -39,9 +42,32 @@ interface WebinarRegistration {
 export default function WebinarRegistrations() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
 
   const { data: registrations = [], isLoading, refetch, isRefetching } = useQuery<WebinarRegistration[]>({
     queryKey: ["/api/admin/webinar-registrations"],
+  });
+
+  const sendConfirmationsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/send-confirmations", {
+        webinarId: "soft-launch-2026"
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Confirmation Emails Sent",
+        description: data.message || `Successfully sent confirmation emails`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Send Emails",
+        description: error.message || "An error occurred while sending emails",
+        variant: "destructive",
+      });
+    },
   });
 
   const filteredRegistrations = registrations.filter(reg =>
@@ -107,6 +133,19 @@ export default function WebinarRegistrations() {
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
               Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => sendConfirmationsMutation.mutate()}
+              disabled={sendConfirmationsMutation.isPending || registrations.length === 0}
+              data-testid="button-send-confirmations"
+            >
+              {sendConfirmationsMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Send Confirmations
             </Button>
             <Button
               onClick={handleExportCSV}
