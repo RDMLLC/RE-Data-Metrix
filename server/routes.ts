@@ -3835,6 +3835,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // RSVP endpoint for webinar attendees
+  app.get("/api/webinar/rsvp/:registrationId", async (req, res) => {
+    try {
+      const { registrationId } = req.params;
+      const { response } = req.query;
+      
+      if (!response || !['confirmed', 'declined'].includes(response as string)) {
+        return res.status(400).json({ error: "Invalid response. Must be 'confirmed' or 'declined'" });
+      }
+      
+      // Get the registration
+      const registration = await storage.getWebinarRegistrationById(registrationId);
+      if (!registration) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+      
+      // Update RSVP status
+      await storage.updateWebinarRegistrationRsvp(registrationId, response as string);
+      
+      // Redirect to a confirmation page
+      const status = response === 'confirmed' ? 'confirmed' : 'declined';
+      res.redirect(`/webinar/rsvp/${registrationId}/thank-you?status=${status}`);
+    } catch (error) {
+      console.error('RSVP update error:', error);
+      res.status(500).json({ error: "Failed to update RSVP" });
+    }
+  });
+
+  // Get RSVP status for confirmation page
+  app.get("/api/webinar/rsvp/:registrationId/status", async (req, res) => {
+    try {
+      const { registrationId } = req.params;
+      
+      const registration = await storage.getWebinarRegistrationById(registrationId);
+      if (!registration) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+      
+      res.json({
+        name: registration.name,
+        email: registration.email,
+        rsvpStatus: registration.rsvpStatus || 'pending',
+        rsvpUpdatedAt: registration.rsvpUpdatedAt
+      });
+    } catch (error) {
+      console.error('Get RSVP status error:', error);
+      res.status(500).json({ error: "Failed to get RSVP status" });
+    }
+  });
+
+  // Admin endpoint to get RSVP statistics
+  app.get("/api/admin/webinar-registrations/rsvp-stats", ensureAdmin, async (req, res) => {
+    try {
+      const registrations = await storage.getWebinarRegistrations();
+      const stats = {
+        total: registrations.length,
+        confirmed: registrations.filter(r => r.rsvpStatus === 'confirmed').length,
+        declined: registrations.filter(r => r.rsvpStatus === 'declined').length,
+        pending: registrations.filter(r => !r.rsvpStatus || r.rsvpStatus === 'pending').length,
+      };
+      res.json(stats);
+    } catch (error) {
+      console.error('Get RSVP stats error:', error);
+      res.status(500).json({ error: "Failed to get RSVP stats" });
+    }
+  });
+
+  // Admin endpoint to manually trigger day-before reminders
+  app.post("/api/admin/webinar-registrations/send-day-before-reminders", ensureAdmin, async (req, res) => {
+    try {
+      const { webinarReminderService } = await import('./services/webinar-reminder.service');
+      const results = await webinarReminderService.triggerDayBeforeReminders();
+      res.json({
+        success: true,
+        message: `Sent ${results.sent} of ${results.total} day-before reminder emails`,
+        results
+      });
+    } catch (error) {
+      console.error('Send day-before reminders error:', error);
+      res.status(500).json({ error: "Failed to send day-before reminders" });
+    }
+  });
+
+  // Admin endpoint to manually trigger final reminders
+  app.post("/api/admin/webinar-registrations/send-final-reminders", ensureAdmin, async (req, res) => {
+    try {
+      const { webinarReminderService } = await import('./services/webinar-reminder.service');
+      const results = await webinarReminderService.triggerFinalReminders();
+      res.json({
+        success: true,
+        message: `Sent ${results.sent} of ${results.total} final reminder emails`,
+        results
+      });
+    } catch (error) {
+      console.error('Send final reminders error:', error);
+      res.status(500).json({ error: "Failed to send final reminders" });
+    }
+  });
+
   // =====================
   // Admin Discount Codes Routes
   // =====================

@@ -83,7 +83,7 @@ import {
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
-import { eq, and, gt, desc, sql as sqlCount, count } from "drizzle-orm";
+import { eq, and, gt, desc, sql, sql as sqlCount, count } from "drizzle-orm";
 import { hashPassword } from "./auth";
 
 export interface IStorage {
@@ -3583,6 +3583,49 @@ export class DatabaseStorage implements IStorage {
       .where(eq(webinarRegistrationsTable.email, email))
       .limit(1);
     return result;
+  }
+
+  async getWebinarRegistrationById(id: string): Promise<WebinarRegistration | undefined> {
+    const [result] = await db.select().from(webinarRegistrationsTable)
+      .where(eq(webinarRegistrationsTable.id, id))
+      .limit(1);
+    return result;
+  }
+
+  async updateWebinarRegistrationRsvp(id: string, rsvpStatus: string): Promise<WebinarRegistration | undefined> {
+    const [result] = await db.update(webinarRegistrationsTable)
+      .set({ 
+        rsvpStatus,
+        rsvpUpdatedAt: new Date()
+      })
+      .where(eq(webinarRegistrationsTable.id, id))
+      .returning();
+    return result;
+  }
+
+  async updateWebinarRegistrationEmailSent(id: string, emailType: 'confirmation' | 'dayBefore' | 'final'): Promise<void> {
+    const updateData: Record<string, Date> = {};
+    if (emailType === 'confirmation') {
+      updateData.confirmationSentAt = new Date();
+    } else if (emailType === 'dayBefore') {
+      updateData.dayBeforeReminderSentAt = new Date();
+    } else if (emailType === 'final') {
+      updateData.finalReminderSentAt = new Date();
+    }
+    
+    await db.update(webinarRegistrationsTable)
+      .set(updateData)
+      .where(eq(webinarRegistrationsTable.id, id));
+  }
+
+  async getWebinarRegistrationsNeedingEmail(emailType: 'dayBefore' | 'final'): Promise<WebinarRegistration[]> {
+    if (emailType === 'dayBefore') {
+      return await db.select().from(webinarRegistrationsTable)
+        .where(sql`${webinarRegistrationsTable.dayBeforeReminderSentAt} IS NULL`);
+    } else {
+      return await db.select().from(webinarRegistrationsTable)
+        .where(sql`${webinarRegistrationsTable.finalReminderSentAt} IS NULL`);
+    }
   }
 
 }

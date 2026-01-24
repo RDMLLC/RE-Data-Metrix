@@ -1313,6 +1313,228 @@ END:VCALENDAR`;
     });
   }
 
+  async sendWebinarDayBeforeReminder(
+    to: string,
+    name: string,
+    registrationId: string,
+    webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
+  ): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    
+    const confirmUrl = `${baseUrl}/api/webinar/rsvp/${registrationId}?response=confirmed`;
+    const declineUrl = `${baseUrl}/api/webinar/rsvp/${registrationId}?response=declined`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Webinar Tomorrow!</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f7;">
+          <tr>
+            <td style="padding: 20px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 30px 40px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">RE Data Metrix</h1>
+                  </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                      <h2 style="color: #1e3a5f; margin: 0 0 10px 0; font-size: 28px;">Your Webinar is Tomorrow!</h2>
+                    </div>
+                    
+                    <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                      Hi ${name},
+                    </p>
+                    
+                    <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                      This is a friendly reminder that the <strong>RE Data Metrix Soft Launch Webinar</strong> is happening <strong>tomorrow</strong>!
+                    </p>
+
+                    <!-- Event Details Box -->
+                    <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin-bottom: 25px; border-left: 4px solid #1e3a5f;">
+                      <h3 style="color: #1e3a5f; margin: 0 0 15px 0; font-size: 18px;">Event Details</h3>
+                      <p style="color: #333; font-size: 15px; margin: 0 0 8px 0;"><strong>Date:</strong> Friday, January 30, 2026</p>
+                      <p style="color: #333; font-size: 15px; margin: 0 0 8px 0;"><strong>Time:</strong> 12:00 PM EST (9:00 AM PST)</p>
+                      <p style="color: #333; font-size: 15px; margin: 0;"><strong>Duration:</strong> 60 minutes</p>
+                    </div>
+
+                    <!-- What You'll Learn -->
+                    <div style="margin-bottom: 25px;">
+                      <h3 style="color: #1e3a5f; margin: 0 0 15px 0; font-size: 18px;">What You'll Learn:</h3>
+                      <ul style="color: #333; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                        <li>How to analyze real estate deals in minutes</li>
+                        <li>Using the Max Offer Calculator for wholesale deals</li>
+                        <li>Finding comparable sales with ARV Helper</li>
+                        <li>Connecting with hard money lenders</li>
+                      </ul>
+                    </div>
+
+                    <p style="color: #d97706; font-size: 16px; font-weight: 600; margin: 0 0 30px 0; text-align: center;">
+                      Stay until the end for an exclusive offer only for webinar attendees!
+                    </p>
+
+                    <!-- RSVP Section -->
+                    <div style="background-color: #fff7ed; border-radius: 8px; padding: 25px; margin-bottom: 25px; text-align: center;">
+                      <h3 style="color: #1e3a5f; margin: 0 0 15px 0; font-size: 18px;">Please Confirm Your Attendance</h3>
+                      <p style="color: #666; font-size: 14px; margin: 0 0 20px 0;">We're finalizing our headcount. Please let us know if you'll be joining us:</p>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                        <tr>
+                          <td style="padding-right: 10px;">
+                            <a href="${confirmUrl}" style="display: inline-block; background-color: #22c55e; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">Yes, I'll be there!</a>
+                          </td>
+                          <td style="padding-left: 10px;">
+                            <a href="${declineUrl}" style="display: inline-block; background-color: #6b7280; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">Sorry, I can't make it</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <!-- Join Link -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                      <p style="color: #333; font-size: 16px; margin: 0 0 15px 0;"><strong>Join Link:</strong></p>
+                      <a href="${webinarLink}" style="display: inline-block; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">Join the Webinar</a>
+                      <p style="color: #666; font-size: 13px; margin: 15px 0 0 0;">
+                        Save this link - we'll send one more reminder 30 minutes before we go live.
+                      </p>
+                    </div>
+
+                    <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;">
+                      See you tomorrow!<br><br>
+                      <strong>The RE Data Metrix Team</strong>
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f8fafc; padding: 25px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 13px; margin: 0;">
+                      You're receiving this because you registered for the RE Data Metrix Soft Launch Webinar.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Tomorrow: RE Data Metrix Soft Launch Webinar - Confirm Your Spot",
+      html: htmlContent,
+    });
+  }
+
+  async sendWebinarFinalReminder(
+    to: string,
+    name: string,
+    webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
+  ): Promise<boolean> {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>We're Going Live!</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f7;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f4f4f7;">
+          <tr>
+            <td style="padding: 20px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 30px 40px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">RE Data Metrix</h1>
+                  </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px; text-align: center;">
+                    <div style="margin-bottom: 25px;">
+                      <h2 style="color: #1e3a5f; margin: 0 0 10px 0; font-size: 32px;">We're Going Live in 30 Minutes!</h2>
+                    </div>
+                    
+                    <p style="color: #333; font-size: 18px; line-height: 1.6; margin: 0 0 25px 0;">
+                      Hi ${name},
+                    </p>
+                    
+                    <p style="color: #333; font-size: 18px; line-height: 1.6; margin: 0 0 30px 0;">
+                      The <strong>RE Data Metrix Soft Launch Webinar</strong> starts in just 30 minutes!
+                    </p>
+
+                    <!-- Time Box -->
+                    <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; margin-bottom: 30px; display: inline-block;">
+                      <p style="color: #92400e; font-size: 20px; font-weight: 600; margin: 0;">
+                        Starting at: 12:00 PM EST (9:00 AM PST)
+                      </p>
+                    </div>
+
+                    <!-- Join Button -->
+                    <div style="margin-bottom: 30px;">
+                      <a href="${webinarLink}" style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: #ffffff; text-decoration: none; padding: 20px 50px; border-radius: 8px; font-weight: 700; font-size: 20px; box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);">Join the Webinar Now</a>
+                    </div>
+                    
+                    <p style="color: #666; font-size: 14px; margin: 0 0 25px 0;">
+                      ${webinarLink}
+                    </p>
+
+                    <!-- Quick Tips -->
+                    <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 25px; text-align: left;">
+                      <h3 style="color: #1e3a5f; margin: 0 0 12px 0; font-size: 16px;">Quick Tips:</h3>
+                      <ul style="color: #333; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                        <li>Click the link a few minutes early to test your connection</li>
+                        <li>Have questions ready - we'll have Q&A at the end</li>
+                        <li><strong>Stay until the end</strong> for an exclusive offer!</li>
+                      </ul>
+                    </div>
+
+                    <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
+                      See you in a few minutes!<br><br>
+                      <strong>The RE Data Metrix Team</strong>
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f8fafc; padding: 25px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 13px; margin: 0;">
+                      You're receiving this because you registered for the RE Data Metrix Soft Launch Webinar.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Starting in 30 Minutes: RE Data Metrix Soft Launch Webinar",
+      html: htmlContent,
+    });
+  }
+
   private async sendEmail(options: {
     to: string;
     subject: string;

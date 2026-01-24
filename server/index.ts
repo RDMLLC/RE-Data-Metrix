@@ -10,6 +10,7 @@ import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, isStripeConfigured } from './services/stripeClient';
 import { WebhookHandlers } from './services/webhookHandlers';
 import { closingRemindersService } from './services/closingReminders.service';
+import { webinarReminderService } from './services/webinar-reminder.service';
 
 const app = express();
 
@@ -238,5 +239,8 @@ app.use((req, res, next) => {
     
     // Start the closing reminders service
     closingRemindersService.start();
+    
+    // Start the webinar reminder service
+    webinarReminderService.start();
   });
 })();
