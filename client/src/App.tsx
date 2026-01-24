@@ -49,6 +49,7 @@ import AdminLenderDetail from "@/pages/admin/LenderDetail";
 import AdminReports from "@/pages/admin/Reports";
 import AdminCompUsers from "@/pages/admin/CompUsers";
 import AdminDiscountCodes from "@/pages/admin/DiscountCodes";
+import AdminPromoCodes from "@/pages/admin/PromoCodes";
 import AdminUserManagement from "@/pages/admin/UserManagement";
 import AdminRequestPasswordReset from "@/pages/admin/RequestPasswordReset";
 import AdminResetPassword from "@/pages/admin/ResetPassword";
@@ -181,6 +182,7 @@ function Router() {
       <Route path="/admin/reports" component={AdminReports} />
       <Route path="/admin/comp-users" component={AdminCompUsers} />
       <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
+      <Route path="/admin/promo-codes" component={AdminPromoCodes} />
       <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route path="/admin/affiliates" component={AdminAffiliates} />

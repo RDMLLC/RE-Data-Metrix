@@ -77,3 +77,23 @@ Implementation files:
 - `server/services/rentcast-api.service.ts` - `searchComparableSales()` method
 - `server/routes.ts` - `/api/comps/search` endpoint
 - `client/src/components/deal-analysis/Step3PurchaseRenovation.tsx` - ARV Helper UI
+
+## Soft Launch Promo Code System (January 2026)
+A promo code system for the webinar soft launch with the following features:
+- **Capped Redemptions**: First 100 webinar attendees get 6-month free access
+- **Waitlist Overflow**: Users beyond capacity are added to a waitlist (first-come-first-served)
+- **Activation-Based Expiry**: 6-month free access starts from activation date, not webinar date
+- **Admin Management**: Admin portal at `/admin/promo-codes` for creating codes, viewing usage, managing waitlist
+
+**Database Tables**: `promo_codes` (code, maxRedemptions, durationMonths, isActive), `promo_redemptions` (userId, activatedAt, expiresAt), `promo_waitlist` (email, position, notifiedAt)
+
+**Key Endpoints**:
+- Admin: `GET/POST /api/admin/promo-codes`, `PATCH /api/admin/promo-codes/:id`, `GET /api/admin/promo-codes/:id/waitlist`, `POST /api/admin/promo-codes/:id/notify-next`
+- User: `GET /api/promo/validate/:code`, `POST /api/promo/redeem`, `GET /api/promo/my-status`, `POST /api/promo/waitlist`
+
+**API Usage Tracking**: RentCast API calls are logged with per-user costs (property lookups: 2¢, comps: 3¢) via `server/services/api-usage.service.ts`. Admin endpoint: `GET /api/admin/api-usage`
+
+Implementation files:
+- `server/services/promo.service.ts` - Promo code business logic
+- `server/services/api-usage.service.ts` - API usage logging service
+- `client/src/pages/admin/PromoCodes.tsx` - Admin UI for promo codes

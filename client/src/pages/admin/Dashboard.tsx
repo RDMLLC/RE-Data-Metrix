@@ -444,6 +444,15 @@ export default function AdminDashboard() {
                       <Ticket className="h-3.5 w-3.5 mr-1.5" />
                       Discount Codes
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/promo-codes")}
+                      data-testid="button-promo-codes"
+                    >
+                      <Key className="h-3.5 w-3.5 mr-1.5" />
+                      Promo Codes
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
