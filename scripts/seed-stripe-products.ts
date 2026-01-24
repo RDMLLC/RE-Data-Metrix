@@ -43,10 +43,10 @@ async function seedStripeProducts() {
 
     const existingPrices = await stripe.prices.list({ limit: 100 });
     const existingMonthlyPrice = existingPrices.data.find(
-      p => p.product === monthlyProduct.id && p.recurring?.interval === 'month' && p.unit_amount === 1500 && p.active
+      p => p.product === monthlyProduct.id && p.recurring?.interval === 'month' && p.unit_amount === 2500 && p.active
     );
     const existingAnnualPrice = existingPrices.data.find(
-      p => p.product === annualProduct.id && p.recurring?.interval === 'year' && p.unit_amount === 15000 && p.active
+      p => p.product === annualProduct.id && p.recurring?.interval === 'year' && p.unit_amount === 25000 && p.active
     );
 
     if (existingMonthlyPrice) {
@@ -54,7 +54,7 @@ async function seedStripeProducts() {
     } else {
       const monthlyPrice = await stripe.prices.create({
         product: monthlyProduct.id,
-        unit_amount: 1500,
+        unit_amount: 2500,
         currency: 'usd',
         recurring: {
           interval: 'month',
@@ -63,7 +63,7 @@ async function seedStripeProducts() {
           plan_type: 'monthly',
         },
       });
-      console.log('Created monthly price:', monthlyPrice.id, '- $15/month');
+      console.log('Created monthly price:', monthlyPrice.id, '- $25/month');
     }
 
     if (existingAnnualPrice) {
@@ -71,7 +71,7 @@ async function seedStripeProducts() {
     } else {
       const annualPrice = await stripe.prices.create({
         product: annualProduct.id,
-        unit_amount: 15000,
+        unit_amount: 25000,
         currency: 'usd',
         recurring: {
           interval: 'year',
@@ -80,7 +80,7 @@ async function seedStripeProducts() {
           plan_type: 'annual',
         },
       });
-      console.log('Created annual price:', annualPrice.id, '- $150/year');
+      console.log('Created annual price:', annualPrice.id, '- $250/year');
     }
 
     console.log('\nStripe products and prices seeded successfully!');

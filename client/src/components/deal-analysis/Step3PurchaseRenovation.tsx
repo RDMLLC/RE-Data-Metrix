@@ -48,6 +48,7 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
+import CompReportPdf from "./CompReportPdf";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -1345,7 +1346,20 @@ export default function Step3PurchaseRenovation({
                             </div>
                           </div>
                         </div>
-                        <div className="mt-3 flex justify-end">
+                        <div className="mt-3 flex justify-end gap-2">
+                          <CompReportPdf
+                            subjectAddress={address}
+                            subjectCity={city}
+                            subjectState={state}
+                            subjectZip={zipCode}
+                            subjectBeds={bedrooms}
+                            subjectBaths={bathrooms}
+                            subjectSqft={sqft}
+                            subjectYearBuilt={form.watch("yearBuilt")}
+                            suggestedArv={selectedArvData.arv}
+                            avgPricePerSqft={selectedArvData.avgPricePerSqft}
+                            selectedComps={(compsData?.comps || []).filter((_, index) => selectedCompIndices.has(index))}
+                          />
                           <Button
                             type="button"
                             size="sm"

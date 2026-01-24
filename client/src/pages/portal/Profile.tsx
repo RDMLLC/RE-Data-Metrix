@@ -502,7 +502,7 @@ export default function Profile() {
                               <p className="font-medium text-foreground">Plan</p>
                               <p className="text-sm text-muted-foreground">Full Membership</p>
                             </div>
-                            <p className="font-semibold text-lg">$15/month</p>
+                            <p className="font-semibold text-lg">$25/month</p>
                           </div>
                           <div className="flex flex-col sm:flex-row gap-3">
                             <Button
@@ -580,7 +580,7 @@ export default function Profile() {
                       <Link href="/checkout" className="flex-1">
                         <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-now">
                           <Crown className="h-4 w-4 mr-2" />
-                          Upgrade Now - $15/month
+                          Upgrade Now - $25/month
                         </Button>
                       </Link>
                       <Link href="/pricing">

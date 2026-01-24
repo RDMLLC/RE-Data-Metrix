@@ -78,7 +78,7 @@ const faqSections: FAQSection[] = [
     items: [
       {
         question: "How is RE Data Metrix priced?",
-        answer: "Our affordable pricing gives investors full access to our tools and partners for around $15 a month or $150 for an annual subscription. That's much lower than many of the tools available to investors."
+        answer: "Our affordable pricing gives investors full access to our tools and partners for $25 a month or $250 for an annual subscription. That's much lower than many of the tools available to investors."
       },
       {
         question: "Do you offer a free account?",

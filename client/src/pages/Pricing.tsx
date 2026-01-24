@@ -26,8 +26,8 @@ export default function Pricing() {
   const { isAuthenticated, isSubscriber, user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
 
-  const monthlyPrice = 15;
-  const annualPrice = 150;
+  const monthlyPrice = 25;
+  const annualPrice = 250;
   const annualMonthlyEquivalent = (annualPrice / 12).toFixed(2);
   const annualSavings = (monthlyPrice * 12) - annualPrice;
 
