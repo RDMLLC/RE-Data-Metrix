@@ -10,8 +10,8 @@ import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, Arr
 const featureComparison = [
   { feature: "Property Lookups (Zillow/Redfin)", free: "2 per month", paid: "Unlimited" },
   { feature: "Wholesale Calculator", free: "2 per month", paid: "Unlimited" },
-  { feature: "ARV Calculator & Comps Search", free: "No", paid: "Unlimited" },
-  { feature: "Comp Reports (PDF Download)", free: "No", paid: "Unlimited" },
+  { feature: "ARV Calculations", free: "2 per month", paid: "Unlimited" },
+  { feature: "Comp Reports", free: "2 per month", paid: "Unlimited" },
   { feature: "Deal Analysis Wizard", free: "Manual entry", paid: "Full automation" },
   { feature: "Lender Loan Comparisons", free: "First 2 lookups only", paid: "Unlimited" },
   { feature: "Rental/DSCR Analysis", free: "Manual entry", paid: "Full access" },
@@ -136,6 +136,10 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
+                    2 ARV calcs/month
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
                     Unlimited manual deal analysis
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
@@ -194,7 +198,11 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    ARV calculator & comps
+                    Unlimited ARV calculations
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Unlimited comp reports
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
@@ -203,10 +211,6 @@ export default function Pricing() {
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
                     Save unlimited deals
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Comp reports (PDF)
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
