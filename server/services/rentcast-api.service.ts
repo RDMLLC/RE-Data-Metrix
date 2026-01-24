@@ -1,5 +1,6 @@
 import type { IPropertyAPIService, PropertyData } from "./property-api.interface";
 import { z } from "zod";
+import { apiUsageService, API_COSTS } from "./api-usage.service";
 
 const RENTCAST_BASE_URL = "https://api.rentcast.io/v1";
 const HASDATA_BASE_URL = "https://api.hasdata.com";
@@ -111,6 +112,7 @@ export class RentCastAPIService implements IPropertyAPIService {
   private apiKey: string;
   private hasDataApiKey: string;
   private baseUrl: string;
+  private currentUserId?: string;
 
   constructor(apiKey?: string, baseUrl: string = RENTCAST_BASE_URL) {
     this.apiKey = process.env.RENTCAST_API_KEY || apiKey || "";
@@ -119,6 +121,31 @@ export class RentCastAPIService implements IPropertyAPIService {
     
     if (!this.apiKey) {
       console.warn("RentCast API key not configured. Property lookup will not work.");
+    }
+  }
+
+  setCurrentUserId(userId?: string): void {
+    this.currentUserId = userId;
+  }
+
+  private async logApiUsage(params: {
+    endpoint: string;
+    apiProvider: string;
+    apiEndpoint?: string;
+    requestPayload?: object;
+    responseStatus?: number;
+    costCents: number;
+    durationMs?: number;
+    success?: boolean;
+    errorMessage?: string;
+  }): Promise<void> {
+    try {
+      await apiUsageService.logApiCall({
+        userId: this.currentUserId,
+        ...params
+      });
+    } catch (err) {
+      console.error("Failed to log API usage:", err);
     }
   }
 
@@ -291,6 +318,7 @@ export class RentCastAPIService implements IPropertyAPIService {
 
   private async fetchPropertyData(address: string): Promise<RentCastProperty | null> {
     const params = new URLSearchParams({ address });
+    const startTime = Date.now();
     
     const response = await fetch(`${this.baseUrl}/properties?${params.toString()}`, {
       method: "GET",
@@ -300,12 +328,36 @@ export class RentCastAPIService implements IPropertyAPIService {
       },
     });
 
+    const durationMs = Date.now() - startTime;
+
     if (!response.ok) {
+      await this.logApiUsage({
+        endpoint: '/api/property/lookup',
+        apiProvider: 'rentcast',
+        apiEndpoint: '/properties',
+        requestPayload: { address },
+        responseStatus: response.status,
+        costCents: API_COSTS.rentcast.property_details,
+        durationMs,
+        success: false,
+        errorMessage: `HTTP ${response.status}`
+      });
       await this.handleApiError(response);
     }
 
     const data = await response.json();
     console.log("RentCast properties response:", JSON.stringify(data, null, 2));
+
+    await this.logApiUsage({
+      endpoint: '/api/property/lookup',
+      apiProvider: 'rentcast',
+      apiEndpoint: '/properties',
+      requestPayload: { address },
+      responseStatus: response.status,
+      costCents: API_COSTS.rentcast.property_details,
+      durationMs,
+      success: true
+    });
 
     if (Array.isArray(data) && data.length > 0) {
       return data[0];
@@ -319,6 +371,7 @@ export class RentCastAPIService implements IPropertyAPIService {
       address,
       compCount: "10"
     });
+    const startTime = Date.now();
     
     const response = await fetch(`${this.baseUrl}/avm/value?${params.toString()}`, {
       method: "GET",
@@ -328,7 +381,20 @@ export class RentCastAPIService implements IPropertyAPIService {
       },
     });
 
+    const durationMs = Date.now() - startTime;
+
     if (!response.ok) {
+      await this.logApiUsage({
+        endpoint: '/api/property/value-estimate',
+        apiProvider: 'rentcast',
+        apiEndpoint: '/avm/value',
+        requestPayload: { address },
+        responseStatus: response.status,
+        costCents: API_COSTS.rentcast.value_estimate,
+        durationMs,
+        success: false,
+        errorMessage: `HTTP ${response.status}`
+      });
       if (response.status === 404) {
         return null;
       }
@@ -338,6 +404,18 @@ export class RentCastAPIService implements IPropertyAPIService {
 
     const data = await response.json();
     console.log("RentCast value estimate response:", JSON.stringify(data, null, 2));
+
+    await this.logApiUsage({
+      endpoint: '/api/property/value-estimate',
+      apiProvider: 'rentcast',
+      apiEndpoint: '/avm/value',
+      requestPayload: { address },
+      responseStatus: response.status,
+      costCents: API_COSTS.rentcast.value_estimate,
+      durationMs,
+      success: true
+    });
+
     return data;
   }
 
@@ -346,6 +424,7 @@ export class RentCastAPIService implements IPropertyAPIService {
       address,
       compCount: "10"
     });
+    const startTime = Date.now();
     
     const response = await fetch(`${this.baseUrl}/avm/rent/long-term?${params.toString()}`, {
       method: "GET",
@@ -355,7 +434,20 @@ export class RentCastAPIService implements IPropertyAPIService {
       },
     });
 
+    const durationMs = Date.now() - startTime;
+
     if (!response.ok) {
+      await this.logApiUsage({
+        endpoint: '/api/property/rent-estimate',
+        apiProvider: 'rentcast',
+        apiEndpoint: '/avm/rent/long-term',
+        requestPayload: { address },
+        responseStatus: response.status,
+        costCents: API_COSTS.rentcast.rent_estimate,
+        durationMs,
+        success: false,
+        errorMessage: `HTTP ${response.status}`
+      });
       if (response.status === 404) {
         return null;
       }
@@ -365,6 +457,18 @@ export class RentCastAPIService implements IPropertyAPIService {
 
     const data = await response.json();
     console.log("RentCast rent estimate response:", JSON.stringify(data, null, 2));
+
+    await this.logApiUsage({
+      endpoint: '/api/property/rent-estimate',
+      apiProvider: 'rentcast',
+      apiEndpoint: '/avm/rent/long-term',
+      requestPayload: { address },
+      responseStatus: response.status,
+      costCents: API_COSTS.rentcast.rent_estimate,
+      durationMs,
+      success: true
+    });
+
     return data;
   }
 
@@ -893,6 +997,7 @@ export class RentCastAPIService implements IPropertyAPIService {
     queryParams.append('bedrooms', `${bedsMin}:${bedsMax}`);
 
     console.log(`[RentCast Comps] Searching: ${this.baseUrl}/properties?${queryParams.toString()}`);
+    const startTime = Date.now();
 
     try {
       const response = await fetch(`${this.baseUrl}/properties?${queryParams.toString()}`, {
@@ -903,14 +1008,38 @@ export class RentCastAPIService implements IPropertyAPIService {
         },
       });
 
+      const durationMs = Date.now() - startTime;
+
       if (!response.ok) {
         const errorText = await response.text().catch(() => "Unknown error");
         console.error(`[RentCast Comps] API error (${response.status}):`, errorText);
+        await this.logApiUsage({
+          endpoint: '/api/comps/search',
+          apiProvider: 'rentcast',
+          apiEndpoint: '/properties',
+          requestPayload: { address: searchAddress, radius: radiusMiles, saleDateRange: saleDateRangeDays },
+          responseStatus: response.status,
+          costCents: API_COSTS.rentcast.comparable_sales,
+          durationMs,
+          success: false,
+          errorMessage: `HTTP ${response.status}: ${errorText}`
+        });
         throw new Error(`RentCast API error: ${response.status}`);
       }
 
       const data = await response.json();
       console.log(`[RentCast Comps] Raw response count:`, Array.isArray(data) ? data.length : 'not array');
+
+      await this.logApiUsage({
+        endpoint: '/api/comps/search',
+        apiProvider: 'rentcast',
+        apiEndpoint: '/properties',
+        requestPayload: { address: searchAddress, radius: radiusMiles, saleDateRange: saleDateRangeDays },
+        responseStatus: response.status,
+        costCents: API_COSTS.rentcast.comparable_sales,
+        durationMs,
+        success: true
+      });
 
       if (!Array.isArray(data) || data.length === 0) {
         return { comps: [], searchRadius: radiusMiles, totalFound: 0 };

@@ -1017,3 +1017,99 @@ export const insertContractorServiceRegionSchema = createInsertSchema(contractor
 
 export type InsertContractorServiceRegion = z.infer<typeof insertContractorServiceRegionSchema>;
 export type ContractorServiceRegion = typeof contractorServiceRegions.$inferSelect;
+
+// Promo Codes - for webinar soft launch and other promotional campaigns
+export const promoCodes = pgTable("promo_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  name: text("name").notNull(), // e.g., "Webinar Soft Launch January 2026"
+  description: text("description"),
+  type: text("type").notNull().default('subscription'), // 'subscription', 'discount', etc.
+  durationMonths: integer("duration_months").notNull().default(6), // How long the free access lasts
+  maxRedemptions: integer("max_redemptions"), // null = unlimited, or e.g., 100
+  currentRedemptions: integer("current_redemptions").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  startsAt: timestamp("starts_at"),
+  expiresAt: timestamp("expires_at"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({
+  id: true,
+  currentRedemptions: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
+export type PromoCode = typeof promoCodes.$inferSelect;
+
+// Promo Redemptions - tracks who redeemed which promo code
+export const promoRedemptions = pgTable("promo_redemptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promoCodeId: varchar("promo_code_id").notNull().references(() => promoCodes.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  activatedAt: timestamp("activated_at").notNull().defaultNow(), // When the promo was activated
+  expiresAt: timestamp("expires_at").notNull(), // When the free access ends (calculated from activatedAt + durationMonths)
+  status: text("status").notNull().default('active'), // 'active', 'expired', 'cancelled'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPromoRedemptionSchema = createInsertSchema(promoRedemptions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPromoRedemption = z.infer<typeof insertPromoRedemptionSchema>;
+export type PromoRedemption = typeof promoRedemptions.$inferSelect;
+
+// Promo Waitlist - for users who want a promo code but the cap has been reached
+export const promoWaitlist = pgTable("promo_waitlist", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promoCodeId: varchar("promo_code_id").notNull().references(() => promoCodes.id),
+  userId: varchar("user_id").references(() => users.id), // Optional - if they already have an account
+  email: text("email").notNull(),
+  name: text("name"),
+  position: integer("position").notNull(), // Their position in line (first-come, first-served)
+  status: text("status").notNull().default('waiting'), // 'waiting', 'notified', 'converted', 'expired'
+  notifiedAt: timestamp("notified_at"),
+  convertedAt: timestamp("converted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPromoWaitlistSchema = createInsertSchema(promoWaitlist).omit({
+  id: true,
+  position: true,
+  notifiedAt: true,
+  convertedAt: true,
+  createdAt: true,
+});
+
+export type InsertPromoWaitlist = z.infer<typeof insertPromoWaitlistSchema>;
+export type PromoWaitlist = typeof promoWaitlist.$inferSelect;
+
+// API Usage Logs - tracks API calls per user with cost
+export const apiUsageLogs = pgTable("api_usage_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id), // Can be null for anonymous requests
+  endpoint: text("endpoint").notNull(), // e.g., '/api/property/lookup', '/api/comps/search'
+  apiProvider: text("api_provider").notNull(), // 'rentcast', 'hasdata', etc.
+  apiEndpoint: text("api_endpoint"), // The external API endpoint called
+  requestPayload: jsonb("request_payload"), // What was sent (sanitized)
+  responseStatus: integer("response_status"), // HTTP status code
+  costCents: integer("cost_cents").notNull().default(0), // Cost in cents
+  durationMs: integer("duration_ms"), // How long the call took
+  success: boolean("success").notNull().default(true),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertApiUsageLogSchema = createInsertSchema(apiUsageLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertApiUsageLog = z.infer<typeof insertApiUsageLogSchema>;
+export type ApiUsageLog = typeof apiUsageLogs.$inferSelect;

@@ -3460,6 +3460,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =====================
+  // Admin Promo Codes Routes
+  // =====================
+
+  // Get all promo codes with stats
+  app.get("/api/admin/promo-codes", ensureAdmin, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const codes = await promoService.getAllPromoCodes();
+      res.json(codes);
+    } catch (error) {
+      console.error('Get promo codes error:', error);
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
+  });
+
+  // Create a new promo code
+  app.post("/api/admin/promo-codes", ensureAdmin, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const user = req.user as User;
+      
+      const promoCode = await promoService.createPromoCode({
+        ...req.body,
+        createdBy: user.id
+      });
+      
+      res.status(201).json(promoCode);
+    } catch (error: any) {
+      console.error('Create promo code error:', error);
+      if (error.message?.includes('duplicate')) {
+        return res.status(400).json({ error: "A promo code with this code already exists" });
+      }
+      res.status(500).json({ error: "Failed to create promo code" });
+    }
+  });
+
+  // Update a promo code
+  app.patch("/api/admin/promo-codes/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const { id } = req.params;
+      
+      const updated = await promoService.updatePromoCode(id, req.body);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Promo code not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Update promo code error:', error);
+      res.status(500).json({ error: "Failed to update promo code" });
+    }
+  });
+
+  // Get waitlist for a promo code
+  app.get("/api/admin/promo-codes/:id/waitlist", ensureAdmin, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const { id } = req.params;
+      
+      const waitlist = await promoService.getWaitlist(id);
+      res.json(waitlist);
+    } catch (error) {
+      console.error('Get promo waitlist error:', error);
+      res.status(500).json({ error: "Failed to fetch waitlist" });
+    }
+  });
+
+  // Notify next person on waitlist
+  app.post("/api/admin/promo-codes/:id/notify-next", ensureAdmin, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const { id } = req.params;
+      
+      const next = await promoService.notifyNextOnWaitlist(id);
+      
+      if (!next) {
+        return res.status(404).json({ error: "No one on waitlist" });
+      }
+      
+      // TODO: Send notification email to next.email
+      
+      res.json({ success: true, notified: next });
+    } catch (error) {
+      console.error('Notify next on waitlist error:', error);
+      res.status(500).json({ error: "Failed to notify next person" });
+    }
+  });
+
+  // Get API usage stats (admin)
+  app.get("/api/admin/api-usage", ensureAdmin, async (req, res) => {
+    try {
+      const { apiUsageService } = await import("./services/api-usage.service");
+      const { startDate, endDate, limit } = req.query;
+      
+      const [totalStats, userStats, recentLogs] = await Promise.all([
+        apiUsageService.getTotalCosts(
+          startDate ? new Date(startDate as string) : undefined,
+          endDate ? new Date(endDate as string) : undefined
+        ),
+        apiUsageService.getAllUsersStats(
+          startDate ? new Date(startDate as string) : undefined,
+          endDate ? new Date(endDate as string) : undefined,
+          limit ? parseInt(limit as string) : 100
+        ),
+        apiUsageService.getRecentLogs(50)
+      ]);
+      
+      res.json({ totalStats, userStats, recentLogs });
+    } catch (error) {
+      console.error('Get API usage error:', error);
+      res.status(500).json({ error: "Failed to fetch API usage stats" });
+    }
+  });
+
+  // Get API usage for a specific user
+  app.get("/api/admin/api-usage/user/:userId", ensureAdmin, async (req, res) => {
+    try {
+      const { apiUsageService } = await import("./services/api-usage.service");
+      const { userId } = req.params;
+      const { startDate, endDate } = req.query;
+      
+      const [stats, logs] = await Promise.all([
+        apiUsageService.getUserStats(
+          userId,
+          startDate ? new Date(startDate as string) : undefined,
+          endDate ? new Date(endDate as string) : undefined
+        ),
+        apiUsageService.getUserLogs(userId, 50)
+      ]);
+      
+      res.json({ stats, logs });
+    } catch (error) {
+      console.error('Get user API usage error:', error);
+      res.status(500).json({ error: "Failed to fetch user API usage" });
+    }
+  });
+
+  // =====================
+  // User Promo Code Routes
+  // =====================
+
+  // Validate a promo code (public - for checking before redeeming)
+  app.get("/api/promo/validate/:code", async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const { code } = req.params;
+      
+      const result = await promoService.validatePromoCode(code);
+      res.json(result);
+    } catch (error) {
+      console.error('Validate promo code error:', error);
+      res.status(500).json({ error: "Failed to validate promo code" });
+    }
+  });
+
+  // Redeem a promo code (requires authentication)
+  app.post("/api/promo/redeem", ensureAuthenticated, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const user = req.user as User;
+      const { code } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ error: "Promo code is required" });
+      }
+      
+      const result = await promoService.redeemPromoCode(user.id, code);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          error: result.error,
+          addedToWaitlist: result.addedToWaitlist,
+          waitlistPosition: result.waitlistPosition
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        redemption: result.redemption,
+        message: "Promo code redeemed successfully! Your free access has been activated."
+      });
+    } catch (error) {
+      console.error('Redeem promo code error:', error);
+      res.status(500).json({ error: "Failed to redeem promo code" });
+    }
+  });
+
+  // Get current user's active promo
+  app.get("/api/promo/my-status", ensureAuthenticated, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const user = req.user as User;
+      
+      const activePromo = await promoService.getUserActivePromo(user.id);
+      
+      res.json({ 
+        hasActivePromo: !!activePromo,
+        promo: activePromo
+      });
+    } catch (error) {
+      console.error('Get user promo status error:', error);
+      res.status(500).json({ error: "Failed to fetch promo status" });
+    }
+  });
+
+  // Join waitlist (requires authentication)
+  app.post("/api/promo/waitlist", ensureAuthenticated, async (req, res) => {
+    try {
+      const { promoService } = await import("./services/promo.service");
+      const user = req.user as User;
+      const { promoCodeId } = req.body;
+      
+      if (!promoCodeId) {
+        return res.status(400).json({ error: "Promo code ID is required" });
+      }
+      
+      const result = await promoService.addToWaitlist(promoCodeId, user.email, user.id, user.username);
+      
+      res.json({ 
+        success: true, 
+        position: result.position,
+        message: `You've been added to the waitlist at position ${result.position}.`
+      });
+    } catch (error) {
+      console.error('Join waitlist error:', error);
+      res.status(500).json({ error: "Failed to join waitlist" });
+    }
+  });
+
+  // =====================
   // Admin Discount Codes Routes
   // =====================
 
