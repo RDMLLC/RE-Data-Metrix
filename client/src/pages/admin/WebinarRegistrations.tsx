@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,6 +31,10 @@ import {
   RefreshCw,
   Loader2,
   Send,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ArrowUpDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -37,16 +48,35 @@ interface WebinarRegistration {
   webinarId: string;
   source: string | null;
   registeredAt: string;
+  rsvpStatus: string | null;
+  rsvpUpdatedAt: string | null;
 }
+
+type RsvpFilter = 'all' | 'confirmed' | 'declined' | 'pending';
+type SortField = 'registeredAt' | 'rsvpStatus' | 'name';
+type SortDirection = 'asc' | 'desc';
 
 export default function WebinarRegistrations() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
+  const [sortField, setSortField] = useState<SortField>('registeredAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { toast } = useToast();
 
   const { data: registrations = [], isLoading, refetch, isRefetching } = useQuery<WebinarRegistration[]>({
     queryKey: ["/api/admin/webinar-registrations"],
   });
+
+  const getRsvpStatus = (status: string | null): string => {
+    return status || 'pending';
+  };
+
+  const rsvpCounts = {
+    confirmed: registrations.filter(r => getRsvpStatus(r.rsvpStatus) === 'confirmed').length,
+    declined: registrations.filter(r => getRsvpStatus(r.rsvpStatus) === 'declined').length,
+    pending: registrations.filter(r => getRsvpStatus(r.rsvpStatus) === 'pending').length,
+  };
 
   const sendConfirmationsMutation = useMutation({
     mutationFn: async () => {
@@ -70,18 +100,78 @@ export default function WebinarRegistrations() {
     },
   });
 
-  const filteredRegistrations = registrations.filter(reg =>
-    reg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (reg.phone && reg.phone.includes(searchTerm))
-  );
+  const filteredRegistrations = registrations
+    .filter(reg => {
+      const matchesSearch = 
+        reg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (reg.phone && reg.phone.includes(searchTerm));
+      
+      const matchesRsvp = rsvpFilter === 'all' || getRsvpStatus(reg.rsvpStatus) === rsvpFilter;
+      
+      return matchesSearch && matchesRsvp;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      if (sortField === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortField === 'rsvpStatus') {
+        const statusOrder = { confirmed: 1, pending: 2, declined: 3 };
+        const aStatus = getRsvpStatus(a.rsvpStatus);
+        const bStatus = getRsvpStatus(b.rsvpStatus);
+        comparison = (statusOrder[aStatus as keyof typeof statusOrder] || 2) - (statusOrder[bStatus as keyof typeof statusOrder] || 2);
+      } else if (sortField === 'registeredAt') {
+        comparison = new Date(a.registeredAt || 0).getTime() - new Date(b.registeredAt || 0).getTime();
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const getRsvpBadge = (status: string | null) => {
+    const rsvp = getRsvpStatus(status);
+    switch (rsvp) {
+      case 'confirmed':
+        return (
+          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Confirmed
+          </Badge>
+        );
+      case 'declined':
+        return (
+          <Badge variant="destructive">
+            <XCircle className="h-3 w-3 mr-1" />
+            Declined
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+    }
+  };
 
   const handleExportCSV = () => {
-    const headers = ["Name", "Email", "Phone", "Webinar ID", "Source", "Registered At"];
+    const headers = ["Name", "Email", "Phone", "RSVP Status", "RSVP Updated", "Webinar ID", "Source", "Registered At"];
     const rows = filteredRegistrations.map(reg => [
       reg.name,
       reg.email,
       reg.phone || "",
+      getRsvpStatus(reg.rsvpStatus),
+      reg.rsvpUpdatedAt ? format(new Date(reg.rsvpUpdatedAt), "yyyy-MM-dd HH:mm:ss") : "",
       reg.webinarId,
       reg.source || "",
       reg.registeredAt ? format(new Date(reg.registeredAt), "yyyy-MM-dd HH:mm:ss") : ""
@@ -159,7 +249,7 @@ export default function WebinarRegistrations() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Registrations</CardTitle>
@@ -170,14 +260,77 @@ export default function WebinarRegistrations() {
                 {registrations.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                All time signups
+                All signups
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-colors ${rsvpFilter === 'confirmed' ? 'ring-2 ring-green-500' : ''}`}
+            onClick={() => setRsvpFilter(rsvpFilter === 'confirmed' ? 'all' : 'confirmed')}
+            data-testid="card-filter-confirmed"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-green-600">Confirmed</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600" data-testid="text-confirmed">
+                {rsvpCounts.confirmed}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {registrations.length > 0 
+                  ? `${Math.round((rsvpCounts.confirmed / registrations.length) * 100)}% of registrants`
+                  : "0%"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-colors ${rsvpFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}`}
+            onClick={() => setRsvpFilter(rsvpFilter === 'pending' ? 'all' : 'pending')}
+            data-testid="card-filter-pending"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-yellow-600">Pending</CardTitle>
+              <Clock className="h-4 w-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600" data-testid="text-pending">
+                {rsvpCounts.pending}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {registrations.length > 0 
+                  ? `${Math.round((rsvpCounts.pending / registrations.length) * 100)}% awaiting response`
+                  : "0%"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-colors ${rsvpFilter === 'declined' ? 'ring-2 ring-red-500' : ''}`}
+            onClick={() => setRsvpFilter(rsvpFilter === 'declined' ? 'all' : 'declined')}
+            data-testid="card-filter-declined"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-red-600">Declined</CardTitle>
+              <XCircle className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600" data-testid="text-declined">
+                {rsvpCounts.declined}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {registrations.length > 0 
+                  ? `${Math.round((rsvpCounts.declined / registrations.length) * 100)}% won't attend`
+                  : "0%"}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">With Phone Number</CardTitle>
+              <CardTitle className="text-sm font-medium">With Phone</CardTitle>
               <Phone className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -186,23 +339,8 @@ export default function WebinarRegistrations() {
               </div>
               <p className="text-xs text-muted-foreground">
                 {registrations.length > 0 
-                  ? `${Math.round((registrations.filter(r => r.phone).length / registrations.length) * 100)}% of registrants`
-                  : "0% of registrants"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Soft Launch 2026</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-soft-launch">
-                {registrations.filter(r => r.webinarId === 'soft-launch-2026').length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                January 30, 2026 webinar
+                  ? `${Math.round((registrations.filter(r => r.phone).length / registrations.length) * 100)}% have phone`
+                  : "0%"}
               </p>
             </CardContent>
           </Card>
@@ -218,15 +356,28 @@ export default function WebinarRegistrations() {
                   {filteredRegistrations.length} of {registrations.length} registrations
                 </CardDescription>
               </div>
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, phone..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                  data-testid="input-search"
-                />
+              <div className="flex items-center gap-3">
+                <Select value={rsvpFilter} onValueChange={(value) => setRsvpFilter(value as RsvpFilter)}>
+                  <SelectTrigger className="w-40" data-testid="select-rsvp-filter">
+                    <SelectValue placeholder="Filter by RSVP" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, phone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                    data-testid="input-search"
+                  />
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -237,17 +388,52 @@ export default function WebinarRegistrations() {
               </div>
             ) : filteredRegistrations.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                {searchTerm ? "No registrations match your search" : "No registrations yet"}
+                {searchTerm || rsvpFilter !== 'all' 
+                  ? "No registrations match your filters" 
+                  : "No registrations yet"}
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => toggleSort('name')}
+                      data-testid="header-sort-name"
+                    >
+                      <div className="flex items-center gap-1">
+                        Name
+                        {sortField === 'name' && (
+                          <ArrowUpDown className="h-3 w-3" />
+                        )}
+                      </div>
+                    </TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Webinar</TableHead>
-                    <TableHead>Registered</TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => toggleSort('rsvpStatus')}
+                      data-testid="header-sort-rsvp"
+                    >
+                      <div className="flex items-center gap-1">
+                        RSVP Status
+                        {sortField === 'rsvpStatus' && (
+                          <ArrowUpDown className="h-3 w-3" />
+                        )}
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
+                      onClick={() => toggleSort('registeredAt')}
+                      data-testid="header-sort-registered"
+                    >
+                      <div className="flex items-center gap-1">
+                        Registered
+                        {sortField === 'registeredAt' && (
+                          <ArrowUpDown className="h-3 w-3" />
+                        )}
+                      </div>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -281,7 +467,7 @@ export default function WebinarRegistrations() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{reg.webinarId}</Badge>
+                        {getRsvpBadge(reg.rsvpStatus)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {reg.registeredAt 
