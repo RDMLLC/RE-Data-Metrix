@@ -454,22 +454,22 @@ export const calculationCategories: CalculationCategory[] = [
         ]
       },
       {
-        id: "total-investment",
-        name: "Total Investment",
-        description: "Complete investment including all costs (for ROI calculations)",
-        formula: "totalInvestment = purchasePrice + rehabBudget + closingCostsBuy + totalCarryingCosts",
-        formulaDisplay: "Total Investment = Purchase + Rehab + Closing + Carrying",
+        id: "est-out-of-pocket",
+        name: "Est Out-of-Pocket",
+        description: "Total amount investor needs to bring to the deal - the portion NOT covered by the lender. Displayed as 'Est Out-of-Pocket' in Deal Analysis results.",
+        formula: "estOutOfPocket = downPayment + closingCostsBuy + carryingCosts + lenderFeesUpfront",
+        formulaDisplay: "Est Out-of-Pocket = Down Payment + Closing Costs + Carrying + Upfront Lender Fees",
         inputs: [
-          { name: "purchasePrice", description: "Purchase price", source: "User input (Step 3)" },
-          { name: "rehabBudget", description: "Rehab budget", source: "User input (Step 3)" },
-          { name: "closingCostsBuy", description: "Closing costs", source: "User input (Step 4)" },
-          { name: "totalCarryingCosts", description: "Total carrying costs", source: "Total Carrying Costs calculation" }
+          { name: "downPayment", description: "Cash needed for portions not covered by loan", source: "Down Payment calculation" },
+          { name: "closingCostsBuy", description: "Base closing costs (excluding lender fees)", source: "User input (Step 4)" },
+          { name: "carryingCosts", description: "Total carrying costs during project", source: "Carrying Costs calculation" },
+          { name: "lenderFeesUpfront", description: "Upfront lender fees (non-deferred points, appraisal, etc.)", source: "Lender product calculations" }
         ],
-        output: "Total investment basis",
+        output: "Total estimated cash the investor needs to provide",
         example: {
-          inputs: { purchasePrice: 200000, rehabBudget: 50000, closingCostsBuy: 5000, totalCarryingCosts: 3600 },
-          result: "$258,600",
-          explanation: "$200,000 + $50,000 + $5,000 + $3,600 = $258,600"
+          inputs: { downPayment: 40000, closingCostsBuy: 5000, carryingCosts: 3600, lenderFeesUpfront: 6045 },
+          result: "$54,645",
+          explanation: "$40,000 down + $5,000 closing + $3,600 carrying + $6,045 lender fees = $54,645 out of pocket"
         }
       },
       {
@@ -581,11 +581,36 @@ export const calculationCategories: CalculationCategory[] = [
     description: "Return on investment calculations",
     calculations: [
       {
+        id: "gross-profit",
+        name: "Gross Profit",
+        description: "Profit before selling costs (commission, closing costs at sale). This is what you make from the deal before paying to sell it.",
+        formula: "grossProfit = sellPrice - projectCost - closingCostsBuy - lenderFees - carryingCosts",
+        formulaDisplay: "Gross Profit = Sale Price - Project Cost - Closing Costs (Buy) - Lender Fees - Carrying Costs",
+        inputs: [
+          { name: "sellPrice", description: "Sale price (ARV)", source: "Sell Price calculation" },
+          { name: "projectCost", description: "Purchase price + Rehab budget", source: "Total Project Cost calculation" },
+          { name: "closingCostsBuy", description: "Closing costs at purchase (excluding lender fees)", source: "User input (Step 4)" },
+          { name: "lenderFees", description: "All lender fees including points, appraisal, draw fees, and interest", source: "Lender product calculations" },
+          { name: "carryingCosts", description: "Total carrying costs during project (taxes, insurance, utilities, HOA)", source: "Carrying Costs calculation" }
+        ],
+        output: "Gross profit before selling costs",
+        example: {
+          inputs: { sellPrice: 300000, projectCost: 250000, closingCostsBuy: 5000, lenderFees: 17075, carryingCosts: 3600 },
+          result: "$24,325",
+          explanation: "$300,000 - $250,000 - $5,000 - $17,075 - $3,600 = $24,325 gross profit"
+        },
+        notes: [
+          "This is the profit BEFORE deducting agent commission and selling closing costs",
+          "Useful for evaluating deal profitability independent of how you choose to sell",
+          "Lender Fees include: points, appraisal, lender fees, draw fees, and total interest cost"
+        ]
+      },
+      {
         id: "profit",
-        name: "Profit",
-        description: "Net profit from the deal after all costs",
+        name: "Net Profit",
+        description: "Net profit from the deal after ALL costs including selling costs",
         formula: "profit = sellPrice - totalInvestment - closingCostsSell - commission - rolledCosts - lenderDrawFees",
-        formulaDisplay: "Profit = Sell Price - All Costs",
+        formulaDisplay: "Net Profit = Sell Price - All Costs",
         inputs: [
           { name: "sellPrice", description: "Sale price", source: "Sell Price calculation" },
           { name: "totalInvestment", description: "Total investment", source: "Total Investment calculation" },
