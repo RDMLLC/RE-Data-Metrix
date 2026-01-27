@@ -1221,12 +1221,28 @@ export class RentCastAPIService implements IPropertyAPIService {
 
   private formatSaleDate(dateStr: string): string {
     try {
+      // Handle ISO date strings (YYYY-MM-DD) by parsing directly to avoid timezone issues
+      const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        const year = isoMatch[1];
+        const month = isoMatch[2];
+        const day = isoMatch[3];
+        return `${month}/${day}/${year}`;
+      }
+      
+      // Handle MM/DD/YYYY format
+      const usMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (usMatch) {
+        return dateStr; // Already in correct format
+      }
+      
+      // Fallback: use UTC methods to avoid timezone conversion issues
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) {
         return dateStr; // Return as-is if can't parse
       }
-      // Format as MM/DD/YYYY
-      return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()}`;
+      // Use UTC methods to prevent timezone shifting
+      return `${(date.getUTCMonth() + 1).toString().padStart(2, '0')}/${date.getUTCDate().toString().padStart(2, '0')}/${date.getUTCFullYear()}`;
     } catch {
       return dateStr;
     }

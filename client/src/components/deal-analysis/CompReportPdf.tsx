@@ -45,6 +45,27 @@ function formatCurrency(value: number): string {
 
 function formatDate(dateString: string): string {
   if (!dateString) return 'N/A';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  // Parse MM/DD/YYYY format without timezone conversion
+  const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usMatch) {
+    const month = parseInt(usMatch[1], 10);
+    const day = parseInt(usMatch[2], 10);
+    const year = parseInt(usMatch[3], 10);
+    return `${months[month - 1]} ${day}, ${year}`;
+  }
+  
+  // Parse ISO format (YYYY-MM-DD) without timezone conversion
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    return `${months[month - 1]} ${day}, ${year}`;
+  }
+  
+  // Fallback
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }

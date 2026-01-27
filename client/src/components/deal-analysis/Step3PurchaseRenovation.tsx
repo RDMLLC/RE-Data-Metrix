@@ -433,10 +433,31 @@ export default function Step3PurchaseRenovation({
     }).format(value);
   };
 
-  // Format date helper
+  // Format date helper - avoids timezone conversion issues
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      // Parse MM/DD/YYYY format (from backend) without timezone conversion
+      const usMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (usMatch) {
+        const month = parseInt(usMatch[1], 10);
+        const day = parseInt(usMatch[2], 10);
+        const year = parseInt(usMatch[3], 10);
+        return `${months[month - 1]} ${day}, ${year}`;
+      }
+      
+      // Parse ISO format (YYYY-MM-DD) without timezone conversion
+      const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        const year = parseInt(isoMatch[1], 10);
+        const month = parseInt(isoMatch[2], 10);
+        const day = parseInt(isoMatch[3], 10);
+        return `${months[month - 1]} ${day}, ${year}`;
+      }
+      
+      // Fallback for other formats
       return new Date(dateStr).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
