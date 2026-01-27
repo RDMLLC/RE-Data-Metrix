@@ -1029,6 +1029,14 @@ export class RentCastAPIService implements IPropertyAPIService {
 
       const data = await response.json();
       console.log(`[RentCast Comps] Raw response count:`, Array.isArray(data) ? data.length : 'not array');
+      
+      // Debug: Log first few properties with their sale dates
+      if (Array.isArray(data) && data.length > 0) {
+        console.log(`[RentCast Comps] Sample sale dates from API:`);
+        data.slice(0, 5).forEach((prop: any, i: number) => {
+          console.log(`  ${i + 1}. ${prop.addressLine1}: lastSaleDate=${prop.lastSaleDate}, lastSalePrice=${prop.lastSalePrice}`);
+        });
+      }
 
       await this.logApiUsage({
         endpoint: '/api/comps/search',
