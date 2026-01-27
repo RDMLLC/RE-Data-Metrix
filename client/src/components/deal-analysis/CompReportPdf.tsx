@@ -17,7 +17,9 @@ interface SoldPropertyComp {
   pricePerSqft: number;
   yearBuilt?: number;
   distanceFromSubject?: number;
+  daysOnMarket?: number;
   isManuallyAdded?: boolean;
+  isPending?: boolean;
 }
 
 interface CompReportPdfProps {
@@ -202,39 +204,45 @@ export default function CompReportPdf({
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f1f5f9' }}>
-                  <th style={{ padding: '10px 8px', textAlign: 'left', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Address</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sale Price</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sale Date</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Bed/Bath</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sqft</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>$/Sqft</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Distance</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'left', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Address</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sale Price</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sale Date</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>DOM</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Bed/Bath</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sqft</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>$/Sqft</th>
+                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Dist</th>
                 </tr>
               </thead>
               <tbody>
                 {selectedComps.map((comp, index) => (
                   <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '10px 8px' }}>
+                    <td style={{ padding: '10px 6px' }}>
                       <div style={{ fontWeight: '500' }}>{comp.address}</div>
                       <div style={{ fontSize: '10px', color: '#6b7280' }}>{comp.city}, {comp.state}</div>
                     </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 'bold', color: '#1a1a2e' }}>
+                    <td style={{ padding: '10px 6px', textAlign: 'right', fontWeight: 'bold', color: '#1a1a2e' }}>
                       {formatCurrency(comp.salePrice)}
                     </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                      {formatDate(comp.saleDate)}
+                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+                      {comp.isPending ? (
+                        <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '500' }}>Pending</span>
+                      ) : formatDate(comp.saleDate)}
                     </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
+                      {comp.daysOnMarket ?? '—'}
+                    </td>
+                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
                       {comp.bedrooms}/{comp.bathrooms}
                     </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 6px', textAlign: 'right' }}>
                       {comp.sqft?.toLocaleString()}
                     </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 6px', textAlign: 'right' }}>
                       ${comp.pricePerSqft?.toFixed(0)}
                     </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                      {comp.distanceFromSubject ? `${comp.distanceFromSubject.toFixed(1)} mi` : 'N/A'}
+                    <td style={{ padding: '10px 6px', textAlign: 'right' }}>
+                      {comp.distanceFromSubject ? `${comp.distanceFromSubject.toFixed(1)}` : '—'}
                     </td>
                   </tr>
                 ))}
