@@ -79,7 +79,10 @@ import {
   contractorServiceRegions as contractorServiceRegionsTable,
   webinarRegistrations as webinarRegistrationsTable,
   type WebinarRegistration,
-  type InsertWebinarRegistration
+  type InsertWebinarRegistration,
+  referralPartners as referralPartnersTable,
+  type ReferralPartner,
+  type InsertReferralPartner
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -3626,6 +3629,56 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(webinarRegistrationsTable)
         .where(sql`${webinarRegistrationsTable.finalReminderSentAt} IS NULL`);
     }
+  }
+
+  // Referral Partners
+  async getReferralPartners(): Promise<ReferralPartner[]> {
+    return await db.select().from(referralPartnersTable)
+      .orderBy(desc(referralPartnersTable.createdAt));
+  }
+
+  async getReferralPartnerBySlug(slug: string): Promise<ReferralPartner | undefined> {
+    const [partner] = await db.select().from(referralPartnersTable)
+      .where(eq(referralPartnersTable.slug, slug.toLowerCase()));
+    return partner;
+  }
+
+  async createReferralPartner(data: InsertReferralPartner): Promise<ReferralPartner> {
+    const [partner] = await db.insert(referralPartnersTable)
+      .values({ ...data, slug: data.slug.toLowerCase() })
+      .returning();
+    return partner;
+  }
+
+  async updateReferralPartner(id: number, data: Partial<InsertReferralPartner>): Promise<void> {
+    await db.update(referralPartnersTable)
+      .set(data)
+      .where(eq(referralPartnersTable.id, id));
+  }
+
+  async deleteReferralPartner(id: number): Promise<void> {
+    await db.delete(referralPartnersTable)
+      .where(eq(referralPartnersTable.id, id));
+  }
+
+  async getWebinarRegistrationsByReferral(referralSource: string): Promise<WebinarRegistration[]> {
+    return await db.select().from(webinarRegistrationsTable)
+      .where(eq(webinarRegistrationsTable.referralSource, referralSource))
+      .orderBy(desc(webinarRegistrationsTable.registeredAt));
+  }
+
+  async getReferralStats(): Promise<{ slug: string; count: number; name: string }[]> {
+    const partners = await this.getReferralPartners();
+    const stats = [];
+    for (const partner of partners) {
+      const registrations = await this.getWebinarRegistrationsByReferral(partner.slug);
+      stats.push({
+        slug: partner.slug,
+        name: partner.name,
+        count: registrations.length
+      });
+    }
+    return stats;
   }
 
 }

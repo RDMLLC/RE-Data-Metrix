@@ -3698,7 +3698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register for webinar (public - no auth required)
   app.post("/api/webinar/register", async (req, res) => {
     try {
-      const { name, email, phone, webinarId, source } = req.body;
+      const { name, email, phone, webinarId, source, referralSource } = req.body;
       
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return res.status(400).json({ error: "Name is required" });
@@ -3717,12 +3717,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Validate referral source if provided
+      let validatedReferral = null;
+      if (referralSource) {
+        const partner = await storage.getReferralPartnerBySlug(referralSource);
+        if (partner && partner.isActive) {
+          validatedReferral = partner.slug;
+        }
+      }
+      
       const registration = await storage.createWebinarRegistration({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         phone: phone?.trim() || null,
         webinarId: webinarId || 'soft-launch-2026',
-        source: source || null
+        source: source || null,
+        referralSource: validatedReferral
       });
       
       // Trigger CRM integration event if configured
@@ -3931,6 +3941,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Send final reminders error:', error);
       res.status(500).json({ error: "Failed to send final reminders" });
+    }
+  });
+
+  // =====================
+  // Admin Referral Partners Routes
+  // =====================
+
+  // Get all referral partners
+  app.get("/api/admin/referral-partners", ensureAdmin, async (req, res) => {
+    try {
+      const partners = await storage.getReferralPartners();
+      res.json(partners);
+    } catch (error) {
+      console.error('Get referral partners error:', error);
+      res.status(500).json({ error: "Failed to fetch referral partners" });
+    }
+  });
+
+  // Get referral stats for webinar signups
+  app.get("/api/admin/referral-stats", ensureAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getReferralStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Get referral stats error:', error);
+      res.status(500).json({ error: "Failed to fetch referral stats" });
+    }
+  });
+
+  // Create a new referral partner
+  app.post("/api/admin/referral-partners", ensureAdmin, async (req, res) => {
+    try {
+      const { name, slug, email, promoCode } = req.body;
+      
+      if (!name || !slug) {
+        return res.status(400).json({ error: "Name and slug are required" });
+      }
+      
+      // Check if slug already exists
+      const existing = await storage.getReferralPartnerBySlug(slug);
+      if (existing) {
+        return res.status(400).json({ error: "A partner with this slug already exists" });
+      }
+      
+      const partner = await storage.createReferralPartner({
+        name: name.trim(),
+        slug: slug.toLowerCase().trim(),
+        email: email?.trim() || null,
+        promoCode: promoCode?.trim() || null,
+        isActive: true
+      });
+      
+      res.status(201).json(partner);
+    } catch (error) {
+      console.error('Create referral partner error:', error);
+      res.status(500).json({ error: "Failed to create referral partner" });
+    }
+  });
+
+  // Update a referral partner
+  app.patch("/api/admin/referral-partners/:id", ensureAdmin, async (req, res) => {
+    try {
+      const partnerId = parseInt(req.params.id);
+      const { name, slug, email, promoCode, isActive } = req.body;
+      
+      const updateData: any = {};
+      if (name !== undefined) updateData.name = name.trim();
+      if (slug !== undefined) updateData.slug = slug.toLowerCase().trim();
+      if (email !== undefined) updateData.email = email?.trim() || null;
+      if (promoCode !== undefined) updateData.promoCode = promoCode?.trim() || null;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      await storage.updateReferralPartner(partnerId, updateData);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Update referral partner error:', error);
+      res.status(500).json({ error: "Failed to update referral partner" });
+    }
+  });
+
+  // Delete a referral partner
+  app.delete("/api/admin/referral-partners/:id", ensureAdmin, async (req, res) => {
+    try {
+      const partnerId = parseInt(req.params.id);
+      await storage.deleteReferralPartner(partnerId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete referral partner error:', error);
+      res.status(500).json({ error: "Failed to delete referral partner" });
     }
   });
 

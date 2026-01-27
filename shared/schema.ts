@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, integer, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer, decimal, timestamp, jsonb, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1114,6 +1114,25 @@ export const insertApiUsageLogSchema = createInsertSchema(apiUsageLogs).omit({
 export type InsertApiUsageLog = z.infer<typeof insertApiUsageLogSchema>;
 export type ApiUsageLog = typeof apiUsageLogs.$inferSelect;
 
+// Referral Partners - tracks partners who can refer webinar signups
+export const referralPartners = pgTable("referral_partners", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Partner's name (e.g., "Sakira")
+  slug: text("slug").notNull().unique(), // URL slug (e.g., "sakira" for ?ref=sakira)
+  email: text("email"), // Partner's email for contact
+  promoCode: text("promo_code"), // Their unique promo code (e.g., "PARTNER2026")
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertReferralPartnerSchema = createInsertSchema(referralPartners).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertReferralPartner = z.infer<typeof insertReferralPartnerSchema>;
+export type ReferralPartner = typeof referralPartners.$inferSelect;
+
 // Webinar Registrations - stores registrations from webinar landing page
 export const webinarRegistrations = pgTable("webinar_registrations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1122,6 +1141,7 @@ export const webinarRegistrations = pgTable("webinar_registrations", {
   phone: text("phone"),
   webinarId: text("webinar_id").notNull().default('soft-launch-2026'), // Identifier for which webinar
   source: text("source"), // Where they came from (utm_source, etc.)
+  referralSource: text("referral_source"), // Referral partner slug (e.g., "sakira")
   registeredAt: timestamp("registered_at").defaultNow(),
   // RSVP tracking
   rsvpStatus: text("rsvp_status").default('pending'), // pending, confirmed, declined
