@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useMemo } from "react";
+import { Link, useLocation, useSearch } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useDeviceMode } from "@/contexts/DeviceModeContext";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,16 @@ export default function MobileWebinar() {
   const { toast } = useToast();
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const webinarDate = "Friday, January 30, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
   const registrationLink = "https://meet.zoho.com/nyok-eid-buf";
+
+  // Capture referral source from URL (?ref=sakira)
+  const referralSource = useMemo(() => {
+    const params = new URLSearchParams(searchString);
+    return params.get('ref') || null;
+  }, [searchString]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -35,11 +42,12 @@ export default function MobileWebinar() {
 
   const handleViewDesktop = () => {
     setDeviceMode("desktop");
-    setLocation("/webinar");
+    // Preserve referral source when switching to desktop
+    setLocation(referralSource ? `/webinar?ref=${referralSource}` : "/webinar");
   };
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; phone: string }) => {
+    mutationFn: async (data: { name: string; email: string; phone: string; referralSource?: string | null }) => {
       const response = await apiRequest("POST", "/api/webinar/register", data);
       return response.json();
     },
@@ -78,7 +86,7 @@ export default function MobileWebinar() {
       toast({ title: "Valid Email Required", description: "Please enter a valid email address.", variant: "destructive" });
       return;
     }
-    registerMutation.mutate(formData);
+    registerMutation.mutate({ ...formData, referralSource });
   };
 
   const benefits = [

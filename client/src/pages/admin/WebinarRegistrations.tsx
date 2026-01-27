@@ -47,9 +47,16 @@ interface WebinarRegistration {
   phone: string | null;
   webinarId: string;
   source: string | null;
+  referralSource: string | null;
   registeredAt: string;
   rsvpStatus: string | null;
   rsvpUpdatedAt: string | null;
+}
+
+interface ReferralStat {
+  slug: string;
+  name: string;
+  count: number;
 }
 
 type RsvpFilter = 'all' | 'confirmed' | 'declined' | 'pending';
@@ -66,6 +73,10 @@ export default function WebinarRegistrations() {
 
   const { data: registrations = [], isLoading, refetch, isRefetching } = useQuery<WebinarRegistration[]>({
     queryKey: ["/api/admin/webinar-registrations"],
+  });
+
+  const { data: referralStats = [] } = useQuery<ReferralStat[]>({
+    queryKey: ["/api/admin/referral-stats"],
   });
 
   const getRsvpStatus = (status: string | null): string => {
@@ -165,13 +176,14 @@ export default function WebinarRegistrations() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Name", "Email", "Phone", "RSVP Status", "RSVP Updated", "Webinar ID", "Source", "Registered At"];
+    const headers = ["Name", "Email", "Phone", "RSVP Status", "RSVP Updated", "Referral Source", "Webinar ID", "Source", "Registered At"];
     const rows = filteredRegistrations.map(reg => [
       reg.name,
       reg.email,
       reg.phone || "",
       getRsvpStatus(reg.rsvpStatus),
       reg.rsvpUpdatedAt ? format(new Date(reg.rsvpUpdatedAt), "yyyy-MM-dd HH:mm:ss") : "",
+      reg.referralSource || "",
       reg.webinarId,
       reg.source || "",
       reg.registeredAt ? format(new Date(reg.registeredAt), "yyyy-MM-dd HH:mm:ss") : ""
@@ -346,6 +358,40 @@ export default function WebinarRegistrations() {
           </Card>
         </div>
 
+        {/* Referral Stats */}
+        {referralStats.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-lg">Referral Partner Signups</CardTitle>
+              <CardDescription>Webinar registrations by referral source</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                {referralStats.map(stat => (
+                  <div key={stat.slug} className="flex items-center gap-3 p-3 border rounded-lg" data-testid={`referral-stat-${stat.slug}`}>
+                    <div>
+                      <div className="font-medium">{stat.name}</div>
+                      <div className="text-xs text-muted-foreground">?ref={stat.slug}</div>
+                    </div>
+                    <Badge variant="secondary" className="text-lg px-3">
+                      {stat.count}
+                    </Badge>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div>
+                    <div className="font-medium">Direct / No Referral</div>
+                    <div className="text-xs text-muted-foreground">No referral link</div>
+                  </div>
+                  <Badge variant="outline" className="text-lg px-3">
+                    {registrations.filter(r => !r.referralSource).length}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Search and Table */}
         <Card>
           <CardHeader>
@@ -410,6 +456,7 @@ export default function WebinarRegistrations() {
                     </TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Referral</TableHead>
                     <TableHead 
                       className="cursor-pointer"
                       onClick={() => toggleSort('rsvpStatus')}
@@ -462,6 +509,13 @@ export default function WebinarRegistrations() {
                               {reg.phone}
                             </a>
                           </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {reg.referralSource ? (
+                          <Badge variant="outline">{reg.referralSource}</Badge>
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}

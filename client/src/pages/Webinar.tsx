@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,9 +24,16 @@ import {
 
 export default function Webinar() {
   const { toast } = useToast();
+  const searchString = useSearch();
   const webinarDate = "Friday, January 30, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
   const registrationLink = "https://meet.zoho.com/nyok-eid-buf";
+
+  // Capture referral source from URL (?ref=sakira)
+  const referralSource = useMemo(() => {
+    const params = new URLSearchParams(searchString);
+    return params.get('ref') || null;
+  }, [searchString]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -34,7 +42,7 @@ export default function Webinar() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; phone: string }) => {
+    mutationFn: async (data: { name: string; email: string; phone: string; referralSource?: string | null }) => {
       const response = await apiRequest("POST", "/api/webinar/register", data);
       return response.json();
     },
@@ -74,7 +82,7 @@ export default function Webinar() {
       toast({ title: "Valid Email Required", description: "Please enter a valid email address.", variant: "destructive" });
       return;
     }
-    registerMutation.mutate(formData);
+    registerMutation.mutate({ ...formData, referralSource });
   };
 
   const features = [
