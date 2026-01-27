@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Plus, X } from "lucide-react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Plus, X, Clock } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -70,6 +70,7 @@ interface SoldPropertyComp {
   distanceFromSubject?: number; // Distance in miles from subject property
   listingUrl?: string; // URL to view the property listing
   isManuallyAdded?: boolean; // Flag for user-added comps
+  isPending?: boolean; // Flag for pending sales (not yet closed)
 }
 
 interface CompsSearchResponse {
@@ -151,6 +152,11 @@ export default function Step3PurchaseRenovation({
   const [customCompUrl, setCustomCompUrl] = useState("");
   const [isAddingCustomComp, setIsAddingCustomComp] = useState(false);
   const [customCompError, setCustomCompError] = useState<string | null>(null);
+  
+  // Pending properties state
+  const [pendingProperties, setPendingProperties] = useState<SoldPropertyComp[]>([]);
+  const [isSearchingPending, setIsSearchingPending] = useState(false);
+  const [showPendingProperties, setShowPendingProperties] = useState(false);
   
   // Comps sorting state
   type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
@@ -423,6 +429,78 @@ export default function Step3PurchaseRenovation({
     }
   };
 
+  // Search for pending properties
+  const searchPendingProperties = async () => {
+    if (!city || !state) {
+      return;
+    }
+
+    setIsSearchingPending(true);
+
+    try {
+      const response = await apiRequest("POST", "/api/comps/search-pending", {
+        city,
+        state,
+        zipCode,
+        bedrooms,
+        bathrooms,
+        sqft,
+        propertyType,
+        subjectLat: propertyLatitude,
+        subjectLng: propertyLongitude,
+      });
+
+      const data = await response.json();
+      
+      // Mark properties as pending
+      const pendingWithFlag = (data.pendingProperties || []).map((p: SoldPropertyComp) => ({
+        ...p,
+        isPending: true,
+        saleDate: 'Pending',
+      }));
+      
+      setPendingProperties(pendingWithFlag);
+      setShowPendingProperties(true);
+    } catch (error: any) {
+      console.error("Pending search error:", error);
+    } finally {
+      setIsSearchingPending(false);
+    }
+  };
+
+  // Add a pending property to the comps list
+  const addPendingToComps = (pending: SoldPropertyComp) => {
+    if (!compsData) return;
+    
+    // Check if already added (by address)
+    const alreadyAdded = compsData.comps.some(
+      c => c.address.toLowerCase() === pending.address.toLowerCase()
+    );
+    
+    if (alreadyAdded) {
+      return;
+    }
+    
+    // Add pending property to comps with flag
+    const newComp: SoldPropertyComp = {
+      ...pending,
+      isPending: true,
+      isManuallyAdded: true,
+    };
+    
+    setCompsData({
+      ...compsData,
+      comps: [...compsData.comps, newComp],
+    });
+    
+    // Select the newly added comp
+    setSelectedCompIndices(prev => {
+      const newSet = new Set(prev);
+      newSet.add(compsData.comps.length); // Index of new comp
+      return newSet;
+    });
+  };
+
   // Format currency helper
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -436,6 +514,12 @@ export default function Step3PurchaseRenovation({
   // Format date helper - avoids timezone conversion issues
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
+    
+    // Handle "Pending" text for pending properties
+    if (dateStr.toLowerCase() === 'pending') {
+      return "Pending";
+    }
+    
     try {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       
@@ -1008,6 +1092,21 @@ export default function Step3PurchaseRenovation({
                         <Plus className="h-4 w-4 mr-1" />
                         Add Comp
                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={searchPendingProperties}
+                        disabled={isSearchingPending || !city || !state}
+                        data-testid="button-add-pending"
+                      >
+                        {isSearchingPending ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Clock className="h-4 w-4 mr-1" />
+                        )}
+                        Add Pending
+                      </Button>
                     </div>
                   </div>
 
@@ -1067,6 +1166,73 @@ export default function Step3PurchaseRenovation({
                       {customCompError && (
                         <p className="text-xs text-destructive">{customCompError}</p>
                       )}
+                    </div>
+                  )}
+
+                  {/* Pending Properties Section */}
+                  {showPendingProperties && pendingProperties.length > 0 && (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-amber-600" />
+                            Pending Sales ({pendingProperties.length})
+                          </h4>
+                          <p className="text-xs text-muted-foreground">Properties under contract but not yet closed. Click to add as comp.</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowPendingProperties(false)}
+                          data-testid="button-close-pending"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {pendingProperties.map((pending, index) => {
+                          const alreadyAdded = compsData?.comps.some(
+                            c => c.address.toLowerCase() === pending.address.toLowerCase()
+                          );
+                          return (
+                            <div 
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-background rounded border text-sm"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{pending.address}</div>
+                                <div className="text-xs text-muted-foreground flex flex-wrap gap-2">
+                                  <span>{formatCurrency(pending.salePrice)}</span>
+                                  <span>{pending.bedrooms}/{pending.bathrooms}</span>
+                                  <span>{pending.sqft.toLocaleString()} sqft</span>
+                                  <span>${pending.pricePerSqft}/sqft</span>
+                                  {pending.distanceFromSubject && (
+                                    <span>{pending.distanceFromSubject.toFixed(1)} mi</span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={alreadyAdded ? "secondary" : "default"}
+                                onClick={() => !alreadyAdded && addPendingToComps(pending)}
+                                disabled={alreadyAdded}
+                                className="ml-2 shrink-0"
+                                data-testid={`button-add-pending-${index}`}
+                              >
+                                {alreadyAdded ? "Added" : "Add"}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {showPendingProperties && pendingProperties.length === 0 && !isSearchingPending && (
+                    <div className="p-3 bg-muted/50 rounded-md border text-center text-sm text-muted-foreground">
+                      No pending sales found in this area.
                     </div>
                   )}
 
@@ -1276,7 +1442,14 @@ export default function Step3PurchaseRenovation({
                                   {formatCurrency(comp.salePrice)}
                                 </TableCell>
                                 <TableCell className="text-right text-sm text-muted-foreground">
-                                  {formatDate(comp.saleDate)}
+                                  {(comp as any).isPending ? (
+                                    <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      Pending
+                                    </Badge>
+                                  ) : (
+                                    formatDate(comp.saleDate)
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-center text-sm">
                                   {comp.bedrooms}/{comp.bathrooms}
@@ -1298,8 +1471,17 @@ export default function Step3PurchaseRenovation({
                                   <TableCell colSpan={9} className="bg-muted/50 p-4">
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                                       <div>
-                                        <span className="text-muted-foreground">Sale Date:</span>
-                                        <div className="font-medium">{formatDate(comp.saleDate)}</div>
+                                        <span className="text-muted-foreground">{(comp as any).isPending ? 'Status:' : 'Sale Date:'}</span>
+                                        <div className="font-medium">
+                                          {(comp as any).isPending ? (
+                                            <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700">
+                                              <Clock className="h-3 w-3 mr-1" />
+                                              Pending (List Price)
+                                            </Badge>
+                                          ) : (
+                                            formatDate(comp.saleDate)
+                                          )}
+                                        </div>
                                       </div>
                                       {comp.yearBuilt && (
                                         <div>

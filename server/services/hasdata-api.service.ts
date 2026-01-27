@@ -944,4 +944,161 @@ export class HasDataAPIService implements IPropertyAPIService {
       return { isFlip: false, sales: [] };
     }
   }
+
+  /**
+   * Search for pending sale properties as potential comparables
+   * Uses Zillow Search API with type=pending
+   */
+  async searchPendingProperties(params: CompsSearchParams): Promise<SoldPropertyComp[]> {
+    const maxResults = params.maxResults || 5;
+    
+    if (!this.apiKey) {
+      throw new Error("HasData API key not configured. Cannot search for pending properties.");
+    }
+
+    const location = `${params.city}, ${params.state} ${params.zipCode}`;
+    const sqftMin = Math.round(params.sqft * 0.75);
+    const sqftMax = Math.round(params.sqft * 1.25);
+    const bedsMin = Math.max(1, params.bedrooms - 1);
+    const bedsMax = params.bedrooms + 1;
+
+    // Search configs - expand if not enough results
+    const searchConfigs = [
+      { radiusMiles: 2 },
+      { radiusMiles: 3 },
+      { radiusMiles: 5 },
+    ];
+
+    for (const config of searchConfigs) {
+      try {
+        console.log(`[Pending Search] Trying radius=${config.radiusMiles}mi`);
+        
+        // Build search parameters for pending properties
+        const searchParams = new URLSearchParams({
+          keyword: location,
+          type: "pending", // Search for pending sales
+          beds_min: String(bedsMin),
+          beds_max: String(bedsMax),
+        });
+
+        const endpoint = `${this.baseUrl}/scrape/zillow/listing`;
+        
+        console.log(`[Pending Search] Fetching from: ${endpoint}?${searchParams.toString()}`);
+
+        const response = await fetch(`${endpoint}?${searchParams.toString()}`, {
+          method: "GET",
+          headers: {
+            "x-api-key": this.apiKey,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          console.error(`[Pending Search] API error: ${response.status}`);
+          continue;
+        }
+
+        const data = await response.json();
+        console.log(`[Pending Search] Raw response keys:`, Object.keys(data));
+        
+        // Extract listings from response
+        const listings = data.listings || data.searchResults || data.properties || data.results || [];
+        console.log(`[Pending Search] Found ${listings.length} raw listings`);
+
+        if (!Array.isArray(listings) || listings.length === 0) {
+          continue;
+        }
+
+        // Filter and transform listings
+        const pendingProps: SoldPropertyComp[] = [];
+        
+        for (const listing of listings) {
+          const sqft = this.parseNumber(listing.area || listing.sqft || listing.squareFeet || listing.livingArea);
+          const beds = this.parseNumber(listing.beds || listing.bedrooms);
+          const baths = this.parseNumber(listing.baths || listing.bathrooms);
+          const listPrice = this.parseNumber(listing.price || listing.listPrice);
+          
+          // Skip if missing essential data
+          if (!sqft || !listPrice || sqft === 0) {
+            continue;
+          }
+
+          // Apply sqft filter
+          if (sqft < sqftMin || sqft > sqftMax) {
+            continue;
+          }
+          
+          // Apply bedroom filter
+          if (beds && (beds < bedsMin || beds > bedsMax)) {
+            continue;
+          }
+          
+          // Apply property type filter
+          const compPropertyType = listing.homeType || listing.propertyType;
+          if (!arePropertyTypesCompatible(params.propertyType, compPropertyType)) {
+            continue;
+          }
+
+          const pricePerSqft = listPrice / sqft;
+          
+          // Extract coordinates
+          const lat = this.parseNumber(
+            listing.latitude || listing.lat || listing.latLong?.latitude || listing.geo?.latitude
+          );
+          const lng = this.parseNumber(
+            listing.longitude || listing.lng || listing.lon || listing.latLong?.longitude || listing.geo?.longitude
+          );
+          
+          // Calculate distance
+          let distanceFromSubject: number | undefined;
+          if (lat && lng && params.subjectLat && params.subjectLng) {
+            distanceFromSubject = calculateDistanceMiles(params.subjectLat, params.subjectLng, lat, lng);
+            
+            // Filter by radius
+            if (distanceFromSubject > config.radiusMiles) {
+              continue;
+            }
+          }
+
+          pendingProps.push({
+            address: listing.address?.street || listing.streetAddress || listing.addressLine1 || '',
+            city: listing.address?.city || listing.city || params.city,
+            state: listing.address?.state || listing.state || params.state,
+            zipCode: listing.address?.zipcode || listing.zipCode || listing.postalCode || '',
+            salePrice: listPrice, // Use list price for pending
+            saleDate: 'Pending', // Mark as pending
+            bedrooms: beds || 0,
+            bathrooms: baths || 0,
+            sqft,
+            pricePerSqft: Math.round(pricePerSqft),
+            yearBuilt: this.parseNumber(listing.yearBuilt),
+            lotSize: this.parseNumber(listing.lotSize || listing.lotAreaValue),
+            propertyType: listing.homeType || listing.propertyType,
+            daysOnMarket: this.parseNumber(listing.daysOnZillow || listing.daysOnMarket),
+            imageUrl: listing.imgSrc || listing.image || listing.photos?.[0],
+            latitude: lat,
+            longitude: lng,
+            distanceFromSubject,
+            listingUrl: listing.detailUrl || listing.url || listing.hdpUrl || listing.homeDetailsUrl || listing.link || '',
+          });
+        }
+
+        // Sort by distance (closest first)
+        pendingProps.sort((a, b) => (a.distanceFromSubject || 999) - (b.distanceFromSubject || 999));
+
+        console.log(`[Pending Search] Filtered to ${pendingProps.length} pending properties`);
+
+        if (pendingProps.length > 0) {
+          return pendingProps.slice(0, maxResults);
+        }
+
+      } catch (error) {
+        console.error(`[Pending Search] Error with config:`, config, error);
+        continue;
+      }
+    }
+
+    console.log(`[Pending Search] Exhausted all search configs`);
+    return [];
+  }
 }

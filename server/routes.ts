@@ -6359,13 +6359,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Use RentCast service for comps search (provides actual sale dates)
-      const { RentCastAPIService } = await import("./services/rentcast-api.service");
-      const rentCastService = new RentCastAPIService();
+      // Use HasData (Zillow) for comps search - provides accurate sale data directly from Zillow
+      const { HasDataAPIService } = await import("./services/hasdata-api.service");
+      const hasDataService = new HasDataAPIService();
 
       console.log(`[Comps Search] Subject property type: "${propertyType}"`);
       
-      const result = await rentCastService.searchComparableSales({
+      const comps = await hasDataService.searchSoldComps({
         address: address || '',
         city,
         state,
@@ -6374,14 +6374,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bathrooms: bathrooms || 2,
         sqft: sqft || 1500,
         propertyType: propertyType || undefined,
-        radiusMiles: radiusMiles ?? 0.5, // Default to 0.5 miles for better comp quality
-        saleDateRangeDays: 180, // Only sales within last 6 months
-        maxResults: 10,
         subjectLat: subjectLat || undefined,
         subjectLng: subjectLng || undefined,
+        minResults: 3,
+        maxResults: 10,
       });
-      
-      const comps = result.comps;
 
       // Calculate suggested ARV using weighted average
       if (comps.length > 0) {
@@ -6415,6 +6412,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Comps search error:", error);
       res.status(500).json({ 
         error: error.message || "Failed to search for comparable sales" 
+      });
+    }
+  });
+
+  // Search for Pending Properties (for ARV Helper)
+  app.post("/api/comps/search-pending", async (req, res) => {
+    try {
+      const { city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng } = req.body;
+      
+      // Validate required fields
+      if (!city || !state || !sqft) {
+        return res.status(400).json({ 
+          error: "City, state, and square footage are required" 
+        });
+      }
+
+      // Check authentication
+      const user = req.user as User | undefined;
+      if (!user) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Use HasData (Zillow) for pending properties search
+      const { HasDataAPIService } = await import("./services/hasdata-api.service");
+      const hasDataService = new HasDataAPIService();
+
+      console.log(`[Pending Search] Searching for pending properties`);
+      
+      const pendingProperties = await hasDataService.searchPendingProperties({
+        address: '',
+        city,
+        state,
+        zipCode: zipCode || '',
+        bedrooms: bedrooms || 3,
+        bathrooms: bathrooms || 2,
+        sqft: sqft || 1500,
+        propertyType: propertyType || undefined,
+        subjectLat: subjectLat || undefined,
+        subjectLng: subjectLng || undefined,
+        maxResults: 10,
+      });
+
+      return res.json({
+        pendingProperties,
+        count: pendingProperties.length,
+      });
+
+    } catch (error: any) {
+      console.error("Pending properties search error:", error);
+      res.status(500).json({ 
+        error: error.message || "Failed to search for pending properties" 
       });
     }
   });

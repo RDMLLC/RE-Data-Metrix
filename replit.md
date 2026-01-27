@@ -63,20 +63,22 @@ Key database fields on `saved_deals`: underContractDate, estimatedClosingDate, a
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
 - **Frontend Libraries**: React Query, Wouter, React Hook Form, Zod, date-fns, Tailwind CSS, class-variance-authority, Stripe (for billing and subscription management)
 - **Email Service**: Zoho Mail SMTP
-- **Property Data APIs**: RentCast API (primary for property details, tax info, estimated values, rent, and comparable sales search), HasData API (for property images from Zillow/Redfin)
+- **Property Data APIs**: RentCast API (for property details, tax info, estimated values, and rent estimates), HasData API (for comparable sales from Zillow, pending sales, and property images)
 
 ## Comparable Sales (Comps) Search
-The ARV Helper feature uses RentCast's `/properties` endpoint with `saleDateRange=365` to search for comparable sales. Key features:
-- **Sale Date Filtering**: Only returns sales within the last 365 days - sales older than 1 year are excluded
+The ARV Helper feature uses HasData API (Zillow data) for comparable sales search. Key features:
+- **Data Source**: HasData/Zillow for accurate, verified sale data (replaced RentCast for comps due to data quality issues)
 - **Property Type Matching**: Single family homes only return single family comps; condos/townhouses return attached-type comps
-- **Search Parameters**: Filters by bedroom range (±1), sqft range (±25%), and radius (3 miles default)
+- **Search Parameters**: Filters by bedroom range (±1), sqft range (±25%), and expanding radius search (2mi → 3mi → 5mi)
 - **Sorting**: Results sorted by distance (closest first), then by sale date (most recent first)
-- **Actual Sale Dates**: RentCast provides real sale dates in lastSaleDate field, displayed in "MMM D, YYYY" format
+- **Actual Sale Dates**: Verified sale dates from Zillow displayed in "MMM D, YYYY" format
+- **Add Pending Sales**: Users can search for and include pending properties (under contract) in their ARV calculations. Pending sales display with amber "Pending" badge and use list price instead of sale price
+- **Add Comp from URL**: Users can paste a Zillow URL to add any property as a comp
 - **Downloadable Comp Report**: Professional PDF with RE Data Metrix branding, subject property details, comp table (address, price, beds/baths, sqft, $/sqft, distance), suggested ARV, marketing footer, and disclaimer. Uses `react-to-pdf` library.
 
 Implementation files:
-- `server/services/rentcast-api.service.ts` - `searchComparableSales()` method
-- `server/routes.ts` - `/api/comps/search` endpoint
+- `server/services/hasdata-api.service.ts` - `searchComparableSales()` and `searchPendingProperties()` methods
+- `server/routes.ts` - `/api/comps/search` and `/api/comps/search-pending` endpoints
 - `client/src/components/deal-analysis/Step3PurchaseRenovation.tsx` - ARV Helper UI
 - `client/src/components/deal-analysis/CompReportPdf.tsx` - Downloadable comp report PDF component
 
