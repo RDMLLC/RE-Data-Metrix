@@ -462,6 +462,15 @@ export default function AdminDashboard() {
                       <Video className="h-3.5 w-3.5 mr-1.5" />
                       Webinar Signups
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/referral-partners")}
+                      data-testid="button-referral-partners"
+                    >
+                      <Handshake className="h-3.5 w-3.5 mr-1.5" />
+                      Referral Partners
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
