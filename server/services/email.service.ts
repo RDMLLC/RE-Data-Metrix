@@ -1598,6 +1598,63 @@ END:VCALENDAR`;
       return false;
     }
   }
+  async sendWebinarRemovalNotification(
+    to: string,
+    name: string
+  ): Promise<boolean> {
+    const firstName = name.split(' ')[0];
+    const baseUrl = this.getBaseUrl();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .btn-primary { display: inline-block; padding: 14px 28px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">RE Data Metrix</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Webinar Registration Update</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            
+            <p>At your request, RE Data Metrix has removed you from the registrants for the upcoming webinar.</p>
+            
+            <p>Please watch your email and check our website to be notified of future events.</p>
+            
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${baseUrl}" class="btn-primary">Visit RE Data Metrix</a>
+            </div>
+            
+            <p>Thank you for your interest in RE Data Metrix!</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>The RE Data Metrix Team</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px;">If you have any questions, reply to this email or contact us at info@redatametrix.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Webinar Registration Update - RE Data Metrix",
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

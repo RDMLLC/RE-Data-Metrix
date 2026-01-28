@@ -36,8 +36,15 @@ import {
   Clock,
   ArrowUpDown,
   Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -114,14 +121,17 @@ export default function WebinarRegistrations() {
   });
 
   const deleteRegistrationMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiRequest("DELETE", `/api/admin/webinar-registrations/${id}`);
+    mutationFn: async ({ id, notify, email, name }: { id: string; notify: boolean; email: string; name: string }) => {
+      const url = notify 
+        ? `/api/admin/webinar-registrations/${id}?notify=true&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
+        : `/api/admin/webinar-registrations/${id}`;
+      const response = await apiRequest("DELETE", url);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Registration Removed",
-        description: "The registrant has been removed from the webinar.",
+        description: data.message || "The registrant has been removed from the webinar.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
     },
@@ -134,9 +144,13 @@ export default function WebinarRegistrations() {
     },
   });
 
-  const handleDeleteRegistration = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to remove ${name} from the webinar?`)) {
-      deleteRegistrationMutation.mutate(id);
+  const handleDeleteRegistration = (id: string, name: string, email: string, notify: boolean) => {
+    const confirmMessage = notify 
+      ? `Remove ${name} and send notification email?`
+      : `Remove ${name} from the webinar? (No notification will be sent)`;
+    
+    if (confirm(confirmMessage)) {
+      deleteRegistrationMutation.mutate({ id, notify, email, name });
     }
   };
 
@@ -559,16 +573,37 @@ export default function WebinarRegistrations() {
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeleteRegistration(reg.id, reg.name)}
-                          disabled={deleteRegistrationMutation.isPending}
-                          data-testid={`button-delete-${reg.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              disabled={deleteRegistrationMutation.isPending}
+                              data-testid={`button-actions-${reg.id}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteRegistration(reg.id, reg.name, reg.email, false)}
+                              data-testid={`button-delete-${reg.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteRegistration(reg.id, reg.name, reg.email, true)}
+                              data-testid={`button-delete-notify-${reg.id}`}
+                            >
+                              <Mail className="h-4 w-4 mr-2" />
+                              Delete & Notify
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}

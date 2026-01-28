@@ -3802,9 +3802,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/webinar-registrations/:id", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
+      const { notify, email, name } = req.query;
+      
       const deleted = await storage.deleteWebinarRegistration(id);
       if (deleted) {
-        res.json({ success: true, message: "Registration deleted" });
+        // Send notification email if requested
+        if (notify === 'true' && email && name) {
+          try {
+            await emailService.sendWebinarRemovalNotification(email as string, name as string);
+            console.log(`✓ Webinar removal notification sent to ${email}`);
+          } catch (emailError) {
+            console.error('Failed to send removal notification:', emailError);
+            // Don't fail the deletion if email fails
+          }
+        }
+        res.json({ success: true, message: notify === 'true' ? "Registration deleted and notification sent" : "Registration deleted" });
       } else {
         res.status(404).json({ error: "Registration not found" });
       }
