@@ -7582,6 +7582,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate referral code for lender
+  app.post("/api/lender/generate-referral-code", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const lender = req.user as any;
+      
+      // Check if lender already has a code
+      const [existingLender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.id, lender.id));
+      
+      if (!existingLender) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      
+      if (existingLender.generatedReferralCode) {
+        return res.json({ 
+          code: existingLender.generatedReferralCode,
+          clickCount: existingLender.referralClickCount || 0
+        });
+      }
+      
+      // Generate a unique code based on company name or fallback to random
+      let baseCode = '';
+      if (existingLender.companyName && existingLender.companyName.trim()) {
+        baseCode = existingLender.companyName
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+          .slice(0, 20);
+      }
+      
+      // Fallback to random alphanumeric if company name is empty
+      if (!baseCode) {
+        baseCode = 'lender-' + Math.random().toString(36).substring(2, 10);
+      }
+      
+      let code = baseCode;
+      let suffix = 1;
+      
+      // Ensure uniqueness with limit to prevent infinite loop
+      const maxAttempts = 100;
+      while (suffix <= maxAttempts) {
+        const [existing] = await db
+          .select()
+          .from(lenders)
+          .where(eq(lenders.generatedReferralCode, code));
+        
+        if (!existing) break;
+        code = `${baseCode}-${suffix}`;
+        suffix++;
+      }
+      
+      if (suffix > maxAttempts) {
+        return res.status(500).json({ error: "Could not generate unique referral code" });
+      }
+      
+      // Update lender with generated code
+      await db
+        .update(lenders)
+        .set({ generatedReferralCode: code })
+        .where(eq(lenders.id, lender.id));
+      
+      res.json({ code, clickCount: 0 });
+    } catch (error) {
+      console.error("Error generating referral code:", error);
+      res.status(500).json({ error: "Failed to generate referral code" });
+    }
+  });
+  
+  // Get lender's referral code and stats
+  app.get("/api/lender/referral-stats", ensureLenderAuthenticated, async (req, res) => {
+    try {
+      const lender = req.user as any;
+      
+      const [lenderData] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.id, lender.id));
+      
+      if (!lenderData) {
+        return res.status(404).json({ error: "Lender not found" });
+      }
+      
+      res.json({
+        code: lenderData.generatedReferralCode || null,
+        clickCount: lenderData.referralClickCount || 0
+      });
+    } catch (error) {
+      console.error("Error fetching referral stats:", error);
+      res.status(500).json({ error: "Failed to fetch referral stats" });
+    }
+  });
+  
+  // Public route: Track click and redirect to lender's referral link
+  app.get("/apply/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      // Find lender by generated code
+      const [lender] = await db
+        .select()
+        .from(lenders)
+        .where(eq(lenders.generatedReferralCode, code));
+      
+      if (!lender) {
+        return res.status(404).send("Lender not found");
+      }
+      
+      // Increment click count
+      await db
+        .update(lenders)
+        .set({ referralClickCount: sql`COALESCE(referral_click_count, 0) + 1` })
+        .where(eq(lenders.id, lender.id));
+      
+      // Redirect to lender's referral link or website
+      const destination = lender.referralLink || lender.website || '/lenders';
+      res.redirect(destination);
+    } catch (error) {
+      console.error("Error processing referral click:", error);
+      res.status(500).send("Error processing request");
+    }
+  });
+
   // Create HTTP server
   const server = createServer(app);
   return server;

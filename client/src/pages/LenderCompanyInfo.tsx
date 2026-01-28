@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Link, useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Copy, Check, LinkIcon, MousePointerClick } from "lucide-react";
 import { useLenderAuth } from "@/contexts/LenderAuthContext";
 
 // Custom URL validation that accepts URLs with or without protocol
@@ -49,6 +49,107 @@ const companyInfoSchema = z.object({
 });
 
 type CompanyInfoForm = z.infer<typeof companyInfoSchema>;
+
+function GenerateReferralLinkButton() {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  
+  const { data: referralStats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['/api/lender/referral-stats'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/lender/referral-stats");
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+  
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/lender/generate-referral-code");
+      if (!res.ok) throw new Error("Failed to generate referral code");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lender/referral-stats'] });
+      toast({
+        title: "Referral Link Generated",
+        description: "Your trackable referral link has been created.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate referral link. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const baseUrl = window.location.origin;
+  const generatedLink = referralStats?.code ? `${baseUrl}/apply/${referralStats.code}` : null;
+  
+  const copyToClipboard = () => {
+    if (generatedLink) {
+      navigator.clipboard.writeText(generatedLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({
+        title: "Copied!",
+        description: "Referral link copied to clipboard.",
+      });
+    }
+  };
+  
+  if (isLoadingStats) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </Button>
+    );
+  }
+  
+  if (generatedLink) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2 items-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={copyToClipboard}
+            data-testid="button-copy-referral-link"
+          >
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1" data-testid="text-referral-click-count">
+          <MousePointerClick className="h-3 w-3" />
+          <span>{referralStats?.clickCount || 0} clicks</span>
+        </div>
+        <div className="text-xs text-muted-foreground break-all max-w-[200px]" data-testid="text-generated-referral-link">
+          {generatedLink}
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => generateMutation.mutate()}
+      disabled={generateMutation.isPending}
+      data-testid="button-generate-referral-link"
+    >
+      {generateMutation.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+      ) : (
+        <LinkIcon className="h-4 w-4 mr-2" />
+      )}
+      Generate
+    </Button>
+  );
+}
 
 export default function LenderCompanyInfo() {
   const { toast } = useToast();
@@ -310,15 +411,18 @@ export default function LenderCompanyInfo() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground">Referral Link</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          type="text"
-                          placeholder="www.company.com/apply"
-                          data-testid="input-referral-link"
-                        />
-                      </FormControl>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            type="text"
+                            placeholder="www.company.com/apply"
+                            data-testid="input-referral-link"
+                          />
+                        </FormControl>
+                        <GenerateReferralLinkButton />
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

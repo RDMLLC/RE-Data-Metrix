@@ -318,6 +318,8 @@ export const lenders = pgTable("lenders", {
   isPreferred: boolean("is_preferred").default(false),
   passwordResetToken: varchar("password_reset_token").unique(),
   passwordResetExpiry: timestamp("password_reset_expiry"),
+  generatedReferralCode: varchar("generated_referral_code").unique(),
+  referralClickCount: integer("referral_click_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
