@@ -63,7 +63,18 @@ export default function LenderLoanProducts() {
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/loan-products", data);
-      return await res.json();
+      const result = await res.json();
+      if (!res.ok) {
+        // Handle Zod validation errors with details array
+        if (result.details && Array.isArray(result.details)) {
+          const fieldErrors = result.details.map((e: any) => 
+            `${e.path?.join('.') || 'Field'}: ${e.message}`
+          ).join(', ');
+          throw new Error(fieldErrors || result.error || "Validation failed");
+        }
+        throw new Error(result.message || result.error || "Failed to add loan product");
+      }
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
@@ -73,10 +84,14 @@ export default function LenderLoanProducts() {
       });
       form.reset();
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = "Failed to add loan product. Please try again.";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Error",
-        description: "Failed to add loan product. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -85,7 +100,18 @@ export default function LenderLoanProducts() {
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const res = await apiRequest("PATCH", `/api/loan-products/${id}`, data);
-      return await res.json();
+      const result = await res.json();
+      if (!res.ok) {
+        // Handle Zod validation errors with details array
+        if (result.details && Array.isArray(result.details)) {
+          const fieldErrors = result.details.map((e: any) => 
+            `${e.path?.join('.') || 'Field'}: ${e.message}`
+          ).join(', ');
+          throw new Error(fieldErrors || result.error || "Validation failed");
+        }
+        throw new Error(result.message || result.error || "Failed to update loan product");
+      }
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/loan-products"] });
@@ -96,10 +122,14 @@ export default function LenderLoanProducts() {
       setEditingProduct(null);
       form.reset();
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = "Failed to update loan product. Please try again.";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Error",
-        description: "Failed to update loan product. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -424,12 +454,6 @@ export default function LenderLoanProducts() {
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder={
-                            watchLoanType === 'dscr-purchase' ? "e.g., DSCR 30-Year Fixed" :
-                            watchLoanType === 'dscr-refi' ? "e.g., Cash-Out DSCR Refinance" :
-                            watchLoanType === 'new-construction' ? "e.g., Ground-Up Construction Loan" :
-                            "e.g., Fix & Flip Bridge Loan"
-                          }
                           data-testid="input-product-name"
                         />
                       </FormControl>
@@ -474,7 +498,6 @@ export default function LenderLoanProducts() {
                           <Input
                             {...field}
                             type="number"
-                            placeholder="660"
                             onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
                             value={field.value || ""}
                             data-testid="input-min-credit-score"
@@ -491,13 +514,12 @@ export default function LenderLoanProducts() {
                   name="maxLtvBuy"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground">Max LTV (%)</FormLabel>
+                      <FormLabel className="text-foreground">Max Lend % (BUY)</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value || ""}
                           type="text"
-                          placeholder="75"
                           data-testid="input-max-ltv-buy"
                         />
                       </FormControl>
@@ -519,7 +541,6 @@ export default function LenderLoanProducts() {
                               {...field}
                               value={field.value || ""}
                               type="text"
-                              placeholder="100"
                               data-testid="input-max-lend-rehab"
                             />
                           </FormControl>
@@ -594,7 +615,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="70"
                                 data-testid="input-cash-out-max-ltv"
                               />
                             </FormControl>
@@ -647,7 +667,6 @@ export default function LenderLoanProducts() {
                               {...field}
                               value={field.value || ""}
                               type="text"
-                              placeholder="1.0"
                               data-testid="input-min-dscr"
                             />
                           </FormControl>
@@ -678,7 +697,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="500"
                                 data-testid="input-transactional-flat-fee"
                               />
                             </FormControl>
@@ -701,7 +719,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="1.5"
                                 data-testid="input-transactional-points"
                               />
                             </FormControl>
@@ -730,7 +747,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="8.50"
                                 data-testid="input-interest-rate"
                               />
                             </FormControl>
@@ -777,7 +793,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="2.5"
                                 data-testid="input-points"
                               />
                             </FormControl>
@@ -825,7 +840,6 @@ export default function LenderLoanProducts() {
                                   {...field}
                                   value={field.value || ""}
                                   type="text"
-                                  placeholder="70"
                                   data-testid="input-max-loan-arv"
                                 />
                               </FormControl>
@@ -878,7 +892,6 @@ export default function LenderLoanProducts() {
                                     {...field}
                                     value={field.value || ""}
                                     type="text"
-                                    placeholder="90"
                                     data-testid="input-max-ltc-percent"
                                   />
                                 </FormControl>
@@ -930,7 +943,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="500"
                                 data-testid="input-appraisal-cost"
                               />
                             </FormControl>
@@ -951,7 +963,6 @@ export default function LenderLoanProducts() {
                               {...field}
                               value={field.value || ""}
                               type="text"
-                              placeholder="1500"
                               data-testid="input-fees"
                             />
                           </FormControl>
@@ -972,7 +983,6 @@ export default function LenderLoanProducts() {
                                 {...field}
                                 value={field.value || ""}
                                 type="text"
-                                placeholder="250"
                                 data-testid="input-cost-per-draw"
                               />
                             </FormControl>
