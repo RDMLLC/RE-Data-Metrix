@@ -3766,9 +3766,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the registration if CRM sync fails
       }
       
-      // Send confirmation email with calendar invite
+      // Send confirmation email with calendar invite and RSVP buttons
       try {
-        await emailService.sendWebinarConfirmationEmail(registration.email, registration.name);
+        await emailService.sendWebinarConfirmationEmail(registration.email, registration.name, registration.id);
         console.log(`✓ Webinar confirmation email sent to ${registration.email}`);
       } catch (emailError) {
         console.error('Webinar confirmation email error:', emailError);
@@ -3820,7 +3820,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const success = await emailService.sendWebinarConfirmationEmail(
             registration.email,
-            registration.name
+            registration.name,
+            registration.id
           );
           if (success) {
             results.sent++;

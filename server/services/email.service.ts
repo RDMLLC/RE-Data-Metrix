@@ -1163,11 +1163,16 @@ class EmailService {
   async sendWebinarConfirmationEmail(
     to: string,
     name: string,
+    registrationId?: string,
     webinarDate: Date = new Date('2026-01-30T12:00:00-05:00'),
     webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
   ): Promise<boolean> {
     const firstName = name.split(' ')[0];
     const baseUrl = this.getBaseUrl();
+    
+    // Build RSVP confirmation URLs if registrationId is provided
+    const confirmUrl = registrationId ? `${baseUrl}/api/webinar/rsvp/${registrationId}?response=confirmed` : null;
+    const declineUrl = registrationId ? `${baseUrl}/api/webinar/rsvp/${registrationId}?response=declined` : null;
     
     const dateFormatted = webinarDate.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -1238,6 +1243,17 @@ class EmailService {
               <li>Finding comparable sales with ARV Helper</li>
               <li>Connecting with hard money lenders</li>
             </ul>
+            
+            ${confirmUrl ? `
+            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 20px; margin: 24px 0; text-align: center;">
+              <p style="margin: 0 0 12px 0; font-weight: 600; color: #047857;">Confirm Your Attendance</p>
+              <p style="margin: 0 0 16px 0; color: #065f46; font-size: 14px;">Let us know if you'll be joining us live:</p>
+              <div style="display: inline-block;">
+                <a href="${confirmUrl}" style="display: inline-block; padding: 12px 24px; background-color: #10b981; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 12px;">Yes, I'll Be There!</a>
+                <a href="${declineUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f3f4f6; color: #6b7280 !important; text-decoration: none; border-radius: 6px; font-weight: 500;">Can't Make It</a>
+              </div>
+            </div>
+            ` : ''}
             
             <div style="text-align: center; margin: 28px 0;">
               <a href="${webinarLink}" class="btn-primary">Join the Webinar</a>
