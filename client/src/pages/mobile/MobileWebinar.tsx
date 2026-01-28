@@ -65,7 +65,7 @@ export default function MobileWebinar() {
       }
       // Redirect to thank you page (avoids popup blocker issues)
       setTimeout(() => {
-        setLocation(`/webinar/thank-you/${result.registrationId}?status=confirmed`);
+        setLocation(`/webinar/rsvp/${result.registrationId}/thank-you`);
       }, 1000);
     },
     onError: (error: any) => {
