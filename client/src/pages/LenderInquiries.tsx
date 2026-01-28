@@ -258,6 +258,191 @@ function InquiryCard({ inquiry }: { inquiry: Inquiry }) {
   );
 }
 
+interface ApplyClick {
+  id: string;
+  propertyAddress: string | null;
+  arv: string | null;
+  buyPrice: string | null;
+  rehabCost: string | null;
+  estProfit: string | null;
+  loanTerms: LoanTerms | null;
+  investorName: string | null;
+  investorEmail: string | null;
+  investorPhone: string | null;
+  productName: string | null;
+  loanType: string | null;
+  referralLink: string | null;
+  source: string | null;
+  createdAt: string;
+}
+
+function ApplyClickCard({ click }: { click: ApplyClick }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <Card className="p-6 hover-elevate border-l-4 border-l-accent" data-testid={`card-apply-click-${click.id}`}>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-accent font-semibold text-lg">
+                {(click.investorName || "U").substring(0, 1).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground" data-testid={`text-apply-click-investor-${click.id}`}>
+                {click.investorName || "Unknown Investor"}
+              </h3>
+              <div className="space-y-1 mt-2">
+                {click.investorEmail && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <a 
+                      href={`mailto:${click.investorEmail}`} 
+                      className="hover:text-primary transition-colors"
+                      data-testid={`link-apply-click-email-${click.id}`}
+                    >
+                      {click.investorEmail}
+                    </a>
+                  </div>
+                )}
+                {click.investorPhone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <a 
+                      href={`tel:${click.investorPhone}`}
+                      className="hover:text-primary transition-colors"
+                      data-testid={`link-apply-click-phone-${click.id}`}
+                    >
+                      {click.investorPhone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant={click.source === 'referral_link' ? 'default' : 'secondary'}>
+              {click.source === 'referral_link' ? 'Referral Link' : 'Direct'}
+            </Badge>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              {format(new Date(click.createdAt), "MMM d, yyyy 'at' h:mm a")}
+            </div>
+          </div>
+        </div>
+
+        {/* Property & Product Info */}
+        <div className="flex flex-wrap gap-3">
+          {click.productName && (
+            <Badge variant="outline" className="text-sm">
+              <DollarSign className="h-3 w-3 mr-1" />
+              {click.productName}
+            </Badge>
+          )}
+          {click.loanType && (
+            <Badge variant="outline" className="text-sm">
+              {click.loanType}
+            </Badge>
+          )}
+          {click.propertyAddress && (
+            <Badge variant="outline" className="text-sm">
+              <MapPin className="h-3 w-3 mr-1" />
+              {click.propertyAddress}
+            </Badge>
+          )}
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-start"
+          onClick={() => setIsExpanded(!isExpanded)}
+          data-testid={`button-toggle-apply-click-details-${click.id}`}
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="h-4 w-4 mr-1" />
+              Hide Details
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4 mr-1" />
+              Show Details
+            </>
+          )}
+        </Button>
+
+        {isExpanded && (
+          <div className="space-y-6 pt-4 border-t">
+            {click.propertyAddress && (
+              <div>
+                <h4 className="font-semibold text-primary flex items-center gap-2 mb-3">
+                  <Building2 className="h-4 w-4" />
+                  Property & Deal Details
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground">ARV</p>
+                    <p className="font-semibold">{formatCurrency(click.arv)}</p>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Buy Price</p>
+                    <p className="font-semibold">{formatCurrency(click.buyPrice)}</p>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Rehab Cost</p>
+                    <p className="font-semibold">{formatCurrency(click.rehabCost)}</p>
+                  </div>
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground">Est. Profit</p>
+                    <p className="font-semibold text-green-600">{formatCurrency(click.estProfit)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {click.loanTerms && (
+              <div>
+                <h4 className="font-semibold text-primary flex items-center gap-2 mb-3">
+                  <DollarSign className="h-4 w-4" />
+                  Loan Terms Viewed
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {click.loanTerms.interestRate && (
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Interest Rate</p>
+                      <p className="font-semibold">{click.loanTerms.interestRate}</p>
+                    </div>
+                  )}
+                  {click.loanTerms.maxLtvBuy && (
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Max LTV (Buy)</p>
+                      <p className="font-semibold">{click.loanTerms.maxLtvBuy}</p>
+                    </div>
+                  )}
+                  {click.loanTerms.points && (
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Points</p>
+                      <p className="font-semibold">{click.loanTerms.points}</p>
+                    </div>
+                  )}
+                  {click.loanTerms.timeToClose && (
+                    <div className="bg-muted/50 p-3 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Time to Close</p>
+                      <p className="font-semibold">{click.loanTerms.timeToClose}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 interface ReferralStats {
   code: string | null;
   clickCount: number;
@@ -293,6 +478,17 @@ export default function LenderInquiries() {
       return res.json();
     },
   });
+  
+  const { data: applyClicks, isLoading: applyClicksLoading } = useQuery<ApplyClick[]>({
+    queryKey: ["/api/lender/apply-clicks"],
+    queryFn: async () => {
+      const res = await fetch("/api/lender/apply-clicks", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch apply clicks");
+      return res.json();
+    },
+  });
+  
+  const [activeTab, setActiveTab] = useState<'inquiries' | 'apply-clicks'>('inquiries');
 
   return (
     <Layout>
@@ -321,16 +517,29 @@ export default function LenderInquiries() {
           </div>
 
           {/* Stats Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <Card className="p-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                   <MessageSquare className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Inquiries</p>
+                  <p className="text-sm text-muted-foreground">Email Inquiries</p>
                   <p className="text-2xl font-bold text-foreground" data-testid="text-total-inquiries">
                     {inquiries?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Apply Button Clicks</p>
+                  <p className="text-2xl font-bold text-foreground" data-testid="text-apply-clicks">
+                    {applyClicks?.length || 0}
                   </p>
                 </div>
               </div>
@@ -355,73 +564,138 @@ export default function LenderInquiries() {
               </div>
             </Card>
           </div>
+          
+          {/* Tab Navigation */}
+          <div className="flex gap-2 mb-6">
+            <Button
+              variant={activeTab === 'inquiries' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('inquiries')}
+              data-testid="button-tab-inquiries"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Email Inquiries ({inquiries?.length || 0})
+            </Button>
+            <Button
+              variant={activeTab === 'apply-clicks' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('apply-clicks')}
+              data-testid="button-tab-apply-clicks"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Apply Clicks ({applyClicks?.length || 0})
+            </Button>
+          </div>
 
-          <Card className="p-4 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by investor name, email, or property..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search"
-                />
-              </div>
-              <div className="flex gap-2 items-center">
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-40"
-                  data-testid="input-start-date"
-                />
-                <span className="text-muted-foreground">to</span>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-40"
-                  data-testid="input-end-date"
-                />
-              </div>
-            </div>
-          </Card>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          ) : !inquiries || inquiries.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">No Inquiries Yet</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                When investors contact you through the deal analysis tool, their inquiries will appear here
-                with all the details about their property and deal metrics.
-              </p>
-              <Link href="/lender-loan-products">
-                <Button className="mt-6" data-testid="button-manage-products">
-                  Manage Your Loan Products
-                </Button>
-              </Link>
-            </Card>
-          ) : (
+          {activeTab === 'inquiries' && (
             <>
-              <div className="mb-6 flex items-center justify-between">
-                <Badge variant="secondary" className="text-base px-4 py-2">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  {inquiries.length} {inquiries.length === 1 ? "Inquiry" : "Inquiries"}
-                </Badge>
-              </div>
+              <Card className="p-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by investor name, email, or property..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search"
+                    />
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-40"
+                      data-testid="input-start-date"
+                    />
+                    <span className="text-muted-foreground">to</span>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-40"
+                      data-testid="input-end-date"
+                    />
+                  </div>
+                </div>
+              </Card>
 
-              <div className="space-y-4">
-                {inquiries.map((inquiry) => (
-                  <InquiryCard key={inquiry.id} inquiry={inquiry} />
-                ))}
-              </div>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              ) : !inquiries || inquiries.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">No Inquiries Yet</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    When investors contact you through the deal analysis tool, their inquiries will appear here
+                    with all the details about their property and deal metrics.
+                  </p>
+                  <Link href="/lender-loan-products">
+                    <Button className="mt-6" data-testid="button-manage-products">
+                      Manage Your Loan Products
+                    </Button>
+                  </Link>
+                </Card>
+              ) : (
+                <>
+                  <div className="mb-6 flex items-center justify-between">
+                    <Badge variant="secondary" className="text-base px-4 py-2">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {inquiries.length} {inquiries.length === 1 ? "Inquiry" : "Inquiries"}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-4">
+                    {inquiries.map((inquiry) => (
+                      <InquiryCard key={inquiry.id} inquiry={inquiry} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          
+          {activeTab === 'apply-clicks' && (
+            <>
+              {applyClicksLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              ) : !applyClicks || applyClicks.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">No Apply Clicks Yet</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    When investors click your "Apply Now" button during their deal analysis, their activity will appear here
+                    with all the details about their property and deal metrics.
+                  </p>
+                  <Link href="/lender-loan-products">
+                    <Button className="mt-6" data-testid="button-manage-products-2">
+                      Manage Your Loan Products
+                    </Button>
+                  </Link>
+                </Card>
+              ) : (
+                <>
+                  <div className="mb-6 flex items-center justify-between">
+                    <Badge variant="secondary" className="text-base px-4 py-2">
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      {applyClicks.length} Apply {applyClicks.length === 1 ? "Click" : "Clicks"}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-4">
+                    {applyClicks.map((click) => (
+                      <ApplyClickCard key={click.id} click={click} />
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

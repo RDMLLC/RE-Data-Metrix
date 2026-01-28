@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -7487,6 +7487,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid request data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to send inquiry" });
+    }
+  });
+  
+  // Track Apply Now button clicks (for referral analytics)
+  app.post("/api/track-apply-click", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+      
+      const clickSchema = z.object({
+        lenderId: z.string(),
+        loanProductId: z.string().optional(),
+        propertyAddress: z.string().optional(),
+        arv: z.number().optional(),
+        buyPrice: z.number().optional(),
+        rehabCost: z.number().optional(),
+        estProfit: z.number().optional(),
+        loanTerms: z.object({
+          interestRate: z.string().optional(),
+          maxLtvBuy: z.string().optional(),
+          points: z.string().optional(),
+          timeToClose: z.string().optional(),
+        }).optional(),
+        productName: z.string().optional(),
+        loanType: z.string().optional(),
+        referralLink: z.string().nullable().optional(),
+        source: z.enum(['referral_link', 'direct']).default('direct'),
+      });
+      
+      const data = clickSchema.parse(req.body);
+      
+      // Get user profile for investor info
+      const profile = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, user.id))
+        .limit(1)
+        .then(rows => rows[0]);
+      
+      const investorName = profile?.fullName || user.username || "Unknown Investor";
+      const investorEmail = user.email;
+      const investorPhone = profile?.phone || undefined;
+      
+      // Store the click in the database
+      await db
+        .insert(applyClicks)
+        .values({
+          lenderId: data.lenderId,
+          loanProductId: data.loanProductId,
+          userId: user.id,
+          propertyAddress: data.propertyAddress,
+          arv: data.arv?.toString(),
+          buyPrice: data.buyPrice?.toString(),
+          rehabCost: data.rehabCost?.toString(),
+          estProfit: data.estProfit?.toString(),
+          loanTerms: data.loanTerms,
+          investorName,
+          investorEmail,
+          investorPhone,
+          productName: data.productName,
+          loanType: data.loanType,
+          referralLink: data.referralLink,
+          source: data.source,
+        });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking apply click:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to track click" });
+    }
+  });
+  
+  // Get apply clicks (for lender portal)
+  app.get("/api/lender/apply-clicks", ensureLenderOrAdmin, async (req, res) => {
+    try {
+      let lenderId: string;
+      
+      if (req.user!.role === "admin") {
+        const previewLenderId = req.query.lenderId as string;
+        if (!previewLenderId) {
+          return res.status(400).json({ error: "Lender ID required for admin preview" });
+        }
+        lenderId = previewLenderId;
+      } else {
+        const lender = await db
+          .select()
+          .from(lenders)
+          .where(eq(lenders.userId, req.user!.id))
+          .limit(1)
+          .then(rows => rows[0]);
+        
+        if (!lender) {
+          return res.status(404).json({ error: "Lender profile not found" });
+        }
+        lenderId = lender.id;
+      }
+      
+      const clicks = await db
+        .select({
+          id: applyClicks.id,
+          propertyAddress: applyClicks.propertyAddress,
+          arv: applyClicks.arv,
+          buyPrice: applyClicks.buyPrice,
+          rehabCost: applyClicks.rehabCost,
+          estProfit: applyClicks.estProfit,
+          loanTerms: applyClicks.loanTerms,
+          investorName: applyClicks.investorName,
+          investorEmail: applyClicks.investorEmail,
+          investorPhone: applyClicks.investorPhone,
+          productName: applyClicks.productName,
+          loanType: applyClicks.loanType,
+          referralLink: applyClicks.referralLink,
+          source: applyClicks.source,
+          createdAt: applyClicks.createdAt,
+        })
+        .from(applyClicks)
+        .where(eq(applyClicks.lenderId, lenderId))
+        .orderBy(desc(applyClicks.createdAt));
+      
+      res.json(clicks);
+    } catch (error) {
+      console.error("Error fetching apply clicks:", error);
+      res.status(500).json({ error: "Failed to fetch apply clicks" });
     }
   });
   

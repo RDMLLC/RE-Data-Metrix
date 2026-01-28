@@ -556,7 +556,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     }
   };
 
-  const handleContactLender = (lenderData: {
+  const handleContactLender = async (lenderData: {
     lenderId: string;
     lenderName: string;
     productId: string;
@@ -575,6 +575,36 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     exitSale?: number;
     referralLink?: string;
   }) => {
+    const formData = form.getValues();
+    const propertyAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
+    
+    const trackingPayload = {
+      lenderId: lenderData.lenderId,
+      loanProductId: lenderData.productId,
+      propertyAddress,
+      arv: editArv || formData.arv || 0,
+      buyPrice: editBuyPrice,
+      rehabCost: editRehab,
+      estProfit: lenderData.profit,
+      loanTerms: {
+        interestRate: lenderData.interestRate ? `${lenderData.interestRate}%` : undefined,
+        maxLtvBuy: lenderData.maxLtvBuy ? `${lenderData.maxLtvBuy}%` : undefined,
+        points: lenderData.points ? `${lenderData.points}` : undefined,
+        timeToClose: lenderData.timeToClose ? `${lenderData.timeToClose} days` : undefined,
+      },
+      productName: lenderData.productName,
+      loanType: lenderData.loanType,
+      referralLink: lenderData.referralLink || null,
+      source: (lenderData.referralLink && lenderData.referralLink !== '#' && lenderData.referralLink.startsWith('http')) ? 'referral_link' : 'direct',
+    };
+    
+    // Track the click (fire and forget - don't block the user experience)
+    try {
+      await apiRequest("POST", "/api/track-apply-click", trackingPayload);
+    } catch (error) {
+      console.error('Failed to track apply click:', error);
+    }
+    
     // If referral link exists and is a valid URL (not "#"), open it
     if (lenderData.referralLink && lenderData.referralLink !== '#' && lenderData.referralLink.startsWith('http')) {
       window.open(lenderData.referralLink, '_blank', 'noopener,noreferrer');
