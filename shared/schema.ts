@@ -696,6 +696,39 @@ export const insertLenderInquirySchema = createInsertSchema(lenderInquiries).omi
 export type InsertLenderInquiry = z.infer<typeof insertLenderInquirySchema>;
 export type LenderInquiry = typeof lenderInquiries.$inferSelect;
 
+// Apply Clicks - tracks when investors click "Apply Now" on loan products
+export const applyClicks = pgTable("apply_clicks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  lenderId: varchar("lender_id").notNull().references(() => lenders.id),
+  loanProductId: varchar("loan_product_id").references(() => loanProducts.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  propertyAddress: text("property_address"),
+  arv: decimal("arv", { precision: 12, scale: 2 }),
+  buyPrice: decimal("buy_price", { precision: 12, scale: 2 }),
+  rehabCost: decimal("rehab_cost", { precision: 12, scale: 2 }),
+  estProfit: decimal("est_profit", { precision: 12, scale: 2 }),
+  loanTerms: jsonb("loan_terms"),
+  investorName: text("investor_name"),
+  investorEmail: text("investor_email"),
+  investorPhone: text("investor_phone"),
+  productName: text("product_name"),
+  loanType: text("loan_type"),
+  referralLink: text("referral_link"),
+  source: text("source").default('direct'),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  lenderIdIdx: { name: "apply_clicks_lender_id_idx", columns: [table.lenderId] },
+  userIdIdx: { name: "apply_clicks_user_id_idx", columns: [table.userId] },
+}));
+
+export const insertApplyClickSchema = createInsertSchema(applyClicks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertApplyClick = z.infer<typeof insertApplyClickSchema>;
+export type ApplyClick = typeof applyClicks.$inferSelect;
+
 // Affiliates - partner programs displayed in the Toolbox
 // Note: loginUsername/loginPassword store admin's credentials for external affiliate portals (admin-only access)
 export const affiliates = pgTable("affiliates", {
