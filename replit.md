@@ -106,3 +106,29 @@ Implementation files:
 - `server/services/promo.service.ts` - Promo code business logic
 - `server/services/api-usage.service.ts` - API usage logging service
 - `client/src/pages/admin/PromoCodes.tsx` - Admin UI for promo codes
+
+## Apply Click Tracking System (January 2026)
+Tracks investor engagement when they click "Apply Now" buttons on loan products, capturing comprehensive data for lender analytics.
+
+**Data Captured:**
+- **Investor Info**: Name, email, phone (enriched from user profile)
+- **Property Details**: Address, ARV, buy price, rehab cost, estimated profit
+- **Loan Product Info**: Lender ID, product name, loan type, terms (interest rate, LTV, points, time to close)
+- **Source Tracking**: `referral_link` (clicked via lender's referral URL) or `direct` (clicked via email modal)
+
+**Database Table**: `apply_clicks` with all captured fields plus timestamp and userId
+
+**Key Endpoints**:
+- `POST /api/track-apply-click` - Records click before opening lender link or email modal
+- `GET /api/lender/apply-clicks` - Retrieves click history for lender portal
+
+**Lender Portal Integration**:
+- Investor Inquiries page (`/lender/inquiries`) shows tabbed view with Email Inquiries and Apply Clicks
+- Apply Clicks tab displays expandable cards with investor/property/loan details
+- Three stat cards: Email Inquiries count, Apply Button Clicks count, Referral Link Clicks count
+
+**Implementation Files**:
+- `shared/schema.ts` - `applyClicks` table definition
+- `server/routes.ts` - Tracking and retrieval endpoints
+- `client/src/components/deal-analysis/Step6Results.tsx` - Click tracking on Apply Now buttons
+- `client/src/pages/LenderInquiries.tsx` - Tabbed inquiries view with apply click cards
