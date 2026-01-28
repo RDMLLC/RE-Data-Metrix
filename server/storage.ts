@@ -3681,6 +3681,12 @@ export class DatabaseStorage implements IStorage {
     return stats;
   }
 
+  async deleteWebinarRegistration(id: string): Promise<boolean> {
+    const result = await db.delete(webinarRegistrationsTable)
+      .where(eq(webinarRegistrationsTable.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
 }
 
 export const storage = new DatabaseStorage();
