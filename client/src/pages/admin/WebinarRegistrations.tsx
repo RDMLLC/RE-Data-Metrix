@@ -35,7 +35,9 @@ import {
   XCircle,
   Clock,
   ArrowUpDown,
+  Trash2,
 } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -110,6 +112,33 @@ export default function WebinarRegistrations() {
       });
     },
   });
+
+  const deleteRegistrationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/admin/webinar-registrations/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Registration Removed",
+        description: "The registrant has been removed from the webinar.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Remove",
+        description: error.message || "An error occurred while removing the registration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteRegistration = (id: string, name: string) => {
+    if (confirm(`Are you sure you want to remove ${name} from the webinar?`)) {
+      deleteRegistrationMutation.mutate(id);
+    }
+  };
 
   const filteredRegistrations = registrations
     .filter(reg => {
@@ -481,6 +510,7 @@ export default function WebinarRegistrations() {
                         )}
                       </div>
                     </TableHead>
+                    <TableHead className="w-16">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -527,6 +557,18 @@ export default function WebinarRegistrations() {
                         {reg.registeredAt 
                           ? format(new Date(reg.registeredAt), "MMM d, yyyy h:mm a")
                           : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteRegistration(reg.id, reg.name)}
+                          disabled={deleteRegistrationMutation.isPending}
+                          data-testid={`button-delete-${reg.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

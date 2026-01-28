@@ -3798,6 +3798,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a webinar registration (admin only)
+  app.delete("/api/admin/webinar-registrations/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteWebinarRegistration(id);
+      if (deleted) {
+        res.json({ success: true, message: "Registration deleted" });
+      } else {
+        res.status(404).json({ error: "Registration not found" });
+      }
+    } catch (error) {
+      console.error('Delete webinar registration error:', error);
+      res.status(500).json({ error: "Failed to delete registration" });
+    }
+  });
+
   // Send confirmation emails to existing registrants (admin only)
   app.post("/api/admin/webinar-registrations/send-confirmations", ensureAdmin, async (req, res) => {
     try {
