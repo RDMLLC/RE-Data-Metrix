@@ -18,8 +18,11 @@ import {
   DollarSign,
   TrendingUp,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MousePointerClick,
+  LinkIcon
 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
@@ -255,6 +258,11 @@ function InquiryCard({ inquiry }: { inquiry: Inquiry }) {
   );
 }
 
+interface ReferralStats {
+  code: string | null;
+  clickCount: number;
+}
+
 export default function LenderInquiries() {
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -273,6 +281,15 @@ export default function LenderInquiries() {
     queryFn: async () => {
       const res = await fetch(apiUrl, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch inquiries");
+      return res.json();
+    },
+  });
+  
+  const { data: referralStats } = useQuery<ReferralStats>({
+    queryKey: ["/api/lender/referral-stats"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/lender/referral-stats");
+      if (!res.ok) return { code: null, clickCount: 0 };
       return res.json();
     },
   });
@@ -301,6 +318,42 @@ export default function LenderInquiries() {
               </div>
             </div>
             <div className="h-1 w-24 bg-accent"></div>
+          </div>
+
+          {/* Stats Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Inquiries</p>
+                  <p className="text-2xl font-bold text-foreground" data-testid="text-total-inquiries">
+                    {inquiries?.length || 0}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <MousePointerClick className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Referral Link Clicks</p>
+                  <p className="text-2xl font-bold text-foreground" data-testid="text-referral-clicks">
+                    {referralStats?.clickCount || 0}
+                  </p>
+                  {referralStats?.code && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <LinkIcon className="h-3 w-3" />
+                      {window.location.origin}/apply/{referralStats.code}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
 
           <Card className="p-4 mb-6">
