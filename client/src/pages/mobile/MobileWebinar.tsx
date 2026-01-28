@@ -55,17 +55,18 @@ export default function MobileWebinar() {
       if (result.alreadyRegistered) {
         toast({
           title: "Already Registered",
-          description: "You're already registered! Redirecting to the meeting page...",
+          description: "You're already registered! Taking you to the confirmation page...",
         });
       } else {
         toast({
           title: "Registration Successful",
-          description: "Thank you for registering! Redirecting to complete your registration...",
+          description: "Thank you for registering! Redirecting to your confirmation...",
         });
       }
+      // Redirect to thank you page (avoids popup blocker issues)
       setTimeout(() => {
-        window.open(registrationLink, '_blank');
-      }, 1500);
+        setLocation(`/webinar/thank-you/${result.registrationId}?status=confirmed`);
+      }, 1000);
     },
     onError: (error: any) => {
       toast({

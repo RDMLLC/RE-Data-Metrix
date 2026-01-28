@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useSearch } from "wouter";
+import { useSearch, useLocation } from "wouter";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,9 +25,9 @@ import {
 export default function Webinar() {
   const { toast } = useToast();
   const searchString = useSearch();
+  const [, setLocation] = useLocation();
   const webinarDate = "Friday, January 30, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
-  const registrationLink = "https://meet.zoho.com/nyok-eid-buf";
 
   // Capture referral source from URL (?ref=sakira)
   const referralSource = useMemo(() => {
@@ -50,18 +50,18 @@ export default function Webinar() {
       if (result.alreadyRegistered) {
         toast({
           title: "Already Registered",
-          description: "You're already registered! Redirecting to the meeting page...",
+          description: "You're already registered! Taking you to the confirmation page...",
         });
       } else {
         toast({
           title: "Registration Successful",
-          description: "Thank you for registering! Redirecting to complete your registration...",
+          description: "Thank you for registering! Redirecting to your confirmation...",
         });
       }
-      // Redirect to Zoho Meeting after a short delay
+      // Redirect to thank you page (avoids popup blocker issues)
       setTimeout(() => {
-        window.open(registrationLink, '_blank');
-      }, 1500);
+        setLocation(`/webinar/thank-you/${result.registrationId}?status=confirmed`);
+      }, 1000);
     },
     onError: (error: any) => {
       toast({

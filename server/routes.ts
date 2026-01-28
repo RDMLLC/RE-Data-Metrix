@@ -3713,7 +3713,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ 
           success: true, 
           message: "You're already registered! Check your email for the meeting link.",
-          alreadyRegistered: true
+          alreadyRegistered: true,
+          registrationId: existing.id
         });
       }
       
