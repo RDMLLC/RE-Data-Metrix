@@ -42,6 +42,14 @@ export default function Hero() {
           <div className="flex flex-col gap-3 w-full">
             <Button
               size="lg"
+              className="bg-white text-primary hover:bg-white/90 text-base px-6 py-5 w-full font-semibold"
+              onClick={() => window.location.href = '/webinar'}
+              data-testid="button-webinar-mobile"
+            >
+              Free Webinar
+            </Button>
+            <Button
+              size="lg"
               className="bg-accent text-accent-foreground hover:bg-accent text-base px-6 py-5 w-full"
               onClick={handleGetStarted}
               data-testid="button-get-started-mobile"
