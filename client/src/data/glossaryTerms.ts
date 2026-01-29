@@ -53,6 +53,10 @@ export const glossaryCategories: GlossaryCategory[] = [
       {
         term: "Points",
         definition: "Upfront fees paid to reduce loan interest rates."
+      },
+      {
+        term: "USDA Loan",
+        definition: "A government-backed mortgage program administered by the U.S. Department of Agriculture for eligible rural and suburban homebuyers. USDA loans offer no down payment requirement, competitive interest rates, and reduced mortgage insurance costs. Properties must be located in USDA-designated rural areas, and borrowers must meet income eligibility requirements (typically up to 115% of the area median income)."
       }
     ]
   },

@@ -356,7 +356,7 @@ export const insertLenderQuestionnaireSchema = createInsertSchema(lenderQuestion
 export type InsertLenderQuestionnaire = z.infer<typeof insertLenderQuestionnaireSchema>;
 export type LenderQuestionnaire = typeof lenderQuestionnaires.$inferSelect;
 
-export const loanTypeEnum = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction', 'transactional-funding'] as const;
+export const loanTypeEnum = ['bridge', 'dscr-purchase', 'dscr-refi', 'new-construction', 'transactional-funding', 'usda'] as const;
 export type LoanTypeEnum = typeof loanTypeEnum[number];
 
 export const loanProducts = pgTable("loan_products", {

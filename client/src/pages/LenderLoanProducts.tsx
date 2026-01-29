@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLoanProductSchema, loanTypeEnum } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, X, Building2, Home, RefreshCw, HardHat, ArrowLeftRight } from "lucide-react";
+import { Plus, Pencil, X, Building2, Home, RefreshCw, HardHat, ArrowLeftRight, Wheat } from "lucide-react";
 import { Link } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,6 +40,11 @@ const loanTypeLabels: Record<LoanTypeEnum, { label: string; icon: any; descripti
     label: 'Transactional Funding', 
     icon: ArrowLeftRight,
     description: 'Short-term funding for double close wholesale transactions'
+  },
+  'usda': { 
+    label: 'USDA Loan', 
+    icon: Wheat,
+    description: 'Government-backed loans for rural property purchases with no down payment'
   },
 };
 
