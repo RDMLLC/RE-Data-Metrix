@@ -6447,13 +6447,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Use HasData (Zillow) for comps search - provides accurate sale data directly from Zillow
-      const { HasDataAPIService } = await import("./services/hasdata-api.service");
-      const hasDataService = new HasDataAPIService();
+      // Use Hybrid Comps Service - queries both RentCast and HasData for maximum coverage
+      const { HybridCompsService } = await import("./services/hybrid-comps.service");
+      const hybridService = new HybridCompsService();
 
-      console.log(`[Comps Search] Subject property type: "${propertyType}"`);
+      console.log(`[Comps Search] Subject property type: "${propertyType}" - Using dual-API strategy`);
       
-      const comps = await hasDataService.searchSoldComps({
+      const result = await hybridService.searchComps({
         address: address || '',
         city,
         state,
@@ -6465,22 +6465,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subjectLat: subjectLat || undefined,
         subjectLng: subjectLng || undefined,
         radiusMiles: radiusMiles || undefined,
-        daysBack: saleDateRangeDays || undefined,
-        minResults: 3,
+        saleDateRangeDays: saleDateRangeDays || undefined,
         maxResults: 10,
       });
 
-      // Calculate suggested ARV using weighted average
-      if (comps.length > 0) {
-        const totalSalePrice = comps.reduce((sum, c) => sum + c.salePrice, 0);
-        const totalSqft = comps.reduce((sum, c) => sum + c.sqft, 0);
-        const weightedAvgPricePerSqft = totalSqft > 0 ? totalSalePrice / totalSqft : 0;
-        const suggestedArv = Math.round(weightedAvgPricePerSqft * sqft);
-
+      if (result.comps.length > 0) {
         return res.json({
-          comps,
-          suggestedArv,
-          weightedAvgPricePerSqft: Math.round(weightedAvgPricePerSqft),
+          comps: result.comps,
+          suggestedArv: result.suggestedArv,
+          weightedAvgPricePerSqft: result.weightedAvgPricePerSqft,
           searchCriteria: {
             city,
             state,
@@ -6488,14 +6481,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             bedrooms,
             bathrooms,
             sqft,
-          }
+          },
+          searchStats: result.searchStats,
         });
       }
 
       return res.json({
         comps: [],
         suggestedArv: null,
-        message: "No comparable sales found in this area. Try expanding your search manually."
+        message: "No comparable sales found in this area. Try expanding your search manually.",
+        searchStats: result.searchStats,
       });
 
     } catch (error: any) {
