@@ -229,7 +229,7 @@ export default function Pricing() {
                     variant={billingCycle === "monthly" ? "default" : "outline"}
                     data-testid="button-get-started-monthly"
                   >
-                    Upgrade Now
+                    {isAuthenticated ? "Upgrade Now" : "Get Started"}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
@@ -280,7 +280,7 @@ export default function Pricing() {
                     variant={billingCycle === "annual" ? "default" : "outline"}
                     data-testid="button-get-started-annual"
                   >
-                    Upgrade Now
+                    {isAuthenticated ? "Upgrade Now" : "Get Started"}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
