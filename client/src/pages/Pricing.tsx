@@ -239,7 +239,7 @@ export default function Pricing() {
                     Currently in Beta Testing
                   </Badge>
                   <Link href="/webinar">
-                    <Button variant="outline" size="sm" data-testid="button-join-webinar-monthly">
+                    <Button size="sm" className="bg-accent text-accent-foreground" data-testid="button-join-webinar-monthly">
                       <Video className="h-4 w-4 mr-2" />
                       Join Next Webinar
                     </Button>
@@ -302,7 +302,7 @@ export default function Pricing() {
                     Currently in Beta Testing
                   </Badge>
                   <Link href="/webinar">
-                    <Button variant="outline" size="sm" data-testid="button-join-webinar-annual">
+                    <Button size="sm" className="bg-accent text-accent-foreground" data-testid="button-join-webinar-annual">
                       <Video className="h-4 w-4 mr-2" />
                       Join Next Webinar
                     </Button>
