@@ -191,7 +191,7 @@ export default function Pricing() {
                 </div>
               </CardHeader>
               <div className="relative">
-                <CardContent className="space-y-4 blur-sm">
+                <CardContent className="space-y-4">
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2 text-sm text-foreground">
                       <Check className="h-4 w-4 text-success" />
@@ -223,7 +223,7 @@ export default function Pricing() {
                     </li>
                   </ul>
                 </CardContent>
-                <CardFooter className="blur-sm">
+                <CardFooter>
                   <Button 
                     className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
                     variant={billingCycle === "monthly" ? "default" : "outline"}
@@ -270,7 +270,7 @@ export default function Pricing() {
                 </p>
               </CardHeader>
               <div className="relative">
-                <CardContent className="space-y-4 blur-sm">
+                <CardContent className="space-y-4">
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2 text-sm text-foreground">
                       <Check className="h-4 w-4 text-success" />
@@ -286,7 +286,7 @@ export default function Pricing() {
                     </li>
                   </ul>
                 </CardContent>
-                <CardFooter className="blur-sm">
+                <CardFooter>
                   <Button 
                     className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
                     variant={billingCycle === "annual" ? "default" : "outline"}
