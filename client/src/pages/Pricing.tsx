@@ -223,20 +223,20 @@ export default function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter>
-                {isSubscriber ? (
-                  <Link href="/portal/profile" className="w-full">
-                    <Button className="w-full" variant="outline" data-testid="button-manage-monthly">
-                      Manage Subscription
-                    </Button>
-                  </Link>
+                {user?.subscriptionPlan === 'monthly' ? (
+                  <Button className="w-full" variant="outline" disabled data-testid="button-current-monthly">
+                    Current Plan
+                  </Button>
+                ) : user?.subscriptionPlan === 'annual' ? (
+                  null
                 ) : (
                   <Link href="/checkout?plan=monthly" className="w-full">
                     <Button 
-                      className={`w-full ${billingCycle === "monthly" ? "bg-accent hover:bg-accent/90 text-accent-foreground" : ""}`}
+                      className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
                       variant={billingCycle === "monthly" ? "default" : "outline"}
                       data-testid="button-get-started-monthly"
                     >
-                      {isAuthenticated ? "Upgrade Now" : "Get Started"}
+                      Upgrade Now
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
@@ -282,20 +282,29 @@ export default function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter>
-                {isSubscriber ? (
-                  <Link href="/portal/profile" className="w-full">
-                    <Button className="w-full" variant="outline" data-testid="button-manage-annual">
-                      Manage Subscription
+                {user?.subscriptionPlan === 'annual' ? (
+                  <Button className="w-full" variant="outline" disabled data-testid="button-current-annual">
+                    Current Plan
+                  </Button>
+                ) : user?.subscriptionPlan === 'monthly' ? (
+                  <Link href="/checkout?plan=annual" className="w-full">
+                    <Button 
+                      className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
+                      variant={billingCycle === "annual" ? "default" : "outline"}
+                      data-testid="button-switch-annual"
+                    >
+                      Switch to Annual Plan
+                      <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
                 ) : (
                   <Link href="/checkout?plan=annual" className="w-full">
                     <Button 
-                      className={`w-full ${billingCycle === "annual" ? "bg-accent hover:bg-accent/90 text-accent-foreground" : ""}`}
+                      className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
                       variant={billingCycle === "annual" ? "default" : "outline"}
                       data-testid="button-get-started-annual"
                     >
-                      {isAuthenticated ? "Upgrade Now" : "Get Started"}
+                      Upgrade Now
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
