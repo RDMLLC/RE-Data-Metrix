@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight } from "lucide-react";
+import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video } from "lucide-react";
 
 const featureComparison = [
   { feature: "Property Lookups (Zillow/Redfin)", free: "2 per month", paid: "Unlimited" },
@@ -190,50 +190,62 @@ export default function Pricing() {
                   <span className="text-muted-foreground ml-2">/month</span>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2">
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Unlimited property lookups
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Unlimited wholesale calcs
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Unlimited ARV calculations
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Unlimited comp reports
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Full lender comparisons
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Save unlimited deals
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Priority support
-                  </li>
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Link href="/checkout?plan=monthly" className="w-full">
+              <div className="relative">
+                <CardContent className="space-y-4 blur-sm">
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Unlimited property lookups
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Unlimited wholesale calcs
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Unlimited ARV calculations
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Unlimited comp reports
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Full lender comparisons
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Save unlimited deals
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Priority support
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter className="blur-sm">
                   <Button 
                     className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
                     variant={billingCycle === "monthly" ? "default" : "outline"}
+                    disabled
                     data-testid="button-get-started-monthly"
                   >
                     {isAuthenticated ? "Upgrade Now" : "Get Started"}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
-                </Link>
-              </CardFooter>
+                </CardFooter>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 rounded-md pointer-events-auto">
+                  <Badge className="bg-primary text-primary-foreground mb-3 px-3 py-1" data-testid="badge-beta-monthly">
+                    Currently in Beta Testing
+                  </Badge>
+                  <Link href="/webinar">
+                    <Button variant="outline" size="sm" data-testid="button-join-webinar-monthly">
+                      <Video className="h-4 w-4 mr-2" />
+                      Join Next Webinar
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </Card>
 
             {/* Annual */}
@@ -257,34 +269,46 @@ export default function Pricing() {
                   Just ${annualMonthlyEquivalent}/month
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2">
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Everything in Monthly
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    2 months free
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
-                    Lock in your rate
-                  </li>
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Link href="/checkout?plan=annual" className="w-full">
+              <div className="relative">
+                <CardContent className="space-y-4 blur-sm">
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Everything in Monthly
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      2 months free
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-success" />
+                      Lock in your rate
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter className="blur-sm">
                   <Button 
                     className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
                     variant={billingCycle === "annual" ? "default" : "outline"}
+                    disabled
                     data-testid="button-get-started-annual"
                   >
                     {isAuthenticated ? "Upgrade Now" : "Get Started"}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
-                </Link>
-              </CardFooter>
+                </CardFooter>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 rounded-md pointer-events-auto">
+                  <Badge className="bg-primary text-primary-foreground mb-3 px-3 py-1" data-testid="badge-beta-annual">
+                    Currently in Beta Testing
+                  </Badge>
+                  <Link href="/webinar">
+                    <Button variant="outline" size="sm" data-testid="button-join-webinar-annual">
+                      <Video className="h-4 w-4 mr-2" />
+                      Join Next Webinar
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </Card>
           </div>
 
@@ -371,20 +395,20 @@ export default function Pricing() {
               Ready to Transform Your Deal Analysis?
             </h2>
             <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-              Join thousands of real estate investors who use RE Data Metrix to analyze deals, compare financing options, and close with confidence.
+              We're currently in beta testing! Join our next webinar to get 6 months of free access and help shape the future of RE Data Metrix.
             </p>
-            {!isSubscriber ? (
-              <Link href={`/checkout?plan=${billingCycle}`}>
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-cta-signup">
-                  {isAuthenticated ? "Upgrade Now" : "Get Started"}
+            {isSubscriber ? (
+              <Link href="/portal/dashboard">
+                <Button size="lg" className="bg-accent text-accent-foreground" data-testid="button-cta-dashboard">
+                  Go to Dashboard
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
             ) : (
-              <Link href="/portal/dashboard">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-cta-dashboard">
-                  Go to Dashboard
-                  <ArrowRight className="h-5 w-5 ml-2" />
+              <Link href="/webinar">
+                <Button size="lg" className="bg-accent text-accent-foreground" data-testid="button-cta-webinar">
+                  <Video className="h-5 w-5 mr-2" />
+                  Join Next Webinar
                 </Button>
               </Link>
             )}
