@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video } from "lucide-react";
 
 const featureComparison = [
-  { feature: "Property Lookups (Zillow/Redfin)", free: "2 per month", paid: "Unlimited" },
+  { feature: "Property Lookups", free: "2 per month", paid: "Unlimited" },
   { feature: "Wholesale Calculator", free: "2 per month", paid: "Unlimited" },
   { feature: "ARV Calculations", free: "2 per month", paid: "Unlimited" },
   { feature: "Comp Reports", free: "2 per month", paid: "Unlimited" },
