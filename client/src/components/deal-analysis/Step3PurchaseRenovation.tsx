@@ -1465,12 +1465,6 @@ export default function Step3PurchaseRenovation({
                                           <div className="font-medium">{comp.propertyType}</div>
                                         </div>
                                       )}
-                                      {comp.daysOnMarket && comp.daysOnMarket > 0 && (
-                                        <div>
-                                          <span className="text-muted-foreground">Days Since Sale:</span>
-                                          <div className="font-medium">{comp.daysOnMarket}</div>
-                                        </div>
-                                      )}
                                       <div>
                                         <span className="text-muted-foreground">View on Zillow:</span>
                                         <div className="font-medium">
