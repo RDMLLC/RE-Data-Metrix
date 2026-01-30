@@ -7,6 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLoanProductSchema, loanTypeEnum } from "@shared/schema";
+import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, X, Building2, Home, RefreshCw, HardHat, ArrowLeftRight, Wheat } from "lucide-react";
 import { Link } from "wouter";
@@ -14,6 +15,45 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { LoanProduct, LoanTypeEnum } from "@shared/schema";
 import { useState, useEffect, useRef } from "react";
+
+// Preprocessor for Zod that cleans numeric values before validation
+// Returns: number for valid input, null for empty input, NaN for invalid input
+const numericPreprocess = (val: unknown): number | null => {
+  if (val === null || val === undefined || val === '') return null;
+  const cleanedStr = String(val).replace(/[$%,]/g, '').trim();
+  if (cleanedStr === '') return null;
+  const num = parseFloat(cleanedStr);
+  // Return the number (or NaN if invalid - z.number() will reject NaN)
+  return num;
+};
+
+// Custom nullable number schema that rejects NaN but allows null
+const nullableNum = z.preprocess(
+  numericPreprocess,
+  z.union([
+    z.null(),
+    z.number().refine((n) => !Number.isNaN(n), { message: "Please enter a valid number" })
+  ])
+);
+
+// Custom schema with preprocessing for numeric fields to allow $, %, and comma input
+const loanProductFormSchema = insertLoanProductSchema.omit({ lenderId: true }).extend({
+  minCreditScore: nullableNum,
+  maxLtvBuy: nullableNum,
+  maxLendRehab: nullableNum,
+  interestRate: nullableNum,
+  points: nullableNum,
+  maxLoanArv: nullableNum,
+  estimatedAppraisalCost: nullableNum,
+  fees: nullableNum,
+  costPerDraw: nullableNum,
+  cashOutMaxLtv: nullableNum,
+  referralLink: z.string().nullable().optional(),
+  loanTermYears: nullableNum,
+  minDscrRequired: nullableNum,
+  maxLtcPercent: nullableNum,
+  transactionalFlatFee: nullableNum,
+});
 
 const loanTypeLabels: Record<LoanTypeEnum, { label: string; icon: any; description: string }> = {
   'bridge': { 
@@ -206,23 +246,7 @@ export default function LenderLoanProducts() {
   };
 
   const form = useForm<any>({
-    resolver: zodResolver(insertLoanProductSchema.omit({ lenderId: true }).extend({
-      minCreditScore: insertLoanProductSchema.shape.minCreditScore.nullable().optional(),
-      maxLtvBuy: insertLoanProductSchema.shape.maxLtvBuy.nullable().optional(),
-      maxLendRehab: insertLoanProductSchema.shape.maxLendRehab.nullable().optional(),
-      interestRate: insertLoanProductSchema.shape.interestRate.nullable().optional(),
-      points: insertLoanProductSchema.shape.points.nullable().optional(),
-      maxLoanArv: insertLoanProductSchema.shape.maxLoanArv.nullable().optional(),
-      estimatedAppraisalCost: insertLoanProductSchema.shape.estimatedAppraisalCost.nullable().optional(),
-      fees: insertLoanProductSchema.shape.fees.nullable().optional(),
-      costPerDraw: insertLoanProductSchema.shape.costPerDraw.nullable().optional(),
-      cashOutMaxLtv: insertLoanProductSchema.shape.cashOutMaxLtv.nullable().optional(),
-      referralLink: insertLoanProductSchema.shape.referralLink.nullable().optional(),
-      loanTermYears: insertLoanProductSchema.shape.loanTermYears.nullable().optional(),
-      minDscrRequired: insertLoanProductSchema.shape.minDscrRequired.nullable().optional(),
-      maxLtcPercent: insertLoanProductSchema.shape.maxLtcPercent.nullable().optional(),
-      transactionalFlatFee: insertLoanProductSchema.shape.transactionalFlatFee.nullable().optional(),
-    })),
+    resolver: zodResolver(loanProductFormSchema),
     defaultValues: {
       loanType: "bridge",
       productName: "",
@@ -257,6 +281,7 @@ export default function LenderLoanProducts() {
   const watchIsLtcWeighted = form.watch("isLtcWeighted");
 
   const onSubmit = async (data: any) => {
+    // Data is already cleaned by the Zod preprocess in loanProductFormSchema
     if (editingProduct) {
       updateProductMutation.mutate({ id: editingProduct.id, data });
     } else {
@@ -502,9 +527,9 @@ export default function LenderLoanProducts() {
                         <FormControl>
                           <Input
                             {...field}
-                            type="number"
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                            value={field.value || ""}
+                            type="text"
+                            placeholder="e.g. 620"
+                            value={field.value ?? ""}
                             data-testid="input-min-credit-score"
                           />
                         </FormControl>
