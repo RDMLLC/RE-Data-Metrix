@@ -210,48 +210,47 @@ export default function MemberDashboard() {
               </CardContent>
             </Card>
 
-            {/* Refer a Friend */}
+            {/* Refer a Friend - Coming Soon */}
             <Card 
-              className="hover-elevate cursor-pointer"
+              className="relative overflow-hidden"
               data-testid="card-refer-friend"
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                    <Gift className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <CardTitle className="text-base">Refer a Friend</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {user.subscriptionStatus === "comped" ? (
-                  <CardDescription className="text-muted-foreground">
-                    Contact the Administrator for Additional Licences.
-                  </CardDescription>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg mb-2">
-                      <code className="text-lg font-bold flex-1" data-testid="text-referral-code">
-                        {user.referralCode || "N/A"}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={copyReferralCode}
-                        disabled={!user.referralCode}
-                        data-testid="button-copy-referral"
-                        className="h-8 w-8"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+              {/* Blurred content */}
+              <div className="blur-sm pointer-events-none select-none">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                      <Gift className="h-5 w-5 text-amber-600" />
                     </div>
-                    <CardDescription className="space-y-1">
-                      <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
-                      <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
-                    </CardDescription>
-                  </>
-                )}
-              </CardContent>
+                    <CardTitle className="text-base">Refer a Friend</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg mb-2">
+                    <code className="text-lg font-bold flex-1">
+                      XXXXXXXX
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled
+                      className="h-8 w-8"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <CardDescription className="space-y-1">
+                    <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
+                    <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
+                  </CardDescription>
+                </CardContent>
+              </div>
+              {/* Coming Soon overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-lg shadow-lg">
+                  Coming Soon
+                </div>
+              </div>
             </Card>
           </div>
         </div>
