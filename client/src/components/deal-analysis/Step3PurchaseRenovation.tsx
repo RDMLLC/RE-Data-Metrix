@@ -1592,24 +1592,23 @@ export default function Step3PurchaseRenovation({
                     <div className="text-center py-6 text-muted-foreground" data-testid="text-no-comps-message">
                       <Home className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">{compsData.message || "No comparable sales found in this area."}</p>
-                      {searchRadius < 5 ? (
+                      {searchRadius < 5 && (
                         <p className="text-xs mt-1">
                           Try expanding the search radius to {searchRadius === 0.5 ? "1 mile" : searchRadius === 1 ? "2 miles" : searchRadius === 2 ? "3 miles" : "5 miles"} to find more comps.
                         </p>
-                      ) : (
-                        <p className="text-xs mt-2">
-                          No comps have been found. Please adjust your search criteria, or consider getting a Propstream account.{" "}
-                          <a 
-                            href="https://trial.propstreampro.com/redatametrix/" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                            data-testid="link-propstream-trial"
-                          >
-                            Use this link to get a 7-day free trial.
-                          </a>
-                        </p>
                       )}
+                      <p className="text-xs mt-2">
+                        Please adjust your search criteria, or consider getting a Propstream account.{" "}
+                        <a 
+                          href="https://trial.propstreampro.com/redatametrix/" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                          data-testid="link-propstream-trial"
+                        >
+                          Use this link to get a 7-day free trial.
+                        </a>
+                      </p>
                     </div>
                   )}
                 </div>
