@@ -212,21 +212,20 @@ export default function MemberDashboard() {
 
             {/* Refer a Friend - Coming Soon */}
             <Card 
-              className="relative overflow-hidden"
               data-testid="card-refer-friend"
             >
-              {/* Blurred content */}
-              <div className="blur-sm pointer-events-none select-none">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                      <Gift className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <CardTitle className="text-base">Refer a Friend</CardTitle>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                    <Gift className="h-5 w-5 text-amber-600" />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg mb-2">
+                  <CardTitle className="text-base">Refer a Friend</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Blurred code section with Coming Soon overlay */}
+                <div className="relative mb-2">
+                  <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg blur-sm pointer-events-none select-none">
                     <code className="text-lg font-bold flex-1">
                       XXXXXXXX
                     </code>
@@ -239,18 +238,17 @@ export default function MemberDashboard() {
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <CardDescription className="space-y-1">
-                    <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
-                    <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
-                  </CardDescription>
-                </CardContent>
-              </div>
-              {/* Coming Soon overlay */}
-              <div className="absolute inset-0 flex items-center justify-center bg-background/60">
-                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-lg shadow-lg">
-                  Coming Soon
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-primary text-primary-foreground px-3 py-1 rounded-md font-semibold text-sm shadow-lg">
+                      Coming Soon
+                    </div>
+                  </div>
                 </div>
-              </div>
+                <CardDescription className="space-y-1">
+                  <span className="block">Give a friend <span className="font-semibold text-green-600">1 month free</span></span>
+                  <span className="block">You get <span className="font-semibold text-green-600">2 months free</span> with their paid subscription</span>
+                </CardDescription>
+              </CardContent>
             </Card>
           </div>
         </div>
