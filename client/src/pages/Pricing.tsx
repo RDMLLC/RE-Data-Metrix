@@ -223,24 +223,16 @@ export default function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter>
-                {user?.subscriptionPlan === 'monthly' ? (
-                  <Button className="w-full" variant="outline" disabled data-testid="button-current-monthly">
-                    Current Plan
+                <Link href="/checkout?plan=monthly" className="w-full">
+                  <Button 
+                    className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
+                    variant={billingCycle === "monthly" ? "default" : "outline"}
+                    data-testid="button-get-started-monthly"
+                  >
+                    Upgrade Now
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
-                ) : user?.subscriptionPlan === 'annual' ? (
-                  null
-                ) : (
-                  <Link href="/checkout?plan=monthly" className="w-full">
-                    <Button 
-                      className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
-                      variant={billingCycle === "monthly" ? "default" : "outline"}
-                      data-testid="button-get-started-monthly"
-                    >
-                      Upgrade Now
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                )}
+                </Link>
               </CardFooter>
             </Card>
 
@@ -282,33 +274,16 @@ export default function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter>
-                {user?.subscriptionPlan === 'annual' ? (
-                  <Button className="w-full" variant="outline" disabled data-testid="button-current-annual">
-                    Current Plan
+                <Link href="/checkout?plan=annual" className="w-full">
+                  <Button 
+                    className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
+                    variant={billingCycle === "annual" ? "default" : "outline"}
+                    data-testid="button-get-started-annual"
+                  >
+                    Upgrade Now
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
-                ) : user?.subscriptionPlan === 'monthly' ? (
-                  <Link href="/checkout?plan=annual" className="w-full">
-                    <Button 
-                      className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
-                      variant={billingCycle === "annual" ? "default" : "outline"}
-                      data-testid="button-switch-annual"
-                    >
-                      Switch to Annual Plan
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/checkout?plan=annual" className="w-full">
-                    <Button 
-                      className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
-                      variant={billingCycle === "annual" ? "default" : "outline"}
-                      data-testid="button-get-started-annual"
-                    >
-                      Upgrade Now
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                )}
+                </Link>
               </CardFooter>
             </Card>
           </div>
