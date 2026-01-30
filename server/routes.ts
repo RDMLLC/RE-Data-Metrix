@@ -6355,7 +6355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/comps/search", async (req, res) => {
     try {
-      const { address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng, radiusMiles } = req.body;
+      const { address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng, radiusMiles, saleDateRangeDays } = req.body;
       
       // Validate required fields
       if (!city || !state || !sqft) {
@@ -6406,6 +6406,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyType: propertyType || undefined,
         subjectLat: subjectLat || undefined,
         subjectLng: subjectLng || undefined,
+        radiusMiles: radiusMiles || undefined,
+        daysBack: saleDateRangeDays || undefined,
         minResults: 3,
         maxResults: 10,
       });

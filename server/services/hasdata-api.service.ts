@@ -68,6 +68,8 @@ export interface CompsSearchParams {
   maxResults?: number; // Default 5
   subjectLat?: number; // Subject property latitude for distance calculation
   subjectLng?: number; // Subject property longitude for distance calculation
+  radiusMiles?: number; // User-selected search radius (default: expand from 1-5 miles)
+  daysBack?: number; // User-selected time range in days (default: 180 = 6 months)
 }
 
 // Helper to check if property types are compatible for comps
@@ -653,13 +655,22 @@ export class HasDataAPIService implements IPropertyAPIService {
       throw new Error("HasData API key not configured. Cannot search for comparables.");
     }
 
-    // Search parameters - start with tight criteria, expand if needed
-    const searchConfigs = [
-      { radiusMiles: 1, daysBack: 180 },    // 1 mile, 6 months
-      { radiusMiles: 2, daysBack: 180 },    // 2 miles, 6 months
-      { radiusMiles: 3, daysBack: 270 },    // 3 miles, 9 months
-      { radiusMiles: 5, daysBack: 365 },    // 5 miles, 12 months
-    ];
+    // Use user-selected radius if provided, otherwise expand progressively
+    const userRadiusMiles = params.radiusMiles;
+    const userDaysBack = params.daysBack || 180; // Default to 6 months
+    
+    // If user specified a radius, only search within that radius
+    // Otherwise use progressive expansion (legacy behavior)
+    const searchConfigs = userRadiusMiles 
+      ? [{ radiusMiles: userRadiusMiles, daysBack: userDaysBack }]
+      : [
+          { radiusMiles: 1, daysBack: 180 },    // 1 mile, 6 months
+          { radiusMiles: 2, daysBack: 180 },    // 2 miles, 6 months
+          { radiusMiles: 3, daysBack: 270 },    // 3 miles, 9 months
+          { radiusMiles: 5, daysBack: 365 },    // 5 miles, 12 months
+        ];
+    
+    console.log(`[Comps Search] Using radius: ${userRadiusMiles || 'progressive'}, daysBack: ${userDaysBack}`);
 
     const location = `${params.city}, ${params.state} ${params.zipCode}`;
     const sqftMin = Math.round(params.sqft * 0.8);
@@ -786,13 +797,50 @@ export class HasDataAPIService implements IPropertyAPIService {
             }
           }
 
+          // Comprehensive sale date extraction - check all possible field names
+          const saleDate = listing.dateSold || 
+            listing.lastSoldDate || 
+            listing.soldDate || 
+            listing.saleDate ||
+            listing.datePosted ||
+            listing.listingDate ||
+            listing.closingDate ||
+            listing.close_date ||
+            listing.sold_date ||
+            listing.date_sold ||
+            (listing.hdpData?.homeInfo?.dateSold) ||
+            '';
+          
+          // Log first listing's sale date fields for debugging (only once per search)
+          if (comps.length === 0) {
+            console.log(`[Comps Search] Sample listing sale date fields:`, {
+              dateSold: listing.dateSold,
+              lastSoldDate: listing.lastSoldDate,
+              soldDate: listing.soldDate,
+              saleDate: listing.saleDate,
+              datePosted: listing.datePosted,
+              closingDate: listing.closingDate,
+              hdpData_dateSold: listing.hdpData?.homeInfo?.dateSold,
+              // Log all top-level string fields that contain 'date' or 'sold'
+              allDateFields: Object.keys(listing).filter((k: string) => 
+                k.toLowerCase().includes('date') || k.toLowerCase().includes('sold')
+              ).map((k: string) => ({ [k]: listing[k] })),
+            });
+          }
+          
+          // Warn if we couldn't find a sale date
+          if (!saleDate && comps.length < 3) {
+            console.warn(`[Comps Search] Missing sale date for: ${listing.address?.street || listing.streetAddress}. Available keys:`, 
+              Object.keys(listing).slice(0, 20));
+          }
+
           comps.push({
             address: listing.address?.street || listing.streetAddress || listing.addressLine1 || '',
             city: listing.address?.city || listing.city || params.city,
             state: listing.address?.state || listing.state || params.state,
             zipCode: listing.address?.zipcode || listing.zipCode || listing.postalCode || '',
             salePrice,
-            saleDate: listing.dateSold || listing.lastSoldDate || listing.soldDate || '',
+            saleDate,
             bedrooms: beds || 0,
             bathrooms: baths || 0,
             sqft,
