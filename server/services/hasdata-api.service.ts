@@ -801,8 +801,8 @@ export class HasDataAPIService implements IPropertyAPIService {
             }
           }
 
-          // Comprehensive sale date extraction - check all possible field names
-          const saleDate = listing.dateSold || 
+          // Sale date extraction - check all possible field names first
+          let saleDate = listing.dateSold || 
             listing.lastSoldDate || 
             listing.soldDate || 
             listing.saleDate ||
@@ -815,27 +815,13 @@ export class HasDataAPIService implements IPropertyAPIService {
             (listing.hdpData?.homeInfo?.dateSold) ||
             '';
           
-          // Log first listing's sale date fields for debugging (only once per search)
-          if (comps.length === 0) {
-            console.log(`[Comps Search] Sample listing sale date fields:`, {
-              dateSold: listing.dateSold,
-              lastSoldDate: listing.lastSoldDate,
-              soldDate: listing.soldDate,
-              saleDate: listing.saleDate,
-              datePosted: listing.datePosted,
-              closingDate: listing.closingDate,
-              hdpData_dateSold: listing.hdpData?.homeInfo?.dateSold,
-              // Log all top-level string fields that contain 'date' or 'sold'
-              allDateFields: Object.keys(listing).filter((k: string) => 
-                k.toLowerCase().includes('date') || k.toLowerCase().includes('sold')
-              ).map((k: string) => ({ [k]: listing[k] })),
-            });
-          }
-          
-          // Warn if we couldn't find a sale date
-          if (!saleDate && comps.length < 3) {
-            console.warn(`[Comps Search] Missing sale date for: ${listing.address?.street || listing.streetAddress}. Available keys:`, 
-              Object.keys(listing).slice(0, 20));
+          // If no direct sale date, calculate from daysOnZillow (for sold listings, this is days since sale recorded)
+          const daysOnZillow = this.parseNumber(listing.daysOnZillow);
+          if (!saleDate && daysOnZillow && daysOnZillow > 0) {
+            const saleDateTime = new Date();
+            saleDateTime.setDate(saleDateTime.getDate() - daysOnZillow);
+            saleDate = saleDateTime.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            console.log(`[Comps Search] Calculated sale date from daysOnZillow (${daysOnZillow}): ${saleDate}`);
           }
 
           comps.push({
