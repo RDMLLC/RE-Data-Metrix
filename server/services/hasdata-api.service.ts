@@ -671,6 +671,9 @@ export class HasDataAPIService implements IPropertyAPIService {
         ];
     
     console.log(`[Comps Search] Using radius: ${userRadiusMiles || 'progressive'}, daysBack: ${userDaysBack}`);
+    
+    // Track best comps found across all search configs
+    let bestCompsFound: SoldPropertyComp[] = [];
 
     const location = `${params.city}, ${params.state} ${params.zipCode}`;
     const sqftMin = Math.round(params.sqft * 0.8);
@@ -862,12 +865,17 @@ export class HasDataAPIService implements IPropertyAPIService {
 
         console.log(`[Comps Search] Filtered to ${comps.length} comps after criteria`);
 
-        // If we have enough results, return them
+        // Track the best results found so far (keep whichever config found more comps)
+        if (comps.length > bestCompsFound.length) {
+          bestCompsFound = comps.slice(0, maxResults);
+        }
+
+        // If we have enough results, return them immediately
         if (comps.length >= minResults) {
           return comps.slice(0, maxResults);
         }
 
-        // Otherwise continue to next search config
+        // Otherwise continue to next search config (if any)
         console.log(`[Comps Search] Only ${comps.length} comps, need ${minResults}, expanding search...`);
 
       } catch (error) {
@@ -877,8 +885,8 @@ export class HasDataAPIService implements IPropertyAPIService {
     }
 
     // Return whatever we found, even if less than minResults
-    console.log(`[Comps Search] Exhausted all search configs, returning best available`);
-    return [];
+    console.log(`[Comps Search] Exhausted all search configs, returning ${bestCompsFound.length} best available`);
+    return bestCompsFound;
   }
 
   /**

@@ -1531,6 +1531,24 @@ export default function Step3PurchaseRenovation({
                         </TableBody>
                       </Table>
 
+                      {/* Insufficient comps warning - show when 1-2 comps found */}
+                      {compsData && compsData.comps.length > 0 && compsData.comps.length < 3 && (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mt-3" data-testid="text-insufficient-comps-warning">
+                          <p className="text-sm text-amber-800 dark:text-amber-200">
+                            Insufficient comps found. Try expanding your criteria or consider subscribing to Propstream.{" "}
+                            <a 
+                              href="https://trial.propstreampro.com/redatametrix/" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline font-medium"
+                              data-testid="link-propstream-trial-insufficient"
+                            >
+                              Use this link to get a 7-day free trial.
+                            </a>
+                          </p>
+                        </div>
+                      )}
+
                       {/* Suggested ARV */}
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1591,14 +1609,9 @@ export default function Step3PurchaseRenovation({
                   {compsData && compsData.comps.length === 0 && (
                     <div className="text-center py-6 text-muted-foreground" data-testid="text-no-comps-message">
                       <Home className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">{compsData.message || "No comparable sales found in this area."}</p>
-                      {searchRadius < 5 && (
-                        <p className="text-xs mt-1">
-                          Try expanding the search radius to {searchRadius === 0.5 ? "1 mile" : searchRadius === 1 ? "2 miles" : searchRadius === 2 ? "3 miles" : "5 miles"} to find more comps.
-                        </p>
-                      )}
+                      <p className="text-sm">No comparable sales found in this area.</p>
                       <p className="text-xs mt-2">
-                        Please adjust your search criteria, or consider getting a Propstream account.{" "}
+                        Try expanding your search radius{searchRadius < 5 ? ` to ${searchRadius === 0.5 ? "1 mile" : searchRadius === 1 ? "2 miles" : searchRadius === 2 ? "3 miles" : "5 miles"}` : ""} or adjusting the time range, or consider subscribing to Propstream.{" "}
                         <a 
                           href="https://trial.propstreampro.com/redatametrix/" 
                           target="_blank" 
