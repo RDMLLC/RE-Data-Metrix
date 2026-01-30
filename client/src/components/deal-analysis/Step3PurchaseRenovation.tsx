@@ -1267,44 +1267,8 @@ export default function Step3PurchaseRenovation({
                   {/* Comps Results */}
                   {compsData && compsData.comps.length > 0 && (
                     <div className="space-y-3">
-                      {/* Filter controls */}
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant={compsDateFilter === "6" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCompsDateFilter(compsDateFilter === "6" ? "all" : "6")}
-                            data-testid="button-filter-6-months"
-                          >
-                            Last 6 Months
-                          </Button>
-                          <Button
-                            type="button"
-                            variant={compsDateFilter === "9" ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCompsDateFilter(compsDateFilter === "9" ? "all" : "9")}
-                            data-testid="button-filter-9-months"
-                          >
-                            Last 9 Months
-                          </Button>
-                          {compsDateFilter !== "all" && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setCompsDateFilter("all")}
-                              data-testid="button-filter-all"
-                            >
-                              Show All
-                            </Button>
-                          )}
-                          {compsDateFilter !== "all" && sortedCompsWithIndices.length === 0 && (
-                            <span className="text-sm text-amber-600">
-                              No comps in selected range - try a longer timeframe
-                            </span>
-                          )}
-                        </div>
+                      {/* Results count */}
+                      <div className="flex items-center justify-end gap-2 flex-wrap">
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-sm text-muted-foreground">
                             Showing {sortedCompsWithIndices.length} of {compsData.comps.length} comps

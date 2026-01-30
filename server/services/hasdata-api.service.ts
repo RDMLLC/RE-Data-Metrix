@@ -795,7 +795,8 @@ export class HasDataAPIService implements IPropertyAPIService {
             );
             
             // Filter by distance based on current search config radius
-            if (distanceFromSubject > config.radiusMiles) {
+            // Add small tolerance (0.05 mi = ~264 ft) for floating-point precision
+            if (distanceFromSubject > config.radiusMiles + 0.05) {
               continue; // Skip comps outside the current radius
             }
           }
@@ -1110,8 +1111,8 @@ export class HasDataAPIService implements IPropertyAPIService {
           if (lat && lng && params.subjectLat && params.subjectLng) {
             distanceFromSubject = calculateDistanceMiles(params.subjectLat, params.subjectLng, lat, lng);
             
-            // Filter by radius
-            if (distanceFromSubject > config.radiusMiles) {
+            // Filter by radius with small tolerance for floating-point precision
+            if (distanceFromSubject > config.radiusMiles + 0.05) {
               continue;
             }
           }
