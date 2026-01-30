@@ -3974,6 +3974,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to send thank you emails to webinar attendees
+  app.post("/api/admin/webinar-attendees/send-thank-you", ensureAdmin, async (req, res) => {
+    try {
+      const { attendees, promoCode, facebookGroupUrl } = req.body;
+      
+      if (!attendees || !Array.isArray(attendees) || attendees.length === 0) {
+        return res.status(400).json({ error: "Attendees list is required" });
+      }
+      
+      if (!promoCode) {
+        return res.status(400).json({ error: "Promo code is required" });
+      }
+      
+      if (!facebookGroupUrl) {
+        return res.status(400).json({ error: "Facebook group URL is required" });
+      }
+      
+      const results = {
+        total: attendees.length,
+        sent: 0,
+        failed: 0,
+        details: [] as { email: string; name: string; success: boolean; error?: string }[]
+      };
+      
+      for (const attendee of attendees) {
+        const { name, email } = attendee;
+        if (!name || !email) {
+          results.failed++;
+          results.details.push({ email: email || 'unknown', name: name || 'unknown', success: false, error: 'Missing name or email' });
+          continue;
+        }
+        
+        try {
+          const success = await emailService.sendWebinarThankYouEmail(email, name, promoCode, facebookGroupUrl);
+          if (success) {
+            results.sent++;
+            results.details.push({ email, name, success: true });
+          } else {
+            results.failed++;
+            results.details.push({ email, name, success: false, error: 'Email service returned false' });
+          }
+        } catch (error) {
+          results.failed++;
+          results.details.push({ email, name, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Sent ${results.sent} of ${results.total} thank you emails`,
+        results
+      });
+    } catch (error) {
+      console.error('Send thank you emails error:', error);
+      res.status(500).json({ error: "Failed to send thank you emails" });
+    }
+  });
+
   // =====================
   // Admin Referral Partners Routes
   // =====================
