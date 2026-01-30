@@ -1655,6 +1655,95 @@ END:VCALENDAR`;
       html: htmlContent,
     });
   }
+
+  async sendWebinarThankYouEmail(
+    to: string,
+    name: string,
+    promoCode: string,
+    facebookGroupUrl: string
+  ): Promise<boolean> {
+    const firstName = name.split(' ')[0];
+    const baseUrl = this.getBaseUrl();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .btn-primary { display: inline-block; padding: 14px 28px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .btn-secondary { display: inline-block; padding: 12px 24px; background-color: #1877F2; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; }
+          .promo-box { background: linear-gradient(135deg, #0F7B49 0%, #1E3A8A 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+          .promo-code { font-size: 28px; font-weight: bold; letter-spacing: 2px; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Thank You for Attending!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">RE Data Metrix Webinar</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            
+            <p>Thank you so much for joining us at today's RE Data Metrix webinar! We truly appreciate you taking the time to learn about our platform and how it can help you analyze real estate investment deals.</p>
+            
+            <p>As promised, here's your exclusive promo code for <strong>6 months of FREE access</strong> to RE Data Metrix:</p>
+            
+            <div class="promo-box">
+              <p style="margin: 0 0 5px 0; font-size: 14px;">YOUR EXCLUSIVE PROMO CODE</p>
+              <div class="promo-code">${promoCode}</div>
+              <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Limited to first 100 users - act now!</p>
+            </div>
+            
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${baseUrl}/signup" class="btn-primary">Create Your Free Account</a>
+            </div>
+            
+            <p>When you sign up, simply enter the promo code during registration to activate your 6-month free access. This gives you unlimited access to:</p>
+            
+            <ul style="margin: 16px 0; padding-left: 20px;">
+              <li>Deal Analysis Wizard for Fix & Flip and Rental properties</li>
+              <li>ARV Helper with comparable sales data</li>
+              <li>Lender Directory with real financing options</li>
+              <li>Wholesale Max Offer Calculator</li>
+              <li>And much more!</li>
+            </ul>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+            
+            <p><strong>Join Our Community!</strong></p>
+            
+            <p>After you sign up, we invite you to join our private Facebook group where you can connect with other real estate investors, share deals, ask questions, and get tips from the community.</p>
+            
+            <div style="text-align: center; margin: 20px 0;">
+              <a href="${facebookGroupUrl}" class="btn-secondary">Join Our Facebook Group</a>
+            </div>
+            
+            <p>If you have any questions about the platform or need help getting started, just reply to this email - we're here to help!</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>The RE Data Metrix Team</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px;">If you have any questions, reply to this email or contact us at info@redatametrix.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Thank You for Attending! Here's Your FREE 6-Month Access Code",
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();
