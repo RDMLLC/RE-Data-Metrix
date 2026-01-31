@@ -26,7 +26,7 @@ export default function Webinar() {
   const { toast } = useToast();
   const searchString = useSearch();
   const [, setLocation] = useLocation();
-  const webinarDate = "Friday, January 30, 2026";
+  const webinarDate = "Friday, February 6, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
 
   // Capture referral source from URL (?ref=sakira)
