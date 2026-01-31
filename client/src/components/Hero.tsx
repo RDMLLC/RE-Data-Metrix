@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 
 // YouTube video for landing page
-const YOUTUBE_VIDEO_ID = "quO8Zn_IIAY";
+const YOUTUBE_VIDEO_ID = "ph2K9uwwgWk";
 
 export default function Hero() {
   const handleGetStarted = () => {
