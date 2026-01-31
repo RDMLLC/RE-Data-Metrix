@@ -1,9 +1,20 @@
+import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-
-// YouTube video for landing page
-const YOUTUBE_VIDEO_ID = "ph2K9uwwgWk";
+import heroVideo from "@assets/A_better_way_for_investors_to_analyze_and_fund_their_deals_vid_1769901175597.mp4";
 
 export default function Hero() {
+  const videoRefMobile = useRef<HTMLVideoElement>(null);
+  const videoRefDesktop = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRefMobile.current) {
+      videoRefMobile.current.playbackRate = 1.1;
+    }
+    if (videoRefDesktop.current) {
+      videoRefDesktop.current.playbackRate = 1.1;
+    }
+  }, []);
+
   const handleGetStarted = () => {
     window.location.href = '/signup';
   };
@@ -23,15 +34,16 @@ export default function Hero() {
           {/* Video immediately after headline on mobile */}
           <div className="w-full">
             <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
-                title="RE Data Metrix Overview"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+              <video
+                ref={videoRefMobile}
+                className="absolute inset-0 w-full h-full object-cover"
+                controls
+                playsInline
                 data-testid="video-hero-mobile"
-              />
+              >
+                <source src={heroVideo} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
 
@@ -73,15 +85,16 @@ export default function Hero() {
           {/* Left: Video */}
           <div>
             <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20">
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
-                title="RE Data Metrix Overview"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+              <video
+                ref={videoRefDesktop}
+                className="absolute inset-0 w-full h-full object-cover"
+                controls
+                playsInline
                 data-testid="video-hero"
-              />
+              >
+                <source src={heroVideo} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
 
