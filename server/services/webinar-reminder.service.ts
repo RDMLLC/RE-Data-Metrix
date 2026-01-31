@@ -4,10 +4,10 @@ import { emailService } from './email.service';
 class WebinarReminderService {
   private checkInterval: NodeJS.Timeout | null = null;
   
-  // Webinar date: January 30, 2026 at 12:00 PM EST (17:00 UTC)
-  private readonly webinarDate = new Date('2026-01-30T17:00:00Z');
-  private readonly dayBeforeReminderTime = new Date('2026-01-29T17:00:00Z'); // Jan 29, 12:00 PM EST
-  private readonly finalReminderTime = new Date('2026-01-30T16:30:00Z'); // Jan 30, 11:30 AM EST
+  // Webinar date: February 6, 2026 at 12:00 PM EST (17:00 UTC)
+  private readonly webinarDate = new Date('2026-02-06T17:00:00Z');
+  private readonly dayBeforeReminderTime = new Date('2026-02-05T17:00:00Z'); // Feb 5, 12:00 PM EST
+  private readonly finalReminderTime = new Date('2026-02-06T16:30:00Z'); // Feb 6, 11:30 AM EST
 
   start() {
     console.log('Starting webinar reminder service...');

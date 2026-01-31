@@ -1164,8 +1164,8 @@ class EmailService {
     to: string,
     name: string,
     registrationId?: string,
-    webinarDate: Date = new Date('2026-01-30T12:00:00-05:00'),
-    webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
+    webinarDate: Date = new Date('2026-02-06T12:00:00-05:00'),
+    webinarLink: string = 'https://meet.zoho.com/edef-zym-pkw'
   ): Promise<boolean> {
     const firstName = name.split(' ')[0];
     const baseUrl = this.getBaseUrl();
@@ -1333,7 +1333,7 @@ END:VCALENDAR`;
     to: string,
     name: string,
     registrationId: string,
-    webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
+    webinarLink: string = 'https://meet.zoho.com/edef-zym-pkw'
   ): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
     
@@ -1379,7 +1379,7 @@ END:VCALENDAR`;
                     <!-- Event Details Box -->
                     <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin-bottom: 25px; border-left: 4px solid #1e3a5f;">
                       <h3 style="color: #1e3a5f; margin: 0 0 15px 0; font-size: 18px;">Event Details</h3>
-                      <p style="color: #333; font-size: 15px; margin: 0 0 8px 0;"><strong>Date:</strong> Friday, January 30, 2026</p>
+                      <p style="color: #333; font-size: 15px; margin: 0 0 8px 0;"><strong>Date:</strong> Friday, February 6, 2026</p>
                       <p style="color: #333; font-size: 15px; margin: 0 0 8px 0;"><strong>Time:</strong> 12:00 PM EST (9:00 AM PST)</p>
                       <p style="color: #333; font-size: 15px; margin: 0;"><strong>Duration:</strong> 60 minutes</p>
                     </div>
@@ -1457,7 +1457,7 @@ END:VCALENDAR`;
   async sendWebinarFinalReminder(
     to: string,
     name: string,
-    webinarLink: string = 'https://meet.zoho.com/nyok-eid-buf'
+    webinarLink: string = 'https://meet.zoho.com/edef-zym-pkw'
   ): Promise<boolean> {
     const htmlContent = `
       <!DOCTYPE html>
