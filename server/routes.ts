@@ -4039,6 +4039,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync webinar registrations with user account subscriptions (admin only)
+  app.post("/api/admin/webinar-registrations/sync-subscriptions", ensureAdmin, async (req, res) => {
+    try {
+      const result = await storage.syncWebinarRegistrationSubscriptions();
+      res.json({ 
+        success: true, 
+        synced: result.synced,
+        total: result.results.length,
+        withAccounts: result.results.filter(r => r.hasAccount).length,
+        results: result.results
+      });
+    } catch (error) {
+      console.error('Sync subscriptions error:', error);
+      res.status(500).json({ error: "Failed to sync subscriptions" });
+    }
+  });
+
   // Send post-webinar emails (promo codes to attendees, next date to non-attendees)
   app.post("/api/admin/webinar-registrations/send-post-webinar-emails", ensureAdmin, async (req, res) => {
     try {

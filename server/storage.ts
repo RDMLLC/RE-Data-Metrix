@@ -3739,6 +3739,98 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Sync webinar registrations with user account subscriptions
+  async syncWebinarRegistrationSubscriptions(): Promise<{
+    synced: number;
+    results: Array<{
+      registrationId: string;
+      email: string;
+      hasAccount: boolean;
+      accountSubscription: string | null;
+      previousLevel: string | null;
+      newLevel: string | null;
+    }>;
+  }> {
+    // Get all webinar registrations
+    const registrations = await db.select().from(webinarRegistrationsTable);
+    
+    // Get all users with their subscription info
+    const allUsers = await db.select({
+      email: usersTable.email,
+      subscriptionStatus: usersTable.subscriptionStatus,
+      subscriptionPlan: usersTable.subscriptionPlan,
+    }).from(usersTable);
+    
+    // Create a map of user emails to their subscription info (case-insensitive)
+    const userMap = new Map<string, { status: string; plan: string | null }>();
+    for (const user of allUsers) {
+      userMap.set(user.email.toLowerCase(), {
+        status: user.subscriptionStatus,
+        plan: user.subscriptionPlan
+      });
+    }
+    
+    const results: Array<{
+      registrationId: string;
+      email: string;
+      hasAccount: boolean;
+      accountSubscription: string | null;
+      previousLevel: string | null;
+      newLevel: string | null;
+    }> = [];
+    
+    let syncedCount = 0;
+    
+    for (const reg of registrations) {
+      const userInfo = userMap.get(reg.email.toLowerCase());
+      const hasAccount = !!userInfo;
+      
+      let accountSubscription: string | null = null;
+      let newLevel: string | null = null;
+      
+      if (userInfo) {
+        // Determine the subscription level based on user's account
+        if (userInfo.plan === 'monthly') {
+          accountSubscription = 'monthly';
+        } else if (userInfo.plan === 'annual') {
+          accountSubscription = 'annual';
+        } else if (userInfo.status === 'comped' || userInfo.status === 'active_comped') {
+          accountSubscription = 'comped';
+        } else if (userInfo.status === 'referral_trial' || userInfo.status === 'beta_free') {
+          accountSubscription = 'beta_free';
+        } else if (userInfo.status === 'active') {
+          // Has active status but no plan - could be free tier or special case
+          accountSubscription = 'free';
+        } else {
+          accountSubscription = 'free';
+        }
+        
+        // Update the registration if it's different from current
+        if (reg.subscriptionLevel !== accountSubscription) {
+          newLevel = accountSubscription;
+          await db.update(webinarRegistrationsTable)
+            .set({ subscriptionLevel: accountSubscription })
+            .where(eq(webinarRegistrationsTable.id, reg.id));
+          syncedCount++;
+        }
+      }
+      
+      results.push({
+        registrationId: reg.id,
+        email: reg.email,
+        hasAccount,
+        accountSubscription,
+        previousLevel: reg.subscriptionLevel,
+        newLevel
+      });
+    }
+    
+    return {
+      synced: syncedCount,
+      results
+    };
+  }
+
 }
 
 export const storage = new DatabaseStorage();

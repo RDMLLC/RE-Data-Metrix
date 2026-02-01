@@ -268,6 +268,27 @@ export default function WebinarRegistrations() {
     }
   };
 
+  const syncSubscriptionsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/sync-subscriptions");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Subscriptions Synced",
+        description: `Updated ${data.synced} registrations. ${data.withAccounts} of ${data.total} have accounts.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync subscriptions with user accounts",
+        variant: "destructive",
+      });
+    },
+  });
+
   const filteredRegistrations = registrations
     .filter(reg => {
       const matchesSearch = 
@@ -508,6 +529,19 @@ export default function WebinarRegistrations() {
                 <Send className="h-4 w-4 mr-2" />
               )}
               Send Confirmations
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => syncSubscriptionsMutation.mutate()}
+              disabled={syncSubscriptionsMutation.isPending || registrations.length === 0}
+              data-testid="button-sync-subscriptions"
+            >
+              {syncSubscriptionsMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <UserCheck className="h-4 w-4 mr-2" />
+              )}
+              Sync Accounts
             </Button>
             <Button
               onClick={handleExportCSV}
