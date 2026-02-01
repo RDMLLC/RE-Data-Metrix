@@ -650,14 +650,17 @@ export default function WebinarRegistrations() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Webinar Dates</SelectItem>
-                    {webinarDates.map((dateStr) => (
-                      <SelectItem 
-                        key={dateStr} 
-                        value={format(new Date(dateStr!), "yyyy-MM-dd")}
-                      >
-                        {format(new Date(dateStr!), "MMM d, yyyy")}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="2026-02-06">Feb 6, 2026</SelectItem>
+                    {webinarDates
+                      .filter(dateStr => format(new Date(dateStr!), "yyyy-MM-dd") !== "2026-02-06")
+                      .map((dateStr) => (
+                        <SelectItem 
+                          key={dateStr} 
+                          value={format(new Date(dateStr!), "yyyy-MM-dd")}
+                        >
+                          {format(new Date(dateStr!), "MMM d, yyyy")}
+                        </SelectItem>
+                      ))}
                     <SelectItem value="not_set">Not Set</SelectItem>
                   </SelectContent>
                 </Select>
