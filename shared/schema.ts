@@ -1183,8 +1183,10 @@ export const webinarRegistrations = pgTable("webinar_registrations", {
   rsvpStatus: text("rsvp_status").default('pending'), // pending, confirmed, declined
   rsvpUpdatedAt: timestamp("rsvp_updated_at"),
   // Attendance tracking
-  attended: boolean("attended").default(false), // Did they actually attend the webinar?
+  attended: boolean("attended"), // Did they actually attend the webinar? null = unmarked
   attendanceMarkedAt: timestamp("attendance_marked_at"), // When attendance was marked
+  // Subscription activation tracking
+  subscriptionLevel: text("subscription_level"), // 'free', 'monthly', 'annual', 'beta_free', 'comped'
   // Email tracking
   confirmationSentAt: timestamp("confirmation_sent_at"),
   dayBeforeReminderSentAt: timestamp("day_before_reminder_sent_at"),

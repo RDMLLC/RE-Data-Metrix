@@ -3631,12 +3631,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateWebinarRegistrationAttendance(id: string, attended: boolean): Promise<WebinarRegistration | undefined> {
+  async updateWebinarRegistrationAttendance(id: string, attended: boolean | null): Promise<WebinarRegistration | undefined> {
     const [result] = await db.update(webinarRegistrationsTable)
       .set({ 
         attended,
-        attendanceMarkedAt: new Date()
+        attendanceMarkedAt: attended !== null ? new Date() : null
       })
+      .where(eq(webinarRegistrationsTable.id, id))
+      .returning();
+    return result;
+  }
+
+  async updateWebinarRegistrationSubscription(id: string, subscriptionLevel: string): Promise<WebinarRegistration | undefined> {
+    const [result] = await db.update(webinarRegistrationsTable)
+      .set({ subscriptionLevel })
       .where(eq(webinarRegistrationsTable.id, id))
       .returning();
     return result;

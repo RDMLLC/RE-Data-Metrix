@@ -67,6 +67,7 @@ interface WebinarRegistration {
   attended: boolean | null;
   attendanceMarkedAt: string | null;
   postWebinarEmailSentAt: string | null;
+  subscriptionLevel: string | null;
 }
 
 interface ReferralStat {
@@ -135,6 +136,52 @@ export default function WebinarRegistrations() {
       toast({
         title: "Failed to Update",
         description: error.message || "An error occurred while updating attendance",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clearAttendanceMutation = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/webinar-registrations/${id}/attendance`, {
+        attended: null
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Attendance Cleared",
+        description: "Attendance status reset to unmarked",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update",
+        description: error.message || "An error occurred while clearing attendance",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async ({ id, level }: { id: string; level: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/webinar-registrations/${id}/subscription`, {
+        subscriptionLevel: level
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Subscription Updated",
+        description: "Subscription level has been updated",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update",
+        description: error.message || "An error occurred while updating subscription",
         variant: "destructive",
       });
     },
@@ -316,7 +363,7 @@ export default function WebinarRegistrations() {
         <Badge 
           variant="destructive"
           className="cursor-pointer"
-          onClick={() => toggleAttendanceMutation.mutate({ id, attended: true })}
+          onClick={() => clearAttendanceMutation.mutate({ id })}
           data-testid={`badge-not-attended-${id}`}
         >
           <UserX className="h-3 w-3 mr-1" />
@@ -326,14 +373,66 @@ export default function WebinarRegistrations() {
     }
     return (
       <Badge 
-        variant="outline"
+        variant="secondary"
         className="cursor-pointer"
         onClick={() => toggleAttendanceMutation.mutate({ id, attended: true })}
         data-testid={`badge-unmarked-${id}`}
       >
         <HelpCircle className="h-3 w-3 mr-1" />
-        Mark Attendance
+        Select
       </Badge>
+    );
+  };
+
+  const getSubscriptionBadge = (level: string | null, id: string) => {
+    const levelLabels: Record<string, string> = {
+      'free': 'Free',
+      'monthly': 'Monthly',
+      'annual': 'Annual',
+      'beta_free': 'BETA Free',
+      'comped': 'Comped',
+    };
+    
+    if (!level) {
+      return (
+        <Select onValueChange={(value) => updateSubscriptionMutation.mutate({ id, level: value })}>
+          <SelectTrigger className="h-7 w-24 text-xs" data-testid={`select-subscription-${id}`}>
+            <SelectValue placeholder="None" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="free">Free</SelectItem>
+            <SelectItem value="monthly">Monthly</SelectItem>
+            <SelectItem value="annual">Annual</SelectItem>
+            <SelectItem value="beta_free">BETA Free</SelectItem>
+            <SelectItem value="comped">Comped</SelectItem>
+          </SelectContent>
+        </Select>
+      );
+    }
+    
+    const colors: Record<string, string> = {
+      'free': 'bg-gray-500',
+      'monthly': 'bg-blue-600',
+      'annual': 'bg-purple-600',
+      'beta_free': 'bg-amber-600',
+      'comped': 'bg-pink-600',
+    };
+    
+    return (
+      <Select value={level} onValueChange={(value) => updateSubscriptionMutation.mutate({ id, level: value })}>
+        <SelectTrigger className="h-7 w-24 text-xs border-0 p-0" data-testid={`select-subscription-${id}`}>
+          <Badge className={`${colors[level] || 'bg-gray-500'}`}>
+            {levelLabels[level] || level}
+          </Badge>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="free">Free</SelectItem>
+          <SelectItem value="monthly">Monthly</SelectItem>
+          <SelectItem value="annual">Annual</SelectItem>
+          <SelectItem value="beta_free">BETA Free</SelectItem>
+          <SelectItem value="comped">Comped</SelectItem>
+        </SelectContent>
+      </Select>
     );
   };
 
@@ -731,6 +830,7 @@ export default function WebinarRegistrations() {
                       </div>
                     </TableHead>
                     <TableHead>Attendance</TableHead>
+                    <TableHead>Subscription</TableHead>
                     <TableHead 
                       className="cursor-pointer"
                       onClick={() => toggleSort('rsvpStatus')}
@@ -802,6 +902,9 @@ export default function WebinarRegistrations() {
                       </TableCell>
                       <TableCell>
                         {getAttendanceBadge(reg.attended, reg.id)}
+                      </TableCell>
+                      <TableCell>
+                        {getSubscriptionBadge(reg.subscriptionLevel, reg.id)}
                       </TableCell>
                       <TableCell>
                         {getRsvpBadge(reg.rsvpStatus)}

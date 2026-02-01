@@ -3980,8 +3980,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { attended } = req.body;
       
-      if (typeof attended !== 'boolean') {
-        return res.status(400).json({ error: "attended must be a boolean" });
+      if (attended !== null && typeof attended !== 'boolean') {
+        return res.status(400).json({ error: "attended must be a boolean or null" });
       }
       
       const result = await storage.updateWebinarRegistrationAttendance(id, attended);
@@ -3993,6 +3993,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Update attendance error:', error);
       res.status(500).json({ error: "Failed to update attendance" });
+    }
+  });
+
+  // Update subscription level for a registration (admin only)
+  app.patch("/api/admin/webinar-registrations/:id/subscription", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { subscriptionLevel } = req.body;
+      
+      if (!subscriptionLevel || typeof subscriptionLevel !== 'string') {
+        return res.status(400).json({ error: "subscriptionLevel must be a string" });
+      }
+      
+      const result = await storage.updateWebinarRegistrationSubscription(id, subscriptionLevel);
+      if (result) {
+        res.json({ success: true, registration: result });
+      } else {
+        res.status(404).json({ error: "Registration not found" });
+      }
+    } catch (error) {
+      console.error('Update subscription error:', error);
+      res.status(500).json({ error: "Failed to update subscription" });
     }
   });
 
