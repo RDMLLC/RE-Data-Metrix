@@ -85,6 +85,7 @@ export default function WebinarRegistrations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
   const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>('all');
+  const [webinarDateFilter, setWebinarDateFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('webinarDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { toast } = useToast();
@@ -234,7 +235,11 @@ export default function WebinarRegistrations() {
         (attendanceFilter === 'not_attended' && reg.attended === false) ||
         (attendanceFilter === 'unmarked' && reg.attended === null);
       
-      return matchesSearch && matchesRsvp && matchesAttendance;
+      const matchesWebinarDate = webinarDateFilter === 'all' || 
+        (webinarDateFilter === 'not_set' && !reg.webinarDate) ||
+        (reg.webinarDate && format(new Date(reg.webinarDate), "yyyy-MM-dd") === webinarDateFilter);
+      
+      return matchesSearch && matchesRsvp && matchesAttendance && matchesWebinarDate;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -637,7 +642,25 @@ export default function WebinarRegistrations() {
                   {filteredRegistrations.length} of {registrations.length} registrations
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Select value={webinarDateFilter} onValueChange={setWebinarDateFilter}>
+                  <SelectTrigger className="w-48" data-testid="select-webinar-date-filter">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <SelectValue placeholder="Filter by webinar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Webinar Dates</SelectItem>
+                    {webinarDates.map((dateStr) => (
+                      <SelectItem 
+                        key={dateStr} 
+                        value={format(new Date(dateStr!), "yyyy-MM-dd")}
+                      >
+                        {format(new Date(dateStr!), "MMM d, yyyy")}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="not_set">Not Set</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Select value={rsvpFilter} onValueChange={(value) => setRsvpFilter(value as RsvpFilter)}>
                   <SelectTrigger className="w-40" data-testid="select-rsvp-filter">
                     <SelectValue placeholder="Filter by RSVP" />
@@ -669,7 +692,7 @@ export default function WebinarRegistrations() {
               </div>
             ) : filteredRegistrations.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                {searchTerm || rsvpFilter !== 'all' 
+                {searchTerm || rsvpFilter !== 'all' || webinarDateFilter !== 'all' || attendanceFilter !== 'all'
                   ? "No registrations match your filters" 
                   : "No registrations yet"}
               </div>
