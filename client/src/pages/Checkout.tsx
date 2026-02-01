@@ -13,6 +13,7 @@ import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, 
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -311,6 +312,7 @@ export default function Checkout() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const { toast } = useToast();
+  const { trackInitiateCheckout, trackCompleteRegistration } = useMarketingEvents();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [justRegistered, setJustRegistered] = useState(false);
@@ -486,6 +488,7 @@ export default function Checkout() {
 
   const handleCheckout = async () => {
     setIsProcessing(true);
+    trackInitiateCheckout({ value: finalPrice, currency: "USD" });
     checkoutMutation.mutate();
   };
 
@@ -528,12 +531,14 @@ export default function Checkout() {
         // Check if email verification is required
         if (result.requiresVerification) {
           setJustRegistered(true);
+          trackCompleteRegistration();
           toast({
             title: "Account Created!",
             description: "Please check your email to verify your account.",
           });
         } else {
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          trackCompleteRegistration();
           toast({
             title: "Welcome to RE Data Metrix!",
             description: "Your free account has been created successfully.",

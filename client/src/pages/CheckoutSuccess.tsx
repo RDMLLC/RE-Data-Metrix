@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 
 export default function CheckoutSuccess() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const { toast } = useToast();
+  const { trackSubscribe } = useMarketingEvents();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
@@ -36,6 +38,7 @@ export default function CheckoutSuccess() {
           setStatus("success");
           setMessage(data.message || "Your subscription is now active!");
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          trackSubscribe({ currency: "USD" });
           toast({
             title: "Welcome!",
             description: "Your subscription is now active. Enjoy RE Data Metrix!",

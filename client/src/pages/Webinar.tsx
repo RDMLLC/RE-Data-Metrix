@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import { 
   Calendar, 
   Clock, 
@@ -26,6 +27,7 @@ export default function Webinar() {
   const { toast } = useToast();
   const searchString = useSearch();
   const [, setLocation] = useLocation();
+  const { trackLead } = useMarketingEvents();
   const webinarDate = "Friday, February 6, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
 
@@ -57,6 +59,7 @@ export default function Webinar() {
           title: "Registration Successful",
           description: "Thank you for registering! Redirecting to your confirmation...",
         });
+        trackLead({ content_name: "Webinar Registration" });
       }
       // Redirect to thank you page (avoids popup blocker issues)
       setTimeout(() => {

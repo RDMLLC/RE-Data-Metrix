@@ -62,6 +62,7 @@ import AdminContractors from "@/pages/admin/Contractors";
 import AdminCalculationsReference from "@/pages/admin/CalculationsReference";
 import AdminTrainingVideos from "@/pages/admin/TrainingVideos";
 import AdminDemoLinks from "@/pages/admin/DemoLinks";
+import AdminMarketingPixels from "@/pages/admin/MarketingPixels";
 import DeveloperIntegrations from "@/pages/admin/DeveloperIntegrations";
 import DemoEntry from "@/pages/DemoEntry";
 import LenderProfile from "@/pages/LenderProfile";
@@ -83,6 +84,7 @@ import CheckoutComplete from "@/pages/CheckoutComplete";
 import WholesaleCalculator from "@/pages/WholesaleCalculator";
 import Webinar from "@/pages/Webinar";
 import WebinarRsvpThankYou from "@/pages/WebinarRsvpThankYou";
+import MarketingPixelLoader from "@/components/MarketingPixelLoader";
 
 function Router() {
   return (
@@ -195,6 +197,7 @@ function Router() {
       <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route path="/admin/affiliates" component={AdminAffiliates} />
       <Route path="/admin/contractors" component={AdminContractors} />
+      <Route path="/admin/marketing-pixels" component={AdminMarketingPixels} />
       <Route path="/admin/training-videos" component={AdminTrainingVideos} />
       <Route path="/admin/calculations" component={AdminCalculationsReference} />
       <Route path="/admin/demo-links" component={AdminDemoLinks} />
@@ -217,6 +220,7 @@ function App() {
                 <Toaster />
                 <CookieConsent />
                 <MobileRedirectHandler />
+                <MarketingPixelLoader />
                 <Router />
               </TooltipProvider>
             </DeviceModeProvider>

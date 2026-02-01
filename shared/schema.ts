@@ -1228,3 +1228,22 @@ export const insertZohoTokenSchema = createInsertSchema(zohoTokens).omit({
 
 export type InsertZohoToken = z.infer<typeof insertZohoTokenSchema>;
 export type ZohoToken = typeof zohoTokens.$inferSelect;
+
+// Marketing pixels for tracking (Meta, LinkedIn, Google, TikTok, etc.)
+export const marketingPixels = pgTable("marketing_pixels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  platform: text("platform").notNull(), // 'meta', 'linkedin', 'google', 'tiktok', 'twitter'
+  pixelId: text("pixel_id").notNull(),
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMarketingPixelSchema = createInsertSchema(marketingPixels).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMarketingPixel = z.infer<typeof insertMarketingPixelSchema>;
+export type MarketingPixel = typeof marketingPixels.$inferSelect;

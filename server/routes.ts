@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -4162,6 +4162,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Zoho sync attendance error:', error);
       res.status(500).json({ error: error.message || "Failed to sync attendance from Zoho" });
+    }
+  });
+
+  // ==================== MARKETING PIXELS API ====================
+  
+  // Validation schemas
+  const marketingPixelPlatformSchema = z.enum(['meta', 'linkedin', 'google', 'tiktok', 'twitter']);
+  const updateMarketingPixelSchema = z.object({
+    pixelId: z.string().min(1).optional(),
+    isEnabled: z.boolean().optional(),
+  });
+  
+  // Get all marketing pixels
+  app.get("/api/admin/marketing-pixels", ensureAdmin, async (req, res) => {
+    try {
+      const pixels = await storage.getAllMarketingPixels();
+      res.json(pixels);
+    } catch (error) {
+      console.error('Get marketing pixels error:', error);
+      res.status(500).json({ error: "Failed to fetch marketing pixels" });
+    }
+  });
+
+  // Get enabled marketing pixels (public - for loading on frontend)
+  app.get("/api/marketing-pixels", async (req, res) => {
+    try {
+      const pixels = await storage.getEnabledMarketingPixels();
+      res.json(pixels);
+    } catch (error) {
+      console.error('Get enabled marketing pixels error:', error);
+      res.status(500).json({ error: "Failed to fetch marketing pixels" });
+    }
+  });
+
+  // Create marketing pixel
+  app.post("/api/admin/marketing-pixels", ensureAdmin, async (req, res) => {
+    try {
+      // Validate request body with Zod
+      const createSchema = insertMarketingPixelSchema.extend({
+        platform: marketingPixelPlatformSchema,
+        pixelId: z.string().min(1, "Pixel ID is required"),
+      });
+      
+      const validation = createSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error.errors[0].message });
+      }
+      
+      const { platform, pixelId, isEnabled } = validation.data;
+
+      // Check if platform already exists
+      const existing = await storage.getMarketingPixelByPlatform(platform);
+      if (existing) {
+        return res.status(400).json({ error: `A pixel for ${platform} already exists. Update or delete it first.` });
+      }
+
+      const pixel = await storage.createMarketingPixel({
+        platform,
+        pixelId,
+        isEnabled: isEnabled ?? true,
+      });
+
+      res.json(pixel);
+    } catch (error) {
+      console.error('Create marketing pixel error:', error);
+      res.status(500).json({ error: "Failed to create marketing pixel" });
+    }
+  });
+
+  // Update marketing pixel
+  app.patch("/api/admin/marketing-pixels/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate id is a valid UUID
+      if (!id || typeof id !== 'string' || id.length === 0) {
+        return res.status(400).json({ error: "Invalid pixel ID" });
+      }
+      
+      // Validate request body with Zod
+      const validation = updateMarketingPixelSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error.errors[0].message });
+      }
+      
+      const { pixelId, isEnabled } = validation.data;
+
+      const pixel = await storage.updateMarketingPixel(id, { pixelId, isEnabled });
+
+      if (!pixel) {
+        return res.status(404).json({ error: "Pixel not found" });
+      }
+
+      res.json(pixel);
+    } catch (error) {
+      console.error('Update marketing pixel error:', error);
+      res.status(500).json({ error: "Failed to update marketing pixel" });
+    }
+  });
+
+  // Delete marketing pixel
+  app.delete("/api/admin/marketing-pixels/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate id
+      if (!id || typeof id !== 'string' || id.length === 0) {
+        return res.status(400).json({ error: "Invalid pixel ID" });
+      }
+
+      const deleted = await storage.deleteMarketingPixel(id);
+
+      if (!deleted) {
+        return res.status(404).json({ error: "Pixel not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete marketing pixel error:', error);
+      res.status(500).json({ error: "Failed to delete marketing pixel" });
     }
   });
 

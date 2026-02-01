@@ -82,7 +82,10 @@ import {
   type InsertWebinarRegistration,
   referralPartners as referralPartnersTable,
   type ReferralPartner,
-  type InsertReferralPartner
+  type InsertReferralPartner,
+  marketingPixels as marketingPixelsTable,
+  type MarketingPixel,
+  type InsertMarketingPixel
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -526,6 +529,14 @@ export interface IStorage {
   incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }>;
   incrementUserArvHelper(userId: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
+  
+  // Marketing Pixels
+  getAllMarketingPixels(): Promise<MarketingPixel[]>;
+  getEnabledMarketingPixels(): Promise<MarketingPixel[]>;
+  getMarketingPixelByPlatform(platform: string): Promise<MarketingPixel | undefined>;
+  createMarketingPixel(data: InsertMarketingPixel): Promise<MarketingPixel>;
+  updateMarketingPixel(id: string, data: Partial<InsertMarketingPixel>): Promise<MarketingPixel | undefined>;
+  deleteMarketingPixel(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -1059,6 +1070,31 @@ export class MemStorage implements IStorage {
   }
 
   async deleteCompInvite(id: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  // Marketing Pixels (stubs)
+  async getAllMarketingPixels(): Promise<MarketingPixel[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getEnabledMarketingPixels(): Promise<MarketingPixel[]> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getMarketingPixelByPlatform(platform: string): Promise<MarketingPixel | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async createMarketingPixel(data: InsertMarketingPixel): Promise<MarketingPixel> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async updateMarketingPixel(id: string, data: Partial<InsertMarketingPixel>): Promise<MarketingPixel | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async deleteMarketingPixel(id: string): Promise<boolean> {
     throw new Error("Not implemented in MemStorage");
   }
 }
@@ -3829,6 +3865,40 @@ export class DatabaseStorage implements IStorage {
       synced: syncedCount,
       results
     };
+  }
+
+  // Marketing Pixels
+  async getAllMarketingPixels(): Promise<MarketingPixel[]> {
+    return await db.select().from(marketingPixelsTable).orderBy(marketingPixelsTable.createdAt);
+  }
+
+  async getEnabledMarketingPixels(): Promise<MarketingPixel[]> {
+    return await db.select().from(marketingPixelsTable).where(eq(marketingPixelsTable.isEnabled, true));
+  }
+
+  async getMarketingPixelByPlatform(platform: string): Promise<MarketingPixel | undefined> {
+    const [pixel] = await db.select().from(marketingPixelsTable).where(eq(marketingPixelsTable.platform, platform));
+    return pixel;
+  }
+
+  async createMarketingPixel(data: InsertMarketingPixel): Promise<MarketingPixel> {
+    const [pixel] = await db.insert(marketingPixelsTable).values(data).returning();
+    return pixel;
+  }
+
+  async updateMarketingPixel(id: string, data: Partial<InsertMarketingPixel>): Promise<MarketingPixel | undefined> {
+    const [pixel] = await db.update(marketingPixelsTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(marketingPixelsTable.id, id))
+      .returning();
+    return pixel;
+  }
+
+  async deleteMarketingPixel(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(marketingPixelsTable)
+      .where(eq(marketingPixelsTable.id, id))
+      .returning();
+    return !!deleted;
   }
 
 }
