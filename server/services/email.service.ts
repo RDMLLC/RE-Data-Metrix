@@ -1744,6 +1744,84 @@ END:VCALENDAR`;
       html: htmlContent,
     });
   }
+
+  async sendMissedWebinarEmail(
+    to: string,
+    name: string,
+    nextWebinarDate: string
+  ): Promise<boolean> {
+    const firstName = name.split(' ')[0];
+    const baseUrl = this.getBaseUrl();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .btn-primary { display: inline-block; padding: 14px 28px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .date-box { background: #f0f9ff; border: 2px solid #0284c7; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+          .date-text { font-size: 24px; font-weight: bold; color: #0284c7; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Sorry We Missed You!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">RE Data Metrix Webinar</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            
+            <p>We noticed you weren't able to make it to our recent RE Data Metrix webinar. We completely understand - life gets busy!</p>
+            
+            <p>Good news: We're hosting another webinar soon, and we'd love for you to join us!</p>
+            
+            <div class="date-box">
+              <p style="margin: 0 0 5px 0; font-size: 14px; color: #64748b;">NEXT WEBINAR DATE</p>
+              <div class="date-text">${nextWebinarDate}</div>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #64748b;">12:00 PM Eastern Time</p>
+            </div>
+            
+            <p>During the webinar, you'll learn how RE Data Metrix can help you:</p>
+            
+            <ul style="margin: 16px 0; padding-left: 20px;">
+              <li>Analyze Fix & Flip and Rental property deals in minutes</li>
+              <li>Find comparable sales data for accurate ARV estimates</li>
+              <li>Connect with lenders who offer real financing options</li>
+              <li>Make smarter investment decisions with data-driven insights</li>
+            </ul>
+            
+            <p><strong>Plus, all attendees receive an exclusive promo code for 6 months of FREE access!</strong></p>
+            
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${baseUrl}/webinar" class="btn-primary">Register for the Next Webinar</a>
+            </div>
+            
+            <p>We hope to see you there!</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>The RE Data Metrix Team</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px;">If you have any questions, reply to this email or contact us at info@redatametrix.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Missed Our Webinar? Join Us Next Time!",
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

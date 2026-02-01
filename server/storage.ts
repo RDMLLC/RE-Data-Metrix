@@ -3631,6 +3631,50 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async updateWebinarRegistrationAttendance(id: string, attended: boolean): Promise<WebinarRegistration | undefined> {
+    const [result] = await db.update(webinarRegistrationsTable)
+      .set({ 
+        attended,
+        attendanceMarkedAt: new Date()
+      })
+      .where(eq(webinarRegistrationsTable.id, id))
+      .returning();
+    return result;
+  }
+
+  async updateWebinarRegistrationWebinarDate(id: string, webinarDate: Date): Promise<WebinarRegistration | undefined> {
+    const [result] = await db.update(webinarRegistrationsTable)
+      .set({ webinarDate })
+      .where(eq(webinarRegistrationsTable.id, id))
+      .returning();
+    return result;
+  }
+
+  async bulkUpdateWebinarDate(ids: string[], webinarDate: Date): Promise<void> {
+    for (const id of ids) {
+      await db.update(webinarRegistrationsTable)
+        .set({ webinarDate })
+        .where(eq(webinarRegistrationsTable.id, id));
+    }
+  }
+
+  async getWebinarRegistrationsByAttendance(attended: boolean): Promise<WebinarRegistration[]> {
+    return await db.select().from(webinarRegistrationsTable)
+      .where(eq(webinarRegistrationsTable.attended, attended))
+      .orderBy(desc(webinarRegistrationsTable.registeredAt));
+  }
+
+  async getWebinarRegistrationsNeedingPostWebinarEmail(): Promise<WebinarRegistration[]> {
+    return await db.select().from(webinarRegistrationsTable)
+      .where(sql`${webinarRegistrationsTable.postWebinarEmailSentAt} IS NULL`);
+  }
+
+  async updateWebinarRegistrationPostEmailSent(id: string): Promise<void> {
+    await db.update(webinarRegistrationsTable)
+      .set({ postWebinarEmailSentAt: new Date() })
+      .where(eq(webinarRegistrationsTable.id, id));
+  }
+
   // Referral Partners
   async getReferralPartners(): Promise<ReferralPartner[]> {
     return await db.select().from(referralPartnersTable)

@@ -3974,6 +3974,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update attendance status for a registration (admin only)
+  app.patch("/api/admin/webinar-registrations/:id/attendance", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { attended } = req.body;
+      
+      if (typeof attended !== 'boolean') {
+        return res.status(400).json({ error: "attended must be a boolean" });
+      }
+      
+      const result = await storage.updateWebinarRegistrationAttendance(id, attended);
+      if (result) {
+        res.json({ success: true, registration: result });
+      } else {
+        res.status(404).json({ error: "Registration not found" });
+      }
+    } catch (error) {
+      console.error('Update attendance error:', error);
+      res.status(500).json({ error: "Failed to update attendance" });
+    }
+  });
+
+  // Bulk update webinar date for registrations (admin only)
+  app.patch("/api/admin/webinar-registrations/bulk-webinar-date", ensureAdmin, async (req, res) => {
+    try {
+      const { ids, webinarDate } = req.body;
+      
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "ids array is required" });
+      }
+      
+      if (!webinarDate) {
+        return res.status(400).json({ error: "webinarDate is required" });
+      }
+      
+      await storage.bulkUpdateWebinarDate(ids, new Date(webinarDate));
+      res.json({ success: true, message: `Updated ${ids.length} registrations` });
+    } catch (error) {
+      console.error('Bulk update webinar date error:', error);
+      res.status(500).json({ error: "Failed to update webinar dates" });
+    }
+  });
+
+  // Send post-webinar emails (promo codes to attendees, next date to non-attendees)
+  app.post("/api/admin/webinar-registrations/send-post-webinar-emails", ensureAdmin, async (req, res) => {
+    try {
+      const { promoCode, nextWebinarDate, facebookGroupUrl } = req.body;
+      
+      if (!promoCode) {
+        return res.status(400).json({ error: "promoCode is required for attendees" });
+      }
+      
+      if (!nextWebinarDate) {
+        return res.status(400).json({ error: "nextWebinarDate is required for non-attendees" });
+      }
+      
+      const allRegistrations = await storage.getWebinarRegistrationsNeedingPostWebinarEmail();
+      
+      const results = {
+        attendees: { total: 0, sent: 0, failed: 0 },
+        nonAttendees: { total: 0, sent: 0, failed: 0 }
+      };
+      
+      for (const reg of allRegistrations) {
+        if (reg.attended) {
+          results.attendees.total++;
+          try {
+            const success = await emailService.sendWebinarThankYouEmail(
+              reg.email,
+              reg.name,
+              promoCode,
+              facebookGroupUrl || 'https://www.facebook.com/groups/1455681056068763/'
+            );
+            if (success) {
+              results.attendees.sent++;
+              await storage.updateWebinarRegistrationPostEmailSent(reg.id);
+            } else {
+              results.attendees.failed++;
+            }
+          } catch (error) {
+            results.attendees.failed++;
+            console.error(`Failed to send promo email to ${reg.email}:`, error);
+          }
+        } else {
+          results.nonAttendees.total++;
+          try {
+            const success = await emailService.sendMissedWebinarEmail(
+              reg.email,
+              reg.name,
+              nextWebinarDate
+            );
+            if (success) {
+              results.nonAttendees.sent++;
+              await storage.updateWebinarRegistrationPostEmailSent(reg.id);
+            } else {
+              results.nonAttendees.failed++;
+            }
+          } catch (error) {
+            results.nonAttendees.failed++;
+            console.error(`Failed to send next date email to ${reg.email}:`, error);
+          }
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Sent ${results.attendees.sent} promo emails to attendees and ${results.nonAttendees.sent} next date emails to non-attendees`,
+        results
+      });
+    } catch (error) {
+      console.error('Send post-webinar emails error:', error);
+      res.status(500).json({ error: "Failed to send post-webinar emails" });
+    }
+  });
+
   // Admin endpoint to send thank you emails to webinar attendees
   app.post("/api/admin/webinar-attendees/send-thank-you", ensureAdmin, async (req, res) => {
     try {
