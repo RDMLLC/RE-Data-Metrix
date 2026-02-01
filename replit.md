@@ -25,6 +25,8 @@ The ARV Helper feature employs a Dual-API Hybrid Strategy for comparable sales (
 
 A Zoho Meeting integration enables automated webinar attendance syncing. Admins can connect their Zoho account via OAuth2, then sync attendance data from Zoho Meeting by entering a meeting key. The sync uses case-insensitive email matching between Zoho participants and webinar registrations. OAuth security includes CSRF protection via state parameter validation with single-use tokens and 10-minute expiry.
 
+A Marketing Pixel Management System enables admins to configure tracking pixels for advertising platforms (Meta, LinkedIn, Google Ads, TikTok, Twitter) via the `/admin/marketing-pixels` page. The `MarketingPixelLoader` component automatically injects enabled pixel scripts site-wide. The `useMarketingEvents` hook provides tracking functions for key conversion events: `trackLead` (webinar registration), `trackInitiateCheckout`, `trackCompleteRegistration` (account creation), and `trackSubscribe` (subscription completion).
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
