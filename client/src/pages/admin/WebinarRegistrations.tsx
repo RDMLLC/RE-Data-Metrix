@@ -37,6 +37,9 @@ import {
   ArrowUpDown,
   Trash2,
   MoreHorizontal,
+  UserCheck,
+  UserX,
+  HelpCircle,
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -55,11 +58,15 @@ interface WebinarRegistration {
   email: string;
   phone: string | null;
   webinarId: string;
+  webinarDate: string | null;
   source: string | null;
   referralSource: string | null;
   registeredAt: string;
   rsvpStatus: string | null;
   rsvpUpdatedAt: string | null;
+  attended: boolean | null;
+  attendanceMarkedAt: string | null;
+  postWebinarEmailSentAt: string | null;
 }
 
 interface ReferralStat {
@@ -69,14 +76,16 @@ interface ReferralStat {
 }
 
 type RsvpFilter = 'all' | 'confirmed' | 'declined' | 'pending';
-type SortField = 'registeredAt' | 'rsvpStatus' | 'name';
+type AttendanceFilter = 'all' | 'attended' | 'not_attended' | 'unmarked';
+type SortField = 'registeredAt' | 'rsvpStatus' | 'name' | 'webinarDate';
 type SortDirection = 'asc' | 'desc';
 
 export default function WebinarRegistrations() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
-  const [sortField, setSortField] = useState<SortField>('registeredAt');
+  const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>('all');
+  const [sortField, setSortField] = useState<SortField>('webinarDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { toast } = useToast();
 
@@ -97,6 +106,63 @@ export default function WebinarRegistrations() {
     declined: registrations.filter(r => getRsvpStatus(r.rsvpStatus) === 'declined').length,
     pending: registrations.filter(r => getRsvpStatus(r.rsvpStatus) === 'pending').length,
   };
+
+  const attendanceCounts = {
+    attended: registrations.filter(r => r.attended === true).length,
+    notAttended: registrations.filter(r => r.attended === false).length,
+    unmarked: registrations.filter(r => r.attended === null).length,
+  };
+
+  const webinarDates = Array.from(new Set(registrations.map(r => r.webinarDate).filter(Boolean)))
+    .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime());
+
+  const toggleAttendanceMutation = useMutation({
+    mutationFn: async ({ id, attended }: { id: string; attended: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/admin/webinar-registrations/${id}/attendance`, {
+        attended
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Attendance Updated",
+        description: data.registration?.attended ? "Marked as attended" : "Marked as not attended",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update",
+        description: error.message || "An error occurred while updating attendance",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendPostWebinarEmailsMutation = useMutation({
+    mutationFn: async ({ promoCode, nextWebinarDate, facebookGroupUrl }: { promoCode: string; nextWebinarDate: string; facebookGroupUrl: string }) => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/send-post-webinar-emails", {
+        promoCode,
+        nextWebinarDate,
+        facebookGroupUrl
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Post-Webinar Emails Sent",
+        description: data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Send Emails",
+        description: error.message || "An error occurred while sending emails",
+        variant: "destructive",
+      });
+    },
+  });
 
   const sendConfirmationsMutation = useMutation({
     mutationFn: async () => {
@@ -163,7 +229,12 @@ export default function WebinarRegistrations() {
       
       const matchesRsvp = rsvpFilter === 'all' || getRsvpStatus(reg.rsvpStatus) === rsvpFilter;
       
-      return matchesSearch && matchesRsvp;
+      const matchesAttendance = attendanceFilter === 'all' || 
+        (attendanceFilter === 'attended' && reg.attended === true) ||
+        (attendanceFilter === 'not_attended' && reg.attended === false) ||
+        (attendanceFilter === 'unmarked' && reg.attended === null);
+      
+      return matchesSearch && matchesRsvp && matchesAttendance;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -177,6 +248,10 @@ export default function WebinarRegistrations() {
         comparison = (statusOrder[aStatus as keyof typeof statusOrder] || 2) - (statusOrder[bStatus as keyof typeof statusOrder] || 2);
       } else if (sortField === 'registeredAt') {
         comparison = new Date(a.registeredAt || 0).getTime() - new Date(b.registeredAt || 0).getTime();
+      } else if (sortField === 'webinarDate') {
+        const aDate = a.webinarDate ? new Date(a.webinarDate).getTime() : 0;
+        const bDate = b.webinarDate ? new Date(b.webinarDate).getTime() : 0;
+        comparison = aDate - bDate;
       }
       
       return sortDirection === 'asc' ? comparison : -comparison;
@@ -218,17 +293,55 @@ export default function WebinarRegistrations() {
     }
   };
 
+  const getAttendanceBadge = (attended: boolean | null, id: string) => {
+    if (attended === true) {
+      return (
+        <Badge 
+          variant="default" 
+          className="bg-emerald-600 cursor-pointer"
+          onClick={() => toggleAttendanceMutation.mutate({ id, attended: false })}
+          data-testid={`badge-attended-${id}`}
+        >
+          <UserCheck className="h-3 w-3 mr-1" />
+          Attended
+        </Badge>
+      );
+    } else if (attended === false) {
+      return (
+        <Badge 
+          variant="destructive"
+          className="cursor-pointer"
+          onClick={() => toggleAttendanceMutation.mutate({ id, attended: true })}
+          data-testid={`badge-not-attended-${id}`}
+        >
+          <UserX className="h-3 w-3 mr-1" />
+          No Show
+        </Badge>
+      );
+    }
+    return (
+      <Badge 
+        variant="outline"
+        className="cursor-pointer"
+        onClick={() => toggleAttendanceMutation.mutate({ id, attended: true })}
+        data-testid={`badge-unmarked-${id}`}
+      >
+        <HelpCircle className="h-3 w-3 mr-1" />
+        Mark Attendance
+      </Badge>
+    );
+  };
+
   const handleExportCSV = () => {
-    const headers = ["Name", "Email", "Phone", "RSVP Status", "RSVP Updated", "Referral Source", "Webinar ID", "Source", "Registered At"];
+    const headers = ["Name", "Email", "Phone", "Webinar Date", "RSVP Status", "Attended", "Referral Source", "Registered At"];
     const rows = filteredRegistrations.map(reg => [
       reg.name,
       reg.email,
       reg.phone || "",
+      reg.webinarDate ? format(new Date(reg.webinarDate), "yyyy-MM-dd") : "",
       getRsvpStatus(reg.rsvpStatus),
-      reg.rsvpUpdatedAt ? format(new Date(reg.rsvpUpdatedAt), "yyyy-MM-dd HH:mm:ss") : "",
+      reg.attended === true ? "Yes" : reg.attended === false ? "No" : "Unmarked",
       reg.referralSource || "",
-      reg.webinarId,
-      reg.source || "",
       reg.registeredAt ? format(new Date(reg.registeredAt), "yyyy-MM-dd HH:mm:ss") : ""
     ]);
     
@@ -401,6 +514,85 @@ export default function WebinarRegistrations() {
           </Card>
         </div>
 
+        {/* Attendance Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card 
+            className={`cursor-pointer transition-colors ${attendanceFilter === 'attended' ? 'ring-2 ring-emerald-500' : ''}`}
+            onClick={() => setAttendanceFilter(attendanceFilter === 'attended' ? 'all' : 'attended')}
+            data-testid="card-filter-attended"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-emerald-600">Attended</CardTitle>
+              <UserCheck className="h-4 w-4 text-emerald-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-600" data-testid="text-attended">
+                {attendanceCounts.attended}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {registrations.length > 0 
+                  ? `${Math.round((attendanceCounts.attended / registrations.length) * 100)}% attended`
+                  : "0%"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-colors ${attendanceFilter === 'not_attended' ? 'ring-2 ring-red-500' : ''}`}
+            onClick={() => setAttendanceFilter(attendanceFilter === 'not_attended' ? 'all' : 'not_attended')}
+            data-testid="card-filter-not-attended"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-red-600">No Shows</CardTitle>
+              <UserX className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600" data-testid="text-not-attended">
+                {attendanceCounts.notAttended}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {registrations.length > 0 
+                  ? `${Math.round((attendanceCounts.notAttended / registrations.length) * 100)}% no shows`
+                  : "0%"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className={`cursor-pointer transition-colors ${attendanceFilter === 'unmarked' ? 'ring-2 ring-gray-500' : ''}`}
+            onClick={() => setAttendanceFilter(attendanceFilter === 'unmarked' ? 'all' : 'unmarked')}
+            data-testid="card-filter-unmarked"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Unmarked</CardTitle>
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="text-unmarked">
+                {attendanceCounts.unmarked}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Need attendance marked
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Webinar Dates</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="text-webinar-dates">
+                {webinarDates.length}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Different sessions
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Referral Stats */}
         {referralStats.length > 0 && (
           <Card className="mb-8">
@@ -502,6 +694,19 @@ export default function WebinarRegistrations() {
                     <TableHead>Referral</TableHead>
                     <TableHead 
                       className="cursor-pointer"
+                      onClick={() => toggleSort('webinarDate')}
+                      data-testid="header-sort-webinar-date"
+                    >
+                      <div className="flex items-center gap-1">
+                        Webinar Date
+                        {sortField === 'webinarDate' && (
+                          <ArrowUpDown className="h-3 w-3" />
+                        )}
+                      </div>
+                    </TableHead>
+                    <TableHead>Attendance</TableHead>
+                    <TableHead 
+                      className="cursor-pointer"
                       onClick={() => toggleSort('rsvpStatus')}
                       data-testid="header-sort-rsvp"
                     >
@@ -563,6 +768,14 @@ export default function WebinarRegistrations() {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {reg.webinarDate 
+                          ? format(new Date(reg.webinarDate), "MMM d, yyyy")
+                          : <span className="text-muted-foreground italic">Not set</span>}
+                      </TableCell>
+                      <TableCell>
+                        {getAttendanceBadge(reg.attended, reg.id)}
                       </TableCell>
                       <TableCell>
                         {getRsvpBadge(reg.rsvpStatus)}
