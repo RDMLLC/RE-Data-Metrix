@@ -23,10 +23,13 @@ A promo code system enables capped redemptions for free access and manages a wai
 
 The ARV Helper feature employs a Dual-API Hybrid Strategy for comparable sales (comps) search, querying RentCast and HasData APIs in parallel. This strategy merges data from both sources, prioritizing MLS-verified information from HasData for sale price and date, and leveraging RentCast for broader coverage, lot size, and images. Address normalization and specific search parameters (property type, bedroom range, sqft range, radius) enhance accuracy. Users can include pending sales and add comps via Zillow URLs.
 
+A Zoho Meeting integration enables automated webinar attendance syncing. Admins can connect their Zoho account via OAuth2, then sync attendance data from Zoho Meeting by entering a meeting key. The sync uses case-insensitive email matching between Zoho participants and webinar registrations. OAuth security includes CSRF protection via state parameter validation with single-use tokens and 10-minute expiry.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
 - **Frontend Libraries**: React Query, Wouter, React Hook Form, Zod, date-fns, Tailwind CSS, class-variance-authority
 - **Payment Processing**: Stripe (for billing and subscription management)
 - **Email Service**: Zoho Mail SMTP
+- **Webinar Integration**: Zoho Meeting API (OAuth2 authentication, participant attendance fetching via ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_ZSOID)
 - **Property Data APIs**: RentCast API (property details, tax info, estimated values, rent estimates), HasData API (comparable sales from Zillow, pending sales, property images)
