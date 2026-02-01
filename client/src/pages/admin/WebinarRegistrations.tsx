@@ -40,7 +40,20 @@ import {
   UserCheck,
   UserX,
   HelpCircle,
+  Video,
+  Link2,
+  Unlink,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
@@ -89,6 +102,8 @@ export default function WebinarRegistrations() {
   const [webinarDateFilter, setWebinarDateFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('webinarDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [zohoDialogOpen, setZohoDialogOpen] = useState(false);
+  const [meetingKey, setMeetingKey] = useState("edef-zym-pkw");
   const { toast } = useToast();
 
   const { data: registrations = [], isLoading, refetch, isRefetching } = useQuery<WebinarRegistration[]>({
@@ -286,6 +301,68 @@ export default function WebinarRegistrations() {
         description: error.message || "Failed to sync subscriptions with user accounts",
         variant: "destructive",
       });
+    },
+  });
+
+  const { data: zohoStatus } = useQuery<{ connected: boolean }>({
+    queryKey: ["/api/zoho/status"],
+    refetchInterval: false,
+  });
+
+  const syncZohoAttendanceMutation = useMutation({
+    mutationFn: async (key: string) => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/sync-zoho-attendance", {
+        meetingKey: key
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setZohoDialogOpen(false);
+      toast({
+        title: "Attendance Synced from Zoho",
+        description: data.message || `Matched ${data.matched} attendees`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync attendance from Zoho",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const connectZohoMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/zoho/authorize");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.authUrl) {
+        window.open(data.authUrl, "_blank");
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Failed to connect to Zoho",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const disconnectZohoMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/zoho/disconnect");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Disconnected",
+        description: "Zoho has been disconnected",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/zoho/status"] });
     },
   });
 
@@ -543,6 +620,83 @@ export default function WebinarRegistrations() {
               )}
               Sync Accounts
             </Button>
+            
+            {/* Zoho Sync Button */}
+            {zohoStatus?.connected ? (
+              <Dialog open={zohoDialogOpen} onOpenChange={setZohoDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                    data-testid="button-sync-zoho"
+                  >
+                    <Video className="h-4 w-4 mr-2" />
+                    Sync from Zoho
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Sync Attendance from Zoho Meeting</DialogTitle>
+                    <DialogDescription>
+                      Enter the meeting key to fetch attendance data from Zoho Meeting and automatically update registrant attendance status.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="meetingKey">Meeting Key</Label>
+                      <Input
+                        id="meetingKey"
+                        value={meetingKey}
+                        onChange={(e) => setMeetingKey(e.target.value)}
+                        placeholder="e.g., edef-zym-pkw"
+                        data-testid="input-meeting-key"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The meeting key from your Zoho Meeting URL (e.g., meet.zoho.com/<strong>edef-zym-pkw</strong>)
+                      </p>
+                    </div>
+                  </div>
+                  <DialogFooter className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => disconnectZohoMutation.mutate()}
+                      disabled={disconnectZohoMutation.isPending}
+                      data-testid="button-disconnect-zoho"
+                    >
+                      <Unlink className="h-4 w-4 mr-2" />
+                      Disconnect Zoho
+                    </Button>
+                    <Button
+                      onClick={() => syncZohoAttendanceMutation.mutate(meetingKey)}
+                      disabled={syncZohoAttendanceMutation.isPending || !meetingKey.trim()}
+                      data-testid="button-sync-zoho-confirm"
+                    >
+                      {syncZohoAttendanceMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Sync Attendance
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => connectZohoMutation.mutate()}
+                disabled={connectZohoMutation.isPending}
+                data-testid="button-connect-zoho"
+              >
+                {connectZohoMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Link2 className="h-4 w-4 mr-2" />
+                )}
+                Connect Zoho
+              </Button>
+            )}
+            
             <Button
               onClick={handleExportCSV}
               disabled={filteredRegistrations.length === 0}

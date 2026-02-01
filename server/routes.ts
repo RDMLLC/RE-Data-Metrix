@@ -4056,6 +4056,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Zoho OAuth and Meeting Integration Routes
+  const { zohoOAuthService } = await import("./services/zoho-oauth.service");
+  const { zohoMeetingService } = await import("./services/zoho-meeting.service");
+
+  // Check Zoho connection status
+  app.get("/api/zoho/status", ensureAdmin, async (req, res) => {
+    try {
+      const isConnected = await zohoOAuthService.isConnected();
+      res.json({ connected: isConnected });
+    } catch (error) {
+      console.error('Zoho status check error:', error);
+      res.json({ connected: false });
+    }
+  });
+
+  // Get Zoho authorization URL
+  app.get("/api/zoho/authorize", ensureAdmin, async (req, res) => {
+    try {
+      const user = req.user as User;
+      if (!user?.id) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      // Generate CSRF state token bound to this admin user
+      const state = zohoOAuthService.generateState(user.id);
+      const authUrl = zohoOAuthService.getAuthorizationUrl(state);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error('Zoho authorize error:', error);
+      res.status(500).json({ error: "Failed to generate authorization URL" });
+    }
+  });
+
+  // Handle Zoho OAuth callback
+  app.get("/api/zoho/callback", async (req, res) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || typeof code !== 'string') {
+        return res.status(400).send("Missing authorization code");
+      }
+
+      if (!state || typeof state !== 'string') {
+        return res.status(400).send("Missing state parameter - possible CSRF attack");
+      }
+
+      // Validate the state parameter (CSRF protection)
+      const userId = zohoOAuthService.validateState(state);
+      if (!userId) {
+        return res.status(400).send("Invalid or expired state parameter - please try connecting again");
+      }
+
+      await zohoOAuthService.exchangeCodeForTokens(code);
+      
+      // Redirect back to admin panel with success message
+      res.redirect("/admin/webinar-registrations?zoho=connected");
+    } catch (error) {
+      console.error('Zoho callback error:', error);
+      res.redirect("/admin/webinar-registrations?zoho=error");
+    }
+  });
+
+  // Disconnect Zoho
+  app.post("/api/zoho/disconnect", ensureAdmin, async (req, res) => {
+    try {
+      await zohoOAuthService.disconnect();
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Zoho disconnect error:', error);
+      res.status(500).json({ error: "Failed to disconnect Zoho" });
+    }
+  });
+
+  // Sync attendance from Zoho Meeting
+  app.post("/api/admin/webinar-registrations/sync-zoho-attendance", ensureAdmin, async (req, res) => {
+    try {
+      const { meetingKey } = req.body;
+      
+      if (!meetingKey) {
+        return res.status(400).json({ error: "meetingKey is required" });
+      }
+
+      // Get all webinar registrations
+      const registrations = await storage.getWebinarRegistrations();
+      const regData = registrations.map(r => ({ id: r.id, email: r.email }));
+
+      // Sync with Zoho
+      const syncResult = await zohoMeetingService.syncAttendanceWithRegistrations(meetingKey, regData);
+
+      // Update attendance in database
+      let updated = 0;
+      for (const regId of syncResult.attendees) {
+        await storage.updateWebinarRegistrationAttendance(regId, true);
+        updated++;
+      }
+
+      res.json({
+        success: true,
+        matched: syncResult.matched,
+        updated,
+        notFound: syncResult.notFound.length,
+        unregisteredAttendees: syncResult.unmatched,
+        message: `Synced ${updated} attendees from Zoho Meeting`
+      });
+    } catch (error: any) {
+      console.error('Zoho sync attendance error:', error);
+      res.status(500).json({ error: error.message || "Failed to sync attendance from Zoho" });
+    }
+  });
+
   // Send post-webinar emails (promo codes to attendees, next date to non-attendees)
   app.post("/api/admin/webinar-registrations/send-post-webinar-emails", ensureAdmin, async (req, res) => {
     try {

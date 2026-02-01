@@ -1209,3 +1209,22 @@ export const insertWebinarRegistrationSchema = createInsertSchema(webinarRegistr
 
 export type InsertWebinarRegistration = z.infer<typeof insertWebinarRegistrationSchema>;
 export type WebinarRegistration = typeof webinarRegistrations.$inferSelect;
+
+// Zoho OAuth tokens for meeting API integration
+export const zohoTokens = pgTable("zoho_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertZohoTokenSchema = createInsertSchema(zohoTokens).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertZohoToken = z.infer<typeof insertZohoTokenSchema>;
+export type ZohoToken = typeof zohoTokens.$inferSelect;
