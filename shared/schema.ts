@@ -1175,16 +1175,21 @@ export const webinarRegistrations = pgTable("webinar_registrations", {
   email: text("email").notNull(),
   phone: text("phone"),
   webinarId: text("webinar_id").notNull().default('soft-launch-2026'), // Identifier for which webinar
+  webinarDate: timestamp("webinar_date"), // The date/time of the webinar they registered for
   source: text("source"), // Where they came from (utm_source, etc.)
   referralSource: text("referral_source"), // Referral partner slug (e.g., "sakira")
   registeredAt: timestamp("registered_at").defaultNow(),
   // RSVP tracking
   rsvpStatus: text("rsvp_status").default('pending'), // pending, confirmed, declined
   rsvpUpdatedAt: timestamp("rsvp_updated_at"),
+  // Attendance tracking
+  attended: boolean("attended").default(false), // Did they actually attend the webinar?
+  attendanceMarkedAt: timestamp("attendance_marked_at"), // When attendance was marked
   // Email tracking
   confirmationSentAt: timestamp("confirmation_sent_at"),
   dayBeforeReminderSentAt: timestamp("day_before_reminder_sent_at"),
   finalReminderSentAt: timestamp("final_reminder_sent_at"),
+  postWebinarEmailSentAt: timestamp("post_webinar_email_sent_at"), // Promo code or next date email
 });
 
 export const insertWebinarRegistrationSchema = createInsertSchema(webinarRegistrations).omit({
@@ -1192,9 +1197,12 @@ export const insertWebinarRegistrationSchema = createInsertSchema(webinarRegistr
   registeredAt: true,
   rsvpStatus: true,
   rsvpUpdatedAt: true,
+  attended: true,
+  attendanceMarkedAt: true,
   confirmationSentAt: true,
   dayBeforeReminderSentAt: true,
   finalReminderSentAt: true,
+  postWebinarEmailSentAt: true,
 });
 
 export type InsertWebinarRegistration = z.infer<typeof insertWebinarRegistrationSchema>;
