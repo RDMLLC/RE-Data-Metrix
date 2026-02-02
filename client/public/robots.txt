@@ -1,0 +1,35 @@
+# Robots.txt for RE Data Metrix
+# https://redatametrix.com
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /portal/
+Disallow: /lender-dashboard
+Disallow: /lender-login
+Disallow: /lender-signup
+Disallow: /checkout
+Disallow: /api/
+
+# Disallow authentication pages
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /reset-password
+Disallow: /request-password-reset
+
+# Allow important pages
+Allow: /
+Allow: /webinar
+Allow: /pricing
+Allow: /features
+Allow: /lenders
+Allow: /faq
+Allow: /about
+Allow: /resources
+Allow: /loan-types
+
+# Sitemap location
+Sitemap: https://redatametrix.com/sitemap.xml

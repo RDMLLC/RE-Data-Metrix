@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
+import { SEO } from "@/components/SEO";
 import { 
   Calendar, 
   Clock, 
@@ -131,6 +132,12 @@ export default function Webinar() {
 
   return (
     <Layout>
+      <SEO 
+        title="Free Webinar - Real Estate Investment Training"
+        description="Join our free live webinar to learn how to analyze real estate deals, connect with private lenders, and use data-driven tools to maximize your investment returns."
+        keywords="real estate webinar, investment training, deal analysis, private lending, free training, real estate education"
+        canonicalUrl="https://redatametrix.com/webinar"
+      />
       {/* Hero Section */}
       <section className="relative bg-primary py-16 lg:py-24 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-primary/80" />

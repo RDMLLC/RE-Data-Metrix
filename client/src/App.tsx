@@ -1,9 +1,11 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsent } from "@/components/CookieConsent";
+import { OrganizationSchema, WebApplicationSchema } from "@/components/StructuredData";
 import { WizardDataProvider } from "@/contexts/WizardDataContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LenderAuthProvider } from "@/contexts/LenderAuthContext";
@@ -211,23 +213,27 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <LenderAuthProvider>
-          <WizardDataProvider>
-            <DeviceModeProvider>
-              <TooltipProvider>
-                <Toaster />
-                <CookieConsent />
-                <MobileRedirectHandler />
-                <MarketingPixelLoader />
-                <Router />
-              </TooltipProvider>
-            </DeviceModeProvider>
-          </WizardDataProvider>
-        </LenderAuthProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <OrganizationSchema />
+      <WebApplicationSchema />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <LenderAuthProvider>
+            <WizardDataProvider>
+              <DeviceModeProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <CookieConsent />
+                  <MobileRedirectHandler />
+                  <MarketingPixelLoader />
+                  <Router />
+                </TooltipProvider>
+              </DeviceModeProvider>
+            </WizardDataProvider>
+          </LenderAuthProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

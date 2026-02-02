@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, BarChart3, Wrench, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { SEO } from "@/components/SEO";
 
 export default function Home() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -91,6 +92,12 @@ export default function Home() {
 
   return (
     <Layout>
+      <SEO 
+        title="Home"
+        description="RE Data Metrix - Turning Terms into Returns. Comprehensive real estate investment analysis platform with deal analysis tools, lender directory, and profitability calculators."
+        keywords="real estate investing, deal analysis, private lenders, fix and flip, rental properties, DSCR loans, investment calculator"
+        canonicalUrl="https://redatametrix.com/"
+      />
       <Hero />
       
       {/* Features Section - Hidden on mobile to reduce scrolling */}

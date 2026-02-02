@@ -17,6 +17,7 @@ import {
   Wrench
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { SEO } from "@/components/SEO";
 
 const coreFeatures = [
   {
@@ -95,6 +96,12 @@ export default function Features() {
 
   return (
     <Layout>
+      <SEO 
+        title="Features"
+        description="Explore RE Data Metrix features: Fix & Flip deal analysis, DSCR rental calculators, ARV helper with comparable sales, wholesale calculator, and private lender directory."
+        keywords="deal analysis features, ARV calculator, DSCR calculator, wholesale calculator, lender comparison, real estate investment tools"
+        canonicalUrl="https://redatametrix.com/features"
+      />
       <div className="min-h-[calc(100vh-16rem)] bg-background">
         {/* Hero Section */}
         <section className="py-20 bg-gradient-to-b from-primary/5 to-background">

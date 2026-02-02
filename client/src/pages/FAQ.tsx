@@ -7,6 +7,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { HelpCircle, Users, DollarSign, Shield, Rocket } from "lucide-react";
+import { SEO } from "@/components/SEO";
+import { FAQSchema } from "@/components/StructuredData";
 
 interface FAQItem {
   question: string;
@@ -153,8 +155,17 @@ const faqSections: FAQSection[] = [
 ];
 
 export default function FAQ() {
+  const allFaqs = faqSections.flatMap(section => section.items);
+  
   return (
     <Layout>
+      <SEO 
+        title="FAQ"
+        description="Frequently asked questions about RE Data Metrix. Learn about our real estate investment analysis tools, pricing, private lender directory, and how to get started."
+        keywords="RE Data Metrix FAQ, real estate investing questions, deal analysis help, private lender questions"
+        canonicalUrl="https://redatametrix.com/faq"
+      />
+      <FAQSchema faqs={allFaqs} />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2" data-testid="text-faq-title">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 const featureComparison = [
   { feature: "Property Lookups", free: "2 per month", paid: "Unlimited" },
@@ -51,6 +52,12 @@ export default function Pricing() {
 
   return (
     <Layout>
+      <SEO 
+        title="Pricing"
+        description="Simple, transparent pricing for RE Data Metrix. Get unlimited access to deal analysis tools, lender directory, and investment calculators for $25/month or $250/year."
+        keywords="real estate software pricing, deal analysis subscription, investment tools cost, real estate platform"
+        canonicalUrl="https://redatametrix.com/pricing"
+      />
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
