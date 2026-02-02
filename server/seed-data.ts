@@ -422,6 +422,18 @@ export const seedAffiliates: SeedAffiliate[] = [
     iconName: "Leaf",
     isActive: true,
     sortOrder: 17
+  },
+  {
+    id: "e2a4151a-d2ba-4c39-9ea4-fd4404982a5d",
+    name: "LegalShield",
+    description: "Affordable legal protection for real estate investors. Access attorneys for contract reviews, legal consultations, and document preparation at a fraction of traditional costs.",
+    benefits: ["Contract Reviews", "Legal Consultations", "Document Preparation", "Attorney Access"],
+    referralLink: "https://REdatametrix.legalshieldassociate.com",
+    categories: ["legal"],
+    features: [],
+    iconName: "Shield",
+    isActive: true,
+    sortOrder: 18
   }
 ];
 
