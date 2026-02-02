@@ -103,8 +103,20 @@ export default function WebinarRegistrations() {
   const [sortField, setSortField] = useState<SortField>('webinarDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [zohoDialogOpen, setZohoDialogOpen] = useState(false);
-  const [meetingKey, setMeetingKey] = useState("edef-zym-pkw");
+  const [meetingKey, setMeetingKey] = useState("");
+  const [useManualEntry, setUseManualEntry] = useState(false);
   const { toast } = useToast();
+
+  interface ZohoSession {
+    meetingKey: string;
+    topic: string;
+    startTime: string;
+    endTime: string;
+    duration: number;
+    status: string;
+    type: 'webinar' | 'meeting';
+  }
+
 
   const { data: registrations = [], isLoading, refetch, isRefetching } = useQuery<WebinarRegistration[]>({
     queryKey: ["/api/admin/webinar-registrations"],
@@ -307,6 +319,11 @@ export default function WebinarRegistrations() {
   const { data: zohoStatus } = useQuery<{ connected: boolean }>({
     queryKey: ["/api/zoho/status"],
     refetchInterval: false,
+  });
+
+  const { data: zohoWebinars, isLoading: isLoadingWebinars, refetch: refetchWebinars } = useQuery<{ sessions: ZohoSession[] }>({
+    queryKey: ["/api/zoho/webinars"],
+    enabled: zohoDialogOpen && !!zohoStatus?.connected,
   });
 
   const syncZohoAttendanceMutation = useMutation({
@@ -634,27 +651,102 @@ export default function WebinarRegistrations() {
                     Sync from Zoho
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Sync Attendance from Zoho Meeting</DialogTitle>
                     <DialogDescription>
-                      Enter the meeting key to fetch attendance data from Zoho Meeting and automatically update registrant attendance status.
+                      Select a webinar or meeting to fetch attendance data and automatically update registrant attendance status.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="meetingKey">Meeting Key</Label>
-                      <Input
-                        id="meetingKey"
-                        value={meetingKey}
-                        onChange={(e) => setMeetingKey(e.target.value)}
-                        placeholder="e.g., edef-zym-pkw"
-                        data-testid="input-meeting-key"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        The meeting key from your Zoho Meeting URL (e.g., meet.zoho.com/<strong>edef-zym-pkw</strong>)
-                      </p>
-                    </div>
+                    {!useManualEntry ? (
+                      <div className="grid gap-2">
+                        <Label>Select Webinar/Meeting</Label>
+                        {isLoadingWebinars ? (
+                          <div className="flex items-center gap-2 p-3 border rounded-md">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm text-muted-foreground">Loading webinars...</span>
+                          </div>
+                        ) : zohoWebinars?.sessions && zohoWebinars.sessions.length > 0 ? (
+                          <Select 
+                            value={meetingKey} 
+                            onValueChange={setMeetingKey}
+                          >
+                            <SelectTrigger data-testid="select-webinar">
+                              <SelectValue placeholder="Choose a webinar or meeting" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {zohoWebinars.sessions.map((session) => (
+                                <SelectItem key={session.meetingKey} value={session.meetingKey}>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={session.type === 'webinar' ? 'default' : 'secondary'} className="text-xs">
+                                      {session.type}
+                                    </Badge>
+                                    <span className="truncate max-w-[250px]">{session.topic || 'Untitled'}</span>
+                                    {session.startTime && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {format(new Date(session.startTime), 'MMM d, yyyy')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="p-3 border rounded-md text-sm text-muted-foreground">
+                            No webinars or meetings found. Try manual entry below.
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 pt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => refetchWebinars()}
+                            disabled={isLoadingWebinars}
+                            data-testid="button-refresh-webinars"
+                          >
+                            <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingWebinars ? 'animate-spin' : ''}`} />
+                            Refresh List
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary underline-offset-4 hover:underline"
+                            onClick={() => setUseManualEntry(true)}
+                            data-testid="button-manual-entry"
+                          >
+                            Enter key manually
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-2">
+                        <Label htmlFor="meetingKey">Meeting Key</Label>
+                        <Input
+                          id="meetingKey"
+                          value={meetingKey}
+                          onChange={(e) => setMeetingKey(e.target.value)}
+                          placeholder="e.g., 3455656789"
+                          data-testid="input-meeting-key"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter the numeric webinar key from your Zoho Meeting dashboard (found in session details).
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="justify-start px-0 text-primary underline-offset-4 hover:underline"
+                          onClick={() => {
+                            setUseManualEntry(false);
+                            setMeetingKey("");
+                          }}
+                          data-testid="button-back-to-dropdown"
+                        >
+                          Back to webinar list
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <DialogFooter className="flex gap-2">
                     <Button

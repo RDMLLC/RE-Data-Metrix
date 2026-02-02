@@ -4071,6 +4071,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get list of recent webinars from Zoho
+  app.get("/api/zoho/webinars", ensureAdmin, async (req, res) => {
+    try {
+      const isConnected = await zohoOAuthService.isConnected();
+      if (!isConnected) {
+        return res.status(401).json({ error: "Zoho is not connected" });
+      }
+      
+      // Fetch both webinars and meetings
+      const [webinars, meetings] = await Promise.all([
+        zohoMeetingService.getRecentWebinars().catch(() => []),
+        zohoMeetingService.getRecentMeetings().catch(() => [])
+      ]);
+      
+      // Combine and format
+      const allSessions = [
+        ...webinars.map(w => ({ ...w, type: 'webinar' as const })),
+        ...meetings.map(m => ({ ...m, type: 'meeting' as const }))
+      ].sort((a, b) => {
+        // Sort by startTime descending (most recent first)
+        const dateA = new Date(a.startTime || 0).getTime();
+        const dateB = new Date(b.startTime || 0).getTime();
+        return dateB - dateA;
+      });
+      
+      res.json({ sessions: allSessions });
+    } catch (error) {
+      console.error('Zoho webinars fetch error:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch webinars" });
+    }
+  });
+
   // Get Zoho authorization URL
   app.get("/api/zoho/authorize", ensureAdmin, async (req, res) => {
     try {
