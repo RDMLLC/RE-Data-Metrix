@@ -57,11 +57,62 @@ export function getZohoAccountsApiUrl(): string {
 export class ZohoMeetingService {
   private zsoid: string;
   private baseUrl: string;
+  private cachedZsoid: string | null = null;
 
   constructor() {
     this.zsoid = process.env.ZOHO_ZSOID || "";
     this.baseUrl = getZohoMeetingApiUrl();
     console.log(`Zoho Meeting Service initialized with data center: ${getZohoDataCenter()}, API URL: ${this.baseUrl}`);
+  }
+
+  // Fetch the organization ID dynamically from Zoho API
+  async getOrganizationId(): Promise<string> {
+    // Return cached value if available
+    if (this.cachedZsoid) {
+      return this.cachedZsoid;
+    }
+
+    // Try environment variable first
+    if (this.zsoid) {
+      console.log(`Using ZSOID from environment: ${this.zsoid}`);
+      return this.zsoid;
+    }
+
+    // Fetch from Zoho API
+    const accessToken = await zohoOAuthService.getValidAccessToken();
+    if (!accessToken) {
+      throw new Error("Zoho is not connected. Please authorize first.");
+    }
+
+    const userUrl = `${this.baseUrl}/user.json`;
+    console.log(`Fetching organization ID from: ${userUrl}`);
+
+    const response = await fetch(userUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Zoho-oauthtoken ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Failed to fetch user info:", error);
+      throw new Error(`Failed to fetch organization ID: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("User API response:", JSON.stringify(data).substring(0, 500));
+
+    // Extract zsoid from response
+    const zsoid = data.zsoid || data.orgId || data.organizationId;
+    if (!zsoid) {
+      console.error("No zsoid found in response:", data);
+      throw new Error("Could not determine organization ID from Zoho API response");
+    }
+
+    this.cachedZsoid = zsoid;
+    console.log(`Fetched ZSOID from API: ${zsoid}`);
+    return zsoid;
   }
 
   async getParticipants(meetingKey: string): Promise<ZohoParticipant[]> {
@@ -70,6 +121,9 @@ export class ZohoMeetingService {
     if (!accessToken) {
       throw new Error("Zoho is not connected. Please authorize first.");
     }
+
+    // Get the organization ID dynamically
+    const orgId = await this.getOrganizationId();
 
     // Check if this is a URL-format key (like edef-zym-pkw) or numeric key
     // URL-format keys contain dashes and letters, numeric keys are just numbers
@@ -90,8 +144,8 @@ export class ZohoMeetingService {
 
     // Try webinar attendee endpoint first (since this is for webinars)
     // Then fall back to meeting participant endpoint
-    const webinarUrl = `${this.baseUrl}/${this.zsoid}/attendee/${numericKey}.json?index=1&count=100`;
-    const meetingUrl = `${this.baseUrl}/${this.zsoid}/participant/${numericKey}.json?index=1&count=100`;
+    const webinarUrl = `${this.baseUrl}/${orgId}/attendee/${numericKey}.json?index=1&count=100`;
+    const meetingUrl = `${this.baseUrl}/${orgId}/participant/${numericKey}.json?index=1&count=100`;
     
     console.log("Trying webinar attendee endpoint:", webinarUrl);
     
@@ -208,7 +262,10 @@ export class ZohoMeetingService {
       throw new Error("Zoho is not connected. Please authorize first.");
     }
 
-    const url = `${this.baseUrl}/${this.zsoid}/sessions.json?fromIndex=1&toIndex=20`;
+    const orgId = await this.getOrganizationId();
+    const url = `${this.baseUrl}/${orgId}/sessions.json?fromIndex=1&toIndex=20`;
+    
+    console.log("Fetching meetings from:", url);
     
     const response = await fetch(url, {
       method: "GET",
@@ -234,8 +291,9 @@ export class ZohoMeetingService {
       throw new Error("Zoho is not connected. Please authorize first.");
     }
 
+    const orgId = await this.getOrganizationId();
     // List webinars endpoint
-    const url = `${this.baseUrl}/${this.zsoid}/webinar.json?fromIndex=1&limit=20`;
+    const url = `${this.baseUrl}/${orgId}/webinar.json?fromIndex=1&limit=20`;
     
     console.log("Fetching webinars from:", url);
     
