@@ -320,7 +320,7 @@ export class PromoService {
       
       // Update user subscription if no other active subscriptions
       await db.update(users)
-        .set({ subscriptionStatus: 'inactive' })
+        .set({ subscriptionStatus: 'free' })
         .where(eq(users.id, userId));
 
       return null;

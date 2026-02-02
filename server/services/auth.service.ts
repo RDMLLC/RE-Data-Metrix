@@ -28,7 +28,7 @@ export const passwordResetSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-export type SubscriptionStatus = 'inactive' | 'active' | 'comped' | 'referral_trial' | 'canceled';
+export type SubscriptionStatus = 'free' | 'active' | 'comped' | 'referral_trial' | 'canceled';
 
 export interface RegistrationResult {
   success: boolean;
@@ -151,7 +151,7 @@ class AuthService {
       const verificationExpiry = this.getTokenExpiry(24);
 
       let referredByUserId: string | null = null;
-      let subscriptionStatus: SubscriptionStatus = 'inactive';
+      let subscriptionStatus: SubscriptionStatus = 'free';
       let compInviteToAccept: { id: string; email: string; status: string; expiresAt: Date } | undefined;
 
       if (validatedData.compCode) {

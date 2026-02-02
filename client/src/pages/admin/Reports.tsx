@@ -126,7 +126,7 @@ interface SubscriptionStats {
   totalActive: number;
   totalReferralTrial: number;
   totalComped: number;
-  totalInactive: number;
+  totalFree: number;
   usersByMonth: Array<{month: string; count: number}>;
   referralConversions: number;
 }
@@ -385,12 +385,13 @@ export default function AdminReports() {
       active: 'default',
       referral_trial: 'default',
       comped: 'default',
-      inactive: 'secondary',
+      free: 'secondary',
       prospect: 'outline',
     };
+    const displayStatus = status === 'free' ? 'Free' : status.replace('_', ' ');
     return (
       <Badge variant={variants[status] || 'outline'} data-testid={`badge-subscription-${status}`}>
-        {status.replace('_', ' ')}
+        {displayStatus}
       </Badge>
     );
   };
@@ -1277,8 +1278,8 @@ export default function AdminReports() {
                           </Card>
                           <Card>
                             <CardContent className="p-4">
-                              <div className="text-sm text-muted-foreground mb-1">Inactive</div>
-                              <p className="text-2xl font-bold text-muted-foreground">{subscriptionStats.totalInactive}</p>
+                              <div className="text-sm text-muted-foreground mb-1">Free</div>
+                              <p className="text-2xl font-bold text-muted-foreground">{subscriptionStats.totalFree}</p>
                             </CardContent>
                           </Card>
                           <Card>

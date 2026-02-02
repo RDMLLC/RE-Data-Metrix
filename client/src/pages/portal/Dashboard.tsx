@@ -62,8 +62,9 @@ export default function MemberDashboard() {
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-200">Comped</Badge>;
       case "referral_trial":
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200">Trial</Badge>;
+      case "free":
       default:
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">Free</Badge>;
     }
   };
 
@@ -93,7 +94,7 @@ export default function MemberDashboard() {
             </h1>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-muted-foreground">Subscription:</span>
-              {getSubscriptionBadge(user.subscriptionStatus || "inactive", user.subscriptionPlan, !!user.stripeSubscriptionId)}
+              {getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)}
             </div>
           </div>
 

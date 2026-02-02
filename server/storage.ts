@@ -567,7 +567,7 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser,
       role: insertUser.role || 'user',
-      subscriptionStatus: insertUser.subscriptionStatus || 'inactive',
+      subscriptionStatus: insertUser.subscriptionStatus || 'free',
       referredBy: insertUser.referredBy || null,
       id,
       referralCode: null,
@@ -2312,10 +2312,10 @@ export class DatabaseStorage implements IStorage {
       'active': 0,
       'referral_trial': 0,
       'comped': 0,
-      'inactive': 0,
+      'free': 0,
     };
     allUsers.forEach(user => {
-      const status = user.subscriptionStatus || 'inactive';
+      const status = user.subscriptionStatus || 'free';
       byStatus[status] = (byStatus[status] || 0) + 1;
     });
 
@@ -2349,7 +2349,7 @@ export class DatabaseStorage implements IStorage {
       totalActive: byStatus['active'] || 0,
       totalReferralTrial: byStatus['referral_trial'] || 0,
       totalComped: byStatus['comped'] || 0,
-      totalInactive: byStatus['inactive'] || 0,
+      totalFree: byStatus['free'] || 0,
       usersByMonth,
       referralConversions,
     };

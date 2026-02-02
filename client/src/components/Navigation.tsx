@@ -51,8 +51,9 @@ function getSubscriptionBadge(status: string, plan?: string | null, hasStripeSub
       return <Badge className="bg-purple-500/10 text-purple-600 border-purple-200 text-xs">Comped</Badge>;
     case "referral_trial":
       return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200 text-xs">Trial</Badge>;
+    case "free":
     default:
-      return <Badge variant="secondary" className="text-xs">Inactive</Badge>;
+      return <Badge variant="secondary" className="text-xs">Free</Badge>;
   }
 }
 
@@ -180,7 +181,7 @@ export default function Navigation() {
                           ) : user.role === 'developer' ? (
                             <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
                           ) : (
-                            getSubscriptionBadge(user.subscriptionStatus || "inactive", user.subscriptionPlan, !!user.stripeSubscriptionId)
+                            getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)
                           )}
                         </div>
                       </div>
@@ -414,7 +415,7 @@ export default function Navigation() {
                         ) : user.role === 'developer' ? (
                           <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
                         ) : (
-                          getSubscriptionBadge(user.subscriptionStatus || "inactive", user.subscriptionPlan, !!user.stripeSubscriptionId)
+                          getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)
                         )}
                       </div>
                     </div>

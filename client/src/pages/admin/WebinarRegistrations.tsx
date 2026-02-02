@@ -105,6 +105,8 @@ export default function WebinarRegistrations() {
   const [zohoDialogOpen, setZohoDialogOpen] = useState(false);
   const [meetingKey, setMeetingKey] = useState("");
   const [useManualEntry, setUseManualEntry] = useState(false);
+  const [noShowEmailDialogOpen, setNoShowEmailDialogOpen] = useState(false);
+  const [nextWebinarDate, setNextWebinarDate] = useState("");
   const { toast } = useToast();
 
   interface ZohoSession {
@@ -311,6 +313,30 @@ export default function WebinarRegistrations() {
       toast({
         title: "Sync Failed",
         description: error.message || "Failed to sync subscriptions with user accounts",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendNoShowEmailsMutation = useMutation({
+    mutationFn: async ({ nextWebinarDate }: { nextWebinarDate: string }) => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/send-noshow-emails", {
+        nextWebinarDate,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "No-Show Emails Sent",
+        description: data.message || `Sent reminder emails to ${data.sent} no-shows`,
+      });
+      setNoShowEmailDialogOpen(false);
+      setNextWebinarDate("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Send Emails",
+        description: error.message || "An error occurred while sending emails",
         variant: "destructive",
       });
     },
@@ -923,22 +949,45 @@ export default function WebinarRegistrations() {
 
           <Card 
             className={`cursor-pointer transition-colors ${attendanceFilter === 'not_attended' ? 'ring-2 ring-red-500' : ''}`}
-            onClick={() => setAttendanceFilter(attendanceFilter === 'not_attended' ? 'all' : 'not_attended')}
             data-testid="card-filter-not-attended"
           >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-red-600">No Shows</CardTitle>
+              <CardTitle 
+                className="text-sm font-medium text-red-600 cursor-pointer"
+                onClick={() => setAttendanceFilter(attendanceFilter === 'not_attended' ? 'all' : 'not_attended')}
+              >
+                No Shows
+              </CardTitle>
               <UserX className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600" data-testid="text-not-attended">
+              <div 
+                className="text-2xl font-bold text-red-600 cursor-pointer" 
+                data-testid="text-not-attended"
+                onClick={() => setAttendanceFilter(attendanceFilter === 'not_attended' ? 'all' : 'not_attended')}
+              >
                 {attendanceCounts.notAttended}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mb-2">
                 {registrations.length > 0 
                   ? `${Math.round((attendanceCounts.notAttended / registrations.length) * 100)}% no shows`
                   : "0%"}
               </p>
+              {attendanceCounts.notAttended > 0 && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setNoShowEmailDialogOpen(true);
+                  }}
+                  data-testid="button-send-noshow-emails"
+                >
+                  <Mail className="h-3 w-3 mr-1" />
+                  Send Reminder
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -1235,6 +1284,61 @@ export default function WebinarRegistrations() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={noShowEmailDialogOpen} onOpenChange={setNoShowEmailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Reminder to No-Shows</DialogTitle>
+            <DialogDescription>
+              Send an email to {attendanceCounts.notAttended} registrants who missed the webinar, inviting them to the next one.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="next-webinar-date">Next Webinar Date</Label>
+              <Input
+                id="next-webinar-date"
+                placeholder="e.g., Friday, February 14th"
+                value={nextWebinarDate}
+                onChange={(e) => setNextWebinarDate(e.target.value)}
+                data-testid="input-next-webinar-date"
+              />
+              <p className="text-xs text-muted-foreground">
+                This date will appear in the email template. The registration link will automatically point to your webinar landing page.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setNoShowEmailDialogOpen(false);
+                setNextWebinarDate("");
+              }}
+              data-testid="button-cancel-noshow-email"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => sendNoShowEmailsMutation.mutate({ nextWebinarDate })}
+              disabled={!nextWebinarDate.trim() || sendNoShowEmailsMutation.isPending}
+              data-testid="button-send-noshow-email-confirm"
+            >
+              {sendNoShowEmailsMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send to {attendanceCounts.notAttended} No-Shows
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

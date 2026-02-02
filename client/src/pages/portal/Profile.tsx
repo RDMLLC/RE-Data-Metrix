@@ -314,7 +314,7 @@ export default function Profile() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">Subscription Status</p>
                       <p className="text-base sm:text-lg capitalize" data-testid="text-subscription-status">
-                        {(user.subscriptionStatus || "inactive").replace(/_/g, " ")}
+                        {(user.subscriptionStatus || "free").replace(/_/g, " ")}
                       </p>
                     </div>
                   </div>

@@ -3060,7 +3060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: allUsers.length,
         bySubscription: {
           active: allUsers.filter(u => u.subscriptionStatus === 'active').length,
-          inactive: allUsers.filter(u => u.subscriptionStatus === 'inactive').length,
+          free: allUsers.filter(u => u.subscriptionStatus === 'free').length,
           comped: allUsers.filter(u => u.subscriptionStatus === 'comped').length,
           referral_trial: allUsers.filter(u => u.subscriptionStatus === 'referral_trial').length,
         },
@@ -3090,7 +3090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { subscriptionStatus } = req.body;
       
-      if (!['active', 'inactive', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
+      if (!['active', 'free', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
         return res.status(400).json({ error: "Invalid subscription status" });
       }
       
@@ -3140,7 +3140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username,
         password: hashedPassword,
         role: 'developer',
-        subscriptionStatus: 'inactive',
+        subscriptionStatus: 'free',
         isEmailVerified: true, // Developer accounts are pre-verified
       });
       
@@ -3237,7 +3237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (totalReferralActivity > 0) {
         return res.status(400).json({ 
           error: "Cannot delete user with referral activity",
-          message: "This user has referral activity recorded. Use 'inactive' or 'archived' status instead."
+          message: "This user has referral activity recorded. Use 'free' or 'archived' status instead."
         });
       }
       
@@ -3272,7 +3272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error.code === '23503' || error.message?.includes('foreign key')) {
         return res.status(400).json({ 
           error: "Cannot delete user",
-          message: "User has related records that couldn't be deleted. Try updating their status to 'inactive' instead."
+          message: "User has related records that couldn't be deleted. Try updating their status to 'free' instead."
         });
       }
       res.status(500).json({ error: "Failed to delete user" });
@@ -4386,6 +4386,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Send post-webinar emails error:', error);
       res.status(500).json({ error: "Failed to send post-webinar emails" });
+    }
+  });
+
+  // Admin endpoint to send reminder emails to no-shows only
+  app.post("/api/admin/webinar-registrations/send-noshow-emails", ensureAdmin, async (req, res) => {
+    try {
+      const { nextWebinarDate } = req.body;
+      
+      if (!nextWebinarDate) {
+        return res.status(400).json({ error: "nextWebinarDate is required" });
+      }
+      
+      // Get all registrations marked as "not attended"
+      const allRegistrations = await storage.getWebinarRegistrations();
+      const noShows = allRegistrations.filter(reg => reg.attended === false);
+      
+      if (noShows.length === 0) {
+        return res.json({
+          success: true,
+          message: "No no-show registrations found to email",
+          sent: 0,
+          failed: 0
+        });
+      }
+      
+      let sent = 0;
+      let failed = 0;
+      
+      for (const reg of noShows) {
+        try {
+          const success = await emailService.sendMissedWebinarEmail(
+            reg.email,
+            reg.name,
+            nextWebinarDate
+          );
+          if (success) {
+            sent++;
+            console.log(`Sent no-show reminder email to ${reg.email}`);
+          } else {
+            failed++;
+            console.error(`Failed to send no-show email to ${reg.email}`);
+          }
+        } catch (error) {
+          failed++;
+          console.error(`Error sending no-show email to ${reg.email}:`, error);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Sent ${sent} reminder emails to no-shows (${failed} failed)`,
+        sent,
+        failed,
+        total: noShows.length
+      });
+    } catch (error) {
+      console.error('Send no-show emails error:', error);
+      res.status(500).json({ error: "Failed to send no-show emails" });
     }
   });
 

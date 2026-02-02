@@ -96,7 +96,7 @@ interface UserStats {
   total: number;
   bySubscription: {
     active: number;
-    inactive: number;
+    free: number;
     comped: number;
     referral_trial: number;
   };
@@ -271,8 +271,9 @@ export default function UserManagement() {
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Referral Trial</Badge>;
       case 'archived':
         return <Badge className="bg-gray-500/10 text-gray-600 border-gray-500/20">Archived</Badge>;
+      case 'free':
       default:
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">Free</Badge>;
     }
   };
 
@@ -435,7 +436,7 @@ export default function UserManagement() {
                       <SelectContent>
                         <SelectItem value="all">All Subscriptions</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="comped">Comped</SelectItem>
                         <SelectItem value="referral_trial">Referral Trial</SelectItem>
                         <SelectItem value="archived">Archived</SelectItem>
@@ -493,7 +494,7 @@ export default function UserManagement() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectItem value="free">Free</SelectItem>
                                     <SelectItem value="comped">Comped</SelectItem>
                                     <SelectItem value="referral_trial">Referral Trial</SelectItem>
                                     <SelectItem value="archived">Archived</SelectItem>
@@ -827,7 +828,7 @@ export default function UserManagement() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="active">Restore Active</SelectItem>
-                                    <SelectItem value="inactive">Set Inactive</SelectItem>
+                                    <SelectItem value="free">Set Free</SelectItem>
                                     <SelectItem value="archived">Keep Archived</SelectItem>
                                   </SelectContent>
                                 </Select>

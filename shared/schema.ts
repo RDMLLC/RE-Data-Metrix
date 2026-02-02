@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default('user'),
-  subscriptionStatus: text("subscription_status").notNull().default('inactive'),
+  subscriptionStatus: text("subscription_status").notNull().default('free'),
   referredBy: varchar("referred_by"),
   referralCode: varchar("referral_code").unique(),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
