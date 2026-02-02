@@ -1822,6 +1822,90 @@ END:VCALENDAR`;
       html: htmlContent,
     });
   }
+
+  async sendAttendedNotSignedUpEmail(
+    to: string,
+    name: string,
+    promoCode: string
+  ): Promise<boolean> {
+    const firstName = name.split(' ')[0];
+    const baseUrl = this.getBaseUrl();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .btn-primary { display: inline-block; padding: 14px 28px; background-color: #0F7B49; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .promo-box { background: linear-gradient(135deg, #0F7B49 0%, #1E3A8A 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+          .promo-code { font-size: 28px; font-weight: bold; letter-spacing: 2px; margin: 10px 0; }
+          .urgency-box { background: #fef3c7; border: 2px solid #f59e0b; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Thanks for Attending!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Don't Forget Your FREE Access</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            
+            <p>Thank you again for attending our RE Data Metrix webinar! We really enjoyed having you there and hope you found the session valuable.</p>
+            
+            <p>We noticed you haven't created your free account yet, and we don't want you to miss out on your exclusive promo code!</p>
+            
+            <div class="promo-box">
+              <p style="margin: 0 0 5px 0; font-size: 14px;">YOUR EXCLUSIVE PROMO CODE</p>
+              <div class="promo-code">${promoCode}</div>
+              <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">6 MONTHS FREE ACCESS</p>
+            </div>
+            
+            <div class="urgency-box">
+              <p style="margin: 0; font-weight: bold; color: #92400e;">LIMITED TIME OFFER</p>
+              <p style="margin: 8px 0 0 0; color: #92400e;">This promo code is only available for a limited time and is capped at 100 accounts. Don't miss your chance to get 6 months of FREE access!</p>
+            </div>
+            
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${baseUrl}/signup" class="btn-primary">Create Your FREE Account Now</a>
+            </div>
+            
+            <p>With your free account, you'll get unlimited access to:</p>
+            
+            <ul style="margin: 16px 0; padding-left: 20px;">
+              <li><strong>Deal Analysis Wizard</strong> - Analyze Fix & Flip and Rental properties in minutes</li>
+              <li><strong>ARV Helper</strong> - Find comparable sales for accurate valuations</li>
+              <li><strong>Lender Directory</strong> - Connect with lenders offering real financing</li>
+              <li><strong>Wholesale Calculator</strong> - Calculate max offers for wholesale deals</li>
+            </ul>
+            
+            <p>Simply enter promo code <strong>${promoCode}</strong> when you sign up to activate your 6 months of free access.</p>
+            
+            <p>If you have any questions, just reply to this email - we're here to help!</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>The RE Data Metrix Team</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 10px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px;">If you have any questions, reply to this email or contact us at info@redatametrix.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Don't Forget Your FREE 6-Month Access - Limited Time!",
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

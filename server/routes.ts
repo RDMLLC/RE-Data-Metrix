@@ -4479,6 +4479,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to send follow-up emails to attendees who haven't signed up
+  app.post("/api/admin/webinar-registrations/send-attended-not-signed-up-emails", ensureAdmin, async (req, res) => {
+    try {
+      const { promoCode } = req.body;
+      
+      if (!promoCode) {
+        return res.status(400).json({ error: "promoCode is required" });
+      }
+      
+      // Get all registrations marked as attended
+      const allRegistrations = await storage.getWebinarRegistrations();
+      const attendees = allRegistrations.filter(reg => reg.attended === true);
+      
+      if (attendees.length === 0) {
+        return res.json({
+          success: true,
+          message: "No attended registrations found",
+          sent: 0,
+          failed: 0,
+          skipped: 0
+        });
+      }
+      
+      let sent = 0;
+      let failed = 0;
+      let skipped = 0;
+      
+      for (const reg of attendees) {
+        try {
+          // Check if user has signed up (exists in users table)
+          const existingUser = await storage.getUserByEmail(reg.email);
+          
+          if (existingUser) {
+            // User already signed up, skip
+            skipped++;
+            continue;
+          }
+          
+          const success = await emailService.sendAttendedNotSignedUpEmail(
+            reg.email,
+            reg.name,
+            promoCode
+          );
+          if (success) {
+            sent++;
+            console.log(`Sent attended-not-signed-up email to ${reg.email}`);
+          } else {
+            failed++;
+            console.error(`Failed to send attended-not-signed-up email to ${reg.email}`);
+          }
+        } catch (error) {
+          failed++;
+          console.error(`Error sending attended-not-signed-up email to ${reg.email}:`, error);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Sent ${sent} follow-up emails to attendees who haven't signed up (${skipped} already signed up, ${failed} failed)`,
+        sent,
+        failed,
+        skipped,
+        total: attendees.length
+      });
+    } catch (error) {
+      console.error('Send attended-not-signed-up emails error:', error);
+      res.status(500).json({ error: "Failed to send follow-up emails" });
+    }
+  });
+
   // Admin endpoint to send thank you emails to webinar attendees
   app.post("/api/admin/webinar-attendees/send-thank-you", ensureAdmin, async (req, res) => {
     try {

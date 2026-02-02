@@ -107,6 +107,8 @@ export default function WebinarRegistrations() {
   const [useManualEntry, setUseManualEntry] = useState(false);
   const [noShowEmailDialogOpen, setNoShowEmailDialogOpen] = useState(false);
   const [nextWebinarDate, setNextWebinarDate] = useState("");
+  const [attendedNotSignedUpDialogOpen, setAttendedNotSignedUpDialogOpen] = useState(false);
+  const [followUpPromoCode, setFollowUpPromoCode] = useState("WEBINAR2026");
   const { toast } = useToast();
 
   interface ZohoSession {
@@ -332,6 +334,29 @@ export default function WebinarRegistrations() {
       });
       setNoShowEmailDialogOpen(false);
       setNextWebinarDate("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Send Emails",
+        description: error.message || "An error occurred while sending emails",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendAttendedNotSignedUpMutation = useMutation({
+    mutationFn: async ({ promoCode }: { promoCode: string }) => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/send-attended-not-signed-up-emails", {
+        promoCode,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Follow-Up Emails Sent",
+        description: data.message || `Sent ${data.sent} follow-up emails`,
+      });
+      setAttendedNotSignedUpDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({
@@ -936,14 +961,33 @@ export default function WebinarRegistrations() {
               <UserCheck className="h-4 w-4 text-emerald-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-600" data-testid="text-attended">
+              <div 
+                className="text-2xl font-bold text-emerald-600 cursor-pointer" 
+                data-testid="text-attended"
+                onClick={() => setAttendanceFilter(attendanceFilter === 'attended' ? 'all' : 'attended')}
+              >
                 {attendanceCounts.attended}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mb-2">
                 {registrations.length > 0 
                   ? `${Math.round((attendanceCounts.attended / registrations.length) * 100)}% attended`
                   : "0%"}
               </p>
+              {attendanceCounts.attended > 0 && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAttendedNotSignedUpDialogOpen(true);
+                  }}
+                  data-testid="button-send-followup-emails"
+                >
+                  <Mail className="h-3 w-3 mr-1" />
+                  Follow-Up Email
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -1333,6 +1377,58 @@ export default function WebinarRegistrations() {
                 <>
                   <Send className="h-4 w-4 mr-2" />
                   Send to {attendanceCounts.notAttended} No-Shows
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={attendedNotSignedUpDialogOpen} onOpenChange={setAttendedNotSignedUpDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Follow-Up: Attendees Not Signed Up</DialogTitle>
+            <DialogDescription>
+              Send a follow-up email to attendees who haven't created an account yet, reminding them about the limited-time promo code.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="followup-promo-code">Promo Code</Label>
+              <Input
+                id="followup-promo-code"
+                placeholder="e.g., WEBINAR2026"
+                value={followUpPromoCode}
+                onChange={(e) => setFollowUpPromoCode(e.target.value)}
+                data-testid="input-followup-promo-code"
+              />
+              <p className="text-xs text-muted-foreground">
+                This promo code will be prominently displayed in the email. Only attendees who haven't created an account will receive this email.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setAttendedNotSignedUpDialogOpen(false)}
+              data-testid="button-cancel-followup-email"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => sendAttendedNotSignedUpMutation.mutate({ promoCode: followUpPromoCode })}
+              disabled={!followUpPromoCode.trim() || sendAttendedNotSignedUpMutation.isPending}
+              data-testid="button-send-followup-email-confirm"
+            >
+              {sendAttendedNotSignedUpMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Follow-Up
                 </>
               )}
             </Button>
