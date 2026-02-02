@@ -46,10 +46,27 @@ export class ZohoMeetingService {
       throw new Error("Zoho is not connected. Please authorize first.");
     }
 
+    // Check if this is a URL-format key (like edef-zym-pkw) or numeric key
+    // URL-format keys contain dashes and letters, numeric keys are just numbers
+    const isUrlFormat = /[a-zA-Z-]/.test(meetingKey);
+    let numericKey = meetingKey;
+    
+    if (isUrlFormat) {
+      console.log("Detected URL-format key, searching for numeric webinar key...");
+      // Try to find the webinar by URL key
+      const webinar = await this.findWebinarByUrlKey(meetingKey);
+      if (webinar) {
+        numericKey = webinar.meetingKey;
+        console.log(`Found webinar with numeric key: ${numericKey}`);
+      } else {
+        console.log("Could not find webinar by URL key, trying URL key directly...");
+      }
+    }
+
     // Try webinar attendee endpoint first (since this is for webinars)
     // Then fall back to meeting participant endpoint
-    const webinarUrl = `${this.baseUrl}/${this.zsoid}/attendee/${meetingKey}.json?index=1&count=100`;
-    const meetingUrl = `${this.baseUrl}/${this.zsoid}/participant/${meetingKey}.json?index=1&count=100`;
+    const webinarUrl = `${this.baseUrl}/${this.zsoid}/attendee/${numericKey}.json?index=1&count=100`;
+    const meetingUrl = `${this.baseUrl}/${this.zsoid}/participant/${numericKey}.json?index=1&count=100`;
     
     console.log("Trying webinar attendee endpoint:", webinarUrl);
     
@@ -78,7 +95,7 @@ export class ZohoMeetingService {
       
       // Check if it's an HTML error (wrong endpoint) vs JSON error
       if (error.includes("<html") || error.includes("<!DOCTYPE")) {
-        throw new Error(`Zoho API returned HTML instead of JSON. This may indicate an incorrect ZSOID (${this.zsoid}) or meeting key format. Please verify your Zoho organization ID.`);
+        throw new Error(`Zoho API returned HTML instead of JSON. This may indicate an incorrect ZSOID (${this.zsoid}) or meeting key format. Please verify your Zoho organization ID. The meeting key "${meetingKey}" may need to be a numeric webinar key from your Zoho Meeting dashboard.`);
       }
       
       // Parse JSON error for better message
@@ -112,6 +129,34 @@ export class ZohoMeetingService {
     }
     
     return data.participants || [];
+  }
+
+  async findWebinarByUrlKey(urlKey: string): Promise<ZohoMeeting | null> {
+    try {
+      // Get list of webinars and find one matching the URL key
+      const webinars = await this.getRecentWebinars();
+      console.log(`Searching ${webinars.length} webinars for URL key: ${urlKey}`);
+      
+      // Also try meetings
+      const meetings = await this.getRecentMeetings();
+      console.log(`Searching ${meetings.length} meetings for URL key: ${urlKey}`);
+      
+      // Search both lists for a match (the meetingKey or topic might contain the URL key)
+      const allSessions = [...webinars, ...meetings];
+      for (const session of allSessions) {
+        // Log session details for debugging
+        console.log(`Session: key=${session.meetingKey}, topic=${session.topic}`);
+        // Check if the URL key appears in the topic or matches directly
+        if (session.topic?.toLowerCase().includes(urlKey.toLowerCase())) {
+          return session;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error finding webinar by URL key:", error);
+      return null;
+    }
   }
 
   async getMeetingByUrlKey(urlKey: string): Promise<ZohoMeeting | null> {
