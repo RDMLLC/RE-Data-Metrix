@@ -160,6 +160,27 @@ export default function UserManagement() {
     },
   });
 
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/stats"] });
+      toast({
+        title: "Role Updated",
+        description: "The user's role has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update role",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resendVerificationMutation = useMutation({
     mutationFn: async (userId: string) => {
       const response = await apiRequest("POST", `/api/admin/users/${userId}/resend-verification`);
@@ -463,6 +484,7 @@ export default function UserManagement() {
                           <TableRow>
                             <TableHead>User</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Role</TableHead>
                             <TableHead>Verified</TableHead>
                             <TableHead>Terms</TableHead>
                             <TableHead>Deals</TableHead>
@@ -477,10 +499,7 @@ export default function UserManagement() {
                             <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                               <TableCell>
                                 <div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium">{user.fullName || user.username}</p>
-                                    {getRoleBadge(user.role)}
-                                  </div>
+                                  <p className="font-medium">{user.fullName || user.username}</p>
                                   <p className="text-sm text-muted-foreground">{user.email}</p>
                                 </div>
                               </TableCell>
@@ -498,6 +517,21 @@ export default function UserManagement() {
                                     <SelectItem value="comped">Comped</SelectItem>
                                     <SelectItem value="referral_trial">Referral Trial</SelectItem>
                                     <SelectItem value="archived">Archived</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={user.role}
+                                  onValueChange={(value) => updateRoleMutation.mutate({ userId: user.id, role: value })}
+                                >
+                                  <SelectTrigger className="w-[110px]" data-testid={`select-role-${user.id}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="developer">Developer</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </TableCell>

@@ -3111,6 +3111,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user role - admin only
+  app.patch("/api/admin/users/:id/role", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      
+      if (!['user', 'admin', 'developer'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'user', 'admin', or 'developer'" });
+      }
+      
+      // Prevent changing own role (safety check)
+      const currentUser = req.user as User;
+      if (currentUser.id === id) {
+        return res.status(400).json({ error: "Cannot change your own role" });
+      }
+      
+      const [updated] = await db.update(users)
+        .set({ role })
+        .where(eq(users.id, id))
+        .returning();
+      
+      if (!updated) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ message: "Role updated successfully", user: sanitizeUserForAdmin(updated) });
+    } catch (error) {
+      console.error('Update role error:', error);
+      res.status(500).json({ error: "Failed to update role" });
+    }
+  });
+
   // Create developer account - admin only
   app.post("/api/admin/users/developer", ensureAdmin, async (req, res) => {
     try {
