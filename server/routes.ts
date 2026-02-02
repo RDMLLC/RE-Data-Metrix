@@ -4530,12 +4530,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/webinar-registrations/attended-not-signed-up", ensureAdmin, async (req, res) => {
     try {
       const allRegistrations = await storage.getWebinarRegistrations();
+      console.log('[attended-not-signed-up] Total registrations:', allRegistrations.length);
+      
       const attendees = allRegistrations.filter(reg => reg.attended === true);
+      console.log('[attended-not-signed-up] Attended count:', attendees.length);
       
       const recipients: { name: string; email: string }[] = [];
       const alreadySignedUp: { name: string; email: string; reason: string }[] = [];
       
       for (const reg of attendees) {
+        console.log('[attended-not-signed-up] Checking:', reg.email, 'subscriptionLevel:', reg.subscriptionLevel);
+        
         // Check if they have a subscription level set (comped, free, etc.) - means they signed up
         if (reg.subscriptionLevel) {
           alreadySignedUp.push({ name: reg.name, email: reg.email, reason: `subscription: ${reg.subscriptionLevel}` });
@@ -4550,6 +4555,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recipients.push({ name: reg.name, email: reg.email });
         }
       }
+      
+      console.log('[attended-not-signed-up] Recipients:', recipients.length, 'AlreadySignedUp:', alreadySignedUp.length);
       
       res.json({
         recipients,
