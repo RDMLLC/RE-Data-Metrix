@@ -4479,6 +4479,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to preview attendees who haven't signed up (for follow-up emails)
+  app.get("/api/admin/webinar-registrations/attended-not-signed-up", ensureAdmin, async (req, res) => {
+    try {
+      const allRegistrations = await storage.getWebinarRegistrations();
+      const attendees = allRegistrations.filter(reg => reg.attended === true);
+      
+      const recipients: { name: string; email: string }[] = [];
+      const alreadySignedUp: { name: string; email: string }[] = [];
+      
+      for (const reg of attendees) {
+        const existingUser = await storage.getUserByEmail(reg.email);
+        if (existingUser) {
+          alreadySignedUp.push({ name: reg.name, email: reg.email });
+        } else {
+          recipients.push({ name: reg.name, email: reg.email });
+        }
+      }
+      
+      res.json({
+        recipients,
+        alreadySignedUp,
+        totalAttended: attendees.length
+      });
+    } catch (error) {
+      console.error('Preview attended-not-signed-up error:', error);
+      res.status(500).json({ error: "Failed to get preview" });
+    }
+  });
+
   // Admin endpoint to send follow-up emails to attendees who haven't signed up
   app.post("/api/admin/webinar-registrations/send-attended-not-signed-up-emails", ensureAdmin, async (req, res) => {
     try {

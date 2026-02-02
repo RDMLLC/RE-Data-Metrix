@@ -344,6 +344,17 @@ export default function WebinarRegistrations() {
     },
   });
 
+  interface AttendedNotSignedUpPreview {
+    recipients: { name: string; email: string }[];
+    alreadySignedUp: { name: string; email: string }[];
+    totalAttended: number;
+  }
+
+  const { data: attendedNotSignedUpPreview, isLoading: isLoadingPreview, refetch: refetchPreview } = useQuery<AttendedNotSignedUpPreview>({
+    queryKey: ["/api/admin/webinar-registrations/attended-not-signed-up"],
+    enabled: attendedNotSignedUpDialogOpen,
+  });
+
   const sendAttendedNotSignedUpMutation = useMutation({
     mutationFn: async ({ promoCode }: { promoCode: string }) => {
       const response = await apiRequest("POST", "/api/admin/webinar-registrations/send-attended-not-signed-up-emails", {
@@ -357,6 +368,7 @@ export default function WebinarRegistrations() {
         description: data.message || `Sent ${data.sent} follow-up emails`,
       });
       setAttendedNotSignedUpDialogOpen(false);
+      refetchPreview();
     },
     onError: (error: Error) => {
       toast({
@@ -1385,14 +1397,64 @@ export default function WebinarRegistrations() {
       </Dialog>
 
       <Dialog open={attendedNotSignedUpDialogOpen} onOpenChange={setAttendedNotSignedUpDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Follow-Up: Attendees Not Signed Up</DialogTitle>
             <DialogDescription>
-              Send a follow-up email to attendees who haven't created an account yet, reminding them about the limited-time promo code.
+              Send a follow-up email to attendees who haven't created an account yet.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {isLoadingPreview ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : attendedNotSignedUpPreview ? (
+              <>
+                <div className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Will receive email:</span>
+                    <Badge variant="default" data-testid="badge-recipient-count">
+                      {attendedNotSignedUpPreview.recipients.length}
+                    </Badge>
+                  </div>
+                  {attendedNotSignedUpPreview.recipients.length > 0 ? (
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {attendedNotSignedUpPreview.recipients.map((r, idx) => (
+                        <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
+                          <Mail className="h-3 w-3" />
+                          <span>{r.name}</span>
+                          <span className="opacity-60">({r.email})</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No attendees need follow-up emails.</p>
+                  )}
+                </div>
+                
+                {attendedNotSignedUpPreview.alreadySignedUp.length > 0 && (
+                  <div className="rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-3 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-emerald-700 dark:text-emerald-400">Already signed up (will skip):</span>
+                      <Badge variant="outline" className="border-emerald-500 text-emerald-700 dark:text-emerald-400">
+                        {attendedNotSignedUpPreview.alreadySignedUp.length}
+                      </Badge>
+                    </div>
+                    <div className="max-h-24 overflow-y-auto space-y-1">
+                      {attendedNotSignedUpPreview.alreadySignedUp.map((r, idx) => (
+                        <div key={idx} className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>{r.name}</span>
+                          <span className="opacity-60">({r.email})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : null}
+            
             <div className="space-y-2">
               <Label htmlFor="followup-promo-code">Promo Code</Label>
               <Input
@@ -1403,7 +1465,7 @@ export default function WebinarRegistrations() {
                 data-testid="input-followup-promo-code"
               />
               <p className="text-xs text-muted-foreground">
-                This promo code will be prominently displayed in the email. Only attendees who haven't created an account will receive this email.
+                This promo code will be prominently displayed in the email.
               </p>
             </div>
           </div>
@@ -1417,7 +1479,7 @@ export default function WebinarRegistrations() {
             </Button>
             <Button
               onClick={() => sendAttendedNotSignedUpMutation.mutate({ promoCode: followUpPromoCode })}
-              disabled={!followUpPromoCode.trim() || sendAttendedNotSignedUpMutation.isPending}
+              disabled={!followUpPromoCode.trim() || sendAttendedNotSignedUpMutation.isPending || !attendedNotSignedUpPreview?.recipients.length}
               data-testid="button-send-followup-email-confirm"
             >
               {sendAttendedNotSignedUpMutation.isPending ? (
@@ -1428,7 +1490,7 @@ export default function WebinarRegistrations() {
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Send Follow-Up
+                  Send to {attendedNotSignedUpPreview?.recipients.length || 0}
                 </>
               )}
             </Button>
