@@ -23,7 +23,13 @@ export class ZohoOAuthService {
   constructor() {
     this.clientId = process.env.ZOHO_CLIENT_ID || "";
     this.clientSecret = process.env.ZOHO_CLIENT_SECRET || "";
-    this.redirectUri = `${process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'}/api/zoho/callback`;
+    // Use production domain when deployed, dev domain in development, or localhost for local testing
+    const baseUrl = process.env.REPLIT_DEPLOYMENT 
+      ? 'https://redatametrix.com'
+      : process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'http://localhost:5000';
+    this.redirectUri = `${baseUrl}/api/zoho/callback`;
   }
 
   generateState(userId: string): string {
