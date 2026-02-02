@@ -57,8 +57,8 @@ export class ZohoOAuthService {
   }
 
   getAuthorizationUrl(state: string): string {
-    // Need ZohoMeeting.meeting.ALL to access participant reports
-    const scopes = "ZohoMeeting.meeting.ALL,ZohoMeeting.manageorg.READ";
+    // Valid Zoho Meeting scopes - need webinar.READ for webinar attendee reports
+    const scopes = "ZohoMeeting.meeting.READ,ZohoMeeting.webinar.READ,ZohoMeeting.manageOrg.READ";
     const params = new URLSearchParams({
       client_id: this.clientId,
       response_type: "code",

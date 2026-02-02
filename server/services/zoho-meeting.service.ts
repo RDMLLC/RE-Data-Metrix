@@ -46,23 +46,89 @@ export class ZohoMeetingService {
       throw new Error("Zoho is not connected. Please authorize first.");
     }
 
-    const url = `${this.baseUrl}/${this.zsoid}/participant/${meetingKey}.json`;
+    // Try webinar attendee endpoint first (since this is for webinars)
+    // Then fall back to meeting participant endpoint
+    const webinarUrl = `${this.baseUrl}/${this.zsoid}/attendee/${meetingKey}.json?index=1&count=100`;
+    const meetingUrl = `${this.baseUrl}/${this.zsoid}/participant/${meetingKey}.json?index=1&count=100`;
     
-    const response = await fetch(url, {
+    console.log("Trying webinar attendee endpoint:", webinarUrl);
+    
+    // Try webinar endpoint first
+    let response = await fetch(webinarUrl, {
       method: "GET",
       headers: {
         Authorization: `Zoho-oauthtoken ${accessToken}`,
       },
     });
 
+    // If webinar endpoint fails, try meeting endpoint
+    if (!response.ok) {
+      console.log("Webinar endpoint failed, trying meeting participant endpoint:", meetingUrl);
+      response = await fetch(meetingUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Zoho-oauthtoken ${accessToken}`,
+        },
+      });
+    }
+
     if (!response.ok) {
       const error = await response.text();
       console.error("Zoho Meeting API error:", error);
+      
+      // Check if it's an HTML error (wrong endpoint) vs JSON error
+      if (error.includes("<html") || error.includes("<!DOCTYPE")) {
+        throw new Error(`Zoho API returned HTML instead of JSON. This may indicate an incorrect ZSOID (${this.zsoid}) or meeting key format. Please verify your Zoho organization ID.`);
+      }
+      
+      // Parse JSON error for better message
+      try {
+        const errorJson = JSON.parse(error);
+        if (errorJson.error?.message) {
+          throw new Error(`Zoho API error: ${errorJson.error.message}`);
+        }
+      } catch (parseErr) {
+        // Not JSON, use raw error
+      }
+      
       throw new Error(`Failed to fetch participants: ${response.status} - ${error}`);
     }
 
-    const data: ParticipantResponse = await response.json();
+    const data = await response.json();
+    
+    // Handle both webinar (attendeeData) and meeting (participants) response formats
+    if (data.attendeeData) {
+      // Webinar format - map to participant format
+      return data.attendeeData.map((a: any) => ({
+        email: a.email,
+        joinTime: 0,
+        leaveTime: 0,
+        duration: 0,
+        role: "attendee",
+        inAndOutTime: "",
+        source: "webinar",
+        memberId: "",
+      }));
+    }
+    
     return data.participants || [];
+  }
+
+  async getMeetingByUrlKey(urlKey: string): Promise<ZohoMeeting | null> {
+    // The URL key (like edef-zym-pkw) may need to be looked up in the sessions list
+    // to find the actual numeric meeting key
+    try {
+      const meetings = await this.getRecentMeetings();
+      // Try to find a meeting that matches the URL key pattern
+      const meeting = meetings.find(m => 
+        m.meetingKey === urlKey || 
+        m.meetingKey.toLowerCase() === urlKey.toLowerCase()
+      );
+      return meeting || null;
+    } catch (error) {
+      console.error("Error looking up meeting by URL key:", error);
+      return null;
+    }
   }
 
   async getRecentMeetings(): Promise<ZohoMeeting[]> {
@@ -89,6 +155,39 @@ export class ZohoMeetingService {
 
     const data: MeetingsResponse = await response.json();
     return data.meetings || [];
+  }
+
+  async getRecentWebinars(): Promise<ZohoMeeting[]> {
+    const accessToken = await zohoOAuthService.getValidAccessToken();
+    
+    if (!accessToken) {
+      throw new Error("Zoho is not connected. Please authorize first.");
+    }
+
+    // List webinars endpoint
+    const url = `${this.baseUrl}/${this.zsoid}/webinar.json?fromIndex=1&limit=20`;
+    
+    console.log("Fetching webinars from:", url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Zoho-oauthtoken ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Zoho Webinar API error:", error);
+      // Don't throw - return empty array as fallback
+      return [];
+    }
+
+    const data = await response.json();
+    console.log("Webinars response:", JSON.stringify(data).substring(0, 500));
+    
+    // Webinar list response format may differ
+    return data.webinars || data.sessions || [];
   }
 
   extractMeetingKeyFromUrl(url: string): string | null {
