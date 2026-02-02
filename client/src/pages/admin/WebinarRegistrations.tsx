@@ -1156,6 +1156,34 @@ export default function WebinarRegistrations() {
           </Card>
         )}
 
+        {/* Alert for missing webinar dates */}
+        {registrations.filter(r => !r.webinarDate).length > 0 && (
+          <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="font-medium text-amber-800 dark:text-amber-200">
+                  {registrations.filter(r => !r.webinarDate).length} registrations are missing webinar dates
+                </p>
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Set the webinar date so you can track which session they registered for.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="default"
+              onClick={() => setWebinarDateMutation.mutate({ webinarDate: '2026-01-30T12:00:00' })}
+              disabled={setWebinarDateMutation.isPending}
+              data-testid="button-set-webinar-dates-alert"
+            >
+              {setWebinarDateMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : null}
+              Set Jan 30, 2026 for All
+            </Button>
+          </div>
+        )}
+
         {/* Search and Table */}
         <Card>
           <CardHeader>
