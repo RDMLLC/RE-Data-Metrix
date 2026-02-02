@@ -4533,12 +4533,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const attendees = allRegistrations.filter(reg => reg.attended === true);
       
       const recipients: { name: string; email: string }[] = [];
-      const alreadySignedUp: { name: string; email: string }[] = [];
+      const alreadySignedUp: { name: string; email: string; reason: string }[] = [];
       
       for (const reg of attendees) {
+        // Check if they have a subscription level set (comped, free, etc.) - means they signed up
+        if (reg.subscriptionLevel) {
+          alreadySignedUp.push({ name: reg.name, email: reg.email, reason: `subscription: ${reg.subscriptionLevel}` });
+          continue;
+        }
+        
+        // Also check if they have a user account
         const existingUser = await storage.getUserByEmail(reg.email);
         if (existingUser) {
-          alreadySignedUp.push({ name: reg.name, email: reg.email });
+          alreadySignedUp.push({ name: reg.name, email: reg.email, reason: 'has user account' });
         } else {
           recipients.push({ name: reg.name, email: reg.email });
         }
@@ -4584,6 +4591,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const reg of attendees) {
         try {
+          // Check if they have a subscription level set (comped, free, etc.) - means they signed up
+          if (reg.subscriptionLevel) {
+            skipped++;
+            continue;
+          }
+          
           // Check if user has signed up (exists in users table)
           const existingUser = await storage.getUserByEmail(reg.email);
           
