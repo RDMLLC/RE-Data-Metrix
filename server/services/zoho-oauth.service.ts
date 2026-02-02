@@ -2,8 +2,15 @@ import { db } from "../db";
 import { zohoTokens } from "@shared/schema";
 import { desc, eq } from "drizzle-orm";
 import crypto from "crypto";
+import { getZohoAccountsApiUrl } from "./zoho-meeting.service";
 
-const ZOHO_TOKEN_URL = "https://accounts.zoho.com/oauth/v2/token";
+function getZohoTokenUrl(): string {
+  return `${getZohoAccountsApiUrl()}/oauth/v2/token`;
+}
+
+function getZohoAuthUrl(): string {
+  return `${getZohoAccountsApiUrl()}/oauth/v2/auth`;
+}
 
 interface TokenResponse {
   access_token: string;
@@ -68,7 +75,9 @@ export class ZohoOAuthService {
       prompt: "consent",
       state,
     });
-    return `https://accounts.zoho.com/oauth/v2/auth?${params.toString()}`;
+    const authUrl = `${getZohoAuthUrl()}?${params.toString()}`;
+    console.log(`Zoho authorization URL generated: ${authUrl.substring(0, 80)}...`);
+    return authUrl;
   }
 
   async exchangeCodeForTokens(code: string): Promise<{ accessToken: string; refreshToken: string; expiresAt: Date }> {
@@ -80,7 +89,10 @@ export class ZohoOAuthService {
       code,
     });
 
-    const response = await fetch(ZOHO_TOKEN_URL, {
+    const tokenUrl = getZohoTokenUrl();
+    console.log(`Exchanging code for tokens at: ${tokenUrl}`);
+    
+    const response = await fetch(tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
@@ -143,7 +155,8 @@ export class ZohoOAuthService {
       refresh_token: refreshToken,
     });
 
-    const response = await fetch(ZOHO_TOKEN_URL, {
+    const tokenUrl = getZohoTokenUrl();
+    const response = await fetch(tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),

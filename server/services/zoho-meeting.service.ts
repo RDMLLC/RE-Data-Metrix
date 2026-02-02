@@ -31,12 +31,37 @@ interface MeetingsResponse {
   totalCount: number;
 }
 
+// Zoho data center configurations
+const ZOHO_DATA_CENTERS: Record<string, { meetingApi: string; accountsApi: string }> = {
+  'US': { meetingApi: 'https://meeting.zoho.com/api/v2', accountsApi: 'https://accounts.zoho.com' },
+  'EU': { meetingApi: 'https://meeting.zoho.eu/api/v2', accountsApi: 'https://accounts.zoho.eu' },
+  'IN': { meetingApi: 'https://meeting.zoho.in/api/v2', accountsApi: 'https://accounts.zoho.in' },
+  'AU': { meetingApi: 'https://meeting.zoho.com.au/api/v2', accountsApi: 'https://accounts.zoho.com.au' },
+  'JP': { meetingApi: 'https://meeting.zoho.jp/api/v2', accountsApi: 'https://accounts.zoho.jp' },
+};
+
+export function getZohoDataCenter(): string {
+  return process.env.ZOHO_DATA_CENTER || 'US';
+}
+
+export function getZohoMeetingApiUrl(): string {
+  const dc = getZohoDataCenter();
+  return ZOHO_DATA_CENTERS[dc]?.meetingApi || ZOHO_DATA_CENTERS['US'].meetingApi;
+}
+
+export function getZohoAccountsApiUrl(): string {
+  const dc = getZohoDataCenter();
+  return ZOHO_DATA_CENTERS[dc]?.accountsApi || ZOHO_DATA_CENTERS['US'].accountsApi;
+}
+
 export class ZohoMeetingService {
   private zsoid: string;
-  private baseUrl = "https://meeting.zoho.com/api/v2";
+  private baseUrl: string;
 
   constructor() {
     this.zsoid = process.env.ZOHO_ZSOID || "";
+    this.baseUrl = getZohoMeetingApiUrl();
+    console.log(`Zoho Meeting Service initialized with data center: ${getZohoDataCenter()}, API URL: ${this.baseUrl}`);
   }
 
   async getParticipants(meetingKey: string): Promise<ZohoParticipant[]> {
