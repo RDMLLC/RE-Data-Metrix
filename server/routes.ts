@@ -4215,23 +4215,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const registrations = await storage.getWebinarRegistrations();
       const regData = registrations.map(r => ({ id: r.id, email: r.email }));
 
-      // Sync with Zoho
+      // Sync with Zoho - now also returns meeting date
       const syncResult = await zohoMeetingService.syncAttendanceWithRegistrations(meetingKey, regData);
 
-      // Update attendance in database
+      // Update attendance and webinar date in database
       let updated = 0;
+      let datesUpdated = 0;
       for (const regId of syncResult.attendees) {
         await storage.updateWebinarRegistrationAttendance(regId, true);
         updated++;
+        
+        // Also update the webinar date if we got it from Zoho
+        if (syncResult.meetingDate) {
+          await storage.updateWebinarRegistrationWebinarDate(regId, syncResult.meetingDate);
+          datesUpdated++;
+        }
       }
+
+      const dateMessage = syncResult.meetingDate 
+        ? ` Updated webinar date to ${syncResult.meetingDate.toLocaleDateString()}.`
+        : '';
 
       res.json({
         success: true,
         matched: syncResult.matched,
         updated,
+        datesUpdated,
         notFound: syncResult.notFound.length,
         unregisteredAttendees: syncResult.unmatched,
-        message: `Synced ${updated} attendees from Zoho Meeting`
+        meetingDate: syncResult.meetingDate?.toISOString() || null,
+        message: `Synced ${updated} attendees from Zoho Meeting.${dateMessage}`
       });
     } catch (error: any) {
       console.error('Zoho sync attendance error:', error);

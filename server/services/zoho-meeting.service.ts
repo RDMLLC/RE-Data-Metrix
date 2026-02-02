@@ -263,7 +263,7 @@ export class ZohoMeetingService {
     }
 
     const orgId = await this.getOrganizationId();
-    const url = `${this.baseUrl}/${orgId}/sessions.json?fromIndex=1&toIndex=20`;
+    const url = `${this.baseUrl}/${orgId}/sessions.json?fromIndex=1&toIndex=50`;
     
     console.log("Fetching meetings from:", url);
     
@@ -293,7 +293,7 @@ export class ZohoMeetingService {
 
     const orgId = await this.getOrganizationId();
     // List webinars endpoint
-    const url = `${this.baseUrl}/${orgId}/webinar.json?fromIndex=1&limit=20`;
+    const url = `${this.baseUrl}/${orgId}/webinar.json?fromIndex=1&limit=50`;
     
     console.log("Fetching webinars from:", url);
     
@@ -331,8 +331,54 @@ export class ZohoMeetingService {
     unmatched: number;
     attendees: string[];
     notFound: string[];
+    meetingDate: Date | null;
   }> {
     const participants = await this.getParticipants(meetingKey);
+    
+    // Try to get the meeting date from the meeting details
+    let meetingDate: Date | null = null;
+    try {
+      // Check if this is a URL-format key (like edef-zym-pkw) or numeric key
+      const isUrlFormat = /[a-zA-Z-]/.test(meetingKey);
+      let numericKey = meetingKey;
+      let foundSession: ZohoMeeting | null = null;
+      
+      if (isUrlFormat) {
+        // Use existing helper to find the webinar/meeting by URL key
+        console.log(`Looking up meeting date for URL-format key: ${meetingKey}`);
+        foundSession = await this.findWebinarByUrlKey(meetingKey);
+        if (!foundSession) {
+          foundSession = await this.getMeetingByUrlKey(meetingKey);
+        }
+        if (foundSession) {
+          numericKey = foundSession.meetingKey;
+        }
+      }
+      
+      // If we found it via URL key helper, use that
+      if (foundSession?.startTime) {
+        meetingDate = new Date(foundSession.startTime);
+        console.log(`Found meeting date from Zoho (via URL key): ${meetingDate.toISOString()}`);
+      } else {
+        // Otherwise, search in recent sessions by numeric key
+        const [meetings, webinars] = await Promise.all([
+          this.getRecentMeetings().catch(() => []),
+          this.getRecentWebinars().catch(() => [])
+        ]);
+        
+        const allSessions = [...meetings, ...webinars];
+        const meeting = allSessions.find(m => m.meetingKey === numericKey);
+        
+        if (meeting?.startTime) {
+          meetingDate = new Date(meeting.startTime);
+          console.log(`Found meeting date from Zoho (via numeric key): ${meetingDate.toISOString()}`);
+        } else {
+          console.log(`Could not find meeting ${meetingKey} (numeric: ${numericKey}) in recent sessions list`);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching meeting date:", error);
+    }
     
     const participantEmails = new Set(
       participants.map((p) => p.email.toLowerCase())
@@ -358,6 +404,7 @@ export class ZohoMeetingService {
       unmatched: unmatchedParticipants.length,
       attendees,
       notFound,
+      meetingDate,
     };
   }
 }
