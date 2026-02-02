@@ -3730,13 +3730,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register for webinar (public - no auth required)
   app.post("/api/webinar/register", async (req, res) => {
     try {
-      const { name, email, phone, webinarId, source, referralSource } = req.body;
+      const { name, email, phone, webinarId, source, referralSource, webinarDate } = req.body;
       
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return res.status(400).json({ error: "Name is required" });
       }
       if (!email || typeof email !== 'string' || !email.includes('@')) {
         return res.status(400).json({ error: "Valid email is required" });
+      }
+      
+      // Default webinar date to next upcoming webinar (Feb 6, 2026 at 12pm EST)
+      let defaultWebinarDate = new Date('2026-02-06T12:00:00');
+      if (webinarDate && typeof webinarDate === 'string') {
+        const parsed = new Date(webinarDate);
+        if (!isNaN(parsed.getTime())) {
+          defaultWebinarDate = parsed;
+        }
       }
       
       // Check if already registered
@@ -3764,6 +3773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: email.trim().toLowerCase(),
         phone: phone?.trim() || null,
         webinarId: webinarId || 'soft-launch-2026',
+        webinarDate: defaultWebinarDate,
         source: source || null,
         referralSource: validatedReferral
       });
@@ -4476,6 +4486,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Send no-show emails error:', error);
       res.status(500).json({ error: "Failed to send no-show emails" });
+    }
+  });
+
+  // Admin endpoint to batch update webinar dates
+  app.post("/api/admin/webinar-registrations/set-webinar-date", ensureAdmin, async (req, res) => {
+    try {
+      const { webinarDate } = req.body;
+      
+      if (!webinarDate || typeof webinarDate !== 'string') {
+        return res.status(400).json({ error: "webinarDate is required as ISO string" });
+      }
+      
+      // Validate the date is parseable and valid
+      const parsedDate = new Date(webinarDate);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date format. Use ISO 8601 format." });
+      }
+      
+      // Update all registrations that don't have a webinar date
+      const allRegistrations = await storage.getWebinarRegistrations();
+      let updated = 0;
+      
+      for (const reg of allRegistrations) {
+        if (!reg.webinarDate) {
+          await storage.updateWebinarRegistrationWebinarDate(reg.id, parsedDate);
+          updated++;
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Updated ${updated} registrations with webinar date`,
+        updated
+      });
+    } catch (error) {
+      console.error('Set webinar date error:', error);
+      res.status(500).json({ error: "Failed to set webinar dates" });
     }
   });
 

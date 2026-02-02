@@ -350,9 +350,11 @@ export default function WebinarRegistrations() {
     totalAttended: number;
   }
 
-  const { data: attendedNotSignedUpPreview, isLoading: isLoadingPreview, refetch: refetchPreview } = useQuery<AttendedNotSignedUpPreview>({
+  const { data: attendedNotSignedUpPreview, isLoading: isLoadingPreview, refetch: refetchPreview, isFetching: isFetchingPreview } = useQuery<AttendedNotSignedUpPreview>({
     queryKey: ["/api/admin/webinar-registrations/attended-not-signed-up"],
     enabled: attendedNotSignedUpDialogOpen,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const sendAttendedNotSignedUpMutation = useMutation({
@@ -374,6 +376,29 @@ export default function WebinarRegistrations() {
       toast({
         title: "Failed to Send Emails",
         description: error.message || "An error occurred while sending emails",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setWebinarDateMutation = useMutation({
+    mutationFn: async ({ webinarDate }: { webinarDate: string }) => {
+      const response = await apiRequest("POST", "/api/admin/webinar-registrations/set-webinar-date", {
+        webinarDate,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Webinar Dates Updated",
+        description: data.message || `Updated ${data.updated} registrations`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/webinar-registrations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Update Dates",
+        description: error.message || "An error occurred while updating dates",
         variant: "destructive",
       });
     },
@@ -1078,6 +1103,21 @@ export default function WebinarRegistrations() {
               <p className="text-xs text-muted-foreground">
                 Different sessions
               </p>
+              {registrations.filter(r => !r.webinarDate).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full"
+                  onClick={() => setWebinarDateMutation.mutate({ webinarDate: '2026-01-30T12:00:00' })}
+                  disabled={setWebinarDateMutation.isPending}
+                  data-testid="button-set-webinar-dates"
+                >
+                  {setWebinarDateMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : null}
+                  Set Jan 30 for {registrations.filter(r => !r.webinarDate).length}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1405,9 +1445,10 @@ export default function WebinarRegistrations() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {isLoadingPreview ? (
+            {(isLoadingPreview || isFetchingPreview) ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading recipients...</span>
               </div>
             ) : attendedNotSignedUpPreview ? (
               <>
