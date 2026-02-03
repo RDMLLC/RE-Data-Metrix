@@ -928,6 +928,35 @@ export const insertIntegrationWebhookSchema = createInsertSchema(integrationWebh
 export type InsertIntegrationWebhook = z.infer<typeof insertIntegrationWebhookSchema>;
 export type IntegrationWebhook = typeof integrationWebhooks.$inferSelect;
 
+// Outbound Webhooks - send data to external endpoints
+export const outboundWebhooks = pgTable("outbound_webhooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  integrationId: varchar("integration_id").references(() => integrationConfigs.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  targetUrl: text("target_url").notNull(),
+  httpMethod: text("http_method").notNull().default('POST'),
+  eventTypes: text("event_types").array(), // which events trigger this webhook
+  headers: jsonb("headers"), // custom headers to send
+  isActive: boolean("is_active").notNull().default(true),
+  retryCount: integer("retry_count").notNull().default(3),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  successCount: integer("success_count").notNull().default(0),
+  failureCount: integer("failure_count").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertOutboundWebhookSchema = createInsertSchema(outboundWebhooks).omit({
+  id: true,
+  createdAt: true,
+  lastTriggeredAt: true,
+  successCount: true,
+  failureCount: true,
+});
+
+export type InsertOutboundWebhook = z.infer<typeof insertOutboundWebhookSchema>;
+export type OutboundWebhook = typeof outboundWebhooks.$inferSelect;
+
 // Integration Sync Logs - history of sync operations
 export const integrationSyncLogs = pgTable("integration_sync_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

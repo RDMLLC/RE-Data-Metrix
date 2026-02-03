@@ -934,6 +934,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Outbound Webhooks
+  app.get("/api/integrations/outbound-webhooks", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const integrationId = req.query.integrationId as string | undefined;
+      const webhooks = await storage.getOutboundWebhooks(integrationId);
+      res.json(webhooks);
+    } catch (error) {
+      console.error('Get outbound webhooks error:', error);
+      res.status(500).json({ error: "Failed to fetch outbound webhooks" });
+    }
+  });
+
+  app.post("/api/integrations/outbound-webhooks", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const webhook = await storage.createOutboundWebhook({
+        ...req.body,
+        createdBy: req.user!.id
+      });
+      res.json(webhook);
+    } catch (error) {
+      console.error('Create outbound webhook error:', error);
+      res.status(500).json({ error: "Failed to create outbound webhook" });
+    }
+  });
+
+  app.patch("/api/integrations/outbound-webhooks/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const updated = await storage.updateOutboundWebhook(req.params.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error('Update outbound webhook error:', error);
+      res.status(500).json({ error: "Failed to update outbound webhook" });
+    }
+  });
+
+  app.delete("/api/integrations/outbound-webhooks/:id", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      await storage.deleteOutboundWebhook(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Delete outbound webhook error:', error);
+      res.status(500).json({ error: "Failed to delete outbound webhook" });
+    }
+  });
+
+  // Test outbound webhook - sends a test payload
+  app.post("/api/integrations/outbound-webhooks/:id/test", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const webhook = await storage.getOutboundWebhook(req.params.id);
+      if (!webhook) {
+        return res.status(404).json({ error: "Webhook not found" });
+      }
+
+      const testPayload = req.body.testData || {
+        event: 'test_event',
+        timestamp: new Date().toISOString(),
+        data: {
+          message: 'This is a test webhook from RE Data Metrix',
+          source: 'developer_portal'
+        }
+      };
+
+      // Send test request
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(webhook.headers as Record<string, string> || {})
+      };
+
+      const response = await fetch(webhook.targetUrl, {
+        method: webhook.httpMethod,
+        headers,
+        body: JSON.stringify(testPayload)
+      });
+
+      const responseText = await response.text();
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = responseText;
+      }
+
+      // Record result
+      await storage.recordOutboundWebhookResult(webhook.id, response.ok);
+
+      // Log the sync
+      await storage.createIntegrationSyncLog({
+        integrationId: webhook.integrationId,
+        eventType: 'test_event',
+        status: response.ok ? 'success' : 'failed',
+        direction: 'outbound',
+        requestData: testPayload,
+        responseData: { status: response.status, body: responseData },
+        errorMessage: response.ok ? null : `HTTP ${response.status}`
+      });
+
+      res.json({
+        success: response.ok,
+        status: response.status,
+        response: responseData
+      });
+    } catch (error) {
+      console.error('Test outbound webhook error:', error);
+      res.status(500).json({ error: "Failed to test webhook", details: String(error) });
+    }
+  });
+
   // Inbound webhook endpoint (public - authenticated via secret token)
   app.post("/api/webhooks/inbound/:endpoint", async (req, res) => {
     try {

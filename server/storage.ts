@@ -38,6 +38,8 @@ import {
   type InsertIntegrationFieldMapping,
   type IntegrationWebhook,
   type InsertIntegrationWebhook,
+  type OutboundWebhook,
+  type InsertOutboundWebhook,
   type IntegrationSyncLog,
   type InsertIntegrationSyncLog,
   type PropertyCache,
@@ -71,6 +73,7 @@ import {
   integrationEventTriggers as integrationEventTriggersTable,
   integrationFieldMappings as integrationFieldMappingsTable,
   integrationWebhooks as integrationWebhooksTable,
+  outboundWebhooks as outboundWebhooksTable,
   integrationSyncLogs as integrationSyncLogsTable,
   propertyCache as propertyCacheTable,
   userUsageCounters as userUsageCountersTable,
@@ -2903,6 +2906,63 @@ export class DatabaseStorage implements IStorage {
         callCount: sqlCount`${integrationWebhooksTable.callCount} + 1`
       })
       .where(eq(integrationWebhooksTable.endpoint, endpoint))
+      .returning();
+    return updated;
+  }
+
+  // Outbound Webhook Methods
+  async createOutboundWebhook(data: InsertOutboundWebhook): Promise<OutboundWebhook> {
+    const [webhook] = await db.insert(outboundWebhooksTable).values(data).returning();
+    return webhook;
+  }
+
+  async getOutboundWebhooks(integrationId?: string): Promise<OutboundWebhook[]> {
+    if (integrationId) {
+      return await db.select().from(outboundWebhooksTable)
+        .where(eq(outboundWebhooksTable.integrationId, integrationId))
+        .orderBy(desc(outboundWebhooksTable.createdAt));
+    }
+    return await db.select().from(outboundWebhooksTable)
+      .orderBy(desc(outboundWebhooksTable.createdAt));
+  }
+
+  async getOutboundWebhook(id: string): Promise<OutboundWebhook | undefined> {
+    const [webhook] = await db.select().from(outboundWebhooksTable)
+      .where(eq(outboundWebhooksTable.id, id))
+      .limit(1);
+    return webhook;
+  }
+
+  async getOutboundWebhooksByEvent(eventType: string): Promise<OutboundWebhook[]> {
+    return await db.select().from(outboundWebhooksTable)
+      .where(and(
+        eq(outboundWebhooksTable.isActive, true),
+        sql`${eventType} = ANY(${outboundWebhooksTable.eventTypes})`
+      ));
+  }
+
+  async updateOutboundWebhook(id: string, data: Partial<InsertOutboundWebhook>): Promise<OutboundWebhook | undefined> {
+    const [updated] = await db.update(outboundWebhooksTable)
+      .set(data)
+      .where(eq(outboundWebhooksTable.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteOutboundWebhook(id: string): Promise<boolean> {
+    await db.delete(outboundWebhooksTable)
+      .where(eq(outboundWebhooksTable.id, id));
+    return true;
+  }
+
+  async recordOutboundWebhookResult(id: string, success: boolean): Promise<OutboundWebhook | undefined> {
+    const [updated] = await db.update(outboundWebhooksTable)
+      .set({ 
+        lastTriggeredAt: new Date(),
+        successCount: success ? sqlCount`${outboundWebhooksTable.successCount} + 1` : outboundWebhooksTable.successCount,
+        failureCount: success ? outboundWebhooksTable.failureCount : sqlCount`${outboundWebhooksTable.failureCount} + 1`
+      })
+      .where(eq(outboundWebhooksTable.id, id))
       .returning();
     return updated;
   }

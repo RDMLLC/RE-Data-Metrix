@@ -114,6 +114,22 @@ interface SyncLog {
   createdAt: string;
 }
 
+interface OutboundWebhook {
+  id: string;
+  integrationId: string | null;
+  name: string;
+  targetUrl: string;
+  httpMethod: string;
+  eventTypes: string[] | null;
+  headers: Record<string, string> | null;
+  isActive: boolean;
+  retryCount: number;
+  lastTriggeredAt: string | null;
+  successCount: number;
+  failureCount: number;
+  createdAt: string;
+}
+
 const EVENT_TYPES = [
   { value: 'user_signup', label: 'User Signup', description: 'When a new user registers' },
   { value: 'lender_signup', label: 'Lender Signup', description: 'When a new lender registers' },
@@ -148,6 +164,15 @@ export default function DeveloperIntegrations() {
   const [showCreateWebhook, setShowCreateWebhook] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [uploadedMappings, setUploadedMappings] = useState<any[]>([]);
+  const [showCreateOutbound, setShowCreateOutbound] = useState(false);
+  const [newOutbound, setNewOutbound] = useState({ 
+    name: '', 
+    targetUrl: '', 
+    httpMethod: 'POST',
+    eventTypes: [] as string[],
+    headers: ''
+  });
+  const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
   
   // Form states
   const [newConnection, setNewConnection] = useState({ 
@@ -201,6 +226,11 @@ export default function DeveloperIntegrations() {
 
   const { data: syncLogs = [] } = useQuery<SyncLog[]>({
     queryKey: ["/api/integrations/sync-logs"],
+    enabled: !authLoading && !!user,
+  });
+
+  const { data: outboundWebhooks = [] } = useQuery<OutboundWebhook[]>({
+    queryKey: ["/api/integrations/outbound-webhooks"],
     enabled: !authLoading && !!user,
   });
 
@@ -310,6 +340,54 @@ export default function DeveloperIntegrations() {
     },
     onError: () => {
       toast({ title: "Upload Failed", description: "Failed to upload mappings. Please check your file format.", variant: "destructive" });
+    }
+  });
+
+  const createOutboundMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/integrations/outbound-webhooks", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/integrations/outbound-webhooks"] });
+      setShowCreateOutbound(false);
+      setNewOutbound({ name: '', targetUrl: '', httpMethod: 'POST', eventTypes: [], headers: '' });
+      toast({ title: "Outbound Webhook Created", description: "Your webhook endpoint has been configured." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteOutboundMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/integrations/outbound-webhooks/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/integrations/outbound-webhooks"] });
+      toast({ title: "Deleted", description: "Outbound webhook deleted." });
+    }
+  });
+
+  const testOutboundMutation = useMutation({
+    mutationFn: async (id: string) => {
+      setTestingWebhook(id);
+      const res = await apiRequest("POST", `/api/integrations/outbound-webhooks/${id}/test`, {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setTestingWebhook(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/integrations/outbound-webhooks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/integrations/sync-logs"] });
+      if (data.success) {
+        toast({ title: "Test Successful", description: `Webhook responded with status ${data.status}` });
+      } else {
+        toast({ title: "Test Failed", description: `Webhook responded with status ${data.status}`, variant: "destructive" });
+      }
+    },
+    onError: (error: Error) => {
+      setTestingWebhook(null);
+      toast({ title: "Test Error", description: error.message, variant: "destructive" });
     }
   });
 
@@ -791,6 +869,100 @@ inquiry_submitted,email,Email,none`;
                 })}
               </div>
             )}
+
+            {/* Outbound Webhooks Section */}
+            <div className="border-t pt-6 mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold">Outbound Webhooks</h2>
+                  <p className="text-sm text-muted-foreground">Send form data to external endpoints when events occur</p>
+                </div>
+                <Button onClick={() => setShowCreateOutbound(true)} data-testid="button-create-outbound">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Outbound Webhook
+                </Button>
+              </div>
+
+              {outboundWebhooks.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <Zap className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="text-lg font-medium mb-2">No Outbound Webhooks</h3>
+                    <p className="text-muted-foreground mb-4">Configure webhooks to send data to your CRM or external systems.</p>
+                    <Button onClick={() => setShowCreateOutbound(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Outbound Webhook
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {outboundWebhooks.map((webhook) => (
+                    <Card key={webhook.id}>
+                      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 pb-2">
+                        <div>
+                          <CardTitle className="text-lg">{webhook.name}</CardTitle>
+                          <CardDescription className="mt-1">
+                            {webhook.httpMethod} • {webhook.successCount} succeeded, {webhook.failureCount} failed
+                            {webhook.lastTriggeredAt && ` • Last triggered ${formatDistanceToNow(new Date(webhook.lastTriggeredAt))} ago`}
+                          </CardDescription>
+                        </div>
+                        <Badge variant={webhook.isActive ? "default" : "secondary"}>
+                          {webhook.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Target URL</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="flex-1 bg-muted px-3 py-2 rounded text-sm break-all">{webhook.targetUrl}</code>
+                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(webhook.targetUrl, 'URL')}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        {webhook.eventTypes && webhook.eventTypes.length > 0 && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Trigger Events</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {webhook.eventTypes.map((event) => (
+                                <Badge key={event} variant="outline">{event.replace(/_/g, ' ')}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => testOutboundMutation.mutate(webhook.id)}
+                            disabled={testingWebhook === webhook.id}
+                            data-testid={`button-test-outbound-${webhook.id}`}
+                          >
+                            {testingWebhook === webhook.id ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Zap className="h-4 w-4 mr-2" />
+                            )}
+                            Test Webhook
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteOutboundMutation.mutate(webhook.id)}
+                            className="text-destructive"
+                            data-testid={`button-delete-outbound-${webhook.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* Logs Tab */}
@@ -1255,6 +1427,110 @@ payment_success,amount,Payment_Amount,currency_cents`}
             >
               {bulkUploadMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Import {uploadedMappings.length} Mappings
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Outbound Webhook Dialog */}
+      <Dialog open={showCreateOutbound} onOpenChange={setShowCreateOutbound}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Outbound Webhook</DialogTitle>
+            <DialogDescription>Configure an endpoint to receive data when events occur.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Webhook Name</Label>
+              <Input
+                placeholder="e.g., Zoho CRM Sync"
+                value={newOutbound.name}
+                onChange={(e) => setNewOutbound({ ...newOutbound, name: e.target.value })}
+                data-testid="input-outbound-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Target URL</Label>
+              <Input
+                placeholder="https://www.zohoapis.com/crm/v7/functions/..."
+                value={newOutbound.targetUrl}
+                onChange={(e) => setNewOutbound({ ...newOutbound, targetUrl: e.target.value })}
+                data-testid="input-outbound-url"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>HTTP Method</Label>
+              <Select value={newOutbound.httpMethod} onValueChange={(v) => setNewOutbound({ ...newOutbound, httpMethod: v })}>
+                <SelectTrigger data-testid="select-http-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="POST">POST</SelectItem>
+                  <SelectItem value="PUT">PUT</SelectItem>
+                  <SelectItem value="PATCH">PATCH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Trigger Events</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {EVENT_TYPES.map((event) => (
+                  <label key={event.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newOutbound.eventTypes.includes(event.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewOutbound({ ...newOutbound, eventTypes: [...newOutbound.eventTypes, event.value] });
+                        } else {
+                          setNewOutbound({ ...newOutbound, eventTypes: newOutbound.eventTypes.filter(t => t !== event.value) });
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    {event.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Custom Headers (JSON, optional)</Label>
+              <Input
+                placeholder='{"Authorization": "Bearer xxx", "X-Custom": "value"}'
+                value={newOutbound.headers}
+                onChange={(e) => setNewOutbound({ ...newOutbound, headers: e.target.value })}
+                data-testid="input-outbound-headers"
+              />
+              <p className="text-xs text-muted-foreground">Add custom headers like API keys or auth tokens</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateOutbound(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                let headers = null;
+                if (newOutbound.headers.trim()) {
+                  try {
+                    headers = JSON.parse(newOutbound.headers);
+                  } catch {
+                    toast({ title: "Invalid Headers", description: "Headers must be valid JSON", variant: "destructive" });
+                    return;
+                  }
+                }
+                createOutboundMutation.mutate({
+                  name: newOutbound.name,
+                  targetUrl: newOutbound.targetUrl,
+                  httpMethod: newOutbound.httpMethod,
+                  eventTypes: newOutbound.eventTypes,
+                  headers,
+                  integrationId: selectedIntegration
+                });
+              }}
+              disabled={!newOutbound.name || !newOutbound.targetUrl || createOutboundMutation.isPending}
+              data-testid="button-save-outbound"
+            >
+              {createOutboundMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create Webhook
             </Button>
           </DialogFooter>
         </DialogContent>
