@@ -150,7 +150,15 @@ export default function DeveloperIntegrations() {
   const [uploadedMappings, setUploadedMappings] = useState<any[]>([]);
   
   // Form states
-  const [newConnection, setNewConnection] = useState({ provider: 'zoho', name: '', clientId: '', clientSecret: '' });
+  const [newConnection, setNewConnection] = useState({ 
+    provider: 'zoho', 
+    name: '', 
+    authType: 'apikey' as 'oauth' | 'apikey',
+    clientId: '', 
+    clientSecret: '',
+    apiKey: '',
+    endpointUrl: ''
+  });
   const [newTrigger, setNewTrigger] = useState({ eventType: '', targetModule: '' });
   const [newMapping, setNewMapping] = useState({ eventType: '', sourceField: '', targetField: '', transformType: 'none' });
   const [newWebhook, setNewWebhook] = useState({ name: '', allowedActions: '' });
@@ -205,7 +213,7 @@ export default function DeveloperIntegrations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/integrations/configs"] });
       setShowCreateConnection(false);
-      setNewConnection({ provider: 'zoho', name: '', clientId: '', clientSecret: '' });
+      setNewConnection({ provider: 'zoho', name: '', authType: 'apikey', clientId: '', clientSecret: '', apiKey: '', endpointUrl: '' });
       toast({ title: "Connection Created", description: "Your CRM connection has been created." });
     },
     onError: (error: Error) => {
@@ -889,33 +897,78 @@ inquiry_submitted,email,Email,none`;
               />
             </div>
             <div className="space-y-2">
-              <Label>Client ID</Label>
-              <Input
-                placeholder="Your CRM API Client ID"
-                value={newConnection.clientId}
-                onChange={(e) => setNewConnection({ ...newConnection, clientId: e.target.value })}
-                data-testid="input-client-id"
-              />
+              <Label>Authentication Type</Label>
+              <Select value={newConnection.authType} onValueChange={(v: 'oauth' | 'apikey') => setNewConnection({ ...newConnection, authType: v })}>
+                <SelectTrigger data-testid="select-auth-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="apikey">API Key</SelectItem>
+                  <SelectItem value="oauth">OAuth (Client ID/Secret)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Client Secret</Label>
-              <Input
-                type="password"
-                placeholder="Your CRM API Client Secret"
-                value={newConnection.clientSecret}
-                onChange={(e) => setNewConnection({ ...newConnection, clientSecret: e.target.value })}
-                data-testid="input-client-secret"
-              />
-            </div>
+            
+            {newConnection.authType === 'apikey' ? (
+              <>
+                <div className="space-y-2">
+                  <Label>API Endpoint URL</Label>
+                  <Input
+                    placeholder="https://www.zohoapis.com/crm/v7/functions/..."
+                    value={newConnection.endpointUrl}
+                    onChange={(e) => setNewConnection({ ...newConnection, endpointUrl: e.target.value })}
+                    data-testid="input-endpoint-url"
+                  />
+                  <p className="text-xs text-muted-foreground">The REST API endpoint for your CRM function</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>API Key</Label>
+                  <Input
+                    type="password"
+                    placeholder="Your API Key (zapikey)"
+                    value={newConnection.apiKey}
+                    onChange={(e) => setNewConnection({ ...newConnection, apiKey: e.target.value })}
+                    data-testid="input-api-key"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Client ID</Label>
+                  <Input
+                    placeholder="Your CRM API Client ID"
+                    value={newConnection.clientId}
+                    onChange={(e) => setNewConnection({ ...newConnection, clientId: e.target.value })}
+                    data-testid="input-client-id"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Client Secret</Label>
+                  <Input
+                    type="password"
+                    placeholder="Your CRM API Client Secret"
+                    value={newConnection.clientSecret}
+                    onChange={(e) => setNewConnection({ ...newConnection, clientSecret: e.target.value })}
+                    data-testid="input-client-secret"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateConnection(false)}>Cancel</Button>
             <Button
-              onClick={() => createConfigMutation.mutate({
-                provider: newConnection.provider,
-                name: newConnection.name,
-                credentials: { clientId: newConnection.clientId, clientSecret: newConnection.clientSecret }
-              })}
+              onClick={() => {
+                const credentials = newConnection.authType === 'apikey'
+                  ? { authType: 'apikey', apiKey: newConnection.apiKey, endpointUrl: newConnection.endpointUrl }
+                  : { authType: 'oauth', clientId: newConnection.clientId, clientSecret: newConnection.clientSecret };
+                createConfigMutation.mutate({
+                  provider: newConnection.provider,
+                  name: newConnection.name,
+                  credentials
+                });
+              }}
               disabled={!newConnection.name || createConfigMutation.isPending}
               data-testid="button-save-connection"
             >
