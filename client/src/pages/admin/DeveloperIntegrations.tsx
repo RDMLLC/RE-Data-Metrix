@@ -52,7 +52,9 @@ import {
   RefreshCw,
   Key,
   Webhook,
-  Database
+  Database,
+  Upload,
+  Download
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -144,6 +146,8 @@ export default function DeveloperIntegrations() {
   const [showCreateTrigger, setShowCreateTrigger] = useState(false);
   const [showCreateMapping, setShowCreateMapping] = useState(false);
   const [showCreateWebhook, setShowCreateWebhook] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [uploadedMappings, setUploadedMappings] = useState<any[]>([]);
   
   // Form states
   const [newConnection, setNewConnection] = useState({ provider: 'zoho', name: '', clientId: '', clientSecret: '' });
@@ -276,6 +280,82 @@ export default function DeveloperIntegrations() {
       toast({ title: "Deleted", description: "Mapping deleted." });
     }
   });
+
+  const bulkUploadMutation = useMutation({
+    mutationFn: async (mappings: any[]) => {
+      const res = await apiRequest("POST", `/api/integrations/configs/${selectedIntegration}/mappings/bulk`, { mappings });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/integrations/configs", selectedIntegration, "mappings"] });
+      setShowBulkUpload(false);
+      setUploadedMappings([]);
+      if (data.errors?.length > 0) {
+        toast({ 
+          title: "Partial Success", 
+          description: `Created ${data.created} mappings. ${data.errors.length} errors occurred.`,
+          variant: "destructive"
+        });
+      } else {
+        toast({ title: "Upload Complete", description: `Successfully created ${data.created} field mappings.` });
+      }
+    },
+    onError: () => {
+      toast({ title: "Upload Failed", description: "Failed to upload mappings. Please check your file format.", variant: "destructive" });
+    }
+  });
+
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+          toast({ title: "Invalid File", description: "CSV must have a header row and at least one data row.", variant: "destructive" });
+          return;
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const eventTypeIdx = headers.findIndex(h => h === 'eventtype' || h === 'event_type' || h === 'event');
+        const sourceFieldIdx = headers.findIndex(h => h === 'sourcefield' || h === 'source_field' || h === 'source');
+        const targetFieldIdx = headers.findIndex(h => h === 'targetfield' || h === 'target_field' || h === 'target');
+        const transformIdx = headers.findIndex(h => h === 'transformtype' || h === 'transform_type' || h === 'transform');
+
+        if (eventTypeIdx === -1 || sourceFieldIdx === -1 || targetFieldIdx === -1) {
+          toast({ 
+            title: "Invalid Headers", 
+            description: "CSV must have columns: eventType (or event), sourceField (or source), targetField (or target)", 
+            variant: "destructive" 
+          });
+          return;
+        }
+
+        const parsedMappings = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          if (values[eventTypeIdx] && values[sourceFieldIdx] && values[targetFieldIdx]) {
+            parsedMappings.push({
+              eventType: values[eventTypeIdx],
+              sourceField: values[sourceFieldIdx],
+              targetField: values[targetFieldIdx],
+              transformType: transformIdx !== -1 ? values[transformIdx] || 'none' : 'none',
+              isRequired: false
+            });
+          }
+        }
+
+        setUploadedMappings(parsedMappings);
+        toast({ title: "File Parsed", description: `Found ${parsedMappings.length} mappings to import.` });
+      } catch (err) {
+        toast({ title: "Parse Error", description: "Failed to parse CSV file.", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const createWebhookMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -518,10 +598,16 @@ export default function DeveloperIntegrations() {
                 <p className="text-sm text-muted-foreground">Map platform fields to your CRM fields</p>
               </div>
               {selectedIntegration && (
-                <Button onClick={() => setShowCreateMapping(true)} data-testid="button-create-mapping">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Mapping
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowBulkUpload(true)} data-testid="button-upload-mappings">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload CSV
+                  </Button>
+                  <Button onClick={() => setShowCreateMapping(true)} data-testid="button-create-mapping">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Mapping
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -965,6 +1051,92 @@ export default function DeveloperIntegrations() {
             >
               {createWebhookMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Webhook
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Upload Mappings Dialog */}
+      <Dialog open={showBulkUpload} onOpenChange={(open) => {
+        setShowBulkUpload(open);
+        if (!open) setUploadedMappings([]);
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Bulk Upload Field Mappings</DialogTitle>
+            <DialogDescription>Upload a CSV file to add multiple field mappings at once.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>CSV File</Label>
+              <Input
+                type="file"
+                accept=".csv"
+                onChange={handleCsvUpload}
+                data-testid="input-csv-upload"
+              />
+              <p className="text-xs text-muted-foreground">
+                CSV must have columns: <code>eventType</code>, <code>sourceField</code>, <code>targetField</code>, and optionally <code>transformType</code>
+              </p>
+            </div>
+
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium mb-2">Example CSV Format:</p>
+              <code className="text-xs block whitespace-pre">
+{`eventType,sourceField,targetField,transformType
+user_signup,email,Email,none
+user_signup,profile.fullName,Full_Name,none
+payment_success,amount,Payment_Amount,currency_cents`}
+              </code>
+            </div>
+
+            {uploadedMappings.length > 0 && (
+              <div className="space-y-2">
+                <Label>Preview ({uploadedMappings.length} mappings found)</Label>
+                <div className="max-h-48 overflow-auto border rounded">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Event</TableHead>
+                        <TableHead>Source</TableHead>
+                        <TableHead>Target</TableHead>
+                        <TableHead>Transform</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {uploadedMappings.slice(0, 10).map((m, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-sm">{m.eventType}</TableCell>
+                          <TableCell className="text-sm"><code>{m.sourceField}</code></TableCell>
+                          <TableCell className="text-sm"><code>{m.targetField}</code></TableCell>
+                          <TableCell className="text-sm">{m.transformType}</TableCell>
+                        </TableRow>
+                      ))}
+                      {uploadedMappings.length > 10 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            ... and {uploadedMappings.length - 10} more
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowBulkUpload(false);
+              setUploadedMappings([]);
+            }}>Cancel</Button>
+            <Button
+              onClick={() => bulkUploadMutation.mutate(uploadedMappings)}
+              disabled={uploadedMappings.length === 0 || bulkUploadMutation.isPending}
+              data-testid="button-confirm-upload"
+            >
+              {bulkUploadMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Import {uploadedMappings.length} Mappings
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -837,6 +837,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk upload field mappings from CSV/JSON
+  app.post("/api/integrations/configs/:id/mappings/bulk", ensureAdminOrDeveloper, async (req, res) => {
+    try {
+      const { mappings } = req.body;
+      
+      if (!Array.isArray(mappings) || mappings.length === 0) {
+        return res.status(400).json({ error: "Mappings array is required and must not be empty" });
+      }
+
+      const results = {
+        created: 0,
+        errors: [] as string[]
+      };
+
+      for (const mapping of mappings) {
+        try {
+          const { eventType, sourceField, targetField, transformType, isRequired } = mapping;
+          
+          if (!eventType || !sourceField || !targetField) {
+            results.errors.push(`Missing required field for mapping: eventType=${eventType}, sourceField=${sourceField}, targetField=${targetField}`);
+            continue;
+          }
+
+          await storage.createIntegrationFieldMapping({
+            integrationId: req.params.id,
+            eventType,
+            sourceField,
+            targetField,
+            transformType: transformType || null,
+            isRequired: isRequired === true || isRequired === 'true'
+          });
+          results.created++;
+        } catch (err) {
+          results.errors.push(`Failed to create mapping for ${mapping.sourceField} -> ${mapping.targetField}: ${err}`);
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error('Bulk create field mappings error:', error);
+      res.status(500).json({ error: "Failed to bulk create field mappings" });
+    }
+  });
+
   // Webhooks
   app.get("/api/integrations/webhooks", ensureAdminOrDeveloper, async (req, res) => {
     try {
