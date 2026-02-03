@@ -1081,7 +1081,40 @@ export default function DeveloperIntegrations() {
             </div>
 
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-2">Example CSV Format:</p>
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-sm font-medium">Example CSV Format:</p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const csvContent = `eventType,sourceField,targetField,transformType
+user_signup,email,Email,none
+user_signup,profile.fullName,Full_Name,none
+user_signup,profile.phone,Phone,none
+user_signup,username,Username,none
+lender_signup,companyName,Company_Name,none
+lender_signup,email,Email,none
+lender_signup,phone,Phone,none
+payment_success,amount,Payment_Amount,currency_cents
+payment_success,email,Email,none
+subscription_created,email,Email,none
+subscription_created,subscriptionStatus,Status,none
+deal_analysis_created,email,Email,none
+inquiry_submitted,email,Email,none`;
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'field_mappings_template.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  data-testid="button-download-template"
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Download Template
+                </Button>
+              </div>
               <code className="text-xs block whitespace-pre">
 {`eventType,sourceField,targetField,transformType
 user_signup,email,Email,none
