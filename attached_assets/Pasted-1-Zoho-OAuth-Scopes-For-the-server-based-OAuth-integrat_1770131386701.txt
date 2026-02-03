@@ -1,0 +1,29 @@
+1. Zoho OAuth Scopes
+For the server-based OAuth integration with Zoho CRM, the following API scopes should be included in the OAuth authorization request:
+ZohoCRM.modules.ALL
+ZohoCRM.modules.contacts.CREATE
+ZohoCRM.modules.contacts.UPDATE
+Also, please make sure the OAuth parameter access_type is set to "offline" so that refresh tokens are generated.
+At a minimum, the integration needs access to the Contacts module for creating and updating records.
+If there’s any confusion around scope selection, you can refer to the official Zoho documentation here:
+https://www.zoho.com/crm/developer/docs/api/v8/select-api-scopes.html
+2. Field Mapping (Contacts Module)
+The below fields will be used to create or update Contacts in Zoho CRM. Please ensure the API names are used exactly as mentioned.
+Last Name (API Name: Last_Name) – Mandatory
+Email (API Name: Email) – Primary identifier
+Phone (API Name: Phone) – Optional
+Contact Type (API Name: Contact_Type) – Fixed value: Subscriber
+Subscription Type (API Name: Subscription_Type) – Picklist values: Free, Annually, Monthly
+All fields should be mapped using the same API names to avoid any issues during create or update.
+3. Integration Logic
+When a new account is created on the website, the backend should:
+Search for an existing Contact in Zoho CRM using the Email
+Update the Contact if it exists
+Create a new Contact if it does not exist
+The Contact Type and Subscription Type should be set based on the user’s selection during signup.
+4. Alternative Integration Method (Fallback Option)
+If the OAuth-based integration faces any issues, you can alternatively use the Zoho CRM Function REST API below to push data into CRM:
+https://www.zohoapis.com/crm/v7/functions/rest_api_for_website_integration/actions/execute?auth_type=apikey&zapikey=1003.4d129976ee1dafd7366040f220560e21.578cefc0e5f4713945b99d76ea8921c1
+This endpoint sends website data directly to Zoho CRM using a predefined custom function.
+Please let us know once the OAuth callback endpoint is ready, or if you need any clarification from our side regarding scopes, field mapping, or overall data flow.
+Also, ensure the requisite scopes are selected during the OAuth setup.

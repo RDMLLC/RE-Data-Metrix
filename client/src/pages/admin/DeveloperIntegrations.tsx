@@ -86,6 +86,7 @@ interface FieldMapping {
   sourceField: string;
   targetField: string;
   transformType: string | null;
+  fixedValue: string | null;
   isRequired: boolean;
 }
 
@@ -185,7 +186,7 @@ export default function DeveloperIntegrations() {
     endpointUrl: ''
   });
   const [newTrigger, setNewTrigger] = useState({ eventType: '', targetModule: '' });
-  const [newMapping, setNewMapping] = useState({ eventType: '', sourceField: '', targetField: '', transformType: 'none' });
+  const [newMapping, setNewMapping] = useState({ eventType: '', sourceField: '', targetField: '', transformType: 'none', fixedValue: '' });
   const [newWebhook, setNewWebhook] = useState({ name: '', allowedActions: '' });
 
   // Check auth
@@ -304,7 +305,7 @@ export default function DeveloperIntegrations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/integrations/configs", selectedIntegration, "mappings"] });
       setShowCreateMapping(false);
-      setNewMapping({ eventType: '', sourceField: '', targetField: '', transformType: 'none' });
+      setNewMapping({ eventType: '', sourceField: '', targetField: '', transformType: 'none', fixedValue: '' });
       toast({ title: "Mapping Created", description: "Field mapping has been created." });
     }
   });
@@ -410,6 +411,7 @@ export default function DeveloperIntegrations() {
         const sourceFieldIdx = headers.findIndex(h => h === 'sourcefield' || h === 'source_field' || h === 'source');
         const targetFieldIdx = headers.findIndex(h => h === 'targetfield' || h === 'target_field' || h === 'target');
         const transformIdx = headers.findIndex(h => h === 'transformtype' || h === 'transform_type' || h === 'transform');
+        const fixedValueIdx = headers.findIndex(h => h === 'fixedvalue' || h === 'fixed_value' || h === 'fixed');
 
         if (eventTypeIdx === -1 || sourceFieldIdx === -1 || targetFieldIdx === -1) {
           toast({ 
@@ -429,6 +431,7 @@ export default function DeveloperIntegrations() {
               sourceField: values[sourceFieldIdx],
               targetField: values[targetFieldIdx],
               transformType: transformIdx !== -1 ? values[transformIdx] || 'none' : 'none',
+              fixedValue: fixedValueIdx !== -1 ? values[fixedValueIdx] || null : null,
               isRequired: false
             });
           }
@@ -687,20 +690,21 @@ export default function DeveloperIntegrations() {
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    const csvContent = `eventType,sourceField,targetField,transformType
-user_signup,email,Email,none
-user_signup,profile.fullName,Full_Name,none
-user_signup,profile.phone,Phone,none
-user_signup,username,Username,none
-lender_signup,companyName,Company_Name,none
-lender_signup,email,Email,none
-lender_signup,phone,Phone,none
-payment_success,amount,Payment_Amount,currency_cents
-payment_success,email,Email,none
-subscription_created,email,Email,none
-subscription_created,subscriptionStatus,Status,none
-deal_analysis_created,email,Email,none
-inquiry_submitted,email,Email,none`;
+                    const csvContent = `eventType,sourceField,targetField,transformType,fixedValue
+user_signup,email,Email,none,
+user_signup,profile.fullName,Last_Name,none,
+user_signup,profile.phone,Phone,none,
+user_signup,FIXED_VALUE,Contact_Type,none,Subscriber
+user_signup,subscriptionStatus,Subscription_Type,subscription_to_type,
+lender_signup,companyName,Company_Name,none,
+lender_signup,email,Email,none,
+lender_signup,phone,Phone,none,
+payment_success,amount,Payment_Amount,currency_cents,
+payment_success,email,Email,none,
+subscription_created,email,Email,none,
+subscription_created,subscriptionStatus,Status,subscription_to_type,
+deal_analysis_created,email,Email,none,
+inquiry_submitted,email,Email,none,`;
                     const blob = new Blob([csvContent], { type: 'text/csv' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -767,7 +771,16 @@ inquiry_submitted,email,Email,none`;
                         <TableCell className="font-medium">
                           {EVENT_TYPES.find(e => e.value === mapping.eventType)?.label || mapping.eventType}
                         </TableCell>
-                        <TableCell><code className="bg-muted px-1 py-0.5 rounded text-sm">{mapping.sourceField}</code></TableCell>
+                        <TableCell>
+                          {mapping.sourceField === 'FIXED_VALUE' ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Badge variant="secondary">Fixed</Badge>
+                              <code className="bg-muted px-1 py-0.5 rounded text-sm">{(mapping as any).fixedValue || '(empty)'}</code>
+                            </span>
+                          ) : (
+                            <code className="bg-muted px-1 py-0.5 rounded text-sm">{mapping.sourceField}</code>
+                          )}
+                        </TableCell>
                         <TableCell><code className="bg-muted px-1 py-0.5 rounded text-sm">{mapping.targetField}</code></TableCell>
                         <TableCell>{mapping.transformType || 'none'}</TableCell>
                         <TableCell>
@@ -1219,17 +1232,30 @@ inquiry_submitted,email,Email,none`;
             </div>
             <div className="space-y-2">
               <Label>Source Field (Platform)</Label>
-              <Select value={newMapping.sourceField} onValueChange={(v) => setNewMapping({ ...newMapping, sourceField: v })}>
+              <Select value={newMapping.sourceField} onValueChange={(v) => setNewMapping({ ...newMapping, sourceField: v, fixedValue: v === 'FIXED_VALUE' ? newMapping.fixedValue : '' })}>
                 <SelectTrigger data-testid="select-source-field">
                   <SelectValue placeholder="Select source field" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="FIXED_VALUE">⭐ Fixed Value (static)</SelectItem>
                   {(newMapping.eventType.includes('user') ? USER_FIELDS : LENDER_FIELDS).map((field) => (
                     <SelectItem key={field} value={field}>{field}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            {newMapping.sourceField === 'FIXED_VALUE' && (
+              <div className="space-y-2">
+                <Label>Fixed Value</Label>
+                <Input
+                  placeholder="e.g., Subscriber, Website Lead"
+                  value={newMapping.fixedValue}
+                  onChange={(e) => setNewMapping({ ...newMapping, fixedValue: e.target.value })}
+                  data-testid="input-fixed-value"
+                />
+                <p className="text-xs text-muted-foreground">This static value will be sent for all records</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Target Field (CRM)</Label>
               <Input
@@ -1251,6 +1277,7 @@ inquiry_submitted,email,Email,none`;
                   <SelectItem value="currency_cents">Currency (cents to dollars)</SelectItem>
                   <SelectItem value="uppercase">Uppercase</SelectItem>
                   <SelectItem value="lowercase">Lowercase</SelectItem>
+                  <SelectItem value="subscription_to_type">Subscription to Type (Free/Monthly/Annually)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1259,7 +1286,7 @@ inquiry_submitted,email,Email,none`;
             <Button variant="outline" onClick={() => setShowCreateMapping(false)}>Cancel</Button>
             <Button
               onClick={() => createMappingMutation.mutate(newMapping)}
-              disabled={!newMapping.eventType || !newMapping.sourceField || !newMapping.targetField || createMappingMutation.isPending}
+              disabled={!newMapping.eventType || !newMapping.sourceField || !newMapping.targetField || (newMapping.sourceField === 'FIXED_VALUE' && !newMapping.fixedValue) || createMappingMutation.isPending}
               data-testid="button-save-mapping"
             >
               {createMappingMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -1344,20 +1371,21 @@ inquiry_submitted,email,Email,none`;
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    const csvContent = `eventType,sourceField,targetField,transformType
-user_signup,email,Email,none
-user_signup,profile.fullName,Full_Name,none
-user_signup,profile.phone,Phone,none
-user_signup,username,Username,none
-lender_signup,companyName,Company_Name,none
-lender_signup,email,Email,none
-lender_signup,phone,Phone,none
-payment_success,amount,Payment_Amount,currency_cents
-payment_success,email,Email,none
-subscription_created,email,Email,none
-subscription_created,subscriptionStatus,Status,none
-deal_analysis_created,email,Email,none
-inquiry_submitted,email,Email,none`;
+                    const csvContent = `eventType,sourceField,targetField,transformType,fixedValue
+user_signup,email,Email,none,
+user_signup,profile.fullName,Last_Name,none,
+user_signup,profile.phone,Phone,none,
+user_signup,FIXED_VALUE,Contact_Type,none,Subscriber
+user_signup,subscriptionStatus,Subscription_Type,subscription_to_type,
+lender_signup,companyName,Company_Name,none,
+lender_signup,email,Email,none,
+lender_signup,phone,Phone,none,
+payment_success,amount,Payment_Amount,currency_cents,
+payment_success,email,Email,none,
+subscription_created,email,Email,none,
+subscription_created,subscriptionStatus,Status,subscription_to_type,
+deal_analysis_created,email,Email,none,
+inquiry_submitted,email,Email,none,`;
                     const blob = new Blob([csvContent], { type: 'text/csv' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -1373,10 +1401,10 @@ inquiry_submitted,email,Email,none`;
                 </Button>
               </div>
               <code className="text-xs block whitespace-pre">
-{`eventType,sourceField,targetField,transformType
-user_signup,email,Email,none
-user_signup,profile.fullName,Full_Name,none
-payment_success,amount,Payment_Amount,currency_cents`}
+{`eventType,sourceField,targetField,transformType,fixedValue
+user_signup,email,Email,none,
+user_signup,FIXED_VALUE,Contact_Type,none,Subscriber
+payment_success,amount,Payment_Amount,currency_cents,`}
               </code>
             </div>
 
@@ -1391,20 +1419,28 @@ payment_success,amount,Payment_Amount,currency_cents`}
                         <TableHead>Source</TableHead>
                         <TableHead>Target</TableHead>
                         <TableHead>Transform</TableHead>
+                        <TableHead>Fixed</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {uploadedMappings.slice(0, 10).map((m, i) => (
                         <TableRow key={i}>
                           <TableCell className="text-sm">{m.eventType}</TableCell>
-                          <TableCell className="text-sm"><code>{m.sourceField}</code></TableCell>
+                          <TableCell className="text-sm">
+                            {m.sourceField === 'FIXED_VALUE' ? (
+                              <Badge variant="secondary">Fixed</Badge>
+                            ) : (
+                              <code>{m.sourceField}</code>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm"><code>{m.targetField}</code></TableCell>
                           <TableCell className="text-sm">{m.transformType}</TableCell>
+                          <TableCell className="text-sm">{m.fixedValue || '-'}</TableCell>
                         </TableRow>
                       ))}
                       {uploadedMappings.length > 10 && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
                             ... and {uploadedMappings.length - 10} more
                           </TableCell>
                         </TableRow>

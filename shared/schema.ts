@@ -889,9 +889,10 @@ export const integrationFieldMappings = pgTable("integration_field_mappings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   integrationId: varchar("integration_id").notNull().references(() => integrationConfigs.id, { onDelete: 'cascade' }),
   eventType: text("event_type").notNull(), // which event this mapping applies to
-  sourceField: text("source_field").notNull(), // RE Data Metrix field
+  sourceField: text("source_field").notNull(), // RE Data Metrix field (or 'FIXED_VALUE' for fixed mappings)
   targetField: text("target_field").notNull(), // CRM field
-  transformType: text("transform_type"), // 'none', 'date_format', 'currency_cents', etc.
+  transformType: text("transform_type"), // 'none', 'date_format', 'currency_cents', 'subscription_to_type', etc.
+  fixedValue: text("fixed_value"), // static value to use when sourceField is 'FIXED_VALUE'
   isRequired: boolean("is_required").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
