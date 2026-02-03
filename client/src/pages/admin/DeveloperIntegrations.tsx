@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -183,7 +184,9 @@ export default function DeveloperIntegrations() {
     clientId: '', 
     clientSecret: '',
     apiKey: '',
-    endpointUrl: ''
+    endpointUrl: '',
+    upsertEnabled: true,
+    upsertField: 'Email'
   });
   const [newTrigger, setNewTrigger] = useState({ eventType: '', targetModule: '' });
   const [newMapping, setNewMapping] = useState({ eventType: '', sourceField: '', targetField: '', transformType: 'none', fixedValue: '' });
@@ -244,7 +247,7 @@ export default function DeveloperIntegrations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/integrations/configs"] });
       setShowCreateConnection(false);
-      setNewConnection({ provider: 'zoho', name: '', authType: 'apikey', clientId: '', clientSecret: '', apiKey: '', endpointUrl: '' });
+      setNewConnection({ provider: 'zoho', name: '', authType: 'apikey', clientId: '', clientSecret: '', apiKey: '', endpointUrl: '', upsertEnabled: true, upsertField: 'Email' });
       toast({ title: "Connection Created", description: "Your CRM connection has been created." });
     },
     onError: (error: Error) => {
@@ -1140,6 +1143,37 @@ inquiry_submitted,email,Email,none,`;
                 </div>
               </>
             )}
+            
+            <Separator className="my-4" />
+            
+            <div className="space-y-4">
+              <Label className="font-medium">Upsert Configuration</Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="upsert-enabled"
+                  checked={newConnection.upsertEnabled}
+                  onChange={(e) => setNewConnection({ ...newConnection, upsertEnabled: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                  data-testid="checkbox-upsert-enabled"
+                />
+                <label htmlFor="upsert-enabled" className="text-sm">
+                  Enable upsert (update existing records if match found)
+                </label>
+              </div>
+              {newConnection.upsertEnabled && (
+                <div className="space-y-2">
+                  <Label>Match Field</Label>
+                  <Input
+                    placeholder="e.g., Email"
+                    value={newConnection.upsertField}
+                    onChange={(e) => setNewConnection({ ...newConnection, upsertField: e.target.value })}
+                    data-testid="input-upsert-field"
+                  />
+                  <p className="text-xs text-muted-foreground">The CRM field to match for finding existing records (typically Email)</p>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateConnection(false)}>Cancel</Button>
@@ -1148,10 +1182,15 @@ inquiry_submitted,email,Email,none,`;
                 const credentials = newConnection.authType === 'apikey'
                   ? { authType: 'apikey', apiKey: newConnection.apiKey, endpointUrl: newConnection.endpointUrl }
                   : { authType: 'oauth', clientId: newConnection.clientId, clientSecret: newConnection.clientSecret };
+                const settings = {
+                  upsertEnabled: newConnection.upsertEnabled,
+                  upsertField: newConnection.upsertField
+                };
                 createConfigMutation.mutate({
                   provider: newConnection.provider,
                   name: newConnection.name,
-                  credentials
+                  credentials,
+                  settings
                 });
               }}
               disabled={!newConnection.name || createConfigMutation.isPending}
