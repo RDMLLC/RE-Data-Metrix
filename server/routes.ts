@@ -15,6 +15,7 @@ import crypto from "crypto";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts, seedTrainingVideos } from "./seed-data";
+import { outboundWebhookService } from "./services/outbound-webhook.service";
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -46,6 +47,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!result.success) {
         return res.status(400).json({ error: result.error || result.message });
+      }
+
+      // Trigger outbound webhooks for user signup (fire and forget) - do this before any early returns
+      if (result.user) {
+        outboundWebhookService.triggerWebhooks('user_signup', {
+          userId: result.user.id,
+          email: result.user.email,
+          username: result.user.username,
+          isComped: result.isComped,
+          createdAt: new Date().toISOString()
+        }).catch(err => console.error('[Webhook] user_signup trigger error:', err));
       }
 
       // For comp users, log them in automatically
@@ -3929,6 +3941,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralSource: validatedReferral
       });
       
+      // Trigger outbound webhooks for webinar registration (fire and forget)
+      outboundWebhookService.triggerWebhooks('webinar_registration', {
+        registrationId: registration.id,
+        name: registration.name,
+        email: registration.email,
+        phone: registration.phone,
+        webinarId: registration.webinarId,
+        webinarDate: registration.webinarDate?.toISOString(),
+        source: registration.source,
+        referralSource: registration.referralSource,
+        createdAt: new Date().toISOString()
+      }).catch(err => console.error('[Webhook] webinar_registration trigger error:', err));
+      
       // Trigger CRM integration event if configured
       try {
         const integrations = await storage.getAllIntegrationConfigs();
@@ -6361,6 +6386,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = insertPropertySchema.parse({...req.body, userId});
 
       const dealAnalysis = await storage.createDealAnalysis(data);
+      
+      // Trigger outbound webhooks for deal analysis created (fire and forget)
+      const user = req.user as User;
+      outboundWebhookService.triggerWebhooks('deal_analysis_created', {
+        dealId: dealAnalysis.id,
+        userId: user.id,
+        email: user.email,
+        propertyAddress: dealAnalysis.address,
+        propertyType: dealAnalysis.propertyType,
+        analysisType: dealAnalysis.analysisType,
+        purchasePrice: dealAnalysis.purchasePrice,
+        arv: dealAnalysis.arv,
+        createdAt: new Date().toISOString()
+      }).catch(err => console.error('[Webhook] deal_analysis_created trigger error:', err));
+      
       res.json(dealAnalysis);
     } catch (error) {
       if (error instanceof z.ZodError) {
