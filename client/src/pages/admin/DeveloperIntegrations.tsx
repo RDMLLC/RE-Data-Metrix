@@ -597,18 +597,50 @@ export default function DeveloperIntegrations() {
                 <h2 className="text-xl font-semibold">Field Mappings</h2>
                 <p className="text-sm text-muted-foreground">Map platform fields to your CRM fields</p>
               </div>
-              {selectedIntegration && (
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setShowBulkUpload(true)} data-testid="button-upload-mappings">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload CSV
-                  </Button>
-                  <Button onClick={() => setShowCreateMapping(true)} data-testid="button-create-mapping">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Mapping
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    const csvContent = `eventType,sourceField,targetField,transformType
+user_signup,email,Email,none
+user_signup,profile.fullName,Full_Name,none
+user_signup,profile.phone,Phone,none
+user_signup,username,Username,none
+lender_signup,companyName,Company_Name,none
+lender_signup,email,Email,none
+lender_signup,phone,Phone,none
+payment_success,amount,Payment_Amount,currency_cents
+payment_success,email,Email,none
+subscription_created,email,Email,none
+subscription_created,subscriptionStatus,Status,none
+deal_analysis_created,email,Email,none
+inquiry_submitted,email,Email,none`;
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'field_mappings_template.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  data-testid="button-download-csv-template"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download CSV
+                </Button>
+                {selectedIntegration && (
+                  <>
+                    <Button variant="outline" onClick={() => setShowBulkUpload(true)} data-testid="button-upload-mappings">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload CSV
+                    </Button>
+                    <Button onClick={() => setShowCreateMapping(true)} data-testid="button-create-mapping">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Mapping
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
 
             {!selectedIntegration ? (
