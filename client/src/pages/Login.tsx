@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Building2, ShieldCheck, UserPlus } from "lucide-react";
+import { CheckCircle, Building2, ShieldCheck, UserPlus, Eye, EyeOff } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -46,6 +46,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLenderLoading, setIsLenderLoading] = useState(false);
   const [returnTo, setReturnTo] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showLenderPassword, setShowLenderPassword] = useState(false);
 
   // Validate returnTo to only allow safe relative paths (prevents open redirect)
   const isValidReturnTo = (url: string | null): boolean => {
@@ -241,12 +243,24 @@ export default function Login() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input
-                                {...field}
-                                type="password"
-                                placeholder="••••••••"
-                                data-testid="input-password"
-                              />
+                              <div className="relative">
+                                <Input
+                                  {...field}
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  data-testid="input-password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  data-testid="button-toggle-password"
+                                >
+                                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -370,12 +384,24 @@ export default function Login() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input
-                                {...field}
-                                type="password"
-                                placeholder="••••••••"
-                                data-testid="input-lender-password"
-                              />
+                              <div className="relative">
+                                <Input
+                                  {...field}
+                                  type={showLenderPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  data-testid="input-lender-password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                                  onClick={() => setShowLenderPassword(!showLenderPassword)}
+                                  data-testid="button-toggle-lender-password"
+                                >
+                                  {showLenderPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>

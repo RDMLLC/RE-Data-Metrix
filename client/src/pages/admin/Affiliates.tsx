@@ -65,6 +65,8 @@ import {
   Download,
   Copy,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
@@ -154,6 +156,8 @@ export default function Affiliates() {
   const [editingAffiliate, setEditingAffiliate] = useState<Affiliate | null>(null);
   const [editingCategory, setEditingCategory] = useState<AffiliateCategory | null>(null);
   const [affiliateForm, setAffiliateForm] = useState<AffiliateFormData>(emptyAffiliateForm);
+  const [showAffiliatePassword, setShowAffiliatePassword] = useState(false);
+  const [showCredentialsPassword, setShowCredentialsPassword] = useState(false);
   const [categoryForm, setCategoryForm] = useState<CategoryFormData>(emptyCategoryForm);
   const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
   const [copiedCredential, setCopiedCredential] = useState<string | null>(null);
@@ -902,14 +906,26 @@ export default function Affiliates() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="loginPassword">Login Password</Label>
-                  <Input
-                    id="loginPassword"
-                    type="password"
-                    value={affiliateForm.loginPassword}
-                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, loginPassword: e.target.value }))}
-                    placeholder="Password"
-                    data-testid="input-login-password"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="loginPassword"
+                      type={showAffiliatePassword ? "text" : "password"}
+                      value={affiliateForm.loginPassword}
+                      onChange={(e) => setAffiliateForm(prev => ({ ...prev, loginPassword: e.target.value }))}
+                      placeholder="Password"
+                      data-testid="input-login-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                      onClick={() => setShowAffiliatePassword(!showAffiliatePassword)}
+                      data-testid="button-toggle-affiliate-password"
+                    >
+                      {showAffiliatePassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -1173,13 +1189,25 @@ export default function Affiliates() {
                   <div className="space-y-2">
                     <Label className="text-muted-foreground text-sm">Password</Label>
                     <div className="flex items-center gap-2">
-                      <Input
-                        value={credentialsAffiliate.loginPassword || ''}
-                        readOnly
-                        type="password"
-                        className="font-mono"
-                        data-testid="text-credentials-password"
-                      />
+                      <div className="relative flex-1">
+                        <Input
+                          value={credentialsAffiliate.loginPassword || ''}
+                          readOnly
+                          type={showCredentialsPassword ? "text" : "password"}
+                          className="font-mono"
+                          data-testid="text-credentials-password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2"
+                          onClick={() => setShowCredentialsPassword(!showCredentialsPassword)}
+                          data-testid="button-toggle-credentials-password"
+                        >
+                          {showCredentialsPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                        </Button>
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, FileText, CheckCircle } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, FileText, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -329,6 +329,8 @@ export default function Checkout() {
   // Comp code state
   const [compCode, setCompCode] = useState("");
   const [showCompCodeField, setShowCompCodeField] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Terms modal state
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -747,13 +749,25 @@ export default function Checkout() {
                               <FormItem>
                                 <FormLabel>Password</FormLabel>
                                 <FormControl>
-                                  <Input
-                                    {...field}
-                                    type="password"
-                                    placeholder="••••••••"
-                                    autoComplete="new-password"
-                                    data-testid="input-checkout-password"
-                                  />
+                                  <div className="relative">
+                                    <Input
+                                      {...field}
+                                      type={showPassword ? "text" : "password"}
+                                      placeholder="••••••••"
+                                      autoComplete="new-password"
+                                      data-testid="input-checkout-password"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                                      onClick={() => setShowPassword(!showPassword)}
+                                      data-testid="button-toggle-checkout-password"
+                                    >
+                                      {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                    </Button>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -766,13 +780,25 @@ export default function Checkout() {
                               <FormItem>
                                 <FormLabel>Confirm Password</FormLabel>
                                 <FormControl>
-                                  <Input
-                                    {...field}
-                                    type="password"
-                                    placeholder="••••••••"
-                                    autoComplete="new-password"
-                                    data-testid="input-checkout-confirm-password"
-                                  />
+                                  <div className="relative">
+                                    <Input
+                                      {...field}
+                                      type={showConfirmPassword ? "text" : "password"}
+                                      placeholder="••••••••"
+                                      autoComplete="new-password"
+                                      data-testid="input-checkout-confirm-password"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                      data-testid="button-toggle-checkout-confirm-password"
+                                    >
+                                      {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                    </Button>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CheckCircle2, Lock, Building2 } from "lucide-react";
+import { CheckCircle2, Lock, Building2, Eye, EyeOff } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -26,6 +26,8 @@ export default function ResetLenderPassword() {
   const [, params] = useRoute("/lender/reset-password/:token");
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const tokenValidation = useQuery({
     queryKey: ['/api/lenders/validate-reset-token', params?.token],
@@ -145,12 +147,24 @@ export default function ResetLenderPassword() {
                     <FormItem>
                       <FormLabel>New Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter new password"
-                          {...field}
-                          data-testid="input-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter new password"
+                            {...field}
+                            data-testid="input-password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowPassword(!showPassword)}
+                            data-testid="button-toggle-password"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -164,12 +178,24 @@ export default function ResetLenderPassword() {
                     <FormItem>
                       <FormLabel>Confirm Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Confirm new password"
-                          {...field}
-                          data-testid="input-confirm-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm new password"
+                            {...field}
+                            data-testid="input-confirm-password"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            data-testid="button-toggle-confirm-password"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -55,7 +55,9 @@ import {
   Webhook,
   Database,
   Upload,
-  Download
+  Download,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -175,6 +177,8 @@ export default function DeveloperIntegrations() {
     headers: ''
   });
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showClientSecret, setShowClientSecret] = useState(false);
   
   // Form states
   const [newConnection, setNewConnection] = useState({ 
@@ -1111,13 +1115,25 @@ inquiry_submitted,email,Email,none,`;
                 </div>
                 <div className="space-y-2">
                   <Label>API Key</Label>
-                  <Input
-                    type="password"
-                    placeholder="Your API Key (zapikey)"
-                    value={newConnection.apiKey}
-                    onChange={(e) => setNewConnection({ ...newConnection, apiKey: e.target.value })}
-                    data-testid="input-api-key"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showApiKey ? "text" : "password"}
+                      placeholder="Your API Key (zapikey)"
+                      value={newConnection.apiKey}
+                      onChange={(e) => setNewConnection({ ...newConnection, apiKey: e.target.value })}
+                      data-testid="input-api-key"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      data-testid="button-toggle-api-key"
+                    >
+                      {showApiKey ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
                 </div>
               </>
             ) : (
@@ -1133,13 +1149,25 @@ inquiry_submitted,email,Email,none,`;
                 </div>
                 <div className="space-y-2">
                   <Label>Client Secret</Label>
-                  <Input
-                    type="password"
-                    placeholder="Your CRM API Client Secret"
-                    value={newConnection.clientSecret}
-                    onChange={(e) => setNewConnection({ ...newConnection, clientSecret: e.target.value })}
-                    data-testid="input-client-secret"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showClientSecret ? "text" : "password"}
+                      placeholder="Your CRM API Client Secret"
+                      value={newConnection.clientSecret}
+                      onChange={(e) => setNewConnection({ ...newConnection, clientSecret: e.target.value })}
+                      data-testid="input-client-secret"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                      onClick={() => setShowClientSecret(!showClientSecret)}
+                      data-testid="button-toggle-client-secret"
+                    >
+                      {showClientSecret ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
                 </div>
               </>
             )}

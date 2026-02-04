@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, ArrowRight, Loader2, FileText } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, FileText, Eye, EyeOff } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -53,6 +53,8 @@ export default function Register() {
   const [compCode, setCompCode] = useState<string>("");
   const [compEmail, setCompEmail] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Validate returnTo to only allow safe relative paths (prevents open redirect)
   const isValidReturnTo = (url: string | null): boolean => {
@@ -273,13 +275,25 @@ export default function Register() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input
-                                {...field}
-                                type="password"
-                                placeholder="••••••••"
-                                autoComplete="new-password"
-                                data-testid="input-password"
-                              />
+                              <div className="relative">
+                                <Input
+                                  {...field}
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  autoComplete="new-password"
+                                  data-testid="input-password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  data-testid="button-toggle-password"
+                                >
+                                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -292,13 +306,25 @@ export default function Register() {
                           <FormItem>
                             <FormLabel>Confirm Password</FormLabel>
                             <FormControl>
-                              <Input
-                                {...field}
-                                type="password"
-                                placeholder="••••••••"
-                                autoComplete="new-password"
-                                data-testid="input-confirm-password"
-                              />
+                              <div className="relative">
+                                <Input
+                                  {...field}
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  placeholder="••••••••"
+                                  autoComplete="new-password"
+                                  data-testid="input-confirm-password"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 top-1/2 -translate-y-1/2"
+                                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                  data-testid="button-toggle-confirm-password"
+                                >
+                                  {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
