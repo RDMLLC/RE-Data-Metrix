@@ -122,19 +122,12 @@ export default function Features() {
                   </Button>
                 </Link>
               ) : (
-                <>
-                  <Link href="/signup">
-                    <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-get-started">
-                      Get Started Free
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button size="lg" variant="outline" data-testid="button-view-pricing">
-                      View Pricing
-                    </Button>
-                  </Link>
-                </>
+                <Link href="/pricing">
+                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-get-started">
+                    Get Started Free
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               )}
             </div>
           </div>
@@ -341,19 +334,12 @@ export default function Features() {
                   </>
                 )
               ) : (
-                <>
-                  <Link href="/signup">
-                    <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-signup">
-                      Get Started
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-cta-pricing">
-                      View Pricing
-                    </Button>
-                  </Link>
-                </>
+                <Link href="/pricing">
+                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-signup">
+                    Get Started
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               )}
             </div>
           </div>

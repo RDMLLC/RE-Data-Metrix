@@ -16,7 +16,7 @@ export default function Hero() {
   }, []);
 
   const handleGetStarted = () => {
-    window.location.href = '/signup';
+    window.location.href = '/pricing';
   };
 
   return (

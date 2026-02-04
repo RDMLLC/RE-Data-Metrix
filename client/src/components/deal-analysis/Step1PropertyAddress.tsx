@@ -295,7 +295,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                     type="button"
                     onClick={() => {
                       if (!isAuthenticated) {
-                        setLocation("/signup?returnTo=/deal-analysis");
+                        setLocation("/pricing?returnTo=/deal-analysis");
                       } else {
                         setManualEntryPreference(true);
                       }

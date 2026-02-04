@@ -937,7 +937,7 @@ export default function Lenders() {
             <Button 
               className="bg-accent text-accent-foreground hover:bg-accent/90"
               size="lg"
-              onClick={() => window.location.href = '/signup'}
+              onClick={() => window.location.href = '/pricing'}
             >
               Get Started Free
             </Button>
