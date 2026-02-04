@@ -197,6 +197,20 @@ export default function BetaSignup() {
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Join the RE Data Metrix BETA</h1>
             <p className="text-muted-foreground">Get early access to our real estate investment platform - no credit card required</p>
+            
+            {/* Info box about getting a promo code */}
+            <div className="mt-6 max-w-2xl mx-auto p-4 bg-accent/10 border border-accent/30 rounded-lg">
+              <p className="text-sm text-foreground">
+                <span className="font-semibold">Don't have a promo code?</span>{" "}
+                Join one of our free webinars to receive your exclusive BETA access code!
+              </p>
+              <a href="/webinar" className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-accent hover:underline">
+                Register for a Free Webinar
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-5 gap-8">
