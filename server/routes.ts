@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -1298,41 +1298,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle 100% discount checkout - bypass Stripe entirely
   app.post("/api/subscription/checkout/free-with-discount", async (req, res) => {
     try {
-      const { username, email, password, fullName, discountCode, selectedPlan } = req.body;
+      const { username, email, password, fullName, discountCode, selectedPlan, codeType, promoCodeId } = req.body;
 
       if (!username || !email || !password || !fullName || !discountCode || !selectedPlan) {
         return res.status(400).json({ error: "All fields are required" });
       }
 
-      // Validate the discount code
       const normalizedCode = discountCode.toUpperCase();
-      const discount = await storage.getDiscountCodeByCode(normalizedCode);
-      
-      if (!discount) {
-        return res.status(400).json({ error: "Invalid discount code" });
-      }
-
-      // Verify it's a 100% discount
-      if (Number(discount.percentOff) !== 100) {
-        return res.status(400).json({ error: "This endpoint is only for 100% discount codes" });
-      }
-
-      // Check if discount is still valid
-      if (!discount.isActive) {
-        return res.status(400).json({ error: "This discount code is no longer active" });
-      }
-
-      const now = new Date();
-      if (discount.startAt && now < discount.startAt) {
-        return res.status(400).json({ error: "This discount code is not yet active" });
-      }
-      if (discount.endAt && now > discount.endAt) {
-        return res.status(400).json({ error: "This discount code has expired" });
-      }
-
-      if (discount.maxRedemptions && discount.currentRedemptions >= discount.maxRedemptions) {
-        return res.status(400).json({ error: "This discount code has reached its maximum uses" });
-      }
+      let subscriptionEndDate = new Date();
+      let codeId: string;
+      let isPromoCode = codeType === 'promo';
 
       // Check if email is already in use
       const existingEmail = await db
@@ -1356,16 +1331,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Username already taken" });
       }
 
+      if (isPromoCode || promoCodeId) {
+        // Handle promo code (from promo_codes table)
+        const promoCode = await storage.getPromoCodeByCode(normalizedCode);
+        
+        if (!promoCode) {
+          return res.status(400).json({ error: "Invalid promo code" });
+        }
+
+        if (!promoCode.isActive) {
+          return res.status(400).json({ error: "This promo code is no longer active" });
+        }
+
+        const now = new Date();
+        if (promoCode.startsAt && now < promoCode.startsAt) {
+          return res.status(400).json({ error: "This promo code is not yet active" });
+        }
+        if (promoCode.expiresAt && now > promoCode.expiresAt) {
+          return res.status(400).json({ error: "This promo code has expired" });
+        }
+
+        if (promoCode.maxRedemptions && promoCode.currentRedemptions >= promoCode.maxRedemptions) {
+          return res.status(400).json({ error: "This promo code has reached its maximum uses" });
+        }
+
+        // Promo codes give free access for durationMonths
+        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + promoCode.durationMonths);
+        codeId = promoCode.id;
+        isPromoCode = true;
+      } else {
+        // Handle regular discount code (from discount_codes table)
+        const discount = await storage.getDiscountCodeByCode(normalizedCode);
+        
+        if (!discount) {
+          return res.status(400).json({ error: "Invalid discount code" });
+        }
+
+        // Verify it's a 100% discount
+        if (Number(discount.percentOff) !== 100) {
+          return res.status(400).json({ error: "This endpoint is only for 100% discount codes" });
+        }
+
+        if (!discount.isActive) {
+          return res.status(400).json({ error: "This discount code is no longer active" });
+        }
+
+        const now = new Date();
+        if (discount.startAt && now < discount.startAt) {
+          return res.status(400).json({ error: "This discount code is not yet active" });
+        }
+        if (discount.endAt && now > discount.endAt) {
+          return res.status(400).json({ error: "This discount code has expired" });
+        }
+
+        if (discount.maxRedemptions && discount.currentRedemptions >= discount.maxRedemptions) {
+          return res.status(400).json({ error: "This discount code has reached its maximum uses" });
+        }
+
+        // Calculate subscription end date based on selected plan
+        if (selectedPlan === 'annual') {
+          subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+        } else {
+          subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+        }
+        codeId = discount.id;
+      }
+
       // Hash password
       const passwordHash = await hashPassword(password);
-
-      // Calculate subscription end date based on selected plan
-      const subscriptionEndDate = new Date();
-      if (selectedPlan === 'annual') {
-        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
-      } else {
-        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
-      }
 
       // Create the user with premium access
       const [newUser] = await db
@@ -1383,15 +1416,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
 
-      // Increment discount code redemption count
-      await db
-        .update(discountCodes)
-        .set({ 
-          currentRedemptions: (discount.currentRedemptions || 0) + 1 
-        })
-        .where(eq(discountCodes.id, discount.id));
-
-      console.log(`[FREE-CHECKOUT] User ${newUser.id} created with 100% discount code ${normalizedCode}`);
+      // Increment redemption count based on code type
+      if (isPromoCode) {
+        await db
+          .update(promoCodes)
+          .set({ 
+            currentRedemptions: sql`${promoCodes.currentRedemptions} + 1`
+          })
+          .where(eq(promoCodes.id, codeId));
+        
+        // Also create a promo redemption record
+        await db
+          .insert(promoRedemptions)
+          .values({
+            promoCodeId: codeId,
+            userId: newUser.id,
+            activatedAt: new Date(),
+            expiresAt: subscriptionEndDate,
+            status: 'active',
+          });
+        
+        console.log(`[FREE-CHECKOUT] User ${newUser.id} created with promo code ${normalizedCode} (${(subscriptionEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)} months free)`);
+      } else {
+        await db
+          .update(discountCodes)
+          .set({ 
+            currentRedemptions: sql`${discountCodes.currentRedemptions} + 1`
+          })
+          .where(eq(discountCodes.id, codeId));
+        
+        console.log(`[FREE-CHECKOUT] User ${newUser.id} created with 100% discount code ${normalizedCode}`);
+      }
 
       // Check if email verification is required
       if (process.env.REQUIRE_EMAIL_VERIFICATION === 'true') {
@@ -1567,7 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Validate discount code (uses database-stored codes)
+  // Validate discount code (uses database-stored codes AND promo codes)
   app.post("/api/subscription/validate-discount", async (req, res) => {
     try {
       const { code, plan } = req.body;
@@ -1578,73 +1633,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const upperCode = code.toUpperCase();
       
-      // Look up the discount code in the database
+      // First, look up in the discount_codes table
       const discount = await storage.getDiscountCodeByCode(upperCode);
       
-      if (!discount) {
-        return res.json({
-          valid: false,
-          message: "Invalid discount code. Please check and try again.",
-        });
-      }
-      
-      // Check if the code is active
-      if (!discount.isActive) {
-        return res.json({
-          valid: false,
-          message: "This discount code is no longer active.",
-        });
-      }
-      
-      // Check date validity
-      const now = new Date();
-      if (discount.startAt && now < discount.startAt) {
-        return res.json({
-          valid: false,
-          message: "This discount code is not yet active.",
-        });
-      }
-      if (discount.endAt && now > discount.endAt) {
-        return res.json({
-          valid: false,
-          message: "This discount code has expired.",
-        });
-      }
-      
-      // Check redemption limit
-      if (discount.maxRedemptions && discount.currentRedemptions >= discount.maxRedemptions) {
-        return res.json({
-          valid: false,
-          message: "This discount code has reached its maximum number of uses.",
-        });
-      }
-      
-      // Check plan applicability
-      if (discount.planApplicability !== 'both' && discount.planApplicability !== plan) {
-        const planName = discount.planApplicability === 'annual' ? 'annual' : 'monthly';
-        return res.json({
-          valid: false,
-          message: `This code is only valid for ${planName} plans.`,
-        });
-      }
-      
-      // Build success message
-      let message = '';
-      if (discount.percentOff) {
-        message = `${discount.percentOff}% off your subscription!`;
-      } else if (discount.amountOff) {
-        message = `$${discount.amountOff} off your payment!`;
-      }
-      if (discount.displayName && discount.partnerName) {
-        message = `${discount.displayName} - ${message}`;
-      }
+      if (discount) {
+        // Check if the code is active
+        if (!discount.isActive) {
+          return res.json({
+            valid: false,
+            message: "This discount code is no longer active.",
+          });
+        }
+        
+        // Check date validity
+        const now = new Date();
+        if (discount.startAt && now < discount.startAt) {
+          return res.json({
+            valid: false,
+            message: "This discount code is not yet active.",
+          });
+        }
+        if (discount.endAt && now > discount.endAt) {
+          return res.json({
+            valid: false,
+            message: "This discount code has expired.",
+          });
+        }
+        
+        // Check redemption limit
+        if (discount.maxRedemptions && discount.currentRedemptions >= discount.maxRedemptions) {
+          return res.json({
+            valid: false,
+            message: "This discount code has reached its maximum number of uses.",
+          });
+        }
+        
+        // Check plan applicability
+        if (discount.planApplicability !== 'both' && discount.planApplicability !== plan) {
+          const planName = discount.planApplicability === 'annual' ? 'annual' : 'monthly';
+          return res.json({
+            valid: false,
+            message: `This code is only valid for ${planName} plans.`,
+          });
+        }
+        
+        // Build success message
+        let message = '';
+        if (discount.percentOff) {
+          message = `${discount.percentOff}% off your subscription!`;
+        } else if (discount.amountOff) {
+          message = `$${discount.amountOff} off your payment!`;
+        }
+        if (discount.displayName && discount.partnerName) {
+          message = `${discount.displayName} - ${message}`;
+        }
 
+        return res.json({
+          valid: true,
+          discountCodeId: discount.id,
+          codeType: 'discount',
+          percentOff: discount.percentOff ? Number(discount.percentOff) : undefined,
+          amountOff: discount.amountOff ? Number(discount.amountOff) : undefined,
+          message,
+        });
+      }
+      
+      // Not found in discount_codes, try promo_codes table
+      const promoCode = await storage.getPromoCodeByCode(upperCode);
+      
+      if (promoCode) {
+        // Check if the promo code is active
+        if (!promoCode.isActive) {
+          return res.json({
+            valid: false,
+            message: "This promo code is no longer active.",
+          });
+        }
+        
+        // Check date validity
+        const now = new Date();
+        if (promoCode.startsAt && now < promoCode.startsAt) {
+          return res.json({
+            valid: false,
+            message: "This promo code is not yet active.",
+          });
+        }
+        if (promoCode.expiresAt && now > promoCode.expiresAt) {
+          return res.json({
+            valid: false,
+            message: "This promo code has expired.",
+          });
+        }
+        
+        // Check redemption limit
+        if (promoCode.maxRedemptions && promoCode.currentRedemptions >= promoCode.maxRedemptions) {
+          return res.json({
+            valid: false,
+            message: "This promo code has reached its maximum number of uses.",
+          });
+        }
+        
+        // Promo codes give 100% off (free access for durationMonths)
+        const message = `${promoCode.name} - ${promoCode.durationMonths} months free access!`;
+
+        return res.json({
+          valid: true,
+          promoCodeId: promoCode.id,
+          codeType: 'promo',
+          percentOff: 100, // Promo codes are always 100% off
+          durationMonths: promoCode.durationMonths,
+          message,
+        });
+      }
+      
+      // Not found in either table
       return res.json({
-        valid: true,
-        discountCodeId: discount.id,
-        percentOff: discount.percentOff ? Number(discount.percentOff) : undefined,
-        amountOff: discount.amountOff ? Number(discount.amountOff) : undefined,
-        message,
+        valid: false,
+        message: "Invalid discount code. Please check and try again.",
       });
     } catch (error) {
       console.error('Discount validation error:', error);

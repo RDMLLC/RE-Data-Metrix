@@ -88,7 +88,9 @@ import {
   type InsertReferralPartner,
   marketingPixels as marketingPixelsTable,
   type MarketingPixel,
-  type InsertMarketingPixel
+  type InsertMarketingPixel,
+  promoCodes as promoCodesTable,
+  type PromoCode
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -414,6 +416,23 @@ export interface IStorage {
     startAt: Date | null;
     endAt: Date | null;
     isActive: boolean;
+    createdBy: string | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  } | undefined>;
+  
+  getPromoCodeByCode(code: string): Promise<{
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    type: string;
+    durationMonths: number;
+    maxRedemptions: number | null;
+    currentRedemptions: number;
+    isActive: boolean;
+    startsAt: Date | null;
+    expiresAt: Date | null;
     createdBy: string | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -2500,6 +2519,11 @@ export class DatabaseStorage implements IStorage {
 
   async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
     const result = await db.select().from(discountCodesTable).where(eq(discountCodesTable.code, code.toUpperCase()));
+    return result[0];
+  }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | undefined> {
+    const result = await db.select().from(promoCodesTable).where(eq(promoCodesTable.code, code.toUpperCase()));
     return result[0];
   }
 

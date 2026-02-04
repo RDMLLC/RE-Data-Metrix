@@ -67,8 +67,8 @@ interface OrderSummaryProps {
   showButton: boolean;
   selectedPlan: "free" | "monthly" | "annual";
   setSelectedPlan: (plan: "free" | "monthly" | "annual") => void;
-  appliedDiscount: { code: string; percentOff: number; amountOff: number } | null;
-  setAppliedDiscount: (discount: { code: string; percentOff: number; amountOff: number } | null) => void;
+  appliedDiscount: { code: string; percentOff: number; amountOff: number; codeType?: string; promoCodeId?: string; durationMonths?: number } | null;
+  setAppliedDiscount: (discount: { code: string; percentOff: number; amountOff: number; codeType?: string; promoCodeId?: string; durationMonths?: number } | null) => void;
   discountCode: string;
   setDiscountCode: (code: string) => void;
   isValidatingDiscount: boolean;
@@ -323,7 +323,7 @@ export default function Checkout() {
   const initialPlan = urlPlan === "monthly" ? "monthly" : urlPlan === "free" ? "free" : "annual";
   const [selectedPlan, setSelectedPlan] = useState<"free" | "monthly" | "annual">(initialPlan);
   const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number } | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number; codeType?: string; promoCodeId?: string; durationMonths?: number } | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   
   // Comp code state
@@ -365,13 +365,16 @@ export default function Checkout() {
       });
       return await response.json();
     },
-    onSuccess: (data: { valid: boolean; percentOff?: number; amountOff?: number; message?: string }) => {
+    onSuccess: (data: { valid: boolean; percentOff?: number; amountOff?: number; message?: string; codeType?: string; promoCodeId?: string; durationMonths?: number }) => {
       setIsValidatingDiscount(false);
       if (data.valid) {
         setAppliedDiscount({
           code: discountCode.toUpperCase(),
           percentOff: data.percentOff || 0,
           amountOff: data.amountOff || 0,
+          codeType: data.codeType,
+          promoCodeId: data.promoCodeId,
+          durationMonths: data.durationMonths,
         });
         toast({
           title: "Discount Applied!",
@@ -563,6 +566,8 @@ export default function Checkout() {
             fullName: data.fullName,
             discountCode: appliedDiscount.code,
             selectedPlan,
+            codeType: appliedDiscount.codeType,
+            promoCodeId: appliedDiscount.promoCodeId,
           }),
         });
 
