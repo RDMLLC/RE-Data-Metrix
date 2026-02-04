@@ -251,9 +251,22 @@ export default function CompReportPdf({
           </div>
 
           {/* Title */}
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
             Comp Report
           </h1>
+
+          {/* Beta Notice */}
+          <div style={{ 
+            backgroundColor: '#fef3c7', 
+            border: '1px solid #f59e0b', 
+            borderRadius: '6px', 
+            padding: '10px 14px', 
+            marginBottom: '16px',
+            fontSize: '11px',
+            color: '#92400e',
+          }}>
+            This ARV calculator is in beta. We are working to refine it. Thank you for your patience and understanding.
+          </div>
 
           {/* Subject Property Card */}
           <div style={{ 
