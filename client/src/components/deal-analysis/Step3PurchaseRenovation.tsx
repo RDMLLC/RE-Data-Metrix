@@ -955,6 +955,10 @@ export default function Step3PurchaseRenovation({
             <Collapsible open={showArvHelper} onOpenChange={setShowArvHelper}>
               <CollapsibleContent className="px-6 pb-4">
                 <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                  {/* Beta Notice */}
+                  <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                    This ARV calculator is in beta. We are working to refine it. Thank you for your patience and understanding.
+                  </div>
                   <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div className="space-y-2">
                       <h4 className="font-semibold text-sm">Find Comparable Sales</h4>
