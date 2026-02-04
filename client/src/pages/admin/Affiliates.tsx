@@ -262,6 +262,13 @@ export default function Affiliates() {
       });
       if (!response.ok) {
         const error = await response.json();
+        // Show detailed validation errors if available
+        if (error.details) {
+          const fieldErrors = Object.entries(error.details)
+            .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+            .join('\n');
+          throw new Error(fieldErrors || error.error || "Failed to create affiliate");
+        }
         throw new Error(error.error || "Failed to create affiliate");
       }
       return response.json();
@@ -306,6 +313,13 @@ export default function Affiliates() {
       });
       if (!response.ok) {
         const error = await response.json();
+        // Show detailed validation errors if available
+        if (error.details) {
+          const fieldErrors = Object.entries(error.details)
+            .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+            .join('\n');
+          throw new Error(fieldErrors || error.error || "Failed to update affiliate");
+        }
         throw new Error(error.error || "Failed to update affiliate");
       }
       return response.json();
