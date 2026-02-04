@@ -1418,22 +1418,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // No verification required - log in the user via passport
       const userForSession = { 
         id: newUser.id, 
-        role: newUser.role 
+        role: newUser.role,
+        userType: 'user'
       };
+      
       req.login(userForSession as any, (err) => {
         if (err) {
           console.error('[FREE-CHECKOUT] Login error:', err);
+          return res.status(500).json({ error: "Failed to log in after registration" });
         }
-      });
-
-      res.json({
-        success: true,
-        user: {
-          id: newUser.id,
-          username: newUser.username,
-          email: newUser.email,
-          subscriptionStatus: newUser.subscriptionStatus,
-        },
+        
+        console.log('[FREE-CHECKOUT] User logged in successfully:', newUser.id);
+        
+        res.json({
+          success: true,
+          user: {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            subscriptionStatus: newUser.subscriptionStatus,
+          },
+        });
       });
     } catch (error: any) {
       console.error('Free checkout with discount error:', error);
