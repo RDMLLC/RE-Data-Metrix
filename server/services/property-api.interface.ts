@@ -18,6 +18,7 @@ export interface PropertyData {
   zillowRentEstimate?: number | null;
   lastSalePrice?: number;
   lastSaleDate?: string;
+  listPrice?: number; // Current listing price for active/pending properties
   imageUrl?: string;
   hoaFees?: number;
   latitude?: number;

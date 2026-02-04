@@ -40,7 +40,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Plus, X, Clock } from "lucide-react";
+import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp, Search, Loader2, Home, MapPin, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Plus, X, Clock, Pencil } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -157,6 +165,13 @@ export default function Step3PurchaseRenovation({
   const [pendingProperties, setPendingProperties] = useState<SoldPropertyComp[]>([]);
   const [isSearchingPending, setIsSearchingPending] = useState(false);
   const [showPendingProperties, setShowPendingProperties] = useState(false);
+  
+  // Comp editing state
+  const [editingCompIndex, setEditingCompIndex] = useState<number | null>(null);
+  const [editFormValues, setEditFormValues] = useState<{
+    salePrice: string;
+    propertyType: string;
+  }>({ salePrice: "", propertyType: "" });
   
   // Comps sorting state
   type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
@@ -651,6 +666,60 @@ export default function Step3PurchaseRenovation({
     }
   };
 
+  // Open edit dialog for a comp
+  const openEditDialog = (index: number) => {
+    if (!compsData) return;
+    const comp = compsData.comps[index];
+    setEditFormValues({
+      salePrice: comp.salePrice.toString(),
+      propertyType: comp.propertyType || "",
+    });
+    setEditingCompIndex(index);
+  };
+
+  // Save edited comp values
+  const saveCompEdit = () => {
+    if (editingCompIndex === null || !compsData) return;
+    
+    const newPrice = parseFloat(editFormValues.salePrice.replace(/[^0-9.]/g, ""));
+    if (isNaN(newPrice) || newPrice <= 0) {
+      toast({
+        title: "Invalid Price",
+        description: "Please enter a valid price.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const comp = compsData.comps[editingCompIndex];
+    // Guard against missing/zero sqft to prevent NaN/Infinity
+    const compSqft = comp.sqft && comp.sqft > 0 ? comp.sqft : 1;
+    const newPricePerSqft = Math.round(newPrice / compSqft);
+    
+    // Update the comp in compsData
+    setCompsData(prev => {
+      if (!prev) return prev;
+      const updatedComps = [...prev.comps];
+      updatedComps[editingCompIndex] = {
+        ...updatedComps[editingCompIndex],
+        salePrice: newPrice,
+        pricePerSqft: newPricePerSqft,
+        propertyType: editFormValues.propertyType || updatedComps[editingCompIndex].propertyType,
+      };
+      return {
+        ...prev,
+        comps: updatedComps,
+      };
+    });
+    
+    toast({
+      title: "Comp Updated",
+      description: `${comp.address} has been updated.`,
+    });
+    
+    setEditingCompIndex(null);
+  };
+
   // Sync ARV from form when it changes (only if calc hasn't been customized)
   useEffect(() => {
     if (arv > 0 && calcArv === 0) {
@@ -1096,21 +1165,6 @@ export default function Step3PurchaseRenovation({
                         <Plus className="h-4 w-4 mr-1" />
                         Add Comp
                       </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={searchPendingProperties}
-                        disabled={isSearchingPending || !city || !state}
-                        data-testid="button-add-pending"
-                      >
-                        {isSearchingPending ? (
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        ) : (
-                          <Clock className="h-4 w-4 mr-1" />
-                        )}
-                        Add Pending
-                      </Button>
                     </div>
                   </div>
 
@@ -1437,52 +1491,71 @@ export default function Step3PurchaseRenovation({
                               {expandedCompIndex === originalIndex && (
                                 <TableRow key={`${originalIndex}-details`}>
                                   <TableCell colSpan={9} className="bg-muted/50 p-4">
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                                      <div>
-                                        <span className="text-muted-foreground">{(comp as any).isPending ? 'Status:' : 'Sale Date:'}</span>
-                                        <div className="font-medium">
-                                          {(comp as any).isPending ? (
-                                            <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700">
-                                              <Clock className="h-3 w-3 mr-1" />
-                                              Pending (List Price)
-                                            </Badge>
-                                          ) : (
-                                            formatDate(comp.saleDate)
-                                          )}
+                                    <div className="flex items-start justify-between gap-4">
+                                      {/* Property Details */}
+                                      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                                        <div>
+                                          <span className="text-muted-foreground">{(comp as any).isPending ? 'Status:' : 'Sale Date:'}</span>
+                                          <div className="font-medium">
+                                            {(comp as any).isPending ? (
+                                              <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700">
+                                                <Clock className="h-3 w-3 mr-1" />
+                                                Pending (List Price)
+                                              </Badge>
+                                            ) : (
+                                              formatDate(comp.saleDate)
+                                            )}
+                                          </div>
                                         </div>
+                                        {comp.yearBuilt && (
+                                          <div>
+                                            <span className="text-muted-foreground">Year Built:</span>
+                                            <div className="font-medium">{comp.yearBuilt}</div>
+                                          </div>
+                                        )}
+                                        {comp.lotSize && (
+                                          <div>
+                                            <span className="text-muted-foreground">Lot Size:</span>
+                                            <div className="font-medium">{comp.lotSize.toLocaleString()} sqft</div>
+                                          </div>
+                                        )}
+                                        {comp.propertyType && (
+                                          <div>
+                                            <span className="text-muted-foreground">Type:</span>
+                                            <div className="font-medium">{comp.propertyType}</div>
+                                          </div>
+                                        )}
                                       </div>
-                                      {comp.yearBuilt && (
-                                        <div>
-                                          <span className="text-muted-foreground">Year Built:</span>
-                                          <div className="font-medium">{comp.yearBuilt}</div>
+                                      {/* Actions - Always on the right */}
+                                      <div className="flex items-center gap-3 flex-shrink-0">
+                                        <div className="text-sm">
+                                          <span className="text-muted-foreground">View on Zillow:</span>
+                                          <div className="font-medium">
+                                            <a 
+                                              href={`https://www.zillow.com/homes/${encodeURIComponent(`${comp.address} ${comp.city} ${comp.state}`.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, ''))}_rb/`}
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              className="text-primary hover:underline inline-flex items-center gap-1"
+                                              data-testid={`link-comp-zillow-${originalIndex}`}
+                                            >
+                                              View Property
+                                              <ExternalLink className="h-3 w-3" />
+                                            </a>
+                                          </div>
                                         </div>
-                                      )}
-                                      {comp.lotSize && (
-                                        <div>
-                                          <span className="text-muted-foreground">Lot Size:</span>
-                                          <div className="font-medium">{comp.lotSize.toLocaleString()} sqft</div>
-                                        </div>
-                                      )}
-                                      {comp.propertyType && (
-                                        <div>
-                                          <span className="text-muted-foreground">Type:</span>
-                                          <div className="font-medium">{comp.propertyType}</div>
-                                        </div>
-                                      )}
-                                      <div>
-                                        <span className="text-muted-foreground">View on Zillow:</span>
-                                        <div className="font-medium">
-                                          <a 
-                                            href={`https://www.zillow.com/homes/${encodeURIComponent(`${comp.address} ${comp.city} ${comp.state}`.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, ''))}_rb/`}
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="text-primary hover:underline inline-flex items-center gap-1"
-                                            data-testid={`link-comp-zillow-${originalIndex}`}
-                                          >
-                                            View Property
-                                            <ExternalLink className="h-3 w-3" />
-                                          </a>
-                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEditDialog(originalIndex);
+                                          }}
+                                          data-testid={`button-edit-comp-${originalIndex}`}
+                                        >
+                                          <Pencil className="h-3 w-3 mr-1" />
+                                          Edit
+                                        </Button>
                                       </div>
                                     </div>
                                   </TableCell>
@@ -1934,6 +2007,66 @@ export default function Step3PurchaseRenovation({
         </form>
       </Form>
       
+      {/* Edit Comp Dialog */}
+      <Dialog open={editingCompIndex !== null} onOpenChange={(open) => !open && setEditingCompIndex(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Comparable</DialogTitle>
+            <DialogDescription>
+              Correct the price or property type if the data is inaccurate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-price">Sale Price</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="edit-price"
+                  type="text"
+                  value={editFormValues.salePrice}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, "");
+                    setEditFormValues(prev => ({ ...prev, salePrice: value }));
+                  }}
+                  className="pl-9"
+                  placeholder="Enter price"
+                  data-testid="input-edit-comp-price"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-property-type">Property Type</Label>
+              <Select
+                value={editFormValues.propertyType}
+                onValueChange={(value) => setEditFormValues(prev => ({ ...prev, propertyType: value }))}
+              >
+                <SelectTrigger id="edit-property-type" data-testid="select-edit-comp-property-type">
+                  <SelectValue placeholder="Select property type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single Family">Single Family</SelectItem>
+                  <SelectItem value="Townhouse">Townhouse</SelectItem>
+                  <SelectItem value="Condo">Condo</SelectItem>
+                  <SelectItem value="Multi-Family">Multi-Family</SelectItem>
+                  <SelectItem value="Manufactured">Manufactured</SelectItem>
+                  <SelectItem value="Land">Land</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditingCompIndex(null)} data-testid="button-cancel-edit-comp">
+              Cancel
+            </Button>
+            <Button type="button" onClick={saveCompEdit} data-testid="button-save-edit-comp">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ArvQuotaExhaustedModal
         open={showArvQuotaModal}
         onOpenChange={setShowArvQuotaModal}

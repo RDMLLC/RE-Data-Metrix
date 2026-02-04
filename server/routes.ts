@@ -7715,14 +7715,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get most recent sale from property data
-      let salePrice = propertyData.lastSalePrice;
+      // Get price - prioritize: listPrice (for active/pending) > lastSalePrice (for sold) > estimatedValue (fallback)
+      // For active/pending listings, listPrice is the actual asking price
+      // For sold properties, lastSalePrice is the recorded sale price
+      // estimatedValue (Zestimate) is only used as last resort
+      let salePrice = propertyData.listPrice || propertyData.lastSalePrice;
       let saleDate = propertyData.lastSaleDate;
       
-      // Fall back to estimated value if no sale data
+      // If we have a list price but no sale date, this is an active/pending listing
+      if (propertyData.listPrice && !propertyData.lastSaleDate) {
+        saleDate = new Date().toISOString().split('T')[0]; // Use today's date
+      }
+      
+      // Fall back to estimated value only if no list price or sale price available
       if (!salePrice && propertyData.estimatedValue) {
         salePrice = propertyData.estimatedValue;
         saleDate = new Date().toISOString().split('T')[0]; // Use today's date
+        console.log(`[Comp From URL] Warning: Using Zestimate ($${salePrice}) as no list/sale price available`);
       }
 
       if (!salePrice) {
@@ -7730,6 +7739,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: "Could not determine property sale price from this URL." 
         });
       }
+      
+      console.log(`[Comp From URL] Price sources - listPrice: $${propertyData.listPrice}, lastSalePrice: $${propertyData.lastSalePrice}, estimatedValue: $${propertyData.estimatedValue}, using: $${salePrice}`);
 
       const sqft = propertyData.sqft || 1500;
       const pricePerSqft = Math.round(salePrice / sqft);

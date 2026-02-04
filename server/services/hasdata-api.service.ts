@@ -284,38 +284,38 @@ export class HasDataAPIService implements IPropertyAPIService {
     return isNaN(parsed) ? undefined : parsed;
   }
 
-  // Normalize property type from API values to form enum values
+  // Normalize property type from API values to human-readable display values
   private normalizePropertyType(rawType: string | undefined): string | undefined {
     if (!rawType) return undefined;
     
     const normalized = rawType.toLowerCase().trim();
     
-    // Map common API values to form enum values
+    // Map common API values to human-readable display values
+    if (normalized.includes('townhouse') || normalized.includes('town house') || normalized.includes('townhome')) {
+      return 'Townhouse';
+    }
     if (normalized.includes('single') && normalized.includes('family')) {
-      return 'SINGLE_FAMILY';
+      return 'Single Family';
     }
     if (normalized.includes('condo') || normalized.includes('co-op') || normalized.includes('coop')) {
-      return 'CONDO';
-    }
-    if (normalized.includes('townhouse') || normalized.includes('town house') || normalized.includes('townhome')) {
-      return 'TOWNHOUSE';
+      return 'Condo';
     }
     if (normalized.includes('multi') && normalized.includes('family')) {
-      return 'MULTI_FAMILY';
+      return 'Multi-Family';
     }
     if (normalized.includes('apartment')) {
-      return 'APARTMENT';
+      return 'Apartment';
     }
     if (normalized.includes('manufactured') || normalized.includes('mobile')) {
-      return 'MANUFACTURED';
+      return 'Manufactured';
     }
     if (normalized.includes('lot') || normalized.includes('land')) {
-      return 'LOT';
+      return 'Land';
     }
     
-    // Return undefined if no match - let user select manually
-    console.log(`Unknown property type: "${rawType}" - user will need to select manually`);
-    return undefined;
+    // Return the original value if no match (let user edit if needed)
+    console.log(`Unknown property type: "${rawType}" - returning as-is`);
+    return rawType;
   }
 
   private transformRedfinResponse(data: any): PropertyData {
@@ -635,6 +635,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
+      listPrice: this.parseNumber(property.price || property.listPrice), // Current listing price for active/pending
       imageUrl,
       hoaFees,
       latitude: this.parseNumber(property.latitude),
