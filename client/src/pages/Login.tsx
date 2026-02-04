@@ -304,13 +304,13 @@ export default function Login() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Get access to deal analysis, lender comparisons, and investment tools.
                   </p>
-                  <Link href="/checkout">
+                  <Link href="/pricing">
                     <Button
                       className="w-full bg-emerald-600 hover:bg-emerald-700"
                       size="sm"
                       data-testid="button-new-account"
                     >
-                      Get Started
+                      View Plans
                     </Button>
                   </Link>
                 </CardContent>

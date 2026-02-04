@@ -28,8 +28,8 @@ import {
 } from "@/components/ui/form";
 import { TermsModal } from "@/components/TermsModal";
 
-const MONTHLY_PRICE = 15;
-const ANNUAL_PRICE = 150;
+const MONTHLY_PRICE = 25;
+const ANNUAL_PRICE = 250;
 const ANNUAL_MONTHLY_EQUIVALENT = (ANNUAL_PRICE / 12).toFixed(2);
 const ANNUAL_SAVINGS = (MONTHLY_PRICE * 12) - ANNUAL_PRICE;
 
