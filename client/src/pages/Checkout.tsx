@@ -554,7 +554,9 @@ export default function Checkout() {
       }
 
       // For 100% discount codes, bypass Stripe and register with premium access directly
+      console.log('[CHECKOUT DEBUG] finalPrice:', finalPrice, 'appliedDiscount:', appliedDiscount);
       if (finalPrice === 0 && appliedDiscount) {
+        console.log('[CHECKOUT DEBUG] Using free-with-discount endpoint (100% off)');
         const response = await fetch("/api/subscription/checkout/free-with-discount", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -598,6 +600,7 @@ export default function Checkout() {
       }
 
       // For paid plans, proceed with Stripe checkout
+      console.log('[CHECKOUT DEBUG] Proceeding with Stripe checkout - finalPrice:', finalPrice);
       const priceId = selectedPlan === "monthly" ? stripePrices.monthly : stripePrices.annual;
       if (!priceId) {
         toast({
