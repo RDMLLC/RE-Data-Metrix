@@ -128,7 +128,12 @@ export default function Navigation() {
               <img src={logoImg} alt="RE Data Metrix" className="h-28 w-28" />
               <span className="font-bold text-4xl text-primary">RE Data Metrix<sup className="text-lg">™</sup></span>
             </Link>
-            <div className="flex-1 flex justify-end">
+            <div className="flex-1 flex justify-end gap-2">
+              <Link href="/beta-signup" data-testid="link-header-beta">
+                <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                  Join BETA
+                </Button>
+              </Link>
               <Link href="/webinar" data-testid="link-header-webinar">
                 <Button variant="default" className="bg-accent text-accent-foreground">
                   <Video className="h-4 w-4 mr-1" />

@@ -86,6 +86,7 @@ import CheckoutComplete from "@/pages/CheckoutComplete";
 import WholesaleCalculator from "@/pages/WholesaleCalculator";
 import Webinar from "@/pages/Webinar";
 import WebinarRsvpThankYou from "@/pages/WebinarRsvpThankYou";
+import BetaSignup from "@/pages/BetaSignup";
 import MarketingPixelLoader from "@/components/MarketingPixelLoader";
 
 function Router() {
@@ -168,6 +169,7 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/complete" component={CheckoutComplete} />
+      <Route path="/beta-signup" component={BetaSignup} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/disclaimer" component={Disclaimer} />
