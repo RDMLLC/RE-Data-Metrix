@@ -20,6 +20,10 @@ interface SoldPropertyComp {
   daysOnMarket?: number;
   isManuallyAdded?: boolean;
   isPending?: boolean;
+  lotSize?: number;
+  hasPool?: boolean;
+  hasGarage?: boolean;
+  imageUrl?: string;
 }
 
 interface CompReportPdfProps {
@@ -31,6 +35,12 @@ interface CompReportPdfProps {
   subjectBaths: number;
   subjectSqft: number;
   subjectYearBuilt?: number;
+  subjectLotSize?: number;
+  subjectLastSoldPrice?: number;
+  subjectLastSoldDate?: string;
+  subjectHasPool?: boolean;
+  subjectHasGarage?: boolean;
+  subjectImageUrl?: string;
   suggestedArv: number | null;
   avgPricePerSqft: number | null;
   selectedComps: SoldPropertyComp[];
@@ -49,7 +59,6 @@ function formatDate(dateString: string): string {
   if (!dateString) return 'N/A';
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  // Parse MM/DD/YYYY format without timezone conversion
   const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (usMatch) {
     const month = parseInt(usMatch[1], 10);
@@ -58,7 +67,6 @@ function formatDate(dateString: string): string {
     return `${months[month - 1]} ${day}, ${year}`;
   }
   
-  // Parse ISO format (YYYY-MM-DD) without timezone conversion
   const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
     const year = parseInt(isoMatch[1], 10);
@@ -67,9 +75,47 @@ function formatDate(dateString: string): string {
     return `${months[month - 1]} ${day}, ${year}`;
   }
   
-  // Fallback
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatShortDate(dateString: string): string {
+  if (!dateString) return 'N/A';
+  
+  const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usMatch) {
+    return `${usMatch[1].padStart(2, '0')}/${usMatch[2].padStart(2, '0')}/${usMatch[3]}`;
+  }
+  
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[2]}/${isoMatch[3]}/${isoMatch[1]}`;
+  }
+  
+  return dateString;
+}
+
+function calculateMonthsSinceSale(dateString: string): number {
+  if (!dateString) return 0;
+  
+  let saleDate: Date;
+  const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usMatch) {
+    saleDate = new Date(parseInt(usMatch[3]), parseInt(usMatch[1]) - 1, parseInt(usMatch[2]));
+  } else {
+    saleDate = new Date(dateString);
+  }
+  
+  const now = new Date();
+  const months = (now.getFullYear() - saleDate.getFullYear()) * 12 + (now.getMonth() - saleDate.getMonth());
+  return Math.max(0, months);
+}
+
+function calculateAdjustment(comp: SoldPropertyComp, subjectSqft: number): number {
+  if (!comp.sqft || !subjectSqft) return 0;
+  const sqftDiff = subjectSqft - comp.sqft;
+  const pricePerSqft = comp.pricePerSqft || (comp.salePrice / comp.sqft);
+  return Math.round(sqftDiff * pricePerSqft);
 }
 
 export default function CompReportPdf({
@@ -81,6 +127,12 @@ export default function CompReportPdf({
   subjectBaths,
   subjectSqft,
   subjectYearBuilt,
+  subjectLotSize,
+  subjectLastSoldPrice,
+  subjectLastSoldDate,
+  subjectHasPool,
+  subjectHasGarage,
+  subjectImageUrl,
   suggestedArv,
   avgPricePerSqft,
   selectedComps,
@@ -91,7 +143,7 @@ export default function CompReportPdf({
   const { toPDF, targetRef } = usePDF({
     filename: `comp-report-${safeAddress.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`,
     page: {
-      margin: 20,
+      margin: 15,
       format: 'letter',
       orientation: 'portrait',
     },
@@ -110,11 +162,50 @@ export default function CompReportPdf({
     setIsGenerating(false);
   };
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  // Calculate stats
+  const avgSqft = selectedComps.length > 0 
+    ? Math.round(selectedComps.reduce((sum, c) => sum + (c.sqft || 0), 0) / selectedComps.length)
+    : 0;
+  
+  const avgBeds = selectedComps.length > 0
+    ? (selectedComps.reduce((sum, c) => sum + (c.bedrooms || 0), 0) / selectedComps.length).toFixed(1)
+    : '0';
+  
+  const avgBaths = selectedComps.length > 0
+    ? (selectedComps.reduce((sum, c) => sum + (c.bathrooms || 0), 0) / selectedComps.length).toFixed(1)
+    : '0';
+  
+  const avgYearBuilt = selectedComps.length > 0
+    ? Math.round(selectedComps.filter(c => c.yearBuilt).reduce((sum, c) => sum + (c.yearBuilt || 0), 0) / selectedComps.filter(c => c.yearBuilt).length) || 0
+    : 0;
+  
+  const compsWithDistance = selectedComps.filter(c => c.distanceFromSubject !== undefined && c.distanceFromSubject !== null);
+  const avgDistance = compsWithDistance.length > 0
+    ? (compsWithDistance.reduce((sum, c) => sum + (c.distanceFromSubject || 0), 0) / compsWithDistance.length).toFixed(1)
+    : null;
+  
+  const avgMonthsSinceSale = selectedComps.length > 0
+    ? Math.round(selectedComps.reduce((sum, c) => sum + calculateMonthsSinceSale(c.saleDate), 0) / selectedComps.length)
+    : 0;
+
+  const avgLotSize = selectedComps.length > 0 && selectedComps.some(c => c.lotSize)
+    ? (selectedComps.filter(c => c.lotSize).reduce((sum, c) => sum + (c.lotSize || 0), 0) / selectedComps.filter(c => c.lotSize).length / 43560).toFixed(2)
+    : null;
+
+  // Calculate adjusted prices
+  const compsWithAdjustments = selectedComps.map(comp => ({
+    ...comp,
+    adjustment: calculateAdjustment(comp, subjectSqft),
+    adjustedPrice: comp.salePrice + calculateAdjustment(comp, subjectSqft),
+  }));
+
+  const avgAdjustedPrice = compsWithAdjustments.length > 0
+    ? Math.round(compsWithAdjustments.reduce((sum, c) => sum + c.adjustedPrice, 0) / compsWithAdjustments.length)
+    : 0;
+
+  // Calculate ARV range (±5% of suggested ARV)
+  const arvLow = suggestedArv ? Math.round(suggestedArv * 0.95) : null;
+  const arvHigh = suggestedArv ? Math.round(suggestedArv * 1.05) : null;
 
   return (
     <>
@@ -145,104 +236,126 @@ export default function CompReportPdf({
           ref={targetRef}
           style={{
             width: '8.5in',
-            padding: '0.5in',
+            padding: '0.4in',
             backgroundColor: 'white',
-            fontFamily: 'Arial, sans-serif',
-            color: '#1a1a2e',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            color: '#1f2937',
+            fontSize: '12px',
+            lineHeight: '1.4',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', borderBottom: '3px solid #1a1a2e', paddingBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <img src={logoPath} alt="RE Data Metrix" style={{ height: '48px', width: 'auto' }} />
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a2e' }}>RE Data Metrix™</div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>Comparable Sales Report</div>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <img src={logoPath} alt="RE Data Metrix" style={{ height: '36px', width: 'auto' }} />
+            <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>RE Data Metrix</span>
+          </div>
+
+          {/* Title */}
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+            Comp Report
+          </h1>
+
+          {/* Subject Property Card */}
+          <div style={{ 
+            display: 'flex', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '8px', 
+            marginBottom: '24px',
+            overflow: 'hidden',
+          }}>
+            <div style={{ flex: 1, padding: '16px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '4px' }}>
+                {subjectAddress}, {subjectCity}, {subjectState} {subjectZip}
+              </div>
+              {subjectLastSoldPrice && subjectLastSoldDate && (
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                  Last sold for {formatCurrency(subjectLastSoldPrice)} on {formatShortDate(subjectLastSoldDate)}
+                </div>
+              )}
+              <div style={{ fontSize: '14px', color: '#059669', fontWeight: '600', marginBottom: '8px' }}>
+                Estimated ARV {arvLow && arvHigh ? `${formatCurrency(arvLow)} - ${formatCurrency(arvHigh)}` : (suggestedArv ? formatCurrency(suggestedArv) : 'N/A')}
+              </div>
+              <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>
+                {subjectSqft?.toLocaleString()} sq ft
+              </div>
+              <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>
+                {subjectBeds} Bedrooms; {subjectBaths} Bathrooms
+              </div>
+              <div style={{ fontSize: '13px', color: '#374151' }}>
+                Garage: {subjectHasGarage === undefined ? 'N/A' : (subjectHasGarage ? 'Yes' : 'No')}; Pool: {subjectHasPool === undefined ? 'N/A' : (subjectHasPool ? 'Yes' : 'No')}
               </div>
             </div>
-            <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
-              <div>Report Date: {currentDate}</div>
-            </div>
+            {subjectImageUrl && (
+              <div style={{ width: '200px', height: '140px', overflow: 'hidden' }}>
+                <img 
+                  src={subjectImageUrl} 
+                  alt="Subject Property" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+            )}
           </div>
 
-          <div style={{ marginBottom: '24px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a1a2e', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Subject Property
-            </div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e', marginBottom: '8px' }}>
-              {subjectAddress}
-            </div>
-            <div style={{ fontSize: '14px', color: '#4b5563', marginBottom: '12px' }}>
-              {subjectCity}, {subjectState} {subjectZip}
-            </div>
-            <div style={{ display: 'flex', gap: '24px', fontSize: '13px' }}>
-              <span><strong>Beds:</strong> {subjectBeds}</span>
-              <span><strong>Baths:</strong> {subjectBaths}</span>
-              <span><strong>Sqft:</strong> {subjectSqft?.toLocaleString()}</span>
-              {subjectYearBuilt && <span><strong>Year Built:</strong> {subjectYearBuilt}</span>}
-            </div>
-          </div>
+          {/* Comps Section */}
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
+            Comps
+          </h2>
 
-          <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1a1a2e', color: 'white', padding: '16px', borderRadius: '8px' }}>
+          {/* Summary Metrics */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '20px', 
+            marginBottom: '16px',
+            borderBottom: '1px solid #e5e7eb',
+            paddingBottom: '16px',
+          }}>
             <div>
-              <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>Based on {selectedComps.length} Comparable Sale{selectedComps.length !== 1 ? 's' : ''}</div>
-              <div style={{ fontSize: '12px', opacity: 0.8 }}>
-                Weighted Avg: ${avgPricePerSqft?.toFixed(0)}/sqft × {subjectSqft?.toLocaleString()} sqft
-              </div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Avg Sale Price (Adjusted)</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{formatCurrency(avgAdjustedPrice)}</div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>Suggested ARV</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold' }}>
-                {suggestedArv ? formatCurrency(suggestedArv) : 'N/A'}
-              </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Avg Square Feet</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{avgSqft.toLocaleString()} sq ft</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Price Per Square Foot</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{avgPricePerSqft != null ? `$${avgPricePerSqft.toFixed(0)}/sq ft` : 'N/A'}</div>
             </div>
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a1a2e', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Comparable Properties
+          {/* Adjustments Table */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+              Adjustments
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f1f5f9' }}>
-                  <th style={{ padding: '10px 6px', textAlign: 'left', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Address</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sale Price</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sale Date</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>DOM</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'center', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Bed/Bath</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Sqft</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>$/Sqft</th>
-                  <th style={{ padding: '10px 6px', textAlign: 'right', borderBottom: '2px solid #1a1a2e', fontWeight: 'bold' }}>Dist</th>
+                <tr>
+                  <th style={{ padding: '8px 6px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Comp</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Original</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Adjustment</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Adjusted</th>
                 </tr>
               </thead>
               <tbody>
-                {selectedComps.map((comp, index) => (
-                  <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '10px 6px' }}>
-                      <div style={{ fontWeight: '500' }}>{comp.address}</div>
-                      <div style={{ fontSize: '10px', color: '#6b7280' }}>{comp.city}, {comp.state}</div>
+                {compsWithAdjustments.map((comp, index) => (
+                  <tr key={index}>
+                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.address.length > 28 ? comp.address.substring(0, 28) + '...' : comp.address}
                     </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'right', fontWeight: 'bold', color: '#1a1a2e' }}>
+                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
                       {formatCurrency(comp.salePrice)}
                     </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
-                      {comp.isPending ? (
-                        <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '500' }}>Pending</span>
-                      ) : formatDate(comp.saleDate)}
+                    <td style={{ 
+                      padding: '8px 6px', 
+                      textAlign: 'right', 
+                      borderBottom: '1px solid #f3f4f6',
+                      color: comp.adjustment >= 0 ? '#059669' : '#dc2626',
+                    }}>
+                      {comp.adjustment >= 0 ? '+' : ''}{formatCurrency(comp.adjustment)}
                     </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
-                      {comp.daysOnMarket ?? '—'}
-                    </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'center' }}>
-                      {comp.bedrooms}/{comp.bathrooms}
-                    </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'right' }}>
-                      {comp.sqft?.toLocaleString()}
-                    </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'right' }}>
-                      ${comp.pricePerSqft?.toFixed(0)}
-                    </td>
-                    <td style={{ padding: '10px 6px', textAlign: 'right' }}>
-                      {comp.distanceFromSubject ? `${comp.distanceFromSubject.toFixed(1)}` : '—'}
+                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600' }}>
+                      {formatCurrency(comp.adjustedPrice)}
                     </td>
                   </tr>
                 ))}
@@ -250,16 +363,98 @@ export default function CompReportPdf({
             </table>
           </div>
 
-          <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>
+          {/* Stats Section */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+              Stats
+            </div>
+            <div style={{ display: 'flex', gap: '40px' }}>
+              <div style={{ fontSize: '12px', color: '#374151' }}>
+                <div style={{ marginBottom: '4px' }}>Avg Beds: {avgBeds}</div>
+                <div style={{ marginBottom: '4px' }}>Avg Bathrooms: {avgBaths}</div>
+                {avgLotSize && <div style={{ marginBottom: '4px' }}>Avg Lot Size: {avgLotSize} acres</div>}
+                {avgYearBuilt > 0 && <div style={{ marginBottom: '4px' }}>Avg Year Built: {avgYearBuilt}</div>}
+                {avgDistance !== null && <div style={{ marginBottom: '4px' }}>Avg Distance: {avgDistance} miles</div>}
+                <div>Average Months Since Sale: {avgMonthsSinceSale}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Individual Comparable Properties Table */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+              Individual Comparable Properties
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <th style={{ padding: '8px 4px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Address</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Sale Price</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Sale Date</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Sq Ft</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Price/Sq Ft</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Bed</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Bath</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Year Built</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Distance</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Pool</th>
+                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Garage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedComps.map((comp, index) => (
+                  <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                    <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>
+                      <div>{comp.address.length > 22 ? comp.address.substring(0, 22) + '...' : comp.address}</div>
+                      <div style={{ fontSize: '9px', color: '#6b7280' }}>{comp.city}, {comp.state}</div>
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '500' }}>
+                      {formatCurrency(comp.salePrice)}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.isPending ? 'Pending' : formatShortDate(comp.saleDate)}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.sqft?.toLocaleString()}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.pricePerSqft != null ? `$${comp.pricePerSqft.toFixed(0)}` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.bedrooms}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.bathrooms}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.yearBuilt || '—'}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.distanceFromSubject ? `${comp.distanceFromSubject.toFixed(1)} mi` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.hasPool !== undefined ? (comp.hasPool ? 'Y' : 'N') : '—'}
+                    </td>
+                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.hasGarage !== undefined ? (comp.hasGarage ? 'Y' : 'N') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer */}
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
                 This comparable sales report was generated using RE Data Metrix™
               </div>
-              <div style={{ fontSize: '12px', color: '#1a1a2e', fontWeight: '500' }}>
+              <div style={{ fontSize: '12px', color: '#1f2937', fontWeight: '500' }}>
                 Get your free account at redatametrix.com
               </div>
             </div>
-            <div style={{ fontSize: '9px', color: '#9ca3af', textAlign: 'center' }}>
+            <div style={{ fontSize: '8px', color: '#9ca3af', textAlign: 'center' }}>
               Disclaimer: This report is for informational purposes only. Comparable sales data is based on publicly available records. 
               Always conduct your own due diligence and consult with qualified professionals before making investment decisions.
             </div>
