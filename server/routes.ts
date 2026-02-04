@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, compInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -1292,6 +1292,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid registration data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to start checkout" });
+    }
+  });
+
+  // Handle 100% discount checkout - bypass Stripe entirely
+  app.post("/api/subscription/checkout/free-with-discount", async (req, res) => {
+    try {
+      const { username, email, password, fullName, discountCode, selectedPlan } = req.body;
+
+      if (!username || !email || !password || !fullName || !discountCode || !selectedPlan) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      // Validate the discount code
+      const normalizedCode = discountCode.toUpperCase();
+      const discount = await storage.getDiscountCodeByCode(normalizedCode);
+      
+      if (!discount) {
+        return res.status(400).json({ error: "Invalid discount code" });
+      }
+
+      // Verify it's a 100% discount
+      if (Number(discount.percentOff) !== 100) {
+        return res.status(400).json({ error: "This endpoint is only for 100% discount codes" });
+      }
+
+      // Check if discount is still valid
+      if (!discount.isActive) {
+        return res.status(400).json({ error: "This discount code is no longer active" });
+      }
+
+      const now = new Date();
+      if (discount.startAt && now < discount.startAt) {
+        return res.status(400).json({ error: "This discount code is not yet active" });
+      }
+      if (discount.endAt && now > discount.endAt) {
+        return res.status(400).json({ error: "This discount code has expired" });
+      }
+
+      if (discount.maxRedemptions && discount.currentRedemptions >= discount.maxRedemptions) {
+        return res.status(400).json({ error: "This discount code has reached its maximum uses" });
+      }
+
+      // Check if email is already in use
+      const existingEmail = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.email}) = LOWER(${email})`)
+        .limit(1);
+
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ error: "Email already in use" });
+      }
+
+      // Check if username is already in use
+      const existingUsername = await db
+        .select()
+        .from(users)
+        .where(sql`LOWER(${users.username}) = LOWER(${username})`)
+        .limit(1);
+
+      if (existingUsername.length > 0) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+
+      // Hash password
+      const passwordHash = await hashPassword(password);
+
+      // Calculate subscription end date based on selected plan
+      const subscriptionEndDate = new Date();
+      if (selectedPlan === 'annual') {
+        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+      } else {
+        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+      }
+
+      // Create the user with premium access
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          username,
+          email,
+          password: passwordHash,
+          fullName,
+          role: 'user',
+          subscriptionStatus: 'active',
+          subscriptionPlan: selectedPlan,
+          subscriptionEndDate,
+          isEmailVerified: false,
+        })
+        .returning();
+
+      // Increment discount code redemption count
+      await db
+        .update(discountCodes)
+        .set({ 
+          currentRedemptions: (discount.currentRedemptions || 0) + 1 
+        })
+        .where(eq(discountCodes.id, discount.id));
+
+      console.log(`[FREE-CHECKOUT] User ${newUser.id} created with 100% discount code ${normalizedCode}`);
+
+      // Check if email verification is required
+      if (process.env.REQUIRE_EMAIL_VERIFICATION === 'true') {
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString('base64url');
+        const verificationExpiry = new Date();
+        verificationExpiry.setHours(verificationExpiry.getHours() + 24);
+
+        await db
+          .update(users)
+          .set({ verificationToken, verificationExpiry })
+          .where(eq(users.id, newUser.id));
+
+        // Send verification email
+        await emailService.sendVerificationEmail(email, username, verificationToken);
+
+        return res.json({
+          success: true,
+          requiresVerification: true,
+          message: "Account created! Please check your email to verify your account.",
+        });
+      }
+
+      // No verification required - log in the user via passport
+      const userForSession = { 
+        id: newUser.id, 
+        role: newUser.role 
+      };
+      req.login(userForSession as any, (err) => {
+        if (err) {
+          console.error('[FREE-CHECKOUT] Login error:', err);
+        }
+      });
+
+      res.json({
+        success: true,
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          subscriptionStatus: newUser.subscriptionStatus,
+        },
+      });
+    } catch (error: any) {
+      console.error('Free checkout with discount error:', error);
+      res.status(500).json({ error: "Failed to complete registration" });
     }
   });
 

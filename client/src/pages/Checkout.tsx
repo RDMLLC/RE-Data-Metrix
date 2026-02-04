@@ -550,6 +550,48 @@ export default function Checkout() {
         return;
       }
 
+      // For 100% discount codes, bypass Stripe and register with premium access directly
+      if (finalPrice === 0 && appliedDiscount) {
+        const response = await fetch("/api/subscription/checkout/free-with-discount", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            username: data.username,
+            email: data.email,
+            password: data.password,
+            fullName: data.fullName,
+            discountCode: appliedDiscount.code,
+            selectedPlan,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Registration failed");
+        }
+
+        // Check if email verification is required
+        if (result.requiresVerification) {
+          setJustRegistered(true);
+          trackCompleteRegistration();
+          toast({
+            title: "Account Created!",
+            description: "Please check your email to verify your account.",
+          });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          trackCompleteRegistration();
+          toast({
+            title: "Welcome to RE Data Metrix!",
+            description: "Your premium account has been activated with 100% discount.",
+          });
+          setLocation("/portal/dashboard");
+        }
+        return;
+      }
+
       // For paid plans, proceed with Stripe checkout
       const priceId = selectedPlan === "monthly" ? stripePrices.monthly : stripePrices.annual;
       if (!priceId) {
