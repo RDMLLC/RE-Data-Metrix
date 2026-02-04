@@ -231,27 +231,17 @@ export default function Pricing() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
-                    variant={billingCycle === "monthly" ? "default" : "outline"}
-                    disabled
-                    data-testid="button-get-started-monthly"
-                  >
-                    {isAuthenticated ? "Upgrade Now" : "Get Started"}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </CardFooter>
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 rounded-md pointer-events-auto">
-                  <Badge className="bg-primary text-primary-foreground mb-3 px-3 py-1" data-testid="badge-beta-monthly">
-                    Currently in Beta Testing
-                  </Badge>
-                  <Link href="/webinar">
-                    <Button size="sm" className="bg-accent text-accent-foreground" data-testid="button-join-webinar-monthly">
-                      <Video className="h-4 w-4 mr-2" />
-                      Join Next Webinar
+                  <Link href={isAuthenticated ? "/portal/upgrade" : "/checkout?plan=monthly"}>
+                    <Button 
+                      className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
+                      variant={billingCycle === "monthly" ? "default" : "outline"}
+                      data-testid="button-get-started-monthly"
+                    >
+                      {isAuthenticated ? "Upgrade Now" : "Get Started"}
+                      <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
-                </div>
+                </CardFooter>
               </div>
             </Card>
 
@@ -294,27 +284,17 @@ export default function Pricing() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
-                    variant={billingCycle === "annual" ? "default" : "outline"}
-                    disabled
-                    data-testid="button-get-started-annual"
-                  >
-                    {isAuthenticated ? "Upgrade Now" : "Get Started"}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </CardFooter>
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 rounded-md pointer-events-auto">
-                  <Badge className="bg-primary text-primary-foreground mb-3 px-3 py-1" data-testid="badge-beta-annual">
-                    Currently in Beta Testing
-                  </Badge>
-                  <Link href="/webinar">
-                    <Button size="sm" className="bg-accent text-accent-foreground" data-testid="button-join-webinar-annual">
-                      <Video className="h-4 w-4 mr-2" />
-                      Join Next Webinar
+                  <Link href={isAuthenticated ? "/portal/upgrade" : "/checkout?plan=annual"}>
+                    <Button 
+                      className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
+                      variant={billingCycle === "annual" ? "default" : "outline"}
+                      data-testid="button-get-started-annual"
+                    >
+                      {isAuthenticated ? "Upgrade Now" : "Get Started"}
+                      <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
-                </div>
+                </CardFooter>
               </div>
             </Card>
           </div>
