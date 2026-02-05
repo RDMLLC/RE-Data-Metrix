@@ -140,10 +140,15 @@ export default function WebinarRegistrations() {
     pending: registrations.filter(r => getRsvpStatus(r.rsvpStatus) === 'pending').length,
   };
 
+  // Only count attendance for past webinars - future webinars can't have attendance yet
+  const now = new Date();
+  const pastWebinarRegs = registrations.filter(r => !r.webinarDate || new Date(r.webinarDate) <= now);
+  const futureWebinarRegs = registrations.filter(r => r.webinarDate && new Date(r.webinarDate) > now);
+  
   const attendanceCounts = {
-    attended: registrations.filter(r => r.attended === true).length,
-    notAttended: registrations.filter(r => r.attended === false).length,
-    unmarked: registrations.filter(r => r.attended === null).length,
+    attended: pastWebinarRegs.filter(r => r.attended === true).length,
+    notAttended: pastWebinarRegs.filter(r => r.attended === false).length,
+    unmarked: pastWebinarRegs.filter(r => r.attended === null).length + futureWebinarRegs.length,
   };
 
   const webinarDates = Array.from(new Set(registrations.map(r => r.webinarDate).filter(Boolean)))
@@ -548,7 +553,24 @@ export default function WebinarRegistrations() {
     }
   };
 
-  const getAttendanceBadge = (attended: boolean | null, id: string) => {
+  const getAttendanceBadge = (attended: boolean | null, id: string, webinarDate: Date | string | null) => {
+    // Check if webinar is in the future - don't allow attendance marking for future events
+    const isFutureWebinar = webinarDate && new Date(webinarDate) > new Date();
+    
+    if (isFutureWebinar) {
+      // For future webinars, show "Upcoming" badge (not clickable)
+      return (
+        <Badge 
+          variant="outline"
+          className="text-muted-foreground"
+          data-testid={`badge-upcoming-${id}`}
+        >
+          <Clock className="h-3 w-3 mr-1" />
+          Upcoming
+        </Badge>
+      );
+    }
+    
     if (attended === true) {
       return (
         <Badge 
@@ -1354,7 +1376,7 @@ export default function WebinarRegistrations() {
                           : <span className="text-muted-foreground italic">Not set</span>}
                       </TableCell>
                       <TableCell>
-                        {getAttendanceBadge(reg.attended, reg.id)}
+                        {getAttendanceBadge(reg.attended, reg.id, reg.webinarDate)}
                       </TableCell>
                       <TableCell>
                         {getSubscriptionBadge(reg.subscriptionLevel, reg.id)}

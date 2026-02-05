@@ -4971,6 +4971,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to reset attendance for future webinars (fix incorrectly marked registrations)
+  app.post("/api/admin/webinar-registrations/reset-future-attendance", ensureAdmin, async (req, res) => {
+    try {
+      const allRegistrations = await storage.getWebinarRegistrations();
+      const now = new Date();
+      let reset = 0;
+      
+      for (const reg of allRegistrations) {
+        // If webinar is in the future and attendance is set (not null), reset it
+        if (reg.webinarDate && new Date(reg.webinarDate) > now && reg.attended !== null) {
+          await storage.updateWebinarRegistrationAttendance(reg.id, null);
+          reset++;
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Reset attendance for ${reset} future webinar registrations`,
+        reset
+      });
+    } catch (error) {
+      console.error('Reset future attendance error:', error);
+      res.status(500).json({ error: "Failed to reset future attendance" });
+    }
+  });
+
   // Admin endpoint to preview attendees who haven't signed up (for follow-up emails)
   app.get("/api/admin/webinar-registrations/attended-not-signed-up", ensureAdmin, async (req, res) => {
     try {
