@@ -1702,10 +1702,10 @@ END:VCALENDAR`;
             </div>
             
             <div style="text-align: center; margin: 28px 0;">
-              <a href="${baseUrl}/signup" class="btn-primary">Create Your Free Account</a>
+              <a href="${baseUrl}/beta-signup?code=${promoCode}" class="btn-primary">Create Your Free Account</a>
             </div>
             
-            <p>When you sign up, simply enter the promo code during registration to activate your 6-month free access. This gives you unlimited access to:</p>
+            <p>Click the button above or enter promo code <strong>${promoCode}</strong> during registration to activate your 6-month free access. This gives you unlimited access to:</p>
             
             <ul style="margin: 16px 0; padding-left: 20px;">
               <li>Deal Analysis Wizard for Fix & Flip and Rental properties</li>
@@ -1873,7 +1873,7 @@ END:VCALENDAR`;
             </div>
             
             <div style="text-align: center; margin: 28px 0;">
-              <a href="${baseUrl}/signup" class="btn-primary">Create Your FREE Account Now</a>
+              <a href="${baseUrl}/beta-signup?code=${promoCode}" class="btn-primary">Create Your FREE Account Now</a>
             </div>
             
             <p>With your free account, you'll get unlimited access to:</p>

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,9 +52,11 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function BetaSignup() {
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { toast } = useToast();
   const [promoCode, setPromoCode] = useState("");
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [codeFromUrl, setCodeFromUrl] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; message: string; codeType?: string; promoCodeId?: string; durationMonths?: number } | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -118,6 +120,18 @@ export default function BetaSignup() {
       });
     },
   });
+
+  // Auto-apply promo code from URL query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const codeParam = params.get("code");
+    if (codeParam && !appliedPromo && !codeFromUrl) {
+      setPromoCode(codeParam);
+      setCodeFromUrl(true);
+      setIsValidatingPromo(true);
+      validatePromoMutation.mutate(codeParam);
+    }
+  }, [searchString, appliedPromo, codeFromUrl]);
 
   const handleApplyPromo = () => {
     if (!promoCode.trim()) return;
