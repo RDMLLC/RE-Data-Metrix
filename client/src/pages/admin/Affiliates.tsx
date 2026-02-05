@@ -67,6 +67,7 @@ import {
   Check,
   Eye,
   EyeOff,
+  Link2,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
@@ -917,13 +918,48 @@ export default function Affiliates() {
 
               <div className="space-y-2">
                 <Label htmlFor="referralLink">Referral Link *</Label>
-                <Input
-                  id="referralLink"
-                  value={affiliateForm.referralLink}
-                  onChange={(e) => setAffiliateForm(prev => ({ ...prev, referralLink: e.target.value }))}
-                  placeholder="https://..."
-                  data-testid="input-referral-link"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="referralLink"
+                    value={affiliateForm.referralLink}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, referralLink: e.target.value }))}
+                    placeholder="https://..."
+                    className="flex-1"
+                    data-testid="input-referral-link"
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        data-testid="button-generate-referral-link"
+                        onClick={() => {
+                          const name = affiliateForm.name.trim();
+                          if (!name) {
+                            toast({ title: "Enter a name first", description: "The affiliate name is needed to generate a link.", variant: "destructive" });
+                            return;
+                          }
+                          const generatedSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                          const slugToUse = affiliateForm.slug || generatedSlug;
+                          const baseUrl = window.location.origin;
+                          setAffiliateForm(prev => ({
+                            ...prev,
+                            referralLink: `${baseUrl}/go/${slugToUse}`,
+                            slug: slugToUse,
+                          }));
+                          toast({ title: "Link generated", description: `Tracking link set to /go/${slugToUse}` });
+                        }}
+                      >
+                        <Link2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Generate custom tracking link</TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Paste the affiliate's referral URL, or click the link icon to generate a custom tracking link.
+                </p>
               </div>
 
               <div className="space-y-2">
