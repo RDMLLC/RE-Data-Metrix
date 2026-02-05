@@ -35,6 +35,8 @@ import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Disclaimer from "@/pages/Disclaimer";
 import AffiliateDisclosure from "@/pages/AffiliateDisclosure";
+import AffiliateDetail from "@/pages/AffiliateDetail";
+import AffiliateReport from "@/pages/AffiliateReport";
 import LenderDashboard from "@/pages/LenderDashboard";
 import LenderQuestionnaire from "@/pages/LenderQuestionnaire";
 import LenderLoanProducts from "@/pages/LenderLoanProducts";
@@ -172,6 +174,8 @@ function Router() {
       <Route path="/terms" component={Terms} />
       <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/affiliate-disclosure" component={AffiliateDisclosure} />
+      <Route path="/partners/:slug" component={AffiliateDetail} />
+      <Route path="/affiliate-report/:token" component={AffiliateReport} />
       <Route path="/lender-portal" component={LenderDashboard} />
       <Route path="/lender-dashboard" component={LenderDashboard} />
       <Route path="/lender-company-info" component={LenderCompanyInfo} />

@@ -1906,6 +1906,81 @@ END:VCALENDAR`;
       html: htmlContent,
     });
   }
+
+  async sendAffiliateClickNotification(
+    to: string,
+    affiliateName: string,
+    source: string,
+    referrer: string | null
+  ): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+
+    const sourceDisplay = source === 'redirect' ? 'External Link' : 
+                          source === 'website' ? 'RE Data Metrix Website' : source;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .info-box { background: #f0fdf4; border: 1px solid #22c55e; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .info-row { display: flex; margin: 8px 0; }
+          .info-label { font-weight: 600; width: 100px; color: #374151; }
+          .info-value { color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">New Referral Click!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">RE Data Metrix Affiliate Notification</p>
+          </div>
+          <div class="content">
+            <p>Hi there,</p>
+            
+            <p>Great news! Someone just clicked on your <strong>${affiliateName}</strong> referral link through RE Data Metrix.</p>
+            
+            <div class="info-box">
+              <p style="margin: 0 0 10px 0; font-weight: 600;">Click Details:</p>
+              <p style="margin: 5px 0;"><strong>Date:</strong> ${formattedDate}</p>
+              <p style="margin: 5px 0;"><strong>Source:</strong> ${sourceDisplay}</p>
+              ${referrer ? `<p style="margin: 5px 0;"><strong>Referrer:</strong> ${referrer}</p>` : ''}
+            </div>
+            
+            <p>This click has been recorded in our system. If this user signs up for your service, please ensure RE Data Metrix is credited for the referral.</p>
+            
+            <p style="margin-top: 24px;">Best regards,<br><strong>RE Data Metrix</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `New Referral Click - ${affiliateName}`,
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

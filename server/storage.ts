@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { 
   type User, 
   type InsertUser,
@@ -179,7 +180,16 @@ export interface IStorage {
   }>>;
   
   // Affiliate Clicks
-  trackAffiliateClick(userId: string | null, affiliateId: string, affiliateName: string, category: string): Promise<void>;
+  trackAffiliateClick(data: {
+    userId: string | null;
+    affiliateId: string;
+    affiliateName: string;
+    category: string;
+    source?: string;
+    referrer?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void>;
   getAffiliateClicksForAdmin(): Promise<Array<{
     id: string;
     userId: string | null;
@@ -188,6 +198,8 @@ export interface IStorage {
     affiliateId: string;
     affiliateName: string;
     category: string;
+    source: string | null;
+    referrer: string | null;
     createdAt: Date | null;
   }>>;
   getAffiliateClickStats(): Promise<Array<{
@@ -201,9 +213,18 @@ export interface IStorage {
   getAllAffiliates(): Promise<Affiliate[]>;
   getActiveAffiliates(): Promise<Affiliate[]>;
   getAffiliateById(id: string): Promise<Affiliate | undefined>;
+  getAffiliateBySlug(slug: string): Promise<Affiliate | undefined>;
+  getAffiliateByReportToken(token: string): Promise<Affiliate | undefined>;
   createAffiliate(data: InsertAffiliate): Promise<Affiliate>;
   updateAffiliate(id: string, data: Partial<InsertAffiliate>): Promise<Affiliate | undefined>;
   deleteAffiliate(id: string): Promise<boolean>;
+  generateAffiliateReportToken(id: string): Promise<string>;
+  getAffiliateClicksForAffiliate(affiliateId: string): Promise<Array<{
+    id: string;
+    source: string | null;
+    referrer: string | null;
+    createdAt: Date | null;
+  }>>;
   getAllAffiliateCategories(): Promise<AffiliateCategory[]>;
   upsertAffiliateCategory(data: InsertAffiliateCategory): Promise<AffiliateCategory>;
   deleteAffiliateCategory(id: string): Promise<boolean>;
@@ -961,7 +982,16 @@ export class MemStorage implements IStorage {
     throw new Error("Not implemented in MemStorage");
   }
 
-  async trackAffiliateClick(userId: string | null, affiliateId: string, affiliateName: string, category: string): Promise<void> {
+  async trackAffiliateClick(data: {
+    userId: string | null;
+    affiliateId: string;
+    affiliateName: string;
+    category: string;
+    source?: string;
+    referrer?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void> {
     throw new Error("Not implemented in MemStorage");
   }
 
@@ -973,6 +1003,29 @@ export class MemStorage implements IStorage {
     affiliateId: string;
     affiliateName: string;
     category: string;
+    source: string | null;
+    referrer: string | null;
+    createdAt: Date | null;
+  }>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAffiliateBySlug(slug: string): Promise<Affiliate | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAffiliateByReportToken(token: string): Promise<Affiliate | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async generateAffiliateReportToken(id: string): Promise<string> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
+  async getAffiliateClicksForAffiliate(affiliateId: string): Promise<Array<{
+    id: string;
+    source: string | null;
+    referrer: string | null;
     createdAt: Date | null;
   }>> {
     throw new Error("Not implemented in MemStorage");
@@ -1919,12 +1972,25 @@ export class DatabaseStorage implements IStorage {
     return users;
   }
 
-  async trackAffiliateClick(userId: string | null, affiliateId: string, affiliateName: string, category: string): Promise<void> {
+  async trackAffiliateClick(data: {
+    userId: string | null;
+    affiliateId: string;
+    affiliateName: string;
+    category: string;
+    source?: string;
+    referrer?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void> {
     await db.insert(affiliateClicksTable).values({
-      userId: userId || undefined,
-      affiliateId,
-      affiliateName,
-      category,
+      userId: data.userId || undefined,
+      affiliateId: data.affiliateId,
+      affiliateName: data.affiliateName,
+      category: data.category,
+      source: data.source || 'website',
+      referrer: data.referrer,
+      ipAddress: data.ipAddress,
+      userAgent: data.userAgent,
     });
   }
 
@@ -1936,6 +2002,8 @@ export class DatabaseStorage implements IStorage {
     affiliateId: string;
     affiliateName: string;
     category: string;
+    source: string | null;
+    referrer: string | null;
     createdAt: Date | null;
   }>> {
     const clicks = await db.select().from(affiliateClicksTable)
@@ -1962,6 +2030,8 @@ export class DatabaseStorage implements IStorage {
         affiliateId: click.affiliateId,
         affiliateName: click.affiliateName,
         category: click.category,
+        source: click.source,
+        referrer: click.referrer,
         createdAt: click.createdAt,
       };
     }));
@@ -2015,6 +2085,42 @@ export class DatabaseStorage implements IStorage {
   async getAffiliateById(id: string): Promise<Affiliate | undefined> {
     const result = await db.select().from(affiliatesTable).where(eq(affiliatesTable.id, id)).limit(1);
     return result[0];
+  }
+
+  async getAffiliateBySlug(slug: string): Promise<Affiliate | undefined> {
+    const result = await db.select().from(affiliatesTable).where(eq(affiliatesTable.slug, slug)).limit(1);
+    return result[0];
+  }
+
+  async getAffiliateByReportToken(token: string): Promise<Affiliate | undefined> {
+    const result = await db.select().from(affiliatesTable).where(eq(affiliatesTable.reportToken, token)).limit(1);
+    return result[0];
+  }
+
+  async generateAffiliateReportToken(id: string): Promise<string> {
+    const token = crypto.randomBytes(32).toString('hex');
+    await db.update(affiliatesTable)
+      .set({ reportToken: token, updatedAt: new Date() })
+      .where(eq(affiliatesTable.id, id));
+    return token;
+  }
+
+  async getAffiliateClicksForAffiliate(affiliateId: string): Promise<Array<{
+    id: string;
+    source: string | null;
+    referrer: string | null;
+    createdAt: Date | null;
+  }>> {
+    const result = await db.select({
+      id: affiliateClicksTable.id,
+      source: affiliateClicksTable.source,
+      referrer: affiliateClicksTable.referrer,
+      createdAt: affiliateClicksTable.createdAt,
+    })
+    .from(affiliateClicksTable)
+    .where(eq(affiliateClicksTable.affiliateId, affiliateId))
+    .orderBy(desc(affiliateClicksTable.createdAt));
+    return result;
   }
 
   async createAffiliate(data: InsertAffiliate): Promise<Affiliate> {

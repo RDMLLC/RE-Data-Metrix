@@ -106,6 +106,12 @@ interface AffiliateFormData {
   isActive: boolean;
   sortOrder: number;
   notes: string;
+  slug: string;
+  videoUrl: string;
+  detailedDescription: string;
+  exclusiveBenefits: string;
+  logoUrl: string;
+  notificationEmail: string;
 }
 
 interface CategoryFormData {
@@ -133,6 +139,12 @@ const emptyAffiliateForm: AffiliateFormData = {
   isActive: true,
   sortOrder: 0,
   notes: '',
+  slug: '',
+  videoUrl: '',
+  detailedDescription: '',
+  exclusiveBenefits: '',
+  logoUrl: '',
+  notificationEmail: '',
 };
 
 const emptyCategoryForm: CategoryFormData = {
@@ -258,6 +270,12 @@ export default function Affiliates() {
           isActive: data.isActive,
           sortOrder: data.sortOrder,
           notes: data.notes || null,
+          slug: data.slug || null,
+          videoUrl: data.videoUrl || null,
+          detailedDescription: data.detailedDescription || null,
+          exclusiveBenefits: data.exclusiveBenefits ? data.exclusiveBenefits.split('\n').filter(b => b.trim()) : [],
+          logoUrl: data.logoUrl || null,
+          notificationEmail: data.notificationEmail || null,
         }),
       });
       if (!response.ok) {
@@ -309,6 +327,12 @@ export default function Affiliates() {
           isActive: data.isActive,
           sortOrder: data.sortOrder,
           notes: data.notes || null,
+          slug: data.slug || null,
+          videoUrl: data.videoUrl || null,
+          detailedDescription: data.detailedDescription || null,
+          exclusiveBenefits: data.exclusiveBenefits ? data.exclusiveBenefits.split('\n').filter(b => b.trim()) : [],
+          logoUrl: data.logoUrl || null,
+          notificationEmail: data.notificationEmail || null,
         }),
       });
       if (!response.ok) {
@@ -447,6 +471,12 @@ export default function Affiliates() {
       isActive: affiliate.isActive,
       sortOrder: affiliate.sortOrder || 0,
       notes: affiliate.notes || '',
+      slug: affiliate.slug || '',
+      videoUrl: affiliate.videoUrl || '',
+      detailedDescription: affiliate.detailedDescription || '',
+      exclusiveBenefits: (affiliate.exclusiveBenefits || []).join('\n'),
+      logoUrl: affiliate.logoUrl || '',
+      notificationEmail: affiliate.notificationEmail || '',
     });
     setShowAffiliateDialog(true);
   };
@@ -1026,6 +1056,85 @@ export default function Affiliates() {
                     data-testid="switch-is-active"
                   />
                   <Label htmlFor="isActive">Active</Label>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium mb-4">Partner Page Settings</h4>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">URL Slug</Label>
+                    <Input
+                      id="slug"
+                      value={affiliateForm.slug}
+                      onChange={(e) => setAffiliateForm(prev => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
+                      placeholder="e.g. deal-machine"
+                      data-testid="input-slug"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {affiliateForm.slug && `URL: /partners/${affiliateForm.slug} and /go/${affiliateForm.slug}`}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="logoUrl">Logo URL</Label>
+                    <Input
+                      id="logoUrl"
+                      value={affiliateForm.logoUrl}
+                      onChange={(e) => setAffiliateForm(prev => ({ ...prev, logoUrl: e.target.value }))}
+                      placeholder="https://example.com/logo.png"
+                      data-testid="input-logo-url"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <Label htmlFor="videoUrl">Video URL (YouTube/Vimeo)</Label>
+                  <Input
+                    id="videoUrl"
+                    value={affiliateForm.videoUrl}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, videoUrl: e.target.value }))}
+                    placeholder="https://youtube.com/watch?v=..."
+                    data-testid="input-video-url"
+                  />
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <Label htmlFor="detailedDescription">Detailed Description</Label>
+                  <Textarea
+                    id="detailedDescription"
+                    value={affiliateForm.detailedDescription}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, detailedDescription: e.target.value }))}
+                    placeholder="Extended description for the partner detail page..."
+                    rows={4}
+                    data-testid="input-detailed-description"
+                  />
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <Label htmlFor="exclusiveBenefits">Exclusive Benefits (one per line)</Label>
+                  <Textarea
+                    id="exclusiveBenefits"
+                    value={affiliateForm.exclusiveBenefits}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, exclusiveBenefits: e.target.value }))}
+                    placeholder="Special discount code&#10;Extended trial period&#10;Priority support"
+                    rows={3}
+                    data-testid="input-exclusive-benefits"
+                  />
+                  <p className="text-xs text-muted-foreground">Special perks users get when signing up through RE Data Metrix</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notificationEmail">Notification Email</Label>
+                  <Input
+                    id="notificationEmail"
+                    type="email"
+                    value={affiliateForm.notificationEmail}
+                    onChange={(e) => setAffiliateForm(prev => ({ ...prev, notificationEmail: e.target.value }))}
+                    placeholder="affiliate@company.com"
+                    data-testid="input-notification-email"
+                  />
+                  <p className="text-xs text-muted-foreground">Receives email alerts when users click referral links</p>
                 </div>
               </div>
 

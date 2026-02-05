@@ -5654,6 +5654,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get affiliate by slug (public, for detail page)
+  app.get("/api/affiliates/by-slug/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const affiliate = await storage.getAffiliateBySlug(slug);
+      
+      if (!affiliate || !affiliate.isActive) {
+        return res.status(404).json({ error: "Affiliate not found" });
+      }
+
+      // Return public affiliate info (exclude sensitive fields)
+      const { loginUsername, loginPassword, portalUrl, reportToken, notificationEmail, ...publicInfo } = affiliate;
+      res.json(publicInfo);
+    } catch (error) {
+      console.error('Get affiliate by slug error:', error);
+      res.status(500).json({ error: "Failed to fetch affiliate" });
+    }
+  });
+
   // List affiliate categories (public, for Tool Finder)
   app.get("/api/affiliate-categories", async (req, res) => {
     try {
@@ -6627,19 +6646,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Track affiliate click (available to logged in users and guests)
   app.post("/api/affiliate-clicks", async (req, res) => {
     try {
-      const { affiliateId, affiliateName, category } = req.body;
+      const { affiliateId, affiliateName, category, source } = req.body;
       
       if (!affiliateId || !affiliateName || !category) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
       const userId = req.isAuthenticated() ? (req.user as User).id : null;
+      const referrer = req.get('referer') || null;
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      const userAgent = req.get('user-agent') || null;
       
-      await storage.trackAffiliateClick(userId, affiliateId, affiliateName, category);
+      await storage.trackAffiliateClick({
+        userId,
+        affiliateId,
+        affiliateName,
+        category,
+        source: source || 'website',
+        referrer,
+        ipAddress,
+        userAgent,
+      });
+
+      // Send notification email to affiliate if configured
+      const affiliate = await storage.getAffiliateById(affiliateId);
+      if (affiliate?.notificationEmail) {
+        try {
+          await emailService.sendAffiliateClickNotification(
+            affiliate.notificationEmail,
+            affiliate.name,
+            source || 'website',
+            referrer
+          );
+        } catch (emailError) {
+          console.error('Failed to send affiliate click notification:', emailError);
+        }
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error('Track affiliate click error:', error);
       res.status(500).json({ error: "Failed to track click" });
+    }
+  });
+
+  // Redirect route for affiliate links - /go/[slug]
+  app.get("/go/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const affiliate = await storage.getAffiliateBySlug(slug);
+      
+      if (!affiliate || !affiliate.isActive) {
+        return res.status(404).send("Affiliate not found");
+      }
+
+      const userId = req.isAuthenticated() ? (req.user as User).id : null;
+      const referrer = req.get('referer') || null;
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      const userAgent = req.get('user-agent') || null;
+
+      // Track the click
+      await storage.trackAffiliateClick({
+        userId,
+        affiliateId: affiliate.id,
+        affiliateName: affiliate.name,
+        category: affiliate.categories[0] || 'general',
+        source: 'redirect',
+        referrer,
+        ipAddress,
+        userAgent,
+      });
+
+      // Send notification email if configured
+      if (affiliate.notificationEmail) {
+        try {
+          await emailService.sendAffiliateClickNotification(
+            affiliate.notificationEmail,
+            affiliate.name,
+            'redirect',
+            referrer
+          );
+        } catch (emailError) {
+          console.error('Failed to send affiliate click notification:', emailError);
+        }
+      }
+
+      // Redirect to the affiliate's referral link
+      res.redirect(affiliate.referralLink);
+    } catch (error) {
+      console.error('Affiliate redirect error:', error);
+      res.status(500).send("Error processing redirect");
+    }
+  });
+
+  // Public affiliate report page (accessed via secure token)
+  app.get("/api/affiliate-report/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const affiliate = await storage.getAffiliateByReportToken(token);
+      
+      if (!affiliate) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const clicks = await storage.getAffiliateClicksForAffiliate(affiliate.id);
+      
+      // Calculate stats
+      const totalClicks = clicks.length;
+      const last30Days = clicks.filter(c => 
+        c.createdAt && new Date(c.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      ).length;
+      const last7Days = clicks.filter(c => 
+        c.createdAt && new Date(c.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      ).length;
+
+      // Group by source
+      const bySource: Record<string, number> = {};
+      clicks.forEach(c => {
+        const source = c.source || 'unknown';
+        bySource[source] = (bySource[source] || 0) + 1;
+      });
+
+      res.json({
+        affiliateName: affiliate.name,
+        totalClicks,
+        last30Days,
+        last7Days,
+        bySource,
+        recentClicks: clicks.slice(0, 50).map(c => ({
+          date: c.createdAt,
+          source: c.source,
+          referrer: c.referrer,
+        })),
+      });
+    } catch (error) {
+      console.error('Affiliate report error:', error);
+      res.status(500).json({ error: "Failed to fetch report" });
+    }
+  });
+
+  // Admin: Generate report token for affiliate
+  app.post("/api/admin/affiliates/:id/generate-report-token", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const token = await storage.generateAffiliateReportToken(id);
+      res.json({ token, reportUrl: `/affiliate-report/${token}` });
+    } catch (error) {
+      console.error('Generate report token error:', error);
+      res.status(500).json({ error: "Failed to generate report token" });
     }
   });
 
