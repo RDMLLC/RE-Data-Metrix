@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, CheckCircle, Lock } from "lucide-react";
+import { ExternalLink, CheckCircle, Lock, Info } from "lucide-react";
 import type { Affiliate } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { Link } from "wouter";
 import {
   Building2,
   Users,
@@ -156,7 +157,7 @@ export function AffiliateCard({ program, isDemoMode = false, demoIndex = 0 }: Af
         </div>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-2">
         {isDemoMode ? (
           <Button
             className="w-full"
@@ -167,21 +168,36 @@ export function AffiliateCard({ program, isDemoMode = false, demoIndex = 0 }: Af
             <ExternalLink className="h-4 w-4 ml-2" />
           </Button>
         ) : (
-          <Button
-            asChild
-            className="w-full"
-            data-testid={`button-visit-${program.id}`}
-          >
-            <a
-              href={program.referralLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleClick}
+          <>
+            {program.slug && (
+              <Button
+                asChild
+                variant="outline"
+                className="w-full"
+                data-testid={`button-details-${program.id}`}
+              >
+                <Link href={`/partners/${program.slug}`}>
+                  <Info className="h-4 w-4 mr-2" />
+                  Learn More
+                </Link>
+              </Button>
+            )}
+            <Button
+              asChild
+              className="w-full"
+              data-testid={`button-visit-${program.id}`}
             >
-              Visit {displayName}
-              <ExternalLink className="h-4 w-4 ml-2" />
-            </a>
-          </Button>
+              <a
+                href={program.referralLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleClick}
+              >
+                Visit {displayName}
+                <ExternalLink className="h-4 w-4 ml-2" />
+              </a>
+            </Button>
+          </>
         )}
       </CardFooter>
     </Card>
