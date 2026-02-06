@@ -63,6 +63,29 @@ export const insertCompInviteSchema = createInsertSchema(compInvites).omit({
 export type InsertCompInvite = z.infer<typeof insertCompInviteSchema>;
 export type CompInvite = typeof compInvites.$inferSelect;
 
+export const auditorInvites = pgTable("auditor_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  inviteCode: varchar("invite_code").notNull().unique(),
+  companyName: text("company_name"),
+  status: text("status").notNull().default('pending'),
+  invitedBy: varchar("invited_by").references(() => users.id),
+  acceptedBy: varchar("accepted_by").references(() => users.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAuditorInviteSchema = createInsertSchema(auditorInvites).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+  acceptedBy: true,
+});
+
+export type InsertAuditorInvite = z.infer<typeof insertAuditorInviteSchema>;
+export type AuditorInvite = typeof auditorInvites.$inferSelect;
+
 // Pending registrations - stores registration data before Stripe payment completes
 export const pendingRegistrations = pgTable("pending_registrations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
