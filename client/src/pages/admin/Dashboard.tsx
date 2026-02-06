@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye, Mail } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -487,8 +487,6 @@ export default function AdminDashboard() {
             )}
 
             <Card 
-              className="hover-elevate cursor-pointer" 
-              onClick={() => setLocation("/admin/lenders")}
               data-testid="card-lender-management"
             >
               <CardHeader>
@@ -500,9 +498,31 @@ export default function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <CardDescription>
+                <CardDescription className="mb-3">
                   Create invites, manage lender profiles, and handle onboarding
                 </CardDescription>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setLocation("/admin/lenders")}
+                    data-testid="button-lenders"
+                  >
+                    <Building2 className="h-3.5 w-3.5 mr-1.5" />
+                    Lenders
+                  </Button>
+                  {isAdmin && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/lender-broadcast")}
+                      data-testid="button-lender-broadcast"
+                    >
+                      <Mail className="h-3.5 w-3.5 mr-1.5" />
+                      Broadcast Email
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
