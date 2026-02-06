@@ -9353,7 +9353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[LENDER BROADCAST] Admin ${adminUser.email} sending broadcast: "${subject}"`);
 
       const allLenders = await storage.getAllLenders();
-      const activeLenders = allLenders.filter((l: any) => !l.archived && l.inviteAccepted);
+      const activeLenders = allLenders.filter((l: any) => !l.archived);
 
       let sent = 0;
       let failed = 0;
@@ -9396,7 +9396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/lender-broadcast/preview", ensureAdminReadAccess, async (req, res) => {
     try {
       const allLenders = await storage.getAllLenders();
-      const activeLenders = allLenders.filter((l: any) => !l.archived && l.inviteAccepted);
+      const activeLenders = allLenders.filter((l: any) => !l.archived);
 
       res.json({
         recipientCount: activeLenders.length,
