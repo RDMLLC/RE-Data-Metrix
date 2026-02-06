@@ -74,6 +74,8 @@ export default function ReferralPartners() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -87,7 +89,7 @@ export default function ReferralPartners() {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
-          if (data.role !== 'admin') {
+          if (data.role !== 'admin' && data.role !== 'auditor') {
             toast({
               title: "Access Denied",
               description: "Admin privileges required.",
@@ -96,6 +98,7 @@ export default function ReferralPartners() {
             setLocation("/admin/login");
             return;
           }
+          setUserRole(data.role);
         } else {
           setLocation("/admin/login");
           return;
@@ -297,6 +300,11 @@ export default function ReferralPartners() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-6">
+        {isAuditor && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-700 dark:text-amber-400" data-testid="banner-read-only">
+            You are viewing this page in read-only mode
+          </div>
+        )}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button
@@ -312,13 +320,15 @@ export default function ReferralPartners() {
               <p className="text-muted-foreground">Manage partners and track referral signups</p>
             </div>
           </div>
-          <Button onClick={() => {
-            setFormData(emptyFormData);
-            setIsCreateDialogOpen(true);
-          }} data-testid="button-create-partner">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Partner
-          </Button>
+          {!isAuditor && (
+            <Button onClick={() => {
+              setFormData(emptyFormData);
+              setIsCreateDialogOpen(true);
+            }} data-testid="button-create-partner">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Partner
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -386,7 +396,7 @@ export default function ReferralPartners() {
                     <TableHead>Promo Code</TableHead>
                     <TableHead className="text-center">Signups</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    {!isAuditor && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -439,28 +449,30 @@ export default function ReferralPartners() {
                           <Badge variant="secondary">Inactive</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEditDialog(partner)}
-                            data-testid={`button-edit-${partner.id}`}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => openDeleteDialog(partner)}
-                            data-testid={`button-delete-${partner.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {!isAuditor && (
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openEditDialog(partner)}
+                              data-testid={`button-edit-${partner.id}`}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => openDeleteDialog(partner)}
+                              data-testid={`button-delete-${partner.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

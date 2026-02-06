@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,6 +96,9 @@ type SortDirection = 'asc' | 'desc';
 
 export default function WebinarRegistrations() {
   const [, setLocation] = useLocation();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [searchTerm, setSearchTerm] = useState("");
   const [rsvpFilter, setRsvpFilter] = useState<RsvpFilter>('all');
   const [attendanceFilter, setAttendanceFilter] = useState<AttendanceFilter>('all');
@@ -110,6 +113,32 @@ export default function WebinarRegistrations() {
   const [attendedNotSignedUpDialogOpen, setAttendedNotSignedUpDialogOpen] = useState(false);
   const [followUpPromoCode, setFollowUpPromoCode] = useState("WEBINAR2026");
   const { toast } = useToast();
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   interface ZohoSession {
     meetingKey: string;
@@ -554,11 +583,9 @@ export default function WebinarRegistrations() {
   };
 
   const getAttendanceBadge = (attended: boolean | null, id: string, webinarDate: Date | string | null) => {
-    // Check if webinar is in the future - don't allow attendance marking for future events
     const isFutureWebinar = webinarDate && new Date(webinarDate) > new Date();
     
     if (isFutureWebinar) {
-      // For future webinars, show "Upcoming" badge (not clickable)
       return (
         <Badge 
           variant="outline"
@@ -575,8 +602,8 @@ export default function WebinarRegistrations() {
       return (
         <Badge 
           variant="default" 
-          className="bg-emerald-600 cursor-pointer"
-          onClick={() => toggleAttendanceMutation.mutate({ id, attended: false })}
+          className={`bg-emerald-600 ${!isAuditor ? 'cursor-pointer' : ''}`}
+          onClick={!isAuditor ? () => toggleAttendanceMutation.mutate({ id, attended: false }) : undefined}
           data-testid={`badge-attended-${id}`}
         >
           <UserCheck className="h-3 w-3 mr-1" />
@@ -587,8 +614,8 @@ export default function WebinarRegistrations() {
       return (
         <Badge 
           variant="destructive"
-          className="cursor-pointer"
-          onClick={() => clearAttendanceMutation.mutate({ id })}
+          className={!isAuditor ? 'cursor-pointer' : ''}
+          onClick={!isAuditor ? () => clearAttendanceMutation.mutate({ id }) : undefined}
           data-testid={`badge-not-attended-${id}`}
         >
           <UserX className="h-3 w-3 mr-1" />
@@ -599,12 +626,12 @@ export default function WebinarRegistrations() {
     return (
       <Badge 
         variant="secondary"
-        className="cursor-pointer"
-        onClick={() => toggleAttendanceMutation.mutate({ id, attended: true })}
+        className={!isAuditor ? 'cursor-pointer' : ''}
+        onClick={!isAuditor ? () => toggleAttendanceMutation.mutate({ id, attended: true }) : undefined}
         data-testid={`badge-unmarked-${id}`}
       >
         <HelpCircle className="h-3 w-3 mr-1" />
-        Select
+        {isAuditor ? 'Unmarked' : 'Select'}
       </Badge>
     );
   };
@@ -708,6 +735,8 @@ export default function WebinarRegistrations() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {!isAuditor && (
+            <>
             <Button
               variant="outline"
               onClick={() => refetch()}
@@ -907,8 +936,16 @@ export default function WebinarRegistrations() {
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
+            </>
+            )}
           </div>
         </div>
+
+        {isAuditor && (
+          <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+            <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -1032,7 +1069,7 @@ export default function WebinarRegistrations() {
                   ? `${Math.round((attendanceCounts.attended / registrations.length) * 100)}% attended`
                   : "0%"}
               </p>
-              {attendanceCounts.attended > 0 && (
+              {!isAuditor && attendanceCounts.attended > 0 && (
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -1076,7 +1113,7 @@ export default function WebinarRegistrations() {
                   ? `${Math.round((attendanceCounts.notAttended / registrations.length) * 100)}% no shows`
                   : "0%"}
               </p>
-              {attendanceCounts.notAttended > 0 && (
+              {!isAuditor && attendanceCounts.notAttended > 0 && (
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -1125,7 +1162,7 @@ export default function WebinarRegistrations() {
               <p className="text-xs text-muted-foreground">
                 Different sessions
               </p>
-              {registrations.filter(r => !r.webinarDate).length > 0 && (
+              {!isAuditor && registrations.filter(r => !r.webinarDate).length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -1330,7 +1367,7 @@ export default function WebinarRegistrations() {
                         )}
                       </div>
                     </TableHead>
-                    <TableHead className="w-16">Actions</TableHead>
+                    {!isAuditor && <TableHead className="w-16">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1389,39 +1426,41 @@ export default function WebinarRegistrations() {
                           ? format(new Date(reg.registeredAt), "MMM d, yyyy h:mm a")
                           : "-"}
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              disabled={deleteRegistrationMutation.isPending}
-                              data-testid={`button-actions-${reg.id}`}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteRegistration(reg.id, reg.name, reg.email, false)}
-                              data-testid={`button-delete-${reg.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteRegistration(reg.id, reg.name, reg.email, true)}
-                              data-testid={`button-delete-notify-${reg.id}`}
-                            >
-                              <Mail className="h-4 w-4 mr-2" />
-                              Delete & Notify
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      {!isAuditor && (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={deleteRegistrationMutation.isPending}
+                                data-testid={`button-actions-${reg.id}`}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteRegistration(reg.id, reg.name, reg.email, false)}
+                                data-testid={`button-delete-${reg.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteRegistration(reg.id, reg.name, reg.email, true)}
+                                data-testid={`button-delete-notify-${reg.id}`}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Delete & Notify
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

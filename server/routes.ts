@@ -8,7 +8,7 @@ import { HasDataAPIService } from "./services/hasdata-api.service";
 import { db } from "./db";
 import { eq, inArray, desc, and, sql, count, gt, or, ne } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
-import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
+import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureAdminReadAccess, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
 import { authService, registrationSchema } from "./services/auth.service";
 import crypto from "crypto";
@@ -156,9 +156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
       
-      if (user.role !== 'admin' && user.role !== 'developer') {
-        console.log('[Admin Login] Non-admin/developer user attempted login:', user.email, user.role);
-        return res.status(403).json({ error: "Access denied. Admin or developer privileges required." });
+      if (user.role !== 'admin' && user.role !== 'developer' && user.role !== 'auditor') {
+        console.log('[Admin Login] Non-admin/developer/auditor user attempted login:', user.email, user.role);
+        return res.status(403).json({ error: "Access denied. Admin, developer, or auditor privileges required." });
       }
       
       req.login(user, (err) => {
@@ -3193,7 +3193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Reports Routes
-  app.get("/api/admin/reports/dashboard-stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/dashboard-stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getAdminDashboardStats();
       res.json(stats);
@@ -3203,7 +3203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/lender-referrals", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/lender-referrals", ensureAdminReadAccess, async (req, res) => {
     try {
       const referrals = await storage.getAllLenderReferralsForAdmin();
       res.json(referrals);
@@ -3213,7 +3213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/users", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/users", ensureAdminReadAccess, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -3223,7 +3223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/affiliate-clicks", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/affiliate-clicks", ensureAdminReadAccess, async (req, res) => {
     try {
       const clicks = await storage.getAffiliateClicksForAdmin();
       res.json(clicks);
@@ -3233,7 +3233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/affiliate-stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/affiliate-stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getAffiliateClickStats();
       res.json(stats);
@@ -3243,7 +3243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/deal-stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/deal-stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getDealAnalysisStats();
       res.json(stats);
@@ -3253,7 +3253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/deals", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/deals", ensureAdminReadAccess, async (req, res) => {
     try {
       const deals = await storage.getAllDealsForAdmin();
       res.json(deals);
@@ -3263,7 +3263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/lender-performance", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/lender-performance", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getLenderPerformanceStats();
       res.json(stats);
@@ -3273,7 +3273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/platform-usage", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/platform-usage", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getPlatformUsageStats();
       res.json(stats);
@@ -3283,7 +3283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/reports/subscriptions", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/reports/subscriptions", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getSubscriptionStats();
       res.json(stats);
@@ -3436,7 +3436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin User Management Routes
-  app.get("/api/admin/users", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/users", ensureAdminReadAccess, async (req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
       
@@ -3471,7 +3471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users/stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/users/stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
       
@@ -3536,8 +3536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { role } = req.body;
       
-      if (!['user', 'admin', 'developer'].includes(role)) {
-        return res.status(400).json({ error: "Invalid role. Must be 'user', 'admin', or 'developer'" });
+      if (!['user', 'admin', 'developer', 'auditor'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'user', 'admin', 'developer', or 'auditor'" });
       }
       
       // Prevent changing own role (safety check)
@@ -3756,7 +3756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/comp-invites", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/comp-invites", ensureAdminReadAccess, async (req, res) => {
     try {
       const invites = await storage.getAllCompInvites();
       res.json(invites);
@@ -3810,7 +3810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
 
   // Get all demo tokens
-  app.get("/api/admin/demo-links", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/demo-links", ensureAdminReadAccess, async (req, res) => {
     try {
       const tokens = await storage.getAllDemoTokens();
       res.json(tokens);
@@ -3915,7 +3915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
 
   // Get all promo codes with stats
-  app.get("/api/admin/promo-codes", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/promo-codes", ensureAdminReadAccess, async (req, res) => {
     try {
       const { promoService } = await import("./services/promo.service");
       const codes = await promoService.getAllPromoCodes();
@@ -3967,7 +3967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get waitlist for a promo code
-  app.get("/api/admin/promo-codes/:id/waitlist", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/promo-codes/:id/waitlist", ensureAdminReadAccess, async (req, res) => {
     try {
       const { promoService } = await import("./services/promo.service");
       const { id } = req.params;
@@ -4002,7 +4002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get API usage stats (admin)
-  app.get("/api/admin/api-usage", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/api-usage", ensureAdminReadAccess, async (req, res) => {
     try {
       const { apiUsageService } = await import("./services/api-usage.service");
       const { startDate, endDate, limit } = req.query;
@@ -4028,7 +4028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get API usage for a specific user
-  app.get("/api/admin/api-usage/user/:userId", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/api-usage/user/:userId", ensureAdminReadAccess, async (req, res) => {
     try {
       const { apiUsageService } = await import("./services/api-usage.service");
       const { userId } = req.params;
@@ -4261,7 +4261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get webinar registrations (admin only)
-  app.get("/api/admin/webinar-registrations", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/webinar-registrations", ensureAdminReadAccess, async (req, res) => {
     try {
       const { webinarId } = req.query;
       const registrations = await storage.getWebinarRegistrations(webinarId as string);
@@ -4400,7 +4400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to get RSVP statistics
-  app.get("/api/admin/webinar-registrations/rsvp-stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/webinar-registrations/rsvp-stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const registrations = await storage.getWebinarRegistrations();
       const stats = {
@@ -4694,7 +4694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get all marketing pixels
-  app.get("/api/admin/marketing-pixels", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/marketing-pixels", ensureAdminReadAccess, async (req, res) => {
     try {
       const pixels = await storage.getAllMarketingPixels();
       res.json(pixels);
@@ -4998,7 +4998,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoint to preview attendees who haven't signed up (for follow-up emails)
-  app.get("/api/admin/webinar-registrations/attended-not-signed-up", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/webinar-registrations/attended-not-signed-up", ensureAdminReadAccess, async (req, res) => {
     try {
       const allRegistrations = await storage.getWebinarRegistrations();
       console.log('[attended-not-signed-up] Total registrations:', allRegistrations.length);
@@ -5179,7 +5179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
 
   // Get all referral partners
-  app.get("/api/admin/referral-partners", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/referral-partners", ensureAdminReadAccess, async (req, res) => {
     try {
       const partners = await storage.getReferralPartners();
       res.json(partners);
@@ -5190,7 +5190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get referral stats for webinar signups
-  app.get("/api/admin/referral-stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/referral-stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getReferralStats();
       res.json(stats);
@@ -5268,7 +5268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================
 
   // Get all discount codes with usage stats
-  app.get("/api/admin/discount-codes", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/discount-codes", ensureAdminReadAccess, async (req, res) => {
     try {
       const { search, partnerName, planApplicability, isActive } = req.query;
       const filters: any = {};
@@ -5286,7 +5286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get discount code stats for dashboard
-  app.get("/api/admin/discount-codes/stats", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/discount-codes/stats", ensureAdminReadAccess, async (req, res) => {
     try {
       const stats = await storage.getDiscountCodeStats();
       res.json(stats);
@@ -5297,7 +5297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single discount code
-  app.get("/api/admin/discount-codes/:id", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/discount-codes/:id", ensureAdminReadAccess, async (req, res) => {
     try {
       const { id } = req.params;
       const code = await storage.getDiscountCode(id);
@@ -5314,7 +5314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get usage for a specific discount code
-  app.get("/api/admin/discount-codes/:id/usage", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/discount-codes/:id/usage", ensureAdminReadAccess, async (req, res) => {
     try {
       const { id } = req.params;
       const usage = await storage.getDiscountCodeUsage(id);
@@ -6218,7 +6218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Site Settings endpoints
-  app.get("/api/admin/settings/:key", ensureAdmin, async (req, res) => {
+  app.get("/api/admin/settings/:key", ensureAdminReadAccess, async (req, res) => {
     try {
       const value = await storage.getSiteSetting(req.params.key);
       res.json({ key: req.params.key, value });
@@ -7597,8 +7597,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as User;
       
-      // Paid subscribers and admins have unlimited access
-      const isPaidSubscriber = user.role === 'admin' || 
+      // Paid subscribers, admins, and auditors have unlimited access
+      const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || 
         ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       if (isPaidSubscriber) {
@@ -7647,8 +7647,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as User;
       
-      // Subscribers and admins have unlimited calculations
-      const isSubscriber = user.role === 'admin' || 
+      // Subscribers, admins, and auditors have unlimited calculations
+      const isSubscriber = user.role === 'admin' || user.role === 'auditor' || 
         ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       if (isSubscriber) {
@@ -7687,8 +7687,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as User;
       const FREE_PDF_LIMIT = 2;
       
-      // Paid subscribers and admins have unlimited downloads
-      const isPaidSubscriber = user.role === 'admin' || 
+      // Paid subscribers, admins, and auditors have unlimited downloads
+      const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || 
         ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       if (isPaidSubscriber) {
@@ -7741,7 +7741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check subscription status - paid subscribers get unlimited access
-      const isPaidSubscriber = user.role === 'admin' || 
+      const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || 
         ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       // For free users, check ARV helper usage
@@ -7994,7 +7994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let usageResult: { canLookup: boolean; remainingLookups: number } | null = null;
       
       if (user) {
-        const isSubscriber = user.role === 'admin' || 
+        const isSubscriber = user.role === 'admin' || user.role === 'auditor' || 
           ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
         
         if (!isSubscriber) {

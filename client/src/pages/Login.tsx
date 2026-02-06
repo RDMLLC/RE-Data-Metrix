@@ -68,7 +68,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && isAuthenticated && currentUser) {
-      if (currentUser.role === 'admin' || currentUser.role === 'developer') {
+      if (currentUser.role === 'admin' || currentUser.role === 'developer' || currentUser.role === 'auditor') {
         setLocation(returnTo || "/admin");
       } else {
         // Check if user is a subscriber
@@ -113,7 +113,7 @@ export default function Login() {
       });
       
       // Redirect based on user role and subscription status
-      if (user.role === 'admin' || user.role === 'developer') {
+      if (user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') {
         setLocation(returnTo || "/admin");
       } else {
         // Check if user is a subscriber (active, comped, or referral_trial)

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
@@ -25,6 +25,9 @@ type LenderWithReferrals = Lender & { referralCount: number, loanProductCount: n
 export default function LenderManagement() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [lenderToDelete, setLenderToDelete] = useState<LenderWithReferrals | null>(null);
   const [lenderToArchive, setLenderToArchive] = useState<LenderWithReferrals | null>(null);
   const [companyNameSearch, setCompanyNameSearch] = useState("");
@@ -35,6 +38,32 @@ export default function LenderManagement() {
   const [newLenderReferralType, setNewLenderReferralType] = useState("$");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const { data: lenders, isLoading } = useQuery<LenderWithReferrals[]>({
     queryKey: ["/api/admin/lenders"],
@@ -285,6 +314,13 @@ export default function LenderManagement() {
               </div>
             </div>
 
+            {isAuditor && (
+              <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+                <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+              </div>
+            )}
+          </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -343,6 +379,7 @@ export default function LenderManagement() {
               </CardContent>
             </Card>
 
+            {!isAuditor && (
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -476,7 +513,7 @@ export default function LenderManagement() {
                 )}
               </CardContent>
             </Card>
-          </div>
+            )}
 
           {isLoading ? (
             <div className="text-center py-12">
@@ -550,49 +587,53 @@ export default function LenderManagement() {
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </Button>
-                            {!lender.inviteAccepted ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => resendInviteMutation.mutate(lender.id)}
-                                disabled={resendInviteMutation.isPending}
-                                data-testid={`button-resend-${lender.id}`}
-                              >
-                                <Mail className="h-4 w-4 mr-2" />
-                                {resendInviteMutation.isPending ? "Sending..." : "Resend Link"}
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => triggerPasswordResetMutation.mutate(lender.id)}
-                                disabled={triggerPasswordResetMutation.isPending}
-                                data-testid={`button-reset-password-${lender.id}`}
-                              >
-                                <KeyRound className="h-4 w-4 mr-2" />
-                                {triggerPasswordResetMutation.isPending ? "Sending..." : "Reset Password"}
-                              </Button>
-                            )}
-                            {lender.referralCount > 0 ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleArchive(lender)}
-                                data-testid={`button-archive-${lender.id}`}
-                              >
-                                <Archive className="h-4 w-4 mr-2" />
-                                Archive
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(lender)}
-                                data-testid={`button-delete-${lender.id}`}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </Button>
+                            {!isAuditor && (
+                              <>
+                                {!lender.inviteAccepted ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => resendInviteMutation.mutate(lender.id)}
+                                    disabled={resendInviteMutation.isPending}
+                                    data-testid={`button-resend-${lender.id}`}
+                                  >
+                                    <Mail className="h-4 w-4 mr-2" />
+                                    {resendInviteMutation.isPending ? "Sending..." : "Resend Link"}
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => triggerPasswordResetMutation.mutate(lender.id)}
+                                    disabled={triggerPasswordResetMutation.isPending}
+                                    data-testid={`button-reset-password-${lender.id}`}
+                                  >
+                                    <KeyRound className="h-4 w-4 mr-2" />
+                                    {triggerPasswordResetMutation.isPending ? "Sending..." : "Reset Password"}
+                                  </Button>
+                                )}
+                                {lender.referralCount > 0 ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleArchive(lender)}
+                                    data-testid={`button-archive-${lender.id}`}
+                                  >
+                                    <Archive className="h-4 w-4 mr-2" />
+                                    Archive
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(lender)}
+                                    data-testid={`button-delete-${lender.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>

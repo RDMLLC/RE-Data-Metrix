@@ -158,6 +158,7 @@ export default function DeveloperIntegrations() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
+  const isAuditor = user?.role === 'auditor';
   const [activeTab, setActiveTab] = useState("connections");
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   
@@ -198,7 +199,7 @@ export default function DeveloperIntegrations() {
 
   // Check auth
   useEffect(() => {
-    if (!authLoading && (!user || (user.role !== 'admin' && user.role !== 'developer'))) {
+    if (!authLoading && (!user || (user.role !== 'admin' && user.role !== 'developer' && user.role !== 'auditor'))) {
       setLocation("/login");
     }
   }, [user, authLoading, setLocation]);
@@ -494,6 +495,11 @@ export default function DeveloperIntegrations() {
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4 max-w-7xl">
+        {isAuditor && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-700 dark:text-amber-400" data-testid="banner-read-only">
+            You are viewing this page in read-only mode
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -535,10 +541,12 @@ export default function DeveloperIntegrations() {
           <TabsContent value="connections" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">CRM Connections</h2>
-              <Button onClick={() => setShowCreateConnection(true)} data-testid="button-create-connection">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Connection
-              </Button>
+              {!isAuditor && (
+                <Button onClick={() => setShowCreateConnection(true)} data-testid="button-create-connection">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Connection
+                </Button>
+              )}
             </div>
 
             {configs.length === 0 ? (
@@ -626,7 +634,7 @@ export default function DeveloperIntegrations() {
                 <h2 className="text-xl font-semibold">Event Triggers</h2>
                 <p className="text-sm text-muted-foreground">Configure which events send data to your CRM</p>
               </div>
-              {selectedIntegration && (
+              {selectedIntegration && !isAuditor && (
                 <Button onClick={() => setShowCreateTrigger(true)} data-testid="button-create-trigger">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Trigger
@@ -731,10 +739,12 @@ inquiry_submitted,email,Email,none,`;
                       <Upload className="h-4 w-4 mr-2" />
                       Upload CSV
                     </Button>
-                    <Button onClick={() => setShowCreateMapping(true)} data-testid="button-create-mapping">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Mapping
-                    </Button>
+                    {!isAuditor && (
+                      <Button onClick={() => setShowCreateMapping(true)} data-testid="button-create-mapping">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Mapping
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -815,10 +825,12 @@ inquiry_submitted,email,Email,none,`;
                 <h2 className="text-xl font-semibold">Inbound Webhooks</h2>
                 <p className="text-sm text-muted-foreground">Create endpoints for external systems to send data</p>
               </div>
-              <Button onClick={() => setShowCreateWebhook(true)} data-testid="button-create-webhook">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Webhook
-              </Button>
+              {!isAuditor && (
+                <Button onClick={() => setShowCreateWebhook(true)} data-testid="button-create-webhook">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Webhook
+                </Button>
+              )}
             </div>
 
             {webhooks.length === 0 ? (
@@ -897,10 +909,12 @@ inquiry_submitted,email,Email,none,`;
                   <h2 className="text-xl font-semibold">Outbound Webhooks</h2>
                   <p className="text-sm text-muted-foreground">Send form data to external endpoints when events occur</p>
                 </div>
-                <Button onClick={() => setShowCreateOutbound(true)} data-testid="button-create-outbound">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Outbound Webhook
-                </Button>
+                {!isAuditor && (
+                  <Button onClick={() => setShowCreateOutbound(true)} data-testid="button-create-outbound">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Outbound Webhook
+                  </Button>
+                )}
               </div>
 
               {outboundWebhooks.length === 0 ? (

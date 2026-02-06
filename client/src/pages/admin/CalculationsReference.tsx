@@ -182,6 +182,8 @@ export default function CalculationsReference() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -191,7 +193,7 @@ export default function CalculationsReference() {
         });
         if (response.ok) {
           const data = await response.json();
-          if (data.role !== 'admin') {
+          if (data.role !== 'admin' && data.role !== 'auditor') {
             toast({
               title: "Access Denied",
               description: "Admin privileges required.",
@@ -200,6 +202,7 @@ export default function CalculationsReference() {
             setLocation("/admin/login");
             return;
           }
+          setUserRole(data.role);
         } else {
           setLocation("/admin/login");
           return;
@@ -266,6 +269,11 @@ export default function CalculationsReference() {
   return (
     <Layout>
       <div className="container py-6 max-w-6xl mx-auto">
+        {isAuditor && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-700 dark:text-amber-400" data-testid="banner-read-only">
+            You are viewing this page in read-only mode
+          </div>
+        )}
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="lg:w-64 flex-shrink-0">
             <div className="sticky top-4 space-y-4">

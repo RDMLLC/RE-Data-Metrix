@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   
   const isAdmin = userRole === 'admin';
   const isDeveloper = userRole === 'developer';
+  const isAuditor = userRole === 'auditor';
 
   useEffect(() => {
     const fetchAdminInfo = async () => {
@@ -54,7 +55,7 @@ export default function AdminDashboard() {
         if (response.ok) {
           const data = await response.json();
           // Check if user is admin or developer - redirect if not
-          if (data.role !== 'admin' && data.role !== 'developer') {
+          if (data.role !== 'admin' && data.role !== 'developer' && data.role !== 'auditor') {
             toast({
               title: "Access Denied",
               description: "Admin or developer privileges required.",
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
             return;
           }
           setUserRole(data.role);
-          setAdminName(data.email?.split("@")[0] || (data.role === 'developer' ? 'Developer' : 'Admin'));
+          setAdminName(data.email?.split("@")[0] || (data.role === 'developer' ? 'Developer' : data.role === 'auditor' ? 'Auditor' : 'Admin'));
           setAdminEmail(data.email || "");
         } else {
           // Not authenticated - redirect to admin login
@@ -375,7 +376,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </CardContent>
-              {isAdmin && (
+              {isAdmin && !isAuditor && (
                 <CardFooter className="pt-0">
                   <Button
                     variant="outline"
@@ -402,7 +403,7 @@ export default function AdminDashboard() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isAdmin && (
+            {(isAdmin || isAuditor) && (
               <Card data-testid="card-user-management">
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -496,7 +497,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {isAdmin && (
+            {(isAdmin || isAuditor) && (
               <Card data-testid="card-analytics">
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -625,7 +626,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {isAdmin && (
+            {(isAdmin || isAuditor) && (
               <Card 
                 className="hover-elevate cursor-pointer" 
                 onClick={() => setLocation("/admin/marketing-pixels")}
@@ -668,7 +669,7 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {isAdmin && (
+          {isAdmin && !isAuditor && (
             <Card className="mt-6" data-testid="card-demo-mode">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between flex-wrap gap-4">

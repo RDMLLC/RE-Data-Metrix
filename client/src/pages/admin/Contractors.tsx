@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -136,6 +136,9 @@ function getStateName(abbrev: string): string {
 export default function Contractors() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [contractorToDelete, setContractorToDelete] = useState<Contractor | null>(null);
@@ -153,6 +156,32 @@ export default function Contractors() {
   const [regionForm, setRegionForm] = useState<ServiceRegionFormData>(emptyRegionForm);
   const [specialtiesInput, setSpecialtiesInput] = useState("");
   const [keyCitiesInput, setKeyCitiesInput] = useState("");
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const { data: contractors = [], isLoading: contractorsLoading } = useQuery<ContractorWithRegions[]>({
     queryKey: ["/api/admin/contractors"],
@@ -382,6 +411,12 @@ export default function Contractors() {
         </div>
       </div>
 
+      {isAuditor && (
+        <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+          <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+        </div>
+      )}
+
       <Tabs defaultValue="contractors" className="space-y-6">
         <TabsList data-testid="tabs-contractor-management">
           <TabsTrigger value="contractors" data-testid="tab-contractors">
@@ -409,10 +444,12 @@ export default function Contractors() {
                     data-testid="input-search-contractors"
                   />
                 </div>
-                <Button onClick={openInviteDialog} data-testid="button-invite-contractor">
-                  <Send className="h-4 w-4 mr-2" />
-                  Invite Contractor
-                </Button>
+                {!isAuditor && (
+                  <Button onClick={openInviteDialog} data-testid="button-invite-contractor">
+                    <Send className="h-4 w-4 mr-2" />
+                    Invite Contractor
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -490,14 +527,16 @@ export default function Contractors() {
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditContractor(contractor)} data-testid={`button-edit-${contractor.id}`}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => setContractorToDelete(contractor)} data-testid={`button-delete-${contractor.id}`}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {!isAuditor && (
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openEditContractor(contractor)} data-testid={`button-edit-${contractor.id}`}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setContractorToDelete(contractor)} data-testid={`button-delete-${contractor.id}`}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </Card>
                   ))}
@@ -524,10 +563,12 @@ export default function Contractors() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={openNewRegion} data-testid="button-add-region">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Region
-              </Button>
+              {!isAuditor && (
+                <Button onClick={openNewRegion} data-testid="button-add-region">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Region
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {regionsLoading ? (
@@ -585,14 +626,16 @@ export default function Contractors() {
                                           ))}
                                         </div>
                                       </div>
-                                      <div className="flex gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => openEditRegion(region)} data-testid={`button-edit-region-${region.id}`}>
-                                          <Edit2 className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => setRegionToDelete(region)} data-testid={`button-delete-region-${region.id}`}>
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </div>
+                                      {!isAuditor && (
+                                        <div className="flex gap-1">
+                                          <Button variant="ghost" size="icon" onClick={() => openEditRegion(region)} data-testid={`button-edit-region-${region.id}`}>
+                                            <Edit2 className="h-4 w-4" />
+                                          </Button>
+                                          <Button variant="ghost" size="icon" onClick={() => setRegionToDelete(region)} data-testid={`button-delete-region-${region.id}`}>
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      )}
                                     </div>
                                   </Card>
                                 ))}

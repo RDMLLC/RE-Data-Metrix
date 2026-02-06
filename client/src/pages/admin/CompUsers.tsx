@@ -59,6 +59,8 @@ export default function CompUsers() {
   const [inviteToDelete, setInviteToDelete] = useState<CompInvite | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
 
   // Check admin authentication on mount
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function CompUsers() {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
-          if (data.role !== 'admin') {
+          if (data.role !== 'admin' && data.role !== 'auditor') {
             toast({
               title: "Access Denied",
               description: "Admin privileges required.",
@@ -76,6 +78,7 @@ export default function CompUsers() {
             setLocation("/admin/login");
             return;
           }
+          setUserRole(data.role);
         } else {
           setLocation("/admin/login");
           return;
@@ -273,6 +276,11 @@ export default function CompUsers() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-6">
+        {isAuditor && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-700 dark:text-amber-400" data-testid="banner-read-only">
+            You are viewing this page in read-only mode
+          </div>
+        )}
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
@@ -290,49 +298,51 @@ export default function CompUsers() {
           </div>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="h-5 w-5" />
-              Send Comp Invitation
-            </CardTitle>
-            <CardDescription>
-              Send an email with a unique comp code for free premium access
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSendInvite} className="flex flex-col sm:flex-row gap-4">
-              <Input
-                type="email"
-                placeholder="Enter email address..."
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="flex-1"
-                data-testid="input-comp-email"
-              />
-              <Select value={expiresInDays} onValueChange={setExpiresInDays}>
-                <SelectTrigger className="w-[140px]" data-testid="select-expires-days">
-                  <SelectValue placeholder="Expires in" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">7 days</SelectItem>
-                  <SelectItem value="14">14 days</SelectItem>
-                  <SelectItem value="30">30 days</SelectItem>
-                  <SelectItem value="60">60 days</SelectItem>
-                  <SelectItem value="90">90 days</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending}
-                data-testid="button-send-comp-invite"
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                {createMutation.isPending ? "Sending..." : "Send Invitation"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        {!isAuditor && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Send Comp Invitation
+              </CardTitle>
+              <CardDescription>
+                Send an email with a unique comp code for free premium access
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSendInvite} className="flex flex-col sm:flex-row gap-4">
+                <Input
+                  type="email"
+                  placeholder="Enter email address..."
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="flex-1"
+                  data-testid="input-comp-email"
+                />
+                <Select value={expiresInDays} onValueChange={setExpiresInDays}>
+                  <SelectTrigger className="w-[140px]" data-testid="select-expires-days">
+                    <SelectValue placeholder="Expires in" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="14">14 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="60">60 days</SelectItem>
+                    <SelectItem value="90">90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  data-testid="button-send-comp-invite"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {createMutation.isPending ? "Sending..." : "Send Invitation"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card>
@@ -441,30 +451,32 @@ export default function CompUsers() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {canResend && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => resendMutation.mutate(invite.id)}
-                            disabled={resendMutation.isPending}
-                            data-testid={`button-resend-${invite.id}`}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            Resend
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setInviteToDelete(invite)}
-                            data-testid={`button-delete-${invite.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
+                      {!isAuditor && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {canResend && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => resendMutation.mutate(invite.id)}
+                              disabled={resendMutation.isPending}
+                              data-testid={`button-resend-${invite.id}`}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-1" />
+                              Resend
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setInviteToDelete(invite)}
+                              data-testid={`button-delete-${invite.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

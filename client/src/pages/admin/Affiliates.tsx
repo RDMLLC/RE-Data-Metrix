@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -158,6 +158,9 @@ const emptyCategoryForm: CategoryFormData = {
 export default function Affiliates() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [affiliateToDelete, setAffiliateToDelete] = useState<Affiliate | null>(null);
@@ -174,6 +177,32 @@ export default function Affiliates() {
   const [categoryForm, setCategoryForm] = useState<CategoryFormData>(emptyCategoryForm);
   const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
   const [copiedCredential, setCopiedCredential] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const downloadQrCode = (affiliateId: string, affiliateName: string) => {
     const svg = document.getElementById(`qr-${affiliateId}`);
@@ -588,6 +617,12 @@ export default function Affiliates() {
           </div>
         </div>
 
+        {isAuditor && (
+          <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+            <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+          </div>
+        )}
+
         <Tabs defaultValue="affiliates" className="space-y-6">
           <TabsList>
             <TabsTrigger value="affiliates" data-testid="tab-affiliates">Affiliates</TabsTrigger>
@@ -598,13 +633,15 @@ export default function Affiliates() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
                 <CardTitle>Affiliate Programs</CardTitle>
-                <Button onClick={() => {
-                  setEditingAffiliate(null);
-                  setAffiliateForm(emptyAffiliateForm);
-                  setShowAffiliateDialog(true);
-                }} data-testid="button-add-affiliate">
-                  <Plus className="h-4 w-4 mr-2" /> Add Affiliate
-                </Button>
+                {!isAuditor && (
+                  <Button onClick={() => {
+                    setEditingAffiliate(null);
+                    setAffiliateForm(emptyAffiliateForm);
+                    setShowAffiliateDialog(true);
+                  }} data-testid="button-add-affiliate">
+                    <Plus className="h-4 w-4 mr-2" /> Add Affiliate
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -769,22 +806,26 @@ export default function Affiliates() {
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEditAffiliate(affiliate)}
-                                    data-testid={`button-edit-${affiliate.id}`}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setAffiliateToDelete(affiliate)}
-                                    data-testid={`button-delete-${affiliate.id}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  {!isAuditor && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEditAffiliate(affiliate)}
+                                        data-testid={`button-edit-${affiliate.id}`}
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setAffiliateToDelete(affiliate)}
+                                        data-testid={`button-delete-${affiliate.id}`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -802,13 +843,15 @@ export default function Affiliates() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-4">
                 <CardTitle>Affiliate Categories</CardTitle>
-                <Button onClick={() => {
-                  setEditingCategory(null);
-                  setCategoryForm(emptyCategoryForm);
-                  setShowCategoryDialog(true);
-                }} data-testid="button-add-category">
-                  <Plus className="h-4 w-4 mr-2" /> Add Category
-                </Button>
+                {!isAuditor && (
+                  <Button onClick={() => {
+                    setEditingCategory(null);
+                    setCategoryForm(emptyCategoryForm);
+                    setShowCategoryDialog(true);
+                  }} data-testid="button-add-category">
+                    <Plus className="h-4 w-4 mr-2" /> Add Category
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {categories?.length === 0 ? (
@@ -822,24 +865,26 @@ export default function Affiliates() {
                           <div className="text-sm text-muted-foreground">{category.description}</div>
                           <div className="text-xs text-muted-foreground mt-1">ID: {category.id}</div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditCategory(category)}
-                            data-testid={`button-edit-category-${category.id}`}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setCategoryToDelete(category)}
-                            data-testid={`button-delete-category-${category.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {!isAuditor && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditCategory(category)}
+                              data-testid={`button-edit-category-${category.id}`}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setCategoryToDelete(category)}
+                              data-testid={`button-delete-category-${category.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

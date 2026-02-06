@@ -74,7 +74,7 @@ export default function Navigation() {
   ];
 
   const userInitials = user 
-    ? (user.role === 'admin' ? 'AD' : user.role === 'developer' ? 'DV' : getInitials(user.profile?.fullName, user.username, user.email))
+    ? (user.role === 'admin' ? 'AD' : user.role === 'developer' ? 'DV' : user.role === 'auditor' ? 'AU' : getInitials(user.profile?.fullName, user.username, user.email))
     : "";
 
   const lenderInitials = lender 
@@ -180,6 +180,8 @@ export default function Navigation() {
                             <Badge variant="default" className="text-xs">Admin</Badge>
                           ) : user.role === 'developer' ? (
                             <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
+                          ) : user.role === 'auditor' ? (
+                            <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">Auditor</Badge>
                           ) : (
                             getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)
                           )}
@@ -187,7 +189,7 @@ export default function Navigation() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {(user.role === 'admin' || user.role === 'developer') ? (
+                    {(user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') ? (
                       <>
                         <DropdownMenuItem 
                           onClick={() => setLocation("/admin/dashboard")}
@@ -195,9 +197,9 @@ export default function Navigation() {
                           data-testid="menu-item-admin-dashboard"
                         >
                           <Settings className="mr-2 h-4 w-4" />
-                          {user.role === 'developer' ? 'Developer Dashboard' : 'Admin Dashboard'}
+                          {user.role === 'developer' ? 'Developer Dashboard' : user.role === 'auditor' ? 'Auditor Dashboard' : 'Admin Dashboard'}
                         </DropdownMenuItem>
-                        {user.role === 'admin' && (
+                        {(user.role === 'admin' || user.role === 'auditor') && (
                           <>
                             <DropdownMenuItem 
                               onClick={() => setLocation("/lender-dashboard")}
@@ -260,7 +262,7 @@ export default function Navigation() {
                           Integrations
                         </DropdownMenuItem>
                         {/* Admin-only pages */}
-                        {user.role === 'admin' && (
+                        {(user.role === 'admin' || user.role === 'auditor') && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
@@ -414,6 +416,8 @@ export default function Navigation() {
                           <Badge variant="default" className="text-xs">Admin</Badge>
                         ) : user.role === 'developer' ? (
                           <Badge className="bg-indigo-500/10 text-indigo-600 border-indigo-200 text-xs">Developer</Badge>
+                        ) : user.role === 'auditor' ? (
+                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-200 text-xs">Auditor</Badge>
                         ) : (
                           getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)
                         )}
@@ -421,16 +425,16 @@ export default function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {(user.role === 'admin' || user.role === 'developer') ? (
+                  {(user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') ? (
                     <>
                       <DropdownMenuItem 
                         onClick={() => setLocation("/admin/dashboard")}
                         className="cursor-pointer"
                       >
                         <Settings className="mr-2 h-4 w-4" />
-                        {user.role === 'developer' ? 'Developer Dashboard' : 'Admin Dashboard'}
+                        {user.role === 'developer' ? 'Developer Dashboard' : user.role === 'auditor' ? 'Auditor Dashboard' : 'Admin Dashboard'}
                       </DropdownMenuItem>
-                      {user.role === 'admin' && (
+                      {(user.role === 'admin' || user.role === 'auditor') && (
                         <>
                           <DropdownMenuItem 
                             onClick={() => setLocation("/lender-dashboard")}
@@ -470,7 +474,7 @@ export default function Navigation() {
                         <Plug className="mr-2 h-4 w-4" />
                         Integrations
                       </DropdownMenuItem>
-                      {user.role === 'admin' && (
+                      {(user.role === 'admin' || user.role === 'auditor') && (
                         <>
                           <DropdownMenuItem 
                             onClick={() => setLocation("/admin/discount-codes")}

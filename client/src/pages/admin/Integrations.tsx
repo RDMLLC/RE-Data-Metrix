@@ -42,6 +42,9 @@ interface StripePlan {
 export default function AdminIntegrations() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [stripePlans, setStripePlans] = useState<StripePlan[]>([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
@@ -88,6 +91,32 @@ export default function AdminIntegrations() {
       setIsLoadingPlans(false);
     }
   };
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   useEffect(() => {
     fetchAllIntegrations();
@@ -163,17 +192,25 @@ export default function AdminIntegrations() {
                 Manage external service connections
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshStatus}
-              disabled={isLoadingStatus}
-              data-testid="button-refresh-status"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingStatus ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            {!isAuditor && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshStatus}
+                disabled={isLoadingStatus}
+                data-testid="button-refresh-status"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingStatus ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            )}
           </div>
+
+          {isAuditor && (
+            <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+              <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+            </div>
+          )}
 
           <div className="space-y-6">
             <Card data-testid="card-stripe-billing-integration">

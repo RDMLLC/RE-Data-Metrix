@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
@@ -133,11 +133,39 @@ interface SubscriptionStats {
 
 export default function AdminReports() {
   const [, setLocation] = useLocation();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [referralSearch, setReferralSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [affiliateSearch, setAffiliateSearch] = useState("");
   const [dealSearch, setDealSearch] = useState("");
   const [lenderSearch, setLenderSearch] = useState("");
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation]);
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/reports/dashboard-stats"],
@@ -426,6 +454,12 @@ export default function AdminReports() {
                 </p>
               </div>
             </div>
+
+            {isAuditor && (
+              <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+                <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+              </div>
+            )}
 
             {statsLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">

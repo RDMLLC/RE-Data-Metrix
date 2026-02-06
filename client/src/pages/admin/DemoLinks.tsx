@@ -73,6 +73,8 @@ export default function DemoLinks() {
   const [tokenToRevoke, setTokenToRevoke] = useState<DemoToken | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
 
   // Form state
   const [contactName, setContactName] = useState("");
@@ -86,7 +88,7 @@ export default function DemoLinks() {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
-          if (data.role !== 'admin') {
+          if (data.role !== 'admin' && data.role !== 'auditor') {
             toast({
               title: "Access Denied",
               description: "Admin privileges required.",
@@ -95,6 +97,7 @@ export default function DemoLinks() {
             setLocation("/admin/login");
             return;
           }
+          setUserRole(data.role);
         } else {
           setLocation("/admin/login");
           return;
@@ -254,6 +257,11 @@ export default function DemoLinks() {
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl">
+      {isAuditor && (
+        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-700 dark:text-amber-400" data-testid="banner-read-only">
+          You are viewing this page in read-only mode
+        </div>
+      )}
       <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
@@ -269,10 +277,12 @@ export default function DemoLinks() {
             Generate and manage demo access links for potential customers, lenders, and affiliates
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} data-testid="button-create-demo-link">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Demo Link
-        </Button>
+        {!isAuditor && (
+          <Button onClick={() => setIsCreateOpen(true)} data-testid="button-create-demo-link">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Demo Link
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">
@@ -383,7 +393,7 @@ export default function DemoLinks() {
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
-                    {token.status === 'active' && new Date(token.expiresAt) > new Date() && (
+                    {!isAuditor && token.status === 'active' && new Date(token.expiresAt) > new Date() && (
                       <Button
                         variant="outline"
                         size="sm"

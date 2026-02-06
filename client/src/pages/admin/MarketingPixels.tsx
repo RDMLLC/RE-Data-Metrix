@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,10 +94,40 @@ const TRACKED_EVENTS = [
 ];
 
 export default function MarketingPixels() {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformKey | "">("");
   const [pixelId, setPixelId] = useState("");
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const { data: pixels = [], isLoading } = useQuery<MarketingPixel[]>({
     queryKey: ["/api/admin/marketing-pixels"],
@@ -159,6 +190,11 @@ export default function MarketingPixels() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
+      {isAuditor && (
+        <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+          <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Marketing Pixels</h1>
@@ -167,6 +203,7 @@ export default function MarketingPixels() {
           </p>
         </div>
         
+        {!isAuditor && (
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button disabled={availablePlatforms.length === 0} data-testid="button-add-pixel">
@@ -246,6 +283,7 @@ export default function MarketingPixels() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {pixels.length === 0 ? (
@@ -284,39 +322,43 @@ export default function MarketingPixels() {
                       ) : (
                         <EyeOff className="h-4 w-4 text-muted-foreground" />
                       )}
-                      <Switch
-                        checked={pixel.isEnabled}
-                        onCheckedChange={(checked) => 
-                          updatePixelMutation.mutate({ id: pixel.id, isEnabled: checked })
-                        }
-                        data-testid={`switch-enable-${pixel.platform}`}
-                      />
+                      {!isAuditor && (
+                        <Switch
+                          checked={pixel.isEnabled}
+                          onCheckedChange={(checked) => 
+                            updatePixelMutation.mutate({ id: pixel.id, isEnabled: checked })
+                          }
+                          data-testid={`switch-enable-${pixel.platform}`}
+                        />
+                      )}
                     </div>
                     
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid={`button-delete-${pixel.platform}`}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Remove {config.name} pixel?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will stop all tracking for this platform. You can add it back later.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deletePixelMutation.mutate(pixel.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remove
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    {!isAuditor && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-delete-${pixel.platform}`}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove {config.name} pixel?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will stop all tracking for this platform. You can add it back later.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deletePixelMutation.mutate(pixel.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>

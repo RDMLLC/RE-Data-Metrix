@@ -241,7 +241,7 @@ export function ensureAdmin(
   next();
 }
 
-// Allow both admin and developer roles
+// Allow admin, developer, and auditor roles
 export function ensureAdminOrDeveloper(
   req: Request,
   res: Response,
@@ -253,8 +253,36 @@ export function ensureAdminOrDeveloper(
 
   const user = req.user as any;
   
-  if (user.role !== 'admin' && user.role !== 'developer') {
+  if (user.role !== 'admin' && user.role !== 'developer' && user.role !== 'auditor') {
     return res.status(403).json({ error: 'Admin or developer access required' });
+  }
+
+  // Auditors can only read
+  if (user.role === 'auditor' && req.method !== 'GET') {
+    return res.status(403).json({ error: 'Auditor accounts have read-only access' });
+  }
+
+  next();
+}
+
+// Allow admin, developer, and auditor roles (read-only access for auditors)
+export function ensureAdminReadAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const user = req.user as any;
+  
+  if (user.role !== 'admin' && user.role !== 'developer' && user.role !== 'auditor') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  if (user.role === 'auditor' && req.method !== 'GET') {
+    return res.status(403).json({ error: 'Auditor accounts have read-only access' });
   }
 
   next();

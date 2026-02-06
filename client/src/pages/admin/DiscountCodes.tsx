@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -142,6 +142,9 @@ const emptyFormData: CodeFormData = {
 export default function DiscountCodes() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [searchQuery, setSearchQuery] = useState("");
   const [partnerFilter, setPartnerFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
@@ -152,6 +155,32 @@ export default function DiscountCodes() {
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
   const [viewingUsage, setViewingUsage] = useState<DiscountCode | null>(null);
   const [formData, setFormData] = useState<CodeFormData>(emptyFormData);
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const { data: codes, isLoading } = useQuery<DiscountCode[]>({
     queryKey: ["/api/admin/discount-codes"],
@@ -493,28 +522,36 @@ export default function DiscountCodes() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={handleExportCSV}
-              disabled={!codes || codes.length === 0}
-              data-testid="button-export-csv"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button
-              onClick={() => {
-                setFormData(emptyFormData);
-                setShowCreateDialog(true);
-              }}
-              data-testid="button-create-code"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Code
-            </Button>
-          </div>
+          {!isAuditor && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportCSV}
+                disabled={!codes || codes.length === 0}
+                data-testid="button-export-csv"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                onClick={() => {
+                  setFormData(emptyFormData);
+                  setShowCreateDialog(true);
+                }}
+                data-testid="button-create-code"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Code
+              </Button>
+            </div>
+          )}
         </div>
+
+        {isAuditor && (
+          <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+            <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
@@ -725,22 +762,6 @@ export default function DiscountCodes() {
                         </div>
                         
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {!code.stripeCouponId && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => syncStripeMutation.mutate(code.id)}
-                              disabled={syncStripeMutation.isPending}
-                              data-testid={`button-sync-stripe-${code.id}`}
-                            >
-                              {syncStripeMutation.isPending ? (
-                                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-                              ) : (
-                                <CreditCard className="h-4 w-4 mr-1" />
-                              )}
-                              Sync to Stripe
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -749,22 +770,42 @@ export default function DiscountCodes() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(code)}
-                            data-testid={`button-edit-${code.id}`}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setCodeToDelete(code)}
-                            data-testid={`button-delete-${code.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {!isAuditor && (
+                            <>
+                              {!code.stripeCouponId && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => syncStripeMutation.mutate(code.id)}
+                                  disabled={syncStripeMutation.isPending}
+                                  data-testid={`button-sync-stripe-${code.id}`}
+                                >
+                                  {syncStripeMutation.isPending ? (
+                                    <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <CreditCard className="h-4 w-4 mr-1" />
+                                  )}
+                                  Sync to Stripe
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(code)}
+                                data-testid={`button-edit-${code.id}`}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCodeToDelete(code)}
+                                data-testid={`button-delete-${code.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

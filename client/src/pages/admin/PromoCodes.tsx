@@ -121,6 +121,8 @@ export default function PromoCodes() {
   const [formData, setFormData] = useState<PromoFormData>(emptyFormData);
   const [activeTab, setActiveTab] = useState("codes");
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -128,7 +130,7 @@ export default function PromoCodes() {
         const response = await fetch("/api/auth/me", { credentials: "include" });
         if (response.ok) {
           const data = await response.json();
-          if (data.role !== 'admin') {
+          if (data.role !== 'admin' && data.role !== 'auditor') {
             toast({
               title: "Access Denied",
               description: "Admin privileges required.",
@@ -137,6 +139,7 @@ export default function PromoCodes() {
             setLocation("/admin/login");
             return;
           }
+          setUserRole(data.role);
         } else {
           setLocation("/admin/login");
           return;
@@ -311,6 +314,11 @@ export default function PromoCodes() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
+        {isAuditor && (
+          <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-700 dark:text-amber-400" data-testid="banner-read-only">
+            You are viewing this page in read-only mode
+          </div>
+        )}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button
@@ -326,16 +334,18 @@ export default function PromoCodes() {
               <p className="text-muted-foreground">Manage launch promo codes and waitlists</p>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              setFormData({ ...emptyFormData, code: generatePromoCode() });
-              setIsCreateDialogOpen(true);
-            }}
-            data-testid="button-create-promo"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Promo Code
-          </Button>
+          {!isAuditor && (
+            <Button
+              onClick={() => {
+                setFormData({ ...emptyFormData, code: generatePromoCode() });
+                setIsCreateDialogOpen(true);
+              }}
+              data-testid="button-create-promo"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Promo Code
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -487,14 +497,16 @@ export default function PromoCodes() {
                                 <Users className="h-4 w-4 mr-1" />
                                 Waitlist
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditDialog(promo)}
-                                data-testid={`button-edit-${promo.id}`}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
+                              {!isAuditor && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(promo)}
+                                  data-testid={`button-edit-${promo.id}`}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -532,18 +544,20 @@ export default function PromoCodes() {
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
                       </Button>
-                      <Button
-                        onClick={() => notifyNextMutation.mutate(selectedPromo.id)}
-                        disabled={notifyNextMutation.isPending || selectedWaitlist.length === 0}
-                        data-testid="button-notify-next"
-                      >
-                        {notifyNextMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Bell className="h-4 w-4 mr-2" />
-                        )}
-                        Notify Next
-                      </Button>
+                      {!isAuditor && (
+                        <Button
+                          onClick={() => notifyNextMutation.mutate(selectedPromo.id)}
+                          disabled={notifyNextMutation.isPending || selectedWaitlist.length === 0}
+                          data-testid="button-notify-next"
+                        >
+                          {notifyNextMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Bell className="h-4 w-4 mr-2" />
+                          )}
+                          Notify Next
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>

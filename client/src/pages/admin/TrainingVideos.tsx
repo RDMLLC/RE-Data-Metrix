@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
@@ -24,7 +24,37 @@ import type { TrainingVideo } from "@shared/schema";
 export default function AdminTrainingVideos() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
+
   const [editingVideo, setEditingVideo] = useState<TrainingVideo | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -172,11 +202,19 @@ export default function AdminTrainingVideos() {
                 Manage educational videos displayed in the Toolbox
               </p>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)} data-testid="button-add-video">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Video
-            </Button>
+            {!isAuditor && (
+              <Button onClick={() => setIsDialogOpen(true)} data-testid="button-add-video">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Video
+              </Button>
+            )}
           </div>
+
+          {isAuditor && (
+            <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+              <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+            </div>
+          )}
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -190,10 +228,12 @@ export default function AdminTrainingVideos() {
                 <p className="text-muted-foreground mb-4">
                   Add your first training video to get started
                 </p>
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Video
-                </Button>
+                {!isAuditor && (
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Video
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -256,50 +296,52 @@ export default function AdminTrainingVideos() {
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => toggleFeatured(video)}
-                                title={video.isFeatured ? "Remove featured" : "Set as featured"}
-                                data-testid={`button-toggle-featured-${video.id}`}
-                              >
-                                <Star className={`h-4 w-4 ${video.isFeatured ? "fill-amber-500 text-amber-500" : "text-muted-foreground"}`} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => toggleActive(video)}
-                                title={video.isActive ? "Hide video" : "Show video"}
-                                data-testid={`button-toggle-active-${video.id}`}
-                              >
-                                {video.isActive ? (
-                                  <Eye className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEditDialog(video)}
-                                data-testid={`button-edit-video-${video.id}`}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  if (confirm("Are you sure you want to delete this video?")) {
-                                    deleteMutation.mutate(video.id);
-                                  }
-                                }}
-                                data-testid={`button-delete-video-${video.id}`}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
+                            {!isAuditor && (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleFeatured(video)}
+                                  title={video.isFeatured ? "Remove featured" : "Set as featured"}
+                                  data-testid={`button-toggle-featured-${video.id}`}
+                                >
+                                  <Star className={`h-4 w-4 ${video.isFeatured ? "fill-amber-500 text-amber-500" : "text-muted-foreground"}`} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => toggleActive(video)}
+                                  title={video.isActive ? "Hide video" : "Show video"}
+                                  data-testid={`button-toggle-active-${video.id}`}
+                                >
+                                  {video.isActive ? (
+                                    <Eye className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEditDialog(video)}
+                                  data-testid={`button-edit-video-${video.id}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (confirm("Are you sure you want to delete this video?")) {
+                                      deleteMutation.mutate(video.id);
+                                    }
+                                  }}
+                                  data-testid={`button-delete-video-${video.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
@@ -117,6 +117,9 @@ interface UserStats {
 export default function UserManagement() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
+  const isAuditor = userRole === 'auditor';
   const [searchTerm, setSearchTerm] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<string>("all");
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
@@ -128,6 +131,32 @@ export default function UserManagement() {
   const [developerUsername, setDeveloperUsername] = useState("");
   const [developerPassword, setDeveloperPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== 'admin' && data.role !== 'auditor') {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+          setUserRole(data.role);
+        } else {
+          setLocation("/admin/login");
+          return;
+        }
+      } catch {
+        setLocation("/admin/login");
+        return;
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, [setLocation, toast]);
 
   const { data: users, isLoading: usersLoading } = useQuery<UserWithStats[]>({
     queryKey: ["/api/admin/users"],
@@ -353,14 +382,22 @@ export default function UserManagement() {
                 <p className="text-muted-foreground mt-1">Manage users, subscriptions, and view activity</p>
               </div>
             </div>
-            <Button
-              onClick={() => setShowCreateDeveloper(true)}
-              data-testid="button-create-developer"
-            >
-              <Code className="h-4 w-4 mr-2" />
-              Create Developer
-            </Button>
+            {!isAuditor && (
+              <Button
+                onClick={() => setShowCreateDeveloper(true)}
+                data-testid="button-create-developer"
+              >
+                <Code className="h-4 w-4 mr-2" />
+                Create Developer
+              </Button>
+            )}
           </div>
+
+          {isAuditor && (
+            <div className="mb-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800" data-testid="banner-read-only">
+              <p className="text-sm text-amber-800 dark:text-amber-200">You are viewing this page in read-only mode.</p>
+            </div>
+          )}
 
           {/* Stats Overview */}
           {stats && (
@@ -504,36 +541,45 @@ export default function UserManagement() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Select
-                                  value={user.subscriptionStatus}
-                                  onValueChange={(value) => setUserToUpdate({ user, status: value })}
-                                >
-                                  <SelectTrigger className="w-[130px]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="free">Free</SelectItem>
-                                    <SelectItem value="comped">Comped</SelectItem>
-                                    <SelectItem value="referral_trial">Referral Trial</SelectItem>
-                                    <SelectItem value="archived">Archived</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                {!isAuditor ? (
+                                  <Select
+                                    value={user.subscriptionStatus}
+                                    onValueChange={(value) => setUserToUpdate({ user, status: value })}
+                                  >
+                                    <SelectTrigger className="w-[130px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="active">Active</SelectItem>
+                                      <SelectItem value="free">Free</SelectItem>
+                                      <SelectItem value="comped">Comped</SelectItem>
+                                      <SelectItem value="referral_trial">Referral Trial</SelectItem>
+                                      <SelectItem value="archived">Archived</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <span className="text-sm">{getSubscriptionBadge(user.subscriptionStatus)}</span>
+                                )}
                               </TableCell>
                               <TableCell>
-                                <Select
-                                  value={user.role}
-                                  onValueChange={(value) => updateRoleMutation.mutate({ userId: user.id, role: value })}
-                                >
-                                  <SelectTrigger className="w-[110px]" data-testid={`select-role-${user.id}`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="user">User</SelectItem>
-                                    <SelectItem value="developer">Developer</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                {!isAuditor ? (
+                                  <Select
+                                    value={user.role}
+                                    onValueChange={(value) => updateRoleMutation.mutate({ userId: user.id, role: value })}
+                                  >
+                                    <SelectTrigger className="w-[110px]" data-testid={`select-role-${user.id}`}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="user">User</SelectItem>
+                                      <SelectItem value="auditor">Auditor</SelectItem>
+                                      <SelectItem value="developer">Developer</SelectItem>
+                                      <SelectItem value="admin">Admin</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <span className="text-sm capitalize">{user.role}</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {user.isEmailVerified ? (
@@ -573,30 +619,32 @@ export default function UserManagement() {
                                 {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {!user.isEmailVerified && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setUserToResendVerification(user)}
-                                      data-testid={`button-resend-${user.id}`}
-                                    >
-                                      <Mail className="h-4 w-4 mr-1" />
-                                      Resend
-                                    </Button>
-                                  )}
-                                  {user.referralCount === 0 && user.role !== 'admin' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      onClick={() => setUserToDelete(user)}
-                                      data-testid={`button-delete-${user.id}`}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
+                                {!isAuditor && (
+                                  <div className="flex items-center gap-2">
+                                    {!user.isEmailVerified && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setUserToResendVerification(user)}
+                                        data-testid={`button-resend-${user.id}`}
+                                      >
+                                        <Mail className="h-4 w-4 mr-1" />
+                                        Resend
+                                      </Button>
+                                    )}
+                                    {user.referralCount === 0 && user.role !== 'admin' && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => setUserToDelete(user)}
+                                        data-testid={`button-delete-${user.id}`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -790,15 +838,17 @@ export default function UserManagement() {
                             </TableCell>
                             <TableCell>{getSubscriptionBadge(user.subscriptionStatus)}</TableCell>
                             <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setUserToResendVerification(user)}
-                                disabled={resendVerificationMutation.isPending}
-                              >
-                                <RefreshCw className={`h-4 w-4 mr-1 ${resendVerificationMutation.isPending ? 'animate-spin' : ''}`} />
-                                Resend Verification
-                              </Button>
+                              {!isAuditor && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setUserToResendVerification(user)}
+                                  disabled={resendVerificationMutation.isPending}
+                                >
+                                  <RefreshCw className={`h-4 w-4 mr-1 ${resendVerificationMutation.isPending ? 'animate-spin' : ''}`} />
+                                  Resend Verification
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -852,32 +902,36 @@ export default function UserManagement() {
                             <TableCell>{user.lendersSaved}</TableCell>
                             <TableCell>{user.referralCount}</TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Select
-                                  value={user.subscriptionStatus}
-                                  onValueChange={(value) => setUserToUpdate({ user, status: value })}
-                                >
-                                  <SelectTrigger className="w-[130px]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="active">Restore Active</SelectItem>
-                                    <SelectItem value="free">Set Free</SelectItem>
-                                    <SelectItem value="archived">Keep Archived</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                {user.referralCount === 0 && user.role !== 'admin' && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => setUserToDelete(user)}
-                                    data-testid={`button-delete-archived-${user.id}`}
+                              {!isAuditor ? (
+                                <div className="flex items-center gap-2">
+                                  <Select
+                                    value={user.subscriptionStatus}
+                                    onValueChange={(value) => setUserToUpdate({ user, status: value })}
                                   >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
+                                    <SelectTrigger className="w-[130px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="active">Restore Active</SelectItem>
+                                      <SelectItem value="free">Set Free</SelectItem>
+                                      <SelectItem value="archived">Keep Archived</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {user.referralCount === 0 && user.role !== 'admin' && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      onClick={() => setUserToDelete(user)}
+                                      data-testid={`button-delete-archived-${user.id}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">{user.subscriptionStatus}</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
