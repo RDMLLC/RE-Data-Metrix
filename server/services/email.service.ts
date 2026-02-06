@@ -732,6 +732,89 @@ class EmailService {
     });
   }
 
+  async sendAuditorInviteEmail(to: string, inviteCode: string, companyName: string | null, expiresAt: Date): Promise<boolean> {
+    const registerUrl = `${this.getBaseUrl()}/register?auditor=${inviteCode}`;
+    const expiryFormatted = expiresAt.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #6B21A8 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .code-box { background: #F5F3FF; border: 2px solid #6B21A8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0; }
+          .code { font-size: 24px; font-weight: bold; color: #6B21A8; letter-spacing: 2px; font-family: monospace; }
+          .feature-box { background: #F9FAFB; padding: 15px; border-radius: 6px; margin: 15px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Auditor Access Invitation</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">RE Data Metrix Platform Access</p>
+          </div>
+          <div class="content">
+            <p>Hello${companyName ? ' (' + companyName + ')' : ''},</p>
+            <p>You've been invited to join RE Data Metrix as an <strong>Auditor</strong>. This gives you read-only access to the platform's admin area for reporting, analytics, and performance monitoring.</p>
+            
+            <div class="code-box">
+              <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">Your Auditor Invite Code:</p>
+              <div class="code">${inviteCode}</div>
+            </div>
+            
+            <div style="text-align: center;">
+              <a href="${registerUrl}" style="display: inline-block; padding: 14px 28px; background-color: #6B21A8; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: 600; font-size: 16px;">Create Your Account</a>
+            </div>
+            
+            <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 18px;">Your Auditor Access Includes:</h2>
+            
+            <div class="feature-box">
+              <strong style="color: #6B21A8;">View-Only Admin Dashboard</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Access all admin reports, analytics, and user data in read-only mode</p>
+            </div>
+            
+            <div class="feature-box">
+              <strong style="color: #1E3A8A;">Performance Analytics</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">View affiliate stats, subscription reports, marketing pixel data, and more</p>
+            </div>
+            
+            <div class="feature-box">
+              <strong style="color: #0F7B49;">Platform Monitoring</strong>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555;">Monitor user activity, webinar registrations, and lender performance</p>
+            </div>
+            
+            <p style="margin-top: 25px; padding: 15px; background: #FEF3C7; border-radius: 6px; font-size: 14px;">
+              <strong>Note:</strong> This invitation expires on <strong>${expiryFormatted}</strong>. Register before then to activate your auditor access.
+            </p>
+            
+            <p style="margin-top: 20px;">If you have any questions, just reply to this email.</p>
+            
+            <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'RE Data Metrix - Auditor Access Invitation',
+      html: htmlContent,
+    });
+  }
+
   async sendLenderSavedNotification(to: string, companyName: string, memberName: string): Promise<boolean> {
     const reportUrl = `${this.getBaseUrl()}/lender-saved-by`;
 

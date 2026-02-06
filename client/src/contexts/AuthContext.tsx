@@ -44,6 +44,8 @@ interface RegisterData {
   fullName: string;
   referralCode?: string;
   compCode?: string;
+  auditorCode?: string;
+  pendingPlan?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

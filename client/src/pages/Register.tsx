@@ -52,6 +52,8 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [compCode, setCompCode] = useState<string>("");
   const [compEmail, setCompEmail] = useState<string | null>(null);
+  const [auditorCode, setAuditorCode] = useState<string>("");
+  const [auditorEmail, setAuditorEmail] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -70,10 +72,13 @@ export default function Register() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const comp = params.get("comp");
+    const auditor = params.get("auditor");
     const returnToParam = params.get("returnTo");
     const planParam = params.get("plan");
     
-    if (comp) {
+    if (auditor) {
+      validateAuditorCode(auditor.toUpperCase());
+    } else if (comp) {
       validateCompCode(comp.toUpperCase());
     }
     if (returnToParam && isValidReturnTo(returnToParam)) {
@@ -99,6 +104,21 @@ export default function Register() {
     }
   };
 
+  const validateAuditorCode = async (code: string) => {
+    try {
+      const res = await fetch(`/api/auditor-invites/validate/${code}`);
+      const data = await res.json();
+      if (data.valid) {
+        setAuditorCode(code);
+        if (data.email) {
+          setAuditorEmail(data.email);
+        }
+      }
+    } catch {
+      // Silently fail - user can still register normally
+    }
+  };
+
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -112,10 +132,12 @@ export default function Register() {
   });
 
   useEffect(() => {
-    if (compEmail) {
+    if (auditorEmail) {
+      form.setValue("email", auditorEmail);
+    } else if (compEmail) {
       form.setValue("email", compEmail);
     }
-  }, [compEmail, form]);
+  }, [compEmail, auditorEmail, form]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
@@ -124,6 +146,7 @@ export default function Register() {
       const finalData = {
         ...registerData,
         compCode: compCode || undefined,
+        auditorCode: auditorCode || undefined,
         pendingPlan: selectedPlan || undefined,
       };
       const result = await register(finalData);
@@ -255,11 +278,11 @@ export default function Register() {
                                 type="email"
                                 placeholder="you@example.com"
                                 autoComplete="email"
-                                disabled={!!compEmail}
+                                disabled={!!compEmail || !!auditorEmail}
                                 data-testid="input-email"
                               />
                             </FormControl>
-                            {compEmail && (
+                            {(compEmail || auditorEmail) && (
                               <FormDescription>
                                 Email is pre-filled from your invitation
                               </FormDescription>

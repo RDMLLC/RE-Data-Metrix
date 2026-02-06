@@ -14,6 +14,7 @@ export const registrationSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   referralCode: z.string().optional(),
   compCode: z.string().optional(),
+  auditorCode: z.string().optional(),
   termsAccepted: z.boolean().optional(),
   pendingPlan: z.enum(["monthly", "annual"]).optional(),
 });
@@ -130,6 +131,28 @@ class AuthService {
     return { valid: true, invite };
   }
 
+  async validateAuditorCode(auditorCode: string): Promise<{
+    valid: boolean;
+    invite?: { id: string; email: string; companyName: string | null; status: string; expiresAt: Date };
+    error?: string;
+  }> {
+    const invite = await storage.getAuditorInviteByCode(auditorCode.toUpperCase());
+    
+    if (!invite) {
+      return { valid: false, error: "Invalid auditor invite code" };
+    }
+
+    if (invite.status !== 'pending') {
+      return { valid: false, error: "This auditor invite code has already been used" };
+    }
+
+    if (new Date() > invite.expiresAt) {
+      return { valid: false, error: "This auditor invite code has expired" };
+    }
+
+    return { valid: true, invite };
+  }
+
   async registerUser(input: RegistrationInput): Promise<RegistrationResult> {
     try {
       const validatedData = registrationSchema.parse(input);
@@ -153,8 +176,24 @@ class AuthService {
       let referredByUserId: string | null = null;
       let subscriptionStatus: SubscriptionStatus = 'free';
       let compInviteToAccept: { id: string; email: string; status: string; expiresAt: Date } | undefined;
+      let auditorInviteToAccept: { id: string; email: string; companyName: string | null; status: string; expiresAt: Date } | undefined;
+      let userRole: string = 'user';
 
-      if (validatedData.compCode) {
+      if (validatedData.auditorCode) {
+        console.log('[AuthService] Auditor code provided:', validatedData.auditorCode.toUpperCase());
+        const auditorValidation = await this.validateAuditorCode(validatedData.auditorCode);
+        
+        if (auditorValidation.valid && auditorValidation.invite) {
+          auditorInviteToAccept = auditorValidation.invite;
+          subscriptionStatus = 'comped';
+          userRole = 'auditor';
+          console.log('[AuthService] Auditor code valid - setting role to auditor');
+        } else {
+          console.log('[AuthService] Auditor code invalid:', auditorValidation.error);
+        }
+      }
+
+      if (!auditorInviteToAccept && validatedData.compCode) {
         console.log('[AuthService] Comp code provided:', validatedData.compCode.toUpperCase());
         const compValidation = await this.validateCompCode(validatedData.compCode);
         
@@ -167,7 +206,7 @@ class AuthService {
         }
       }
 
-      if (!compInviteToAccept && validatedData.referralCode) {
+      if (!compInviteToAccept && !auditorInviteToAccept && validatedData.referralCode) {
         const [referrer] = await db
           .select()
           .from(users)
@@ -180,7 +219,7 @@ class AuthService {
         }
       }
 
-      const isAutoVerified = !!compInviteToAccept;
+      const isAutoVerified = !!compInviteToAccept || !!auditorInviteToAccept;
 
       const [newUser] = await db
         .insert(users)
@@ -188,7 +227,7 @@ class AuthService {
           username: validatedData.username,
           email: validatedData.email,
           password: hashedPassword,
-          role: 'user',
+          role: userRole,
           subscriptionStatus,
           referralCode: userReferralCode,
           referredBy: referredByUserId,
@@ -207,7 +246,9 @@ class AuthService {
         fullName: validatedData.fullName,
       });
 
-      if (compInviteToAccept) {
+      if (auditorInviteToAccept) {
+        await storage.acceptAuditorInvite(validatedData.auditorCode!.toUpperCase(), newUser.id);
+      } else if (compInviteToAccept) {
         await storage.acceptCompInvite(validatedData.compCode!.toUpperCase(), newUser.id);
       }
 
@@ -241,7 +282,7 @@ class AuthService {
           isEmailVerified: newUser.isEmailVerified || false,
         },
         requiresVerification: !isAutoVerified,
-        isComped: !!compInviteToAccept,
+        isComped: !!compInviteToAccept || !!auditorInviteToAccept,
         message,
       };
     } catch (error: any) {

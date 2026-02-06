@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -3710,6 +3710,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clear comp invite references (set to null instead of deleting the invites)
       await db.update(compInvites).set({ invitedBy: null }).where(eq(compInvites.invitedBy, id));
       await db.update(compInvites).set({ acceptedBy: null }).where(eq(compInvites.acceptedBy, id));
+      // Clear auditor invite references
+      await db.update(auditorInvites).set({ invitedBy: null }).where(eq(auditorInvites.invitedBy, id));
+      await db.update(auditorInvites).set({ acceptedBy: null }).where(eq(auditorInvites.acceptedBy, id));
       
       // Delete the user
       await db.delete(users).where(eq(users.id, id));
@@ -3802,6 +3805,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete comp invite error:', error);
       res.status(500).json({ error: "Failed to delete comp invite" });
+    }
+  });
+
+  // =====================
+  // Admin Auditor Invites Routes
+  // =====================
+
+  app.post("/api/admin/auditor-invites", ensureAdmin, async (req, res) => {
+    try {
+      const { email, companyName, expiresInDays } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const adminId = (req.user as User).id;
+      const result = await storage.createAuditorInvite(email, adminId, companyName, expiresInDays || 30);
+      
+      const emailSent = await emailService.sendAuditorInviteEmail(result.email, result.inviteCode, companyName || null, result.expiresAt);
+      
+      res.json({ 
+        ...result, 
+        emailSent,
+        message: emailSent ? "Auditor invitation sent successfully" : "Invitation created but email failed to send"
+      });
+    } catch (error) {
+      console.error('Create auditor invite error:', error);
+      res.status(500).json({ error: "Failed to create auditor invite" });
+    }
+  });
+
+  app.get("/api/admin/auditor-invites", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const invites = await storage.getAllAuditorInvites();
+      res.json(invites);
+    } catch (error) {
+      console.error('Get auditor invites error:', error);
+      res.status(500).json({ error: "Failed to fetch auditor invites" });
+    }
+  });
+
+  app.post("/api/admin/auditor-invites/:id/resend", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await storage.resendAuditorInvite(id);
+      
+      if (!result) {
+        return res.status(404).json({ error: "Auditor invite not found" });
+      }
+      
+      const emailSent = await emailService.sendAuditorInviteEmail(result.email, result.inviteCode, null, result.expiresAt);
+      
+      res.json({ 
+        ...result, 
+        emailSent,
+        message: emailSent ? "Invitation resent successfully" : "Invitation updated but email failed to send"
+      });
+    } catch (error) {
+      console.error('Resend auditor invite error:', error);
+      res.status(500).json({ error: "Failed to resend auditor invite" });
+    }
+  });
+
+  app.delete("/api/admin/auditor-invites/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteAuditorInvite(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Auditor invite not found" });
+      }
+      
+      res.json({ success: true, message: "Auditor invite deleted" });
+    } catch (error) {
+      console.error('Delete auditor invite error:', error);
+      res.status(500).json({ error: "Failed to delete auditor invite" });
     }
   });
 
@@ -6639,6 +6718,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ valid: true, email: invite.email });
     } catch (error) {
       console.error('Validate comp code error:', error);
+      res.status(500).json({ error: "Failed to validate code" });
+    }
+  });
+
+  // Validate auditor invite code (public - for registration page)
+  app.get("/api/auditor-invites/validate/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const invite = await storage.getAuditorInviteByCode(code.toUpperCase());
+      
+      if (!invite) {
+        return res.json({ valid: false, reason: "Invalid code" });
+      }
+      
+      if (invite.status !== 'pending') {
+        return res.json({ valid: false, reason: "Code has already been used" });
+      }
+      
+      if (new Date() > invite.expiresAt) {
+        return res.json({ valid: false, reason: "Code has expired" });
+      }
+      
+      res.json({ valid: true, email: invite.email, companyName: invite.companyName });
+    } catch (error) {
+      console.error('Validate auditor code error:', error);
       res.status(500).json({ error: "Failed to validate code" });
     }
   });

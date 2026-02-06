@@ -91,7 +91,9 @@ import {
   type MarketingPixel,
   type InsertMarketingPixel,
   promoCodes as promoCodesTable,
-  type PromoCode
+  type PromoCode,
+  auditorInvites as auditorInvitesTable,
+  type AuditorInvite
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -370,6 +372,25 @@ export interface IStorage {
   }>>;
   resendCompInvite(id: string): Promise<{compCode: string; email: string; expiresAt: Date} | undefined>;
   deleteCompInvite(id: string): Promise<boolean>;
+  
+  // Auditor Invites
+  createAuditorInvite(email: string, invitedById: string, companyName?: string, expiresInDays?: number): Promise<{inviteCode: string; email: string; expiresAt: Date}>;
+  getAuditorInviteByCode(inviteCode: string): Promise<{id: string; email: string; companyName: string | null; status: string; expiresAt: Date} | undefined>;
+  acceptAuditorInvite(inviteCode: string, userId: string): Promise<boolean>;
+  getAllAuditorInvites(): Promise<Array<{
+    id: string;
+    email: string;
+    inviteCode: string;
+    companyName: string | null;
+    status: string;
+    invitedByEmail: string | null;
+    acceptedByEmail: string | null;
+    expiresAt: Date;
+    acceptedAt: Date | null;
+    createdAt: Date | null;
+  }>>;
+  resendAuditorInvite(id: string): Promise<{inviteCode: string; email: string; expiresAt: Date} | undefined>;
+  deleteAuditorInvite(id: string): Promise<boolean>;
   
   // Discount Codes
   createDiscountCode(data: {
@@ -1155,6 +1176,25 @@ export class MemStorage implements IStorage {
     throw new Error("Not implemented in MemStorage");
   }
 
+  async createAuditorInvite(email: string, invitedById: string, companyName?: string, expiresInDays?: number): Promise<{inviteCode: string; email: string; expiresAt: Date}> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  async getAuditorInviteByCode(inviteCode: string): Promise<{id: string; email: string; companyName: string | null; status: string; expiresAt: Date} | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  async acceptAuditorInvite(inviteCode: string, userId: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  async getAllAuditorInvites(): Promise<Array<{id: string; email: string; inviteCode: string; companyName: string | null; status: string; invitedByEmail: string | null; acceptedByEmail: string | null; expiresAt: Date; acceptedAt: Date | null; createdAt: Date | null}>> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  async resendAuditorInvite(id: string): Promise<{inviteCode: string; email: string; expiresAt: Date} | undefined> {
+    throw new Error("Not implemented in MemStorage");
+  }
+  async deleteAuditorInvite(id: string): Promise<boolean> {
+    throw new Error("Not implemented in MemStorage");
+  }
+
   // Marketing Pixels (stubs)
   async getAllMarketingPixels(): Promise<MarketingPixel[]> {
     throw new Error("Not implemented in MemStorage");
@@ -1833,6 +1873,141 @@ export class DatabaseStorage implements IStorage {
   async deleteCompInvite(id: string): Promise<boolean> {
     const result = await db.delete(compInvitesTable)
       .where(eq(compInvitesTable.id, id))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async createAuditorInvite(email: string, invitedById: string, companyName?: string, expiresInDays: number = 30): Promise<{inviteCode: string; email: string; expiresAt: Date}> {
+    const inviteCode = 'AUD-' + randomBytes(16).toString('hex').substring(0, 8).toUpperCase();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    
+    await db.insert(auditorInvitesTable).values({
+      email,
+      inviteCode,
+      companyName: companyName || null,
+      status: 'pending',
+      invitedBy: invitedById,
+      expiresAt,
+    });
+    
+    return { inviteCode, email, expiresAt };
+  }
+
+  async getAuditorInviteByCode(inviteCode: string): Promise<{id: string; email: string; companyName: string | null; status: string; expiresAt: Date} | undefined> {
+    const result = await db.select().from(auditorInvitesTable)
+      .where(sqlCount`UPPER(${auditorInvitesTable.inviteCode}) = UPPER(${inviteCode})`)
+      .limit(1);
+    
+    if (!result[0]) return undefined;
+    
+    return {
+      id: result[0].id,
+      email: result[0].email,
+      companyName: result[0].companyName,
+      status: result[0].status,
+      expiresAt: result[0].expiresAt,
+    };
+  }
+
+  async acceptAuditorInvite(inviteCode: string, userId: string): Promise<boolean> {
+    const invite = await db.select().from(auditorInvitesTable)
+      .where(sqlCount`UPPER(${auditorInvitesTable.inviteCode}) = UPPER(${inviteCode})`)
+      .limit(1);
+    
+    if (!invite[0]) return false;
+    if (invite[0].status !== 'pending') return false;
+    if (new Date() > invite[0].expiresAt) return false;
+    
+    await db.update(auditorInvitesTable)
+      .set({ 
+        status: 'accepted',
+        acceptedBy: userId,
+        acceptedAt: new Date(),
+      })
+      .where(eq(auditorInvitesTable.id, invite[0].id));
+    
+    await db.update(usersTable)
+      .set({ role: 'auditor', subscriptionStatus: 'comped' })
+      .where(eq(usersTable.id, userId));
+    
+    return true;
+  }
+
+  async getAllAuditorInvites(): Promise<Array<{
+    id: string;
+    email: string;
+    inviteCode: string;
+    companyName: string | null;
+    status: string;
+    invitedByEmail: string | null;
+    acceptedByEmail: string | null;
+    expiresAt: Date;
+    acceptedAt: Date | null;
+    createdAt: Date | null;
+  }>> {
+    const invites = await db.select().from(auditorInvitesTable)
+      .orderBy(desc(auditorInvitesTable.createdAt));
+    
+    const enrichedInvites = await Promise.all(invites.map(async (invite) => {
+      let invitedByEmail: string | null = null;
+      let acceptedByEmail: string | null = null;
+      
+      if (invite.invitedBy) {
+        const inviter = await db.select().from(usersTable)
+          .where(eq(usersTable.id, invite.invitedBy)).limit(1);
+        if (inviter[0]) invitedByEmail = inviter[0].email;
+      }
+      
+      if (invite.acceptedBy) {
+        const accepter = await db.select().from(usersTable)
+          .where(eq(usersTable.id, invite.acceptedBy)).limit(1);
+        if (accepter[0]) acceptedByEmail = accepter[0].email;
+      }
+      
+      return {
+        id: invite.id,
+        email: invite.email,
+        inviteCode: invite.inviteCode,
+        companyName: invite.companyName,
+        status: invite.status,
+        invitedByEmail,
+        acceptedByEmail,
+        expiresAt: invite.expiresAt,
+        acceptedAt: invite.acceptedAt,
+        createdAt: invite.createdAt,
+      };
+    }));
+    
+    return enrichedInvites;
+  }
+
+  async resendAuditorInvite(id: string): Promise<{inviteCode: string; email: string; expiresAt: Date} | undefined> {
+    const invite = await db.select().from(auditorInvitesTable)
+      .where(eq(auditorInvitesTable.id, id))
+      .limit(1);
+    
+    if (!invite[0]) return undefined;
+    
+    const newInviteCode = 'AUD-' + randomBytes(16).toString('hex').substring(0, 8).toUpperCase();
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 30);
+    
+    await db.update(auditorInvitesTable)
+      .set({ 
+        inviteCode: newInviteCode,
+        expiresAt: newExpiresAt,
+        status: 'pending',
+      })
+      .where(eq(auditorInvitesTable.id, id));
+    
+    return { inviteCode: newInviteCode, email: invite[0].email, expiresAt: newExpiresAt };
+  }
+
+  async deleteAuditorInvite(id: string): Promise<boolean> {
+    const result = await db.delete(auditorInvitesTable)
+      .where(eq(auditorInvitesTable.id, id))
       .returning();
     
     return result.length > 0;
