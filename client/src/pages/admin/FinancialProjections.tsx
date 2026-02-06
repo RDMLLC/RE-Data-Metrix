@@ -67,7 +67,7 @@ export default function FinancialProjections() {
       </div>
       <div className="flex-1 px-6 pb-6">
         <iframe
-          src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVCbVoIeY3TgB1R-45L1hm-NV2uBpiepp7Ry7sYsS6W53CDaxkwPZD8N1R4AmWPyxGOOow-iZWawik/pubhtml?widget=true&headers=false"
+          src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSVCbVoIeY3TgB1R-45L1hm-NV2uBpiepp7Ry7sYsS6W53CDaxkwPZD8N1R4AmWPyxGOOow-iZWawik/pubhtml?widget=true&headers=false&chrome=false&rm=minimal"
           className="w-full h-full min-h-[calc(100vh-160px)] border rounded-lg"
           title="Financial Projections"
           data-testid="iframe-financial-projections"
