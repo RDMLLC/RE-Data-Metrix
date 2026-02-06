@@ -539,6 +539,15 @@ export default function AdminDashboard() {
                       <Calculator className="h-3.5 w-3.5 mr-1.5" />
                       Calculations
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/financial-projections")}
+                      data-testid="button-financial-projections"
+                    >
+                      <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+                      Financial Projections
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
