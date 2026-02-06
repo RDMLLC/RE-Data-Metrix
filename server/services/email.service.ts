@@ -2064,6 +2064,57 @@ END:VCALENDAR`;
       html: htmlContent,
     });
   }
+  async sendLenderBroadcastEmail(to: string, contactName: string, companyName: string, subject: string, bodyHtml: string): Promise<boolean> {
+    const portalUrl = `${this.getBaseUrl()}/lender-login`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .highlight-box { background: #F0F9FF; border: 1px solid #1E3A8A; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .cta-box { background: #F0FDF4; border: 1px solid #0F7B49; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+          .button { display: inline-block; padding: 14px 28px; background: #D4AF37; color: #1E3A8A; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: bold; font-size: 16px; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">RE Data Metrix</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">Lender Partner Update</p>
+          </div>
+          <div class="content">
+            <p>Hi ${contactName},</p>
+            ${bodyHtml}
+            <div class="cta-box">
+              <p style="margin: 0 0 12px; font-weight: 600; color: #0F7B49;">Review Your Portal Information</p>
+              <p style="margin: 0 0 16px; font-size: 14px; color: #555;">Please log in and confirm your company details and loan products are accurate and up to date.</p>
+              <a href="${portalUrl}" class="button">Log Into Your Portal</a>
+            </div>
+            <p style="margin-top: 24px;">Thank you again for your trust and partnership. I'm looking forward to what's ahead for all of us.</p>
+            <p style="margin-top: 24px;">Warm regards,<br><strong>RE Data Metrix</strong></p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="font-size: 12px; color: #9ca3af;">8375 Dunwoody Place, STE R, Atlanta, GA 30350</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject,
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

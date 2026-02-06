@@ -50,6 +50,7 @@ import LenderInvite from "@/pages/admin/LenderInvite";
 import AdminLogin from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import LenderManagement from "@/pages/admin/LenderManagement";
+import AdminLenderBroadcast from "@/pages/admin/LenderBroadcast";
 import AdminLenderDetail from "@/pages/admin/LenderDetail";
 import AdminReports from "@/pages/admin/Reports";
 import AdminCompUsers from "@/pages/admin/CompUsers";
@@ -195,6 +196,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/lenders/:id" component={AdminLenderDetail} />
       <Route path="/admin/lenders" component={LenderManagement} />
+      <Route path="/admin/lender-broadcast" component={AdminLenderBroadcast} />
       <Route path="/admin/reports" component={AdminReports} />
       <Route path="/admin/comp-users" component={AdminCompUsers} />
       <Route path="/admin/auditor-invites" component={AdminAuditorInvites} />

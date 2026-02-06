@@ -9342,6 +9342,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/lender-broadcast", ensureAdmin, async (req, res) => {
+    try {
+      const { subject, bodyHtml } = req.body;
+      if (!subject || !bodyHtml) {
+        return res.status(400).json({ error: "Subject and body are required" });
+      }
+
+      const adminUser = req.user as User;
+      console.log(`[LENDER BROADCAST] Admin ${adminUser.email} sending broadcast: "${subject}"`);
+
+      const allLenders = await storage.getAllLenders();
+      const activeLenders = allLenders.filter((l: any) => !l.archived && l.inviteAccepted);
+
+      let sent = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (const lender of activeLenders) {
+        try {
+          const success = await emailService.sendLenderBroadcastEmail(
+            lender.email,
+            lender.contactName || lender.companyName,
+            lender.companyName,
+            subject,
+            bodyHtml
+          );
+          if (success) {
+            sent++;
+          } else {
+            failed++;
+            errors.push(`Failed to send to ${lender.companyName}`);
+          }
+        } catch (err: any) {
+          failed++;
+          errors.push(`Error sending to ${lender.companyName}: ${err.message}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        totalLenders: activeLenders.length,
+        sent,
+        failed,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error: any) {
+      console.error("Error sending lender broadcast:", error);
+      res.status(500).json({ error: "Failed to send broadcast" });
+    }
+  });
+
+  app.get("/api/admin/lender-broadcast/preview", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const allLenders = await storage.getAllLenders();
+      const activeLenders = allLenders.filter((l: any) => !l.archived && l.inviteAccepted);
+
+      res.json({
+        recipientCount: activeLenders.length,
+        recipients: activeLenders.map((l: any) => ({
+          companyName: l.companyName,
+          contactName: l.contactName,
+          email: l.email,
+        })),
+      });
+    } catch (error: any) {
+      console.error("Error fetching broadcast preview:", error);
+      res.status(500).json({ error: "Failed to fetch preview" });
+    }
+  });
+
   // Create HTTP server
   const server = createServer(app);
   return server;
