@@ -53,6 +53,7 @@ import LenderManagement from "@/pages/admin/LenderManagement";
 import AdminLenderDetail from "@/pages/admin/LenderDetail";
 import AdminReports from "@/pages/admin/Reports";
 import AdminCompUsers from "@/pages/admin/CompUsers";
+import AdminAuditorInvites from "@/pages/admin/AuditorInvites";
 import AdminDiscountCodes from "@/pages/admin/DiscountCodes";
 import AdminPromoCodes from "@/pages/admin/PromoCodes";
 import AdminWebinarRegistrations from "@/pages/admin/WebinarRegistrations";
@@ -195,6 +196,7 @@ function Router() {
       <Route path="/admin/lenders" component={LenderManagement} />
       <Route path="/admin/reports" component={AdminReports} />
       <Route path="/admin/comp-users" component={AdminCompUsers} />
+      <Route path="/admin/auditor-invites" component={AdminAuditorInvites} />
       <Route path="/admin/discount-codes" component={AdminDiscountCodes} />
       <Route path="/admin/promo-codes" component={AdminPromoCodes} />
       <Route path="/admin/webinar-registrations" component={AdminWebinarRegistrations} />

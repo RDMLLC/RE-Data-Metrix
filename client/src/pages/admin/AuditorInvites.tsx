@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft,
-  Gift,
   Mail,
   RefreshCw,
   Trash2,
@@ -35,14 +34,16 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Users,
   Loader2,
+  Eye,
+  Building2,
 } from "lucide-react";
 
-interface CompInvite {
+interface AuditorInvite {
   id: string;
   email: string;
-  compCode: string;
+  inviteCode: string;
+  companyName: string | null;
   status: string;
   invitedByEmail: string | null;
   acceptedByEmail: string | null;
@@ -51,19 +52,18 @@ interface CompInvite {
   createdAt: string | null;
 }
 
-export default function CompUsers() {
+export default function AuditorInvites() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [newEmail, setNewEmail] = useState("");
-  const [expiresInDays, setExpiresInDays] = useState("30");
-  const [inviteToDelete, setInviteToDelete] = useState<CompInvite | null>(null);
+  const [auditorEmail, setAuditorEmail] = useState("");
+  const [auditorCompanyName, setAuditorCompanyName] = useState("");
+  const [auditorExpiresInDays, setAuditorExpiresInDays] = useState("30");
+  const [inviteToDelete, setInviteToDelete] = useState<AuditorInvite | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [userRole, setUserRole] = useState<string>('');
   const isAuditor = userRole === 'auditor';
 
-
-  // Check admin authentication on mount
   useEffect(() => {
     const checkAdminAuth = async () => {
       try {
@@ -87,46 +87,46 @@ export default function CompUsers() {
       } catch {
         setLocation("/admin/login");
         return;
-      } finally {
-        setIsAuthChecking(false);
       }
+      setIsAuthChecking(false);
     };
     checkAdminAuth();
   }, [setLocation, toast]);
 
-  const { data: invites, isLoading } = useQuery<CompInvite[]>({
-    queryKey: ["/api/admin/comp-invites"],
-    enabled: !isAuthChecking, // Only fetch after auth check
+  const { data: auditorInvites, isLoading } = useQuery<AuditorInvite[]>({
+    queryKey: ["/api/admin/auditor-invites"],
+    enabled: !isAuthChecking,
   });
 
   const createMutation = useMutation({
-    mutationFn: async ({ email, expiresInDays }: { email: string; expiresInDays: number }) => {
-      const response = await fetch("/api/admin/comp-invites", {
+    mutationFn: async ({ email, companyName, expiresInDays }: { email: string; companyName: string; expiresInDays: number }) => {
+      const response = await fetch("/api/admin/auditor-invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, expiresInDays }),
+        body: JSON.stringify({ email, companyName: companyName || undefined, expiresInDays }),
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to create invitation");
+        throw new Error(error.error || "Failed to create auditor invitation");
       }
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/comp-invites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/auditor-invites"] });
       toast({
-        title: "Invitation Sent",
+        title: "Auditor Invitation Sent",
         description: data.emailSent 
-          ? `Comp invitation sent to ${data.email}` 
+          ? `Auditor invitation sent to ${data.email}` 
           : "Invitation created but email failed to send",
       });
-      setNewEmail("");
+      setAuditorEmail("");
+      setAuditorCompanyName("");
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create invitation",
+        description: error.message || "Failed to create auditor invitation",
         variant: "destructive",
       });
     },
@@ -134,20 +134,20 @@ export default function CompUsers() {
 
   const resendMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/admin/comp-invites/${id}/resend`, {
+      const response = await fetch(`/api/admin/auditor-invites/${id}/resend`, {
         method: "POST",
         credentials: "include",
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to resend invitation");
+        throw new Error(error.error || "Failed to resend auditor invitation");
       }
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/comp-invites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/auditor-invites"] });
       toast({
-        title: "Invitation Resent",
+        title: "Auditor Invitation Resent",
         description: data.emailSent 
           ? `New invitation sent to ${data.email}` 
           : "Invitation updated but email failed to send",
@@ -156,7 +156,7 @@ export default function CompUsers() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to resend invitation",
+        description: error.message || "Failed to resend auditor invitation",
         variant: "destructive",
       });
     },
@@ -164,28 +164,28 @@ export default function CompUsers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/admin/comp-invites/${id}`, {
+      const response = await fetch(`/api/admin/auditor-invites/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to delete invitation");
+        throw new Error(error.error || "Failed to delete auditor invitation");
       }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/comp-invites"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/auditor-invites"] });
       toast({
-        title: "Invitation Deleted",
-        description: "The invitation has been deleted.",
+        title: "Auditor Invitation Deleted",
+        description: "The auditor invitation has been deleted.",
       });
       setInviteToDelete(null);
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete invitation",
+        description: error.message || "Failed to delete auditor invitation",
         variant: "destructive",
       });
       setInviteToDelete(null);
@@ -194,7 +194,7 @@ export default function CompUsers() {
 
   const handleSendInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmail) {
+    if (!auditorEmail) {
       toast({
         title: "Missing Email",
         description: "Please enter an email address.",
@@ -202,7 +202,7 @@ export default function CompUsers() {
       });
       return;
     }
-    if (!newEmail.includes("@")) {
+    if (!auditorEmail.includes("@")) {
       toast({
         title: "Invalid Email",
         description: "Please enter a valid email address.",
@@ -210,7 +210,11 @@ export default function CompUsers() {
       });
       return;
     }
-    createMutation.mutate({ email: newEmail, expiresInDays: parseInt(expiresInDays) });
+    createMutation.mutate({ 
+      email: auditorEmail, 
+      companyName: auditorCompanyName,
+      expiresInDays: parseInt(auditorExpiresInDays) 
+    });
   };
 
   const handleCopyCode = (code: string) => {
@@ -219,37 +223,8 @@ export default function CompUsers() {
     setTimeout(() => setCopiedCode(null), 2000);
     toast({
       title: "Code Copied",
-      description: "Comp code copied to clipboard.",
+      description: "Auditor invite code copied to clipboard.",
     });
-  };
-
-  const getStatusBadge = (invite: CompInvite) => {
-    const isExpired = new Date(invite.expiresAt) < new Date();
-    
-    if (invite.status === "accepted") {
-      return (
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-          <CheckCircle2 className="h-3 w-3 mr-1" />
-          Accepted
-        </Badge>
-      );
-    }
-    
-    if (isExpired) {
-      return (
-        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-          <XCircle className="h-3 w-3 mr-1" />
-          Expired
-        </Badge>
-      );
-    }
-    
-    return (
-      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-        <Clock className="h-3 w-3 mr-1" />
-        Pending
-      </Badge>
-    );
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -261,11 +236,10 @@ export default function CompUsers() {
     });
   };
 
-  const pendingInvites = invites?.filter(i => i.status === "pending" && new Date(i.expiresAt) >= new Date()) || [];
-  const acceptedInvites = invites?.filter(i => i.status === "accepted") || [];
-  const expiredInvites = invites?.filter(i => i.status === "pending" && new Date(i.expiresAt) < new Date()) || [];
+  const pendingInvites = auditorInvites?.filter(i => i.status === "pending" && new Date(i.expiresAt) >= new Date()) || [];
+  const acceptedInvites = auditorInvites?.filter(i => i.status === "accepted") || [];
+  const expiredInvites = auditorInvites?.filter(i => i.status === "pending" && new Date(i.expiresAt) < new Date()) || [];
 
-  // Show loading while checking auth
   if (isAuthChecking) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -292,9 +266,9 @@ export default function CompUsers() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Comp Users</h1>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">Auditor Invitations</h1>
             <p className="text-muted-foreground mt-1">
-              Invite beta testers with complimentary premium access
+              Invite marketing agencies or partners with read-only admin access
             </p>
           </div>
         </div>
@@ -303,11 +277,11 @@ export default function CompUsers() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Gift className="h-5 w-5" />
-                Send Comp Invitation
+                <Eye className="h-5 w-5" />
+                Send Auditor Invitation
               </CardTitle>
               <CardDescription>
-                Send an email with a unique comp code for free premium access
+                Send an invitation for read-only admin access — auditors can view reports, analytics, and user data without editing
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -315,13 +289,21 @@ export default function CompUsers() {
                 <Input
                   type="email"
                   placeholder="Enter email address..."
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  value={auditorEmail}
+                  onChange={(e) => setAuditorEmail(e.target.value)}
                   className="flex-1"
-                  data-testid="input-comp-email"
+                  data-testid="input-auditor-email"
                 />
-                <Select value={expiresInDays} onValueChange={setExpiresInDays}>
-                  <SelectTrigger className="w-[140px]" data-testid="select-expires-days">
+                <Input
+                  type="text"
+                  placeholder="Company name (optional)"
+                  value={auditorCompanyName}
+                  onChange={(e) => setAuditorCompanyName(e.target.value)}
+                  className="w-[200px]"
+                  data-testid="input-auditor-company"
+                />
+                <Select value={auditorExpiresInDays} onValueChange={setAuditorExpiresInDays}>
+                  <SelectTrigger className="w-[140px]" data-testid="select-auditor-expires-days">
                     <SelectValue placeholder="Expires in" />
                   </SelectTrigger>
                   <SelectContent>
@@ -335,7 +317,7 @@ export default function CompUsers() {
                 <Button
                   type="submit"
                   disabled={createMutation.isPending}
-                  data-testid="button-send-comp-invite"
+                  data-testid="button-send-auditor-invite"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   {createMutation.isPending ? "Sending..." : "Send Invitation"}
@@ -349,11 +331,11 @@ export default function CompUsers() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-amber-600" />
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-950/40 rounded-lg flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{pendingInvites.length}</p>
+                  <p className="text-2xl font-bold" data-testid="text-pending-count">{pendingInvites.length}</p>
                   <p className="text-sm text-muted-foreground">Pending</p>
                 </div>
               </div>
@@ -363,11 +345,11 @@ export default function CompUsers() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-950/40 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{acceptedInvites.length}</p>
+                  <p className="text-2xl font-bold" data-testid="text-accepted-count">{acceptedInvites.length}</p>
                   <p className="text-sm text-muted-foreground">Accepted</p>
                 </div>
               </div>
@@ -377,11 +359,11 @@ export default function CompUsers() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <XCircle className="h-5 w-5 text-red-600" />
+                <div className="w-10 h-10 bg-red-100 dark:bg-red-950/40 rounded-lg flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{expiredInvites.length}</p>
+                  <p className="text-2xl font-bold" data-testid="text-expired-count">{expiredInvites.length}</p>
                   <p className="text-sm text-muted-foreground">Expired</p>
                 </div>
               </div>
@@ -392,22 +374,22 @@ export default function CompUsers() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              All Invitations
+              <Eye className="h-5 w-5" />
+              All Auditor Invitations
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">
-                Loading invitations...
+                Loading auditor invitations...
               </div>
-            ) : !invites || invites.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No comp invitations yet. Send one above to get started.
+            ) : !auditorInvites || auditorInvites.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground" data-testid="text-empty-state">
+                No auditor invitations yet. Send one above to get started.
               </div>
             ) : (
               <div className="space-y-4">
-                {invites.map((invite) => {
+                {auditorInvites.map((invite) => {
                   const isExpired = new Date(invite.expiresAt) < new Date();
                   const canResend = invite.status === "pending";
                   const canDelete = invite.status !== "accepted";
@@ -416,29 +398,50 @@ export default function CompUsers() {
                     <div
                       key={invite.id}
                       className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border rounded-lg"
-                      data-testid={`comp-invite-${invite.id}`}
+                      data-testid={`auditor-invite-${invite.id}`}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium truncate" data-testid={`text-invite-email-${invite.id}`}>
+                          <span className="font-medium truncate" data-testid={`text-auditor-email-${invite.id}`}>
                             {invite.email}
                           </span>
-                          {getStatusBadge(invite)}
+                          {invite.companyName && (
+                            <Badge variant="outline" className="gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {invite.companyName}
+                            </Badge>
+                          )}
+                          {invite.status === "accepted" ? (
+                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Accepted
+                            </Badge>
+                          ) : isExpired ? (
+                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Expired
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Pending
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                           <div className="flex items-center gap-1">
                             <span>Code:</span>
                             <code className="bg-muted px-2 py-0.5 rounded font-mono">
-                              {invite.compCode}
+                              {invite.inviteCode}
                             </code>
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() => handleCopyCode(invite.compCode)}
-                              data-testid={`button-copy-code-${invite.id}`}
+                              onClick={() => handleCopyCode(invite.inviteCode)}
+                              data-testid={`button-copy-auditor-code-${invite.id}`}
                             >
-                              {copiedCode === invite.compCode ? (
+                              {copiedCode === invite.inviteCode ? (
                                 <Check className="h-3 w-3 text-emerald-600" />
                               ) : (
                                 <Copy className="h-3 w-3" />
@@ -460,7 +463,7 @@ export default function CompUsers() {
                               size="sm"
                               onClick={() => resendMutation.mutate(invite.id)}
                               disabled={resendMutation.isPending}
-                              data-testid={`button-resend-${invite.id}`}
+                              data-testid={`button-resend-auditor-${invite.id}`}
                             >
                               <RefreshCw className="h-4 w-4 mr-1" />
                               Resend
@@ -471,7 +474,7 @@ export default function CompUsers() {
                               variant="ghost"
                               size="icon"
                               onClick={() => setInviteToDelete(invite)}
-                              data-testid={`button-delete-${invite.id}`}
+                              data-testid={`button-delete-auditor-${invite.id}`}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -485,31 +488,29 @@ export default function CompUsers() {
             )}
           </CardContent>
         </Card>
-
       </div>
 
       <AlertDialog open={!!inviteToDelete} onOpenChange={() => setInviteToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invitation?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Auditor Invitation?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the invitation for{" "}
+              Are you sure you want to delete the auditor invitation for{" "}
               <strong>{inviteToDelete?.email}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete-auditor">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => inviteToDelete && deleteMutation.mutate(inviteToDelete.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
+              data-testid="button-confirm-delete-auditor"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
     </div>
   );
 }

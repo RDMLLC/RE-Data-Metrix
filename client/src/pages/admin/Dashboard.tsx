@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -435,6 +435,15 @@ export default function AdminDashboard() {
                     >
                       <Gift className="h-3.5 w-3.5 mr-1.5" />
                       Comp Users
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/admin/auditor-invites")}
+                      data-testid="button-auditor-invites"
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />
+                      Auditor Invites
                     </Button>
                     <Button 
                       variant="outline" 
