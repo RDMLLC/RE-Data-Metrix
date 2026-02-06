@@ -9,7 +9,7 @@ export default function Privacy() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Privacy Policy</h1>
           <div className="h-0.5 w-24 bg-accent mx-auto mb-4"></div>
-          <p className="text-xs text-muted-foreground">Last Updated: December 19, 2025</p>
+          <p className="text-xs text-muted-foreground">Last Updated: February 6, 2026</p>
         </div>
 
         <Card className="p-6 prose prose-sm max-w-none dark:prose-invert prose-headings:text-base prose-headings:font-semibold prose-p:text-[13px] prose-p:leading-relaxed prose-li:text-[13px] prose-li:leading-relaxed">
@@ -29,6 +29,10 @@ export default function Privacy() {
             <li>Subscription and billing information (e.g., billing address; payment details are generally processed by third-party payment processors and not stored in full by RDM).</li>
             <li>Deal and property information (e.g., property address, purchase price, rehab budgets, ARV, rent estimates, closing costs, loan terms, experience level, estimated credit score, and other User-Generated Content you input into the Deal Analysis Tool).</li>
             <li>Communications (e.g., support requests, survey responses, feedback, email or phone communications).</li>
+            <li>Webinar registration and attendance information (e.g., name, email, attendance status) collected through Zoho Meeting integrations.</li>
+            <li>Contractor profile information (e.g., company name, service regions, contact details) provided by contractors during the invitation-based onboarding process.</li>
+            <li>Developer Portal configuration data (e.g., webhook URLs, field mappings, integration credentials) provided by users setting up CRM integrations.</li>
+            <li>Promo code and referral code usage data, including which codes were redeemed and associated account activity.</li>
           </ul>
 
           <h3 className="text-primary/90">Information collected automatically</h3>
@@ -36,6 +40,8 @@ export default function Privacy() {
           <ul className="text-foreground">
             <li>Device and usage data (e.g., IP address, browser type, operating system, device identifiers, pages viewed, links clicked, referring/exit pages, dates and times of access, and general location based on IP).</li>
             <li>Log and analytics data related to how you interact with the Deal Analysis Tool and other features, which helps us maintain security, troubleshoot issues, and improve performance.</li>
+            <li>Apply click tracking data, which records when you click 'Apply Now' buttons on lender listings, including the associated property details, loan product information, and referral source.</li>
+            <li>Marketing pixel data collected by third-party advertising platforms (Meta/Facebook, LinkedIn, Google Ads, TikTok, Twitter/X) embedded on the Platform. These pixels may collect information about your browsing activity, page views, and conversion events (such as account registration, subscription purchase, and webinar registration).</li>
           </ul>
           <h3 className="text-primary/90">Cookies and tracking technologies</h3>
           <p className="text-foreground">
@@ -45,6 +51,7 @@ export default function Privacy() {
             <li><strong>Essential cookies:</strong> Required for the Services to function properly, including session authentication cookies that keep you logged in and security cookies that protect against unauthorized access. These cookies cannot be disabled.</li>
             <li><strong>Partner Tools tracking cookies:</strong> Our Toolbox features Partner Tools (affiliate programs) from third-party services. When you click on Partner Tool links, these services place tracking cookies to attribute referrals. These cookies are necessary for the Partner Tools to function and cannot be opted out of if you use those features. RDM may receive compensation when you engage with Partner Tools through our platform.</li>
             <li><strong>Analytics cookies:</strong> Help us understand how visitors use the Services, which pages are most popular, and how to improve user experience.</li>
+            <li><strong>Advertising and measurement pixels:</strong> The Platform uses tracking pixels from advertising platforms including Meta (Facebook/Instagram), LinkedIn, Google Ads, TikTok, and Twitter (X). These pixels collect data about your interactions with the Platform to measure advertising effectiveness, build advertising audiences, and attribute conversions. You may opt out of personalized advertising through each platform's privacy settings or through industry opt-out tools such as the Digital Advertising Alliance (DAA) at optout.aboutads.info.</li>
           </ul>
           <p className="text-foreground">
             You can usually control non-essential cookies through your browser settings, but disabling cookies may limit certain features of the Services. Essential and Partner Tools cookies are required for core functionality and cannot be disabled.
@@ -56,6 +63,8 @@ export default function Privacy() {
             <li>Lenders and other financial partners who interact with you through our Lender Referral Program.</li>
             <li>Public record databases and third-party data providers integrated into the Platform.</li>
             <li>Marketing, analytics, or affiliate partners, where permitted by law and their privacy policies.</li>
+            <li>Property data providers, including RentCast and HasData (which sources data from Zillow), which provide property details, comparable sales data, tax information, rent estimates, and property images when you use the ARV Helper or Deal Analysis tools.</li>
+            <li>Zoho Meeting, which provides webinar attendance data that we sync with our registration records to track educational event participation.</li>
           </ul>
 
           <h2 className="text-primary">2. How We Use Your Information</h2>
@@ -68,6 +77,13 @@ export default function Privacy() {
             <li><strong>Marketing (where permitted):</strong> Sending you newsletters, product updates, promotions, or event information; you can opt out of marketing emails at any time via the unsubscribe link or by contacting us.</li>
             <li><strong>Security and fraud prevention:</strong> Protecting accounts, monitoring for suspicious activity, and enforcing our User Agreement and policies.</li>
             <li><strong>Legal compliance:</strong> Complying with legal obligations, responding to lawful requests, and protecting our rights, users, and the public.</li>
+            <li><strong>Providing property data and comparable sales:</strong> Sending property addresses and search parameters to third-party APIs (RentCast and HasData) to retrieve property details, comparable sales, rent estimates, and property images for the ARV Helper and Deal Analysis tools.</li>
+            <li><strong>Processing payments:</strong> Sharing billing information with Stripe to process subscription payments, manage billing cycles, and handle refunds or disputes.</li>
+            <li><strong>Sending transactional emails:</strong> Using Zoho Mail SMTP to deliver account verification emails, password reset emails, invitation emails, and other system notifications.</li>
+            <li><strong>Tracking webinar attendance:</strong> Syncing attendance data from Zoho Meeting with our webinar registration records to track participation in educational events.</li>
+            <li><strong>Advertising measurement:</strong> Using marketing pixels to measure the effectiveness of advertising campaigns, track conversion events, and build advertising audiences on platforms such as Meta, LinkedIn, Google Ads, TikTok, and Twitter.</li>
+            <li><strong>Developer Portal integrations:</strong> Transmitting Platform event data (such as deal analysis completions or user registrations) to external CRM systems configured by users through the Developer Portal, via webhooks and API integrations.</li>
+            <li><strong>Enabling auditor review:</strong> Providing authorized auditors (third-party marketing agencies or compliance reviewers) with read-only access to administrative dashboards, analytics, reports, and user data for marketing performance evaluation and compliance review purposes.</li>
           </ul>
           <p className="text-foreground">
             Where required (e.g., for users in the European Economic Area or U.K.), we rely on lawful bases such as performance of a contract (providing the Services), our legitimate interests (e.g., improving and securing the Services), consent (for certain marketing and cookies), and compliance with legal obligations.
@@ -82,6 +98,12 @@ export default function Privacy() {
             <li><strong>For legal and safety reasons:</strong> When we believe disclosure is reasonably necessary to comply with law, regulation, legal process, or governmental request; to protect the rights, property, or safety of RDM, our users, or others; or to detect, prevent, or address fraud, security, or technical issues.</li>
             <li><strong>Business transfers:</strong> In connection with a merger, acquisition, financing, reorganization, bankruptcy, sale of assets, or similar transaction, your information may be transferred as part of that transaction, subject to this Privacy Policy or a successor policy that provides at least the same level of protection.</li>
             <li><strong>Aggregated or de-identified information:</strong> We may share aggregated or de-identified data that does not reasonably identify you, for research, analytics, or business purposes.</li>
+            <li><strong>With property data providers:</strong> When you use the ARV Helper or Deal Analysis tools, we send property addresses and search parameters to RentCast and HasData to retrieve comparable sales, property details, and rent estimates. These providers may process this data according to their own privacy policies.</li>
+            <li><strong>With payment processors:</strong> We share billing and payment information with Stripe to process your subscription payments. Stripe processes this data according to its own privacy policy (available at stripe.com/privacy).</li>
+            <li><strong>With email service providers:</strong> We share your email address and name with Zoho Mail to send transactional emails such as account verification, password resets, and system notifications.</li>
+            <li><strong>With advertising platforms:</strong> Through marketing pixels, certain browsing and conversion data may be shared with Meta (Facebook/Instagram), LinkedIn, Google Ads, TikTok, and Twitter (X) for advertising measurement and audience building. You can manage your preferences through each platform's privacy controls.</li>
+            <li><strong>With authorized auditors:</strong> We may provide read-only access to administrative data, analytics, and reports to authorized auditors (such as marketing agencies) for performance evaluation and compliance review. Auditors are bound by confidentiality obligations and are granted access only through our invitation system.</li>
+            <li><strong>Through Developer Portal integrations:</strong> If you configure CRM integrations through the Developer Portal, Platform event data may be transmitted to your designated external systems via webhooks. You are responsible for the privacy and security practices of your own integrated systems.</li>
           </ul>
           <p className="text-foreground">
             We do not sell personal information in the ordinary sense of the word. If applicable privacy laws (such as the CCPA) treat certain sharing as a "sale" or "sharing" for targeted advertising, we will provide required notices and opt-out mechanisms.
@@ -92,6 +114,9 @@ export default function Privacy() {
           <h3 className="text-primary/90">Data retention</h3>
           <p className="text-foreground">
             We retain personal information for as long as your account is active and as necessary to provide the Services, comply with legal obligations, resolve disputes, and enforce our agreements. After account closure, we may retain limited information for backup, audit, or legal purposes and may continue to use aggregated or de-identified data. We also retain data as described in our User Agreement and internal retention policies.
+          </p>
+          <p className="text-foreground">
+            Apply click tracking data (recording when users click 'Apply Now' on lender listings) is retained for analytics and lender reporting purposes for the duration of the lender's participation in our referral program. Marketing pixel data retention is governed by the respective advertising platform's data retention policies.
           </p>
 
           <h3 className="text-primary/90">Security</h3>

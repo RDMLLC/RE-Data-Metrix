@@ -10,7 +10,7 @@ export default function Terms() {
           <h1 className="text-3xl font-bold text-primary mb-2">User Agreement</h1>
           <p className="text-sm text-muted-foreground">(Terms of Service)</p>
           <div className="h-0.5 w-24 bg-accent mx-auto mb-4 mt-3"></div>
-          <p className="text-xs text-muted-foreground">Effective Date: December 4, 2025</p>
+          <p className="text-xs text-muted-foreground">Effective Date: February 6, 2026</p>
         </div>
 
         <Card className="p-6 prose prose-sm max-w-none dark:prose-invert prose-headings:text-base prose-headings:font-semibold prose-p:text-[13px] prose-p:leading-relaxed prose-li:text-[13px] prose-li:leading-relaxed">
@@ -27,16 +27,26 @@ export default function Terms() {
           <p className="text-foreground">For the purposes of this Agreement, the following terms shall have the meanings set forth below:</p>
           <ul className="text-foreground">
             <li><strong>Agreement:</strong> This legally binding contract, including all its terms and conditions.</li>
+            <li><strong>ARV Helper:</strong> A Platform tool that retrieves comparable property sales data from third-party APIs to assist in estimating After Repair Value.</li>
+            <li><strong>Auditor:</strong> A third-party individual or agency granted read-only administrative access to the Platform for marketing, analytics, or compliance review purposes.</li>
+            <li><strong>Complimentary Access ("Comp"):</strong> Free premium access granted by RDM at its discretion for beta testing, promotional, or partnership purposes.</li>
+            <li><strong>Contractor Search:</strong> A Platform feature that enables subscribers to find general contractors by service region.</li>
             <li><strong>Customer/Subscriber/User:</strong> Any individual or entity that accesses, subscribes to, or uses the RE Data Metrix platform and its associated services.</li>
             <li><strong>Deal Analysis Tool:</strong> The core RDM platform feature for analyzing real estate deals and comparing loan options.</li>
+            <li><strong>Developer Portal:</strong> A Platform feature enabling external CRM integration via configurable webhooks and field mappings.</li>
+            <li><strong>Financial Projections Tool:</strong> An embedded spreadsheet tool available exclusively to administrators and auditors for internal business planning purposes.</li>
             <li><strong>Lender:</strong> A financial institution or individual providing loan products for real estate investments, often featured on the RDM platform for referral.</li>
+            <li><strong>Marketing Pixels:</strong> Third-party tracking scripts embedded on the Platform for advertising measurement and attribution purposes.</li>
             <li><strong>Platform:</strong> The RE Data Metrix online system, including its website, software, tools, and services.</li>
+            <li><strong>Promo Code:</strong> A promotional code issued by RDM that provides temporary free or discounted access to the Platform.</li>
             <li><strong>Real Estate Investment and Financial Terms:</strong> Terms such as ARV (After Repair Value), Cash-on-Cash Return, DSCR (Debt Service Coverage Ratio), Drawn Funds Only, Loan Specs, LTV (Loan-to-Value), Points, Rehab Estimate, and ROI (Return on Investment) are defined as their commonly accepted meanings within the real estate investor and financial sectors.</li>
             <li><strong>RE Data Metrix ("RDM"):</strong> The company providing the online platform and services for real estate deal analysis, loan product comparison, and lender referrals.</li>
             <li><strong>Referral Program:</strong> The arrangement where RDM receives compensation for connecting investors with lenders.</li>
+            <li><strong>Rental Analysis Tool:</strong> A Platform feature for analyzing rental property investments, including DSCR (Debt Service Coverage Ratio) calculations and rent estimate comparisons.</li>
             <li><strong>Subscription:</strong> The recurring payment made by a user to gain access to the full features of the RDM platform.</li>
             <li><strong>Third-Party Services:</strong> Any services, applications, or websites provided by entities other than RDM, which may be integrated with or linked from the RDM platform (e.g., lender websites, affiliate programs).</li>
             <li><strong>User-Generated Content:</strong> The data and information you input into the RDM Platform, such as property data, project data, closing costs, experience levels, and estimated credit scores.</li>
+            <li><strong>Wholesale Max Offer Calculator:</strong> A Platform tool for calculating maximum allowable offers for wholesale real estate transactions, including Assignment and Double Close strategies.</li>
           </ul>
 
           <h2 className="text-primary">3. Eligibility and User Registration</h2>
@@ -46,7 +56,7 @@ export default function Terms() {
 
           <h2 className="text-primary">4. Grant of Rights and Access</h2>
           <p className="text-foreground">
-            Subject to the terms and conditions of this Agreement and your timely payment of all applicable Subscription Fees, RDM grants you a limited, non-exclusive, non-transferable, and revocable right to access and use the RDM Platform and its associated services. This includes access to the Deal Analysis Tool for unlimited deal analyses, viewing and comparing lender information and programs, accessing educational materials and bonus content, and the ability to export or download your deal analyses in PDF or CSV formats. Your access and use are solely for your internal real estate investment analysis purposes. This Agreement does not grant you any ownership or intellectual property rights in the RDM Platform or its underlying technology. All rights not expressly granted are reserved by RDM.
+            Subject to the terms and conditions of this Agreement and your timely payment of all applicable Subscription Fees, RDM grants you a limited, non-exclusive, non-transferable, and revocable right to access and use the RDM Platform and its associated services. This includes access to the Deal Analysis Tool for unlimited deal analyses, access to the ARV Helper for comparable sales research, the Wholesale Max Offer Calculator, the Rental Analysis Tool, and the Contractor Search directory, viewing and comparing lender information and programs, accessing educational materials and bonus content, and the ability to export or download your deal analyses in PDF or CSV formats. Your access and use are solely for your internal real estate investment analysis purposes. This Agreement does not grant you any ownership or intellectual property rights in the RDM Platform or its underlying technology. All rights not expressly granted are reserved by RDM.
           </p>
 
           <h2 className="text-primary">5. User Responsibilities and Acceptable Use</h2>
@@ -57,6 +67,7 @@ export default function Terms() {
             <li>Maintain the confidentiality of your account credentials.</li>
             <li>Acknowledge that RDM provides tools and information for analysis only and does not constitute legal, financial, or investment advice. You should consult qualified professionals.</li>
             <li>Understand that RDM is not responsible for the terms or outcomes of any loan agreements you establish with third-party lenders.</li>
+            <li>Understand that the Contractor Search feature is provided as a directory service only. RDM does not vet, endorse, or guarantee the quality, reliability, or qualifications of any contractor listed on the Platform. You are solely responsible for evaluating and selecting contractors.</li>
           </ul>
           <p className="text-foreground">
             You also agree not to engage in prohibited activities, including but not limited to: (a) creating multiple accounts to exploit free trial periods or circumvent account suspensions; (b) using the Platform to provide analysis, recommendations, or services to third parties, clients, or in any commercial or professional capacity (including white-labeling, reselling, or business service use); (c) sharing your credentials or account access with unrelated third parties or the public (household members and immediate business partners may access your account at your discretion, but you remain solely responsible for all activity); and (d) unauthorized access, interference with Platform integrity, transmitting harmful content, reverse engineering, automated data extraction, or circumventing security measures.
@@ -73,7 +84,7 @@ export default function Terms() {
 
           <h2 className="text-primary">7. Subscription Plans, Fees, and Payment Terms</h2>
           <p className="text-foreground">
-            RDM offers Monthly and Annual Subscription plans, providing full access and unlimited deal analyses. Subscription fees are billed in advance on a recurring basis and automatically renew unless canceled. You authorize RDM to charge your provided payment method. RDM may change fees with prior notice, effective at your next billing cycle. All subscription fees are non-refundable.
+            RDM offers Monthly and Annual Subscription plans, providing full access and unlimited deal analyses. Current subscription options include a Monthly plan at $25.00 per month and an Annual plan at $250.00 per year. RDM may also offer promotional codes, complimentary access, referral trials, and other promotional pricing at its discretion. Promotional access terms (including duration and feature limitations) are specified at the time of redemption and may differ from standard subscription terms. RDM reserves the right to modify, limit, or discontinue any promotional offer at any time. Subscription fees are billed in advance on a recurring basis and automatically renew unless canceled. You authorize RDM to charge your provided payment method. RDM may change fees with prior notice, effective at your next billing cycle. All subscription fees are non-refundable.
           </p>
 
           <h2 className="text-primary">8. Intellectual Property Rights</h2>
@@ -95,13 +106,37 @@ export default function Terms() {
           <p className="text-foreground">
             The RDM Platform may integrate with or link to Third-Party Services (e.g., public record databases, lender websites, affiliate platforms like Bigger Pockets, Propstream, Privy, Buildium, local REIAs). RDM does not endorse or control these services, and your use is at your own risk, subject to their terms and policies. You acknowledge that RDM may share your User-Generated Content and contact information with these services to provide Platform functionalities (e.g., lender referrals, automated data input via APIs). RDM may receive compensation from affiliate programs when you engage with these services through RDM links. You are responsible for reviewing third-party terms.
           </p>
+          <p className="text-foreground">The Platform currently integrates with or utilizes the following third-party services:</p>
+          <ul className="text-foreground">
+            <li>Property data providers, including RentCast and HasData (Zillow data), which provide property details, comparable sales, tax information, rent estimates, and property images to power the ARV Helper and Deal Analysis tools.</li>
+            <li>Stripe, which processes all subscription payments, billing management, and refunds.</li>
+            <li>Zoho Mail, which provides email delivery services for account notifications, verification emails, and system communications.</li>
+            <li>Zoho Meeting, which provides webinar hosting and attendance tracking for RDM educational events.</li>
+            <li>Advertising platforms, including Meta (Facebook/Instagram), LinkedIn, Google Ads, TikTok, and Twitter (X), which receive anonymized tracking data through marketing pixels for advertising measurement and attribution.</li>
+            <li>Straightline Funding, which provides an embedded loan application form for Double Close wholesale transactions.</li>
+          </ul>
 
           <h2 className="text-primary">12. Lender Referral Program Terms</h2>
           <p className="text-foreground">
             RDM operates a Lender Referral Program to connect users with lenders. By using the Platform and expressing interest in a loan through RDM links, you consent to RDM identifying you as a referral to that lender. You understand RDM may receive compensation (fees, points, commissions) from lenders if you secure a loan through an RDM referral, which may continue in perpetuity even after your subscription ends. You explicitly consent to RDM sharing your User-Generated Content and contact information with selected lenders upon inquiry. RDM acts solely as a referral service; it does not guarantee loan approval, specific terms, or make credit decisions. All loan agreements are solely between you and the lender. RDM disclaims liability for your dealings with lenders.
           </p>
 
-          <h2 className="text-primary">13. Disclaimers and Limitations of Liability</h2>
+          <h2 className="text-primary">13. Developer Portal and CRM Integration</h2>
+          <p className="text-foreground">
+            RDM offers a Developer Portal that enables authorized users to integrate the Platform with external Customer Relationship Management (CRM) systems. Through the Developer Portal, users may configure webhooks, set up field mappings, and receive automated notifications of Platform events. Users of the Developer Portal are responsible for the security of their integration credentials and for ensuring their use of Platform data through integrations complies with this Agreement and all applicable laws. RDM reserves the right to revoke Developer Portal access for misuse, excessive API usage, or any violation of this Agreement.
+          </p>
+
+          <h2 className="text-primary">14. Auditor Access and Third-Party Review</h2>
+          <p className="text-foreground">
+            RDM may grant Auditor access to selected third parties, such as marketing agencies or compliance reviewers, at RDM's discretion. Auditors receive read-only access to administrative dashboards, analytics, reports, user management data, and the Financial Projections Tool. Auditors may interact with subscriber-level features (such as Deal Analysis and ARV Helper) for evaluation purposes. Auditor access is invitation-only, granted via unique invitation codes, and subject to expiration. Auditors are bound by this Agreement and any additional confidentiality obligations specified at the time of invitation. RDM may revoke Auditor access at any time without notice.
+          </p>
+
+          <h2 className="text-primary">15. Financial Projections Tool</h2>
+          <p className="text-foreground">
+            The Financial Projections Tool is an embedded third-party spreadsheet (hosted by Google) available exclusively to administrators and auditors. This tool is provided for internal business planning purposes only and does not constitute financial advice, a guarantee of future performance, or a solicitation of investment. RDM makes no representations or warranties regarding the accuracy, completeness, or reliability of any projections, forecasts, or financial models contained within the Financial Projections Tool. Users of this tool are solely responsible for their own financial decisions.
+          </p>
+
+          <h2 className="text-primary">16. Disclaimers and Limitations of Liability</h2>
           <p className="text-foreground">
             <strong>Service Provided As-Is:</strong> The RDM Platform and its services are provided "as is" and "as available" for informational and analytical purposes only and do not constitute financial, investment, legal, or other professional advice. You are solely responsible for verifying information and conducting independent due diligence. RDM does not guarantee specific financial outcomes or loan approvals.
           </p>
@@ -115,16 +150,19 @@ export default function Terms() {
             <strong>Data Accuracy Disclaimer:</strong> RDM does not guarantee the accuracy, completeness, or reliability of any data or projections, including auto-populated data or lender program details. You are responsible for independently verifying all information.
           </p>
           <p className="text-foreground">
+            <strong>Data Sourced from Third Parties:</strong> The Platform retrieves property data, comparable sales, and rent estimates from third-party APIs (including RentCast and HasData). RDM does not independently verify the accuracy or completeness of data provided by these third-party sources. Property values, comparable sales prices, rent estimates, tax information, and other data points are provided for informational purposes only and should not be relied upon as the sole basis for investment decisions. Users are strongly encouraged to conduct independent due diligence, including obtaining professional appraisals and inspections.
+          </p>
+          <p className="text-foreground">
             <strong>Limitation of Liability:</strong> To the fullest extent permitted by law, in no event will RDM, its affiliates, or their respective officers, directors, employees, or agents be liable to you for any indirect, incidental, special, consequential, exemplary, or punitive damages, including any loss of profits, revenue, goodwill, or data, arising out of or in connection with this Agreement or your use of or inability to use the Platform, whether based in contract, tort (including negligence), strict liability, or any other legal theory, even if RDM has been advised of the possibility of such damages.
           </p>
           <p className="text-foreground">
             <strong>Cap on Liability:</strong> To the fullest extent permitted by law, the total aggregate liability of RDM and its affiliates for all claims arising out of or relating to this Agreement or the Platform will not exceed the total Subscription fees you actually paid to RDM for access to the Platform in the twelve (12) months immediately preceding the event giving rise to the claim.
           </p>
           <p className="text-foreground">
-            <strong>Exceptions:</strong> The limitations in this Section do not apply to liabilities that cannot be limited under applicable law, and do not limit your obligation to indemnify RDM (as described in Section 18) or your liability for your own fraud or intentional misconduct.
+            <strong>Exceptions:</strong> The limitations in this Section do not apply to liabilities that cannot be limited under applicable law, and do not limit your obligation to indemnify RDM (as described in Section 21) or your liability for your own fraud or intentional misconduct.
           </p>
 
-          <h2 className="text-primary">14. Termination and Cancellation</h2>
+          <h2 className="text-primary">17. Termination and Cancellation</h2>
           <p className="text-foreground">
             <strong>User-Initiated Cancellation:</strong> You may cancel your RDM subscription at any time by logging into your account, accessing the subscription settings, and selecting "Cancel Subscription," or by contacting RDM at info@redatametrix.com. Cancellation requests received before your next billing date will take effect at the end of your current billing cycle; no refunds will be issued for the current billing period. You will retain access to the Platform through the end of your paid subscription period. After cancellation, your account and User-Generated Content will be deactivated but may be retained by RDM for 90 days before deletion, unless you request immediate deletion in writing.
           </p>
@@ -135,7 +173,7 @@ export default function Terms() {
             <strong>Effect of Termination:</strong> Upon termination, your right to access the Platform ceases immediately. RDM's liability limitations and your indemnification obligations survive termination. Any lender referrals made during your subscription period remain active, and RDM may continue to receive compensation from those referrals.
           </p>
 
-          <h2 className="text-primary">15. Service Level Agreement</h2>
+          <h2 className="text-primary">18. Service Level Agreement</h2>
           <p className="text-foreground">
             <strong>Uptime Guarantee:</strong> RDM commits to maintaining Platform availability of 99.5% per calendar month, measured as time when the Platform is accessible and functional, excluding scheduled maintenance windows (which RDM will communicate at least 48 hours in advance).
           </p>
@@ -149,7 +187,7 @@ export default function Terms() {
             <strong>Service Credit:</strong> If the Platform experiences downtime exceeding 1% in a calendar month (excluding scheduled maintenance and user-caused outages), you may request a service credit equal to 10% of your subscription fee for that month. Service credits are your sole remedy for downtime and will be credited to your account for future billing periods or refunded, at RDM's discretion. To claim a credit, contact RDM within 30 days of the outage.
           </p>
 
-          <h2 className="text-primary">16. Governing Law and Dispute Resolution</h2>
+          <h2 className="text-primary">19. Governing Law and Dispute Resolution</h2>
           <p className="text-foreground">
             <strong>Governing Law:</strong> This Agreement is governed by and construed in accordance with the laws of Georgia, U.S.A., without regard to its conflict of law principles. The United Nations Convention on Contracts for the International Sale of Goods shall not apply to this Agreement.
           </p>
@@ -157,7 +195,7 @@ export default function Terms() {
             <strong>Dispute Resolution Process:</strong>
           </p>
           <p className="text-foreground">
-            <em>Step 1 – Informal Negotiation:</em> If you have a dispute with RDM, you agree to first attempt to resolve it through good-faith negotiation. Either party may initiate this by sending written notice to the other party's contact address (as provided in Section 19) describing the dispute and the resolution sought. The parties agree to negotiate for at least 30 days before pursuing other remedies.
+            <em>Step 1 – Informal Negotiation:</em> If you have a dispute with RDM, you agree to first attempt to resolve it through good-faith negotiation. Either party may initiate this by sending written notice to the other party's contact address (as provided in Section 22) describing the dispute and the resolution sought. The parties agree to negotiate for at least 30 days before pursuing other remedies.
           </p>
           <p className="text-foreground">
             <em>Step 2 – Binding Arbitration:</em> If the dispute is not resolved within 30 days, both you and RDM agree that the dispute will be settled by binding arbitration administered by the American Arbitration Association (AAA) under its Commercial Arbitration Rules. The arbitration shall take place in Atlanta, Georgia, and the arbitrator's decision shall be final and enforceable in any court of competent jurisdiction. Each party will bear its own attorney's fees and costs, and the arbitration filing fees will be split equally.
@@ -169,7 +207,7 @@ export default function Terms() {
             <strong>No Class Action:</strong> You and RDM agree that any arbitration or litigation shall be conducted on an individual basis and not as a class action or representative action.
           </p>
 
-          <h2 className="text-primary">17. Amendments and Changes to This Agreement</h2>
+          <h2 className="text-primary">20. Amendments and Changes to This Agreement</h2>
           <p className="text-foreground">
             <strong>Right to Modify:</strong> RDM reserves the right to modify this Agreement at any time. Material changes include modifications to pricing, liability limitations, data handling practices, lender referral compensation, or your core rights and obligations. Changes will be effective upon the date specified in the notice, which will be no less than 30 days after notification (except for changes required by law, which may be effective immediately).
           </p>
@@ -183,24 +221,24 @@ export default function Terms() {
             <strong>Updates to Privacy Policy:</strong> Changes to RDM's Privacy Policy follow the same notification process and your continued use of the Platform following notice constitutes acceptance.
           </p>
 
-          <h2 className="text-primary">18. Indemnification</h2>
+          <h2 className="text-primary">21. Indemnification</h2>
           <p className="text-foreground">
-            <strong>18.1 User Indemnification of RDM:</strong> You agree to indemnify, defend, and hold harmless RE Data Metrix ("RDM"), its affiliates, and their respective officers, directors, employees, contractors, and agents from and against any and all claims, demands, actions, proceedings, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) your use of the Platform in violation of this Agreement or any applicable law or regulation; (b) your User-Generated Content, including any allegation that such content is inaccurate, misleading, incomplete, infringing, defamatory, or otherwise unlawful; (c) your real estate transactions, loan applications, or agreements with lenders or other third parties; and (d) your negligence, willful misconduct, or fraud. This obligation applies to third-party claims brought against RDM and does not require RDM to prove that you acted intentionally unless required by applicable law.
+            <strong>21.1 User Indemnification of RDM:</strong> You agree to indemnify, defend, and hold harmless RE Data Metrix ("RDM"), its affiliates, and their respective officers, directors, employees, contractors, and agents from and against any and all claims, demands, actions, proceedings, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) your use of the Platform in violation of this Agreement or any applicable law or regulation; (b) your User-Generated Content, including any allegation that such content is inaccurate, misleading, incomplete, infringing, defamatory, or otherwise unlawful; (c) your real estate transactions, loan applications, or agreements with lenders or other third parties; and (d) your negligence, willful misconduct, or fraud. This obligation applies to third-party claims brought against RDM and does not require RDM to prove that you acted intentionally unless required by applicable law.
           </p>
           <p className="text-foreground">
-            <strong>18.2 RDM Indemnification of User for IP Infringement:</strong> RDM will indemnify, defend, and hold you harmless from and against any third-party claim alleging that your authorized use of the unmodified RDM Platform directly infringes that third party's United States patent, copyright, or trademark, and will pay any court-awarded damages and reasonable attorneys' fees finally awarded against you as a result of such claim. This obligation is conditioned on you: (a) promptly notifying RDM in writing of the claim; (b) giving RDM sole control of the defense and settlement of the claim (except that RDM may not settle any claim that imposes a monetary or non-monetary obligation on you without your prior written consent); and (c) providing RDM with reasonable cooperation, at RDM's expense.
+            <strong>21.2 RDM Indemnification of User for IP Infringement:</strong> RDM will indemnify, defend, and hold you harmless from and against any third-party claim alleging that your authorized use of the unmodified RDM Platform directly infringes that third party's United States patent, copyright, or trademark, and will pay any court-awarded damages and reasonable attorneys' fees finally awarded against you as a result of such claim. This obligation is conditioned on you: (a) promptly notifying RDM in writing of the claim; (b) giving RDM sole control of the defense and settlement of the claim (except that RDM may not settle any claim that imposes a monetary or non-monetary obligation on you without your prior written consent); and (c) providing RDM with reasonable cooperation, at RDM's expense.
           </p>
           <p className="text-foreground">
-            RDM will have no obligation under this Section 18.2 to the extent a claim results from: (i) your unauthorized use of the Platform; (ii) modification of the Platform by anyone other than RDM; (iii) combination or use of the Platform with any products, services, data, or software not provided by RDM, if the claim would not have arisen but for that combination or use; or (iv) your User-Generated Content. As RDM's sole and exclusive obligations for any such IP claim, RDM may, at its option and expense: (1) modify the Platform so that it is non-infringing; (2) obtain a license for you to continue using the Platform; or (3) terminate your access to the allegedly infringing feature and refund any prepaid, unused Subscription fees for that feature.
+            RDM will have no obligation under this Section 21.2 to the extent a claim results from: (i) your unauthorized use of the Platform; (ii) modification of the Platform by anyone other than RDM; (iii) combination or use of the Platform with any products, services, data, or software not provided by RDM, if the claim would not have arisen but for that combination or use; or (iv) your User-Generated Content. As RDM's sole and exclusive obligations for any such IP claim, RDM may, at its option and expense: (1) modify the Platform so that it is non-infringing; (2) obtain a license for you to continue using the Platform; or (3) terminate your access to the allegedly infringing feature and refund any prepaid, unused Subscription fees for that feature.
           </p>
           <p className="text-foreground">
-            <strong>18.3 Procedures and Limitations:</strong> The indemnified party must promptly notify the indemnifying party of any claim for which it seeks indemnification and provide reasonable cooperation. Failure to provide prompt notice will relieve the indemnifying party of its obligations only to the extent it is materially prejudiced by the delay. The indemnifying party has the right to control the defense and settlement of the claim, subject to the limitations set out above. The indemnification obligations in this Section 18 are subject to the liability limitations in Section 13, except for any liabilities that cannot be limited under applicable law.
+            <strong>21.3 Procedures and Limitations:</strong> The indemnified party must promptly notify the indemnifying party of any claim for which it seeks indemnification and provide reasonable cooperation. Failure to provide prompt notice will relieve the indemnifying party of its obligations only to the extent it is materially prejudiced by the delay. The indemnifying party has the right to control the defense and settlement of the claim, subject to the limitations set out above. The indemnification obligations in this Section 21 are subject to the liability limitations in Section 16, except for any liabilities that cannot be limited under applicable law.
           </p>
           <p className="text-foreground">
-            <strong>18.4 Survival:</strong> The indemnification obligations in this Section 18 will survive termination or expiration of this Agreement for a period of two (2) years, or for as long as any related third-party claim is pending, whichever is longer.
+            <strong>21.4 Survival:</strong> The indemnification obligations in this Section 21 will survive termination or expiration of this Agreement for a period of two (2) years, or for as long as any related third-party claim is pending, whichever is longer.
           </p>
 
-          <h2 className="text-primary">19. Contact Information</h2>
+          <h2 className="text-primary">22. Contact Information</h2>
           <p className="text-foreground">
             For questions, concerns, complaints, or notices related to this Agreement, the Platform, or RDM's services, please contact us at:
           </p>
