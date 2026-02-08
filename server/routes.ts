@@ -5799,6 +5799,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loginUsername: data.loginUsername || null,
         loginPassword: data.loginPassword || null,
         notes: data.notes || null,
+        slug: data.slug || null,
+        videoUrl: data.videoUrl || null,
+        detailedDescription: data.detailedDescription || null,
+        exclusiveBenefits: data.exclusiveBenefits || [],
+        logoUrl: data.logoUrl || null,
+        notificationEmail: data.notificationEmail || null,
       });
       
       res.status(201).json(affiliate);
@@ -5827,6 +5833,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     loginUsername: z.string().nullable().optional(),
     loginPassword: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
+    slug: z.string().nullable().optional(),
+    videoUrl: z.string().nullable().optional(),
+    detailedDescription: z.string().nullable().optional(),
+    exclusiveBenefits: z.array(z.string()).optional(),
+    logoUrl: z.string().nullable().optional(),
+    notificationEmail: z.string().nullable().optional(),
   });
   
   app.put("/api/admin/affiliates/:id", ensureAdminOrDeveloper, async (req, res) => {
@@ -5860,6 +5872,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (data.loginUsername !== undefined) updateData.loginUsername = data.loginUsername;
       if (data.loginPassword !== undefined) updateData.loginPassword = data.loginPassword;
       if (data.notes !== undefined) updateData.notes = data.notes;
+      if (data.slug !== undefined) updateData.slug = data.slug;
+      if (data.videoUrl !== undefined) updateData.videoUrl = data.videoUrl;
+      if (data.detailedDescription !== undefined) updateData.detailedDescription = data.detailedDescription;
+      if (data.exclusiveBenefits !== undefined) updateData.exclusiveBenefits = data.exclusiveBenefits;
+      if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
+      if (data.notificationEmail !== undefined) updateData.notificationEmail = data.notificationEmail;
       
       const updated = await storage.updateAffiliate(id, updateData);
       
