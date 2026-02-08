@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2, DollarSign, Video } from "lucide-react";
+import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2, DollarSign, Video, Info } from "lucide-react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
 const TOOL_FINDER_VIDEO_ID = "5hfQdtC42fk";
@@ -635,16 +635,30 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
               )}
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-shrink-0"
-              onClick={() => window.open(affiliate.referralLink, '_blank', 'noopener,noreferrer')}
-              data-testid={`button-visit-${affiliate.id}`}
-            >
-              <ExternalLink className="h-4 w-4 mr-1" />
-              Visit
-            </Button>
+            <div className="flex gap-2 flex-shrink-0">
+              {affiliate.slug && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  data-testid={`button-learn-more-${affiliate.id}`}
+                >
+                  <Link href={`/partners/${affiliate.slug}`}>
+                    <Info className="h-4 w-4 mr-1" />
+                    Learn More
+                  </Link>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(affiliate.referralLink, '_blank', 'noopener,noreferrer')}
+                data-testid={`button-visit-${affiliate.id}`}
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Visit
+              </Button>
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-1.5">
