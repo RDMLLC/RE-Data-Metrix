@@ -82,7 +82,7 @@ export default function AffiliateDetail() {
       } else if (url.includes("youtu.be/")) {
         videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
       }
-      return `https://www.youtube.com/embed/${videoId}`;
+      return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0`;
     }
     if (url.includes("vimeo.com")) {
       const videoId = url.split("vimeo.com/")[1]?.split("?")[0] || "";
