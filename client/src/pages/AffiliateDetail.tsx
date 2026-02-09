@@ -1,5 +1,6 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useCallback } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,23 @@ import { ExternalLink, CheckCircle, Star, Tag, Play, ArrowLeft } from "lucide-re
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Affiliate } from "@shared/schema";
+
+function getYouTubeVideoId(url: string): string | null {
+  if (url.includes("youtube.com/watch")) {
+    return new URL(url).searchParams.get("v") || null;
+  } else if (url.includes("youtu.be/")) {
+    return url.split("youtu.be/")[1]?.split("?")[0] || null;
+  }
+  return null;
+}
+
+function getVideoEmbed(url: string): string {
+  if (url.includes("vimeo.com")) {
+    const videoId = url.split("vimeo.com/")[1]?.split("?")[0] || "";
+    return `https://player.vimeo.com/video/${videoId}`;
+  }
+  return url;
+}
 
 export default function AffiliateDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -22,6 +40,83 @@ export default function AffiliateDetail() {
     },
     enabled: !!slug,
   });
+
+  const videoUrl = affiliate?.videoUrl?.trim() || "";
+  const hasVideo = videoUrl !== "";
+  const isYouTubeVideo = hasVideo && (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be"));
+  const youtubeVideoId = isYouTubeVideo ? getYouTubeVideoId(videoUrl) : null;
+
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<any>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const initYouTubePlayer = useCallback(() => {
+    if (!youtubeVideoId || !playerContainerRef.current) return;
+    if (playerRef.current) return;
+
+    const onPlayerStateChange = (event: any) => {
+      const YT = (window as any).YT;
+      if (event.data === YT.PlayerState.PLAYING) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        timerRef.current = setInterval(() => {
+          const player = playerRef.current;
+          if (player && player.getDuration && player.getCurrentTime) {
+            const duration = player.getDuration();
+            const currentTime = player.getCurrentTime();
+            if (duration > 0 && currentTime >= duration - 1) {
+              player.seekTo(0);
+              player.pauseVideo();
+              if (timerRef.current) clearInterval(timerRef.current);
+            }
+          }
+        }, 500);
+      } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+    };
+
+    const YT = (window as any).YT;
+    playerRef.current = new YT.Player(playerContainerRef.current, {
+      videoId: youtubeVideoId,
+      host: 'https://www.youtube-nocookie.com',
+      playerVars: {
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0,
+        iv_load_policy: 3,
+      },
+      events: {
+        onStateChange: onPlayerStateChange,
+      },
+    });
+  }, [youtubeVideoId]);
+
+  useEffect(() => {
+    if (!youtubeVideoId) return;
+
+    if ((window as any).YT && (window as any).YT.Player) {
+      initYouTubePlayer();
+      return;
+    }
+
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      initYouTubePlayer();
+    };
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (playerRef.current) {
+        try { playerRef.current.destroy(); } catch (e) { /* ignore */ }
+        playerRef.current = null;
+      }
+    };
+  }, [youtubeVideoId, initYouTubePlayer]);
 
   const handleVisitClick = async () => {
     if (!affiliate) return;
@@ -71,25 +166,7 @@ export default function AffiliateDetail() {
     );
   }
 
-  const hasVideo = affiliate.videoUrl && affiliate.videoUrl.trim() !== "";
   const hasExclusiveBenefits = affiliate.exclusiveBenefits && affiliate.exclusiveBenefits.length > 0;
-
-  const getVideoEmbed = (url: string) => {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      let videoId = "";
-      if (url.includes("youtube.com/watch")) {
-        videoId = new URL(url).searchParams.get("v") || "";
-      } else if (url.includes("youtu.be/")) {
-        videoId = url.split("youtu.be/")[1]?.split("?")[0] || "";
-      }
-      return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0`;
-    }
-    if (url.includes("vimeo.com")) {
-      const videoId = url.split("vimeo.com/")[1]?.split("?")[0] || "";
-      return `https://player.vimeo.com/video/${videoId}`;
-    }
-    return url;
-  };
 
   return (
     <Layout>
@@ -141,14 +218,19 @@ export default function AffiliateDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                  <iframe
-                    src={getVideoEmbed(affiliate.videoUrl!)}
-                    title={`${affiliate.name} Demo Video`}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                <div className="aspect-video rounded-lg overflow-hidden bg-muted relative">
+                  {isYouTubeVideo ? (
+                    <div ref={playerContainerRef} className="w-full h-full" />
+                  ) : (
+                    <iframe
+                      src={getVideoEmbed(affiliate.videoUrl!)}
+                      title={`${affiliate.name} Demo Video`}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10" />
                 </div>
               </CardContent>
             </Card>
