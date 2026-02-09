@@ -230,7 +230,7 @@ export default function AffiliateDetail() {
                       allowFullScreen
                     />
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-black/90 to-transparent pointer-events-none z-10" />
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black to-transparent pointer-events-none z-10" />
                 </div>
               </CardContent>
             </Card>
