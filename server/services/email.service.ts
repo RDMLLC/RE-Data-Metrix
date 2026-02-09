@@ -1247,8 +1247,8 @@ class EmailService {
     to: string,
     name: string,
     registrationId?: string,
-    webinarDate: Date = new Date('2026-02-06T12:00:00-05:00'),
-    webinarLink: string = 'https://meet.zoho.com/edef-zym-pkw'
+    webinarDate: Date = new Date('2026-02-13T12:00:00-05:00'),
+    webinarLink: string = 'https://meet.zoho.com/xecs-lpa-ohi'
   ): Promise<boolean> {
     const firstName = name.split(' ')[0];
     const baseUrl = this.getBaseUrl();
@@ -1416,7 +1416,7 @@ END:VCALENDAR`;
     to: string,
     name: string,
     registrationId: string,
-    webinarLink: string = 'https://meet.zoho.com/edef-zym-pkw'
+    webinarLink: string = 'https://meet.zoho.com/xecs-lpa-ohi'
   ): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
     
@@ -1540,7 +1540,7 @@ END:VCALENDAR`;
   async sendWebinarFinalReminder(
     to: string,
     name: string,
-    webinarLink: string = 'https://meet.zoho.com/edef-zym-pkw'
+    webinarLink: string = 'https://meet.zoho.com/xecs-lpa-ohi'
   ): Promise<boolean> {
     const htmlContent = `
       <!DOCTYPE html>

@@ -31,7 +31,7 @@ export default function WebinarRsvpThankYou() {
   // Prefer API data over URL query param when available
   const effectiveStatus = rsvpData?.rsvpStatus || status;
   const isConfirmed = effectiveStatus === 'confirmed';
-  const webinarLink = 'https://meet.zoho.com/edef-zym-pkw';
+  const webinarLink = 'https://meet.zoho.com/xecs-lpa-ohi';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 py-12 px-4">

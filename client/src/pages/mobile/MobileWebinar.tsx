@@ -24,9 +24,9 @@ export default function MobileWebinar() {
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
-  const webinarDate = "Friday, February 6, 2026";
+  const webinarDate = "Friday, February 13, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
-  const registrationLink = "https://meet.zoho.com/edef-zym-pkw";
+  const registrationLink = "https://meet.zoho.com/xecs-lpa-ohi";
 
   // Capture referral source from URL (?ref=sakira)
   const referralSource = useMemo(() => {
