@@ -186,9 +186,9 @@ export default function AffiliateDetail() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Link href="/resources" className="inline-flex items-center text-primary hover:underline mb-6">
+        <Link href="/toolbox" className="inline-flex items-center text-primary hover:underline mb-6">
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Resources
+          Back to Toolbox
         </Link>
 
         <div className="grid gap-8">
