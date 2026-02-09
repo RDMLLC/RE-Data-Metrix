@@ -11,6 +11,20 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Affiliate } from "@shared/schema";
 
+interface BrandColors {
+  primary: string;
+  dark: string;
+  accent: string;
+}
+
+const brandColorMap: Record<string, BrandColors> = {
+  "deal-machine": {
+    primary: "#31CCE5",
+    dark: "#004E64",
+    accent: "#F2633A",
+  },
+};
+
 function getYouTubeVideoId(url: string): string | null {
   if (url.includes("youtube.com/watch")) {
     return new URL(url).searchParams.get("v") || null;
@@ -167,6 +181,7 @@ export default function AffiliateDetail() {
   }
 
   const hasExclusiveBenefits = affiliate.exclusiveBenefits && affiliate.exclusiveBenefits.length > 0;
+  const brandColors = slug ? brandColorMap[slug] : undefined;
 
   return (
     <Layout>
@@ -177,37 +192,83 @@ export default function AffiliateDetail() {
         </Link>
 
         <div className="grid gap-8">
-          <div className="flex flex-col md:flex-row md:items-start gap-6">
-            {affiliate.logoUrl && (
-              <div className="flex-shrink-0">
-                <img
-                  src={affiliate.logoUrl}
-                  alt={affiliate.name}
-                  className="h-24 w-auto object-contain rounded-lg border p-2"
-                />
+          {brandColors ? (
+            <div
+              className="rounded-lg p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6"
+              style={{ background: `linear-gradient(135deg, ${brandColors.dark} 0%, ${brandColors.dark}dd 100%)` }}
+            >
+              {affiliate.logoUrl && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={affiliate.logoUrl}
+                    alt={affiliate.name}
+                    className="h-20 w-auto object-contain rounded-lg bg-white/10 p-3"
+                    data-testid="img-affiliate-logo"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold mb-2 text-white" data-testid="text-affiliate-name">
+                  {affiliate.name}
+                </h1>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {affiliate.categories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="bg-white/15 text-white border-white/20 no-default-hover-elevate no-default-active-elevate"
+                    >
+                      {category}
+                    </Badge>
+                  ))}
+                  {affiliate.hasFreeTrial && (
+                    <Badge
+                      variant="outline"
+                      className="border-green-400 text-green-300 no-default-hover-elevate no-default-active-elevate"
+                    >
+                      Free Trial Available
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-white/80 text-lg">
+                  {affiliate.description}
+                </p>
               </div>
-            )}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2" data-testid="text-affiliate-name">
-                {affiliate.name}
-              </h1>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {affiliate.categories.map((category) => (
-                  <Badge key={category} variant="secondary">
-                    {category}
-                  </Badge>
-                ))}
-                {affiliate.hasFreeTrial && (
-                  <Badge variant="outline" className="border-green-500 text-green-600">
-                    Free Trial Available
-                  </Badge>
-                )}
-              </div>
-              <p className="text-muted-foreground text-lg">
-                {affiliate.description}
-              </p>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col md:flex-row md:items-start gap-6">
+              {affiliate.logoUrl && (
+                <div className="flex-shrink-0">
+                  <img
+                    src={affiliate.logoUrl}
+                    alt={affiliate.name}
+                    className="h-24 w-auto object-contain rounded-lg border p-2"
+                    data-testid="img-affiliate-logo"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold mb-2" data-testid="text-affiliate-name">
+                  {affiliate.name}
+                </h1>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {affiliate.categories.map((category) => (
+                    <Badge key={category} variant="secondary">
+                      {category}
+                    </Badge>
+                  ))}
+                  {affiliate.hasFreeTrial && (
+                    <Badge variant="outline" className="border-green-500 text-green-600">
+                      Free Trial Available
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-lg">
+                  {affiliate.description}
+                </p>
+              </div>
+            </div>
+          )}
 
           {hasVideo && (
             <Card>
@@ -344,6 +405,7 @@ export default function AffiliateDetail() {
               size="lg"
               asChild
               className="px-8"
+              style={brandColors ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: brandColors.dark } : undefined}
               data-testid="button-visit-affiliate"
             >
               <a
