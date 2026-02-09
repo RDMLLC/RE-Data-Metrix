@@ -293,7 +293,7 @@ export const seedAffiliates: SeedAffiliate[] = [
   },
   {
     id: "6dfa6ea3-e2dc-4a0b-b73e-5fd6e596d848",
-    name: "Deal Machine",
+    name: "DealMachine",
     description: "Drive-for-dollars app that helps investors find off-market properties, skip trace owner information, and send direct mail campaigns to motivated sellers.",
     benefits: ["Mobile driving-for-dollars", "Built-in skip tracing", "Direct mail campaign automation", "Deal pipeline management"],
     referralLink: "https://dealmachine.com",

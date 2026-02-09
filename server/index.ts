@@ -4,7 +4,9 @@ import connectPgSimple from "connect-pg-simple";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { pool } from "./db";
+import { pool, db } from "./db";
+import { affiliates } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import passport from "./auth";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, isStripeConfigured } from './services/stripeClient';
@@ -207,6 +209,19 @@ app.use((req, res, next) => {
   await initStripe();
   
   const server = await registerRoutes(app);
+
+  // One-time data fix: correct "Deal Machine" to "DealMachine" and clear known-bad logo URL
+  try {
+    const { sql } = await import('drizzle-orm');
+    await db.update(affiliates)
+      .set({ name: 'DealMachine', logoUrl: null })
+      .where(eq(affiliates.name, 'Deal Machine'));
+    await db.update(affiliates)
+      .set({ logoUrl: null })
+      .where(sql`${affiliates.slug} = 'deal-machine' AND (${affiliates.logoUrl} LIKE '%dealmachine.com/?%' OR ${affiliates.logoUrl} LIKE '%dealmachine.com/logo%')`);
+  } catch (e) {
+    console.error('Data fix error:', e);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
