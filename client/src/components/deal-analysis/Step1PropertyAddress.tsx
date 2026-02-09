@@ -11,9 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import GroundUpModal from "./GroundUpModal";
 import QuotaExhaustedModal from "./QuotaExhaustedModal";
+import { normalizePropertyTypeToEnum } from "./propertyTypeUtils";
 import { Link, useLocation } from "wouter";
 
-// YouTube video for demo
 const YOUTUBE_VIDEO_ID = "m6SjKQ3dYe4";
 
 interface Step1Props {
@@ -75,7 +75,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         city: data.city || "",
         state: data.state || "",
         zipCode: data.zipCode || "",
-        propertyType: data.propertyType || "",
+        propertyType: normalizePropertyTypeToEnum(data.propertyType),
         bedrooms: data.bedrooms,
         bathrooms: data.bathrooms,
         sqft: data.sqft,

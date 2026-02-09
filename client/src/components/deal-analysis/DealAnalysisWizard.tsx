@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizePropertyTypeToEnum } from "./propertyTypeUtils";
 import WizardLayout from "./WizardLayout";
 import Step1PropertyAddress from "./Step1PropertyAddress";
 import Step2PropertyDetails from "./Step2PropertyDetails";
@@ -260,7 +261,7 @@ export default function DealAnalysisWizard() {
         city: snapshot.city || "",
         state: snapshot.state || "",
         zipCode: snapshot.zipCode || snapshot.zip || "",
-        propertyType: snapshot.propertyType,
+        propertyType: normalizePropertyTypeToEnum(snapshot.propertyType),
         bedrooms: snapshot.bedrooms,
         bathrooms: snapshot.bathrooms,
         sqft: snapshot.sqft || snapshot.squareFootage,
