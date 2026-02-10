@@ -1312,3 +1312,11 @@ export const insertMarketingPixelSchema = createInsertSchema(marketingPixels).om
 
 export type InsertMarketingPixel = z.infer<typeof insertMarketingPixelSchema>;
 export type MarketingPixel = typeof marketingPixels.$inferSelect;
+
+export const sentReminders = pgTable("sent_reminders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dealId: varchar("deal_id").notNull(),
+  daysUntilClosing: integer("days_until_closing").notNull(),
+  sentDate: text("sent_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});

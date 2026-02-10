@@ -1,6 +1,7 @@
 import { db } from '../db';
-import { savedDeals, users } from '@shared/schema';
-import { eq, and, lte, gte, isNull, isNotNull } from 'drizzle-orm';
+import { savedDeals, users, sentReminders } from '@shared/schema';
+import { eq, and, lte, gte, isNotNull } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { emailService } from './email.service';
 
 interface DealWithUser {
@@ -22,7 +23,6 @@ interface DealWithUser {
 class ClosingRemindersService {
   private reminderDays = [7, 5, 3, 1, 0];
   private checkInterval: NodeJS.Timeout | null = null;
-  private sentReminders: Set<string> = new Set();
 
   start() {
     console.log('Starting closing reminders service...');
@@ -43,9 +43,30 @@ class ClosingRemindersService {
     }
   }
 
-  private getReminderKey(dealId: string, daysUntilClosing: number): string {
-    const today = new Date().toISOString().split('T')[0];
-    return `${dealId}-${daysUntilClosing}-${today}`;
+  private async hasReminderBeenSent(dealId: string, daysUntilClosing: number, dateStr: string): Promise<boolean> {
+    const existing = await db
+      .select({ id: sentReminders.id })
+      .from(sentReminders)
+      .where(and(
+        eq(sentReminders.dealId, dealId),
+        eq(sentReminders.daysUntilClosing, daysUntilClosing),
+        eq(sentReminders.sentDate, dateStr)
+      ))
+      .limit(1);
+    return existing.length > 0;
+  }
+
+  private async markReminderSent(dealId: string, daysUntilClosing: number, dateStr: string): Promise<boolean> {
+    try {
+      await db.insert(sentReminders).values({
+        dealId,
+        daysUntilClosing,
+        sentDate: dateStr,
+      }).onConflictDoNothing();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async checkAndSendReminders() {
@@ -54,6 +75,7 @@ class ClosingRemindersService {
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
       
       const maxDate = new Date(today);
       maxDate.setDate(maxDate.getDate() + 8);
@@ -102,9 +124,9 @@ class ClosingRemindersService {
         const daysUntilClosing = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
         if (this.reminderDays.includes(daysUntilClosing)) {
-          const reminderKey = this.getReminderKey(deal.id, daysUntilClosing);
+          const alreadySent = await this.hasReminderBeenSent(deal.id, daysUntilClosing, todayStr);
           
-          if (this.sentReminders.has(reminderKey)) {
+          if (alreadySent) {
             console.log(`[CLOSING REMINDERS] Already sent ${daysUntilClosing}-day reminder for ${deal.id}`);
             continue;
           }
@@ -121,7 +143,7 @@ class ClosingRemindersService {
           );
           
           if (sent) {
-            this.sentReminders.add(reminderKey);
+            await this.markReminderSent(deal.id, daysUntilClosing, todayStr);
             console.log(`[CLOSING REMINDERS] Reminder sent successfully for ${deal.propertyAddress}`);
           }
         }
@@ -134,19 +156,18 @@ class ClosingRemindersService {
     }
   }
 
-  private cleanupOldReminders() {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
-    const keysToDelete: string[] = [];
-    this.sentReminders.forEach((key) => {
-      if (!key.endsWith(today) && !key.endsWith(yesterdayStr)) {
-        keysToDelete.push(key);
-      }
-    });
-    keysToDelete.forEach(key => this.sentReminders.delete(key));
+  private async cleanupOldReminders() {
+    try {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const cutoffDate = threeDaysAgo.toISOString().split('T')[0];
+      
+      await db.delete(sentReminders).where(
+        sql`${sentReminders.sentDate} < ${cutoffDate}`
+      );
+    } catch (error) {
+      console.error('[CLOSING REMINDERS] Error cleaning up old reminders:', error);
+    }
   }
 }
 
