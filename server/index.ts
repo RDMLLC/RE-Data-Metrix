@@ -221,7 +221,7 @@ app.use((req, res, next) => {
       .where(sql`${affiliates.slug} = 'deal-machine' AND (${affiliates.logoUrl} LIKE '%dealmachine.com/?%' OR ${affiliates.logoUrl} LIKE '%dealmachine.com/logo%')`);
 
     const emailMap: Record<string, string> = {
-      'MotivatedLeads': 'jacob@freedomleads.com',
+      'FreedomLeads': 'jacob@freedomleads.com',
       'Propstream': 'partners@propstream.com',
       'Padsplit': 'support@padsplit.zendesk.com',
       'DealMachine': 'promoter@firstpromoter.com',
