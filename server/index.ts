@@ -210,7 +210,7 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  // One-time data fix: correct "Deal Machine" to "DealMachine" and clear known-bad logo URL
+  // Data fixes: correct affiliate data on startup
   try {
     const { sql } = await import('drizzle-orm');
     await db.update(affiliates)
@@ -219,6 +219,25 @@ app.use((req, res, next) => {
     await db.update(affiliates)
       .set({ logoUrl: null })
       .where(sql`${affiliates.slug} = 'deal-machine' AND (${affiliates.logoUrl} LIKE '%dealmachine.com/?%' OR ${affiliates.logoUrl} LIKE '%dealmachine.com/logo%')`);
+
+    const emailMap: Record<string, string> = {
+      'MotivatedLeads': 'jacob@freedomleads.com',
+      'Propstream': 'partners@propstream.com',
+      'Padsplit': 'support@padsplit.zendesk.com',
+      'DealMachine': 'promoter@firstpromoter.com',
+      'Rehab Valuator': 'support@rehabvaluator.com',
+      'DealCheck': 'affiliates@dealcheck.io',
+      'Flipster': 'jerrynorton@flippingmastery.com',
+      'FreedomSoft': 'support@freedomsoft.com',
+      'REsimpli': 'tyler@resimpli.com',
+      'BatchLeads': 'affiliate@getbatch.co',
+      'Carrot': 'partners@carrot.com',
+    };
+    for (const [name, email] of Object.entries(emailMap)) {
+      await db.update(affiliates)
+        .set({ contactEmail: email })
+        .where(sql`${affiliates.name} = ${name} AND ${affiliates.contactEmail} IS NULL`);
+    }
   } catch (e) {
     console.error('Data fix error:', e);
   }

@@ -5744,8 +5744,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return public affiliate info (exclude sensitive fields)
-      const { loginUsername, loginPassword, portalUrl, reportToken, notificationEmail, ...publicInfo } = affiliate;
-      res.json(publicInfo);
+      const { loginUsername, loginPassword, portalUrl, reportToken, notificationEmail, contactEmail, ...publicInfo } = affiliate;
+      const isAdmin = req.session?.userId && (await storage.getUser(req.session.userId))?.role === "admin";
+      res.json(isAdmin ? { ...publicInfo, contactEmail } : publicInfo);
     } catch (error) {
       console.error('Get affiliate by slug error:', error);
       res.status(500).json({ error: "Failed to fetch affiliate" });
@@ -6593,6 +6594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             iconName: affiliate.iconName,
             isActive: affiliate.isActive,
             sortOrder: affiliate.sortOrder,
+            contactEmail: affiliate.contactEmail || null,
           }).onConflictDoNothing();
           results.affiliates.added++;
         }

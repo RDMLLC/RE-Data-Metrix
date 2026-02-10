@@ -18,6 +18,7 @@ export interface SeedAffiliate {
   iconName: string;
   isActive: boolean;
   sortOrder: number;
+  contactEmail?: string;
 }
 
 export interface SeedAffiliateCategory {
@@ -229,7 +230,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "MapPin",
     isActive: true,
-    sortOrder: 1
+    sortOrder: 1,
+    contactEmail: "partners@propstream.com"
   },
   {
     id: "2823df97-9c2e-4500-b9d7-c141500d683c",
@@ -253,7 +255,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Building2",
     isActive: true,
-    sortOrder: 2
+    sortOrder: 2,
+    contactEmail: "support@padsplit.zendesk.com"
   },
   {
     id: "2bf27db8-ab9a-49c6-b7af-415a9806d179",
@@ -301,7 +304,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Target",
     isActive: true,
-    sortOrder: 6
+    sortOrder: 6,
+    contactEmail: "promoter@firstpromoter.com"
   },
   {
     id: "d1856693-ba8a-4a9e-b6d2-766a439d1266",
@@ -325,7 +329,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Calculator",
     isActive: true,
-    sortOrder: 9
+    sortOrder: 9,
+    contactEmail: "support@rehabvaluator.com"
   },
   {
     id: "718b4e1f-718b-4ebc-a62c-a1068af4981b",
@@ -337,7 +342,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Calculator",
     isActive: true,
-    sortOrder: 10
+    sortOrder: 10,
+    contactEmail: "affiliates@dealcheck.io"
   },
   {
     id: "14febb4f-daa5-4133-9126-8300ea946f1a",
@@ -349,7 +355,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "BarChart3",
     isActive: true,
-    sortOrder: 11
+    sortOrder: 11,
+    contactEmail: "jerrynorton@flippingmastery.com"
   },
   {
     id: "e45cd134-8d77-482a-83c1-6295c9ec2222",
@@ -385,7 +392,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Layers",
     isActive: true,
-    sortOrder: 14
+    sortOrder: 14,
+    contactEmail: "support@freedomsoft.com"
   },
   {
     id: "33f44d2c-7159-4d14-a7b0-921194d82e59",
@@ -397,7 +405,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Layers",
     isActive: true,
-    sortOrder: 15
+    sortOrder: 15,
+    contactEmail: "tyler@resimpli.com"
   },
   {
     id: "62d6fc1d-da9f-490a-8afa-e6c86b32ba69",
@@ -409,7 +418,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Target",
     isActive: true,
-    sortOrder: 16
+    sortOrder: 16,
+    contactEmail: "affiliate@getbatch.co"
   },
   {
     id: "a8c3f912-5e71-4b8a-9c2d-8f1e3a7b6c5d",
@@ -421,7 +431,8 @@ export const seedAffiliates: SeedAffiliate[] = [
     features: [],
     iconName: "Leaf",
     isActive: true,
-    sortOrder: 17
+    sortOrder: 17,
+    contactEmail: "partners@carrot.com"
   },
   {
     id: "e2a4151a-d2ba-4c39-9ea4-fd4404982a5d",

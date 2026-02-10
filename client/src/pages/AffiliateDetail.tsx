@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, CheckCircle, Star, Tag, Play, ArrowLeft } from "lucide-react";
+import { ExternalLink, CheckCircle, Star, Tag, Play, ArrowLeft, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Affiliate } from "@shared/schema";
 
 interface BrandColors {
@@ -44,6 +45,8 @@ function getVideoEmbed(url: string): string {
 
 export default function AffiliateDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const { data: affiliate, isLoading, error } = useQuery<Affiliate>({
     queryKey: ["/api/affiliates/by-slug", slug],
@@ -396,6 +399,26 @@ export default function AffiliateDetail() {
                     Free trial available
                   </p>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {isAdmin && affiliate.contactEmail && (
+            <Card className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20" data-testid="card-admin-contact">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm" data-testid="text-admin-contact-title">
+                  <Mail className="h-4 w-4" />
+                  Partner Contact (Admin Only)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <a
+                  href={`mailto:${affiliate.contactEmail}`}
+                  className="underline hover:opacity-80"
+                  data-testid="link-contact-email"
+                >
+                  {affiliate.contactEmail}
+                </a>
               </CardContent>
             </Card>
           )}

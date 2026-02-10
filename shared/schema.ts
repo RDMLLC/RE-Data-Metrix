@@ -785,6 +785,7 @@ export const affiliates = pgTable("affiliates", {
   detailedDescription: text("detailed_description"),
   exclusiveBenefits: text("exclusive_benefits").array().default([]),
   logoUrl: text("logo_url"),
+  contactEmail: text("contact_email"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
