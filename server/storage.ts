@@ -753,7 +753,50 @@ export class MemStorage implements IStorage {
     const toBool = (val: string): boolean => val.toLowerCase() === "yes";
     const isActive = (val: any): boolean => val && val !== "" && val !== "any";
 
+    const stateAbbrToName: Record<string, string> = {
+      AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+      CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+      HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+      KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+      MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
+      MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+      NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+      OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+      SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+      VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+    };
+
+    const loanTypeMap: Record<string, string> = {
+      hard_money: "hard-money",
+      dscr: "dscr",
+      conventional: "conventional",
+      transactional: "transactional",
+      portfolio: "portfolio",
+      balloon: "balloon",
+      interest_only: "interest-only",
+      arm: "arm",
+      "private-seller": "private-seller",
+      new_construction: "new-construction",
+      fha_va: "fha-va",
+    };
+
     const matchingQuestionnaires = questionnaires.filter((q) => {
+      if (isActive(criteria.state)) {
+        if (q.offerLoansAllStates !== "Yes") {
+          const states = q.statesServiced || [];
+          const stateName = stateAbbrToName[criteria.state] || criteria.state;
+          if (!states.includes(stateName)) {
+            return false;
+          }
+        }
+      }
+      if (isActive(criteria.loanType)) {
+        const loanTypes = q.loanTypes || [];
+        const dbLoanType = loanTypeMap[criteria.loanType] || criteria.loanType;
+        if (!loanTypes.includes(dbLoanType)) {
+          return false;
+        }
+      }
       if (isActive(criteria.brokerOrDirectLender) &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
         return false;
@@ -770,8 +813,8 @@ export class MemStorage implements IStorage {
           q.workWithNewInvestors !== toBool(criteria.workWithNewInvestors)) {
         return false;
       }
-      if (isActive(criteria.creditScore)) {
-        const investorScore = creditScoreToNumeric(criteria.creditScore);
+      if (isActive(criteria.minCreditScore)) {
+        const investorScore = creditScoreToNumeric(criteria.minCreditScore);
         const lenderMinScore = creditScoreToNumeric(q.minCreditScore);
         if (investorScore < lenderMinScore) {
           return false;
@@ -788,6 +831,12 @@ export class MemStorage implements IStorage {
       if (isActive(criteria.offer100PercentFunding) &&
           q.offer100PercentFunding !== toBool(criteria.offer100PercentFunding)) {
         return false;
+      }
+      if (isActive(criteria.offerMultiUnitFinancing) && toBool(criteria.offerMultiUnitFinancing)) {
+        const loanTypes = q.loanTypes || [];
+        if (!loanTypes.includes("multi-unit")) {
+          return false;
+        }
       }
 
       return true;
@@ -1336,7 +1385,50 @@ export class DatabaseStorage implements IStorage {
     const toBool = (val: string): boolean => val.toLowerCase() === "yes";
     const isActive = (val: any): boolean => val && val !== "" && val !== "any";
 
+    const stateAbbrToName: Record<string, string> = {
+      AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+      CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+      HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+      KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+      MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
+      MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+      NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+      OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+      SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+      VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+    };
+
+    const loanTypeMap: Record<string, string> = {
+      hard_money: "hard-money",
+      dscr: "dscr",
+      conventional: "conventional",
+      transactional: "transactional",
+      portfolio: "portfolio",
+      balloon: "balloon",
+      interest_only: "interest-only",
+      arm: "arm",
+      "private-seller": "private-seller",
+      new_construction: "new-construction",
+      fha_va: "fha-va",
+    };
+
     const matchingQuestionnaires = questionnaires.filter((q) => {
+      if (isActive(criteria.state)) {
+        if (q.offerLoansAllStates !== "Yes") {
+          const states = q.statesServiced || [];
+          const stateName = stateAbbrToName[criteria.state] || criteria.state;
+          if (!states.includes(stateName)) {
+            return false;
+          }
+        }
+      }
+      if (isActive(criteria.loanType)) {
+        const loanTypes = q.loanTypes || [];
+        const dbLoanType = loanTypeMap[criteria.loanType] || criteria.loanType;
+        if (!loanTypes.includes(dbLoanType)) {
+          return false;
+        }
+      }
       if (isActive(criteria.brokerOrDirectLender) &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
         return false;
@@ -1353,8 +1445,8 @@ export class DatabaseStorage implements IStorage {
           q.workWithNewInvestors !== toBool(criteria.workWithNewInvestors)) {
         return false;
       }
-      if (isActive(criteria.creditScore)) {
-        const investorScore = creditScoreToNumeric(criteria.creditScore);
+      if (isActive(criteria.minCreditScore)) {
+        const investorScore = creditScoreToNumeric(criteria.minCreditScore);
         const lenderMinScore = creditScoreToNumeric(q.minCreditScore);
         if (investorScore < lenderMinScore) {
           return false;
@@ -1371,6 +1463,12 @@ export class DatabaseStorage implements IStorage {
       if (isActive(criteria.offer100PercentFunding) &&
           q.offer100PercentFunding !== toBool(criteria.offer100PercentFunding)) {
         return false;
+      }
+      if (isActive(criteria.offerMultiUnitFinancing) && toBool(criteria.offerMultiUnitFinancing)) {
+        const loanTypes = q.loanTypes || [];
+        if (!loanTypes.includes("multi-unit")) {
+          return false;
+        }
       }
 
       return true;
