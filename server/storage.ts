@@ -750,40 +750,43 @@ export class MemStorage implements IStorage {
       }
     };
     
+    const toBool = (val: string): boolean => val.toLowerCase() === "yes";
+    const isActive = (val: any): boolean => val && val !== "" && val !== "any";
+
     const matchingQuestionnaires = questionnaires.filter((q) => {
-      if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && criteria.brokerOrDirectLender !== "any" &&
+      if (isActive(criteria.brokerOrDirectLender) &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
         return false;
       }
-      if (criteria.fastestClosingTime && criteria.fastestClosingTime !== "" && criteria.fastestClosingTime !== "any" &&
+      if (isActive(criteria.fastestClosingTime) &&
           q.fastestClosingTime !== criteria.fastestClosingTime) {
         return false;
       }
-      if (criteria.offerNonTraditionalLending && criteria.offerNonTraditionalLending !== "" && criteria.offerNonTraditionalLending !== "any" &&
-          q.offerNonTraditionalLending !== criteria.offerNonTraditionalLending) {
+      if (isActive(criteria.offerNonTraditionalLending) &&
+          q.offerNonTraditionalLending !== toBool(criteria.offerNonTraditionalLending)) {
         return false;
       }
-      if (criteria.workWithNewInvestors && criteria.workWithNewInvestors !== "" && criteria.workWithNewInvestors !== "any" &&
-          q.workWithNewInvestors !== criteria.workWithNewInvestors) {
+      if (isActive(criteria.workWithNewInvestors) &&
+          q.workWithNewInvestors !== toBool(criteria.workWithNewInvestors)) {
         return false;
       }
-      if (criteria.creditScore && criteria.creditScore !== "" && criteria.creditScore !== "any") {
+      if (isActive(criteria.creditScore)) {
         const investorScore = creditScoreToNumeric(criteria.creditScore);
         const lenderMinScore = creditScoreToNumeric(q.minCreditScore);
         if (investorScore < lenderMinScore) {
           return false;
         }
       }
-      if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && criteria.offerDeferredPayment !== "any" &&
-          q.offerDeferredPayment !== criteria.offerDeferredPayment) {
+      if (isActive(criteria.offerDeferredPayment) &&
+          q.offerDeferredPayment !== toBool(criteria.offerDeferredPayment)) {
         return false;
       }
-      if (criteria.offerRolledPoints && criteria.offerRolledPoints !== "" && criteria.offerRolledPoints !== "any" &&
-          q.offerRolledPoints !== criteria.offerRolledPoints) {
+      if (isActive(criteria.offerRolledPoints) &&
+          q.offerRolledPoints !== toBool(criteria.offerRolledPoints)) {
         return false;
       }
-      if (criteria.offer100PercentFunding && criteria.offer100PercentFunding !== "" && criteria.offer100PercentFunding !== "any" &&
-          q.offer100PercentFunding !== criteria.offer100PercentFunding) {
+      if (isActive(criteria.offer100PercentFunding) &&
+          q.offer100PercentFunding !== toBool(criteria.offer100PercentFunding)) {
         return false;
       }
 
@@ -1330,40 +1333,43 @@ export class DatabaseStorage implements IStorage {
       }
     };
     
+    const toBool = (val: string): boolean => val.toLowerCase() === "yes";
+    const isActive = (val: any): boolean => val && val !== "" && val !== "any";
+
     const matchingQuestionnaires = questionnaires.filter((q) => {
-      if (criteria.brokerOrDirectLender && criteria.brokerOrDirectLender !== "" && criteria.brokerOrDirectLender !== "any" &&
+      if (isActive(criteria.brokerOrDirectLender) &&
           q.brokerOrDirectLender !== criteria.brokerOrDirectLender) {
         return false;
       }
-      if (criteria.fastestClosingTime && criteria.fastestClosingTime !== "" && criteria.fastestClosingTime !== "any" &&
+      if (isActive(criteria.fastestClosingTime) &&
           q.fastestClosingTime !== criteria.fastestClosingTime) {
         return false;
       }
-      if (criteria.offerNonTraditionalLending && criteria.offerNonTraditionalLending !== "" && criteria.offerNonTraditionalLending !== "any" &&
-          q.offerNonTraditionalLending !== criteria.offerNonTraditionalLending) {
+      if (isActive(criteria.offerNonTraditionalLending) &&
+          q.offerNonTraditionalLending !== toBool(criteria.offerNonTraditionalLending)) {
         return false;
       }
-      if (criteria.workWithNewInvestors && criteria.workWithNewInvestors !== "" && criteria.workWithNewInvestors !== "any" &&
-          q.workWithNewInvestors !== criteria.workWithNewInvestors) {
+      if (isActive(criteria.workWithNewInvestors) &&
+          q.workWithNewInvestors !== toBool(criteria.workWithNewInvestors)) {
         return false;
       }
-      if (criteria.creditScore && criteria.creditScore !== "" && criteria.creditScore !== "any") {
+      if (isActive(criteria.creditScore)) {
         const investorScore = creditScoreToNumeric(criteria.creditScore);
         const lenderMinScore = creditScoreToNumeric(q.minCreditScore);
         if (investorScore < lenderMinScore) {
           return false;
         }
       }
-      if (criteria.offerDeferredPayment && criteria.offerDeferredPayment !== "" && criteria.offerDeferredPayment !== "any" &&
-          q.offerDeferredPayment !== criteria.offerDeferredPayment) {
+      if (isActive(criteria.offerDeferredPayment) &&
+          q.offerDeferredPayment !== toBool(criteria.offerDeferredPayment)) {
         return false;
       }
-      if (criteria.offerRolledPoints && criteria.offerRolledPoints !== "" && criteria.offerRolledPoints !== "any" &&
-          q.offerRolledPoints !== criteria.offerRolledPoints) {
+      if (isActive(criteria.offerRolledPoints) &&
+          q.offerRolledPoints !== toBool(criteria.offerRolledPoints)) {
         return false;
       }
-      if (criteria.offer100PercentFunding && criteria.offer100PercentFunding !== "" && criteria.offer100PercentFunding !== "any" &&
-          q.offer100PercentFunding !== criteria.offer100PercentFunding) {
+      if (isActive(criteria.offer100PercentFunding) &&
+          q.offer100PercentFunding !== toBool(criteria.offer100PercentFunding)) {
         return false;
       }
 
