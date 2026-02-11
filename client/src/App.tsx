@@ -82,6 +82,8 @@ import RequestPasswordReset from "@/pages/RequestPasswordReset";
 import ResetPassword from "@/pages/ResetPassword";
 import RequestLenderPasswordReset from "@/pages/RequestLenderPasswordReset";
 import ResetLenderPassword from "@/pages/ResetLenderPassword";
+import RequestContractorPasswordReset from "@/pages/RequestContractorPasswordReset";
+import ResetContractorPassword from "@/pages/ResetContractorPassword";
 import LenderSavedBy from "@/pages/LenderSavedBy";
 import LenderInquiries from "@/pages/LenderInquiries";
 import FAQ from "@/pages/FAQ";
@@ -126,6 +128,8 @@ function Router() {
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/lender/request-password-reset" component={RequestLenderPasswordReset} />
       <Route path="/lender/reset-password/:token" component={ResetLenderPassword} />
+      <Route path="/contractor/request-password-reset" component={RequestContractorPasswordReset} />
+      <Route path="/contractor/reset-password/:token" component={ResetContractorPassword} />
       <Route path="/portal">
         {() => (
           <ProtectedRoute>

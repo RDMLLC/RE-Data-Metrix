@@ -6575,6 +6575,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contractor password reset routes
+  app.post("/api/contractors/request-password-reset", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const [contractor] = await db
+        .select()
+        .from(contractors)
+        .where(sql`LOWER(${contractors.email}) = LOWER(${email})`)
+        .limit(1);
+
+      if (!contractor) {
+        return res.json({ 
+          message: "If an account exists with this email, a password reset link will be sent." 
+        });
+      }
+
+      const resetToken = generateVerificationToken();
+      const resetExpiry = new Date();
+      resetExpiry.setHours(resetExpiry.getHours() + 1);
+
+      await db
+        .update(contractors)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiry: resetExpiry,
+        })
+        .where(eq(contractors.id, contractor.id));
+
+      await emailService.sendContractorPasswordResetEmail(
+        contractor.email,
+        contractor.name,
+        resetToken
+      );
+
+      res.json({ 
+        message: "If an account exists with this email, a password reset link will be sent." 
+      });
+    } catch (error) {
+      console.error('Contractor password reset request error:', error);
+      res.status(500).json({ error: "Password reset request failed" });
+    }
+  });
+
+  app.get("/api/contractors/validate-reset-token/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+
+      const [contractor] = await db
+        .select()
+        .from(contractors)
+        .where(eq(contractors.passwordResetToken, token))
+        .limit(1);
+
+      if (!contractor) {
+        return res.status(400).json({ valid: false, error: "Invalid reset token" });
+      }
+      
+      if (contractor.passwordResetExpiry && new Date() > contractor.passwordResetExpiry) {
+        return res.status(400).json({ valid: false, error: "Reset token has expired" });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      console.error('Contractor token validation error:', error);
+      res.status(500).json({ valid: false, error: "Token validation failed" });
+    }
+  });
+
+  app.post("/api/contractors/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { password } = req.body;
+
+      if (!password) {
+        return res.status(400).json({ error: "Password is required" });
+      }
+
+      const [contractor] = await db
+        .select()
+        .from(contractors)
+        .where(eq(contractors.passwordResetToken, token))
+        .limit(1);
+
+      if (!contractor) {
+        return res.status(400).json({ error: "Invalid reset token" });
+      }
+
+      if (contractor.passwordResetExpiry && new Date() > contractor.passwordResetExpiry) {
+        return res.status(400).json({ error: "Reset token has expired" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+
+      await db
+        .update(contractors)
+        .set({
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
+        })
+        .where(eq(contractors.id, contractor.id));
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error('Contractor password reset error:', error);
+      res.status(500).json({ error: "Password reset failed" });
+    }
+  });
+
   // Contractor referral link redirect (public)
   app.get("/api/contractor-ref/:code", async (req, res) => {
     try {

@@ -327,6 +327,56 @@ class EmailService {
     });
   }
 
+  async sendContractorPasswordResetEmail(to: string, name: string, token: string): Promise<boolean> {
+    const resetUrl = `${this.getBaseUrl()}/contractor/reset-password/${token}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .alert { background: #FEF2F2; border-left: 4px solid #DC2626; padding: 15px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Contractor Password Reset Request</h1>
+          </div>
+          <div class="content">
+            <p>Hello ${name},</p>
+            <p>We received a request to reset your password for your RE Data Metrix Contractor Portal account. Click the button below to create a new password:</p>
+            <div style="text-align: center;">
+              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Reset Password</a>
+            </div>
+            <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${resetUrl}</p>
+            <div class="alert">
+              <strong>Security Notice:</strong> This password reset link will expire in 1 hour.
+            </div>
+            <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Reset Your Contractor Portal Password - RE Data Metrix',
+      html: htmlContent,
+    });
+  }
+
   async sendContactConfirmation(to: string, name: string): Promise<boolean> {
     const htmlContent = `
       <!DOCTYPE html>

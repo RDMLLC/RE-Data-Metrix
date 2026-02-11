@@ -561,6 +561,11 @@ export default function Login() {
                             <p className="text-xs text-muted-foreground text-center">
                               Check your email for login credentials sent by RE Data Metrix.
                             </p>
+                            <div className="text-center text-sm mt-2">
+                              <Link href="/contractor/request-password-reset" className="text-accent hover:underline" data-testid="link-contractor-forgot-password">
+                                Forgot your password?
+                              </Link>
+                            </div>
                           </div>
                         </form>
                       </Form>
