@@ -67,9 +67,9 @@ export default function AdminRequestPasswordReset() {
                         If an admin account exists with that email, we've sent password reset instructions.
                       </p>
                       <Button asChild variant="outline" size="sm" data-testid="button-back-login">
-                        <Link href="/admin/login">
+                        <Link href="/login">
                           <ArrowLeft className="h-4 w-4 mr-2" />
-                          Back to Admin Login
+                          Back to Login
                         </Link>
                       </Button>
                     </div>
@@ -114,9 +114,9 @@ export default function AdminRequestPasswordReset() {
                     </Button>
 
                     <div className="text-center text-sm">
-                      <Link href="/admin/login" className="text-accent hover:underline" data-testid="link-login">
+                      <Link href="/login" className="text-accent hover:underline" data-testid="link-login">
                         <ArrowLeft className="h-4 w-4 inline mr-1" />
-                        Back to Admin Login
+                        Back to Login
                       </Link>
                     </div>
                   </form>

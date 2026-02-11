@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, Building2, ShieldCheck, UserPlus, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, Building2, ShieldCheck, Eye, EyeOff, HardHat, Loader2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -13,6 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +31,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const loginSchema = z.object({
   identifier: z.string().min(1, "Email or username is required"),
@@ -36,8 +43,20 @@ const lenderLoginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const contractorLoginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const adminLoginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
 type LoginFormData = z.infer<typeof loginSchema>;
 type LenderLoginFormData = z.infer<typeof lenderLoginSchema>;
+type ContractorLoginFormData = z.infer<typeof contractorLoginSchema>;
+type AdminLoginFormData = z.infer<typeof adminLoginSchema>;
 
 export default function Login() {
   const { login, isAuthenticated, isLoading: authLoading, user: currentUser } = useAuth();
@@ -45,18 +64,19 @@ export default function Login() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isLenderLoading, setIsLenderLoading] = useState(false);
+  const [isContractorLoading, setIsContractorLoading] = useState(false);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showLenderPassword, setShowLenderPassword] = useState(false);
+  const [showContractorPassword, setShowContractorPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
-  // Validate returnTo to only allow safe relative paths (prevents open redirect)
   const isValidReturnTo = (url: string | null): boolean => {
     if (!url) return false;
-    // Must start with "/" and not contain protocol or double slashes
     return url.startsWith("/") && !url.includes("//") && !url.includes(":");
   };
 
-  // Check for returnTo in URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const returnToParam = params.get("returnTo");
@@ -65,22 +85,17 @@ export default function Login() {
     }
   }, []);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && isAuthenticated && currentUser) {
       if (currentUser.role === 'admin' || currentUser.role === 'developer' || currentUser.role === 'auditor') {
         setLocation(returnTo || "/admin");
       } else {
-        // Check if user is a subscriber
         const isSubscriber = ['active', 'referral_trial', 'comped'].includes(currentUser.subscriptionStatus);
         if (isSubscriber) {
-          // Subscribers can use returnTo or go to dashboard
           setLocation(returnTo || "/portal/dashboard");
         } else if ((currentUser as any).pendingPlan) {
-          // User signed up for premium - go straight to checkout
           setLocation(`/checkout?plan=${(currentUser as any).pendingPlan}`);
         } else {
-          // Free users see the upgrade comparison page
           setLocation("/upgrade");
         }
       }
@@ -89,18 +104,22 @@ export default function Login() {
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      identifier: "",
-      password: "",
-    },
+    defaultValues: { identifier: "", password: "" },
   });
 
   const lenderForm = useForm<LenderLoginFormData>({
     resolver: zodResolver(lenderLoginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
+  });
+
+  const contractorForm = useForm<ContractorLoginFormData>({
+    resolver: zodResolver(contractorLoginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const adminForm = useForm<AdminLoginFormData>({
+    resolver: zodResolver(adminLoginSchema),
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (data: LoginFormData) => {
@@ -111,8 +130,6 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      
-      // Use window.location for full page reload to ensure session cookie is sent
       if (user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') {
         window.location.href = returnTo || "/admin";
       } else {
@@ -128,7 +145,6 @@ export default function Login() {
     } catch (error: any) {
       const errorMessage = error.message || "Invalid credentials";
       const isVerificationError = errorMessage.includes("verify") || errorMessage.includes("Email not verified");
-      
       toast({
         title: isVerificationError ? "Email Verification Required" : "Login failed",
         description: errorMessage,
@@ -148,17 +164,14 @@ export default function Login() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Invalid email or password");
       }
-
       const lenderData = await response.json();
       if (lenderData._sessionToken) {
         localStorage.setItem('_sessionToken', lenderData._sessionToken);
       }
-
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in to the Lender Portal.",
@@ -175,272 +188,478 @@ export default function Login() {
     }
   };
 
+  const onContractorSubmit = async (data: ContractorLoginFormData) => {
+    setIsContractorLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/contractors/login", data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Login failed");
+      }
+      const responseData = await res.json();
+      if (responseData._sessionToken) {
+        localStorage.setItem('_sessionToken', responseData._sessionToken);
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
+      toast({
+        title: "Welcome back!",
+        description: "You've successfully logged in to the Contractor Portal.",
+      });
+      setTimeout(() => {
+        if (responseData.contractor && !responseData.contractor.agreementSignedAt) {
+          window.location.href = "/contractor-agreement";
+        } else {
+          window.location.href = "/contractor-portal";
+        }
+      }, 500);
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid email or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsContractorLoading(false);
+    }
+  };
+
+  const onAdminSubmit = async (data: AdminLoginFormData) => {
+    setIsAdminLoading(true);
+    try {
+      const response = await fetch("/api/auth/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: data.email, password: data.password }),
+        credentials: "include",
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData._sessionToken) {
+          localStorage.setItem('_sessionToken', userData._sessionToken);
+        }
+        queryClient.setQueryData(["/api/auth/me"], userData);
+        toast({
+          title: "Welcome Admin",
+          description: "You've successfully logged in.",
+        });
+        window.location.href = "/admin/dashboard";
+        return;
+      } else if (response.status === 403) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin access. Contact support.",
+          variant: "destructive",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Login failed",
+          description: error.error || "Invalid credentials",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Login failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
-        <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {/* Left Side - Navy Value Prop Panel */}
-            <div className="lg:col-span-3 bg-primary text-primary-foreground rounded-lg p-12 space-y-8">
+        <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6">
+            <div className="bg-primary text-primary-foreground rounded-md p-8 sm:p-12 space-y-6">
               <div>
-                <h2 className="text-4xl font-bold mb-6">Welcome Back</h2>
-                <div className="h-1 w-24 bg-accent mb-8"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-lg">
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4">Welcome Back</h2>
+                <div className="h-1 w-24 bg-accent mb-6"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-base">
                   <p className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
                     <span>Access your saved deal analyses</span>
                   </p>
                   <p className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
                     <span>Compare financing options</span>
                   </p>
                   <p className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
                     <span>Connect with top lenders</span>
                   </p>
                   <p className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-accent mt-1 flex-shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
                     <span>Build out your toolbox</span>
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Main User Login Card - Full Width */}
-            <div className="lg:col-span-3 flex flex-col gap-6">
-              {/* User Login Card */}
-              <Card className="p-8 shadow-xl bg-card" data-testid="card-login">
-                <CardHeader>
-                  <CardTitle className="text-2xl">Member Portal</CardTitle>
-                  <CardDescription>
-                    Enter your credentials to access the platform
-                  </CardDescription>
-                </CardHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)}>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="identifier"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email or Username</FormLabel>
-                            <FormControl>
+            <Card className="shadow-xl bg-card" data-testid="card-login">
+              <CardHeader>
+                <CardTitle className="text-2xl">Member Sign In</CardTitle>
+                <CardDescription>
+                  Enter your credentials to access the platform
+                </CardDescription>
+              </CardHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="identifier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email or Username</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="text"
+                              placeholder="you@example.com or username"
+                              data-testid="input-identifier"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
                               <Input
                                 {...field}
-                                type="text"
-                                placeholder="you@example.com or username"
-                                data-testid="input-identifier"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter your password"
+                                data-testid="input-password"
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Input
-                                  {...field}
-                                  type={showPassword ? "text" : "password"}
-                                  placeholder="••••••••"
-                                  data-testid="input-password"
-                                />
-                                <Button
-                                  type="button"
-                                  tabIndex={-1}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-1 top-1/2 -translate-y-1/2"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                  data-testid="button-toggle-password"
-                                >
-                                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-                                </Button>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                    <CardFooter className="flex flex-col gap-4">
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isLoading}
-                        data-testid="button-login"
-                      >
-                        {isLoading ? "Logging in..." : "Login"}
-                      </Button>
-                      <p className="text-sm text-muted-foreground text-center">
-                        <Link href="/request-password-reset" className="text-accent hover:underline" data-testid="link-forgot-password">
-                          Forgot your password?
-                        </Link>
-                      </p>
-                    </CardFooter>
-                  </form>
-                </Form>
-              </Card>
-            </div>
-
-            {/* Left Column - New Account and Admin Panel stacked */}
-            <div className="lg:col-span-1 xl:col-span-1 flex flex-col gap-4">
-              {/* New Account Signup Card - Hidden on mobile */}
-              <Card className="hidden md:block border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20" data-testid="card-new-account">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg flex items-center justify-center">
-                      <UserPlus className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-foreground">New Account</h3>
-                      <p className="text-xs text-muted-foreground">Join RE Data Metrix</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Get access to deal analysis, lender comparisons, and investment tools.
-                  </p>
-                  <Link href="/pricing">
+                              <Button
+                                type="button"
+                                tabIndex={-1}
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 -translate-y-1/2"
+                                onClick={() => setShowPassword(!showPassword)}
+                                data-testid="button-toggle-password"
+                              >
+                                {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-4">
                     <Button
-                      className="w-full bg-emerald-600 hover:bg-emerald-700"
-                      size="sm"
-                      data-testid="button-new-account"
-                    >
-                      View Plans
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              {/* Admin Panel Card - Hidden on mobile */}
-              <Card className="hidden md:block border border-primary/20" data-testid="card-admin-login">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-foreground">Admin Panel</h3>
-                      <p className="text-xs text-muted-foreground">Platform management</p>
-                    </div>
-                  </div>
-                  <Link href="/admin/login">
-                    <Button
-                      variant="outline"
+                      type="submit"
                       className="w-full"
-                      size="sm"
-                      data-testid="button-admin-portal"
+                      disabled={isLoading}
+                      data-testid="button-login"
                     >
-                      Admin Login
+                      {isLoading ? "Logging in..." : "Sign In"}
                     </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-2 xl:col-span-2" id="lender-portal">
-              {/* Lender Login Card */}
-              <Card className="border border-accent/20" data-testid="card-lender-login">
-                <CardHeader className="p-6 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-accent" />
+                    <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
+                      <Link href="/request-password-reset" className="text-accent hover:underline" data-testid="link-forgot-password">
+                        Forgot your password?
+                      </Link>
+                      <span className="hidden sm:inline">|</span>
+                      <Link href="/pricing" className="text-accent hover:underline" data-testid="link-new-account">
+                        Create an account
+                      </Link>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">Lender Portal</CardTitle>
-                      <CardDescription className="text-sm">Manage loan products and applications</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <Form {...lenderForm}>
-                  <form onSubmit={lenderForm.handleSubmit(onLenderSubmit)}>
-                    <CardContent className="p-6 pt-0 space-y-4">
-                      <FormField
-                        control={lenderForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                type="email"
-                                placeholder="lender@example.com"
-                                data-testid="input-lender-email"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={lenderForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Input
-                                  {...field}
-                                  type={showLenderPassword ? "text" : "password"}
-                                  placeholder="••••••••"
-                                  data-testid="input-lender-password"
-                                />
-                                <Button
-                                  type="button"
-                                  tabIndex={-1}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-1 top-1/2 -translate-y-1/2"
-                                  onClick={() => setShowLenderPassword(!showLenderPassword)}
-                                  data-testid="button-toggle-lender-password"
-                                >
-                                  {showLenderPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-                                </Button>
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                    <CardFooter className="p-6 pt-0 flex flex-col gap-3">
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isLenderLoading}
-                        data-testid="button-lender-login"
-                      >
-                        {isLenderLoading ? "Logging in..." : "Login as Lender"}
-                      </Button>
-                      <p className="text-sm text-muted-foreground text-center">
-                        <Link href="/lender/request-password-reset" className="text-accent hover:underline" data-testid="link-lender-forgot-password">
-                          Forgot your password?
-                        </Link>
-                      </p>
-                    </CardFooter>
-                  </form>
-                </Form>
-              </Card>
-            </div>
+                  </CardFooter>
+                </form>
+              </Form>
+            </Card>
 
-            {/* Subtle Admin Link - Visible on mobile only (cards hidden on desktop show admin access) */}
-            <div className="lg:col-span-3 md:hidden text-center">
-              <Link 
-                href="/admin/login" 
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="link-admin-mobile"
-              >
-                Admin access
-              </Link>
-            </div>
+            <Card className="bg-card" data-testid="card-partner-logins">
+              <CardContent className="p-0">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="lender" className="border-b px-6" data-testid="accordion-lender">
+                    <AccordionTrigger className="hover:no-underline" data-testid="trigger-lender-login">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-accent/10 rounded-md flex items-center justify-center flex-shrink-0">
+                          <Building2 className="h-4 w-4 text-accent" />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-base font-medium">Lender Sign In</span>
+                          <p className="text-xs text-muted-foreground font-normal">Manage loan products and applications</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <Form {...lenderForm}>
+                        <form onSubmit={lenderForm.handleSubmit(onLenderSubmit)} className="space-y-4 pt-2">
+                          <FormField
+                            control={lenderForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="lender@example.com"
+                                    data-testid="input-lender-email"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={lenderForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input
+                                      {...field}
+                                      type={showLenderPassword ? "text" : "password"}
+                                      placeholder="Enter your password"
+                                      data-testid="input-lender-password"
+                                    />
+                                    <Button
+                                      type="button"
+                                      tabIndex={-1}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                                      onClick={() => setShowLenderPassword(!showLenderPassword)}
+                                      data-testid="button-toggle-lender-password"
+                                    >
+                                      {showLenderPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                    </Button>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="flex flex-col gap-3">
+                            <Button
+                              type="submit"
+                              className="w-full"
+                              disabled={isLenderLoading}
+                              data-testid="button-lender-login"
+                            >
+                              {isLenderLoading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Signing In...
+                                </>
+                              ) : (
+                                "Sign In as Lender"
+                              )}
+                            </Button>
+                            <p className="text-sm text-muted-foreground text-center">
+                              <Link href="/lender/request-password-reset" className="text-accent hover:underline" data-testid="link-lender-forgot-password">
+                                Forgot your password?
+                              </Link>
+                            </p>
+                          </div>
+                        </form>
+                      </Form>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="contractor" className="border-b px-6" data-testid="accordion-contractor">
+                    <AccordionTrigger className="hover:no-underline" data-testid="trigger-contractor-login">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-accent/10 rounded-md flex items-center justify-center flex-shrink-0">
+                          <HardHat className="h-4 w-4 text-accent" />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-base font-medium">Contractor Sign In</span>
+                          <p className="text-xs text-muted-foreground font-normal">Access your contractor portal</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <Form {...contractorForm}>
+                        <form onSubmit={contractorForm.handleSubmit(onContractorSubmit)} className="space-y-4 pt-2">
+                          <FormField
+                            control={contractorForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="contractor@email.com"
+                                    autoComplete="email"
+                                    data-testid="input-contractor-email"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={contractorForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input
+                                      {...field}
+                                      type={showContractorPassword ? "text" : "password"}
+                                      placeholder="Enter your password"
+                                      autoComplete="current-password"
+                                      data-testid="input-contractor-password"
+                                    />
+                                    <Button
+                                      type="button"
+                                      tabIndex={-1}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                                      onClick={() => setShowContractorPassword(!showContractorPassword)}
+                                      data-testid="button-toggle-contractor-password"
+                                    >
+                                      {showContractorPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                    </Button>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="flex flex-col gap-3">
+                            <Button
+                              type="submit"
+                              className="w-full"
+                              disabled={isContractorLoading}
+                              data-testid="button-contractor-login"
+                            >
+                              {isContractorLoading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Signing In...
+                                </>
+                              ) : (
+                                "Sign In as Contractor"
+                              )}
+                            </Button>
+                            <p className="text-xs text-muted-foreground text-center">
+                              Check your email for login credentials sent by RE Data Metrix.
+                            </p>
+                          </div>
+                        </form>
+                      </Form>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="admin" className="border-b-0 px-6" data-testid="accordion-admin">
+                    <AccordionTrigger className="hover:no-underline" data-testid="trigger-admin-login">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary/10 rounded-md flex items-center justify-center flex-shrink-0">
+                          <ShieldCheck className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-base font-medium">Admin Sign In</span>
+                          <p className="text-xs text-muted-foreground font-normal">Platform administrator access</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <Form {...adminForm}>
+                        <form onSubmit={adminForm.handleSubmit(onAdminSubmit)} className="space-y-4 pt-2">
+                          <FormField
+                            control={adminForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="admin@example.com"
+                                    data-testid="input-admin-email"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={adminForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input
+                                      {...field}
+                                      type={showAdminPassword ? "text" : "password"}
+                                      placeholder="Enter your password"
+                                      data-testid="input-admin-password"
+                                    />
+                                    <Button
+                                      type="button"
+                                      tabIndex={-1}
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-1 top-1/2 -translate-y-1/2"
+                                      onClick={() => setShowAdminPassword(!showAdminPassword)}
+                                      data-testid="button-toggle-admin-password"
+                                    >
+                                      {showAdminPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                    </Button>
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="flex flex-col gap-3">
+                            <Button
+                              type="submit"
+                              className="w-full"
+                              disabled={isAdminLoading}
+                              data-testid="button-admin-login"
+                            >
+                              {isAdminLoading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Signing In...
+                                </>
+                              ) : (
+                                "Sign In as Admin"
+                              )}
+                            </Button>
+                            <p className="text-sm text-muted-foreground text-center">
+                              <Link href="/admin/request-password-reset" className="text-accent hover:underline" data-testid="link-admin-forgot-password">
+                                Forgot your password?
+                              </Link>
+                            </p>
+                          </div>
+                        </form>
+                      </Form>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

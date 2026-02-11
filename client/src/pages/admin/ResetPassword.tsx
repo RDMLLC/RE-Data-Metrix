@@ -109,7 +109,7 @@ export default function AdminResetPassword() {
                         Your admin password has been updated successfully. You can now log in with your new password.
                       </p>
                       <Button asChild data-testid="button-login">
-                        <Link href="/admin/login">Go to Admin Login</Link>
+                        <Link href="/login">Go to Login</Link>
                       </Button>
                     </div>
                   </div>
@@ -204,9 +204,9 @@ export default function AdminResetPassword() {
                     </Button>
 
                     <div className="text-center text-sm">
-                      <Link href="/admin/login" className="text-accent hover:underline" data-testid="link-login">
+                      <Link href="/login" className="text-accent hover:underline" data-testid="link-login">
                         <ArrowLeft className="h-4 w-4 inline mr-1" />
-                        Back to Admin Login
+                        Back to Login
                       </Link>
                     </div>
                   </form>
