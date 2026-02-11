@@ -134,29 +134,20 @@ try {
   process.exit(1);
 }
 
-const sessionMiddleware = session({
-  store: sessionStore,
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: true,
-  },
-});
-
-app.use((req, res, next) => {
-  const isIframe = req.headers['sec-fetch-dest'] === 'iframe' || req.headers['sec-fetch-site'] === 'cross-site';
-  sessionMiddleware(req, res, () => {
-    if (isIframe && req.session) {
-      req.session.cookie.sameSite = 'none';
-      req.session.cookie.secure = true;
-    }
-    next();
-  });
-});
+app.use(
+  session({
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+    },
+  })
+);
 
 app.use(passport.initialize());
 app.use(passport.session());
