@@ -356,26 +356,152 @@ export default function ContractorPortal() {
       <Layout>
         <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-primary" data-testid="text-portal-title">
-                Contractor Portal
-              </h1>
-              <div className="h-1 w-24 bg-accent mt-2"></div>
-              <p className="text-muted-foreground mt-2">
-                Viewing as Admin
-              </p>
+            <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-primary" data-testid="text-portal-title">
+                  Contractor Portal
+                </h1>
+                <div className="h-1 w-24 bg-accent mt-2"></div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="secondary">Admin Preview</Badge>
+                  <p className="text-muted-foreground">
+                    This is what contractors see when they log in
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" onClick={() => setLocation("/admin/contractors")} data-testid="button-admin-contractors">
+                Contractor Management
+              </Button>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-primary/10">
+                      <MousePointerClick className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Referral Clicks</p>
+                      <p className="text-2xl font-bold">0</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-primary/10">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Documents</p>
+                      <p className="text-2xl font-bold">0</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-primary/10">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Assigned Users</p>
+                      <p className="text-2xl font-bold">0</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="h-5 w-5" />
+                  Signed Agreement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm py-2 text-center">
+                  Agreement details appear here after the contractor signs.
+                </p>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Link className="h-5 w-5" />
+                    Referral Link
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground mb-4">
+                      Contractors generate a referral code to start tracking clicks.
+                    </p>
+                    <Button disabled>
+                      <Link className="mr-2 h-4 w-4" />
+                      Generate Referral Code
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Referred Users
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm py-4 text-center">
+                    Users assigned to this contractor appear here.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  Upload Contract / Agreement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">File (PDF, DOC, DOCX, JPG, PNG - Max 10MB)</label>
+                    <Input type="file" disabled accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Description (optional)</label>
+                    <Textarea disabled placeholder="Brief description of this document..." className="resize-none" />
+                  </div>
+                  <Button disabled>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Document
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
-              <CardContent className="pt-6 text-center py-12">
-                <p className="text-muted-foreground mb-2">
-                  This portal is where contractors manage their referrals, documents, and agreements.
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm py-4 text-center">
+                  Uploaded documents appear here.
                 </p>
-                <p className="text-muted-foreground mb-6">
-                  To manage contractors, invitations, and service regions, use the Contractors section on the Admin Dashboard.
-                </p>
-                <Button onClick={() => setLocation("/admin/contractors")} data-testid="button-admin-contractors">
-                  Go to Contractor Management
-                </Button>
               </CardContent>
             </Card>
           </div>
