@@ -5,8 +5,8 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pool, db } from "./db";
-import { affiliates } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { affiliates, serviceRegions } from "@shared/schema";
+import { eq, count } from "drizzle-orm";
 import passport from "./auth";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, isStripeConfigured } from './services/stripeClient';
@@ -241,6 +241,74 @@ app.use((req, res, next) => {
     }
   } catch (e) {
     console.error('Data fix error:', e);
+  }
+
+  try {
+    const [{ count: regionCount }] = await db.select({ count: count() }).from(serviceRegions);
+    if (Number(regionCount) === 0) {
+      console.log('Seeding service regions...');
+      const regions: { state: string; name: string; keyCities: string[]; sortOrder: number }[] = [
+        { state: 'GA', name: 'Atlanta Metro', keyCities: ['Atlanta', 'Marietta', 'Alpharetta', 'Roswell', 'Sandy Springs', 'Johns Creek', 'Duluth', 'Lawrenceville', 'Decatur', 'Smyrna', 'Kennesaw'], sortOrder: 1 },
+        { state: 'GA', name: 'North Georgia Mountains', keyCities: ['Blue Ridge', 'Dahlonega', 'Helen', 'Ellijay', 'Blairsville', 'Clayton', 'Hiawassee'], sortOrder: 2 },
+        { state: 'GA', name: 'Athens Area', keyCities: ['Athens', 'Watkinsville', 'Winterville', 'Bogart'], sortOrder: 3 },
+        { state: 'GA', name: 'Augusta Area', keyCities: ['Augusta', 'Evans', 'Martinez', 'Grovetown'], sortOrder: 4 },
+        { state: 'GA', name: 'Macon Area', keyCities: ['Macon', 'Warner Robins', 'Byron', 'Forsyth'], sortOrder: 5 },
+        { state: 'GA', name: 'Savannah Area', keyCities: ['Savannah', 'Pooler', 'Richmond Hill', 'Hinesville'], sortOrder: 6 },
+        { state: 'GA', name: 'Columbus Area', keyCities: ['Columbus', 'Phenix City', 'Fort Moore'], sortOrder: 7 },
+        { state: 'GA', name: 'Valdosta Area', keyCities: ['Valdosta', 'Lowndes County', 'Moultrie'], sortOrder: 8 },
+        { state: 'GA', name: 'Brunswick/Golden Isles', keyCities: ['Brunswick', 'St. Simons Island', 'Jekyll Island'], sortOrder: 9 },
+        { state: 'GA', name: 'Gainesville/Lake Lanier', keyCities: ['Gainesville', 'Flowery Branch', 'Buford', 'Cumming'], sortOrder: 10 },
+        { state: 'GA', name: 'South Metro Atlanta', keyCities: ['McDonough', 'Stockbridge', 'Griffin', 'Newnan', 'Peachtree City', 'Fayetteville'], sortOrder: 11 },
+        { state: 'GA', name: 'Northwest Georgia', keyCities: ['Rome', 'Dalton', 'Cartersville', 'Calhoun'], sortOrder: 12 },
+        { state: 'GA', name: 'Middle Georgia', keyCities: ['Dublin', 'Milledgeville', 'Sandersville', 'Vidalia'], sortOrder: 13 },
+        { state: 'GA', name: 'Southwest Georgia', keyCities: ['Albany', 'Americus', 'Cordele', 'Tifton'], sortOrder: 14 },
+        { state: 'GA', name: 'Albany Area', keyCities: ['Albany', 'Leesburg', 'Dawson'], sortOrder: 15 },
+        { state: 'AL', name: 'Birmingham Metro', keyCities: ['Birmingham', 'Hoover', 'Vestavia Hills', 'Homewood', 'Mountain Brook', 'Trussville', 'Pelham'], sortOrder: 1 },
+        { state: 'AL', name: 'Huntsville Metro', keyCities: ['Huntsville', 'Madison', 'Decatur', 'Athens'], sortOrder: 2 },
+        { state: 'AL', name: 'Montgomery Metro', keyCities: ['Montgomery', 'Prattville', 'Millbrook', 'Wetumpka'], sortOrder: 3 },
+        { state: 'AL', name: 'Mobile Metro', keyCities: ['Mobile', 'Prichard', 'Saraland', 'Chickasaw'], sortOrder: 4 },
+        { state: 'AL', name: 'Tuscaloosa Metro', keyCities: ['Tuscaloosa', 'Northport', 'Holt'], sortOrder: 5 },
+        { state: 'AL', name: 'Auburn-Opelika', keyCities: ['Auburn', 'Opelika', 'Phenix City'], sortOrder: 6 },
+        { state: 'AL', name: 'Florence-Muscle Shoals', keyCities: ['Florence', 'Muscle Shoals', 'Sheffield', 'Tuscumbia'], sortOrder: 7 },
+        { state: 'AL', name: 'Dothan/Wiregrass', keyCities: ['Dothan', 'Enterprise', 'Ozark', 'Daleville'], sortOrder: 8 },
+        { state: 'AL', name: 'Gadsden Area', keyCities: ['Gadsden', 'Attalla', 'Rainbow City', 'Albertville'], sortOrder: 9 },
+        { state: 'AL', name: 'Anniston-Oxford', keyCities: ['Anniston', 'Oxford', 'Jacksonville', 'Heflin'], sortOrder: 10 },
+        { state: 'AL', name: 'Gulf Coast/Baldwin County', keyCities: ['Gulf Shores', 'Orange Beach', 'Fairhope', 'Daphne', 'Foley'], sortOrder: 11 },
+        { state: 'AL', name: 'North Alabama', keyCities: ['Cullman', 'Hartselle', 'Moulton', 'Scottsboro'], sortOrder: 12 },
+        { state: 'AL', name: 'Central Alabama', keyCities: ['Selma', 'Clanton', 'Alexander City', 'Talladega'], sortOrder: 13 },
+        { state: 'AL', name: 'East Alabama', keyCities: ['Valley', 'Lanett', 'Roanoke', 'Dadeville'], sortOrder: 14 },
+        { state: 'AL', name: 'West Alabama', keyCities: ['Demopolis', 'Livingston', 'Greensboro', 'Eutaw'], sortOrder: 15 },
+        { state: 'FL', name: 'Miami-Dade/South Beach', keyCities: ['Miami', 'Miami Beach', 'Hialeah', 'Coral Gables', 'Doral', 'Homestead', 'Kendall', 'North Miami'], sortOrder: 1 },
+        { state: 'FL', name: 'Fort Lauderdale/Broward', keyCities: ['Fort Lauderdale', 'Hollywood', 'Pembroke Pines', 'Coral Springs', 'Plantation', 'Davie', 'Sunrise', 'Deerfield Beach'], sortOrder: 2 },
+        { state: 'FL', name: 'West Palm Beach/Palm Beach County', keyCities: ['West Palm Beach', 'Boca Raton', 'Boynton Beach', 'Delray Beach', 'Jupiter', 'Palm Beach Gardens', 'Lake Worth', 'Wellington'], sortOrder: 3 },
+        { state: 'FL', name: 'Florida Keys/Monroe County', keyCities: ['Key West', 'Key Largo', 'Marathon', 'Islamorada', 'Big Pine Key'], sortOrder: 4 },
+        { state: 'FL', name: 'Naples/Southwest Florida', keyCities: ['Naples', 'Marco Island', 'Bonita Springs', 'Estero', 'Immokalee'], sortOrder: 5 },
+        { state: 'FL', name: 'Fort Myers/Cape Coral', keyCities: ['Fort Myers', 'Cape Coral', 'Lehigh Acres', 'North Fort Myers', 'Sanibel'], sortOrder: 6 },
+        { state: 'FL', name: 'Sarasota/Bradenton', keyCities: ['Sarasota', 'Bradenton', 'North Port', 'Venice', 'Palmetto', 'Lakewood Ranch'], sortOrder: 7 },
+        { state: 'FL', name: 'Tampa Metro', keyCities: ['Tampa', 'Brandon', 'Temple Terrace', 'Plant City', 'Riverview', 'Wesley Chapel', 'Land O Lakes'], sortOrder: 8 },
+        { state: 'FL', name: 'St. Petersburg/Clearwater', keyCities: ['St. Petersburg', 'Clearwater', 'Largo', 'Dunedin', 'Pinellas Park', 'Tarpon Springs'], sortOrder: 9 },
+        { state: 'FL', name: 'Nature Coast (Citrus/Hernando)', keyCities: ['Spring Hill', 'Brooksville', 'Crystal River', 'Homosassa', 'Inverness', 'Weeki Wachee'], sortOrder: 10 },
+        { state: 'FL', name: 'Lakeland/Polk County', keyCities: ['Lakeland', 'Winter Haven', 'Bartow', 'Haines City', 'Lake Wales', 'Auburndale'], sortOrder: 11 },
+        { state: 'FL', name: 'Orlando Metro', keyCities: ['Orlando', 'Winter Park', 'Altamonte Springs', 'Sanford', 'Oviedo', 'Lake Mary', 'Apopka'], sortOrder: 12 },
+        { state: 'FL', name: 'Kissimmee/Osceola', keyCities: ['Kissimmee', 'St. Cloud', 'Celebration', 'Poinciana'], sortOrder: 13 },
+        { state: 'FL', name: 'Space Coast/Brevard', keyCities: ['Melbourne', 'Palm Bay', 'Titusville', 'Cocoa', 'Cocoa Beach', 'Merritt Island', 'Rockledge'], sortOrder: 14 },
+        { state: 'FL', name: 'Daytona Beach/Volusia', keyCities: ['Daytona Beach', 'Ormond Beach', 'Port Orange', 'DeLand', 'New Smyrna Beach', 'Deltona'], sortOrder: 15 },
+        { state: 'FL', name: 'Treasure Coast (Stuart/Port St. Lucie)', keyCities: ['Port St. Lucie', 'Stuart', 'Fort Pierce', 'Vero Beach', 'Sebastian', 'Jensen Beach'], sortOrder: 16 },
+        { state: 'FL', name: 'The Villages/Sumter County', keyCities: ['The Villages', 'Wildwood', 'Bushnell', 'Coleman', 'Lady Lake', 'Leesburg'], sortOrder: 17 },
+        { state: 'FL', name: 'Ocala/Marion County', keyCities: ['Ocala', 'Belleview', 'Dunnellon', 'Silver Springs'], sortOrder: 18 },
+        { state: 'FL', name: 'Gainesville Area', keyCities: ['Gainesville', 'Alachua', 'Newberry', 'High Springs'], sortOrder: 19 },
+        { state: 'FL', name: 'Jacksonville Metro', keyCities: ['Jacksonville', 'Jacksonville Beach', 'Orange Park', 'St. Augustine', 'Fernandina Beach', 'Ponte Vedra Beach'], sortOrder: 20 },
+        { state: 'FL', name: 'Tallahassee Area', keyCities: ['Tallahassee', 'Quincy', 'Monticello', 'Crawfordville'], sortOrder: 21 },
+        { state: 'FL', name: 'Panama City/Emerald Coast', keyCities: ['Panama City', 'Panama City Beach', 'Destin', 'Fort Walton Beach', 'Crestview', 'Defuniak Springs'], sortOrder: 22 },
+        { state: 'FL', name: 'Pensacola/Northwest Florida', keyCities: ['Pensacola', 'Pensacola Beach', 'Milton', 'Gulf Breeze', 'Pace', 'Navarre'], sortOrder: 23 },
+      ];
+      for (const region of regions) {
+        await db.insert(serviceRegions).values(region);
+      }
+      console.log(`Seeded ${regions.length} service regions`);
+    }
+  } catch (e) {
+    console.error('Service regions seed error:', e);
   }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
