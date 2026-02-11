@@ -9,6 +9,7 @@ import { OrganizationSchema, WebApplicationSchema } from "@/components/Structure
 import { WizardDataProvider } from "@/contexts/WizardDataContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LenderAuthProvider } from "@/contexts/LenderAuthContext";
+import { ContractorAuthProvider } from "@/contexts/ContractorAuthContext";
 import { DeviceModeProvider } from "@/contexts/DeviceModeContext";
 import { MobileRedirectHandler } from "@/components/MobileRedirectHandler";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -45,6 +46,8 @@ import LoanTypes from "@/pages/LoanTypes";
 import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
 import LenderSignup from "@/pages/LenderSignup";
 import ContractorSignup from "@/pages/ContractorSignup";
+import ContractorLogin from "@/pages/ContractorLogin";
+import ContractorPortal from "@/pages/ContractorPortal";
 import LenderLogin from "@/pages/LenderLogin";
 import LenderInvite from "@/pages/admin/LenderInvite";
 import AdminLogin from "@/pages/admin/Login";
@@ -188,6 +191,8 @@ function Router() {
       <Route path="/lender-inquiries" component={LenderInquiries} />
       <Route path="/lender-signup/:token" component={LenderSignup} />
       <Route path="/contractor-signup/:token" component={ContractorSignup} />
+      <Route path="/contractor-login" component={ContractorLogin} />
+      <Route path="/contractor-portal" component={ContractorPortal} />
       <Route path="/lender-login" component={LenderLogin} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/request-password-reset" component={AdminRequestPasswordReset} />
@@ -229,6 +234,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <LenderAuthProvider>
+            <ContractorAuthProvider>
             <WizardDataProvider>
               <DeviceModeProvider>
                 <TooltipProvider>
@@ -240,6 +246,7 @@ function App() {
                 </TooltipProvider>
               </DeviceModeProvider>
             </WizardDataProvider>
+            </ContractorAuthProvider>
           </LenderAuthProvider>
         </AuthProvider>
       </QueryClientProvider>

@@ -1,14 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
 import { db } from "./db";
 import { eq, inArray, desc, and, sql, count, gt, or, ne } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
-import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureAdminReadAccess, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, requireRole } from "./auth";
+import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureAdminReadAccess, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, ensureContractorAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
 import { authService, registrationSchema } from "./services/auth.service";
 import crypto from "crypto";
@@ -6331,6 +6331,434 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Delete contractor error:', error);
       res.status(500).json({ error: "Failed to delete contractor" });
+    }
+  });
+
+  // ==========================================
+  // Contractor Portal Routes
+  // ==========================================
+
+  app.post("/api/contractors/login", (req, res, next) => {
+    passport.authenticate("contractor-local", (err: any, user: any | false, info: { message: string }) => {
+      if (err) {
+        return res.status(500).json({ error: "Authentication failed" });
+      }
+      if (!user) {
+        return res.status(401).json({ error: info.message || "Invalid credentials" });
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login failed" });
+        }
+        res.json({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          companyName: user.companyName,
+        });
+      });
+    })(req, res, next);
+  });
+
+  app.post("/api/contractors/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Logout failed" });
+      }
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error("Contractor session destroy error:", destroyErr);
+        }
+        res.clearCookie('connect.sid');
+        res.json({ message: "Logged out successfully" });
+      });
+    });
+  });
+
+  app.get("/api/contractors/me", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const regions = await storage.getContractorServiceRegions(contractor.id);
+      res.json({
+        id: contractor.id,
+        name: contractor.name,
+        companyName: contractor.companyName,
+        email: contractor.email,
+        phone: contractor.phone,
+        website: contractor.website,
+        description: contractor.description,
+        specialties: contractor.specialties,
+        licenseNumber: contractor.licenseNumber,
+        licensedStates: contractor.licensedStates,
+        isInsured: contractor.isInsured,
+        isBonded: contractor.isBonded,
+        referralLink: contractor.referralLink,
+        generatedReferralCode: contractor.generatedReferralCode,
+        referralClickCount: contractor.referralClickCount,
+        isActive: contractor.isActive,
+        serviceRegions: regions,
+      });
+    } catch (error) {
+      console.error('Get contractor me error:', error);
+      res.status(500).json({ error: "Failed to fetch contractor data" });
+    }
+  });
+
+  app.put("/api/contractors/profile", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+
+      const profileSchema = z.object({
+        name: z.string().min(1).optional(),
+        companyName: z.string().optional(),
+        phone: z.string().optional(),
+        website: z.string().optional(),
+        description: z.string().optional(),
+        specialties: z.array(z.string()).optional(),
+        licenseNumber: z.string().optional(),
+        licensedStates: z.array(z.string()).optional(),
+        isInsured: z.boolean().optional(),
+        isBonded: z.boolean().optional(),
+        serviceRegionIds: z.array(z.string()).optional(),
+      });
+
+      const parsed = profileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid profile data", details: parsed.error.errors });
+      }
+
+      const { serviceRegionIds, ...profileData } = parsed.data;
+
+      const updated = await storage.updateContractor(contractor.id, profileData);
+
+      if (serviceRegionIds && Array.isArray(serviceRegionIds)) {
+        await storage.setContractorServiceRegions(contractor.id, serviceRegionIds);
+      }
+
+      const regions = await storage.getContractorServiceRegions(contractor.id);
+      res.json({ ...updated, serviceRegions: regions });
+    } catch (error) {
+      console.error('Update contractor profile error:', error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  app.post("/api/contractors/generate-referral-code", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+
+      const [existingContractor] = await db.select().from(contractors).where(eq(contractors.id, contractor.id)).limit(1);
+      if (!existingContractor) {
+        return res.status(404).json({ error: "Contractor not found" });
+      }
+
+      if (existingContractor.generatedReferralCode) {
+        return res.json({
+          code: existingContractor.generatedReferralCode,
+          clickCount: existingContractor.referralClickCount || 0
+        });
+      }
+
+      let code = '';
+      const prefix = (existingContractor.companyName || existingContractor.name || 'CONT')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, 6)
+        .toUpperCase();
+
+      for (let i = 0; i < 10; i++) {
+        const suffix = crypto.randomBytes(3).toString('hex').toUpperCase();
+        code = `${prefix}-${suffix}`;
+
+        const [existing] = await db.select().from(contractors)
+          .where(eq(contractors.generatedReferralCode, code));
+
+        if (!existing) break;
+        if (i === 9) {
+          return res.status(500).json({ error: "Could not generate unique referral code" });
+        }
+      }
+
+      await db.update(contractors)
+        .set({ generatedReferralCode: code })
+        .where(eq(contractors.id, contractor.id));
+
+      res.json({ code, clickCount: 0 });
+    } catch (error) {
+      console.error("Error generating contractor referral code:", error);
+      res.status(500).json({ error: "Failed to generate referral code" });
+    }
+  });
+
+  app.get("/api/contractors/referral-stats", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const [contractorData] = await db.select().from(contractors).where(eq(contractors.id, contractor.id)).limit(1);
+
+      if (!contractorData) {
+        return res.status(404).json({ error: "Contractor not found" });
+      }
+
+      const docs = await db.select({
+        id: contractorDocuments.id,
+        userId: contractorDocuments.userId,
+        fileName: contractorDocuments.fileName,
+        description: contractorDocuments.description,
+        createdAt: contractorDocuments.createdAt,
+      }).from(contractorDocuments)
+        .where(eq(contractorDocuments.contractorId, contractor.id))
+        .orderBy(desc(contractorDocuments.createdAt));
+
+      const assignedUserIds = docs.filter(d => d.userId).map(d => d.userId!);
+      let assignedUsers: Array<{ id: string; email: string; username: string }> = [];
+      if (assignedUserIds.length > 0) {
+        assignedUsers = await db.select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+        }).from(users).where(inArray(users.id, assignedUserIds));
+      }
+
+      res.json({
+        code: contractorData.generatedReferralCode || null,
+        clickCount: contractorData.referralClickCount || 0,
+        documentsCount: docs.length,
+        assignedUsersCount: assignedUsers.length,
+        assignedUsers,
+      });
+    } catch (error) {
+      console.error("Error fetching contractor referral stats:", error);
+      res.status(500).json({ error: "Failed to fetch referral stats" });
+    }
+  });
+
+  // Contractor referral link redirect (public)
+  app.get("/api/contractor-ref/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const [contractor] = await db.select().from(contractors)
+        .where(eq(contractors.generatedReferralCode, code.toUpperCase()))
+        .limit(1);
+
+      if (!contractor || !contractor.referralLink) {
+        return res.status(404).json({ error: "Invalid referral code" });
+      }
+
+      await db.update(contractors)
+        .set({ referralClickCount: (contractor.referralClickCount || 0) + 1 })
+        .where(eq(contractors.id, contractor.id));
+
+      res.redirect(contractor.referralLink);
+    } catch (error) {
+      console.error('Contractor referral redirect error:', error);
+      res.status(500).json({ error: "Failed to process referral" });
+    }
+  });
+
+  // Contractor document management
+  app.get("/api/contractors/documents", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const docs = await db.select().from(contractorDocuments)
+        .where(eq(contractorDocuments.contractorId, contractor.id))
+        .orderBy(desc(contractorDocuments.createdAt));
+
+      const userIds = docs.filter(d => d.userId).map(d => d.userId!);
+      let usersMap: Record<string, { email: string; username: string }> = {};
+      if (userIds.length > 0) {
+        const userRows = await db.select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+        }).from(users).where(inArray(users.id, userIds));
+        usersMap = Object.fromEntries(userRows.map(u => [u.id, { email: u.email, username: u.username }]));
+      }
+
+      const result = docs.map(d => ({
+        id: d.id,
+        fileName: d.fileName,
+        fileSize: d.fileSize,
+        mimeType: d.mimeType,
+        description: d.description,
+        createdAt: d.createdAt,
+        userId: d.userId,
+        assignedUser: d.userId ? usersMap[d.userId] || null : null,
+      }));
+
+      res.json(result);
+    } catch (error) {
+      console.error('Get contractor documents error:', error);
+      res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  app.post("/api/contractors/documents", ensureContractorAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        return res.status(400).json({ error: "File size exceeds 10MB limit" });
+      }
+
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+      ];
+
+      if (!allowedTypes.includes(file.mimetype)) {
+        return res.status(400).json({ error: "File type not allowed. Accepted: PDF, DOC, DOCX, JPG, PNG" });
+      }
+
+      const fileData = file.buffer.toString('base64');
+      const { description, userId } = req.body;
+
+      if (userId) {
+        const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
+        if (!user) {
+          return res.status(400).json({ error: "Assigned user not found" });
+        }
+      }
+
+      const [doc] = await db.insert(contractorDocuments).values({
+        contractorId: contractor.id,
+        userId: userId || null,
+        fileName: file.originalname,
+        fileData,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        description: description || null,
+      }).returning();
+
+      res.status(201).json({
+        id: doc.id,
+        fileName: doc.fileName,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        description: doc.description,
+        userId: doc.userId,
+        createdAt: doc.createdAt,
+      });
+    } catch (error) {
+      console.error('Upload contractor document error:', error);
+      res.status(500).json({ error: "Failed to upload document" });
+    }
+  });
+
+  app.get("/api/contractors/documents/:docId/download", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const { docId } = req.params;
+
+      const [doc] = await db.select().from(contractorDocuments)
+        .where(and(
+          eq(contractorDocuments.id, docId),
+          eq(contractorDocuments.contractorId, contractor.id)
+        ))
+        .limit(1);
+
+      if (!doc) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      const buffer = Buffer.from(doc.fileData, 'base64');
+      res.setHeader('Content-Disposition', `attachment; filename="${doc.fileName}"`);
+      res.setHeader('Content-Type', doc.mimeType);
+      res.setHeader('Content-Length', buffer.length.toString());
+      res.send(buffer);
+    } catch (error) {
+      console.error('Download contractor document error:', error);
+      res.status(500).json({ error: "Failed to download document" });
+    }
+  });
+
+  app.delete("/api/contractors/documents/:docId", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const { docId } = req.params;
+
+      const [doc] = await db.select({ id: contractorDocuments.id }).from(contractorDocuments)
+        .where(and(
+          eq(contractorDocuments.id, docId),
+          eq(contractorDocuments.contractorId, contractor.id)
+        ))
+        .limit(1);
+
+      if (!doc) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      await db.delete(contractorDocuments).where(eq(contractorDocuments.id, docId));
+      res.json({ success: true, message: "Document deleted" });
+    } catch (error) {
+      console.error('Delete contractor document error:', error);
+      res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+
+  app.patch("/api/contractors/documents/:docId/assign", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const { docId } = req.params;
+      const { userId } = req.body;
+
+      const [doc] = await db.select({ id: contractorDocuments.id }).from(contractorDocuments)
+        .where(and(
+          eq(contractorDocuments.id, docId),
+          eq(contractorDocuments.contractorId, contractor.id)
+        ))
+        .limit(1);
+
+      if (!doc) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+
+      if (userId) {
+        const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
+        if (!user) {
+          return res.status(400).json({ error: "User not found" });
+        }
+      }
+
+      await db.update(contractorDocuments)
+        .set({ userId: userId || null })
+        .where(eq(contractorDocuments.id, docId));
+
+      res.json({ success: true, message: userId ? "Document assigned to user" : "Document unassigned" });
+    } catch (error) {
+      console.error('Assign contractor document error:', error);
+      res.status(500).json({ error: "Failed to assign document" });
+    }
+  });
+
+  // Contractor: search users by email for document assignment
+  app.get("/api/contractors/search-users", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const { email } = req.query;
+      if (!email || typeof email !== 'string' || email.length < 3) {
+        return res.json([]);
+      }
+
+      const matchedUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+      }).from(users)
+        .where(sql`LOWER(${users.email}) LIKE LOWER(${'%' + email + '%'})`)
+        .limit(10);
+
+      res.json(matchedUsers);
+    } catch (error) {
+      console.error('Search users for contractor error:', error);
+      res.status(500).json({ error: "Failed to search users" });
     }
   });
 

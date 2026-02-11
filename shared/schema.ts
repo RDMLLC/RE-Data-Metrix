@@ -1074,7 +1074,9 @@ export const contractors = pgTable("contractors", {
   licensedStates: text("licensed_states").array().default([]), // States where contractor is licensed (e.g., ["GA", "AL"])
   isInsured: boolean("is_insured").default(false),
   isBonded: boolean("is_bonded").default(false),
-  referralLink: text("referral_link"), // Affiliate link if applicable
+  referralLink: text("referral_link"),
+  generatedReferralCode: varchar("generated_referral_code").unique(),
+  referralClickCount: integer("referral_click_count").default(0),
   notes: text("notes"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").default(0),
@@ -1097,6 +1099,8 @@ export const insertContractorSchema = createInsertSchema(contractors).omit({
   inviteAccepted: true,
   passwordResetToken: true,
   passwordResetExpiry: true,
+  generatedReferralCode: true,
+  referralClickCount: true,
 });
 
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -1312,6 +1316,29 @@ export const insertMarketingPixelSchema = createInsertSchema(marketingPixels).om
 
 export type InsertMarketingPixel = z.infer<typeof insertMarketingPixelSchema>;
 export type MarketingPixel = typeof marketingPixels.$inferSelect;
+
+export const contractorDocuments = pgTable("contractor_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractorId: varchar("contractor_id").notNull().references(() => contractors.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  fileName: text("file_name").notNull(),
+  fileData: text("file_data").notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: text("mime_type").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  contractorIdIdx: { name: "contractor_documents_contractor_id_idx", columns: [table.contractorId] },
+  userIdIdx: { name: "contractor_documents_user_id_idx", columns: [table.userId] },
+}));
+
+export const insertContractorDocumentSchema = createInsertSchema(contractorDocuments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertContractorDocument = z.infer<typeof insertContractorDocumentSchema>;
+export type ContractorDocument = typeof contractorDocuments.$inferSelect;
 
 export const sentReminders = pgTable("sent_reminders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

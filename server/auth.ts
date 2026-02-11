@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
 import { db } from './db';
-import { users, type User, lenders } from '@shared/schema';
+import { users, type User, lenders, contractors } from '@shared/schema';
 import { eq, sql } from 'drizzle-orm';
 import type { Request, Response, NextFunction } from 'express';
 
@@ -105,6 +105,47 @@ passport.use('lender-local',
   )
 );
 
+// Contractor authentication strategy
+passport.use('contractor-local',
+  new LocalStrategy(
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+    },
+    async (email, password, done) => {
+      try {
+        const [contractor] = await db
+          .select()
+          .from(contractors)
+          .where(sql`LOWER(${contractors.email}) = LOWER(${email})`)
+          .limit(1);
+
+        if (!contractor) {
+          return done(null, false, { message: 'Invalid email or password' });
+        }
+
+        if (!contractor.inviteAccepted) {
+          return done(null, false, { message: 'Account setup not completed. Please use your invitation link.' });
+        }
+
+        if (!contractor.isActive) {
+          return done(null, false, { message: 'Account is inactive. Please contact support.' });
+        }
+
+        const isPasswordValid = await comparePassword(password, contractor.password);
+
+        if (!isPasswordValid) {
+          return done(null, false, { message: 'Invalid email or password' });
+        }
+
+        return done(null, { ...contractor, userType: 'contractor' });
+      } catch (error) {
+        return done(error);
+      }
+    }
+  )
+);
+
 passport.serializeUser((user: Express.User, done) => {
   const userData = user as any;
   done(null, { id: userData.id, userType: userData.userType });
@@ -129,6 +170,20 @@ passport.deserializeUser(async (sessionData: any, done) => {
 
       console.log('[Deserialize] Lender restored:', lender.email);
       done(null, { ...lender, userType: 'lender' });
+    } else if (userType === 'contractor') {
+      const [contractor] = await db
+        .select()
+        .from(contractors)
+        .where(eq(contractors.id, id))
+        .limit(1);
+
+      if (!contractor) {
+        console.log('[Deserialize] Contractor not found for id:', id);
+        return done(null, false);
+      }
+
+      console.log('[Deserialize] Contractor restored:', contractor.email);
+      done(null, { ...contractor, userType: 'contractor' });
     } else {
       const [user] = await db
         .select()
@@ -217,6 +272,24 @@ export function ensureLenderOrAdmin(
   }
 
   return res.status(403).json({ error: 'Access denied: Lender or admin authentication required' });
+}
+
+export function ensureContractorAuthenticated(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Contractor authentication required' });
+  }
+
+  const user = req.user as any;
+  
+  if (user.userType !== 'contractor') {
+    return res.status(403).json({ error: 'Access denied: Contractor authentication required' });
+  }
+
+  next();
 }
 
 export function ensureAdmin(
