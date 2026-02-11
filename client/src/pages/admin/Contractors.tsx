@@ -788,20 +788,74 @@ export default function Contractors() {
             </div>
             <div className="space-y-2">
               <Label>Service Regions</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                {serviceRegions.map(region => (
-                  <div key={region.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`region-${region.id}`}
-                      checked={contractorForm.serviceRegionIds.includes(region.id)}
-                      onCheckedChange={() => toggleRegion(region.id)}
-                      data-testid={`checkbox-region-${region.id}`}
-                    />
-                    <label htmlFor={`region-${region.id}`} className="text-sm cursor-pointer">
-                      {region.name} ({region.state})
-                    </label>
-                  </div>
-                ))}
+              <div className="max-h-64 overflow-y-auto border rounded-md p-3 space-y-2">
+                {(() => {
+                  const states = Array.from(new Set(serviceRegions.map(r => r.state))).sort();
+                  return states.map(state => {
+                    const stateRegions = serviceRegions.filter(r => r.state === state);
+                    const selectedCount = stateRegions.filter(r => contractorForm.serviceRegionIds.includes(r.id)).length;
+                    return (
+                      <Collapsible key={state}>
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center justify-between gap-2 p-2 rounded-md cursor-pointer hover-elevate" data-testid={`trigger-state-${state}`}>
+                            <div className="flex items-center gap-2">
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{state}</span>
+                              {selectedCount > 0 && (
+                                <Badge variant="secondary">{selectedCount}</Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{stateRegions.length} areas</span>
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-6 pt-1 pb-2 space-y-1">
+                            <div className="flex justify-end mb-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const allIds = stateRegions.map(r => r.id);
+                                  const allSelected = allIds.every(id => contractorForm.serviceRegionIds.includes(id));
+                                  if (allSelected) {
+                                    setContractorForm(prev => ({
+                                      ...prev,
+                                      serviceRegionIds: prev.serviceRegionIds.filter(id => !allIds.includes(id))
+                                    }));
+                                  } else {
+                                    setContractorForm(prev => ({
+                                      ...prev,
+                                      serviceRegionIds: Array.from(new Set([...prev.serviceRegionIds, ...allIds]))
+                                    }));
+                                  }
+                                }}
+                                data-testid={`button-select-all-${state}`}
+                              >
+                                {stateRegions.every(r => contractorForm.serviceRegionIds.includes(r.id)) ? "Deselect All" : "Select All"}
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1">
+                              {stateRegions.map(region => (
+                                <div key={region.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`region-${region.id}`}
+                                    checked={contractorForm.serviceRegionIds.includes(region.id)}
+                                    onCheckedChange={() => toggleRegion(region.id)}
+                                    data-testid={`checkbox-region-${region.id}`}
+                                  />
+                                  <label htmlFor={`region-${region.id}`} className="text-sm cursor-pointer">
+                                    {region.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  });
+                })()}
               </div>
             </div>
             <div className="space-y-2">
