@@ -98,6 +98,27 @@ interface ServiceRegionFormData {
   sortOrder: number;
 }
 
+const SPECIALTY_OPTIONS = [
+  "Full Rehabs",
+  "Kitchen Remodels",
+  "Bathroom Remodels",
+  "Roofing",
+  "Foundation",
+  "HVAC",
+  "Electrical",
+  "Plumbing",
+  "New Construction",
+  "Additions",
+  "Basement Finishing",
+  "Exterior/Siding",
+  "Windows/Doors",
+  "Flooring",
+  "Painting",
+  "Landscaping",
+  "Decks/Patios",
+  "General Repairs",
+];
+
 const emptyContractorForm: ContractorFormData = {
   name: '',
   companyName: '',
@@ -154,7 +175,7 @@ export default function Contractors() {
   const [editingRegion, setEditingRegion] = useState<ServiceRegion | null>(null);
   const [contractorForm, setContractorForm] = useState<ContractorFormData>(emptyContractorForm);
   const [regionForm, setRegionForm] = useState<ServiceRegionFormData>(emptyRegionForm);
-  const [specialtiesInput, setSpecialtiesInput] = useState("");
+  
   const [keyCitiesInput, setKeyCitiesInput] = useState("");
 
   useEffect(() => {
@@ -332,7 +353,7 @@ export default function Contractors() {
       sortOrder: contractor.sortOrder || 0,
       serviceRegionIds: contractor.serviceRegions?.map(r => r.id) || [],
     });
-    setSpecialtiesInput((contractor.specialties || []).join(", "));
+    
     setShowContractorDialog(true);
   };
 
@@ -352,7 +373,7 @@ export default function Contractors() {
   const openNewContractor = () => {
     setEditingContractor(null);
     setContractorForm(emptyContractorForm);
-    setSpecialtiesInput("");
+    
     setShowContractorDialog(true);
   };
 
@@ -366,7 +387,6 @@ export default function Contractors() {
   const handleSaveContractor = () => {
     const data = {
       ...contractorForm,
-      specialties: specialtiesInput.split(",").map(s => s.trim()).filter(Boolean),
       id: editingContractor?.id,
     };
     saveContractorMutation.mutate(data);
@@ -726,14 +746,63 @@ export default function Contractors() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="specialties">Specialties (comma-separated)</Label>
-              <Input
-                id="specialties"
-                value={specialtiesInput}
-                onChange={(e) => setSpecialtiesInput(e.target.value)}
-                placeholder="Rehabs, New Construction, Renovations"
-                data-testid="input-specialties"
-              />
+              <Label>Specialties</Label>
+              {contractorForm.specialties.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {contractorForm.specialties.length === SPECIALTY_OPTIONS.length ? (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      ALL
+                      <button
+                        type="button"
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                        onClick={() => setContractorForm(prev => ({ ...prev, specialties: [] }))}
+                        data-testid="button-remove-all-specialties"
+                      >
+                        &times;
+                      </button>
+                    </Badge>
+                  ) : (
+                    contractorForm.specialties.map(s => (
+                      <Badge key={s} variant="secondary" className="flex items-center gap-1">
+                        {s}
+                        <button
+                          type="button"
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                          onClick={() => setContractorForm(prev => ({
+                            ...prev,
+                            specialties: prev.specialties.filter(sp => sp !== s)
+                          }))}
+                          data-testid={`button-remove-specialty-${s}`}
+                        >
+                          &times;
+                        </button>
+                      </Badge>
+                    ))
+                  )}
+                </div>
+              )}
+              <Select
+                value=""
+                onValueChange={(value) => {
+                  if (value === "ALL") {
+                    setContractorForm(prev => ({ ...prev, specialties: [...SPECIALTY_OPTIONS] }));
+                  } else if (!contractorForm.specialties.includes(value)) {
+                    setContractorForm(prev => ({ ...prev, specialties: [...prev.specialties, value] }));
+                  }
+                }}
+              >
+                <SelectTrigger data-testid="select-specialties">
+                  <SelectValue placeholder="Add a specialty..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">ALL (Select All)</SelectItem>
+                  {SPECIALTY_OPTIONS.filter(s => !contractorForm.specialties.includes(s)).map(specialty => (
+                    <SelectItem key={specialty} value={specialty}>
+                      {specialty}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
