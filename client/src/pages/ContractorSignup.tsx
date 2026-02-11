@@ -25,6 +25,7 @@ import type { ServiceRegion } from "@shared/schema";
 
 const US_STATES = [
   { value: "AL", label: "Alabama" },
+  { value: "FL", label: "Florida" },
   { value: "GA", label: "Georgia" },
 ];
 
