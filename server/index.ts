@@ -19,7 +19,6 @@ const app = express();
 // Serve static assets (videos, images) from attached_assets folder
 app.use('/static-assets', express.static(path.resolve(process.cwd(), 'attached_assets')));
 
-// Trust proxy for secure cookies behind Replit's HTTPS proxy
 app.set('trust proxy', 1);
 
 // Initialize Stripe schema and sync data
@@ -135,27 +134,29 @@ try {
   process.exit(1);
 }
 
-// In Replit's environment, we need 'none' for cross-origin webview, but it requires secure: true
-// Replit provides HTTPS even in development, so we can use secure: true
-const isReplit = !!process.env.REPLIT_DOMAINS;
-const isProduction = process.env.NODE_ENV === 'production';
+const sessionMiddleware = session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: true,
+  },
+});
 
-app.use(
-  session({
-    store: sessionStore,
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      // Use 'none' for Replit webview (cross-origin iframe), 'lax' otherwise
-      sameSite: isReplit ? 'none' : 'lax',
-      // Secure must be true when sameSite is 'none', and Replit provides HTTPS
-      secure: isReplit || isProduction,
-    },
-  })
-);
+app.use((req, res, next) => {
+  const isIframe = req.headers['sec-fetch-dest'] === 'iframe' || req.headers['sec-fetch-site'] === 'cross-site';
+  sessionMiddleware(req, res, () => {
+    if (isIframe && req.session) {
+      req.session.cookie.sameSite = 'none';
+      req.session.cookie.secure = true;
+    }
+    next();
+  });
+});
 
 app.use(passport.initialize());
 app.use(passport.session());
