@@ -4037,6 +4037,27 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Contractor> {
     const hashedPassword = await hashPassword(data.password);
     
+    const prefix = (data.companyName || data.name || 'CONT')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .substring(0, 6)
+      .toUpperCase();
+
+    let referralCode = '';
+    let isUnique = false;
+    for (let i = 0; i < 20; i++) {
+      const suffix = crypto.randomBytes(i < 10 ? 3 : 4).toString('hex').toUpperCase();
+      referralCode = `${prefix}-${suffix}`;
+      const [existing] = await db.select().from(contractorsTable)
+        .where(eq(contractorsTable.generatedReferralCode, referralCode));
+      if (!existing) {
+        isUnique = true;
+        break;
+      }
+    }
+    if (!isUnique) {
+      throw new Error("Could not generate unique referral code after multiple attempts");
+    }
+
     const updateData: any = {
       password: hashedPassword,
       name: data.name,
@@ -4044,6 +4065,7 @@ export class DatabaseStorage implements IStorage {
       inviteToken: null,
       inviteExpiry: null,
       isActive: true,
+      generatedReferralCode: referralCode,
       updatedAt: new Date()
     };
     

@@ -117,21 +117,6 @@ export default function ContractorPortal() {
     },
   });
 
-  const generateCodeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/contractors/generate-referral-code");
-      if (!res.ok) throw new Error("Failed to generate code");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors/referral-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
-      toast({ title: "Referral Code Generated", description: "Your referral code is ready to share." });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to generate referral code", variant: "destructive" });
-    },
-  });
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -439,14 +424,21 @@ export default function ContractorPortal() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground mb-4">
-                      Contractors generate a referral code to start tracking clicks.
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Your Referral Code</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-base px-3 py-1">
+                          SAMPLE-A1B2C3
+                        </Badge>
+                        <Button size="icon" variant="ghost" disabled>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Referral codes are auto-generated when a contractor completes signup.
                     </p>
-                    <Button disabled>
-                      <Link className="mr-2 h-4 w-4" />
-                      Generate Referral Code
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -671,23 +663,18 @@ export default function ContractorPortal() {
                       Total clicks: <span className="font-semibold">{referralStats.clickCount}</span>
                     </p>
                   </div>
+                ) : statsLoading ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                      Loading referral code...
+                    </p>
+                  </div>
                 ) : (
                   <div className="text-center py-4">
-                    <p className="text-muted-foreground mb-4">
-                      Generate a referral code to start tracking clicks.
+                    <p className="text-muted-foreground text-sm">
+                      No referral code found. Please contact support if this issue persists.
                     </p>
-                    <Button
-                      onClick={() => generateCodeMutation.mutate()}
-                      disabled={generateCodeMutation.isPending}
-                      data-testid="button-generate-code"
-                    >
-                      {generateCodeMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Link className="mr-2 h-4 w-4" />
-                      )}
-                      Generate Referral Code
-                    </Button>
                   </div>
                 )}
               </CardContent>

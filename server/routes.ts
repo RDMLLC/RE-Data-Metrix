@@ -6526,33 +6526,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      let code = '';
-      const prefix = (existingContractor.companyName || existingContractor.name || 'CONT')
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .substring(0, 6)
-        .toUpperCase();
-
-      for (let i = 0; i < 10; i++) {
-        const suffix = crypto.randomBytes(3).toString('hex').toUpperCase();
-        code = `${prefix}-${suffix}`;
-
-        const [existing] = await db.select().from(contractors)
-          .where(eq(contractors.generatedReferralCode, code));
-
-        if (!existing) break;
-        if (i === 9) {
-          return res.status(500).json({ error: "Could not generate unique referral code" });
-        }
-      }
-
-      await db.update(contractors)
-        .set({ generatedReferralCode: code })
-        .where(eq(contractors.id, contractor.id));
-
-      res.json({ code, clickCount: 0 });
+      return res.status(400).json({ error: "Referral code is generated automatically during signup" });
     } catch (error) {
-      console.error("Error generating contractor referral code:", error);
-      res.status(500).json({ error: "Failed to generate referral code" });
+      console.error("Error with contractor referral code:", error);
+      res.status(500).json({ error: "Failed to retrieve referral code" });
     }
   });
 
