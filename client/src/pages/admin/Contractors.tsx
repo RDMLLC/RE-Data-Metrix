@@ -126,7 +126,7 @@ const emptyContractorForm: ContractorFormData = {
   email: '',
   website: '',
   description: '',
-  specialties: [],
+  specialties: [...SPECIALTY_OPTIONS],
   licenseNumber: '',
   isInsured: false,
   isBonded: false,
@@ -175,6 +175,7 @@ export default function Contractors() {
   const [editingRegion, setEditingRegion] = useState<ServiceRegion | null>(null);
   const [contractorForm, setContractorForm] = useState<ContractorFormData>(emptyContractorForm);
   const [regionForm, setRegionForm] = useState<ServiceRegionFormData>(emptyRegionForm);
+  const [dialogExpandedStates, setDialogExpandedStates] = useState<Record<string, boolean>>({});
   
   const [keyCitiesInput, setKeyCitiesInput] = useState("");
 
@@ -343,7 +344,7 @@ export default function Contractors() {
       email: contractor.email || '',
       website: contractor.website || '',
       description: contractor.description || '',
-      specialties: contractor.specialties || [],
+      specialties: (contractor.specialties && contractor.specialties.length > 0) ? contractor.specialties : [...SPECIALTY_OPTIONS],
       licenseNumber: contractor.licenseNumber || '',
       isInsured: contractor.isInsured || false,
       isBonded: contractor.isBonded || false,
@@ -353,7 +354,7 @@ export default function Contractors() {
       sortOrder: contractor.sortOrder || 0,
       serviceRegionIds: contractor.serviceRegions?.map(r => r.id) || [],
     });
-    
+    setDialogExpandedStates({});
     setShowContractorDialog(true);
   };
 
@@ -373,7 +374,7 @@ export default function Contractors() {
   const openNewContractor = () => {
     setEditingContractor(null);
     setContractorForm(emptyContractorForm);
-    
+    setDialogExpandedStates({});
     setShowContractorDialog(true);
   };
 
@@ -747,42 +748,44 @@ export default function Contractors() {
             </div>
             <div className="space-y-2">
               <Label>Specialties</Label>
-              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-1">
-                <div className="flex items-center space-x-2 pb-1 mb-1 border-b">
-                  <Checkbox
-                    id="specialty-all"
-                    checked={contractorForm.specialties.length === SPECIALTY_OPTIONS.length}
-                    onCheckedChange={(checked) => {
-                      setContractorForm(prev => ({
-                        ...prev,
-                        specialties: checked ? [...SPECIALTY_OPTIONS] : []
-                      }));
-                    }}
-                    data-testid="checkbox-specialty-all"
-                  />
-                  <label htmlFor="specialty-all" className="text-sm font-medium cursor-pointer">Select All</label>
-                </div>
-                <div className="grid grid-cols-2 gap-1">
-                  {SPECIALTY_OPTIONS.map(specialty => (
-                    <div key={specialty} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`specialty-${specialty}`}
-                        checked={contractorForm.specialties.includes(specialty)}
-                        onCheckedChange={(checked) => {
-                          setContractorForm(prev => ({
-                            ...prev,
-                            specialties: checked
-                              ? [...prev.specialties, specialty]
-                              : prev.specialties.filter(s => s !== specialty)
-                          }));
-                        }}
-                        data-testid={`checkbox-specialty-${specialty}`}
-                      />
-                      <label htmlFor={`specialty-${specialty}`} className="text-sm cursor-pointer">{specialty}</label>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="specialty-all"
+                  checked={contractorForm.specialties.length === SPECIALTY_OPTIONS.length}
+                  onCheckedChange={(checked) => {
+                    setContractorForm(prev => ({
+                      ...prev,
+                      specialties: checked ? [...SPECIALTY_OPTIONS] : []
+                    }));
+                  }}
+                  data-testid="checkbox-specialty-all"
+                />
+                <label htmlFor="specialty-all" className="text-sm font-medium cursor-pointer">All Specialties</label>
               </div>
+              {contractorForm.specialties.length < SPECIALTY_OPTIONS.length && (
+                <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-1">
+                    {SPECIALTY_OPTIONS.map(specialty => (
+                      <div key={specialty} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`specialty-${specialty}`}
+                          checked={contractorForm.specialties.includes(specialty)}
+                          onCheckedChange={(checked) => {
+                            setContractorForm(prev => ({
+                              ...prev,
+                              specialties: checked
+                                ? [...prev.specialties, specialty]
+                                : prev.specialties.filter(s => s !== specialty)
+                            }));
+                          }}
+                          data-testid={`checkbox-specialty-${specialty}`}
+                        />
+                        <label htmlFor={`specialty-${specialty}`} className="text-sm cursor-pointer">{specialty}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -837,75 +840,101 @@ export default function Contractors() {
             </div>
             <div className="space-y-2">
               <Label>Service Regions</Label>
-              <div className="max-h-64 overflow-y-auto border rounded-md p-3 space-y-2">
-                {(() => {
-                  const states = Array.from(new Set(serviceRegions.map(r => r.state))).sort();
-                  return states.map(state => {
-                    const stateRegions = serviceRegions.filter(r => r.state === state);
-                    const selectedCount = stateRegions.filter(r => contractorForm.serviceRegionIds.includes(r.id)).length;
-                    return (
-                      <Collapsible key={state}>
-                        <CollapsibleTrigger asChild>
-                          <div className="flex items-center justify-between gap-2 p-2 rounded-md cursor-pointer hover-elevate" data-testid={`trigger-state-${state}`}>
-                            <div className="flex items-center gap-2">
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">{state}</span>
+              {(() => {
+                const states = Array.from(new Set(serviceRegions.map(r => r.state))).sort();
+                const checkedStates = states.filter(state => {
+                  const stateRegions = serviceRegions.filter(r => r.state === state);
+                  return stateRegions.some(r => contractorForm.serviceRegionIds.includes(r.id));
+                });
+                const expandedStatesList = states.filter(st => dialogExpandedStates[st] || checkedStates.includes(st));
+                return (
+                  <>
+                    <div className="flex flex-wrap gap-3">
+                      {states.map(state => {
+                        const stateRegions = serviceRegions.filter(r => r.state === state);
+                        const selectedCount = stateRegions.filter(r => contractorForm.serviceRegionIds.includes(r.id)).length;
+                        return (
+                          <div key={state} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`state-toggle-${state}`}
+                              checked={dialogExpandedStates[state] || selectedCount > 0}
+                              onCheckedChange={(checked) => {
+                                setDialogExpandedStates(prev => ({ ...prev, [state]: !!checked }));
+                                if (!checked) {
+                                  const stateIds = stateRegions.map(r => r.id);
+                                  setContractorForm(prev => ({
+                                    ...prev,
+                                    serviceRegionIds: prev.serviceRegionIds.filter(id => !stateIds.includes(id))
+                                  }));
+                                }
+                              }}
+                              data-testid={`checkbox-state-${state}`}
+                            />
+                            <label htmlFor={`state-toggle-${state}`} className="text-sm font-medium cursor-pointer">
+                              {state}
                               {selectedCount > 0 && (
-                                <Badge variant="secondary">{selectedCount}</Badge>
+                                <span className="ml-1 text-xs text-muted-foreground">({selectedCount})</span>
                               )}
-                            </div>
-                            <span className="text-xs text-muted-foreground">{stateRegions.length} areas</span>
+                            </label>
                           </div>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="pl-6 pt-1 pb-2 space-y-1">
-                            <div className="flex justify-end mb-1">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const allIds = stateRegions.map(r => r.id);
-                                  const allSelected = allIds.every(id => contractorForm.serviceRegionIds.includes(id));
-                                  if (allSelected) {
-                                    setContractorForm(prev => ({
-                                      ...prev,
-                                      serviceRegionIds: prev.serviceRegionIds.filter(id => !allIds.includes(id))
-                                    }));
-                                  } else {
-                                    setContractorForm(prev => ({
-                                      ...prev,
-                                      serviceRegionIds: Array.from(new Set([...prev.serviceRegionIds, ...allIds]))
-                                    }));
-                                  }
-                                }}
-                                data-testid={`button-select-all-${state}`}
-                              >
-                                {stateRegions.every(r => contractorForm.serviceRegionIds.includes(r.id)) ? "Deselect All" : "Select All"}
-                              </Button>
+                        );
+                      })}
+                    </div>
+                    {expandedStatesList.length > 0 && (
+                      <div className="border rounded-md p-3 max-h-64 overflow-y-auto space-y-3">
+                        {expandedStatesList.map(state => {
+                          const stateRegions = serviceRegions.filter(r => r.state === state);
+                          const allSelected = stateRegions.every(r => contractorForm.serviceRegionIds.includes(r.id));
+                          return (
+                            <div key={state}>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">{state}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const allIds = stateRegions.map(r => r.id);
+                                    if (allSelected) {
+                                      setContractorForm(prev => ({
+                                        ...prev,
+                                        serviceRegionIds: prev.serviceRegionIds.filter(id => !allIds.includes(id))
+                                      }));
+                                    } else {
+                                      setContractorForm(prev => ({
+                                        ...prev,
+                                        serviceRegionIds: Array.from(new Set([...prev.serviceRegionIds, ...allIds]))
+                                      }));
+                                    }
+                                  }}
+                                  data-testid={`button-select-all-${state}`}
+                                >
+                                  {allSelected ? "Deselect All" : "Select All"}
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-1">
+                                {stateRegions.map(region => (
+                                  <div key={region.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`region-${region.id}`}
+                                      checked={contractorForm.serviceRegionIds.includes(region.id)}
+                                      onCheckedChange={() => toggleRegion(region.id)}
+                                      data-testid={`checkbox-region-${region.id}`}
+                                    />
+                                    <label htmlFor={`region-${region.id}`} className="text-sm cursor-pointer">
+                                      {region.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-1">
-                              {stateRegions.map(region => (
-                                <div key={region.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`region-${region.id}`}
-                                    checked={contractorForm.serviceRegionIds.includes(region.id)}
-                                    onCheckedChange={() => toggleRegion(region.id)}
-                                    data-testid={`checkbox-region-${region.id}`}
-                                  />
-                                  <label htmlFor={`region-${region.id}`} className="text-sm cursor-pointer">
-                                    {region.name}
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  });
-                })()}
-              </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (internal)</Label>
