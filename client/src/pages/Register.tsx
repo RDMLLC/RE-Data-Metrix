@@ -308,6 +308,7 @@ export default function Register() {
                                 />
                                 <Button
                                   type="button"
+                                  tabIndex={-1}
                                   variant="ghost"
                                   size="icon"
                                   className="absolute right-1 top-1/2 -translate-y-1/2"
@@ -339,6 +340,7 @@ export default function Register() {
                                 />
                                 <Button
                                   type="button"
+                                  tabIndex={-1}
                                   variant="ghost"
                                   size="icon"
                                   className="absolute right-1 top-1/2 -translate-y-1/2"

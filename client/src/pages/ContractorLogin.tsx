@@ -129,6 +129,7 @@ export default function ContractorLogin() {
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => setShowPassword(!showPassword)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                               data-testid="button-toggle-contractor-password"

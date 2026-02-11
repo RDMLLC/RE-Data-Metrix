@@ -1082,6 +1082,7 @@ export default function UserManagement() {
                 />
                 <Button
                   type="button"
+                  tabIndex={-1}
                   variant="ghost"
                   size="icon"
                   className="absolute right-0 top-0 h-full"

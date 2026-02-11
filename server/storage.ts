@@ -268,6 +268,7 @@ export interface IStorage {
     description?: string;
     specialties?: string[];
     licenseNumber?: string;
+    licenseNumbers?: Record<string, string>;
     licensedStates?: string[];
     isInsured?: boolean;
     isBonded?: boolean;
@@ -4028,6 +4029,7 @@ export class DatabaseStorage implements IStorage {
     description?: string;
     specialties?: string[];
     licenseNumber?: string;
+    licenseNumbers?: Record<string, string>;
     licensedStates?: string[];
     isInsured?: boolean;
     isBonded?: boolean;
@@ -4051,6 +4053,7 @@ export class DatabaseStorage implements IStorage {
     if (data.description) updateData.description = data.description;
     if (data.specialties) updateData.specialties = data.specialties;
     if (data.licenseNumber) updateData.licenseNumber = data.licenseNumber;
+    if (data.licenseNumbers) updateData.licenseNumbers = data.licenseNumbers;
     if (data.licensedStates) updateData.licensedStates = data.licensedStates;
     if (data.isInsured !== undefined) updateData.isInsured = data.isInsured;
     if (data.isBonded !== undefined) updateData.isBonded = data.isBonded;

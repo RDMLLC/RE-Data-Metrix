@@ -108,6 +108,7 @@ export default function LenderChangePassword() {
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => setShowCurrent(!showCurrent)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                               data-testid="button-toggle-current-password"
@@ -137,6 +138,7 @@ export default function LenderChangePassword() {
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => setShowNew(!showNew)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                               data-testid="button-toggle-new-password"
@@ -166,6 +168,7 @@ export default function LenderChangePassword() {
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => setShowConfirm(!showConfirm)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                               data-testid="button-toggle-confirm-password"

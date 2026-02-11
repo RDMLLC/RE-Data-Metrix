@@ -296,11 +296,11 @@ export default function BetaSignup() {
                                 />
                                 <Button
                                   type="button"
+                                  tabIndex={-1}
                                   variant="ghost"
                                   size="icon"
                                   className="absolute right-1 top-1/2 -translate-y-1/2"
                                   onClick={() => setShowPassword(!showPassword)}
-                                  tabIndex={-1}
                                 >
                                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </Button>
@@ -327,11 +327,11 @@ export default function BetaSignup() {
                                 />
                                 <Button
                                   type="button"
+                                  tabIndex={-1}
                                   variant="ghost"
                                   size="icon"
                                   className="absolute right-1 top-1/2 -translate-y-1/2"
                                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                  tabIndex={-1}
                                 >
                                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </Button>

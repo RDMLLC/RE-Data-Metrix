@@ -59,6 +59,7 @@ const signupSchema = z.object({
   website: z.string().optional(),
   description: z.string().optional(),
   licenseNumber: z.string().optional(),
+  licenseNumbers: z.record(z.string(), z.string()).default({}),
   licensedStates: z.array(z.string()).default([]),
   isInsured: z.boolean().default(false),
   isBonded: z.boolean().default(false),
@@ -124,6 +125,7 @@ export default function ContractorSignup() {
       website: "",
       description: "",
       licenseNumber: "",
+      licenseNumbers: {},
       licensedStates: [],
       isInsured: false,
       isBonded: false,
@@ -143,6 +145,7 @@ export default function ContractorSignup() {
         description: data.description,
         specialties: specialtiesToSend,
         licenseNumber: data.licenseNumber,
+        licenseNumbers: data.licenseNumbers,
         licensedStates: data.licensedStates,
         isInsured: data.isInsured,
         isBonded: data.isBonded,
@@ -360,6 +363,7 @@ export default function ContractorSignup() {
                               />
                               <button
                                 type="button"
+                                tabIndex={-1}
                                 className="absolute right-3 top-1/2 -translate-y-1/2"
                                 onClick={() => setShowPassword(!showPassword)}
                                 data-testid="button-toggle-password"
@@ -390,6 +394,7 @@ export default function ContractorSignup() {
                               />
                               <button
                                 type="button"
+                                tabIndex={-1}
                                 className="absolute right-3 top-1/2 -translate-y-1/2"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 data-testid="button-toggle-confirm-password"
@@ -469,25 +474,6 @@ export default function ContractorSignup() {
 
                   <FormField
                     control={form.control}
-                    name="licenseNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>License Number</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="GC-12345"
-                            {...field}
-                            data-testid="input-license"
-                          />
-                        </FormControl>
-                        <FormDescription>Your contractor license number (if applicable)</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="licensedStates"
                     render={({ field }) => (
                       <FormItem>
@@ -502,10 +488,15 @@ export default function ContractorSignup() {
                                   : "bg-background hover:bg-muted"
                               }`}
                               onClick={() => {
-                                const newValue = field.value?.includes(state.value)
-                                  ? field.value.filter((s: string) => s !== state.value)
-                                  : [...(field.value || []), state.value];
-                                field.onChange(newValue);
+                                const currentLicenseNumbers = form.getValues("licenseNumbers") || {};
+                                if (field.value?.includes(state.value)) {
+                                  const newValue = field.value.filter((s: string) => s !== state.value);
+                                  field.onChange(newValue);
+                                  const { [state.value]: _, ...rest } = currentLicenseNumbers;
+                                  form.setValue("licenseNumbers", rest);
+                                } else {
+                                  field.onChange([...(field.value || []), state.value]);
+                                }
                               }}
                               data-testid={`toggle-license-state-${state.value}`}
                             >
@@ -518,6 +509,32 @@ export default function ContractorSignup() {
                       </FormItem>
                     )}
                   />
+
+                  {form.watch("licensedStates")?.length > 0 && (
+                    <div className="space-y-3">
+                      <FormLabel>License Numbers by State</FormLabel>
+                      <FormDescription>Enter your license number for each selected state</FormDescription>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {form.watch("licensedStates").sort().map((stateCode: string) => {
+                          const stateLabel = US_STATES.find(s => s.value === stateCode)?.label || stateCode;
+                          return (
+                            <div key={stateCode} className="flex items-center gap-2">
+                              <span className="text-sm font-medium min-w-[32px]">{stateCode}</span>
+                              <Input
+                                placeholder={`${stateLabel} license #`}
+                                value={(form.watch("licenseNumbers") || {})[stateCode] || ""}
+                                onChange={(e) => {
+                                  const current = form.getValues("licenseNumbers") || {};
+                                  form.setValue("licenseNumbers", { ...current, [stateCode]: e.target.value });
+                                }}
+                                data-testid={`input-license-${stateCode}`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField

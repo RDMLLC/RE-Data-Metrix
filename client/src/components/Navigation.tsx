@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users, Link2, Code } from "lucide-react";
+import { Menu, X, LogOut, User, Settings, Building2, CreditCard, UserCog, Handshake, Calculator, Video, BarChart3, Gift, Ticket, Plug, Users, Link2, Code, HardHat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -216,6 +216,14 @@ export default function Navigation() {
                             >
                               <User className="mr-2 h-4 w-4" />
                               Member Portal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setLocation("/contractor-portal")}
+                              className="cursor-pointer"
+                              data-testid="menu-item-contractor-portal"
+                            >
+                              <HardHat className="mr-2 h-4 w-4" />
+                              Contractor Portal
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => setLocation("/admin/developer-integrations")}
@@ -449,6 +457,14 @@ export default function Navigation() {
                           >
                             <User className="mr-2 h-4 w-4" />
                             Member Portal
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setLocation("/contractor-portal")}
+                            className="cursor-pointer"
+                            data-testid="menu-item-contractor-portal-mobile"
+                          >
+                            <HardHat className="mr-2 h-4 w-4" />
+                            Contractor Portal
                           </DropdownMenuItem>
                         </>
                       )}

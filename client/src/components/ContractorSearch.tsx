@@ -354,12 +354,27 @@ function ContractorCard({ contractor }: { contractor: Contractor }) {
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              {contractor.licenseNumber && (
-                <div className="flex items-center gap-1">
-                  <Building2 className="h-4 w-4" />
-                  <span>License: {contractor.licenseNumber}</span>
-                </div>
-              )}
+              {(() => {
+                const ln = contractor.licenseNumbers as Record<string, string> | null | undefined;
+                const hasPerState = ln && Object.keys(ln).some(k => ln[k]);
+                if (hasPerState) {
+                  return Object.entries(ln!).filter(([, v]) => v).map(([state, num]) => (
+                    <div key={state} className="flex items-center gap-1">
+                      <Building2 className="h-4 w-4" />
+                      <span>{state}: {num}</span>
+                    </div>
+                  ));
+                }
+                if (contractor.licenseNumber) {
+                  return (
+                    <div className="flex items-center gap-1">
+                      <Building2 className="h-4 w-4" />
+                      <span>License: {contractor.licenseNumber}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               {contractor.isInsured && (
                 <Badge variant="secondary" className="text-xs">Insured</Badge>
               )}

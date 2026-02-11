@@ -81,6 +81,7 @@ interface ContractorFormData {
   description: string;
   specialties: string[];
   licenseNumber: string;
+  licenseNumbers: Record<string, string>;
   isInsured: boolean;
   isBonded: boolean;
   referralLink: string;
@@ -128,6 +129,7 @@ const emptyContractorForm: ContractorFormData = {
   description: '',
   specialties: [...SPECIALTY_OPTIONS],
   licenseNumber: '',
+  licenseNumbers: {},
   isInsured: false,
   isBonded: false,
   referralLink: '',
@@ -346,6 +348,7 @@ export default function Contractors() {
       description: contractor.description || '',
       specialties: (contractor.specialties && contractor.specialties.length > 0) ? contractor.specialties : [...SPECIALTY_OPTIONS],
       licenseNumber: contractor.licenseNumber || '',
+      licenseNumbers: (contractor.licenseNumbers as Record<string, string>) || {},
       isInsured: contractor.isInsured || false,
       isBonded: contractor.isBonded || false,
       referralLink: contractor.referralLink || '',
@@ -787,17 +790,36 @@ export default function Contractors() {
                 </div>
               )}
             </div>
+            {(() => {
+              const selectedStates = Array.from(new Set(
+                contractorForm.serviceRegionIds
+                  .map(id => serviceRegions.find(r => r.id === id)?.state)
+                  .filter(Boolean) as string[]
+              )).sort();
+              return selectedStates.length > 0 ? (
+                <div className="space-y-2">
+                  <Label>License Numbers by State</Label>
+                  <p className="text-sm text-muted-foreground">Enter license number for each state where service regions are selected</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedStates.map((stateCode) => (
+                      <div key={stateCode} className="flex items-center gap-2">
+                        <span className="text-sm font-medium min-w-[32px]">{stateCode}</span>
+                        <Input
+                          placeholder={`${stateCode} license #`}
+                          value={(contractorForm.licenseNumbers || {})[stateCode] || ""}
+                          onChange={(e) => setContractorForm(prev => ({
+                            ...prev,
+                            licenseNumbers: { ...prev.licenseNumbers, [stateCode]: e.target.value }
+                          }))}
+                          data-testid={`input-license-${stateCode}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="licenseNumber">License Number</Label>
-                <Input
-                  id="licenseNumber"
-                  value={contractorForm.licenseNumber}
-                  onChange={(e) => setContractorForm(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                  placeholder="License #"
-                  data-testid="input-license"
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="sortOrder">Sort Order</Label>
                 <Input

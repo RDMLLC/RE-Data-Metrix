@@ -199,6 +199,7 @@ export default function LenderSignup() {
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => setShowPassword(!showPassword)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                               data-testid="button-toggle-password"
@@ -229,6 +230,7 @@ export default function LenderSignup() {
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                               data-testid="button-toggle-confirm-password"

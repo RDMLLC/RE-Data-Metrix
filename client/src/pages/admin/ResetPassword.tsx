@@ -140,6 +140,7 @@ export default function AdminResetPassword() {
                               />
                               <Button
                                 type="button"
+                                tabIndex={-1}
                                 variant="ghost"
                                 size="icon"
                                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
@@ -174,6 +175,7 @@ export default function AdminResetPassword() {
                               />
                               <Button
                                 type="button"
+                                tabIndex={-1}
                                 variant="ghost"
                                 size="icon"
                                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
