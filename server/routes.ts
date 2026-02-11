@@ -6401,6 +6401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralClickCount: contractor.referralClickCount,
         isActive: contractor.isActive,
         agreementSignedAt: contractor.agreementSignedAt,
+        agreementSignerName: contractor.agreementSignerName,
+        agreementSignerTitle: contractor.agreementSignerTitle,
         agreementVersion: contractor.agreementVersion,
         serviceRegions: regions,
       });

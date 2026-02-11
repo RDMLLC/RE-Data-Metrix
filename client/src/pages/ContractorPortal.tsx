@@ -24,7 +24,9 @@ import {
   X,
   LogOut,
   UserPlus,
+  FileCheck,
 } from "lucide-react";
+import jsPDF from "jspdf";
 
 interface DocumentItem {
   id: string;
@@ -207,6 +209,130 @@ export default function ContractorPortal() {
     setLocation("/contractor-login");
   };
 
+  const generateAgreementPdf = () => {
+    if (!contractor) return;
+
+    const doc = new jsPDF({ unit: "pt", format: "letter" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 60;
+    const maxWidth = pageWidth - margin * 2;
+    let y = 60;
+
+    const addText = (text: string, opts?: { bold?: boolean; size?: number; indent?: number; spacing?: number }) => {
+      const size = opts?.size || 10;
+      const style = opts?.bold ? "bold" : "normal";
+      const indent = opts?.indent || 0;
+      const spacing = opts?.spacing || 4;
+      doc.setFontSize(size);
+      doc.setFont("helvetica", style);
+      const lines = doc.splitTextToSize(text, maxWidth - indent);
+      for (const line of lines) {
+        if (y > doc.internal.pageSize.getHeight() - 60) {
+          doc.addPage();
+          y = 60;
+        }
+        doc.text(line, margin + indent, y);
+        y += size + spacing;
+      }
+    };
+
+    const addSpace = (pts: number) => { y += pts; };
+
+    addText("CONTRACTOR REFERRAL AGREEMENT", { bold: true, size: 16 });
+    addSpace(10);
+
+    addText(`This Contractor Referral Agreement ("Agreement") is entered into by and between RE Data Metrix, LLC ("RDM") and the undersigned Contractor (collectively, the "Parties"), effective as of the date of the last signature below.`);
+    addSpace(10);
+
+    addText("1. Purpose", { bold: true, size: 11 });
+    addSpace(4);
+    addText("RDM agrees to list Contractor on RDM's website for the purpose of referring the Contractor to users of RDM's platform (\"Users\"). This listing is provided at no charge to the Contractor.");
+    addSpace(10);
+
+    addText("2. Referral Fees", { bold: true, size: 11 });
+    addSpace(4);
+    addText("If a User hires the Contractor following a referral by RDM, the Contractor agrees to pay RDM a referral fee as follows:");
+    addText("\u2022  For jobs valued at $50,000 or more: $1,000.", { indent: 16 });
+    addText("\u2022  For jobs valued at up to $49,999: $500.", { indent: 16 });
+    addSpace(4);
+    addText("Payment shall be made via ACH, wire transfer, or another mutually agreed method. All fees are due within two (2) business days of the execution of a contract or agreement between the Contractor and the referred User.");
+    addSpace(10);
+
+    addText("3. Residual Referral Fees and First Contract Date", { bold: true, size: 11 });
+    addSpace(4);
+    addText("For purposes of this Agreement, the \"First Contract Date\" means the date on which the first written contract or agreement between the Contractor and a referred User is executed.");
+    addSpace(4);
+    addText("Contractor acknowledges that RDM is referring a client relationship, not a single project. Therefore, additional referral fees are due for future contracts between the Contractor and the same User as follows, measured from the First Contract Date:");
+    addText("\u2022  For contracts or agreements executed on or before the 12-month anniversary of the First Contract Date (\"Year One\"): 50% of the initial referral fee (i.e., $500 for jobs \u2265 $50,000; $250 for jobs \u2264 $49,999).", { indent: 16 });
+    addText("\u2022  For contracts or agreements executed after the 12-month anniversary but on or before the 24-month anniversary of the First Contract Date (\"Year Two\"): 50% of the Year One residual fee (i.e., $250 for jobs \u2265 $50,000; $125 for jobs \u2264 $49,999).", { indent: 16 });
+    addSpace(4);
+    addText("No referral fees are due for contracts executed after the 24-month anniversary of the First Contract Date.");
+    addSpace(4);
+    addText("For all purposes under this Section, the relevant date is the execution date of the contract or agreement, not the date work begins or is completed.");
+    addSpace(10);
+
+    addText("4. Reporting and Payment Responsibility", { bold: true, size: 11 });
+    addSpace(4);
+    addText("The Contractor is responsible for reporting all qualifying contracts with referred Users and for submitting the appropriate referral payments. Reporting of referrals will be available via the Contractor Portal provided by RDM, or by request directly from RDM.");
+    addSpace(4);
+    addText("RDM has no independent means of tracking such activity; therefore, the Contractor must ensure timely reporting and payment in accordance with this Agreement.");
+    addSpace(10);
+
+    addText("5. Compliance and Enforcement", { bold: true, size: 11 });
+    addSpace(4);
+    addText("The Contractor agrees not to engage in any workarounds, side arrangements, or other methods intended to avoid the payment of fees owed to RDM.");
+    addSpace(4);
+    addText("Failure to comply with this Agreement will result in removal from RDM's referral program and may result in legal action. RDM reserves the right to recover any unpaid fees, as well as reasonable attorney's fees, court costs, or other expenses incurred in the enforcement of this Agreement.");
+    addSpace(10);
+
+    addText("6. Term and Termination", { bold: true, size: 11 });
+    addSpace(4);
+    addText("This Agreement shall remain in effect until terminated. Either Party may terminate this Agreement upon thirty (30) days' written notice to the other Party.");
+    addSpace(10);
+
+    addText("7. Effect of Termination on Existing Referrals", { bold: true, size: 11 });
+    addSpace(4);
+    addText("a. Survival of Referral Fee Obligations. Contractor's obligation to pay referral fees shall survive termination of this Agreement with respect to any User that was referred to Contractor by RDM on or before the effective date of termination, whether or not Contractor and such User have entered into a contract as of the termination date.");
+    addSpace(4);
+    addText("b. Existing Referred Users. For each such referred User, all applicable referral fees (initial referral job fee, Year One residual fees, and Year Two residual fees) shall remain payable in accordance with Sections 2 and 3 for any qualifying contracts or agreements executed within the relevant time periods, measured from the First Contract Date for that User.");
+    addSpace(4);
+    addText("c. No New Referrals After Termination. After the effective date of termination, RDM shall have no obligation to provide new referrals to Contractor, and Contractor shall have no obligation to pay referral fees for Users first referred after the effective date of termination.");
+    addSpace(10);
+
+    addText("8. Entire Agreement", { bold: true, size: 11 });
+    addSpace(4);
+    addText("This Agreement constitutes the entire understanding between the Parties regarding the referral relationship and supersedes any prior agreements, oral or written, relating to this subject matter.");
+    addSpace(20);
+
+    addText("IN WITNESS WHEREOF, the Parties have executed this Agreement as of the dates indicated below.", { bold: true });
+    addSpace(20);
+
+    addText("Contractor:", { bold: true, size: 11 });
+    addSpace(6);
+    addText(`Name: ${contractor.agreementSignerName || contractor.name || ""}`);
+    addText(`Company Name: ${contractor.companyName || ""}`);
+    addText(`Title/Authorized Signer: ${contractor.agreementSignerTitle || ""}`);
+    addText(`Signature: /s/ ${contractor.agreementSignerName || contractor.name || ""}`);
+    const signedDate = contractor.agreementSignedAt ? new Date(contractor.agreementSignedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+    addText(`Date: ${signedDate}`);
+    addSpace(20);
+
+    addText("RE DATA METRIX, LLC", { bold: true, size: 11 });
+    addSpace(6);
+    addText("By: Daniel Turro");
+    addText("Name: Daniel Turro");
+    addText("Title: Founder");
+    addSpace(16);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Agreement Version: ${contractor.agreementVersion || "1.0"} | Electronically signed on ${signedDate}`, margin, y);
+
+    const fileName = `Contractor_Referral_Agreement_${(contractor.companyName || contractor.name || "").replace(/\s+/g, "_")}.pdf`;
+    doc.save(fileName);
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "Copied to clipboard" });
@@ -295,6 +421,41 @@ export default function ContractorPortal() {
               </CardContent>
             </Card>
           </div>
+
+          {contractor.agreementSignedAt && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="h-5 w-5" />
+                  Signed Agreement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" data-testid="badge-agreement-status">
+                        <FileCheck className="h-3 w-3 mr-1" />
+                        Executed
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        Version {contractor.agreementVersion || "1.0"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground" data-testid="text-agreement-signed-date">
+                      Signed on {new Date(contractor.agreementSignedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                      {contractor.agreementSignerName && ` by ${contractor.agreementSignerName}`}
+                      {contractor.agreementSignerTitle && `, ${contractor.agreementSignerTitle}`}
+                    </p>
+                  </div>
+                  <Button onClick={generateAgreementPdf} data-testid="button-download-agreement">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card>
