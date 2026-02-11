@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
@@ -29,7 +29,6 @@ const ANNUAL_SAVINGS = (MONTHLY_PRICE * 12) - ANNUAL_PRICE;
 export default function Upgrade() {
   const { isAuthenticated, isSubscriber, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   // Redirect subscribers to dashboard
   useEffect(() => {
@@ -60,37 +59,7 @@ export default function Upgrade() {
             </p>
           </div>
 
-          <div className="flex justify-center mb-8">
-            <div className="inline-flex items-center bg-muted rounded-lg p-1" data-testid="billing-toggle">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  billingCycle === "monthly"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                data-testid="button-monthly"
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle("annual")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                  billingCycle === "annual"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                data-testid="button-annual"
-              >
-                Annual
-                <Badge variant="secondary" className="text-xs bg-success/20 text-success border-0">
-                  Save ${ANNUAL_SAVINGS}
-                </Badge>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <Card className="relative border">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl text-primary">Free Account</CardTitle>
@@ -137,33 +106,14 @@ export default function Upgrade() {
               </CardFooter>
             </Card>
 
-            <Card className="relative border-2 border-accent shadow-lg">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <Badge className="bg-accent text-accent-foreground px-4 py-1">
-                  <Star className="h-3 w-3 mr-1 inline" />
-                  Recommended
-                </Badge>
-              </div>
+            <Card className="relative border">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl text-primary">
-                  {billingCycle === "monthly" ? "Monthly" : "Annual"} Plan
-                </CardTitle>
-                <CardDescription>
-                  {billingCycle === "annual" ? `Save $${ANNUAL_SAVINGS}/year` : "Full access, cancel anytime"}
-                </CardDescription>
+                <CardTitle className="text-xl text-primary">Monthly Plan</CardTitle>
+                <CardDescription>Full access, cancel anytime</CardDescription>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold text-primary">
-                    ${billingCycle === "monthly" ? MONTHLY_PRICE : ANNUAL_PRICE}
-                  </span>
-                  <span className="text-muted-foreground ml-2">
-                    /{billingCycle === "monthly" ? "month" : "year"}
-                  </span>
+                  <span className="text-4xl font-bold text-primary">${MONTHLY_PRICE}</span>
+                  <span className="text-muted-foreground ml-2">/month</span>
                 </div>
-                {billingCycle === "annual" && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Just ${(ANNUAL_PRICE / 12).toFixed(2)}/month
-                  </p>
-                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2">
@@ -194,8 +144,64 @@ export default function Upgrade() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href={`/checkout?plan=${billingCycle}`} className="w-full">
-                  <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade">
+                <Link href="/checkout?plan=monthly" className="w-full">
+                  <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-monthly">
+                    Upgrade Now
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+
+            <Card className="relative border-2 border-accent shadow-lg">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground px-4 py-1">
+                  <Star className="h-3 w-3 mr-1 inline" />
+                  Best Value
+                </Badge>
+              </div>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl text-primary">Annual Plan</CardTitle>
+                <CardDescription>Save ${ANNUAL_SAVINGS}/year</CardDescription>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-primary">${ANNUAL_PRICE}</span>
+                  <span className="text-muted-foreground ml-2">/year</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Just ${(ANNUAL_PRICE / 12).toFixed(2)}/month
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    <strong>Unlimited</strong> property lookups
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    <strong>Unlimited</strong> wholesale calcs
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Full lender comparisons
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Save <strong>unlimited</strong> deals
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    PDF & CSV export
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    Priority support
+                  </li>
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Link href="/checkout?plan=annual" className="w-full">
+                  <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-annual">
                     Upgrade Now
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
