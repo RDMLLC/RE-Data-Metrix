@@ -17,8 +17,10 @@ export default function Home() {
   useEffect(() => {
     async function checkLenderSession() {
       try {
+        const token = localStorage.getItem('_sessionToken');
         const response = await fetch("/api/lenders/me", {
           credentials: "include",
+          headers: token ? { 'X-Session-Token': token } : {},
         });
         if (response.ok) {
           setIsLender(true);

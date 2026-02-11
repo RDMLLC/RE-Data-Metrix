@@ -134,6 +134,17 @@ try {
   process.exit(1);
 }
 
+app.use((req, _res, next) => {
+  const sessionToken = req.headers['x-session-token'] as string | undefined;
+  if (sessionToken && (!req.headers.cookie || !req.headers.cookie.includes('connect.sid'))) {
+    const cookieStr = `connect.sid=${encodeURIComponent(sessionToken)}`;
+    req.headers.cookie = req.headers.cookie
+      ? `${req.headers.cookie}; ${cookieStr}`
+      : cookieStr;
+  }
+  next();
+});
+
 app.use(
   session({
     store: sessionStore,

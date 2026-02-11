@@ -60,8 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     enabled: authChecked,
     queryFn: async () => {
       try {
+        const token = localStorage.getItem('_sessionToken');
         const response = await fetch("/api/auth/me", {
           credentials: "include",
+          headers: token ? { 'X-Session-Token': token } : {},
         });
         if (!response.ok) {
           if (response.status === 401) {
@@ -94,6 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error.requiresVerification = responseData.requiresVerification;
         throw error;
       }
+      if (responseData._sessionToken) {
+        localStorage.setItem('_sessionToken', responseData._sessionToken);
+      }
       return responseData;
     },
     onSuccess: () => {
@@ -117,6 +122,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) {
         throw new Error(responseData.error || "Registration failed");
       }
+      if (responseData._sessionToken) {
+        localStorage.setItem('_sessionToken', responseData._sessionToken);
+      }
       return responseData;
     },
     onSuccess: (data) => {
@@ -137,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     },
     onSuccess: () => {
+      localStorage.removeItem('_sessionToken');
       queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.setQueryData(["/api/lenders/me"], null);
       queryClient.clear();

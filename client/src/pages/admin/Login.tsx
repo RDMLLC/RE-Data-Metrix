@@ -47,6 +47,9 @@ export default function AdminLogin() {
 
       if (response.ok) {
         const userData = await response.json();
+        if (userData._sessionToken) {
+          localStorage.setItem('_sessionToken', userData._sessionToken);
+        }
         queryClient.setQueryData(["/api/auth/me"], userData);
         toast({
           title: "Welcome Admin",

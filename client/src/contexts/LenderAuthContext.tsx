@@ -39,8 +39,10 @@ export function LenderAuthProvider({ children }: { children: React.ReactNode }) 
     refetchOnMount: true,
     queryFn: async () => {
       try {
+        const token = localStorage.getItem('_sessionToken');
         const response = await fetch("/api/lenders/me", {
           credentials: "include",
+          headers: token ? { 'X-Session-Token': token } : {},
         });
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
@@ -71,6 +73,9 @@ export function LenderAuthProvider({ children }: { children: React.ReactNode }) 
       if (!response.ok) {
         throw new Error(responseData.message || responseData.error || "Login failed");
       }
+      if (responseData._sessionToken) {
+        localStorage.setItem('_sessionToken', responseData._sessionToken);
+      }
       return responseData;
     },
     onSuccess: () => {
@@ -87,6 +92,7 @@ export function LenderAuthProvider({ children }: { children: React.ReactNode }) 
       if (!response.ok) {
         throw new Error("Logout failed");
       }
+      localStorage.removeItem('_sessionToken');
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/lenders/me"], null);

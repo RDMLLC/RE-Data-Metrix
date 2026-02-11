@@ -154,6 +154,11 @@ export default function Login() {
         throw new Error(error.error || "Invalid email or password");
       }
 
+      const lenderData = await response.json();
+      if (lenderData._sessionToken) {
+        localStorage.setItem('_sessionToken', lenderData._sessionToken);
+      }
+
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in to the Lender Portal.",

@@ -40,7 +40,11 @@ export default function ContractorLogin() {
         const errorData = await res.json();
         throw new Error(errorData.error || "Login failed");
       }
-      return await res.json();
+      const responseData = await res.json();
+      if (responseData._sessionToken) {
+        localStorage.setItem('_sessionToken', responseData._sessionToken);
+      }
+      return responseData;
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });

@@ -16,6 +16,7 @@ import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts, seedTrainingVideos } from "./seed-data";
 import { outboundWebhookService } from "./services/outbound-webhook.service";
+import signature from "cookie-signature";
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -24,6 +25,11 @@ function generateReferralCode(): string {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
+}
+
+function getSignedSessionToken(req: any): string {
+  const secret = process.env.SESSION_SECRET!;
+  return 's:' + signature.sign(req.sessionID, secret);
 }
 
 function generateVerificationToken(): string {
@@ -98,6 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             return res.json({
+              _sessionToken: getSignedSessionToken(req),
               id: result.user!.id,
               username: result.user!.username,
               email: result.user!.email,
@@ -153,6 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(500).json({ error: "Login failed" });
           }
           res.json({
+            _sessionToken: getSignedSessionToken(req),
             id: user.id,
             username: user.username,
             email: user.email,
@@ -200,6 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             path: req.session.cookie.path
           });
           res.json({
+            _sessionToken: getSignedSessionToken(req),
             id: user.id,
             username: user.username,
             email: user.email,
@@ -1505,6 +1514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[FREE-CHECKOUT] User logged in successfully:', newUser.id);
         
         res.json({
+          _sessionToken: getSignedSessionToken(req),
           success: true,
           user: {
             id: newUser.id,
@@ -2104,6 +2114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Login after signup failed" });
         }
         res.json({
+          _sessionToken: getSignedSessionToken(req),
           message: "Lender account setup successfully",
           lender: updatedLender,
         });
@@ -2287,6 +2298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Login failed" });
         }
         res.json({
+          _sessionToken: getSignedSessionToken(req),
           id: user.id,
           email: user.email,
           companyName: user.companyName,
@@ -6352,6 +6364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Login failed" });
         }
         res.json({
+          _sessionToken: getSignedSessionToken(req),
           contractor: {
             id: user.id,
             email: user.email,
