@@ -240,8 +240,8 @@ export default function ContractorPortal() {
     addText("2. Referral Fees", { bold: true, size: 11 });
     addSpace(4);
     addText("If a User hires the Contractor following a referral by RDM, the Contractor agrees to pay RDM a referral fee as follows:");
-    addText("\u2022  For jobs valued at $50,000 or more: $1,000.", { indent: 16 });
-    addText("\u2022  For jobs valued at up to $49,999: $500.", { indent: 16 });
+    addText("- For jobs valued at $50,000 or more: $1,000.", { indent: 16 });
+    addText("- For jobs valued at up to $49,999: $500.", { indent: 16 });
     addSpace(4);
     addText("Payment shall be made via ACH, wire transfer, or another mutually agreed method. All fees are due within two (2) business days of the execution of a contract or agreement between the Contractor and the referred User.");
     addSpace(10);
@@ -251,8 +251,8 @@ export default function ContractorPortal() {
     addText("For purposes of this Agreement, the \"First Contract Date\" means the date on which the first written contract or agreement between the Contractor and a referred User is executed.");
     addSpace(4);
     addText("Contractor acknowledges that RDM is referring a client relationship, not a single project. Therefore, additional referral fees are due for future contracts between the Contractor and the same User as follows, measured from the First Contract Date:");
-    addText("\u2022  For contracts or agreements executed on or before the 12-month anniversary of the First Contract Date (\"Year One\"): 50% of the initial referral fee (i.e., $500 for jobs \u2265 $50,000; $250 for jobs \u2264 $49,999).", { indent: 16 });
-    addText("\u2022  For contracts or agreements executed after the 12-month anniversary but on or before the 24-month anniversary of the First Contract Date (\"Year Two\"): 50% of the Year One residual fee (i.e., $250 for jobs \u2265 $50,000; $125 for jobs \u2264 $49,999).", { indent: 16 });
+    addText("- For contracts or agreements executed on or before the 12-month anniversary of the First Contract Date (\"Year One\"): 50% of the initial referral fee (i.e., $500 for jobs valued at $50,000 or more; $250 for jobs valued at up to $49,999).", { indent: 16 });
+    addText("- For contracts or agreements executed after the 12-month anniversary but on or before the 24-month anniversary of the First Contract Date (\"Year Two\"): 50% of the Year One residual fee (i.e., $250 for jobs valued at $50,000 or more; $125 for jobs valued at up to $49,999).", { indent: 16 });
     addSpace(4);
     addText("No referral fees are due for contracts executed after the 24-month anniversary of the First Contract Date.");
     addSpace(4);
