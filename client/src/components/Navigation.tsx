@@ -218,12 +218,12 @@ export default function Navigation() {
                               Member Portal
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => setLocation("/contractor-portal")}
+                              onClick={() => setLocation("/admin/contractors")}
                               className="cursor-pointer"
                               data-testid="menu-item-contractor-portal"
                             >
                               <HardHat className="mr-2 h-4 w-4" />
-                              Contractor Portal
+                              Contractor Management
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => setLocation("/admin/developer-integrations")}
@@ -459,12 +459,12 @@ export default function Navigation() {
                             Member Portal
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => setLocation("/contractor-portal")}
+                            onClick={() => setLocation("/admin/contractors")}
                             className="cursor-pointer"
                             data-testid="menu-item-contractor-portal-mobile"
                           >
                             <HardHat className="mr-2 h-4 w-4" />
-                            Contractor Portal
+                            Contractor Management
                           </DropdownMenuItem>
                         </>
                       )}
