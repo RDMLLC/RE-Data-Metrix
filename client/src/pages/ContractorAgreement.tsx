@@ -25,7 +25,7 @@ export default function ContractorAgreement() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setLocation("/contractor-login");
+      setLocation("/login");
     }
   }, [authLoading, isAuthenticated, setLocation]);
 

@@ -74,7 +74,7 @@ export default function ContractorPortal() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setLocation("/contractor-login");
+      setLocation("/login");
     }
   }, [authLoading, isAuthenticated, setLocation]);
 
@@ -206,7 +206,7 @@ export default function ContractorPortal() {
 
   const handleLogout = async () => {
     await logout();
-    setLocation("/contractor-login");
+    setLocation("/login");
   };
 
   const generateAgreementPdf = () => {
