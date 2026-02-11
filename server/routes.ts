@@ -51,10 +51,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Trigger outbound webhooks for user signup (fire and forget) - do this before any early returns
       if (result.user) {
+        const fullName = (req.body.fullName || '').trim();
+        const nameParts = fullName.split(/\s+/);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+        let phone = '';
+        try {
+          const profile = await storage.getUserProfile(result.user.id);
+          if (profile?.phone) phone = profile.phone;
+        } catch (e) {}
+
+        const subscriptionType = result.isComped ? 'comped' : (req.body.pendingPlan || 'free');
+
         outboundWebhookService.triggerWebhooks('user_signup', {
           userId: result.user.id,
           email: result.user.email,
           username: result.user.username,
+          firstName,
+          lastName,
+          fullName,
+          phone,
+          subscriptionType,
+          subscriptionStatus: result.user.subscriptionStatus || 'free',
           isComped: result.isComped,
           createdAt: new Date().toISOString()
         }).catch(err => console.error('[Webhook] user_signup trigger error:', err));

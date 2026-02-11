@@ -1,5 +1,9 @@
 import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { completeCheckoutSession } from './checkoutService';
+import { outboundWebhookService } from './outbound-webhook.service';
+import { db } from '../db';
+import { users, userProfiles } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 
 export class WebhookHandlers {
@@ -41,6 +45,36 @@ export class WebhookHandlers {
           
           if (result.success) {
             console.log(`[WEBHOOK] Checkout completed for session ${session.id}: ${result.message}`);
+
+            if (result.userId) {
+              try {
+                const [user] = await db.select().from(users).where(eq(users.id, result.userId)).limit(1);
+                if (user) {
+                  const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+                  const fullName = (profile?.fullName || session.customer_details?.name || '').trim();
+                  const nameParts = fullName.split(/\s+/);
+                  const firstName = nameParts[0] || '';
+                  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+                  outboundWebhookService.triggerWebhooks('subscription_completed', {
+                    userId: user.id,
+                    email: user.email,
+                    username: user.username,
+                    firstName,
+                    lastName,
+                    fullName,
+                    phone: profile?.phone || '',
+                    subscriptionType: user.subscriptionPlan || 'monthly',
+                    subscriptionStatus: user.subscriptionStatus || 'active',
+                    stripeCustomerId: user.stripeCustomerId || '',
+                    stripeSubscriptionId: user.stripeSubscriptionId || '',
+                    createdAt: new Date().toISOString()
+                  }).catch(err => console.error('[Webhook] subscription_completed trigger error:', err));
+                }
+              } catch (err) {
+                console.error('[Webhook] Error fetching user for subscription webhook:', err);
+              }
+            }
           } else {
             console.error(`[WEBHOOK] Failed to complete checkout for session ${session.id}: ${result.error}`);
           }
