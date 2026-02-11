@@ -11,6 +11,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { queryClient } from "@/lib/queryClient";
 
 const adminLoginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -45,12 +46,14 @@ export default function AdminLogin() {
       });
 
       if (response.ok) {
-        await refetchUser();
+        const userData = await response.json();
+        queryClient.setQueryData(["/api/auth/me"], userData);
         toast({
           title: "Welcome Admin",
           description: "You've successfully logged in.",
         });
-        setLocation("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
+        return;
       } else if (response.status === 403) {
         toast({
           title: "Access Denied",

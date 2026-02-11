@@ -112,21 +112,17 @@ export default function Login() {
         description: "You've successfully logged in.",
       });
       
-      // Redirect based on user role and subscription status
+      // Use window.location for full page reload to ensure session cookie is sent
       if (user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') {
-        setLocation(returnTo || "/admin");
+        window.location.href = returnTo || "/admin";
       } else {
-        // Check if user is a subscriber (active, comped, or referral_trial)
         const isSubscriber = ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
         if (isSubscriber) {
-          // Subscribers can use returnTo or go to dashboard
-          setLocation(returnTo || "/portal/dashboard");
+          window.location.href = returnTo || "/portal/dashboard";
         } else if ((user as any).pendingPlan) {
-          // User signed up for premium - go straight to checkout
-          setLocation(`/checkout?plan=${(user as any).pendingPlan}`);
+          window.location.href = `/checkout?plan=${(user as any).pendingPlan}`;
         } else {
-          // Free users see the upgrade comparison page
-          setLocation("/upgrade");
+          window.location.href = "/upgrade";
         }
       }
     } catch (error: any) {
@@ -162,7 +158,7 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've successfully logged in to the Lender Portal.",
       });
-      setLocation("/lender-dashboard");
+      window.location.href = "/lender-dashboard";
     } catch (error: any) {
       toast({
         title: "Login failed",
