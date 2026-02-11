@@ -18,6 +18,8 @@ interface ContractorData {
   generatedReferralCode?: string;
   referralClickCount?: number;
   isActive?: boolean;
+  agreementSignedAt?: string | null;
+  agreementVersion?: string | null;
   serviceRegions?: Array<{ id: string; name: string; state: string }>;
 }
 

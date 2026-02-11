@@ -1085,6 +1085,11 @@ export const contractors = pgTable("contractors", {
   inviteAccepted: boolean("invite_accepted").default(false),
   passwordResetToken: varchar("password_reset_token").unique(),
   passwordResetExpiry: timestamp("password_reset_expiry"),
+  agreementSignedAt: timestamp("agreement_signed_at"),
+  agreementSignerName: text("agreement_signer_name"),
+  agreementSignerTitle: text("agreement_signer_title"),
+  agreementSignerIp: text("agreement_signer_ip"),
+  agreementVersion: text("agreement_version"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1101,6 +1106,11 @@ export const insertContractorSchema = createInsertSchema(contractors).omit({
   passwordResetExpiry: true,
   generatedReferralCode: true,
   referralClickCount: true,
+  agreementSignedAt: true,
+  agreementSignerName: true,
+  agreementSignerTitle: true,
+  agreementSignerIp: true,
+  agreementVersion: true,
 });
 
 export type InsertContractor = z.infer<typeof insertContractorSchema>;

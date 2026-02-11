@@ -42,14 +42,18 @@ export default function ContractorLogin() {
       }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
       toast({
         title: "Login Successful",
-        description: "Redirecting to your portal...",
+        description: "Redirecting...",
       });
       setTimeout(() => {
-        setLocation("/contractor-portal");
+        if (data.contractor && !data.contractor.agreementSignedAt) {
+          setLocation("/contractor-agreement");
+        } else {
+          setLocation("/contractor-portal");
+        }
       }, 1000);
     },
     onError: (error: any) => {

@@ -76,6 +76,12 @@ export default function ContractorPortal() {
     }
   }, [authLoading, isAuthenticated, setLocation]);
 
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && contractor && !contractor.agreementSignedAt) {
+      setLocation("/contractor-agreement");
+    }
+  }, [authLoading, isAuthenticated, contractor, setLocation]);
+
   const { data: referralStats, isLoading: statsLoading } = useQuery<ReferralStats>({
     queryKey: ["/api/contractors/referral-stats"],
     enabled: isAuthenticated,

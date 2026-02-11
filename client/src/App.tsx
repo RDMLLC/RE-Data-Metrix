@@ -47,6 +47,7 @@ import AboutPrivateLenders from "@/pages/AboutPrivateLenders";
 import LenderSignup from "@/pages/LenderSignup";
 import ContractorSignup from "@/pages/ContractorSignup";
 import ContractorLogin from "@/pages/ContractorLogin";
+import ContractorAgreement from "@/pages/ContractorAgreement";
 import ContractorPortal from "@/pages/ContractorPortal";
 import LenderLogin from "@/pages/LenderLogin";
 import LenderInvite from "@/pages/admin/LenderInvite";
@@ -192,6 +193,7 @@ function Router() {
       <Route path="/lender-signup/:token" component={LenderSignup} />
       <Route path="/contractor-signup/:token" component={ContractorSignup} />
       <Route path="/contractor-login" component={ContractorLogin} />
+      <Route path="/contractor-agreement" component={ContractorAgreement} />
       <Route path="/contractor-portal" component={ContractorPortal} />
       <Route path="/lender-login" component={LenderLogin} />
       <Route path="/admin/login" component={AdminLogin} />

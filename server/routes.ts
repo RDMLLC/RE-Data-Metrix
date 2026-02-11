@@ -6352,10 +6352,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Login failed" });
         }
         res.json({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          companyName: user.companyName,
+          contractor: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            companyName: user.companyName,
+            agreementSignedAt: user.agreementSignedAt,
+          },
         });
       });
     })(req, res, next);
@@ -6397,11 +6400,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         generatedReferralCode: contractor.generatedReferralCode,
         referralClickCount: contractor.referralClickCount,
         isActive: contractor.isActive,
+        agreementSignedAt: contractor.agreementSignedAt,
+        agreementVersion: contractor.agreementVersion,
         serviceRegions: regions,
       });
     } catch (error) {
       console.error('Get contractor me error:', error);
       res.status(500).json({ error: "Failed to fetch contractor data" });
+    }
+  });
+
+  app.post("/api/contractors/sign-agreement", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+
+      const signatureSchema = z.object({
+        signerName: z.string().min(1, "Full name is required"),
+        signerTitle: z.string().min(1, "Title is required"),
+        companyName: z.string().min(1, "Company name is required"),
+      });
+
+      const parsed = signatureSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid signature data", details: parsed.error.errors });
+      }
+
+      const forwardedFor = req.headers['x-forwarded-for'];
+      const clientIp = (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : '') || req.socket.remoteAddress || 'unknown';
+
+      const [updated] = await db.update(contractors)
+        .set({
+          agreementSignedAt: new Date(),
+          agreementSignerName: parsed.data.signerName,
+          agreementSignerTitle: parsed.data.signerTitle,
+          agreementVersion: "1.0",
+          agreementSignerIp: clientIp,
+          companyName: parsed.data.companyName,
+          updatedAt: new Date(),
+        })
+        .where(eq(contractors.id, contractor.id))
+        .returning();
+
+      res.json({
+        success: true,
+        agreementSignedAt: updated.agreementSignedAt,
+        agreementVersion: updated.agreementVersion,
+      });
+    } catch (error) {
+      console.error('Sign agreement error:', error);
+      res.status(500).json({ error: "Failed to sign agreement" });
     }
   });
 
