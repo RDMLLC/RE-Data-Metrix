@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useContractorAuth } from "@/contexts/ContractorAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import {
@@ -62,6 +63,8 @@ function formatFileSize(bytes: number): string {
 export default function ContractorPortal() {
   const [, setLocation] = useLocation();
   const { contractor, isLoading: authLoading, isAuthenticated, logout } = useContractorAuth();
+  const { user: currentUser, isLoading: userAuthLoading } = useAuth();
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,10 +76,10 @@ export default function ContractorPortal() {
   const [assignSearchQuery, setAssignSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!authLoading && !userAuthLoading && !isAuthenticated && !isAdmin) {
       setLocation("/login");
     }
-  }, [authLoading, isAuthenticated, setLocation]);
+  }, [authLoading, userAuthLoading, isAuthenticated, isAdmin, setLocation]);
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && contractor && !contractor.agreementSignedAt) {
@@ -338,11 +341,44 @@ export default function ContractorPortal() {
     toast({ title: "Copied to clipboard" });
   };
 
-  if (authLoading) {
+  if (authLoading || userAuthLoading) {
     return (
       <Layout>
         <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isAdmin && !isAuthenticated) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-primary" data-testid="text-portal-title">
+                Contractor Portal
+              </h1>
+              <div className="h-1 w-24 bg-accent mt-2"></div>
+              <p className="text-muted-foreground mt-2">
+                Viewing as Admin
+              </p>
+            </div>
+            <Card>
+              <CardContent className="pt-6 text-center py-12">
+                <p className="text-muted-foreground mb-2">
+                  This portal is where contractors manage their referrals, documents, and agreements.
+                </p>
+                <p className="text-muted-foreground mb-6">
+                  To manage contractors, invitations, and service regions, use the Contractors section on the Admin Dashboard.
+                </p>
+                <Button onClick={() => setLocation("/admin/contractors")} data-testid="button-admin-contractors">
+                  Go to Contractor Management
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </Layout>
     );
