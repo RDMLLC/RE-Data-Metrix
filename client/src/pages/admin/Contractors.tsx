@@ -747,62 +747,42 @@ export default function Contractors() {
             </div>
             <div className="space-y-2">
               <Label>Specialties</Label>
-              {contractorForm.specialties.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {contractorForm.specialties.length === SPECIALTY_OPTIONS.length ? (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      ALL
-                      <button
-                        type="button"
-                        className="ml-1 text-muted-foreground hover:text-foreground"
-                        onClick={() => setContractorForm(prev => ({ ...prev, specialties: [] }))}
-                        data-testid="button-remove-all-specialties"
-                      >
-                        &times;
-                      </button>
-                    </Badge>
-                  ) : (
-                    contractorForm.specialties.map(s => (
-                      <Badge key={s} variant="secondary" className="flex items-center gap-1">
-                        {s}
-                        <button
-                          type="button"
-                          className="ml-1 text-muted-foreground hover:text-foreground"
-                          onClick={() => setContractorForm(prev => ({
-                            ...prev,
-                            specialties: prev.specialties.filter(sp => sp !== s)
-                          }))}
-                          data-testid={`button-remove-specialty-${s}`}
-                        >
-                          &times;
-                        </button>
-                      </Badge>
-                    ))
-                  )}
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-1">
+                <div className="flex items-center space-x-2 pb-1 mb-1 border-b">
+                  <Checkbox
+                    id="specialty-all"
+                    checked={contractorForm.specialties.length === SPECIALTY_OPTIONS.length}
+                    onCheckedChange={(checked) => {
+                      setContractorForm(prev => ({
+                        ...prev,
+                        specialties: checked ? [...SPECIALTY_OPTIONS] : []
+                      }));
+                    }}
+                    data-testid="checkbox-specialty-all"
+                  />
+                  <label htmlFor="specialty-all" className="text-sm font-medium cursor-pointer">Select All</label>
                 </div>
-              )}
-              <Select
-                value=""
-                onValueChange={(value) => {
-                  if (value === "ALL") {
-                    setContractorForm(prev => ({ ...prev, specialties: [...SPECIALTY_OPTIONS] }));
-                  } else if (!contractorForm.specialties.includes(value)) {
-                    setContractorForm(prev => ({ ...prev, specialties: [...prev.specialties, value] }));
-                  }
-                }}
-              >
-                <SelectTrigger data-testid="select-specialties">
-                  <SelectValue placeholder="Add a specialty..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">ALL (Select All)</SelectItem>
-                  {SPECIALTY_OPTIONS.filter(s => !contractorForm.specialties.includes(s)).map(specialty => (
-                    <SelectItem key={specialty} value={specialty}>
-                      {specialty}
-                    </SelectItem>
+                <div className="grid grid-cols-2 gap-1">
+                  {SPECIALTY_OPTIONS.map(specialty => (
+                    <div key={specialty} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`specialty-${specialty}`}
+                        checked={contractorForm.specialties.includes(specialty)}
+                        onCheckedChange={(checked) => {
+                          setContractorForm(prev => ({
+                            ...prev,
+                            specialties: checked
+                              ? [...prev.specialties, specialty]
+                              : prev.specialties.filter(s => s !== specialty)
+                          }));
+                        }}
+                        data-testid={`checkbox-specialty-${specialty}`}
+                      />
+                      <label htmlFor={`specialty-${specialty}`} className="text-sm cursor-pointer">{specialty}</label>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
