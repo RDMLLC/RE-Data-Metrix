@@ -821,6 +821,16 @@ export default function Contractors() {
             })()}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="referralLink">Referral Link</Label>
+                <Input
+                  id="referralLink"
+                  value={contractorForm.referralLink}
+                  onChange={(e) => setContractorForm(prev => ({ ...prev, referralLink: e.target.value }))}
+                  placeholder="https://..."
+                  data-testid="input-referral-link"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="sortOrder">Sort Order</Label>
                 <Input
                   id="sortOrder"
