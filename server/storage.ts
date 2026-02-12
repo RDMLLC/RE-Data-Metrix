@@ -3963,6 +3963,24 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  private async generateContractorReferralCode(nameForPrefix: string): Promise<string> {
+    const prefix = (nameForPrefix || 'CONT')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .substring(0, 6)
+      .toUpperCase();
+
+    for (let i = 0; i < 20; i++) {
+      const suffix = crypto.randomBytes(i < 10 ? 3 : 4).toString('hex').toUpperCase();
+      const referralCode = `${prefix}-${suffix}`;
+      const [existing] = await db.select().from(contractorsTable)
+        .where(eq(contractorsTable.generatedReferralCode, referralCode));
+      if (!existing) {
+        return referralCode;
+      }
+    }
+    throw new Error("Could not generate unique referral code after multiple attempts");
+  }
+
   // Contractor Invitation Methods
   async createContractorInvite(email: string, companyName: string): Promise<{token: string, contractor: Contractor, isNewInvite: boolean}> {
     const token = randomBytes(32).toString('base64url');
@@ -3980,21 +3998,26 @@ export class DatabaseStorage implements IStorage {
         // Already registered, return existing
         return { token, contractor, isNewInvite: false };
       } else {
-        // Not yet accepted, update invite token
+        // Not yet accepted, update invite token and generate referral code if missing
+        const updateData: any = {
+          companyName: companyName,
+          inviteToken: token,
+          inviteExpiry: expiry,
+          updatedAt: new Date()
+        };
+        if (!contractor.generatedReferralCode) {
+          updateData.generatedReferralCode = await this.generateContractorReferralCode(companyName);
+        }
         const result = await db.update(contractorsTable)
-          .set({
-            companyName: companyName,
-            inviteToken: token,
-            inviteExpiry: expiry,
-            updatedAt: new Date()
-          })
+          .set(updateData)
           .where(eq(contractorsTable.email, email))
           .returning();
         return { token, contractor: result[0], isNewInvite: false };
       }
     }
     
-    // Create new contractor with pending invite
+    // Create new contractor with pending invite and auto-generated referral code
+    const referralCode = await this.generateContractorReferralCode(companyName);
     const result = await db.insert(contractorsTable).values({
       name: companyName,
       email,
@@ -4004,6 +4027,7 @@ export class DatabaseStorage implements IStorage {
       inviteExpiry: expiry,
       inviteAccepted: false,
       isActive: false,
+      generatedReferralCode: referralCode,
     }).returning();
     
     return { token, contractor: result[0], isNewInvite: true };
@@ -4037,26 +4061,11 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Contractor> {
     const hashedPassword = await hashPassword(data.password);
     
-    const prefix = (data.companyName || data.name || 'CONT')
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .substring(0, 6)
-      .toUpperCase();
-
-    let referralCode = '';
-    let isUnique = false;
-    for (let i = 0; i < 20; i++) {
-      const suffix = crypto.randomBytes(i < 10 ? 3 : 4).toString('hex').toUpperCase();
-      referralCode = `${prefix}-${suffix}`;
-      const [existing] = await db.select().from(contractorsTable)
-        .where(eq(contractorsTable.generatedReferralCode, referralCode));
-      if (!existing) {
-        isUnique = true;
-        break;
-      }
-    }
-    if (!isUnique) {
-      throw new Error("Could not generate unique referral code after multiple attempts");
-    }
+    // Check if a referral code was already generated at invite time
+    const [currentContractor] = await db.select({ generatedReferralCode: contractorsTable.generatedReferralCode })
+      .from(contractorsTable).where(eq(contractorsTable.id, contractorId)).limit(1);
+    const referralCode = currentContractor?.generatedReferralCode 
+      || await this.generateContractorReferralCode(data.companyName || data.name);
 
     const updateData: any = {
       password: hashedPassword,
