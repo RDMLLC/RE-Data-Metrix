@@ -149,21 +149,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Block contractors from signing in via the member login
-      if (user.email) {
-        const [contractorMatch] = await db
-          .select({ id: contractors.id })
-          .from(contractors)
-          .where(sql`LOWER(${contractors.email}) = LOWER(${user.email})`)
-          .limit(1);
-        if (contractorMatch) {
-          return res.status(403).json({
-            error: "Contractor account detected",
-            message: "This account is registered as a contractor. Please use the Contractor login section to sign in.",
-          });
-        }
-      }
-      
       req.login(user, (err) => {
         if (err) {
           return res.status(500).json({ error: "Login failed" });
@@ -6201,6 +6186,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         serviceRegionIds
       });
 
+      let memberAccountCreated = false;
+      try {
+        const existingUser = await db.select().from(users).where(eq(users.email, contractor.email)).limit(1);
+        if (existingUser.length === 0) {
+          const hashedPw = await hashPassword(password);
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+          let referralCode = '';
+          for (let i = 0; i < 8; i++) {
+            referralCode += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          const username = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'contractor';
+          let uniqueUsername = username;
+          let attempt = 0;
+          while (true) {
+            const [existing] = await db.select().from(users).where(eq(users.username, uniqueUsername)).limit(1);
+            if (!existing) break;
+            attempt++;
+            uniqueUsername = `${username}${attempt}`;
+          }
+
+          const [newUser] = await db.insert(users).values({
+            username: uniqueUsername,
+            email: contractor.email,
+            password: hashedPw,
+            role: 'user',
+            subscriptionStatus: 'free',
+            referralCode,
+            isEmailVerified: true,
+            termsAcceptedAt: new Date(),
+            termsVersion: '1.0',
+            privacyVersion: '1.0',
+          }).returning();
+
+          await db.insert(userProfiles).values({
+            userId: newUser.id,
+            fullName: name,
+          });
+
+          memberAccountCreated = true;
+          console.log(`[Contractor Signup] Free member account created for contractor ${contractor.email} (user ID: ${newUser.id})`);
+        } else {
+          console.log(`[Contractor Signup] Member account already exists for ${contractor.email}, skipping creation`);
+        }
+      } catch (memberError) {
+        console.error('[Contractor Signup] Failed to create member account (non-fatal):', memberError);
+      }
+
       res.json({
         message: "Contractor profile created successfully",
         contractor: {
@@ -6209,6 +6241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companyName: updatedContractor.companyName,
           email: updatedContractor.email
         },
+        memberAccountCreated,
       });
     } catch (error) {
       console.error('Accept contractor invite error:', error);
