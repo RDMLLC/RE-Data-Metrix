@@ -6820,7 +6820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(contractors.generatedReferralCode, code.toUpperCase()))
         .limit(1);
 
-      if (!contractor || !contractor.referralLink) {
+      if (!contractor) {
         return res.status(404).json({ error: "Invalid referral code" });
       }
 
@@ -6828,7 +6828,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ referralClickCount: (contractor.referralClickCount || 0) + 1 })
         .where(eq(contractors.id, contractor.id));
 
-      res.redirect(contractor.referralLink);
+      const protocol = req.protocol || "https";
+      const host = req.get("host") || "localhost:5000";
+      const baseUrl = `${protocol}://${host}`;
+      const destination = contractor.referralLink || `${baseUrl}/?ref=contractor&code=${code}`;
+      res.redirect(destination);
     } catch (error) {
       console.error('Contractor referral redirect error:', error);
       res.status(500).json({ error: "Failed to process referral" });
