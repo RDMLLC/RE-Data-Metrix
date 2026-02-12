@@ -143,6 +143,15 @@ export default function LenderSignup() {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <input
+                    type="email"
+                    value={inviteData.email}
+                    readOnly
+                    autoComplete="username"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    className="sr-only"
+                  />
                   <FormField
                     control={form.control}
                     name="contactName"

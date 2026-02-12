@@ -301,6 +301,15 @@ export default function ContractorSignup() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <input
+                type="email"
+                value={inviteData.email}
+                readOnly
+                autoComplete="username"
+                tabIndex={-1}
+                aria-hidden="true"
+                className="sr-only"
+              />
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Account Information</CardTitle>
