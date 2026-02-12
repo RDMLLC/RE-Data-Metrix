@@ -206,13 +206,20 @@ export default function ContractorPortal() {
     const maxWidth = pageWidth - margin * 2;
     let y = 60;
 
-    const addText = (text: string, opts?: { bold?: boolean; size?: number; indent?: number; spacing?: number }) => {
+    const addText = (text: string, opts?: { bold?: boolean; size?: number; indent?: number; spacing?: number; signature?: boolean }) => {
       const size = opts?.size || 10;
-      const style = opts?.bold ? "bold" : "normal";
       const indent = opts?.indent || 0;
       const spacing = opts?.spacing || 4;
-      doc.setFontSize(size);
-      doc.setFont("helvetica", style);
+      if (opts?.signature) {
+        doc.setFont("times", "bolditalic");
+        doc.setFontSize(size);
+        doc.setTextColor(0, 30, 100);
+      } else {
+        const style = opts?.bold ? "bold" : "normal";
+        doc.setFontSize(size);
+        doc.setFont("helvetica", style);
+        doc.setTextColor(0, 0, 0);
+      }
       const lines = doc.splitTextToSize(text, maxWidth - indent);
       for (const line of lines) {
         if (y > doc.internal.pageSize.getHeight() - 60) {
@@ -221,6 +228,9 @@ export default function ContractorPortal() {
         }
         doc.text(line, margin + indent, y);
         y += size + spacing;
+      }
+      if (opts?.signature) {
+        doc.setTextColor(0, 0, 0);
       }
     };
 
@@ -300,14 +310,22 @@ export default function ContractorPortal() {
     addText(`Name: ${contractor.agreementSignerName || contractor.name || ""}`);
     addText(`Company Name: ${contractor.companyName || ""}`);
     addText(`Title/Authorized Signer: ${contractor.agreementSignerTitle || ""}`);
-    addText(`Signature: /s/ ${contractor.agreementSignerName || contractor.name || ""}`);
+    addSpace(4);
+    addText(`/s/ ${contractor.agreementSignerName || contractor.name || ""}`, { signature: true, size: 16 });
+    addSpace(2);
+    doc.setDrawColor(0, 0, 0);
+    doc.line(margin, y - 4, margin + 200, y - 4);
+    addText("Signature");
     const signedDate = contractor.agreementSignedAt ? new Date(contractor.agreementSignedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
     addText(`Date: ${signedDate}`);
     addSpace(20);
 
     addText("RE DATA METRIX, LLC", { bold: true, size: 11 });
     addSpace(6);
-    addText("By: Daniel Turro");
+    addText(`Daniel Turro`, { signature: true, size: 16 });
+    addSpace(2);
+    doc.line(margin, y - 4, margin + 200, y - 4);
+    addText("Authorized Signature");
     addText("Name: Daniel Turro");
     addText("Title: Founder");
     addSpace(16);
