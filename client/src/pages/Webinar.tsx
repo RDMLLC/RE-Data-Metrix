@@ -29,7 +29,7 @@ export default function Webinar() {
   const searchString = useSearch();
   const [, setLocation] = useLocation();
   const { trackLead } = useMarketingEvents();
-  const webinarDate = "Friday, February 13, 2026";
+  const webinarDate = "Friday, February 27, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
 
   // Capture referral source from URL (?ref=sakira)

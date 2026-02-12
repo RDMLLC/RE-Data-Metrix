@@ -24,7 +24,7 @@ export default function MobileWebinar() {
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
-  const webinarDate = "Friday, February 13, 2026";
+  const webinarDate = "Friday, February 27, 2026";
   const webinarTime = "12:00 PM (Noon) EST";
   const registrationLink = "https://meet.zoho.com/xecs-lpa-ohi";
 

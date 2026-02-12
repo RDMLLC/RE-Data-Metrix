@@ -4322,8 +4322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid email is required" });
       }
       
-      // Default webinar date to next upcoming webinar (Feb 6, 2026 at 12pm EST)
-      let defaultWebinarDate = new Date('2026-02-06T12:00:00');
+      // Default webinar date to next upcoming webinar (Feb 27, 2026 at 12pm EST)
+      let defaultWebinarDate = new Date('2026-02-27T12:00:00-05:00');
       if (webinarDate && typeof webinarDate === 'string') {
         const parsed = new Date(webinarDate);
         if (!isNaN(parsed.getTime())) {

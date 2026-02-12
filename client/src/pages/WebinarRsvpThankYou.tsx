@@ -62,7 +62,7 @@ export default function WebinarRsvpThankYou() {
                   <h3 className="font-semibold text-lg mb-4">Event Details</h3>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-primary" />
-                    <span>Friday, February 6, 2026</span>
+                    <span>Friday, February 27, 2026</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock className="h-5 w-5 text-primary" />
@@ -93,7 +93,7 @@ export default function WebinarRsvpThankYou() {
 
                 <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-sm text-muted-foreground">
-                    Changed your mind? You can still join us on February 6th at 12:00 PM EST.
+                    Changed your mind? You can still join us on February 27th at 12:00 PM EST.
                   </p>
                 </div>
 
