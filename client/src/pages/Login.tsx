@@ -67,6 +67,7 @@ export default function Login() {
   const [isContractorLoading, setIsContractorLoading] = useState(false);
   const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [returnTo, setReturnTo] = useState<string | null>(null);
+  const [contractorLoginInProgress, setContractorLoginInProgress] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLenderPassword, setShowLenderPassword] = useState(false);
   const [showContractorPassword, setShowContractorPassword] = useState(false);
@@ -86,6 +87,7 @@ export default function Login() {
   }, []);
 
   useEffect(() => {
+    if (contractorLoginInProgress) return;
     if (!authLoading && isAuthenticated && currentUser) {
       if (currentUser.role === 'admin' || currentUser.role === 'developer' || currentUser.role === 'auditor') {
         setLocation(returnTo || "/admin");
@@ -95,12 +97,14 @@ export default function Login() {
           setLocation(returnTo || "/portal/dashboard");
         } else if ((currentUser as any).pendingPlan) {
           setLocation(`/checkout?plan=${(currentUser as any).pendingPlan}`);
+        } else if (currentUser.isContractor) {
+          setLocation("/contractor-portal");
         } else {
           setLocation("/upgrade");
         }
       }
     }
-  }, [isAuthenticated, authLoading, setLocation, currentUser, returnTo]);
+  }, [isAuthenticated, authLoading, setLocation, currentUser, returnTo, contractorLoginInProgress]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -190,6 +194,7 @@ export default function Login() {
 
   const onContractorSubmit = async (data: ContractorLoginFormData) => {
     setIsContractorLoading(true);
+    setContractorLoginInProgress(true);
     try {
       const res = await apiRequest("POST", "/api/contractors/login", data);
       if (!res.ok) {
@@ -201,18 +206,18 @@ export default function Login() {
         localStorage.setItem('_sessionToken', responseData._sessionToken);
       }
       queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in to the Contractor Portal.",
       });
-      setTimeout(() => {
-        if (responseData.contractor && !responseData.contractor.agreementSignedAt) {
-          window.location.href = "/contractor-agreement";
-        } else {
-          window.location.href = "/contractor-portal";
-        }
-      }, 500);
+      if (responseData.contractor && !responseData.contractor.agreementSignedAt) {
+        window.location.href = "/contractor-agreement";
+      } else {
+        window.location.href = "/contractor-portal";
+      }
     } catch (error: any) {
+      setContractorLoginInProgress(false);
       toast({
         title: "Login failed",
         description: error.message || "Invalid email or password",

@@ -9174,10 +9174,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Create/save a deal (auto-save from Step 5)
+  // Create/save a deal (auto-save from Step 5) - subscribers only
   app.post("/api/member/deals", ensureAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as User).id;
+      const user = req.user as User;
+      
+      // Only paid subscribers can save deals
+      const isSubscriber = ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus) || 
+                           user.role === 'admin' || user.role === 'developer' || user.role === 'auditor';
+      if (!isSubscriber) {
+        return res.status(403).json({ error: "Active subscription required to save deals" });
+      }
+      
       const { dealSnapshot, resultsSnapshot, propertyAddress, arv, roi, profit, dscr, status = 'draft', notes, lendersPresented } = req.body;
       
       // Check for duplicate within last 5 minutes (same user + same address)

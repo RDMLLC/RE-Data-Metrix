@@ -501,10 +501,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     },
   });
 
-  // Auto-save effect - triggers once when results are first loaded for authenticated users
+  // Auto-save effect - triggers once when results are first loaded for subscribers only
   useEffect(() => {
-    // Skip if already saved or save already attempted
-    if (!results || !isAuthenticated || dealSaved || saveAttemptedRef.current) return;
+    // Skip if already saved or save already attempted - only save for paid subscribers
+    if (!results || !isAuthenticated || !effectiveIsSubscriber || dealSaved || saveAttemptedRef.current) return;
     
     // Mark as attempted immediately to prevent duplicate saves
     saveAttemptedRef.current = true;
