@@ -229,6 +229,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ error: "Not authenticated" });
     }
     
+    // If session is a contractor-only session (no linked member), look up the member account
+    if (sessionUser.userType === 'contractor') {
+      const contractorEmail = sessionUser.email;
+      if (contractorEmail) {
+        const [linkedMember] = await db.select()
+          .from(users)
+          .where(sql`LOWER(${users.email}) = LOWER(${contractorEmail})`)
+          .limit(1);
+        if (linkedMember) {
+          const [profile] = await db.select()
+            .from(userProfiles)
+            .where(eq(userProfiles.userId, linkedMember.id))
+            .limit(1);
+          return res.json({
+            id: linkedMember.id,
+            username: linkedMember.username,
+            email: linkedMember.email,
+            role: linkedMember.role,
+            subscriptionStatus: linkedMember.subscriptionStatus,
+            subscriptionPlan: linkedMember.subscriptionPlan,
+            stripeSubscriptionId: linkedMember.stripeSubscriptionId,
+            referralCode: linkedMember.referralCode,
+            pendingPlan: linkedMember.pendingPlan,
+            createdAt: linkedMember.createdAt,
+            termsAcceptedAt: linkedMember.termsAcceptedAt,
+            termsVersion: linkedMember.termsVersion,
+            privacyVersion: linkedMember.privacyVersion,
+            isContractor: true,
+            profile: profile ? {
+              fullName: profile.fullName || "",
+              creditScoreRange: profile.creditScoreRange || "",
+              state: profile.state || "",
+              street: profile.street || "",
+              city: profile.city || "",
+              zipCode: profile.zipCode || "",
+              phone: profile.phone || "",
+            } : null,
+          });
+        }
+      }
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
     const user = req.user as User;
     
     const [userProfile] = await db
@@ -6412,29 +6455,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==========================================
 
   app.post("/api/contractors/login", (req, res, next) => {
-    passport.authenticate("contractor-local", (err: any, user: any | false, info: { message: string }) => {
+    passport.authenticate("contractor-local", async (err: any, contractor: any | false, info: { message: string }) => {
       if (err) {
         return res.status(500).json({ error: "Authentication failed" });
       }
-      if (!user) {
+      if (!contractor) {
         return res.status(401).json({ error: info.message || "Invalid credentials" });
       }
 
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({ error: "Login failed" });
-        }
-        res.json({
-          _sessionToken: getSignedSessionToken(req),
-          contractor: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            companyName: user.companyName,
-            agreementSignedAt: user.agreementSignedAt,
-          },
+      // Check if there's a linked member account (same email)
+      const [linkedMember] = await db.select()
+        .from(users)
+        .where(sql`LOWER(${users.email}) = LOWER(${contractor.email})`)
+        .limit(1);
+
+      if (linkedMember) {
+        // Log in as the member user so all member API routes work automatically
+        // The /api/auth/me endpoint already sets isContractor: true for linked accounts
+        req.login(linkedMember, (err) => {
+          if (err) {
+            return res.status(500).json({ error: "Login failed" });
+          }
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error('[Contractor Login] Session save failed:', saveErr);
+              return res.status(500).json({ error: "Login failed" });
+            }
+            res.json({
+              _sessionToken: getSignedSessionToken(req),
+              contractor: {
+                id: contractor.id,
+                email: contractor.email,
+                name: contractor.name,
+                companyName: contractor.companyName,
+                agreementSignedAt: contractor.agreementSignedAt,
+              },
+              linkedMember: true,
+            });
+          });
         });
-      });
+      } else {
+        // No linked member account - log in as contractor only
+        req.login(contractor, (err) => {
+          if (err) {
+            return res.status(500).json({ error: "Login failed" });
+          }
+          res.json({
+            _sessionToken: getSignedSessionToken(req),
+            contractor: {
+              id: contractor.id,
+              email: contractor.email,
+              name: contractor.name,
+              companyName: contractor.companyName,
+              agreementSignedAt: contractor.agreementSignedAt,
+            },
+            linkedMember: false,
+          });
+        });
+      }
     })(req, res, next);
   });
 
@@ -6455,7 +6533,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contractors/me", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      // Use linkedContractor from middleware if member session, otherwise use req.user
+      const contractor = (req as any).linkedContractor || req.user as any;
       const regions = await storage.getContractorServiceRegions(contractor.id);
       res.json({
         id: contractor.id,
@@ -6489,7 +6568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/contractors/profile", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const updateSchema = z.object({
         name: z.string().min(1).optional(),
         companyName: z.string().optional(),
@@ -6554,7 +6633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contractors/sign-agreement", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
 
       const signatureSchema = z.object({
         signerName: z.string().min(1, "Full name is required"),
@@ -6596,7 +6675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/contractors/profile", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
 
       const profileSchema = z.object({
         name: z.string().min(1).optional(),
@@ -6636,7 +6715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contractors/generate-referral-code", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
 
       const [existingContractor] = await db.select().from(contractors).where(eq(contractors.id, contractor.id)).limit(1);
       if (!existingContractor) {
@@ -6659,7 +6738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contractors/referral-stats", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const [contractorData] = await db.select().from(contractors).where(eq(contractors.id, contractor.id)).limit(1);
 
       if (!contractorData) {
@@ -6842,7 +6921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contractor document management
   app.get("/api/contractors/documents", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const docs = await db.select().from(contractorDocuments)
         .where(eq(contractorDocuments.contractorId, contractor.id))
         .orderBy(desc(contractorDocuments.createdAt));
@@ -6878,7 +6957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contractors/documents", ensureContractorAuthenticated, upload.single('file'), async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const file = req.file;
 
       if (!file) {
@@ -6939,7 +7018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contractors/documents/:docId/download", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const { docId } = req.params;
 
       const [doc] = await db.select().from(contractorDocuments)
@@ -6966,7 +7045,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/contractors/documents/:docId", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const { docId } = req.params;
 
       const [doc] = await db.select({ id: contractorDocuments.id }).from(contractorDocuments)
@@ -6990,7 +7069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/contractors/documents/:docId/assign", ensureContractorAuthenticated, async (req, res) => {
     try {
-      const contractor = req.user as any;
+      const contractor = (req as any).linkedContractor || req.user as any;
       const { docId } = req.params;
       const { userId } = req.body;
 

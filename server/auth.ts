@@ -274,7 +274,7 @@ export function ensureLenderOrAdmin(
   return res.status(403).json({ error: 'Access denied: Lender or admin authentication required' });
 }
 
-export function ensureContractorAuthenticated(
+export async function ensureContractorAuthenticated(
   req: Request,
   res: Response,
   next: NextFunction
@@ -285,11 +285,25 @@ export function ensureContractorAuthenticated(
 
   const user = req.user as any;
   
-  if (user.userType !== 'contractor') {
-    return res.status(403).json({ error: 'Access denied: Contractor authentication required' });
+  // Direct contractor session
+  if (user.userType === 'contractor') {
+    return next();
+  }
+  
+  // Member session with linked contractor account (same email)
+  if (!user.userType && user.email) {
+    const [contractorMatch] = await db
+      .select()
+      .from(contractors)
+      .where(sql`LOWER(${contractors.email}) = LOWER(${user.email})`)
+      .limit(1);
+    if (contractorMatch && contractorMatch.inviteAccepted && contractorMatch.isActive) {
+      (req as any).linkedContractor = contractorMatch;
+      return next();
+    }
   }
 
-  next();
+  return res.status(403).json({ error: 'Access denied: Contractor authentication required' });
 }
 
 export function ensureAdmin(

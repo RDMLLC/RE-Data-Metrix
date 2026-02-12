@@ -88,8 +88,12 @@ export function ContractorAuthProvider({ children }: { children: React.ReactNode
       }
       return responseData;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
+      // If contractor has a linked member account, also refresh member auth
+      if (data?.linkedMember) {
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      }
     },
   });
 
@@ -106,7 +110,9 @@ export function ContractorAuthProvider({ children }: { children: React.ReactNode
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/contractors/me"], null);
+      queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     },
   });
 

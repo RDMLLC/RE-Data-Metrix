@@ -26,6 +26,7 @@ import {
   Search,
   X,
   LogOut,
+  User,
   UserPlus,
   FileCheck,
   Pencil,
@@ -602,10 +603,18 @@ export default function ContractorPortal() {
                 Welcome back, {contractor.name || contractor.companyName}
               </p>
             </div>
-            <Button variant="outline" onClick={handleLogout} data-testid="button-contractor-logout">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {currentUser && (
+                <Button variant="outline" onClick={() => setLocation("/portal/dashboard")} data-testid="button-member-dashboard">
+                  <User className="mr-2 h-4 w-4" />
+                  Member Dashboard
+                </Button>
+              )}
+              <Button variant="outline" onClick={handleLogout} data-testid="button-contractor-logout">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

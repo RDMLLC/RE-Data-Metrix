@@ -347,7 +347,7 @@ export default function Navigation() {
                     </DropdownMenuItem>
                     {user?.isContractor && (
                       <DropdownMenuItem 
-                        onClick={() => { window.location.href = "/contractor-portal"; }}
+                        onClick={() => setLocation("/contractor-portal")}
                         className="cursor-pointer"
                         data-testid="menu-item-contractor-portal"
                       >
@@ -611,7 +611,7 @@ export default function Navigation() {
                   </DropdownMenuItem>
                   {user?.isContractor && (
                     <DropdownMenuItem 
-                      onClick={() => { window.location.href = "/contractor-portal"; }}
+                      onClick={() => setLocation("/contractor-portal")}
                       className="cursor-pointer"
                     >
                       <HardHat className="mr-2 h-4 w-4" />
