@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLenderAuth } from "@/contexts/LenderAuthContext";
@@ -64,6 +65,7 @@ export default function Navigation() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { lender, isAuthenticated: isLenderAuthenticated, isLoading: isLenderLoading, isAdminPreview, logout: lenderLogout } = useLenderAuth();
   const { contractor, isAuthenticated: isContractorAuthenticated, logout: contractorLogout } = useContractorAuth();
+  const { toast } = useToast();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -116,18 +118,20 @@ export default function Navigation() {
 
   const handleManageSubscription = async () => {
     try {
-      const response = await fetch('/api/subscription/billing-portal', {
-        method: 'GET',
+      const response = await fetch('/api/subscription/manage-billing', {
+        method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
       });
       const data = await response.json();
       if (data.url) {
         window.location.href = data.url;
-      } else {
-        console.error("No billing portal URL returned");
+      } else if (data.error) {
+        toast({ title: "Subscription", description: data.error, variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to open billing portal:", error);
+      toast({ title: "Error", description: "Failed to open subscription management. Please try again.", variant: "destructive" });
     }
   };
 
