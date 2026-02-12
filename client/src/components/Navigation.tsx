@@ -14,6 +14,7 @@ import { useState } from "react";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLenderAuth } from "@/contexts/LenderAuthContext";
+import { useContractorAuth } from "@/contexts/ContractorAuthContext";
 
 function getInitials(fullName: string | undefined, username: string, email: string): string {
   if (fullName && fullName.trim().length > 0) {
@@ -62,6 +63,7 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { lender, isAuthenticated: isLenderAuthenticated, isLoading: isLenderLoading, isAdminPreview, logout: lenderLogout } = useLenderAuth();
+  const { contractor, isAuthenticated: isContractorAuthenticated, logout: contractorLogout } = useContractorAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -81,6 +83,10 @@ export default function Navigation() {
     ? getInitials(lender.contactName, lender.companyName || '', lender.email)
     : "";
 
+  const contractorInitials = contractor
+    ? getInitials(contractor.name, contractor.companyName || '', contractor.email)
+    : "";
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -96,6 +102,15 @@ export default function Navigation() {
       setLocation("/");
     } catch (error) {
       console.error("Failed to logout lender:", error);
+    }
+  };
+
+  const handleContractorLogout = async () => {
+    try {
+      await contractorLogout();
+      setLocation("/");
+    } catch (error) {
+      console.error("Failed to logout contractor:", error);
     }
   };
 
@@ -388,6 +403,47 @@ export default function Navigation() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              ) : isContractorAuthenticated && contractor ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div 
+                      className="w-9 h-9 rounded-full bg-orange-600 text-white flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                      data-testid="button-contractor-menu"
+                    >
+                      {contractorInitials}
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-2">
+                        <p className="text-sm font-medium">{contractor.name || contractor.companyName || 'Contractor'}</p>
+                        <p className="text-xs text-muted-foreground truncate">{contractor.email}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Type:</span>
+                          <Badge className="bg-orange-500/10 text-orange-600 border-orange-200 text-xs">Contractor</Badge>
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => { window.location.href = "/contractor-portal"; }}
+                      className="cursor-pointer"
+                      data-testid="menu-item-contractor-portal-nav"
+                    >
+                      <HardHat className="mr-2 h-4 w-4" />
+                      Contractor Portal
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleContractorLogout}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      data-testid="menu-item-contractor-logout"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Link href="/login" data-testid="link-nav-login">
                   <Button
@@ -600,6 +656,45 @@ export default function Navigation() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={isAdminPreview ? handleLogout : handleLenderLogout}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : isContractorAuthenticated && contractor ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div 
+                    className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center font-semibold text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                    data-testid="button-contractor-menu-mobile"
+                  >
+                    {contractorInitials}
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm font-medium">{contractor.name || contractor.companyName || 'Contractor'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{contractor.email}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Type:</span>
+                        <Badge className="bg-orange-500/10 text-orange-600 border-orange-200 text-xs">Contractor</Badge>
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => { window.location.href = "/contractor-portal"; }}
+                    className="cursor-pointer"
+                  >
+                    <HardHat className="mr-2 h-4 w-4" />
+                    Contractor Portal
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleContractorLogout}
                     className="cursor-pointer text-red-600 focus:text-red-600"
                   >
                     <LogOut className="mr-2 h-4 w-4" />

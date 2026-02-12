@@ -11,6 +11,8 @@ import { useContractorAuth } from "@/contexts/ContractorAuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2,
   Copy,
@@ -26,6 +28,8 @@ import {
   LogOut,
   UserPlus,
   FileCheck,
+  Pencil,
+  Save,
 } from "lucide-react";
 import jsPDF from "jspdf";
 
@@ -74,6 +78,19 @@ export default function ContractorPortal() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [assigningDocId, setAssigningDocId] = useState<string | null>(null);
   const [assignSearchQuery, setAssignSearchQuery] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    companyName: "",
+    phone: "",
+    website: "",
+    description: "",
+    specialties: [] as string[],
+    licenseNumber: "",
+    licensedStates: [] as string[],
+    isInsured: false,
+    isBonded: false,
+  });
 
   useEffect(() => {
     if (!authLoading && !userAuthLoading && !isAuthenticated && !isAdmin) {
@@ -117,6 +134,51 @@ export default function ContractorPortal() {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: typeof profileForm) => {
+      const token = localStorage.getItem('_sessionToken');
+      const res = await fetch("/api/contractors/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { 'X-Session-Token': token } : {}),
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update profile");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/contractors/me"] });
+      setIsEditingProfile(false);
+      toast({ title: "Profile updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update profile", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const startEditing = () => {
+    if (contractor) {
+      setProfileForm({
+        name: contractor.name || "",
+        companyName: contractor.companyName || "",
+        phone: contractor.phone || "",
+        website: contractor.website || "",
+        description: contractor.description || "",
+        specialties: contractor.specialties || [],
+        licenseNumber: contractor.licenseNumber || "",
+        licensedStates: contractor.licensedStates || [],
+        isInsured: contractor.isInsured || false,
+        isBonded: contractor.isBonded || false,
+      });
+      setIsEditingProfile(true);
+    }
+  };
 
   const uploadMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -593,6 +655,187 @@ export default function ContractorPortal() {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Pencil className="h-5 w-5" />
+                  Profile Settings
+                </CardTitle>
+                {!isEditingProfile ? (
+                  <Button variant="outline" size="sm" onClick={startEditing} data-testid="button-edit-profile">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit Profile
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditingProfile(false)} data-testid="button-cancel-edit">
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={() => updateProfileMutation.mutate(profileForm)} disabled={updateProfileMutation.isPending} data-testid="button-save-profile">
+                      {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                      Save
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isEditingProfile ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-name">Contact Name</Label>
+                      <Input
+                        id="edit-name"
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
+                        data-testid="input-edit-name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-company">Company Name</Label>
+                      <Input
+                        id="edit-company"
+                        value={profileForm.companyName}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, companyName: e.target.value }))}
+                        data-testid="input-edit-company"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-phone">Phone</Label>
+                      <Input
+                        id="edit-phone"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                        data-testid="input-edit-phone"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-website">Website</Label>
+                      <Input
+                        id="edit-website"
+                        value={profileForm.website}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, website: e.target.value }))}
+                        data-testid="input-edit-website"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={profileForm.description}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, description: e.target.value }))}
+                      rows={3}
+                      data-testid="input-edit-description"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-specialties">Specialties (comma separated)</Label>
+                      <Input
+                        id="edit-specialties"
+                        value={profileForm.specialties.join(", ")}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, specialties: e.target.value.split(",").map(s => s.trim()).filter(Boolean) }))}
+                        placeholder="Rehabs, New Construction, Renovations"
+                        data-testid="input-edit-specialties"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-license">License Number</Label>
+                      <Input
+                        id="edit-license"
+                        value={profileForm.licenseNumber}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, licenseNumber: e.target.value }))}
+                        data-testid="input-edit-license"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-licensed-states">Licensed States (comma separated)</Label>
+                    <Input
+                      id="edit-licensed-states"
+                      value={profileForm.licensedStates.join(", ")}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, licensedStates: e.target.value.split(",").map(s => s.trim().toUpperCase()).filter(Boolean) }))}
+                      placeholder="GA, FL, AL"
+                      data-testid="input-edit-licensed-states"
+                    />
+                  </div>
+                  <div className="flex gap-6">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="edit-insured"
+                        checked={profileForm.isInsured}
+                        onCheckedChange={(checked) => setProfileForm(prev => ({ ...prev, isInsured: !!checked }))}
+                        data-testid="checkbox-edit-insured"
+                      />
+                      <Label htmlFor="edit-insured">Insured</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="edit-bonded"
+                        checked={profileForm.isBonded}
+                        onCheckedChange={(checked) => setProfileForm(prev => ({ ...prev, isBonded: !!checked }))}
+                        data-testid="checkbox-edit-bonded"
+                      />
+                      <Label htmlFor="edit-bonded">Bonded</Label>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Contact Name</p>
+                    <p className="font-medium">{contractor.name || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Company</p>
+                    <p className="font-medium">{contractor.companyName || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Email</p>
+                    <p className="font-medium">{contractor.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Phone</p>
+                    <p className="font-medium">{contractor.phone || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Website</p>
+                    <p className="font-medium">{contractor.website || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">License Number</p>
+                    <p className="font-medium">{contractor.licenseNumber || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Specialties</p>
+                    <p className="font-medium">{contractor.specialties?.length ? contractor.specialties.join(", ") : "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Licensed States</p>
+                    <p className="font-medium">{contractor.licensedStates?.length ? contractor.licensedStates.join(", ") : "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Insurance / Bonding</p>
+                    <p className="font-medium">
+                      {contractor.isInsured ? "Insured" : "Not insured"}
+                      {" / "}
+                      {contractor.isBonded ? "Bonded" : "Not bonded"}
+                    </p>
+                  </div>
+                  {contractor.description && (
+                    <div className="md:col-span-2">
+                      <p className="text-muted-foreground">Description</p>
+                      <p className="font-medium">{contractor.description}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {contractor.agreementSignedAt && (
             <Card className="mb-8">

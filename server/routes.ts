@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("user-local", (err: any, user: User | false, info: { message: string }) => {
+    passport.authenticate("user-local", async (err: any, user: User | false, info: { message: string }) => {
       if (err) {
         return res.status(500).json({ error: "Authentication failed" });
       }
@@ -147,6 +147,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Please verify your email address before logging in. Check your inbox for the verification link.",
           requiresVerification: true,
         });
+      }
+
+      // Block contractors from signing in via the member login
+      if (user.email) {
+        const [contractorMatch] = await db
+          .select({ id: contractors.id })
+          .from(contractors)
+          .where(sql`LOWER(${contractors.email}) = LOWER(${user.email})`)
+          .limit(1);
+        if (contractorMatch) {
+          return res.status(403).json({
+            error: "Contractor account detected",
+            message: "This account is registered as a contractor. Please use the Contractor login section to sign in.",
+          });
+        }
       }
       
       req.login(user, (err) => {
@@ -6436,6 +6451,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Get contractor me error:', error);
       res.status(500).json({ error: "Failed to fetch contractor data" });
+    }
+  });
+
+  app.patch("/api/contractors/profile", ensureContractorAuthenticated, async (req, res) => {
+    try {
+      const contractor = req.user as any;
+      const updateSchema = z.object({
+        name: z.string().min(1).optional(),
+        companyName: z.string().optional(),
+        phone: z.string().optional(),
+        website: z.string().optional(),
+        description: z.string().optional(),
+        specialties: z.array(z.string()).optional(),
+        licenseNumber: z.string().optional(),
+        licenseNumbers: z.record(z.string()).optional(),
+        licensedStates: z.array(z.string()).optional(),
+        isInsured: z.boolean().optional(),
+        isBonded: z.boolean().optional(),
+      });
+
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid data", details: parsed.error.errors });
+      }
+
+      const updates: Record<string, any> = {};
+      const data = parsed.data;
+      if (data.name !== undefined) updates.name = data.name;
+      if (data.companyName !== undefined) updates.companyName = data.companyName;
+      if (data.phone !== undefined) updates.phone = data.phone;
+      if (data.website !== undefined) updates.website = data.website;
+      if (data.description !== undefined) updates.description = data.description;
+      if (data.specialties !== undefined) updates.specialties = data.specialties;
+      if (data.licenseNumber !== undefined) updates.licenseNumber = data.licenseNumber;
+      if (data.licenseNumbers !== undefined) updates.licenseNumbers = data.licenseNumbers;
+      if (data.licensedStates !== undefined) updates.licensedStates = data.licensedStates;
+      if (data.isInsured !== undefined) updates.isInsured = data.isInsured;
+      if (data.isBonded !== undefined) updates.isBonded = data.isBonded;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "No fields to update" });
+      }
+
+      updates.updatedAt = new Date();
+
+      await db.update(contractors).set(updates).where(eq(contractors.id, contractor.id));
+
+      const [updated] = await db.select().from(contractors).where(eq(contractors.id, contractor.id)).limit(1);
+      res.json({
+        id: updated.id,
+        name: updated.name,
+        companyName: updated.companyName,
+        phone: updated.phone,
+        website: updated.website,
+        description: updated.description,
+        specialties: updated.specialties,
+        licenseNumber: updated.licenseNumber,
+        licenseNumbers: updated.licenseNumbers,
+        licensedStates: updated.licensedStates,
+        isInsured: updated.isInsured,
+        isBonded: updated.isBonded,
+      });
+    } catch (error) {
+      console.error('Update contractor profile error:', error);
+      res.status(500).json({ error: "Failed to update profile" });
     }
   });
 
