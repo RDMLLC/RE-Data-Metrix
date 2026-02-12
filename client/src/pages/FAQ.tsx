@@ -84,7 +84,7 @@ const faqSections: FAQSection[] = [
       },
       {
         question: "Do you offer a free account?",
-        answer: "Yes! Free accounts include 2 automated property lookups per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited property lookups, PDF export, deal saving, deal sharing, and priority support."
+        answer: "Yes! Free accounts include 2 automated deal analyses per month (using property lookups from Zillow or Redfin), unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support."
       },
       {
         question: "Can I cancel my subscription?",

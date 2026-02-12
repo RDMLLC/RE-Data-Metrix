@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Info } from "lucide-react";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -34,6 +34,20 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
   const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
+
+  const { data: usageData, isLoading: usageLoading, isError: usageError } = useQuery<{
+    isSubscriber: boolean;
+    remainingLookups: number;
+    propertyLookupCount: number;
+  }>({
+    queryKey: ['/api/user/usage'],
+    enabled: isAuthenticated && !isSubscriber,
+    retry: 2,
+  });
+
+  const usageReady = isSubscriber || (!usageLoading && !usageError && usageData != null);
+  const remainingLookups = isSubscriber ? -1 : (usageData?.remainingLookups ?? null);
+  const lookupQuotaExhausted = !isSubscriber && remainingLookups !== null && remainingLookups <= 0;
 
   // Check if form already has property data (e.g., when navigating back) and restore state
   useEffect(() => {
@@ -162,6 +176,8 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       onPropertyDataLoaded(data);
       setIsLookupComplete(true);
       
+      queryClient.invalidateQueries({ queryKey: ['/api/user/usage'] });
+      
       toast({
         title: "Property Found",
         description: "Property details have been loaded successfully.",
@@ -282,27 +298,21 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
       {!manualEntryPreference && (
         <>
-          {/* For non-subscribers: Show "Try it for free" first, then premium lookup */}
-          {!isSubscriber && (
+          {/* For unauthenticated users: Show signup prompt */}
+          {!isAuthenticated && (
             <>
               <div>
                 <h2 className="text-xl font-semibold mb-2">Get Started</h2>
                 <p className="text-muted-foreground mb-4">
-                  Enter property details manually to analyze your deal and compare financing options.
+                  Create a free account to analyze deals with 2 automated deal analyses per month, plus unlimited manual entry.
                 </p>
                 <div className="flex flex-wrap gap-3 items-center">
                   <Button
                     type="button"
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        setLocation("/pricing?returnTo=/deal-analysis");
-                      } else {
-                        setManualEntryPreference(true);
-                      }
-                    }}
+                    onClick={() => setLocation("/pricing?returnTo=/deal-analysis")}
                     data-testid="button-switch-manual-entry"
                   >
-                    Try it for Free
+                    Get Started Free
                   </Button>
                   <button
                     type="button"
@@ -324,14 +334,14 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   <div className="flex-1">
                     <h3 className="font-semibold flex items-center gap-2 mb-1">
                       <Sparkles className="h-4 w-4 text-amber-500" />
-                      Premium Feature: Auto Property Lookup & Lender Referral
+                      Auto Property Lookup & Lender Referral
                     </h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Members can automatically fetch property details, tax records, and valuations from Zillow or Redfin URLs - saving time and ensuring accuracy.
+                      Free accounts get 2 automated deal analyses per month. Subscribers get unlimited analyses plus deal saving, PDF export, and more.
                     </p>
-                    <Link href="/checkout">
+                    <Link href="/pricing">
                       <Button size="sm" data-testid="button-upgrade-lookup">
-                        Upgrade to Unlock
+                        View Plans
                       </Button>
                     </Link>
                   </div>
@@ -340,14 +350,37 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             </>
           )}
 
-          {/* For subscribers: Show property lookup interface */}
-          {isSubscriber && (
+          {/* For authenticated users (free or subscriber): Show property lookup interface */}
+          {isAuthenticated && (
             <>
               <div>
                 <h2 className="text-xl font-semibold mb-2">Property Lookup</h2>
                 <p className="text-muted-foreground">
                   Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
                 </p>
+
+                {!isSubscriber && (
+                  <div className="mt-3 flex items-center gap-2 text-sm" data-testid="text-remaining-lookups">
+                    <Info className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    {usageLoading ? (
+                      <span className="text-muted-foreground">Checking available lookups...</span>
+                    ) : usageError ? (
+                      <span className="text-muted-foreground">
+                        Unable to check lookup availability. Try refreshing the page or use manual entry below.
+                      </span>
+                    ) : lookupQuotaExhausted ? (
+                      <span className="text-muted-foreground">
+                        You've used your 2 free lookups this month. <Link href="/pricing" className="text-primary underline underline-offset-4">Upgrade for unlimited</Link> or use manual entry below.
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        You have <span className="font-semibold text-foreground">{remainingLookups}</span> free automated {remainingLookups === 1 ? 'lookup' : 'lookups'} remaining this month.{" "}
+                        <Link href="/pricing" className="text-primary underline underline-offset-4">Upgrade for unlimited</Link>
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <Alert className="mt-4">
                   <ExternalLink className="h-4 w-4" />
                   <AlertDescription>
@@ -397,7 +430,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                     <Button
                       type="button"
                       onClick={handleLookup}
-                      disabled={propertyLookupMutation.isPending}
+                      disabled={propertyLookupMutation.isPending || lookupQuotaExhausted || (!isSubscriber && !usageReady)}
                       data-testid="button-lookup-property"
                     >
                       {propertyLookupMutation.isPending ? (

@@ -125,7 +125,7 @@ const OrderSummary = memo(function OrderSummary({
                 <RadioGroupItem value="free" id="plan-free" data-testid="radio-plan-free" />
                 <Label htmlFor="plan-free" className="cursor-pointer">
                   <div className="font-medium">Free</div>
-                  <div className="text-sm text-muted-foreground">2 property lookups/month</div>
+                  <div className="text-sm text-muted-foreground">2 automated deal analyses/month</div>
                 </Label>
               </div>
               <span className="font-semibold">$0</span>
@@ -253,7 +253,7 @@ const OrderSummary = memo(function OrderSummary({
               <span className="text-success">$0.00</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Free account with 2 automated property lookups per month. Upgrade anytime.
+              Free account with 2 automated deal analyses per month. Upgrade anytime.
             </p>
           </>
         )}

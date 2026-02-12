@@ -73,7 +73,7 @@ export default function Upgrade() {
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    2 property lookups/month
+                    2 automated deal analyses/month
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />

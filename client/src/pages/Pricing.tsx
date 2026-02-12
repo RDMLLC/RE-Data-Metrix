@@ -13,9 +13,9 @@ const featureComparison = [
   { feature: "Wholesale Calculator", free: "2 per month", paid: "Unlimited" },
   { feature: "ARV Calculations", free: "2 per month", paid: "Unlimited" },
   { feature: "Comp Reports", free: "2 per month", paid: "Unlimited" },
-  { feature: "Deal Analysis Wizard", free: "Manual entry", paid: "Full automation" },
+  { feature: "Deal Analysis Wizard", free: "2 automated + unlimited manual", paid: "Unlimited automation" },
   { feature: "Lender Loan Comparisons", free: "First 2 lookups only", paid: "Unlimited" },
-  { feature: "Rental/DSCR Analysis", free: "Manual entry", paid: "Full access" },
+  { feature: "Rental/DSCR Analysis", free: "2 automated + unlimited manual", paid: "Unlimited automation" },
   { feature: "Lender Search Tool", free: "Yes", paid: "Yes" },
   { feature: "State-Specific Calculations", free: "No", paid: "Yes" },
   { feature: "Save Deals", free: "No", paid: "Unlimited" },
@@ -135,7 +135,7 @@ export default function Pricing() {
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    2 property lookups/month
+                    2 automated deal analyses/month
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
@@ -148,6 +148,10 @@ export default function Pricing() {
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
                     2 comp reports/month
+                  </li>
+                  <li className="flex items-center gap-2 text-sm text-foreground">
+                    <Check className="h-4 w-4 text-success" />
+                    2 automated deal analyses/month
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />

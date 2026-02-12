@@ -178,7 +178,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left">
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
-                <span>2 automated property lookups per month</span>
+                <span>2 automated deal analyses per month</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-accent flex-shrink-0" />
