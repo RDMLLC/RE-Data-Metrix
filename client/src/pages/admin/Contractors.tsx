@@ -324,8 +324,8 @@ export default function Contractors() {
     inviteContractorMutation.mutate(inviteForm);
   };
 
-  const openInviteDialog = () => {
-    setInviteForm({ email: '', companyName: '' });
+  const openInviteDialog = (prefillEmail?: string, prefillCompany?: string) => {
+    setInviteForm({ email: prefillEmail || '', companyName: prefillCompany || '' });
     setInviteResult(null);
     setShowInviteDialog(true);
   };
@@ -553,6 +553,17 @@ export default function Contractors() {
                         </div>
                         {!isAuditor && (
                           <div className="flex gap-2">
+                            {contractor.email && contractor.inviteAccepted !== true && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => openInviteDialog(contractor.email || '', contractor.companyName || '')}
+                                data-testid={`button-invite-${contractor.id}`}
+                              >
+                                <Send className="h-4 w-4 mr-1" />
+                                {contractor.inviteAccepted === false ? "Resend" : "Invite"}
+                              </Button>
+                            )}
                             <Button variant="outline" size="sm" onClick={() => openEditContractor(contractor)} data-testid={`button-edit-${contractor.id}`}>
                               <Edit2 className="h-4 w-4" />
                             </Button>
