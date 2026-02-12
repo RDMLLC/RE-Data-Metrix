@@ -236,6 +236,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .from(userProfiles)
       .where(eq(userProfiles.userId, user.id))
       .limit(1);
+
+    let isContractor = false;
+    if (user.email) {
+      const [contractorMatch] = await db
+        .select({ id: contractors.id })
+        .from(contractors)
+        .where(sql`LOWER(${contractors.email}) = LOWER(${user.email})`)
+        .limit(1);
+      isContractor = !!contractorMatch;
+    }
     
     res.json({
       id: user.id,
@@ -251,6 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       termsAcceptedAt: user.termsAcceptedAt,
       termsVersion: user.termsVersion,
       privacyVersion: user.privacyVersion,
+      isContractor,
       profile: userProfile ? {
         fullName: userProfile.fullName || "",
         creditScoreRange: userProfile.creditScoreRange || "",

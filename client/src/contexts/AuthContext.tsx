@@ -15,6 +15,7 @@ interface User {
   termsAcceptedAt?: string | null;
   termsVersion?: string | null;
   privacyVersion?: string | null;
+  isContractor?: boolean;
   profile?: {
     fullName: string;
     creditScoreRange?: string;

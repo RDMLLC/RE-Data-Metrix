@@ -326,6 +326,16 @@ export default function Navigation() {
                       <CreditCard className="mr-2 h-4 w-4" />
                       Manage Subscription
                     </DropdownMenuItem>
+                    {user?.isContractor && (
+                      <DropdownMenuItem 
+                        onClick={() => { window.location.href = "/contractor-portal"; }}
+                        className="cursor-pointer"
+                        data-testid="menu-item-contractor-portal"
+                      >
+                        <HardHat className="mr-2 h-4 w-4" />
+                        Contractor Portal
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       onClick={handleLogout}
@@ -539,6 +549,15 @@ export default function Navigation() {
                     <CreditCard className="mr-2 h-4 w-4" />
                     Manage Subscription
                   </DropdownMenuItem>
+                  {user?.isContractor && (
+                    <DropdownMenuItem 
+                      onClick={() => { window.location.href = "/contractor-portal"; }}
+                      className="cursor-pointer"
+                    >
+                      <HardHat className="mr-2 h-4 w-4" />
+                      Contractor Portal
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={handleLogout}

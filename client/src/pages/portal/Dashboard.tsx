@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Copy,
   Gift,
-  Search
+  Search,
+  HardHat
 } from "lucide-react";
 
 interface MemberStats {
@@ -210,6 +211,29 @@ export default function MemberDashboard() {
                 <CardDescription>Lenders you've bookmarked</CardDescription>
               </CardContent>
             </Card>
+
+            {/* Contractor Portal - shown if user is also a contractor */}
+            {user?.isContractor && (
+              <Card 
+                className="hover-elevate cursor-pointer"
+                onClick={() => { window.location.href = "/contractor-portal"; }}
+                data-testid="card-contractor-portal"
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                      <HardHat className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <CardTitle className="text-base">Contractor Portal</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Access your contractor dashboard, referrals, and documents
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Refer a Friend - Coming Soon */}
             <Card 
