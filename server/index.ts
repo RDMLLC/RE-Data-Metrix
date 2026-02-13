@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import compression from "compression";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -15,6 +16,8 @@ import { closingRemindersService } from './services/closingReminders.service';
 import { webinarReminderService } from './services/webinar-reminder.service';
 
 const app = express();
+
+app.use(compression());
 
 // Serve static assets (videos, images) from attached_assets folder
 app.use('/static-assets', express.static(path.resolve(process.cwd(), 'attached_assets')));
