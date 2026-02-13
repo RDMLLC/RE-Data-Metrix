@@ -6768,9 +6768,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }).from(users).where(inArray(users.id, assignedUserIds));
       }
 
+      const referredSignups = await db.select({ count: count() }).from(users)
+        .where(eq(users.referredBy, `contractor:${contractor.id}`));
+
       res.json({
         code: contractorData.generatedReferralCode || null,
         clickCount: contractorData.referralClickCount || 0,
+        signupCount: Number(referredSignups[0]?.count || 0),
         documentsCount: docs.length,
         assignedUsersCount: assignedUsers.length,
         assignedUsers,
@@ -6913,7 +6917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const protocol = req.protocol || "https";
       const host = req.get("host") || "localhost:5000";
       const baseUrl = `${protocol}://${host}`;
-      const destination = contractor.referralLink || `${baseUrl}/?ref=contractor&code=${code}`;
+      const destination = contractor.referralLink || `${baseUrl}/register?ref=contractor&code=${code}`;
       res.redirect(destination);
     } catch (error) {
       console.error('Contractor referral redirect error:', error);

@@ -21,7 +21,7 @@ class EmailService {
 
   constructor() {
     this.config = {
-      host: process.env.SMTP_HOST || 'smtppro.zoho.com',
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
       auth: {
@@ -56,6 +56,9 @@ class EmailService {
         port: this.config.port,
         secure: this.config.secure,
         auth: this.config.auth,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         tls: {
           rejectUnauthorized: true,
         },

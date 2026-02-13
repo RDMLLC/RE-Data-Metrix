@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { z } from "zod";
 import { db } from "../db";
-import { users, userProfiles, compInvites } from "@shared/schema";
+import { users, userProfiles, compInvites, contractors } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { hashPassword, comparePassword } from "../auth";
 import { storage } from "../storage";
@@ -174,6 +174,7 @@ class AuthService {
       const verificationExpiry = this.getTokenExpiry(24);
 
       let referredByUserId: string | null = null;
+      let referredByContractorId: string | null = null;
       let subscriptionStatus: SubscriptionStatus = 'free';
       let compInviteToAccept: { id: string; email: string; status: string; expiresAt: Date } | undefined;
       let auditorInviteToAccept: { id: string; email: string; companyName: string | null; status: string; expiresAt: Date } | undefined;
@@ -216,6 +217,17 @@ class AuthService {
         if (referrer) {
           referredByUserId = referrer.id;
           subscriptionStatus = 'referral_trial';
+        } else {
+          const [contractor] = await db
+            .select()
+            .from(contractors)
+            .where(eq(contractors.generatedReferralCode, validatedData.referralCode.toUpperCase()))
+            .limit(1);
+
+          if (contractor) {
+            referredByContractorId = contractor.id;
+            console.log(`[AuthService] Contractor referral matched: ${contractor.name} (${contractor.id})`);
+          }
         }
       }
 
@@ -230,7 +242,7 @@ class AuthService {
           role: userRole,
           subscriptionStatus,
           referralCode: userReferralCode,
-          referredBy: referredByUserId,
+          referredBy: referredByUserId || (referredByContractorId ? `contractor:${referredByContractorId}` : null),
           isEmailVerified: isAutoVerified,
           verificationToken: isAutoVerified ? null : verificationToken,
           verificationExpiry: isAutoVerified ? null : verificationExpiry,

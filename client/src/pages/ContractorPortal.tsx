@@ -48,6 +48,7 @@ interface DocumentItem {
 interface ReferralStats {
   code: string | null;
   clickCount: number;
+  signupCount: number;
   documentsCount: number;
   assignedUsersCount: number;
   assignedUsers: Array<{ id: string; email: string; username: string }>;
@@ -617,7 +618,7 @@ export default function ContractorPortal() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
@@ -628,6 +629,21 @@ export default function ContractorPortal() {
                     <p className="text-sm text-muted-foreground">Referral Clicks</p>
                     <p className="text-2xl font-bold" data-testid="text-referral-clicks">
                       {statsLoading ? "..." : (referralStats?.clickCount || 0)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-accent/10">
+                    <UserPlus className="h-5 w-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Referred Signups</p>
+                    <p className="text-2xl font-bold" data-testid="text-referral-signups">
+                      {statsLoading ? "..." : (referralStats?.signupCount || 0)}
                     </p>
                   </div>
                 </div>
@@ -931,6 +947,8 @@ export default function ContractorPortal() {
                     )}
                     <p className="text-sm text-muted-foreground">
                       Total clicks: <span className="font-semibold">{referralStats.clickCount}</span>
+                      {" | "}
+                      Signups: <span className="font-semibold">{referralStats.signupCount || 0}</span>
                     </p>
                   </div>
                 ) : statsLoading ? (

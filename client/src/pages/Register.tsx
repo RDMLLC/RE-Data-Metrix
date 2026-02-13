@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, ArrowRight, Loader2, FileText, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, ArrowRight, Loader2, FileText, Eye, EyeOff, UserCheck } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -54,6 +54,7 @@ export default function Register() {
   const [compEmail, setCompEmail] = useState<string | null>(null);
   const [auditorCode, setAuditorCode] = useState<string>("");
   const [auditorEmail, setAuditorEmail] = useState<string | null>(null);
+  const [contractorRefCode, setContractorRefCode] = useState<string>("");
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -75,11 +76,16 @@ export default function Register() {
     const auditor = params.get("auditor");
     const returnToParam = params.get("returnTo");
     const planParam = params.get("plan");
+    const refType = params.get("ref");
+    const refCode = params.get("code");
     
     if (auditor) {
       validateAuditorCode(auditor.toUpperCase());
     } else if (comp) {
       validateCompCode(comp.toUpperCase());
+    }
+    if (refType === "contractor" && refCode) {
+      setContractorRefCode(refCode.toUpperCase());
     }
     if (returnToParam && isValidReturnTo(returnToParam)) {
       setReturnTo(returnToParam);
@@ -147,6 +153,7 @@ export default function Register() {
         ...registerData,
         compCode: compCode || undefined,
         auditorCode: auditorCode || undefined,
+        referralCode: contractorRefCode || undefined,
         pendingPlan: selectedPlan || undefined,
       };
       const result = await register(finalData);
@@ -225,6 +232,12 @@ export default function Register() {
                   <CardDescription>
                     Get started with free access to deal analysis tools
                   </CardDescription>
+                  {contractorRefCode && (
+                    <div className="flex items-center gap-2 mt-2 p-3 rounded-md bg-accent/10 border border-accent/20 text-sm text-muted-foreground">
+                      <UserCheck className="h-4 w-4 text-accent flex-shrink-0" />
+                      <span>You were referred by a trusted contractor partner</span>
+                    </div>
+                  )}
                 </CardHeader>
                 
                 <Form {...form}>
