@@ -291,7 +291,7 @@ export async function ensureContractorAuthenticated(
   }
   
   // Member session with linked contractor account (same email)
-  if (!user.userType && user.email) {
+  if ((user.userType === 'user' || !user.userType) && user.email) {
     const [contractorMatch] = await db
       .select()
       .from(contractors)
