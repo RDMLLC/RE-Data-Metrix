@@ -56,7 +56,7 @@ export class WebhookHandlers {
                   const firstName = nameParts[0] || '';
                   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
-                  outboundWebhookService.triggerWebhooks('subscription_completed', {
+                  const webhookPayload = {
                     userId: user.id,
                     email: user.email,
                     username: user.username,
@@ -69,7 +69,17 @@ export class WebhookHandlers {
                     stripeCustomerId: user.stripeCustomerId || '',
                     stripeSubscriptionId: user.stripeSubscriptionId || '',
                     createdAt: new Date().toISOString()
-                  }).catch(err => console.error('[Webhook] subscription_completed trigger error:', err));
+                  };
+
+                  outboundWebhookService.triggerWebhooks('subscription_completed', webhookPayload)
+                    .catch(err => console.error('[Webhook] subscription_completed trigger error:', err));
+
+                  if (!result.alreadyProcessed) {
+                    outboundWebhookService.triggerWebhooks('user_signup', {
+                      ...webhookPayload,
+                      isComped: false,
+                    }).catch(err => console.error('[Webhook] user_signup trigger error (paid signup):', err));
+                  }
                 }
               } catch (err) {
                 console.error('[Webhook] Error fetching user for subscription webhook:', err);

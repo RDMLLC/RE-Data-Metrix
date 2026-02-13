@@ -61,7 +61,6 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
   if (existingUser.length > 0) {
     const user = existingUser[0];
     if (!user.stripeSubscriptionId || user.stripeSubscriptionId !== subscription.id) {
-      // Determine plan type from subscription interval
       const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
       const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
       
@@ -105,6 +104,7 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
       })
       .where(eq(users.id, user.id));
     console.log(`[CHECKOUT] Linked subscription to existing user ${user.email} (plan: ${subscriptionPlan})`);
+
     return {
       success: true,
       message: 'Subscription linked to existing account. Please log in.',

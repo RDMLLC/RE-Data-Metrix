@@ -1968,16 +1968,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subscription = session.subscription as any;
       
       if (subscription && subscription.status === 'active') {
-        // Update user subscription status
+        const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+        const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
+
         await db
           .update(users)
           .set({ 
             subscriptionStatus: 'active',
             stripeSubscriptionId: subscription.id,
+            subscriptionPlan,
           })
           .where(eq(users.id, user.id));
 
-        console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id}`);
+        console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id} (plan: ${subscriptionPlan})`);
 
         res.json({
           success: true,
