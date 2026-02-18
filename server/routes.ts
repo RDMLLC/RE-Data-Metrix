@@ -1530,9 +1530,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[FREE-CHECKOUT] User ${newUser.id} created with 100% discount code ${normalizedCode}`);
       }
 
+      // Trigger webhooks for discount code signup (fire and forget) - do this before any early returns
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstNamePart = nameParts[0] || '';
+      const lastNamePart = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+      const discountWebhookPayload = {
+        userId: newUser.id,
+        email: newUser.email,
+        username: newUser.username,
+        firstName: firstNamePart,
+        lastName: lastNamePart,
+        fullName: fullName.trim(),
+        phone: '',
+        subscriptionType: selectedPlan,
+        subscriptionStatus: 'active',
+        stripeCustomerId: '',
+        stripeSubscriptionId: '',
+        isComped: false,
+        createdAt: new Date().toISOString()
+      };
+
+      outboundWebhookService.triggerWebhooks('user_signup', discountWebhookPayload)
+        .catch(err => console.error('[Webhook] user_signup trigger error (discount signup):', err));
+
+      outboundWebhookService.triggerWebhooks('subscription_completed', discountWebhookPayload)
+        .catch(err => console.error('[Webhook] subscription_completed trigger error (discount signup):', err));
+
       // Check if email verification is required
       if (process.env.REQUIRE_EMAIL_VERIFICATION === 'true') {
-        // Generate verification token
         const verificationToken = crypto.randomBytes(32).toString('base64url');
         const verificationExpiry = new Date();
         verificationExpiry.setHours(verificationExpiry.getHours() + 24);
@@ -1542,7 +1568,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ verificationToken, verificationExpiry })
           .where(eq(users.id, newUser.id));
 
-        // Send verification email
         await emailService.sendVerificationEmail(email, username, verificationToken);
 
         return res.json({
@@ -1598,6 +1623,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await completeCheckoutSession(session_id);
 
       if (result.success) {
+        // Trigger webhooks for paid signup (fire and forget) if this is a new user (not already processed)
+        if (result.userId && !result.alreadyProcessed) {
+          try {
+            const [completedUser] = await db.select().from(users).where(eq(users.id, result.userId)).limit(1);
+            if (completedUser) {
+              const [completedProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, completedUser.id)).limit(1);
+              const completedFullName = (completedProfile?.fullName || '').trim();
+              const completedNameParts = completedFullName.split(/\s+/);
+              const completedFirstName = completedNameParts[0] || '';
+              const completedLastName = completedNameParts.length > 1 ? completedNameParts.slice(1).join(' ') : '';
+
+              const completedWebhookPayload = {
+                userId: completedUser.id,
+                email: completedUser.email,
+                username: completedUser.username,
+                firstName: completedFirstName,
+                lastName: completedLastName,
+                fullName: completedFullName,
+                phone: completedProfile?.phone || '',
+                subscriptionType: completedUser.subscriptionPlan || 'monthly',
+                subscriptionStatus: completedUser.subscriptionStatus || 'active',
+                stripeCustomerId: completedUser.stripeCustomerId || '',
+                stripeSubscriptionId: completedUser.stripeSubscriptionId || '',
+                isComped: false,
+                createdAt: new Date().toISOString()
+              };
+
+              outboundWebhookService.triggerWebhooks('user_signup', completedWebhookPayload)
+                .catch(err => console.error('[Webhook] user_signup trigger error (paid signup complete):', err));
+
+              outboundWebhookService.triggerWebhooks('subscription_completed', completedWebhookPayload)
+                .catch(err => console.error('[Webhook] subscription_completed trigger error (paid signup complete):', err));
+            }
+          } catch (webhookErr) {
+            console.error('[Webhook] Error preparing paid signup webhook:', webhookErr);
+          }
+        }
+
         res.json(result);
       } else {
         res.status(400).json({ error: result.error || result.message });
@@ -1981,6 +2044,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(users.id, user.id));
 
         console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id} (plan: ${subscriptionPlan})`);
+
+        // Trigger subscription_completed webhook for upgrade flow
+        try {
+          const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+          const upgradeName = (profile?.fullName || user.username || '').trim();
+          const upgradeNameParts = upgradeName.split(/\s+/);
+          const upgradeFirstName = upgradeNameParts[0] || '';
+          const upgradeLastName = upgradeNameParts.length > 1 ? upgradeNameParts.slice(1).join(' ') : '';
+
+          outboundWebhookService.triggerWebhooks('subscription_completed', {
+            userId: user.id,
+            email: user.email,
+            username: user.username,
+            firstName: upgradeFirstName,
+            lastName: upgradeLastName,
+            fullName: upgradeName,
+            phone: profile?.phone || '',
+            subscriptionType: subscriptionPlan,
+            subscriptionStatus: 'active',
+            stripeCustomerId: user.stripeCustomerId || '',
+            stripeSubscriptionId: subscription.id,
+            createdAt: new Date().toISOString()
+          }).catch(err => console.error('[Webhook] subscription_completed trigger error (upgrade):', err));
+        } catch (webhookErr) {
+          console.error('[Webhook] Error preparing upgrade webhook:', webhookErr);
+        }
 
         res.json({
           success: true,

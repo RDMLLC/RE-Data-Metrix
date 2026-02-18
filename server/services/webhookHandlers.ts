@@ -71,14 +71,16 @@ export class WebhookHandlers {
                     createdAt: new Date().toISOString()
                   };
 
-                  outboundWebhookService.triggerWebhooks('subscription_completed', webhookPayload)
-                    .catch(err => console.error('[Webhook] subscription_completed trigger error:', err));
-
                   if (!result.alreadyProcessed) {
+                    outboundWebhookService.triggerWebhooks('subscription_completed', webhookPayload)
+                      .catch(err => console.error('[Webhook] subscription_completed trigger error:', err));
+
                     outboundWebhookService.triggerWebhooks('user_signup', {
                       ...webhookPayload,
                       isComped: false,
                     }).catch(err => console.error('[Webhook] user_signup trigger error (paid signup):', err));
+                  } else {
+                    console.log(`[WEBHOOK] Skipping webhooks for session ${session.id} - already processed by frontend or upgrade flow`);
                   }
                 }
               } catch (err) {
