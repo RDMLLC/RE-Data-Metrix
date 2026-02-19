@@ -1210,7 +1210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const plans = prices.data
-        .filter(price => price.recurring && (price.metadata?.plan_type || (price.product as any)?.metadata?.plan_type))
+        .filter(price => price.recurring && (price.product as any)?.active !== false && (price.metadata?.plan_type || (price.product as any)?.metadata?.plan_type))
         .map(price => ({
           id: price.id,
           productId: (price.product as any).id,
@@ -1372,6 +1372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Checkout start error:', error);
       if (error.name === 'ZodError') {
         return res.status(400).json({ error: "Invalid registration data", details: error.errors });
+      }
+      if (error.type === 'StripeInvalidRequestError' && error.message?.includes('product is not active')) {
+        return res.status(400).json({ error: "This subscription plan is temporarily unavailable. Please try again later or contact support." });
       }
       res.status(500).json({ error: "Failed to start checkout" });
     }
