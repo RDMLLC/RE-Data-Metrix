@@ -1272,6 +1272,12 @@ class EmailService {
             
             <p style="color: #6b7280; font-size: 14px;">Once your deal closes, don't forget to update your deal status in RE Data Metrix to track your success!</p>
             
+            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 24px 0;">
+              <p style="margin: 0 0 8px 0; font-weight: 600; color: #0369a1; font-size: 15px;">Coming Soon: Custom Email Reminders</p>
+              <p style="margin: 0 0 12px 0; color: #475569; font-size: 14px;">Want to send your own reminders to your title company, agent, and partners with your own talking points and timeline? We're building it — and your input shapes what we build.</p>
+              <a href="${baseUrl}/feedback?feature=custom_email_workflow" style="display: inline-block; padding: 8px 16px; background-color: #0369a1; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 13px;">Share Your Input</a>
+            </div>
+
             <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Team</p>
           </div>
           <div class="footer">

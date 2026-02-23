@@ -15,8 +15,11 @@ import {
   Copy,
   Gift,
   Search,
-  HardHat
+  HardHat,
+  Lightbulb,
+  ArrowRight
 } from "lucide-react";
+import { Link } from "wouter";
 
 interface MemberStats {
   totalDeals: number;
@@ -276,6 +279,28 @@ export default function MemberDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="mt-6 border-accent/30 bg-accent/5" data-testid="card-feature-feedback-banner">
+            <CardContent className="pt-5 pb-5">
+              <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row">
+                <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center shrink-0">
+                  <Lightbulb className="h-5 w-5 text-accent" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">Coming Soon: Custom Email Reminders</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Create your own deal reminders with custom timing, talking points, and send them to your entire team. Help us build it right!
+                  </p>
+                </div>
+                <Link href="/feedback?feature=custom_email_workflow" data-testid="link-give-feedback">
+                  <Button variant="outline" size="sm" data-testid="button-give-feedback">
+                    Share Your Input
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

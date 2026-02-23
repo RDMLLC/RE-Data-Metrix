@@ -1351,6 +1351,24 @@ export const insertContractorDocumentSchema = createInsertSchema(contractorDocum
 export type InsertContractorDocument = z.infer<typeof insertContractorDocumentSchema>;
 export type ContractorDocument = typeof contractorDocuments.$inferSelect;
 
+export const featureFeedback = pgTable("feature_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  featureName: text("feature_name").notNull(),
+  priorities: text("priorities").array(),
+  comments: text("comments"),
+  email: text("email"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFeatureFeedbackSchema = createInsertSchema(featureFeedback).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertFeatureFeedback = z.infer<typeof insertFeatureFeedbackSchema>;
+export type FeatureFeedback = typeof featureFeedback.$inferSelect;
+
 export const sentReminders = pgTable("sent_reminders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   dealId: varchar("deal_id").notNull(),

@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
 import { db } from "./db";
-import { eq, inArray, desc, and, sql, count, gt, or, ne } from "drizzle-orm";
+import { eq, inArray, desc, asc, and, sql, count, gt, or, ne } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
 import passport, { ensureAdmin, ensureAdminOrDeveloper, ensureAdminReadAccess, ensureLenderAuthenticated, ensureLenderOrAdmin, ensureAuthenticated, ensureContractorAuthenticated, requireRole } from "./auth";
 import { emailService } from "./services/email.service";
@@ -10347,6 +10347,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching broadcast preview:", error);
       res.status(500).json({ error: "Failed to fetch preview" });
+    }
+  });
+
+  // Feature Feedback endpoints
+  app.post("/api/feature-feedback", async (req, res) => {
+    try {
+      const { featureName, priorities, comments, email } = req.body;
+
+      if (!featureName) {
+        return res.status(400).json({ error: "Feature name is required" });
+      }
+
+      const user = req.user as User | undefined;
+
+      const [feedback] = await db
+        .insert(featureFeedback)
+        .values({
+          userId: user?.id || null,
+          featureName,
+          priorities: priorities || [],
+          comments: comments || null,
+          email: email || user?.email || null,
+        })
+        .returning();
+
+      console.log(`[FEEDBACK] New feedback for "${featureName}" from ${user?.email || email || 'anonymous'}`);
+      res.json({ success: true, id: feedback.id });
+    } catch (error: any) {
+      console.error("Error submitting feedback:", error);
+      res.status(500).json({ error: "Failed to submit feedback" });
+    }
+  });
+
+  app.get("/api/admin/feature-feedback", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const { feature, sort } = req.query;
+      
+      let query = db
+        .select({
+          id: featureFeedback.id,
+          userId: featureFeedback.userId,
+          featureName: featureFeedback.featureName,
+          priorities: featureFeedback.priorities,
+          comments: featureFeedback.comments,
+          email: featureFeedback.email,
+          createdAt: featureFeedback.createdAt,
+          username: users.username,
+          userEmail: users.email,
+        })
+        .from(featureFeedback)
+        .leftJoin(users, eq(featureFeedback.userId, users.id));
+
+      if (feature && typeof feature === 'string') {
+        query = query.where(eq(featureFeedback.featureName, feature)) as any;
+      }
+
+      const sortOrder = sort === 'oldest' ? asc(featureFeedback.createdAt) : desc(featureFeedback.createdAt);
+      const results = await (query as any).orderBy(sortOrder);
+
+      res.json({ feedback: results });
+    } catch (error: any) {
+      console.error("Error fetching feedback:", error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  app.delete("/api/admin/feature-feedback/:id", ensureAdminReadAccess, async (req, res) => {
+    try {
+      await db
+        .delete(featureFeedback)
+        .where(eq(featureFeedback.id, req.params.id));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting feedback:", error);
+      res.status(500).json({ error: "Failed to delete feedback" });
     }
   });
 

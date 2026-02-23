@@ -100,6 +100,8 @@ const WholesaleCalculator = lazy(() => import("@/pages/WholesaleCalculator"));
 const Webinar = lazy(() => import("@/pages/Webinar"));
 const WebinarRsvpThankYou = lazy(() => import("@/pages/WebinarRsvpThankYou"));
 const BetaSignup = lazy(() => import("@/pages/BetaSignup"));
+const FeatureFeedback = lazy(() => import("@/pages/FeatureFeedback"));
+const AdminFeatureFeedback = lazy(() => import("@/pages/admin/FeatureFeedback"));
 
 function PageLoader() {
   return (
@@ -195,6 +197,7 @@ function Router() {
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/complete" component={CheckoutComplete} />
         <Route path="/beta-signup" component={BetaSignup} />
+        <Route path="/feedback" component={FeatureFeedback} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />
         <Route path="/disclaimer" component={Disclaimer} />
@@ -239,6 +242,7 @@ function Router() {
         <Route path="/admin/calculations" component={AdminCalculationsReference} />
         <Route path="/admin/demo-links" component={AdminDemoLinks} />
         <Route path="/admin/developer-integrations" component={DeveloperIntegrations} />
+        <Route path="/admin/feature-feedback" component={AdminFeatureFeedback} />
         <Route path="/admin/lender-invite" component={LenderInvite} />
         <Route path="/demo/:token" component={DemoEntry} />
         <Route component={NotFound} />
