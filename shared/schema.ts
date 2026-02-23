@@ -1376,3 +1376,10 @@ export const sentReminders = pgTable("sent_reminders", {
   sentDate: text("sent_date").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const sentSignupFollowups = pgTable("sent_signup_followups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  emailType: text("email_type").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
