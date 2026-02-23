@@ -27,6 +27,16 @@ A Zoho Meeting integration enables automated webinar attendance syncing. Admins 
 
 A Marketing Pixel Management System enables admins to configure tracking pixels for advertising platforms (Meta, LinkedIn, Google Ads, TikTok, Twitter) via the `/admin/marketing-pixels` page. The `MarketingPixelLoader` component automatically injects enabled pixel scripts site-wide. The `useMarketingEvents` hook provides tracking functions for key conversion events: `trackLead` (webinar registration), `trackInitiateCheckout`, `trackCompleteRegistration` (account creation), and `trackSubscribe` (subscription completion).
 
+## Future Features (Backlog)
+
+### Custom User Email Workflow
+Allow users to create custom follow-up reminder emails tied to their deals. Key capabilities:
+- **Timing**: User selects days before closing (e.g., 7 days, 4 days, 1 day before)
+- **Content**: User provides talking points/reminders; system generates a professional branded email from their input (e.g., "remind group to schedule final walkthrough and confirm funding")
+- **Custom Recipients**: Add recipients with role labels — closing attorney/title company, real estate agent, contractor, partner, etc.
+- **Read Receipts**: Embed tracking pixel in sent emails; display read/unread status per recipient in the UI
+- **Implementation Notes**: Extends existing closing reminder scheduler and Zoho SMTP email infrastructure. New tables: `custom_deal_reminders` (deal ID, days before closing, talking points, subject, status, sent_at) and `custom_reminder_recipients` (reminder ID, email, name, role label, read status, read_at). Tracking pixel endpoint records opens. Minimal cost impact — uses existing SMTP service and lightweight tracking requests.
+
 ## External Dependencies
 - **Database Service**: Neon Serverless PostgreSQL
 - **UI Component Libraries**: Radix UI, shadcn/ui, Lucide React
