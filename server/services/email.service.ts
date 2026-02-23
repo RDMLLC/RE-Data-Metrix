@@ -2174,6 +2174,100 @@ END:VCALENDAR`;
       html: htmlContent,
     });
   }
+
+  async sendTwoWeekFollowupEmail(to: string, username: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const feedbackUrl = `${baseUrl}/feedback?feature=custom_email_workflow`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .feature-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .feature-item { display: flex; margin: 10px 0; font-size: 15px; color: #334155; }
+          .check-mark { color: #0F7B49; font-weight: bold; margin-right: 10px; }
+          .poll-box { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 1px solid #fde68a; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center; }
+          .poll-buttons { margin: 16px 0; }
+          .poll-btn { display: inline-block; padding: 10px 24px; margin: 6px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; }
+          .poll-yes { background-color: #0F7B49; color: #ffffff !important; }
+          .poll-maybe { background-color: #1E3A8A; color: #ffffff !important; }
+          .poll-no { background-color: #6b7280; color: #ffffff !important; }
+          .cta-section { text-align: center; margin: 28px 0; }
+          .btn-primary { display: inline-block; padding: 14px 28px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+          .divider { height: 1px; background: #e5e7eb; margin: 24px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 26px;">We're Building Something New</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">And we want your input</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>It's been a couple of weeks since you joined RE Data Metrix, and we hope you've been finding value in your deal analysis tools. We're reaching out because we're planning a new feature and <strong>your perspective as an investor matters to us</strong>.</p>
+
+            <div class="feature-box">
+              <p style="margin: 0 0 12px 0; font-weight: 700; color: #0369a1; font-size: 17px;">Custom Deal Email Reminders</p>
+              <p style="margin: 0 0 14px 0; color: #475569; font-size: 14px;">Here's what we're looking to build:</p>
+
+              <div class="feature-item"><span class="check-mark">&#10003;</span> <span><strong>Your timeline, your reminders</strong> &mdash; Set custom reminders at any point before closing (7 days, 4 days, day-of, etc.)</span></div>
+              <div class="feature-item"><span class="check-mark">&#10003;</span> <span><strong>Your words, professionally delivered</strong> &mdash; Give us your talking points ("remind group to schedule final walkthrough and confirm funding") and we'll generate a polished, branded email</span></div>
+              <div class="feature-item"><span class="check-mark">&#10003;</span> <span><strong>Send to your whole team</strong> &mdash; Add recipients with role labels: closing attorney, title company, real estate agent, contractor, partner, and more</span></div>
+              <div class="feature-item"><span class="check-mark">&#10003;</span> <span><strong>Know who's seen it</strong> &mdash; Read receipts show you which recipients opened your email, so you know who's in the loop and who needs a follow-up call</span></div>
+            </div>
+
+            <div class="poll-box">
+              <p style="margin: 0 0 4px 0; font-weight: 700; color: #92400e; font-size: 18px;">Quick Poll</p>
+              <p style="margin: 0 0 16px 0; color: #78350f; font-size: 15px;">Would you use Custom Deal Email Reminders?</p>
+              <div class="poll-buttons">
+                <a href="${feedbackUrl}&response=yes" class="poll-btn poll-yes">Yes, I'd use this</a>
+                <a href="${feedbackUrl}&response=maybe" class="poll-btn poll-maybe">Maybe, tell me more</a>
+                <a href="${feedbackUrl}&response=no" class="poll-btn poll-no">Not for me</a>
+              </div>
+              <p style="margin: 12px 0 0 0; color: #92400e; font-size: 12px;">Clicking any option takes you to our feedback page where you can share more details</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <p style="font-weight: 600; color: #1E3A8A; font-size: 16px;">We also want to hear from you:</p>
+            <ul style="color: #475569; font-size: 15px; padding-left: 20px;">
+              <li style="margin-bottom: 8px;">Are there <strong>other types of emails</strong> you'd want to send from the platform? (e.g., offer letters, status updates to partners)</li>
+              <li style="margin-bottom: 8px;">Who else would you want to <strong>include as recipients</strong>? (e.g., hard money lenders, insurance agents, inspectors)</li>
+              <li style="margin-bottom: 8px;">Would you want to <strong>add other features</strong> to your deal workflow? (e.g., task checklists, document sharing, milestone tracking)</li>
+              <li style="margin-bottom: 8px;">Any other tools or integrations that would make your investing process smoother?</li>
+            </ul>
+
+            <div class="cta-section">
+              <a href="${feedbackUrl}" class="btn-primary">Share Your Feedback</a>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">Your input directly shapes what we build next. Every response is read by our team &mdash; this isn't a generic survey, it's a conversation.</p>
+
+            <p style="margin-top: 24px;">Happy investing,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px; color: #9ca3af;">8375 Dunwoody Place, STE R, Atlanta, GA 30350</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'We\'re building something new - and we want your input | RE Data Metrix',
+      html: htmlContent,
+    });
+  }
 }
 
 export const emailService = new EmailService();

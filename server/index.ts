@@ -14,6 +14,7 @@ import { getStripeSync, isStripeConfigured } from './services/stripeClient';
 import { WebhookHandlers } from './services/webhookHandlers';
 import { closingRemindersService } from './services/closingReminders.service';
 import { webinarReminderService } from './services/webinar-reminder.service';
+import { signupFollowupService } from './services/signupFollowup.service';
 
 const app = express();
 
@@ -345,10 +346,8 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Start the closing reminders service
     closingRemindersService.start();
-    
-    // Start the webinar reminder service
     webinarReminderService.start();
+    signupFollowupService.start();
   });
 })();
