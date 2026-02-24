@@ -266,9 +266,10 @@ class AuthService {
 
       let emailSent = false;
       if (!isAutoVerified) {
+        const firstName = (validatedData.fullName || '').trim().split(/\s+/)[0] || newUser.username;
         emailSent = await emailService.sendVerificationEmail(
           newUser.email,
-          newUser.username,
+          firstName,
           verificationToken,
           validatedData.pendingPlan
         );
@@ -379,9 +380,11 @@ class AuthService {
         .where(eq(users.id, user.id));
 
       console.log('[AuthService] Token saved. Attempting to send email...');
+      const [resetProfile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const resetFirstName = (resetProfile?.fullName || '').trim().split(/\s+/)[0] || user.username;
       const emailSent = await emailService.sendPasswordResetEmail(
         user.email,
-        user.username,
+        resetFirstName,
         resetToken
       );
 
@@ -497,7 +500,9 @@ class AuthService {
         })
         .where(eq(users.id, user.id));
 
-      const emailSent = await emailService.sendWelcomeEmail(user.email, user.username);
+      const [profile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const welcomeFirstName = (profile?.fullName || '').trim().split(/\s+/)[0] || user.username;
+      const emailSent = await emailService.sendWelcomeEmail(user.email, welcomeFirstName);
       if (!emailSent) {
         console.error('[AuthService] Failed to send welcome email to:', user.email);
       }
@@ -555,9 +560,11 @@ class AuthService {
         })
         .where(eq(users.id, user.id));
 
+      const [resendProfile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const resendFirstName = (resendProfile?.fullName || '').trim().split(/\s+/)[0] || user.username;
       const emailSent = await emailService.sendVerificationEmail(
         user.email,
-        user.username,
+        resendFirstName,
         verificationToken
       );
 

@@ -1571,7 +1571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .set({ verificationToken, verificationExpiry })
           .where(eq(users.id, newUser.id));
 
-        await emailService.sendVerificationEmail(email, username, verificationToken);
+        await emailService.sendVerificationEmail(email, firstNamePart || username, verificationToken);
 
         return res.json({
           success: true,
@@ -3545,9 +3545,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const host = req.get("host") || "localhost:5000";
       const resetUrl = `${protocol}://${host}/admin/reset-password/${resetToken}`;
       
+      const [adminProfile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const adminFirstName = (adminProfile?.fullName || '').trim().split(/\s+/)[0] || user.username;
       const emailSent = await emailService.sendPasswordResetEmail(
         user.email,
-        user.username,
+        adminFirstName,
         resetToken,
         resetUrl
       );
@@ -3812,8 +3814,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ verificationToken, verificationExpiry })
         .where(eq(users.id, id));
       
-      // Send verification email
-      const emailSent = await emailService.sendVerificationEmail(user.email, user.username, verificationToken);
+      const [resendProfile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const resendFirstName = (resendProfile?.fullName || '').trim().split(/\s+/)[0] || user.username;
+      const emailSent = await emailService.sendVerificationEmail(user.email, resendFirstName, verificationToken);
       
       res.json({ 
         message: emailSent ? "Verification email sent successfully" : "Failed to send email",

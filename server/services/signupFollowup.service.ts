@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { users, sentSignupFollowups } from '@shared/schema';
+import { users, userProfiles, sentSignupFollowups } from '@shared/schema';
 import { eq, and, lte, isNull, sql } from 'drizzle-orm';
 import { emailService } from './email.service';
 
@@ -51,8 +51,13 @@ class SignupFollowupService {
           id: users.id,
           email: users.email,
           username: users.username,
+          fullName: userProfiles.fullName,
         })
         .from(users)
+        .leftJoin(
+          userProfiles,
+          eq(userProfiles.userId, users.id)
+        )
         .leftJoin(
           sentSignupFollowups,
           and(
@@ -71,11 +76,12 @@ class SignupFollowupService {
       let sentCount = 0;
 
       for (const user of eligibleUsers) {
+        const firstName = (user.fullName || '').trim().split(/\s+/)[0] || user.username;
         console.log(`[SIGNUP FOLLOWUP] Sending two-week followup to ${user.email}`);
 
         const sent = await emailService.sendTwoWeekFollowupEmail(
           user.email,
-          user.username
+          firstName
         );
 
         if (sent) {

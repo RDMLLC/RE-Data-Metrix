@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { savedDeals, users, sentReminders } from '@shared/schema';
+import { savedDeals, users, userProfiles, sentReminders } from '@shared/schema';
 import { eq, and, lte, gte, isNotNull } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { emailService } from './email.service';
@@ -17,6 +17,7 @@ interface DealWithUser {
     id: string;
     email: string;
     username: string;
+    fullName: string | null;
   };
 }
 
@@ -94,10 +95,12 @@ class ClosingRemindersService {
             id: users.id,
             email: users.email,
             username: users.username,
+            fullName: userProfiles.fullName,
           },
         })
         .from(savedDeals)
         .innerJoin(users, eq(savedDeals.userId, users.id))
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
         .where(and(
           eq(savedDeals.status, 'under_contract'),
           isNotNull(savedDeals.estimatedClosingDate),
@@ -133,9 +136,10 @@ class ClosingRemindersService {
           
           console.log(`[CLOSING REMINDERS] Sending ${daysUntilClosing}-day reminder for ${deal.propertyAddress}`);
           
+          const reminderFirstName = (user.fullName || '').trim().split(/\s+/)[0] || user.username;
           const sent = await emailService.sendClosingReminderEmail(
             user.email,
-            user.username,
+            reminderFirstName,
             deal.propertyAddress,
             closingDate,
             daysUntilClosing,

@@ -250,11 +250,12 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
   }
 
   try {
+    const checkoutFirstName = (fullName || '').trim().split(/\s+/)[0] || username;
     if (needsPasswordReset && passwordResetToken) {
-      await emailService.sendPasswordResetEmail(email, username, passwordResetToken);
+      await emailService.sendPasswordResetEmail(email, checkoutFirstName, passwordResetToken);
       console.log(`[CHECKOUT] Sent password reset email to ${email} (fallback account)`);
     } else {
-      await emailService.sendVerificationEmail(email, username, verificationToken);
+      await emailService.sendVerificationEmail(email, checkoutFirstName, verificationToken);
       console.log(`[CHECKOUT] Sent verification email to ${email}`);
     }
   } catch (emailError) {
