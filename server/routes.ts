@@ -1957,7 +1957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
-        return_url: `${baseUrl}/profile`,
+        return_url: `${baseUrl}/portal/profile`,
       });
 
       console.log(`[STRIPE] Billing portal session created for user ${user.id}`);
@@ -2014,7 +2014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle checkout success - verify session and activate subscription
   app.get("/api/subscription/checkout-success", ensureAuthenticated, async (req, res) => {
     try {
-      const user = req.user as User;
+      const sessionUser = req.user as User;
       const { session_id } = req.query;
 
       if (!session_id || typeof session_id !== 'string') {
@@ -2026,9 +2026,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expand: ['subscription'],
       });
 
-      // Verify the session is for this user
+      // Fetch fresh user from DB — session data may be stale (e.g. stripeCustomerId was
+      // created during checkout but session hasn't been refreshed yet)
+      const [freshUser] = await db.select().from(users).where(eq(users.id, sessionUser.id)).limit(1);
+      const user = freshUser || sessionUser;
+
+      // Verify the session belongs to this user
       if (session.customer !== user.stripeCustomerId) {
-        return res.status(403).json({ error: "Session does not belong to this user" });
+        // If the session metadata has this userId, trust that instead
+        const sessionUserId = (session.metadata as any)?.userId;
+        if (sessionUserId !== user.id) {
+          return res.status(403).json({ error: "Session does not belong to this user" });
+        }
+        // Update stripeCustomerId in DB if it's missing
+        if (!user.stripeCustomerId && session.customer) {
+          await db.update(users).set({ stripeCustomerId: session.customer as string }).where(eq(users.id, user.id));
+        }
       }
 
       const subscription = session.subscription as any;
