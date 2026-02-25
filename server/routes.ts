@@ -3494,6 +3494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: user.email,
       role: user.role,
       subscriptionStatus: user.subscriptionStatus,
+      subscriptionPlan: user.subscriptionPlan,
       createdAt: user.createdAt,
       isEmailVerified: user.isEmailVerified,
       termsAcceptedAt: user.termsAcceptedAt,

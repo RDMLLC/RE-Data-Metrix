@@ -78,6 +78,7 @@ interface UserWithStats {
   email: string;
   role: string;
   subscriptionStatus: string;
+  subscriptionPlan: string | null;
   createdAt: string | null;
   isEmailVerified: boolean;
   dealsAnalyzed: number;
@@ -311,10 +312,17 @@ export default function UserManagement() {
     }
   };
 
-  const getSubscriptionBadge = (status: string) => {
+  const getSubscriptionBadge = (status: string, plan?: string | null) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Active</Badge>;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Active</Badge>
+            {plan && (
+              <span className="text-xs text-muted-foreground capitalize">{plan}</span>
+            )}
+          </div>
+        );
       case 'comped':
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Comped</Badge>;
       case 'referral_trial':
@@ -558,7 +566,7 @@ export default function UserManagement() {
                                     </SelectContent>
                                   </Select>
                                 ) : (
-                                  <span className="text-sm">{getSubscriptionBadge(user.subscriptionStatus)}</span>
+                                  <span className="text-sm">{getSubscriptionBadge(user.subscriptionStatus, user.subscriptionPlan)}</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -697,7 +705,7 @@ export default function UserManagement() {
                           <TableCell>{user.dealsAnalyzed}</TableCell>
                           <TableCell>{user.lendersSaved}</TableCell>
                           <TableCell className="font-bold">{user.dealsAnalyzed + user.lendersSaved}</TableCell>
-                          <TableCell>{getSubscriptionBadge(user.subscriptionStatus)}</TableCell>
+                          <TableCell>{getSubscriptionBadge(user.subscriptionStatus, user.subscriptionPlan)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -741,7 +749,7 @@ export default function UserManagement() {
                               </div>
                             </TableCell>
                             <TableCell className="font-bold text-lg">{user.referralCount}</TableCell>
-                            <TableCell>{getSubscriptionBadge(user.subscriptionStatus)}</TableCell>
+                            <TableCell>{getSubscriptionBadge(user.subscriptionStatus, user.subscriptionPlan)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -792,7 +800,7 @@ export default function UserManagement() {
                               <XCircle className="h-5 w-5 text-red-500" />
                             )}
                           </TableCell>
-                          <TableCell>{getSubscriptionBadge(user.subscriptionStatus)}</TableCell>
+                          <TableCell>{getSubscriptionBadge(user.subscriptionStatus, user.subscriptionPlan)}</TableCell>
                           <TableCell>
                             {user.city && user.state ? `${user.city}, ${user.state}` : '-'}
                           </TableCell>
@@ -836,7 +844,7 @@ export default function UserManagement() {
                             <TableCell>
                               {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}
                             </TableCell>
-                            <TableCell>{getSubscriptionBadge(user.subscriptionStatus)}</TableCell>
+                            <TableCell>{getSubscriptionBadge(user.subscriptionStatus, user.subscriptionPlan)}</TableCell>
                             <TableCell>
                               {!isAuditor && (
                                 <Button
