@@ -1409,3 +1409,22 @@ export const emailCategorySettings = pgTable("email_category_settings", {
 });
 
 export type EmailCategorySettings = typeof emailCategorySettings.$inferSelect;
+
+export const userSubmissions = pgTable("user_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  userEmail: text("user_email"),
+  type: text("type").notNull(), // 'issue' | 'feature'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default('open'), // 'open' | 'resolved'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUserSubmissionSchema = createInsertSchema(userSubmissions).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+export type InsertUserSubmission = z.infer<typeof insertUserSubmissionSchema>;
+export type UserSubmission = typeof userSubmissions.$inferSelect;

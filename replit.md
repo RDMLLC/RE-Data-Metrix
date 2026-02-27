@@ -29,6 +29,8 @@ A Marketing Pixel Management System enables admins to configure tracking pixels 
 
 An Email Sender Management System (`/admin/email-senders`) allows admins to register email alias addresses (e.g. `support@redatametrix.com`, `info@redatametrix.com`) and assign them to one of five email categories: Transactional, Support, Webinar, Marketing, and Lender. The email service resolves the "from" address per category at send time, falling back to the global default alias or the `SMTP_FROM_NAME`/`SMTP_FROM_EMAIL` environment variables. Tables: `email_sender_aliases` (aliases with label, fromName, fromEmail, isDefault) and `email_category_settings` (category-to-alias mappings). All 26 send methods in `server/services/email.service.ts` are category-aware via `getFromForCategory()`.
 
+A User Feedback & Issue Reporting system allows members to submit bug reports and feature suggestions directly from their portal dashboard. The "Provide Feedback" card (replacing the old "Coming Soon: Custom Email Reminders" banner) offers three options: "Report an Issue" (Bug icon, opens a modal form, type='issue'), "Suggest a Feature" (Sparkles icon, opens a modal form, type='feature'), and the "Coming Soon: Custom Email Reminders" option (links to /feedback). Submissions are stored in the `user_submissions` table and viewable/manageable in the admin portal at `/admin/user-submissions`, with filter tabs (All Open / Issues / Features / Resolved) and a one-click resolve/reopen toggle. API: `POST /api/user-submissions` (public, accepts authenticated or unauthenticated with email), `GET /api/admin/user-submissions` (admin read), `PATCH /api/admin/user-submissions/:id/status` (admin).
+
 ## Future Features (Backlog)
 
 ### Custom User Email Workflow

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -10526,6 +10526,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating email category:", error);
       res.status(500).json({ error: "Failed to update email category" });
+    }
+  });
+
+  // ── User Submissions (feedback & issue reports) ─────────────────────────────
+
+  app.post("/api/user-submissions", async (req, res) => {
+    try {
+      const user = req.user as User | undefined;
+      const { type, title, description, email } = req.body;
+
+      if (!type || !['issue', 'feature'].includes(type)) {
+        return res.status(400).json({ error: "Type must be 'issue' or 'feature'" });
+      }
+      if (!title?.trim()) return res.status(400).json({ error: "Title is required" });
+      if (!description?.trim()) return res.status(400).json({ error: "Description is required" });
+
+      const resolvedEmail = user?.email ?? email ?? null;
+
+      const [submission] = await db.insert(userSubmissions).values({
+        userId: user?.id ?? null,
+        userEmail: resolvedEmail,
+        type,
+        title: title.trim(),
+        description: description.trim(),
+      }).returning();
+
+      res.json(submission);
+    } catch (error) {
+      console.error("Error saving user submission:", error);
+      res.status(500).json({ error: "Failed to save submission" });
+    }
+  });
+
+  app.get("/api/admin/user-submissions", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const rows = await db
+        .select({
+          id: userSubmissions.id,
+          type: userSubmissions.type,
+          title: userSubmissions.title,
+          description: userSubmissions.description,
+          status: userSubmissions.status,
+          createdAt: userSubmissions.createdAt,
+          userEmail: userSubmissions.userEmail,
+          userId: userSubmissions.userId,
+          submitterEmail: users.email,
+        })
+        .from(userSubmissions)
+        .leftJoin(users, eq(userSubmissions.userId, users.id))
+        .orderBy(desc(userSubmissions.createdAt));
+
+      // Prefer linked user's email over stored email
+      const result = rows.map(r => ({
+        ...r,
+        resolvedEmail: r.submitterEmail ?? r.userEmail ?? 'Anonymous',
+      }));
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching user submissions:", error);
+      res.status(500).json({ error: "Failed to fetch submissions" });
+    }
+  });
+
+  app.patch("/api/admin/user-submissions/:id/status", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      if (!['open', 'resolved'].includes(status)) {
+        return res.status(400).json({ error: "Status must be 'open' or 'resolved'" });
+      }
+      const [updated] = await db
+        .update(userSubmissions)
+        .set({ status })
+        .where(eq(userSubmissions.id, id))
+        .returning();
+      if (!updated) return res.status(404).json({ error: "Submission not found" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating submission status:", error);
+      res.status(500).json({ error: "Failed to update status" });
     }
   });
 

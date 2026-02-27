@@ -1,12 +1,17 @@
-import { type MouseEvent } from "react";
+import { type MouseEvent, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Calculator, 
   Building2, 
@@ -17,7 +22,12 @@ import {
   Search,
   HardHat,
   Lightbulb,
-  ArrowRight
+  ArrowRight,
+  Bug,
+  Sparkles,
+  CheckCircle,
+  Loader2,
+  MessageSquarePlus
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -31,10 +41,132 @@ interface MemberStats {
   savedLenders: number;
 }
 
+type SubmissionType = 'issue' | 'feature';
+
+interface FeedbackModalProps {
+  open: boolean;
+  onClose: () => void;
+  type: SubmissionType;
+  userEmail?: string;
+}
+
+function FeedbackModal({ open, onClose, type, userEmail }: FeedbackModalProps) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/user-submissions", {
+        type,
+        title: title.trim(),
+        description: description.trim(),
+        email: userEmail,
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      setSubmitted(true);
+    },
+    onError: () => {
+      toast({
+        title: "Something went wrong",
+        description: "Unable to submit. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleClose = () => {
+    setTitle("");
+    setDescription("");
+    setSubmitted(false);
+    onClose();
+  };
+
+  const isIssue = type === 'issue';
+  const modalTitle = isIssue ? "Report an Issue" : "Suggest a Feature";
+  const titlePlaceholder = isIssue
+    ? "Brief description of the issue"
+    : "Name your feature idea";
+  const descPlaceholder = isIssue
+    ? "What happened? What did you expect to happen? Steps to reproduce if known."
+    : "Describe your idea and how it would help you.";
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md" data-testid="dialog-feedback-modal">
+        <DialogHeader>
+          <DialogTitle data-testid="text-modal-title">{modalTitle}</DialogTitle>
+          <DialogDescription>
+            {isIssue
+              ? "Tell us what went wrong and we'll look into it."
+              : "Share your idea and help shape the future of the platform."}
+          </DialogDescription>
+        </DialogHeader>
+
+        {submitted ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center" data-testid="div-submission-success">
+            <CheckCircle className="h-12 w-12 text-green-500" />
+            <p className="font-semibold text-foreground">Thank you!</p>
+            <p className="text-sm text-muted-foreground">
+              {isIssue
+                ? "We've received your report and will look into it."
+                : "Your idea has been submitted. We appreciate your input!"}
+            </p>
+            <Button onClick={handleClose} data-testid="button-close-success">Done</Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="submission-title">
+                {isIssue ? "Issue Summary" : "Feature Title"}
+              </Label>
+              <Input
+                id="submission-title"
+                placeholder={titlePlaceholder}
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                data-testid="input-submission-title"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="submission-description">Details</Label>
+              <Textarea
+                id="submission-description"
+                placeholder={descPlaceholder}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                rows={4}
+                data-testid="input-submission-description"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={handleClose} data-testid="button-cancel-modal">
+                Cancel
+              </Button>
+              <Button
+                onClick={() => submitMutation.mutate()}
+                disabled={!title.trim() || !description.trim() || submitMutation.isPending}
+                data-testid="button-submit-feedback"
+              >
+                {submitMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Submit
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function MemberDashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [modalType, setModalType] = useState<SubmissionType | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery<MemberStats>({
     queryKey: ["/api/member/stats"],
@@ -54,7 +186,6 @@ export default function MemberDashboard() {
   const getSubscriptionBadge = (status: string, plan?: string | null, hasStripeSubscription?: boolean) => {
     switch (status) {
       case "active":
-        // Show plan type: Free (no Stripe subscription), Monthly, or Annual
         if (hasStripeSubscription) {
           if (plan === 'annual') {
             return <Badge className="bg-green-500/10 text-green-600 border-green-200">Annual</Badge>;
@@ -104,8 +235,6 @@ export default function MemberDashboard() {
 
           {/* 2x3 Grid of Dashboard Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Row 1: Start Deal Analysis | Deals Analyzed | Tools & Resources */}
-            
             {/* Start Deal Analysis */}
             <Card 
               className="hover-elevate cursor-pointer" 
@@ -127,7 +256,7 @@ export default function MemberDashboard() {
               </CardContent>
             </Card>
 
-            {/* Deals Analyzed - Clickable */}
+            {/* Deals Analyzed */}
             <Card 
               className="hover-elevate cursor-pointer" 
               onClick={() => setLocation("/portal/deals")}
@@ -169,8 +298,6 @@ export default function MemberDashboard() {
                 </CardDescription>
               </CardContent>
             </Card>
-
-            {/* Row 2: Search Lenders | Saved Lenders | Refer a Friend */}
 
             {/* Search Lenders */}
             <Card 
@@ -239,9 +366,7 @@ export default function MemberDashboard() {
             )}
 
             {/* Refer a Friend - Coming Soon */}
-            <Card 
-              data-testid="card-refer-friend"
-            >
+            <Card data-testid="card-refer-friend">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
@@ -251,18 +376,10 @@ export default function MemberDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Blurred code section with Coming Soon overlay */}
                 <div className="relative mb-2">
                   <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg blur-sm pointer-events-none select-none">
-                    <code className="text-lg font-bold flex-1">
-                      XXXXXXXX
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled
-                      className="h-8 w-8"
-                    >
+                    <code className="text-lg font-bold flex-1">XXXXXXXX</code>
+                    <Button variant="ghost" size="icon" disabled className="h-8 w-8">
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -280,29 +397,91 @@ export default function MemberDashboard() {
             </Card>
           </div>
 
-          <Card className="mt-6 border-accent/30 bg-accent/5" data-testid="card-feature-feedback-banner">
-            <CardContent className="pt-5 pb-5">
-              <div className="flex items-start sm:items-center gap-4 flex-col sm:flex-row">
+          {/* Provide Feedback Banner */}
+          <Card className="mt-6 border-accent/30 bg-accent/5" data-testid="card-provide-feedback">
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center shrink-0">
-                  <Lightbulb className="h-5 w-5 text-accent" />
+                  <MessageSquarePlus className="h-5 w-5 text-accent" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">Coming Soon: Custom Email Reminders</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Create your own deal reminders with custom timing, talking points, and send them to your entire team. Help us build it right!
-                  </p>
+                <div>
+                  <CardTitle className="text-base">Provide Feedback</CardTitle>
+                  <CardDescription className="mt-0.5">Help us improve the platform</CardDescription>
                 </div>
-                <Link href="/feedback?feature=custom_email_workflow" data-testid="link-give-feedback">
-                  <Button variant="outline" size="sm" data-testid="button-give-feedback">
-                    Share Your Input
-                    <ArrowRight className="h-4 w-4 ml-1" />
+              </div>
+            </CardHeader>
+            <CardContent className="pb-5">
+              <div className="divide-y divide-border/60">
+                {/* Report an Issue */}
+                <div className="flex items-center gap-4 py-3" data-testid="row-report-issue">
+                  <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Bug className="h-4 w-4 text-red-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Report an Issue</p>
+                    <p className="text-xs text-muted-foreground">Found something that isn't working? Let us know</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setModalType('issue')}
+                    data-testid="button-report-issue"
+                  >
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
-                </Link>
+                </div>
+
+                {/* Suggest a Feature */}
+                <div className="flex items-center gap-4 py-3" data-testid="row-suggest-feature">
+                  <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Sparkles className="h-4 w-4 text-indigo-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Suggest a Feature</p>
+                    <p className="text-xs text-muted-foreground">Have an idea to make the platform better?</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setModalType('feature')}
+                    data-testid="button-suggest-feature"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Coming Soon: Custom Email Reminders */}
+                <div className="flex items-center gap-4 py-3" data-testid="row-email-reminders">
+                  <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Lightbulb className="h-4 w-4 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      Coming Soon: Custom Email Reminders
+                    </p>
+                    <p className="text-xs text-muted-foreground">Help us prioritize this feature</p>
+                  </div>
+                  <Link href="/feedback?feature=custom_email_workflow" data-testid="link-email-reminders-feedback">
+                    <Button variant="ghost" size="icon" data-testid="button-email-reminders-feedback">
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      {modalType && (
+        <FeedbackModal
+          open={!!modalType}
+          onClose={() => setModalType(null)}
+          type={modalType}
+          userEmail={user?.email}
+        />
+      )}
     </Layout>
   );
 }
