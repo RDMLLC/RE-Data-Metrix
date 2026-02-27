@@ -2344,6 +2344,133 @@ END:VCALENDAR`;
       from: await this.getFromForCategory('marketing'),
     });
   }
+  async sendUserSubmissionConfirmation(
+    to: string,
+    name: string,
+    type: 'issue' | 'feature',
+    title: string,
+    description: string
+  ): Promise<boolean> {
+    const isIssue = type === 'issue';
+    const typeLabel = isIssue ? 'Issue Report' : 'Feature Suggestion';
+    const intro = isIssue
+      ? "Thank you for taking the time to report this issue. Our team will review it and follow up if we need additional details."
+      : "Thank you for sharing your idea! We review every suggestion as we continue to improve the platform.";
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .recap-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .recap-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; }
+          .recap-value { font-size: 15px; color: #1e293b; margin-bottom: 16px; }
+          .recap-value:last-child { margin-bottom: 0; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">${typeLabel} Received</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${name},</p>
+            <p>${intro}</p>
+            <div class="recap-box">
+              <div class="recap-label">Type</div>
+              <div class="recap-value">${typeLabel}</div>
+              <div class="recap-label">Subject</div>
+              <div class="recap-value">${title}</div>
+              <div class="recap-label">Details</div>
+              <div class="recap-value" style="white-space: pre-wrap;">${description}</div>
+            </div>
+            <p>If you have any additional information to add, simply reply to this email.</p>
+            <p style="margin-top: 30px;">Best regards,<br>The RE Data Metrix Support Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `We received your ${typeLabel.toLowerCase()} - RE Data Metrix`,
+      html: htmlContent,
+      from: await this.getFromForCategory('support'),
+    });
+  }
+
+  async sendUserSubmissionAdminAlert(
+    submitterEmail: string,
+    type: 'issue' | 'feature',
+    title: string,
+    description: string
+  ): Promise<boolean> {
+    const isIssue = type === 'issue';
+    const typeLabel = isIssue ? 'Bug Report' : 'Feature Suggestion';
+    const adminUrl = `${this.getBaseUrl()}/admin/user-submissions`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: ${isIssue ? '#dc2626' : '#4f46e5'}; color: white; padding: 24px 30px; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .detail-row { padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+          .detail-row:last-child { border-bottom: none; }
+          .detail-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 3px; }
+          .detail-value { font-size: 15px; color: #1e293b; white-space: pre-wrap; }
+          .btn { display: inline-block; background: #1E3A8A; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 20px;">New ${typeLabel} Submitted</h1>
+          </div>
+          <div class="content">
+            <p>A new ${typeLabel.toLowerCase()} has been submitted through the member portal.</p>
+            <div class="detail-row">
+              <div class="detail-label">From</div>
+              <div class="detail-value">${submitterEmail}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Subject</div>
+              <div class="detail-value">${title}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Details</div>
+              <div class="detail-value">${description}</div>
+            </div>
+            <a href="${adminUrl}" class="btn">View in Admin Panel</a>
+          </div>
+          <div class="footer">
+            <p>RE Data Metrix Admin Notifications</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: 'admin@redatametrix.com',
+      subject: `[${typeLabel}] ${title}`,
+      html: htmlContent,
+      from: await this.getFromForCategory('support'),
+    });
+  }
 }
 
 export const emailService = new EmailService();

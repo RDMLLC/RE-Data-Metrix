@@ -10553,6 +10553,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).returning();
 
       res.json(submission);
+
+      // Fire emails asynchronously — don't block the response
+      const submitterName = (user as any)?.profile?.fullName
+        || (user as any)?.username
+        || resolvedEmail?.split('@')[0]
+        || 'there';
+
+      if (resolvedEmail) {
+        emailService.sendUserSubmissionConfirmation(
+          resolvedEmail,
+          submitterName,
+          type as 'issue' | 'feature',
+          title.trim(),
+          description.trim()
+        ).catch(err => console.error('Failed to send submission confirmation:', err));
+      }
+
+      emailService.sendUserSubmissionAdminAlert(
+        resolvedEmail ?? 'Anonymous',
+        type as 'issue' | 'feature',
+        title.trim(),
+        description.trim()
+      ).catch(err => console.error('Failed to send admin alert:', err));
     } catch (error) {
       console.error("Error saving user submission:", error);
       res.status(500).json({ error: "Failed to save submission" });
