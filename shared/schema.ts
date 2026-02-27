@@ -1383,3 +1383,29 @@ export const sentSignupFollowups = pgTable("sent_signup_followups", {
   emailType: text("email_type").notNull(),
   sentAt: timestamp("sent_at").defaultNow(),
 });
+
+export const emailSenderAliases = pgTable("email_sender_aliases", {
+  id: serial("id").primaryKey(),
+  label: text("label").notNull(),
+  fromName: text("from_name").notNull(),
+  fromEmail: text("from_email").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEmailSenderAliasSchema = createInsertSchema(emailSenderAliases).omit({
+  id: true,
+  createdAt: true,
+  isDefault: true,
+});
+export type InsertEmailSenderAlias = z.infer<typeof insertEmailSenderAliasSchema>;
+export type EmailSenderAlias = typeof emailSenderAliases.$inferSelect;
+
+export const emailCategorySettings = pgTable("email_category_settings", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull().unique(), // 'transactional' | 'support' | 'webinar' | 'marketing' | 'lender'
+  aliasId: integer("alias_id").references(() => emailSenderAliases.id),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type EmailCategorySettings = typeof emailCategorySettings.$inferSelect;

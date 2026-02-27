@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -10440,6 +10440,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error deleting feedback:", error);
       res.status(500).json({ error: "Failed to delete feedback" });
+    }
+  });
+
+  // ── Email Sender Aliases & Category Settings ────────────────────────────────
+
+  app.get("/api/admin/email-senders", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const aliases = await db.select().from(emailSenderAliases).orderBy(asc(emailSenderAliases.id));
+      const categories = await db.select().from(emailCategorySettings);
+      res.json({ aliases, categories });
+    } catch (error) {
+      console.error("Error fetching email senders:", error);
+      res.status(500).json({ error: "Failed to fetch email senders" });
+    }
+  });
+
+  app.post("/api/admin/email-senders", ensureAdmin, async (req, res) => {
+    try {
+      const parsed = insertEmailSenderAliasSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0].message });
+      }
+      const [alias] = await db.insert(emailSenderAliases).values(parsed.data).returning();
+      res.json(alias);
+    } catch (error) {
+      console.error("Error creating email sender alias:", error);
+      res.status(500).json({ error: "Failed to create email sender alias" });
+    }
+  });
+
+  app.delete("/api/admin/email-senders/:id", ensureAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const [alias] = await db.select().from(emailSenderAliases).where(eq(emailSenderAliases.id, id));
+      if (!alias) return res.status(404).json({ error: "Alias not found" });
+      if (alias.isDefault) return res.status(400).json({ error: "Cannot delete the default sender. Set another as default first." });
+      // Check if assigned to any category
+      const assignments = await db.select().from(emailCategorySettings).where(eq(emailCategorySettings.aliasId, id));
+      if (assignments.length > 0) {
+        return res.status(400).json({ error: "Cannot delete: this address is assigned to one or more email categories. Reassign them first." });
+      }
+      await db.delete(emailSenderAliases).where(eq(emailSenderAliases.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting email sender alias:", error);
+      res.status(500).json({ error: "Failed to delete email sender alias" });
+    }
+  });
+
+  app.patch("/api/admin/email-senders/:id/default", ensureAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      // Clear all defaults, then set new one
+      await db.update(emailSenderAliases).set({ isDefault: false });
+      const [alias] = await db.update(emailSenderAliases).set({ isDefault: true }).where(eq(emailSenderAliases.id, id)).returning();
+      if (!alias) return res.status(404).json({ error: "Alias not found" });
+      res.json(alias);
+    } catch (error) {
+      console.error("Error setting default email sender:", error);
+      res.status(500).json({ error: "Failed to set default email sender" });
+    }
+  });
+
+  app.patch("/api/admin/email-category/:category", ensureAdmin, async (req, res) => {
+    try {
+      const { category } = req.params;
+      const validCategories = ['transactional', 'support', 'webinar', 'marketing', 'lender'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: "Invalid category" });
+      }
+      const aliasId = req.body.aliasId ? parseInt(req.body.aliasId) : null;
+      // Upsert
+      const existing = await db.select().from(emailCategorySettings).where(eq(emailCategorySettings.category, category));
+      if (existing.length > 0) {
+        const [updated] = await db.update(emailCategorySettings)
+          .set({ aliasId, updatedAt: new Date() })
+          .where(eq(emailCategorySettings.category, category))
+          .returning();
+        res.json(updated);
+      } else {
+        const [created] = await db.insert(emailCategorySettings).values({ category, aliasId }).returning();
+        res.json(created);
+      }
+    } catch (error) {
+      console.error("Error updating email category:", error);
+      res.status(500).json({ error: "Failed to update email category" });
     }
   });
 

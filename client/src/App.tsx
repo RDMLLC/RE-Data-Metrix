@@ -77,6 +77,7 @@ const AdminCalculationsReference = lazy(() => import("@/pages/admin/Calculations
 const AdminTrainingVideos = lazy(() => import("@/pages/admin/TrainingVideos"));
 const AdminDemoLinks = lazy(() => import("@/pages/admin/DemoLinks"));
 const AdminMarketingPixels = lazy(() => import("@/pages/admin/MarketingPixels"));
+const AdminEmailSenders = lazy(() => import("@/pages/admin/EmailSenders"));
 const DeveloperIntegrations = lazy(() => import("@/pages/admin/DeveloperIntegrations"));
 const DemoEntry = lazy(() => import("@/pages/DemoEntry"));
 const LenderProfile = lazy(() => import("@/pages/LenderProfile"));
@@ -243,6 +244,7 @@ function Router() {
         <Route path="/admin/demo-links" component={AdminDemoLinks} />
         <Route path="/admin/developer-integrations" component={DeveloperIntegrations} />
         <Route path="/admin/feature-feedback" component={AdminFeatureFeedback} />
+        <Route path="/admin/email-senders" component={AdminEmailSenders} />
         <Route path="/admin/lender-invite" component={LenderInvite} />
         <Route path="/demo/:token" component={DemoEntry} />
         <Route component={NotFound} />

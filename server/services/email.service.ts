@@ -1,5 +1,10 @@
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import { db } from '../db';
+import { emailSenderAliases, emailCategorySettings } from '../../shared/schema';
+import { eq } from 'drizzle-orm';
+
+export type EmailCategory = 'transactional' | 'support' | 'webinar' | 'marketing' | 'lender';
 
 interface EmailConfig {
   host: string;
@@ -222,6 +227,8 @@ class EmailService {
       to,
       subject: isPremiumSignup ? 'Complete Your Premium Registration - RE Data Metrix' : 'Welcome! Verify Your Email - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -272,6 +279,8 @@ class EmailService {
       to,
       subject: 'Reset Your Password - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -327,6 +336,8 @@ class EmailService {
       to,
       subject: 'Reset Your Lender Portal Password - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('lender'),
     });
   }
 
@@ -377,6 +388,8 @@ class EmailService {
       to,
       subject: 'Reset Your Contractor Portal Password - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -425,6 +438,8 @@ class EmailService {
       to,
       subject: 'We Received Your Message - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('support'),
     });
   }
 
@@ -493,6 +508,8 @@ class EmailService {
       to,
       subject: 'You\'re Locked In! Early Access Confirmed - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('support'),
     });
   }
 
@@ -553,6 +570,8 @@ class EmailService {
       to,
       subject: 'Welcome to RE Data Metrix - Get Started Today!',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -625,6 +644,8 @@ class EmailService {
       to,
       subject: 'Welcome to RE Data Metrix - Lender Invitation',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('lender'),
     });
   }
 
@@ -699,6 +720,8 @@ class EmailService {
       to,
       subject: 'Join RE Data Metrix as a Contractor Partner',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -782,6 +805,8 @@ class EmailService {
       to,
       subject: 'Your Invitation to RE Data Metrix - Free Premium Access',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -865,6 +890,8 @@ class EmailService {
       to,
       subject: 'RE Data Metrix - Auditor Access Invitation',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -922,6 +949,8 @@ class EmailService {
       to,
       subject: 'An Investor Just Saved You - RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('lender'),
     });
   }
 
@@ -986,6 +1015,8 @@ class EmailService {
       to,
       subject: `Loan Product ${changeType === 'created' ? 'Added' : 'Updated'} - RE Data Metrix`,
       html: htmlContent,
+    
+      from: await this.getFromForCategory('lender'),
     });
   }
 
@@ -1134,6 +1165,8 @@ class EmailService {
       to,
       subject: `New Investor Inquiry - ${data.propertyAddress} - RE Data Metrix`,
       html: htmlContent,
+    
+      from: await this.getFromForCategory('lender'),
     });
   }
 
@@ -1186,6 +1219,8 @@ class EmailService {
       to,
       subject: 'Your RE Data Metrix Demo Access Link',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -1299,6 +1334,8 @@ class EmailService {
       to,
       subject: subjectLine,
       html: htmlContent,
+    
+      from: await this.getFromForCategory('transactional'),
     });
   }
 
@@ -1467,7 +1504,8 @@ END:VCALENDAR`;
           content: icsContent,
           contentType: 'text/calendar'
         }
-      ]
+      ],
+      from: await this.getFromForCategory('webinar'),
     });
   }
 
@@ -1593,6 +1631,8 @@ END:VCALENDAR`;
       to,
       subject: "Tomorrow: RE Data Metrix Soft Launch Webinar - Confirm Your Spot",
       html: htmlContent,
+    
+      from: await this.getFromForCategory('webinar'),
     });
   }
 
@@ -1690,7 +1730,25 @@ END:VCALENDAR`;
       to,
       subject: "Starting in 30 Minutes: RE Data Metrix Soft Launch Webinar",
       html: htmlContent,
+    
+      from: await this.getFromForCategory('webinar'),
     });
+  }
+
+  async getFromForCategory(category: EmailCategory): Promise<{ name: string; email: string }> {
+    try {
+      const [setting] = await db.select().from(emailCategorySettings).where(eq(emailCategorySettings.category, category)).limit(1);
+      if (setting?.aliasId) {
+        const [alias] = await db.select().from(emailSenderAliases).where(eq(emailSenderAliases.id, setting.aliasId)).limit(1);
+        if (alias) return { name: alias.fromName, email: alias.fromEmail };
+      }
+      // Try global default alias
+      const [defaultAlias] = await db.select().from(emailSenderAliases).where(eq(emailSenderAliases.isDefault, true)).limit(1);
+      if (defaultAlias) return { name: defaultAlias.fromName, email: defaultAlias.fromEmail };
+    } catch {
+      // Fall through to env var fallback
+    }
+    return { name: this.config.from.name, email: this.config.from.email };
   }
 
   private async sendEmail(options: {
@@ -1698,19 +1756,23 @@ END:VCALENDAR`;
     subject: string;
     html: string;
     attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+    from?: { name: string; email: string };
   }): Promise<boolean> {
     if (!this.transporter) {
       console.error('Email transporter not initialized');
       return false;
     }
 
+    const fromName = options.from?.name ?? this.config.from.name;
+    const fromEmail = options.from?.email ?? this.config.from.email;
+
     try {
       console.log(`[EMAIL] Attempting to send to: ${options.to}`);
-      console.log(`[EMAIL] From: ${this.config.from.name} <${this.config.from.email}>`);
+      console.log(`[EMAIL] From: ${fromName} <${fromEmail}>`);
       console.log(`[EMAIL] SMTP Host: ${this.config.host}:${this.config.port}`);
       
       const info = await this.transporter.sendMail({
-        from: `"${this.config.from.name}" <${this.config.from.email}>`,
+        from: `"${fromName}" <${fromEmail}>`,
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -1795,6 +1857,8 @@ END:VCALENDAR`;
       to,
       subject: "Webinar Registration Update - RE Data Metrix",
       html: htmlContent,
+    
+      from: await this.getFromForCategory('webinar'),
     });
   }
 
@@ -1884,6 +1948,8 @@ END:VCALENDAR`;
       to,
       subject: "Thank You for Attending! Here's Your FREE 6-Month Access Code",
       html: htmlContent,
+    
+      from: await this.getFromForCategory('webinar'),
     });
   }
 
@@ -1962,6 +2028,8 @@ END:VCALENDAR`;
       to,
       subject: "Missed Our Webinar? Join Us Next Time!",
       html: htmlContent,
+    
+      from: await this.getFromForCategory('webinar'),
     });
   }
 
@@ -2046,6 +2114,8 @@ END:VCALENDAR`;
       to,
       subject: "Don't Forget Your FREE 6-Month Access - Limited Time!",
       html: htmlContent,
+    
+      from: await this.getFromForCategory('webinar'),
     });
   }
 
@@ -2121,6 +2191,8 @@ END:VCALENDAR`;
       to,
       subject: `New Referral Click - ${affiliateName}`,
       html: htmlContent,
+    
+      from: await this.getFromForCategory('marketing'),
     });
   }
   async sendLenderBroadcastEmail(to: string, contactName: string, companyName: string, subject: string, bodyHtml: string): Promise<boolean> {
@@ -2172,6 +2244,8 @@ END:VCALENDAR`;
       to,
       subject,
       html: htmlContent,
+    
+      from: await this.getFromForCategory('lender'),
     });
   }
 
@@ -2266,6 +2340,8 @@ END:VCALENDAR`;
       to,
       subject: 'We\'re building something new - and we want your input | RE Data Metrix',
       html: htmlContent,
+    
+      from: await this.getFromForCategory('marketing'),
     });
   }
 }

@@ -686,6 +686,28 @@ export default function AdminDashboard() {
               </Card>
             )}
 
+            {isAdmin && (
+              <Card
+                className="hover-elevate cursor-pointer"
+                onClick={() => setLocation("/admin/email-senders")}
+                data-testid="card-email-senders"
+              >
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <CardTitle>Email Senders</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Manage "from" addresses for different email categories
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            )}
+
             <Card 
               className="hover-elevate cursor-pointer" 
               onClick={() => setLocation("/admin/feature-feedback")}

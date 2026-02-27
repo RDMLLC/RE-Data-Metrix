@@ -27,6 +27,8 @@ A Zoho Meeting integration enables automated webinar attendance syncing. Admins 
 
 A Marketing Pixel Management System enables admins to configure tracking pixels for advertising platforms (Meta, LinkedIn, Google Ads, TikTok, Twitter) via the `/admin/marketing-pixels` page. The `MarketingPixelLoader` component automatically injects enabled pixel scripts site-wide. The `useMarketingEvents` hook provides tracking functions for key conversion events: `trackLead` (webinar registration), `trackInitiateCheckout`, `trackCompleteRegistration` (account creation), and `trackSubscribe` (subscription completion).
 
+An Email Sender Management System (`/admin/email-senders`) allows admins to register email alias addresses (e.g. `support@redatametrix.com`, `info@redatametrix.com`) and assign them to one of five email categories: Transactional, Support, Webinar, Marketing, and Lender. The email service resolves the "from" address per category at send time, falling back to the global default alias or the `SMTP_FROM_NAME`/`SMTP_FROM_EMAIL` environment variables. Tables: `email_sender_aliases` (aliases with label, fromName, fromEmail, isDefault) and `email_category_settings` (category-to-alias mappings). All 26 send methods in `server/services/email.service.ts` are category-aware via `getFromForCategory()`.
+
 ## Future Features (Backlog)
 
 ### Custom User Email Workflow
