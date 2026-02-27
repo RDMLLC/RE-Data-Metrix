@@ -18,22 +18,28 @@ import {
   AlertTriangle,
   CheckCircle2,
   Building2,
+  X,
 } from "lucide-react";
 
-const DEFAULT_SUBJECT = "Exciting Updates from RE Data Metrix \u2014 Investor Fuel Podcast & What\u2019s Ahead";
+const DEFAULT_SUBJECT = "Action Required: Set Up Your Loan Products on RE Data Metrix";
 
-const DEFAULT_BODY = `<p>I wanted to take a moment to share some exciting news and express my sincere gratitude for being part of the RE Data Metrix experience.</p>
+const DEFAULT_BODY = `<p>I wanted to share a quick update on where RE Data Metrix stands and why now is an important time to make sure your lender profile is complete.</p>
 
-<div class="highlight-box">
-  <h3 style="margin-top: 0; color: #1E3A8A; font-size: 18px;">We're on the Investor Fuel Podcast!</h3>
-  <p style="margin: 0;">I'm thrilled to share that I just finished filming an episode of the <strong>Investor Fuel</strong> podcast. The episode is scheduled to air on or around <strong>February 20, 2026</strong>, and I'll be sure to share the link with you once it's live. This is a fantastic opportunity to get RE Data Metrix in front of a wider audience of serious real estate investors \u2014 the exact people who will benefit from the lending solutions you offer.</p>
-</div>
+<h3 style="color: #1E3A8A; font-size: 16px;">We've Hired a Marketing Firm</h3>
+<p>RE Data Metrix has officially partnered with <strong>BizIQ</strong>, a digital marketing agency, to handle our SEO and AEO optimization along with other behind-the-scenes improvements to the platform. We are actively preparing for a monthly paid digital ad campaign &mdash; which means qualified real estate investors will soon be finding us through search and targeted advertising.</p>
 
-<h3 style="color: #1E3A8A; font-size: 16px;">Thank You for Being Here</h3>
-<p>I want to personally thank you for setting up your lender portal and taking the time to build out your loan products on the platform. Your participation is what makes RE Data Metrix a valuable resource for investors, and I truly appreciate your partnership.</p>
+<h3 style="color: #1E3A8A; font-size: 16px;">Growth is Coming</h3>
+<p>We're already seeing users come through the platform, and with BizIQ's efforts now underway, we expect signups to accelerate in the near term. This is exactly the moment to make sure your profile is ready to receive those referrals.</p>
 
-<h3 style="color: #1E3A8A; font-size: 16px;">What's Next</h3>
-<p>It's an exciting time for RE Data Metrix. In addition to the podcast, I'm currently interviewing marketing companies to help us scale our reach and drive traffic to the platform. I'm hopeful that we'll start adding subscribers soon, which means more qualified investors discovering your loan products and reaching out to you directly.</p>`;
+<h3 style="color: #1E3A8A; font-size: 16px;">One Lender Is Ready &mdash; Make Sure You Are Too</h3>
+<p>At this point, only one lender on the platform has fully loaded their loan products. That matters because <strong>investors are only matched with and referred to lenders whose loan products are visible in the system.</strong> If your loan products aren't set up, you will not appear in investor results &mdash; and those referrals will go elsewhere.</p>
+
+<h3 style="color: #1E3A8A; font-size: 16px;">What to Do</h3>
+<p>Please log in to your Lender Portal and complete your loan product setup today. The button below will take you directly to your portal.</p>
+
+<p>Need a refresher on how to set up your portal? <a href="https://youtu.be/pGaiRLIkcmQ" style="color: #1E3A8A; font-weight: 600;">Watch a short walkthrough video here</a>.</p>
+
+<p>If you need assistance, feel free to contact me directly. For your convenience, you can use the links in my signature below to schedule a short phone call, or a longer video meeting if you'd like to walk through it together on a video call.</p>`;
 
 export default function LenderBroadcast() {
   const { user } = useAuth();
@@ -42,6 +48,7 @@ export default function LenderBroadcast() {
   const [bodyHtml, setBodyHtml] = useState(DEFAULT_BODY);
   const [showPreview, setShowPreview] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
+  const [excludedEmails, setExcludedEmails] = useState<Set<string>>(new Set());
 
   const isAuditor = user?.role === "auditor";
 
@@ -52,11 +59,29 @@ export default function LenderBroadcast() {
     queryKey: ["/api/admin/lender-broadcast/preview"],
   });
 
+  const activeRecipients = (previewData?.recipients ?? []).filter(
+    r => !excludedEmails.has(r.email)
+  );
+
+  const toggleExclusion = (email: string) => {
+    setExcludedEmails(prev => {
+      const next = new Set(prev);
+      if (next.has(email)) {
+        next.delete(email);
+      } else {
+        next.add(email);
+      }
+      return next;
+    });
+    setConfirmSend(false);
+  };
+
   const sendMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/admin/lender-broadcast", {
         subject,
         bodyHtml,
+        excludedEmails: Array.from(excludedEmails),
       });
       return res.json();
     },
@@ -88,11 +113,11 @@ export default function LenderBroadcast() {
           <p>Hi [Contact Name],</p>
           ${bodyHtml}
           <div style="background: #F0FDF4; border: 1px solid #0F7B49; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0 0 12px; font-weight: 600; color: #0F7B49;">Review Your Portal Information</p>
-            <p style="margin: 0 0 16px; font-size: 14px; color: #555;">Please log in and confirm your company details and loan products are accurate and up to date.</p>
-            <a style="display: inline-block; padding: 14px 28px; background: #D4AF37; color: #1E3A8A; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: bold; font-size: 16px;">Log Into Your Portal</a>
+            <p style="margin: 0 0 12px; font-weight: 600; color: #0F7B49;">Access Your Lender Portal</p>
+            <p style="margin: 0 0 16px; font-size: 14px; color: #555;">Log in to complete your loan product setup and start receiving investor referrals.</p>
+            <a href="#" style="display: inline-block; padding: 14px 28px; background: #D4AF37; color: #1E3A8A; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: bold; font-size: 16px;">Log Into Your Portal</a>
           </div>
-          <p style="margin-top: 24px;">Thank you again for your trust and partnership. I'm looking forward to what's ahead for all of us.</p>
+          <p style="margin-top: 24px;">Thank you for being a part of RE Data Metrix. We're building something valuable here, and your participation is what makes it work for investors.</p>
           <p style="margin-top: 24px;">Warm regards,<br><strong>RE Data Metrix</strong></p>
         </div>
         <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px;">
@@ -122,7 +147,7 @@ export default function LenderBroadcast() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold" data-testid="text-page-title">Lender Broadcast Email</h1>
-            <p className="text-sm text-muted-foreground">Send an email to all active lender partners</p>
+            <p className="text-sm text-muted-foreground">Send an email to active lender partners</p>
           </div>
         </div>
 
@@ -148,7 +173,7 @@ export default function LenderBroadcast() {
               <div>
                 <p className="text-sm text-muted-foreground">Emails to Send</p>
                 <p className="text-2xl font-bold" data-testid="text-email-count">
-                  {previewLoading ? "..." : previewData?.recipientCount ?? 0}
+                  {previewLoading ? "..." : activeRecipients.length}
                 </p>
               </div>
             </div>
@@ -157,17 +182,48 @@ export default function LenderBroadcast() {
 
         {previewData && previewData.recipientCount > 0 && (
           <Card className="p-4 mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-medium">Recipients</h3>
+            <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-medium">Recipients</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">Click a name to exclude from this send</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {previewData.recipients.map((r, i) => (
-                <Badge key={i} variant="secondary" data-testid={`badge-recipient-${i}`}>
-                  {r.companyName}
-                </Badge>
-              ))}
+              {previewData.recipients.map((r, i) => {
+                const excluded = excludedEmails.has(r.email);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => toggleExclusion(r.email)}
+                    data-testid={`badge-recipient-${i}`}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-medium transition-colors border ${
+                      excluded
+                        ? "bg-muted text-muted-foreground border-border line-through opacity-50"
+                        : "bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80"
+                    }`}
+                  >
+                    {r.companyName}
+                    {excluded ? (
+                      <span className="text-xs">excluded</span>
+                    ) : (
+                      <X className="h-3 w-3 opacity-60" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            {excludedEmails.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setExcludedEmails(new Set())}
+                className="mt-3 text-xs text-primary underline-offset-2 hover:underline"
+                data-testid="button-reset-exclusions"
+              >
+                Reset — include all lenders
+              </button>
+            )}
           </Card>
         )}
 
@@ -220,18 +276,23 @@ export default function LenderBroadcast() {
               {!confirmSend ? (
                 <Button
                   onClick={() => setConfirmSend(true)}
-                  disabled={!subject.trim() || !bodyHtml.trim() || !previewData?.recipientCount}
+                  disabled={!subject.trim() || !bodyHtml.trim() || activeRecipients.length === 0}
                   data-testid="button-prepare-send"
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  Send to All Lenders
+                  Send to {activeRecipients.length} {activeRecipients.length === 1 ? "Lender" : "Lenders"}
                 </Button>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      Send to {previewData?.recipientCount} lenders?
+                      Send to {activeRecipients.length} {activeRecipients.length === 1 ? "lender" : "lenders"}?
+                      {excludedEmails.size > 0 && (
+                        <span className="text-muted-foreground ml-1">
+                          ({excludedEmails.size} excluded)
+                        </span>
+                      )}
                     </span>
                   </div>
                   <Button

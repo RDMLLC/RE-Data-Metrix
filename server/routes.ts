@@ -10299,16 +10299,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/lender-broadcast", ensureAdmin, async (req, res) => {
     try {
-      const { subject, bodyHtml } = req.body;
+      const { subject, bodyHtml, excludedEmails } = req.body;
       if (!subject || !bodyHtml) {
         return res.status(400).json({ error: "Subject and body are required" });
       }
 
+      const excluded: string[] = Array.isArray(excludedEmails) ? excludedEmails : [];
+
       const adminUser = req.user as User;
-      console.log(`[LENDER BROADCAST] Admin ${adminUser.email} sending broadcast: "${subject}"`);
+      console.log(`[LENDER BROADCAST] Admin ${adminUser.email} sending broadcast: "${subject}" (excluding ${excluded.length})`);
 
       const allLenders = await storage.getAllLenders();
-      const activeLenders = allLenders.filter((l: any) => !l.archived);
+      const activeLenders = allLenders.filter((l: any) => !l.archived && !excluded.includes(l.email));
 
       let sent = 0;
       let failed = 0;
