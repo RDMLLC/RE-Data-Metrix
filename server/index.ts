@@ -212,9 +212,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize Stripe before registering routes
-  await initStripe();
-  
   const server = await registerRoutes(app);
 
   // Data fixes: correct affiliate data on startup
@@ -345,9 +342,15 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
-    
+
+    // Start background services
     closingRemindersService.start();
     webinarReminderService.start();
     signupFollowupService.start();
+
+    // Initialize Stripe after server is already listening so health checks pass immediately
+    initStripe().catch((err) => {
+      console.error('Stripe initialization error (non-fatal):', err);
+    });
   });
 })();
