@@ -320,9 +320,10 @@ export default function Checkout() {
   // Plan and discount state
   const urlParams = new URLSearchParams(searchString);
   const urlPlan = urlParams.get("plan");
+  const urlCode = urlParams.get("code");
   const initialPlan = urlPlan === "monthly" ? "monthly" : urlPlan === "free" ? "free" : "annual";
   const [selectedPlan, setSelectedPlan] = useState<"free" | "monthly" | "annual">(initialPlan);
-  const [discountCode, setDiscountCode] = useState("");
+  const [discountCode, setDiscountCode] = useState(urlCode ? urlCode.toUpperCase() : "");
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; percentOff: number; amountOff: number; codeType?: string; promoCodeId?: string; durationMonths?: number } | null>(null);
   const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
   
@@ -403,6 +404,15 @@ export default function Checkout() {
     setIsValidatingDiscount(true);
     validateDiscountMutation.mutate(discountCode.trim());
   };
+
+  // Auto-apply discount code from URL params on mount
+  useEffect(() => {
+    if (urlCode && urlCode.trim() && selectedPlan !== "free") {
+      setIsValidatingDiscount(true);
+      validateDiscountMutation.mutate(urlCode.trim().toUpperCase());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const removeDiscount = () => {
     setAppliedDiscount(null);

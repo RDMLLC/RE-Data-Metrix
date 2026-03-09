@@ -6,11 +6,11 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pool, db } from "./db";
-import { affiliates, serviceRegions } from "@shared/schema";
+import { affiliates, serviceRegions, discountCodes } from "@shared/schema";
 import { eq, count } from "drizzle-orm";
 import passport from "./auth";
 import { runMigrations } from 'stripe-replit-sync';
-import { getStripeSync, isStripeConfigured } from './services/stripeClient';
+import { getStripeSync, isStripeConfigured, getStripeSecretKey } from './services/stripeClient';
 import { WebhookHandlers } from './services/webhookHandlers';
 import { closingRemindersService } from './services/closingReminders.service';
 import { webinarReminderService } from './services/webinar-reminder.service';
@@ -77,6 +77,54 @@ async function initStripe() {
       });
   } catch (error) {
     console.error('Failed to initialize Stripe:', error);
+  }
+}
+
+// Seed FREEMONTH discount code if it doesn't exist
+async function seedFreeMonthDiscount() {
+  try {
+    const [existing] = await db.select().from(discountCodes).where(eq(discountCodes.code, 'FREEMONTH'));
+    if (existing) return;
+
+    const secretKey = await getStripeSecretKey().catch(() => null);
+    if (!secretKey) {
+      console.warn('[SEED] Stripe not configured — skipping FREEMONTH coupon creation');
+      return;
+    }
+
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(secretKey, { apiVersion: '2025-01-27.acacia' as any });
+
+    let couponId = 'FREEMONTH';
+    try {
+      await stripe.coupons.create({
+        id: 'FREEMONTH',
+        name: 'Free Month Promotion',
+        amount_off: 2500,
+        currency: 'usd',
+        duration: 'once',
+      });
+      console.log('[SEED] Created Stripe coupon FREEMONTH');
+    } catch (err: any) {
+      if (err?.code === 'resource_already_exists') {
+        console.log('[SEED] Stripe coupon FREEMONTH already exists, reusing');
+      } else {
+        throw err;
+      }
+    }
+
+    await db.insert(discountCodes).values({
+      code: 'FREEMONTH',
+      displayName: 'Free Month Promotion',
+      description: 'Pay for 9 months, get 12. Limited time offer.',
+      planApplicability: 'annual',
+      amountOff: '25.00',
+      stripeCouponId: couponId,
+      isActive: true,
+    });
+    console.log('[SEED] Inserted FREEMONTH discount code into database');
+  } catch (err) {
+    console.error('[SEED] Failed to seed FREEMONTH discount code:', err);
   }
 }
 
@@ -351,6 +399,11 @@ app.use((req, res, next) => {
     // Initialize Stripe after server is already listening so health checks pass immediately
     initStripe().catch((err) => {
       console.error('Stripe initialization error (non-fatal):', err);
+    });
+
+    // Seed FREEMONTH discount code (no-op if already exists)
+    seedFreeMonthDiscount().catch((err) => {
+      console.error('FREEMONTH seed error (non-fatal):', err);
     });
   });
 })();

@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video } from "lucide-react";
+import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video, Tag, Copy, CheckCheck } from "lucide-react";
 import { SEO } from "@/components/SEO";
 
 const featureComparison = [
@@ -28,6 +28,13 @@ const featureComparison = [
 export default function Pricing() {
   const { isAuthenticated, isSubscriber, user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const copyPromoCode = () => {
+    navigator.clipboard.writeText("FREEMONTH");
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  };
 
   const monthlyPrice = 25;
   const annualPrice = 250;
@@ -286,9 +293,32 @@ export default function Pricing() {
                       Lock in your rate
                     </li>
                   </ul>
+
+                  <div className="rounded-md border border-accent/50 bg-accent/10 p-3 space-y-2" data-testid="promo-banner-freemonth">
+                    <div className="flex items-start gap-2">
+                      <Tag className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                      <p className="text-xs text-foreground leading-snug">
+                        <span className="font-semibold text-accent">Limited time offer:</span> Get an additional month free. Pay for 9 months, get 12.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 bg-background/60 rounded px-2 py-1.5">
+                      <span className="text-xs font-mono font-bold text-foreground tracking-widest">FREEMONTH</span>
+                      <button
+                        onClick={copyPromoCode}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        data-testid="button-copy-promo-code"
+                      >
+                        {codeCopied ? (
+                          <><CheckCheck className="h-3.5 w-3.5 text-success" /><span className="text-success">Copied</span></>
+                        ) : (
+                          <><Copy className="h-3.5 w-3.5" /><span>Copy</span></>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={isAuthenticated ? "/portal/upgrade" : "/checkout?plan=annual"}>
+                  <Link href={isAuthenticated ? "/portal/upgrade?plan=annual&code=FREEMONTH" : "/checkout?plan=annual&code=FREEMONTH"} className="w-full">
                     <Button 
                       className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
                       variant={billingCycle === "annual" ? "default" : "outline"}
