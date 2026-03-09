@@ -335,6 +335,7 @@ export interface IStorage {
     totalActive: number;
     totalReferralTrial: number;
     totalComped: number;
+    totalFree: number;
     totalInactive: number;
     usersByMonth: Array<{month: string; count: number}>;
     referralConversions: number;
@@ -648,6 +649,13 @@ export class MemStorage implements IStorage {
       verificationExpiry: null,
       passwordResetToken: null,
       passwordResetExpiry: null,
+      termsAcceptedAt: insertUser.termsAcceptedAt ?? null,
+      pendingPlan: insertUser.pendingPlan ?? null,
+      termsVersion: insertUser.termsVersion ?? null,
+      privacyVersion: insertUser.privacyVersion ?? null,
+      stripeCustomerId: insertUser.stripeCustomerId ?? null,
+      stripeSubscriptionId: insertUser.stripeSubscriptionId ?? null,
+      subscriptionPlan: insertUser.subscriptionPlan ?? null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -888,6 +896,11 @@ export class MemStorage implements IStorage {
       cashOutMaxLtv: data.cashOutMaxLtv ?? null,
       referralLink: data.referralLink ?? null,
       isActive: data.isActive ?? true,
+      loanTermYears: data.loanTermYears ?? null,
+      minDscrRequired: data.minDscrRequired ?? null,
+      isLtcWeighted: data.isLtcWeighted ?? false,
+      maxLtcPercent: data.maxLtcPercent ?? null,
+      transactionalFlatFee: data.transactionalFlatFee ?? null,
       createdAt: new Date(),
     };
     this.loanProducts.set(id, loanProduct);
@@ -1170,6 +1183,7 @@ export class MemStorage implements IStorage {
     totalActive: number;
     totalReferralTrial: number;
     totalComped: number;
+    totalFree: number;
     totalInactive: number;
     usersByMonth: Array<{month: string; count: number}>;
     referralConversions: number;
@@ -1272,6 +1286,69 @@ export class MemStorage implements IStorage {
   async deleteMarketingPixel(id: string): Promise<boolean> {
     throw new Error("Not implemented in MemStorage");
   }
+
+  async getAllAffiliates(): Promise<Affiliate[]> { throw new Error("Not implemented in MemStorage"); }
+  async getActiveAffiliates(): Promise<Affiliate[]> { throw new Error("Not implemented in MemStorage"); }
+  async getAffiliateById(id: string): Promise<Affiliate | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async createAffiliate(data: InsertAffiliate): Promise<Affiliate> { throw new Error("Not implemented in MemStorage"); }
+  async updateAffiliate(id: string, data: Partial<InsertAffiliate>): Promise<Affiliate | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async deleteAffiliate(id: string): Promise<boolean> { throw new Error("Not implemented in MemStorage"); }
+  async getAllAffiliateCategories(): Promise<AffiliateCategory[]> { throw new Error("Not implemented in MemStorage"); }
+  async upsertAffiliateCategory(data: InsertAffiliateCategory): Promise<AffiliateCategory> { throw new Error("Not implemented in MemStorage"); }
+  async deleteAffiliateCategory(id: string): Promise<boolean> { throw new Error("Not implemented in MemStorage"); }
+  async getSiteSetting(key: string): Promise<string | null> { throw new Error("Not implemented in MemStorage"); }
+  async setSiteSetting(key: string, value: string): Promise<SiteSetting> { throw new Error("Not implemented in MemStorage"); }
+  async getAllServiceRegions(): Promise<ServiceRegion[]> { throw new Error("Not implemented in MemStorage"); }
+  async getServiceRegionsByState(state: string): Promise<ServiceRegion[]> { throw new Error("Not implemented in MemStorage"); }
+  async getServiceRegionById(id: string): Promise<ServiceRegion | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async createServiceRegion(data: InsertServiceRegion): Promise<ServiceRegion> { throw new Error("Not implemented in MemStorage"); }
+  async updateServiceRegion(id: string, data: Partial<InsertServiceRegion>): Promise<ServiceRegion | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async deleteServiceRegion(id: string): Promise<boolean> { throw new Error("Not implemented in MemStorage"); }
+  async getAllContractors(): Promise<Contractor[]> { throw new Error("Not implemented in MemStorage"); }
+  async getActiveContractors(): Promise<Contractor[]> { throw new Error("Not implemented in MemStorage"); }
+  async getContractorById(id: string): Promise<Contractor | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async getContractorsByRegion(regionId: string): Promise<Contractor[]> { throw new Error("Not implemented in MemStorage"); }
+  async createContractor(data: InsertContractor): Promise<Contractor> { throw new Error("Not implemented in MemStorage"); }
+  async updateContractor(id: string, data: Partial<InsertContractor>): Promise<Contractor | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async deleteContractor(id: string): Promise<boolean> { throw new Error("Not implemented in MemStorage"); }
+  async getContractorServiceRegions(contractorId: string): Promise<ServiceRegion[]> { throw new Error("Not implemented in MemStorage"); }
+  async setContractorServiceRegions(contractorId: string, regionIds: string[]): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async createContractorInvite(email: string, companyName: string): Promise<{token: string, contractor: Contractor, isNewInvite: boolean}> { throw new Error("Not implemented in MemStorage"); }
+  async validateContractorInvite(token: string): Promise<Contractor | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async completeContractorSignup(contractorId: string, data: any): Promise<Contractor> { throw new Error("Not implemented in MemStorage"); }
+  async getContractorByEmail(email: string): Promise<Contractor | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async getAllTrainingVideos(): Promise<TrainingVideo[]> { throw new Error("Not implemented in MemStorage"); }
+  async getActiveTrainingVideos(): Promise<TrainingVideo[]> { throw new Error("Not implemented in MemStorage"); }
+  async getTrainingVideoById(id: string): Promise<TrainingVideo | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async createTrainingVideo(data: InsertTrainingVideo): Promise<TrainingVideo> { throw new Error("Not implemented in MemStorage"); }
+  async updateTrainingVideo(id: string, data: Partial<InsertTrainingVideo>): Promise<TrainingVideo | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async deleteTrainingVideo(id: string): Promise<boolean> { throw new Error("Not implemented in MemStorage"); }
+  async createDiscountCode(data: any): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async getDiscountCode(id: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async getDiscountCodeByCode(code: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async getPromoCodeByCode(code: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async getAllDiscountCodes(filters?: any): Promise<any[]> { throw new Error("Not implemented in MemStorage"); }
+  async updateDiscountCode(id: string, data: any): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async deleteDiscountCode(id: string): Promise<boolean> { throw new Error("Not implemented in MemStorage"); }
+  async recordDiscountCodeUse(data: any): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async getDiscountCodeUsage(discountCodeId: string): Promise<any[]> { throw new Error("Not implemented in MemStorage"); }
+  async getDiscountCodeStats(): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async createDemoToken(data: any): Promise<DemoToken> { throw new Error("Not implemented in MemStorage"); }
+  async getDemoTokenByToken(token: string): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async getAllDemoTokens(): Promise<DemoToken[]> { throw new Error("Not implemented in MemStorage"); }
+  async updateDemoToken(id: string, data: any): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async revokeDemoToken(id: string): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async recordDemoTokenUsage(token: string): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async getPropertyCache(normalizedAddress: string, provider?: string): Promise<PropertyCache | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache> { throw new Error("Not implemented in MemStorage"); }
+  async incrementPropertyCacheHit(id: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async deleteExpiredPropertyCache(): Promise<number> { throw new Error("Not implemented in MemStorage"); }
+  async getUserUsageCounter(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserPropertyLookup(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserWholesaleCalc(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserPdfDownload(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserArvHelper(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async resetUserUsageIfExpired(userId: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2718,6 +2795,7 @@ export class DatabaseStorage implements IStorage {
     totalActive: number;
     totalReferralTrial: number;
     totalComped: number;
+    totalFree: number;
     totalInactive: number;
     usersByMonth: Array<{month: string; count: number}>;
     referralConversions: number;
@@ -2770,6 +2848,7 @@ export class DatabaseStorage implements IStorage {
       totalReferralTrial: byStatus['referral_trial'] || 0,
       totalComped: byStatus['comped'] || 0,
       totalFree: byStatus['free'] || 0,
+      totalInactive: byStatus['inactive'] || 0,
       usersByMonth,
       referralConversions,
     };

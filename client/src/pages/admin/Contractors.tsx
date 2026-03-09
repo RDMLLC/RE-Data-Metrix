@@ -469,7 +469,7 @@ export default function Contractors() {
                   />
                 </div>
                 {!isAuditor && (
-                  <Button onClick={openInviteDialog} data-testid="button-invite-contractor">
+                  <Button onClick={() => openInviteDialog()} data-testid="button-invite-contractor">
                     <Send className="h-4 w-4 mr-2" />
                     Invite Contractor
                   </Button>

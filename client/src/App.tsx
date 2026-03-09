@@ -1,5 +1,5 @@
 import { Switch, Route } from "wouter";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, Component, type ReactNode } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from 'react-helmet-async';
@@ -116,8 +116,32 @@ function PageLoader() {
   );
 }
 
+interface ErrorBoundaryState { hasError: boolean }
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-center max-w-md px-4">
+            <p className="text-lg font-medium">Something went wrong</p>
+            <p className="text-sm text-muted-foreground">A page failed to load. Please refresh the browser to try again.</p>
+            <button onClick={() => window.location.reload()} className="text-sm underline text-muted-foreground">Refresh</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function Router() {
   return (
+    <ErrorBoundary>
     <Suspense fallback={<PageLoader />}>
       <Switch>
         {/* Mobile-specific routes */}
@@ -148,13 +172,6 @@ function Router() {
         <Route path="/lender/reset-password/:token" component={ResetLenderPassword} />
         <Route path="/contractor/request-password-reset" component={RequestContractorPasswordReset} />
         <Route path="/contractor/reset-password/:token" component={ResetContractorPassword} />
-        <Route path="/portal">
-          {() => (
-            <ProtectedRoute>
-              <MemberDashboard />
-            </ProtectedRoute>
-          )}
-        </Route>
         <Route path="/portal/dashboard">
           {() => (
             <ProtectedRoute>
@@ -252,6 +269,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
     </Suspense>
+    </ErrorBoundary>
   );
 }
 

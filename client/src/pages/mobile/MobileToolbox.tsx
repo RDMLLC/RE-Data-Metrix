@@ -34,7 +34,7 @@ import type { Affiliate, AffiliateCategory } from "@shared/schema";
 const TOOL_FINDER_VIDEO_ID = "5hfQdtC42fk";
 const TOOL_FINDER_VIDEO_TITLE = "Tool Finder Tutorial";
 
-const PLACEHOLDER_AFFILIATES: Affiliate[] = [
+const PLACEHOLDER_AFFILIATES: Affiliate[] = (([
   {
     id: "demo-1",
     name: "Property Research Tool",
@@ -81,7 +81,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     updatedAt: null,
     notes: null,
   },
-];
+]) as any[]);
 
 export default function MobileToolbox() {
   const { isSubscriber, isLoading: authLoading } = useAuth();

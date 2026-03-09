@@ -40,6 +40,23 @@ import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useDemoAccess } from "@/hooks/use-demo-access";
 import PdfQuotaExhaustedModal from "./PdfQuotaExhaustedModal";
 
+const STATE_TAX_RATES: Record<string, number> = {
+  AL: 0.0040, AK: 0.0099, AZ: 0.0063, AR: 0.0061, CA: 0.0075, CO: 0.0049,
+  CT: 0.0187, DE: 0.0057, FL: 0.0083, GA: 0.0092, HI: 0.0028, ID: 0.0069,
+  IL: 0.0205, IN: 0.0085, IA: 0.0151, KS: 0.0131, KY: 0.0086, LA: 0.0055,
+  ME: 0.0109, MD: 0.0099, MA: 0.0114, MI: 0.0144, MN: 0.0108, MS: 0.0065,
+  MO: 0.0097, MT: 0.0084, NE: 0.0157, NV: 0.0053, NH: 0.0186, NJ: 0.0213,
+  NM: 0.0077, NY: 0.0172, NC: 0.0080, ND: 0.0098, OH: 0.0153, OK: 0.0090,
+  OR: 0.0091, PA: 0.0153, RI: 0.0153, SC: 0.0057, SD: 0.0115, TN: 0.0056,
+  TX: 0.0160, UT: 0.0058, VT: 0.0188, VA: 0.0082, WA: 0.0093, WV: 0.0059,
+  WI: 0.0157, WY: 0.0055, DC: 0.0085,
+};
+
+function getStateTaxRate(state: string): number {
+  const abbr = state?.trim().toUpperCase();
+  return STATE_TAX_RATES[abbr] ?? 0.0120;
+}
+
 // Demo lender names for Demo Mode - used when shooting marketing content
 const DEMO_LENDER_NAMES = [
   { lenderName: "Capital Bridge Funding", productName: "Bridge Express" },
@@ -466,14 +483,20 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     onSuccess: (data) => {
       setDealSaved(true);
       setSavedDealId(data.id);
-      // Invalidate member stats to update dashboard count
+      toast({
+        title: "Analysis saved",
+        description: "Your deal analysis has been saved to your dashboard.",
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/member/stats'] });
       queryClient.invalidateQueries({ queryKey: ['/api/member/deals'] });
     },
     onError: (error: any) => {
       console.error("Failed to auto-save deal:", error);
-      // Silent fail for auto-save - don't show toast to avoid interrupting user
-      // Reset the ref so user can retry if they want
+      toast({
+        title: "Failed to save analysis",
+        description: error.message || "Your deal could not be saved. Please try again.",
+        variant: "destructive",
+      });
       saveAttemptedRef.current = false;
     },
   });
@@ -666,7 +689,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     
     const monthlyInsurance = (formData.annualInsurance || 0) / 12;
     const monthlyUtilities = formData.monthlyUtilities || 0;
-    const monthlyPropertyTax = ((formData.taxAssessedValue || purchasePrice) * 0.012) / 12;
+    const monthlyPropertyTax = ((formData.taxAssessedValue || purchasePrice) * getStateTaxRate(formData.state || '')) / 12;
     const monthlyHoa = formData.hoaFees || 0;
     const hoaTransferFee = formData.hoaTransferFee || 0;
     const otherCarryingCosts = formData.otherCarryingCosts || 0;
@@ -1150,7 +1173,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       ? Math.round(propertySqft * getInsuranceCostPerSqFt(propertyState))
       : 0);
   
-  const monthlyPropertyTax = ((formData.taxAssessedValue || propertyPurchasePrice) * 0.012) / 12;
+  const monthlyPropertyTax = ((formData.taxAssessedValue || propertyPurchasePrice) * getStateTaxRate(propertyState)) / 12;
   const monthlyInsurance = annualInsurance / 12;
   const monthlyHoa = formData.hoaFees || 0;
   

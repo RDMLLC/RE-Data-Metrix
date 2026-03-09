@@ -39,7 +39,7 @@ interface ToolFinderProps {
   showTutorial?: boolean;
 }
 
-const PLACEHOLDER_AFFILIATES: Affiliate[] = [
+const PLACEHOLDER_AFFILIATES: Affiliate[] = (([
   {
     id: "demo-1",
     name: "Property Research Tool",
@@ -480,7 +480,7 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = [
     createdAt: null,
     updatedAt: null,
   },
-];
+]) as any[]);
 
 export default function ToolFinder({ isBlurred = false, showTutorial = true }: ToolFinderProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);

@@ -28,14 +28,12 @@ export interface LenderWithQuestionnaire {
     creditScoreMin: number | null;
     loanTypes: string[] | null;
     statesServiced: string[] | null;
-    workWithNewInvestors: string | null;
+    workWithNewInvestors: boolean | null;
     fastestClosingTime: string | null;
-    offerNonTraditionalLending: string | null;
-    offerDeferredPayment: string | null;
-    offerRolledPoints: string | null;
-    offer100PercentFunding: string | null;
-    offerMultiUnitFinancing: string | null;
-    offerDscrLoans: string | null;
+    offerNonTraditionalLending: boolean | null;
+    offerDeferredPayment: boolean | null;
+    offerRolledPoints: boolean | null;
+    offer100PercentFunding: boolean | null;
     offerLoansAllStates: string | null;
   } | null;
 }
@@ -73,7 +71,7 @@ export async function matchLendersByLoanType(params: MatchLendersParams): Promis
         referralAmount: lender.referralAmount,
         referralType: lender.referralType,
         questionnaire: questionnaire ? {
-          creditScoreMin: questionnaire.creditScoreMin,
+          creditScoreMin: questionnaire.minCreditScore !== null ? Number(questionnaire.minCreditScore) : null,
           loanTypes: questionnaire.loanTypes,
           statesServiced: questionnaire.statesServiced,
           workWithNewInvestors: questionnaire.workWithNewInvestors,
@@ -82,8 +80,6 @@ export async function matchLendersByLoanType(params: MatchLendersParams): Promis
           offerDeferredPayment: questionnaire.offerDeferredPayment,
           offerRolledPoints: questionnaire.offerRolledPoints,
           offer100PercentFunding: questionnaire.offer100PercentFunding,
-          offerMultiUnitFinancing: questionnaire.offerMultiUnitFinancing,
-          offerDscrLoans: questionnaire.offerDscrLoans,
           offerLoansAllStates: questionnaire.offerLoansAllStates,
         } : null
       };

@@ -185,11 +185,6 @@ export default function DealAnalysisWizard() {
         return;
       }
     }
-    
-    // Reset to Step 1 when component mounts (new analysis session)
-    // This ensures users always start fresh when navigating to Deal Analysis
-    setCurrentStep(1);
-    setContextStep(1);
   }, []);
 
   // Sync step changes to context so it persists when navigating away
