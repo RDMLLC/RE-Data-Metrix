@@ -30,6 +30,15 @@ export default function Upgrade() {
   const { isAuthenticated, isSubscriber, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlCode = urlParams.get("code") || "";
+
+  function checkoutUrl(plan: "monthly" | "annual") {
+    const params = new URLSearchParams({ plan });
+    if (urlCode) params.set("code", urlCode);
+    return `/checkout?${params.toString()}`;
+  }
+
   // Redirect subscribers to dashboard
   useEffect(() => {
     if (!isLoading && isSubscriber) {
@@ -58,6 +67,15 @@ export default function Upgrade() {
               Upgrade to access unlimited property lookups, save your deals, export reports, and use advanced features that help you close more deals.
             </p>
           </div>
+
+          {urlCode && (
+            <div className="mb-8 text-center">
+              <div className="inline-flex items-center gap-2 bg-success/10 text-success border border-success/20 rounded-md px-4 py-2 text-sm font-medium" data-testid="banner-promo-code">
+                <Check className="h-4 w-4" />
+                Promo code <span className="font-mono font-bold">{urlCode}</span> will be applied at checkout
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <Card className="relative border">
@@ -144,7 +162,7 @@ export default function Upgrade() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href="/checkout?plan=monthly" className="w-full">
+                <Link href={checkoutUrl("monthly")} className="w-full">
                   <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-monthly">
                     Upgrade Now
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -200,7 +218,7 @@ export default function Upgrade() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Link href="/checkout?plan=annual" className="w-full">
+                <Link href={checkoutUrl("annual")} className="w-full">
                   <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-annual">
                     Upgrade Now
                     <ArrowRight className="h-4 w-4 ml-2" />

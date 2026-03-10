@@ -212,6 +212,13 @@ function Router() {
         <Route path="/features" component={Features} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/upgrade" component={Upgrade} />
+        <Route path="/portal/upgrade">
+          {() => (
+            <ProtectedRoute>
+              <Upgrade />
+            </ProtectedRoute>
+          )}
+        </Route>
         <Route path="/checkout" component={Checkout} />
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/complete" component={CheckoutComplete} />
