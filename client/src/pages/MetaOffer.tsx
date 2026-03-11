@@ -82,47 +82,28 @@ export default function MetaOffer() {
       <section className="bg-gradient-to-br from-primary via-primary/95 to-primary/90 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItaDJWMzRoLTJ6bTAtNHYyaDJ2LTJoLTJ6bS0yIDJoMnYtMmgtMnYyem0wLTJ2LTJoLTJ2Mmgyem0tMiAwaDJ2LTJoLTJ2MnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 py-16 lg:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4" data-testid="heading-hero">
-                Analyze Any Deal.{" "}
-                <span className="text-accent">Find the Right Lender.</span>{" "}
-                Close with Confidence.
-              </h1>
-              <p className="text-lg text-white/85 mb-8" data-testid="text-subheadline">
-                Turn guesswork into data-driven decisions — know your profit, compare lenders, and move fast.
-              </p>
+        <div className="relative z-10 max-w-3xl mx-auto px-6 py-16 lg:py-24 text-center">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4" data-testid="heading-hero">
+            Analyze Any Deal.{" "}
+            <span className="text-accent">Find the Right Lender.</span>{" "}
+            Close with Confidence.
+          </h1>
+          <p className="text-lg text-white/85 mb-8" data-testid="text-subheadline">
+            Turn guesswork into data-driven decisions — know your profit, compare lenders, and move fast.
+          </p>
 
-              <div className="flex flex-col items-center lg:items-start gap-2">
-                <Button
-                  size="lg"
-                  className="bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
-                  onClick={handleCta}
-                  data-testid="button-cta-hero"
-                >
-                  Start Analyzing Free
-                </Button>
-                <p className="text-sm text-white/70" data-testid="text-no-card">
-                  No credit card required.
-                </p>
-              </div>
-            </div>
-
-            <div className="hidden lg:block">
-              <div className="relative aspect-video bg-black rounded-md overflow-hidden shadow-2xl border-2 border-white/20">
-                <video
-                  ref={videoRef}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  controls
-                  playsInline
-                  data-testid="video-hero"
-                >
-                  <source src={heroVideo} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            </div>
+          <div className="flex flex-col items-center gap-2">
+            <Button
+              size="lg"
+              className="bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
+              onClick={handleCta}
+              data-testid="button-cta-hero"
+            >
+              Start Analyzing Free
+            </Button>
+            <p className="text-sm text-white/70" data-testid="text-no-card">
+              No credit card required.
+            </p>
           </div>
         </div>
       </section>
@@ -145,21 +126,25 @@ export default function MetaOffer() {
         </div>
       </section>
 
-      <section className="py-16 lg:py-24 bg-muted/50">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <div className="lg:hidden mb-8">
-            <div className="relative aspect-video bg-black rounded-md overflow-hidden shadow-xl border border-border">
-              <video
-                className="absolute inset-0 w-full h-full object-cover"
-                controls
-                playsInline
-                data-testid="video-below-fold"
-              >
-                <source src={heroVideo} type="video/mp4" />
-              </video>
-            </div>
+      <section className="py-16 lg:py-20 bg-muted/50">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="relative aspect-video bg-black rounded-md overflow-hidden shadow-xl border border-border">
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              controls
+              playsInline
+              data-testid="video-main"
+            >
+              <source src={heroVideo} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
+        </div>
+      </section>
 
+      <section className="py-16 lg:py-24 bg-background">
+        <div className="max-w-3xl mx-auto px-6 text-center">
           <p className="text-muted-foreground text-sm mb-8" data-testid="text-social-proof">
             Trusted by real estate investors across the U.S.
           </p>
