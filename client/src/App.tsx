@@ -22,6 +22,7 @@ const MobileDealAnalysis = lazy(() => import("@/pages/mobile/MobileDealAnalysis"
 const MobileLenders = lazy(() => import("@/pages/mobile/MobileLenders"));
 const MobileToolbox = lazy(() => import("@/pages/mobile/MobileToolbox"));
 const MobileWebinar = lazy(() => import("@/pages/mobile/MobileWebinar"));
+const MobileMetaOffer = lazy(() => import("@/pages/mobile/MobileMetaOffer"));
 const About = lazy(() => import("@/pages/About"));
 const Company = lazy(() => import("@/pages/Company"));
 const DealAnalysis = lazy(() => import("@/pages/DealAnalysis"));
@@ -104,6 +105,7 @@ const WebinarRsvpThankYou = lazy(() => import("@/pages/WebinarRsvpThankYou"));
 const BetaSignup = lazy(() => import("@/pages/BetaSignup"));
 const FeatureFeedback = lazy(() => import("@/pages/FeatureFeedback"));
 const AdminFeatureFeedback = lazy(() => import("@/pages/admin/FeatureFeedback"));
+const MetaOffer = lazy(() => import("@/pages/MetaOffer"));
 
 function PageLoader() {
   return (
@@ -149,6 +151,7 @@ function Router() {
         <Route path="/m/lenders" component={MobileLenders} />
         <Route path="/m/toolbox" component={MobileToolbox} />
         <Route path="/m/webinar" component={MobileWebinar} />
+        <Route path="/m/meta-offer" component={MobileMetaOffer} />
         
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />
@@ -222,6 +225,7 @@ function Router() {
         <Route path="/checkout" component={Checkout} />
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/complete" component={CheckoutComplete} />
+        <Route path="/meta-offer" component={MetaOffer} />
         <Route path="/beta-signup" component={BetaSignup} />
         <Route path="/feedback" component={FeatureFeedback} />
         <Route path="/privacy" component={Privacy} />

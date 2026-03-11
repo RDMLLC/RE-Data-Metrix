@@ -117,7 +117,7 @@ function loadTwitterPixel(pixelId: string) {
 }
 
 export function useMarketingEvents() {
-  const { data: pixels = [] } = useQuery<MarketingPixel[]>({
+  const { data: pixels = [], isSuccess: pixelsLoaded } = useQuery<MarketingPixel[]>({
     queryKey: ["/api/marketing-pixels"],
     staleTime: 1000 * 60 * 5,
   });
@@ -168,6 +168,7 @@ export function useMarketingEvents() {
     trackCustom: (eventName: string, params?: Record<string, any>) => {
       trackEvent(eventName, params);
     },
+    pixelsLoaded,
   };
 }
 

@@ -7,6 +7,7 @@ const MOBILE_ROUTE_MAP: Record<string, string> = {
   "/toolbox": "/m/toolbox",
   "/lenders": "/m/lenders",
   "/webinar": "/m/webinar",
+  "/meta-offer": "/m/meta-offer",
 };
 
 const DESKTOP_ROUTE_MAP: Record<string, string> = {
@@ -14,6 +15,7 @@ const DESKTOP_ROUTE_MAP: Record<string, string> = {
   "/m/toolbox": "/toolbox",
   "/m/lenders": "/lenders",
   "/m/webinar": "/webinar",
+  "/m/meta-offer": "/meta-offer",
 };
 
 export function useMobileRedirect() {
@@ -21,17 +23,19 @@ export function useMobileRedirect() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
+    const qs = window.location.search || "";
+
     if (isMobileView && deviceMode !== "desktop") {
       const mobileRoute = MOBILE_ROUTE_MAP[location];
       if (mobileRoute) {
-        setLocation(mobileRoute, { replace: true });
+        setLocation(mobileRoute + qs, { replace: true });
       }
     }
     
     if (!isMobileView && deviceMode !== "mobile") {
       const desktopRoute = DESKTOP_ROUTE_MAP[location];
       if (desktopRoute) {
-        setLocation(desktopRoute, { replace: true });
+        setLocation(desktopRoute + qs, { replace: true });
       }
     }
   }, [isMobileView, deviceMode, location, setLocation]);
