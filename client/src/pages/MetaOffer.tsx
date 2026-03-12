@@ -134,6 +134,7 @@ export default function MetaOffer() {
               className="absolute inset-0 w-full h-full object-cover"
               controls
               playsInline
+              preload="none"
               data-testid="video-main"
             >
               <source src={heroVideo} type="video/mp4" />

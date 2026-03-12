@@ -30,13 +30,16 @@ export function LenderAuthProvider({ children }: { children: React.ReactNode }) 
   const queryClient = useQueryClient();
   const [authChecked, setAuthChecked] = useState(false);
 
+  const isLandingPage = typeof window !== "undefined" &&
+    ["/meta-offer", "/m/meta-offer"].some(p => window.location.pathname.startsWith(p));
+
   const { data: lender = null, isLoading } = useQuery<Lender | null>({
     queryKey: ["/api/lenders/me"],
     retry: false,
-    enabled: authChecked,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    enabled: authChecked && !isLandingPage,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: !isLandingPage,
+    refetchOnMount: !isLandingPage,
     queryFn: async () => {
       try {
         const token = localStorage.getItem('_sessionToken');

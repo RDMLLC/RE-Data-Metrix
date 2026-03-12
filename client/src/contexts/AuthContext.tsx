@@ -55,10 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [authChecked, setAuthChecked] = useState(false);
 
+  const isLandingPage = typeof window !== "undefined" &&
+    ["/meta-offer", "/m/meta-offer"].some(p => window.location.pathname.startsWith(p));
+
   const { data: user = null, isLoading } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
-    enabled: authChecked,
+    enabled: authChecked && !isLandingPage,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: !isLandingPage,
     queryFn: async () => {
       try {
         const token = localStorage.getItem('_sessionToken');

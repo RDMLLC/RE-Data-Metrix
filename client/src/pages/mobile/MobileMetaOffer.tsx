@@ -141,6 +141,7 @@ export default function MobileMetaOffer() {
             className="absolute inset-0 w-full h-full object-cover"
             controls
             playsInline
+            preload="none"
             data-testid="video-mobile"
           >
             <source src={heroVideo} type="video/mp4" />
