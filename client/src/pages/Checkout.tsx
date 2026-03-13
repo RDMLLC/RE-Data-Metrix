@@ -464,9 +464,11 @@ export default function Checkout() {
       if (!priceId) {
         throw new Error("Subscription plans are not available. Please try again later.");
       }
+      const metaEventId = crypto.randomUUID();
       const response = await apiRequest("POST", "/api/subscription/checkout", { 
         priceId,
         discountCode: appliedDiscount?.code,
+        metaEventId,
       });
       return await response.json();
     },
@@ -513,6 +515,7 @@ export default function Checkout() {
       // For free plan OR if a comp code is provided, register without Stripe
       // Comp codes give premium access, so no payment is needed
       if (selectedPlan === "free" || compCode.trim()) {
+        const freeMetaEventId = crypto.randomUUID();
         const response = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -523,6 +526,7 @@ export default function Checkout() {
             password: data.password,
             fullName: data.fullName,
             compCode: compCode.trim() || undefined,
+            metaEventId: freeMetaEventId,
           }),
         });
 
@@ -546,14 +550,14 @@ export default function Checkout() {
         // Check if email verification is required
         if (result.requiresVerification) {
           setJustRegistered(true);
-          trackCompleteRegistration();
+          trackCompleteRegistration({ eventId: freeMetaEventId });
           toast({
             title: "Account Created!",
             description: "Please check your email to verify your account.",
           });
         } else {
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-          trackCompleteRegistration();
+          trackCompleteRegistration({ eventId: freeMetaEventId });
           toast({
             title: "Welcome to RE Data Metrix!",
             description: "Your free account has been created successfully.",
@@ -621,6 +625,9 @@ export default function Checkout() {
         return;
       }
 
+      // Generate deduplication ID for Meta CAPI
+      const metaEventId = crypto.randomUUID();
+
       // Call the payment-first checkout endpoint
       const response = await fetch("/api/subscription/checkout/start", {
         method: "POST",
@@ -635,6 +642,7 @@ export default function Checkout() {
           selectedPlan,
           discountCode: appliedDiscount?.code,
           termsAccepted: data.termsAccepted,
+          metaEventId,
         }),
       });
 

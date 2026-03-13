@@ -147,8 +147,28 @@ export function useMarketingEvents() {
   };
 
   return {
-    trackCompleteRegistration: (params?: { value?: number; currency?: string }) => {
-      trackEvent('CompleteRegistration', params);
+    trackCompleteRegistration: (params?: { value?: number; currency?: string; eventId?: string }) => {
+      const { eventId, ...rest } = params ?? {};
+      pixels.forEach(pixel => {
+        if (!pixel.isEnabled) return;
+        switch (pixel.platform) {
+          case 'meta':
+            window.fbq?.('track', 'CompleteRegistration', rest, eventId ? { eventID: eventId } : undefined);
+            break;
+          case 'linkedin':
+            window.lintrk?.('track', { conversion_id: rest.currency });
+            break;
+          case 'google':
+            window.gtag?.('event', 'CompleteRegistration', rest);
+            break;
+          case 'tiktok':
+            window.ttq?.track?.('CompleteRegistration', rest);
+            break;
+          case 'twitter':
+            window.twq?.('track', 'CompleteRegistration', rest);
+            break;
+        }
+      });
     },
     trackSubscribe: (params?: { value?: number; currency?: string; plan?: string }) => {
       trackEvent('Subscribe', { ...params, predicted_ltv: params?.value });

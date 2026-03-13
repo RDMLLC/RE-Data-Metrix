@@ -16,6 +16,7 @@ import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts, seedTrainingVideos } from "./seed-data";
 import { outboundWebhookService } from "./services/outbound-webhook.service";
+import { sendMetaCapiEvent } from "./services/metaCapi";
 // @ts-ignore
 import signature from "cookie-signature";
 
@@ -56,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: result.error || result.message });
       }
 
-      // Trigger outbound webhooks for user signup (fire and forget) - do this before any early returns
+      // Trigger outbound webhooks and CAPI for user signup (fire and forget)
       if (result.user) {
         const fullName = (req.body.fullName || '').trim();
         const nameParts = fullName.split(/\s+/);
@@ -66,6 +67,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let phone = '';
 
         const subscriptionType = result.isComped ? 'comped' : (req.body.pendingPlan || 'free');
+
+        // Fire Meta CAPI CompleteRegistration for free signups
+        sendMetaCapiEvent(
+          'CompleteRegistration',
+          {
+            email: result.user.email,
+            firstName,
+            lastName,
+            clientIp: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '',
+            clientUserAgent: req.headers['user-agent'] || '',
+          },
+          { contentName: 'free_signup' },
+          req.body.metaEventId || undefined,
+        ).catch(err => console.error('[CAPI] register error:', err));
 
         outboundWebhookService.triggerWebhooks('user_signup', {
           userId: result.user.id,
@@ -1325,6 +1340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_url: `${baseUrl}/checkout?canceled=true`,
         metadata: {
           pendingRegistrationId: pending.id,
+          ...(req.body.metaEventId && { meta_event_id: req.body.metaEventId }),
         },
       };
 
@@ -1659,7 +1675,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        res.json(result);
+        // Surface the meta_event_id so CheckoutComplete.tsx can fire browser pixel with matching ID
+        const stripe = await getUncachableStripeClient();
+        let metaEventId: string | undefined;
+        try {
+          const stripeSession = await stripe.checkout.sessions.retrieve(session_id);
+          metaEventId = stripeSession.metadata?.meta_event_id || undefined;
+        } catch (_) {}
+
+        res.json({ ...result, metaEventId });
       } else {
         res.status(400).json({ error: result.error || result.message });
       }
@@ -1720,6 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_url: `${baseUrl}/checkout?canceled=true`,
         metadata: {
           userId: user.id,
+          ...(req.body.metaEventId && { meta_event_id: req.body.metaEventId }),
         },
       };
 
@@ -4965,6 +4990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const updateMarketingPixelSchema = z.object({
     pixelId: z.string().min(1).optional(),
     isEnabled: z.boolean().optional(),
+    capiAccessToken: z.string().optional().nullable(),
   });
   
   // Get all marketing pixels
@@ -4979,10 +5005,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get enabled marketing pixels (public - for loading on frontend)
+  // capiAccessToken is stripped — it's a server secret and must never reach the browser
   app.get("/api/marketing-pixels", async (req, res) => {
     try {
       const pixels = await storage.getEnabledMarketingPixels();
-      res.json(pixels);
+      const safe = pixels.map(({ capiAccessToken: _omit, ...p }) => p);
+      res.json(safe);
     } catch (error) {
       console.error('Get enabled marketing pixels error:', error);
       res.status(500).json({ error: "Failed to fetch marketing pixels" });
@@ -5040,9 +5068,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: validation.error.errors[0].message });
       }
       
-      const { pixelId, isEnabled } = validation.data;
+      const { pixelId, isEnabled, capiAccessToken } = validation.data;
 
-      const pixel = await storage.updateMarketingPixel(id, { pixelId, isEnabled });
+      const pixel = await storage.updateMarketingPixel(id, {
+        ...(pixelId !== undefined && { pixelId }),
+        ...(isEnabled !== undefined && { isEnabled }),
+        ...(capiAccessToken !== undefined && { capiAccessToken }),
+      });
 
       if (!pixel) {
         return res.status(404).json({ error: "Pixel not found" });

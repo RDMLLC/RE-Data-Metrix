@@ -1314,6 +1314,7 @@ export const marketingPixels = pgTable("marketing_pixels", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   platform: text("platform").notNull(), // 'meta', 'linkedin', 'google', 'tiktok', 'twitter'
   pixelId: text("pixel_id").notNull(),
+  capiAccessToken: text("capi_access_token"), // Meta Conversions API server-side token (Meta only)
   isEnabled: boolean("is_enabled").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

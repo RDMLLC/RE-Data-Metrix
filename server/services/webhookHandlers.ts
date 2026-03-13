@@ -1,6 +1,7 @@
 import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { completeCheckoutSession } from './checkoutService';
 import { outboundWebhookService } from './outbound-webhook.service';
+import { sendMetaCapiEvent } from './metaCapi';
 import { db } from '../db';
 import { users, userProfiles } from '@shared/schema';
 import { eq } from 'drizzle-orm';
@@ -79,6 +80,35 @@ export class WebhookHandlers {
                       ...webhookPayload,
                       isComped: false,
                     }).catch(err => console.error('[Webhook] user_signup trigger error (paid signup):', err));
+
+                    // Meta CAPI: fire CompleteRegistration + Subscribe for paid signups
+                    const metaEventId = (session as any).metadata?.meta_event_id || undefined;
+                    const subAmount = typeof (session as any).amount_total === 'number'
+                      ? (session as any).amount_total / 100
+                      : undefined;
+
+                    sendMetaCapiEvent(
+                      'CompleteRegistration',
+                      {
+                        email: user.email,
+                        firstName,
+                        lastName,
+                        clientIp: session.customer_details?.address?.city ? undefined : undefined,
+                      },
+                      { contentName: 'paid_signup', value: subAmount },
+                      metaEventId,
+                    ).catch(err => console.error('[CAPI] CompleteRegistration (paid) error:', err));
+
+                    sendMetaCapiEvent(
+                      'Subscribe',
+                      {
+                        email: user.email,
+                        firstName,
+                        lastName,
+                      },
+                      { value: subAmount, contentName: user.subscriptionPlan || 'monthly' },
+                      metaEventId ? `sub_${metaEventId}` : undefined,
+                    ).catch(err => console.error('[CAPI] Subscribe error:', err));
                   } else {
                     console.log(`[WEBHOOK] Skipping webhooks for session ${session.id} - already processed by frontend or upgrade flow`);
                   }

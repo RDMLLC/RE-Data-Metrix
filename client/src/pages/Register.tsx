@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ export default function Register() {
   const { register } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { trackCompleteRegistration } = useMarketingEvents();
   const [isLoading, setIsLoading] = useState(false);
   const [compCode, setCompCode] = useState<string>("");
   const [compEmail, setCompEmail] = useState<string | null>(null);
@@ -162,6 +164,11 @@ export default function Register() {
       const isComped = (result as any)?.isComped;
       
       const loginUrl = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login";
+
+      // Fire browser pixel for CompleteRegistration (free signup)
+      if (!isComped) {
+        trackCompleteRegistration();
+      }
       
       if (isComped && !requiresVerification) {
         toast({

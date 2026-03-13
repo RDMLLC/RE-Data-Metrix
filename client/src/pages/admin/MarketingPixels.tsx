@@ -102,6 +102,9 @@ export default function MarketingPixels() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformKey | "">("");
   const [pixelId, setPixelId] = useState("");
+  // CAPI token editing state: maps pixel id -> draft token value
+  const [capiTokenDrafts, setCapiTokenDrafts] = useState<Record<string, string>>({});
+  const [showCapiToken, setShowCapiToken] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -150,11 +153,12 @@ export default function MarketingPixels() {
   });
 
   const updatePixelMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; pixelId?: string; isEnabled?: boolean }) => {
+    mutationFn: async ({ id, ...data }: { id: string; pixelId?: string; isEnabled?: boolean; capiAccessToken?: string | null }) => {
       return apiRequest("PATCH", `/api/admin/marketing-pixels/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/marketing-pixels"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/marketing-pixels"] });
       toast({ title: "Updated", description: "Pixel settings saved." });
     },
     onError: (error: any) => {
@@ -174,6 +178,17 @@ export default function MarketingPixels() {
       toast({ title: "Error", description: error.message || "Failed to delete pixel", variant: "destructive" });
     },
   });
+
+  // Sync draft CAPI token values whenever pixels load
+  useEffect(() => {
+    const drafts: Record<string, string> = {};
+    pixels.forEach(p => {
+      if (p.platform === 'meta') {
+        drafts[p.id] = (p as any).capiAccessToken ?? '';
+      }
+    });
+    setCapiTokenDrafts(prev => ({ ...drafts, ...prev }));
+  }, [pixels]);
 
   const existingPlatforms = new Set(pixels.map(p => p.platform));
   const availablePlatforms = Object.keys(PLATFORM_CONFIG).filter(
@@ -361,8 +376,57 @@ export default function MarketingPixels() {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">{config.description}</p>
+
+                  {/* Meta-only: Conversions API (server-side) token */}
+                  {pixel.platform === 'meta' && !isAuditor && (
+                    <div className="space-y-2 pt-1">
+                      <Label className="text-sm font-medium flex items-center gap-1">
+                        Conversions API Access Token
+                        <span className="text-xs text-muted-foreground font-normal">(server-side, optional)</span>
+                      </Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={showCapiToken[pixel.id] ? 'text' : 'password'}
+                            value={capiTokenDrafts[pixel.id] ?? ''}
+                            onChange={e => setCapiTokenDrafts(prev => ({ ...prev, [pixel.id]: e.target.value }))}
+                            placeholder="Enter CAPI access token..."
+                            className="pr-10 font-mono text-xs"
+                            data-testid={`input-capi-token-${pixel.platform}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowCapiToken(prev => ({ ...prev, [pixel.id]: !prev[pixel.id] }))}
+                            data-testid={`button-toggle-capi-token-${pixel.platform}`}
+                          >
+                            {showCapiToken[pixel.id]
+                              ? <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              : <Eye className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="default"
+                          disabled={updatePixelMutation.isPending}
+                          onClick={() => updatePixelMutation.mutate({
+                            id: pixel.id,
+                            capiAccessToken: capiTokenDrafts[pixel.id] || null,
+                          })}
+                          data-testid={`button-save-capi-token-${pixel.platform}`}
+                        >
+                          {updatePixelMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Found in Meta Events Manager under your pixel's Settings tab. Enables server-side event deduplication.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

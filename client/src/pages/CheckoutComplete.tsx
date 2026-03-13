@@ -4,11 +4,14 @@ import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, XCircle, Mail } from "lucide-react";
+import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 
 export default function CheckoutComplete() {
   const searchString = useSearch();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const { trackCompleteRegistration, trackSubscribe, pixelsLoaded } = useMarketingEvents();
+  const [pendingPixelData, setPendingPixelData] = useState<{ metaEventId?: string } | null>(null);
 
   useEffect(() => {
     const completeCheckout = async () => {
@@ -31,6 +34,7 @@ export default function CheckoutComplete() {
         if (response.ok && data.success) {
           setStatus("success");
           setMessage(data.message || "Your account has been created!");
+          setPendingPixelData({ metaEventId: data.metaEventId });
         } else {
           setStatus("error");
           setMessage(data.error || "Unable to complete registration. Please contact support.");
@@ -44,6 +48,13 @@ export default function CheckoutComplete() {
 
     completeCheckout();
   }, [searchString]);
+
+  // Fire browser pixel events once pixels are loaded and we have the event data
+  useEffect(() => {
+    if (!pixelsLoaded || !pendingPixelData) return;
+    trackCompleteRegistration({ eventId: pendingPixelData.metaEventId });
+    trackSubscribe();
+  }, [pixelsLoaded, pendingPixelData]);
 
   return (
     <Layout>

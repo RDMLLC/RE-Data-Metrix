@@ -1,0 +1,27 @@
+What Conversions API does
+Creates a direct server‑to‑server connection: Your app or website backend sends events like CompleteRegistration, Subscribe, Purchase, etc. straight to Meta’s servers, bypassing the user’s browser.
+
+Fills the gaps from the Pixel: It captures conversions that the Pixel can’t see because of ad blockers, iOS tracking limits, cookie restrictions, or broken JavaScript.
+
+Sends richer data: You can include hashed first‑party data (email, phone, user ID, plan type, LTV, renewal status) so Meta can better match events to users and optimize toward your most valuable customers.
+
+Why you want Pixel + CAPI together
+Two data streams, one clean event: Meta receives the event from the browser (Pixel) and from your server (CAPI) with the same event_id and deduplicates them into a single conversion.
+
+Better attribution and optimization: With fewer missed conversions, Meta’s algorithm learns faster, exits the learning phase more reliably, and can find more people like your actual buyers or subscribers.
+
+Stronger retargeting and reporting: Because more events are captured, your custom audiences (free sign‑ups, monthly subscribers, annual upgrades, churn‑winback, etc.) and your ROAS/CPA numbers become more accurate.
+
+How setup usually works
+Direct integration: Many platforms (Shopify, popular subscription platforms, some SaaS tools) have built‑in CAPI integrations you can toggle on and map events through their settings.
+
+Tag manager or middleware: Some teams use tools like Google Tag Manager server‑side or dedicated tracking tools to send server events to Meta.
+
+Custom integration: Your developers call Meta’s Marketing API from your backend whenever a key event occurs (free account created, subscription started, plan upgraded, renewal billed), passing an event_id, event name, timestamp, and hashed customer identifiers.
+
+How this helps your specific funnel
+Free → paid: When a free account is created or upgraded to monthly/annual, your backend can send a Lead, Subscribe, or Purchase event via CAPI, so Meta clearly sees which ad brought in that user and how far they moved through the funnel.
+
+Monthly → annual: When a user upgrades, you can send a separate event (for example, Subscribe with a higher value, or a custom event like UpgradeToAnnual), which can power value‑based optimization and high‑value lookalikes.
+
+Long‑term behavior: You can keep sending renewal, churn, and reactivation events over time so Meta optimizes not just for the first sign‑up but for long‑term revenue.
