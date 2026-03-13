@@ -2102,10 +2102,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Trigger subscription_completed webhook for upgrade flow
         const upgradeWorkflowTrigger =
-          previousPlan === 'free' && subscriptionPlan === 'monthly' ? 'upgrade_free_to_monthly' :
-          previousPlan === 'free' && subscriptionPlan === 'annual' ? 'upgrade_free_to_annual' :
-          previousPlan === 'monthly' && subscriptionPlan === 'annual' ? 'upgrade_monthly_to_annual' :
-          `upgrade_${previousPlan}_to_${subscriptionPlan}`;
+          previousPlan === 'free' && subscriptionPlan === 'monthly' ? 'upgrade_free_to_monthly' as const :
+          previousPlan === 'free' && subscriptionPlan === 'annual' ? 'upgrade_free_to_annual' as const :
+          previousPlan === 'monthly' && subscriptionPlan === 'annual' ? 'upgrade_monthly_to_annual' as const :
+          (() => {
+            console.warn(`[Webhook] Unexpected upgrade path: ${previousPlan} → ${subscriptionPlan}, defaulting to upgrade_free_to_monthly`);
+            return 'upgrade_free_to_monthly' as const;
+          })();
 
         try {
           const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
