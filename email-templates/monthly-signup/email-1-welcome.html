@@ -1,0 +1,113 @@
+<!--
+  WORKFLOW: Monthly Account Sign-up
+  EMAIL: 1 of 5 — Welcome Paid Member + Feature Overview
+  TIMING: Immediate (upon monthly subscription activation)
+  SUBJECT: You are in, ${Contact.First Name} — here is everything you just unlocked
+  PREHEADER: Your paid membership is active. Here is the full rundown.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Your Paid Membership</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .header p { color: #c7d2fe; font-size: 14px; margin: 8px 0 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .feature-card { background-color: #f0f4ff; border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
+    .feature-card h3 { color: #4f46e5; font-size: 15px; margin: 0 0 6px; }
+    .feature-card p { font-size: 14px; color: #4b5563; margin: 0; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Welcome to RE Data Metrix</h1>
+        <p>Monthly Membership &mdash; Active</p>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Your paid membership is live. You now have full, unlimited access to every tool on the platform. Here is what that includes:</p>
+
+        <div class="feature-card">
+          <h3>Unlimited Property Lookups</h3>
+          <p>No more monthly caps. Run as many automated property lookups, ARV/comp reports, and wholesale calculations as you need.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>Unlimited Deal Analysis</h3>
+          <p>Full automation on every analysis. Walk any property through the Deal Analysis Wizard with automatic data population.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>Save Deals &amp; Lenders</h3>
+          <p>Build your personal portfolio. Save deal analyses and preferred lenders to your portal for quick reference.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>Export PDF &amp; CSV Reports</h3>
+          <p>Download professional reports to share with partners, lenders, or your own records.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>State-Specific Calculators</h3>
+          <p>Accurate calculations tailored to your state's closing costs, transfer taxes, and other location-specific factors.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>Full Lender Network Access</h3>
+          <p>Unlimited lender comparisons across hard money, DSCR, bridge, transactional, and conventional options.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>Priority Support</h3>
+          <p>Your questions go to the front of the line. Reply to any email or reach out through the platform.</p>
+        </div>
+
+        <h2>Get Started Now</h2>
+        <p>The best way to get value from your membership immediately is to run a deal through the analysis wizard. Pick a property you are evaluating and see the full breakdown.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Portal}" class="cta-button">Analyze Your First Deal</a>
+        </div>
+
+        <hr class="divider">
+
+        <h2>Training Videos</h2>
+        <p>Our training library has short walkthroughs for every feature. Each one is under 5 minutes.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Training}" class="cta-button" style="background-color: #6b7280;">Watch Training Videos</a>
+        </div>
+
+        <hr class="divider">
+
+        <p>We would love to hear what projects you are working on. Reply to this email and let us know &mdash; it helps us build the tools you actually need.</p>
+
+        <p>Welcome to the team,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

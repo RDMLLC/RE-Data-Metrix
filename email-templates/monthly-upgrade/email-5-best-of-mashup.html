@@ -1,0 +1,110 @@
+<!--
+  WORKFLOW: Monthly Account Upgrade (Free to Monthly)
+  EMAIL: 5 of 5 — Best-of Mashup + Feedback Ask
+  TIMING: 4 weeks after upgrade
+  SUBJECT: One month as a paid member
+  PREHEADER: A recap of your tools and a quick question for you.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Month Recap</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .recap-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+    .recap-card h3 { color: #1a1a2e; font-size: 16px; margin: 0 0 8px; }
+    .recap-card p { font-size: 14px; color: #4b5563; margin: 0 0 8px; }
+    .recap-card a { color: #4f46e5; font-size: 14px; font-weight: 600; text-decoration: none; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .feedback-section { background-color: #fef3c7; border-radius: 8px; padding: 24px; margin: 24px 0; }
+    .feedback-section h2 { color: #92400e; font-size: 18px; margin: 0 0 12px; }
+    .feedback-section p { font-size: 14px; color: #78350f; margin: 0 0 8px; }
+    .feedback-section ol { margin: 8px 0 0; padding-left: 20px; }
+    .feedback-section li { font-size: 14px; color: #78350f; margin-bottom: 6px; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>One Month In</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>It has been a month since you upgraded. Here is a quick recap of everything at your disposal &mdash; including features you might not have fully explored yet.</p>
+
+        <div class="recap-card">
+          <h3>Deal Analysis Wizard</h3>
+          <p>Unlimited automated lookups. Enter an address and get projected ROI, holding costs, and profit in minutes. Full automation, no manual data entry.</p>
+          <a href="${URL.Portal}">Analyze a deal &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Saved Deals Portal</h3>
+          <p>Track deals from Analyzing through Sold. Compare projected vs. actual performance. Build your investing track record over time.</p>
+          <a href="${URL.SavedDeals}">View saved deals &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Lender Network</h3>
+          <p>Unlimited comparisons across hard money, DSCR, bridge, transactional, and conventional lenders. Filter and save your preferred partners.</p>
+          <a href="${URL.Lenders}">Browse lenders &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Investor Toolbox</h3>
+          <p>20+ categories of vetted partner tools with member-only discounts. Lead generation, comps, skip tracing, project management, and more.</p>
+          <a href="${URL.Toolbox}">Explore tools &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Reports &amp; Exports</h3>
+          <p>Download any deal analysis as a professional PDF or CSV to share with partners and lenders.</p>
+        </div>
+
+        <div class="recap-card">
+          <h3>Training Library</h3>
+          <p>Short video walkthroughs for every feature, each under 5 minutes.</p>
+          <a href="${URL.Training}">Watch videos &rarr;</a>
+        </div>
+
+        <hr class="divider">
+
+        <div class="feedback-section">
+          <h2>Quick Feedback</h2>
+          <p>We build this platform based on what investors tell us they need. If you have a minute, we would love to hear:</p>
+          <ol>
+            <li>What feature has been most useful to you?</li>
+            <li>What is one thing you wish worked differently?</li>
+            <li>Is there a tool or resource we should add?</li>
+          </ol>
+          <p>Just hit reply &mdash; we read every response.</p>
+        </div>
+
+        <p>Thanks for being a member. We are glad you are here.</p>
+
+        <p>Onward,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

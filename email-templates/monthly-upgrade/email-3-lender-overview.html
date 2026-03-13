@@ -1,0 +1,99 @@
+<!--
+  WORKFLOW: Monthly Account Upgrade (Free to Monthly)
+  EMAIL: 3 of 5 — Lender Network Overview + Value Check-in
+  TIMING: 2 weeks after upgrade
+  SUBJECT: Find financing that fits your next deal
+  PREHEADER: Compare lenders side by side with unlimited access.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lender Network</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #1a1a2e; padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .lender-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
+    .lender-card h3 { color: #1a1a2e; font-size: 16px; margin: 0 0 6px; }
+    .lender-card p { font-size: 14px; color: #4b5563; margin: 0 0 6px; }
+    .lender-card .use-case { font-size: 13px; color: #4f46e5; font-weight: 600; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .tip-box { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 0 6px 6px 0; margin: 16px 0 24px; }
+    .tip-box p { margin: 0; font-size: 14px; color: #15803d; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Lender Network</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Two weeks into your membership &mdash; by now you have probably run a few deal analyses. The natural next step is making sure you have the right financing lined up. That is where the lender network comes in.</p>
+
+        <p>With your paid membership, you have unlimited access to compare lenders side by side. Here is a breakdown of what is available:</p>
+
+        <div class="lender-card">
+          <h3>Hard Money / Bridge Lenders</h3>
+          <p>Short-term financing with fast closings. Asset-based underwriting means approval is based on the deal, not your personal financials.</p>
+          <span class="use-case">Best for: Fix-and-flip projects, quick acquisitions</span>
+        </div>
+
+        <div class="lender-card">
+          <h3>DSCR (Rental) Lenders</h3>
+          <p>Long-term loans qualified on rental income rather than personal income. No tax returns or W-2s required.</p>
+          <span class="use-case">Best for: Buy-and-hold portfolio building</span>
+        </div>
+
+        <div class="lender-card">
+          <h3>Transactional Lenders</h3>
+          <p>Same-day funding for wholesale double closes. No seasoning requirements, minimal documentation.</p>
+          <span class="use-case">Best for: Wholesale investors doing double closes</span>
+        </div>
+
+        <div class="lender-card">
+          <h3>Conventional Lenders</h3>
+          <p>Traditional mortgage products for investors who prefer standard loan terms and qualify on personal financials.</p>
+          <span class="use-case">Best for: Long-term holds with strong personal credit</span>
+        </div>
+
+        <p>You can filter lenders by state, loan type, closing speed, and specific criteria like "works with new investors" or "100% funding available." Save your preferred lenders to your portal for quick access on future deals.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Lenders}" class="cta-button">Compare Lenders</a>
+        </div>
+
+        <hr class="divider">
+
+        <div class="tip-box">
+          <p><strong>Pro tip:</strong> After you analyze a deal, the platform can show you loan comparison options based on that specific property. Try it on your next analysis.</p>
+        </div>
+
+        <p>How is the membership treating you so far? Reply and let us know what is working.</p>
+
+        <p>Best,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

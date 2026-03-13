@@ -1,0 +1,111 @@
+<!--
+  WORKFLOW: Monthly Account Sign-up
+  EMAIL: 4 of 5 — Saved Deals Deep-Dive + Annual Upgrade Pitch
+  TIMING: 3 weeks after signup
+  SUBJECT: Track your deals from analysis to sold
+  PREHEADER: Plus, save $50 a year with annual billing.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saved Deals and Annual Savings</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #1a1a2e; padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .step-list { margin: 16px 0 24px; padding: 0; list-style: none; }
+    .step-list li { font-size: 15px; margin-bottom: 14px; padding-left: 36px; position: relative; }
+    .step-list li .step-num { position: absolute; left: 0; top: 0; width: 24px; height: 24px; background-color: #4f46e5; color: #ffffff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 13px; font-weight: 700; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .savings-box { background: linear-gradient(135deg, #f0f4ff, #e8f5e9); border: 2px solid #4f46e5; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0; }
+    .savings-box h3 { color: #1a1a2e; font-size: 18px; margin: 0 0 8px; }
+    .savings-box .price-compare { margin: 12px 0; }
+    .savings-box .old-price { font-size: 16px; color: #9ca3af; text-decoration: line-through; }
+    .savings-box .new-price { font-size: 28px; font-weight: 700; color: #4f46e5; margin-left: 8px; }
+    .savings-box .savings-note { font-size: 14px; color: #16a34a; font-weight: 600; margin: 4px 0 12px; }
+    .savings-box p { font-size: 13px; color: #6b7280; margin: 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Deal Tracking</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>One of the most underused features for new members is the deal tracking lifecycle. Here is the full picture of how it works:</p>
+
+        <h2>From Analysis to Sold</h2>
+
+        <ul class="step-list">
+          <li>
+            <span class="step-num">1</span>
+            <strong>Analyze</strong> &mdash; Run any property through the Deal Analysis Wizard. The platform calculates projected ROI, profit, holding costs, and compares loan options automatically.
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <strong>Save</strong> &mdash; Save the analysis to your portal. It starts in "Analyzing" status so you can come back to it anytime.
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <strong>Track</strong> &mdash; Move the deal through statuses as it progresses: Under Contract, Purchased, and finally Sold.
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <strong>Measure</strong> &mdash; When you mark a deal as Sold, enter your actuals. The platform compares your real ROI and profit against your original projections.
+          </li>
+        </ul>
+
+        <p>Over time, this builds a record of your investing performance &mdash; which deals hit their targets, which ones did not, and why.</p>
+
+        <div class="cta-section">
+          <a href="${URL.SavedDeals}" class="cta-button">View Your Deal Portal</a>
+        </div>
+
+        <hr class="divider">
+
+        <h2>A Note on Annual Billing</h2>
+        <p>You are three weeks into your monthly plan. If RE Data Metrix is becoming part of your workflow, switching to annual billing saves you money:</p>
+
+        <div class="savings-box">
+          <h3>Annual Plan</h3>
+          <div class="price-compare">
+            <span class="old-price">$300/year</span>
+            <span class="new-price">$250/year</span>
+          </div>
+          <div class="savings-note">Save $50 &mdash; that is 2 months free</div>
+          <p>Same features, same access. Just a better price.</p>
+        </div>
+
+        <div class="cta-section">
+          <a href="${URL.Pricing}" class="cta-button">Switch to Annual</a>
+        </div>
+
+        <p>No pressure &mdash; your monthly plan works just fine. This is just here if you want to lock in the savings.</p>
+
+        <p>Best,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

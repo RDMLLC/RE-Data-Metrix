@@ -1,0 +1,84 @@
+<!--
+  WORKFLOW: Free Account Sign-up
+  EMAIL: 1 of 5 — Welcome + Features Overview
+  TIMING: Immediate (upon free account creation)
+  SUBJECT: Welcome to RE Data Metrix, ${Contact.First Name}!
+  PREHEADER: Your free real estate investment toolkit is ready to go.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to RE Data Metrix</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #1a1a2e; padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .feature-list { margin: 16px 0 24px; padding: 0; }
+    .feature-list li { font-size: 15px; margin-bottom: 10px; color: #333333; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Welcome to RE Data Metrix</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Thanks for signing up. Your free account is live and you can start analyzing deals right away.</p>
+
+        <p>Here is what you have access to today:</p>
+
+        <ul class="feature-list">
+          <li><strong>Deal Analysis Wizard</strong> &mdash; Walk through a property step by step to get projected ROI, profit, and holding costs. You get 2 automated lookups per month on the free plan, plus unlimited manual entry.</li>
+          <li><strong>Lender Network</strong> &mdash; Browse verified private lenders filtered by state, loan type, and closing speed. Your first 2 lender lookups are included.</li>
+          <li><strong>Investor Toolbox</strong> &mdash; A curated collection of 20+ categories of partner tools covering lead generation, comps, skip tracing, project management, and more.</li>
+          <li><strong>Training Videos</strong> &mdash; Short walkthroughs to help you get the most out of every feature.</li>
+        </ul>
+
+        <h2>Start with Your First Deal</h2>
+        <p>The best way to learn the platform is to run a real property through the Deal Analysis Wizard. Pick an address you are evaluating and see what the numbers look like.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Portal}" class="cta-button">Analyze Your First Deal</a>
+        </div>
+
+        <hr class="divider">
+
+        <h2>Training Videos</h2>
+        <p>If you prefer a guided tour, our training library walks you through each tool in under 5 minutes per video.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Training}" class="cta-button" style="background-color: #6b7280;">Watch Training Videos</a>
+        </div>
+
+        <hr class="divider">
+
+        <p>We would love to hear what brought you to RE Data Metrix. Reply to this email and let us know what type of deals you are working on &mdash; your feedback helps us build better tools for investors like you.</p>
+
+        <p>Welcome aboard,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
