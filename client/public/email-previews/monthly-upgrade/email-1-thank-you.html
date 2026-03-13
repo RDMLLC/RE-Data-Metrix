@@ -1,0 +1,118 @@
+<!--
+  WORKFLOW: Monthly Account Upgrade (Free to Monthly)
+  EMAIL: 1 of 5 — Thank You for Upgrading + New Features Overview
+  TIMING: Immediate (upon upgrade from free to monthly)
+  SUBJECT: Your upgrade is live, ${Contact.First Name}
+  PREHEADER: Here is everything you just unlocked with your paid membership.
+
+  ZOHO NOTE: This workflow should unenroll the contact from the
+  Free Account Sign-up email sequence upon entry. Configure this
+  in the Zoho workflow "Entry Criteria" or "Exit Criteria" of
+  the Free Account workflow.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Upgrade Is Live</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .header p { color: #a5b4fc; font-size: 14px; margin: 8px 0 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .unlocked-item { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 14px 18px; border-radius: 0 6px 6px 0; margin-bottom: 10px; }
+    .unlocked-item strong { color: #15803d; font-size: 15px; }
+    .unlocked-item span { display: block; font-size: 13px; color: #4b5563; margin-top: 4px; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Upgrade Complete</h1>
+        <p>Monthly Membership &mdash; Active</p>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Thank you for upgrading. Your paid membership is now active, and the limits on your account have been removed. Here is what you just unlocked:</p>
+
+        <div class="unlocked-item">
+          <strong>Unlimited Property Lookups</strong>
+          <span>No more 2-per-month cap. Run as many automated lookups, ARV/comp reports, and wholesale calculations as you need.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Unlimited Deal Analysis</strong>
+          <span>Full automation on every analysis. No manual data entry required &mdash; the wizard handles it all.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Save Deals &amp; Lenders</strong>
+          <span>Build your personal portfolio. Save analyses and preferred lenders to your portal for quick reference anytime.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Export PDF &amp; CSV Reports</strong>
+          <span>Download professional reports to share with partners, lenders, or for your own records.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>State-Specific Calculators</strong>
+          <span>Accurate calculations tailored to your state's closing costs, transfer taxes, and location-specific factors.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Unlimited Lender Comparisons</strong>
+          <span>Full access to the lender network. Compare rates, terms, and requirements across every lender type.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Priority Support</strong>
+          <span>Your questions go to the front of the line.</span>
+        </div>
+
+        <h2>Try It Out</h2>
+        <p>The best way to see the difference is to run a deal through the analysis wizard with the new unlimited access. Pick a property and see the full breakdown.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Portal}" class="cta-button">Analyze a Deal</a>
+        </div>
+
+        <hr class="divider">
+
+        <h2>Training Videos</h2>
+        <p>If you have not explored the training library yet, now is a good time. Each walkthrough is under 5 minutes and covers a specific feature in depth.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Training}" class="cta-button" style="background-color: #6b7280;">Watch Training Videos</a>
+        </div>
+
+        <hr class="divider">
+
+        <p>We appreciate you making the decision to invest in your investing. If there is anything we can do to help you get the most out of your membership, reply to this email.</p>
+
+        <p>Welcome to the paid tier,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

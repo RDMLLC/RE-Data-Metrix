@@ -1,0 +1,139 @@
+<!--
+  WORKFLOW: Free Account Sign-up
+  EMAIL: 4 of 5 — Free vs Paid Comparison + Upgrade CTA
+  TIMING: 3 weeks after signup
+  SUBJECT: What you are missing on the free plan
+  PREHEADER: A side-by-side look at free vs. paid features.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free vs Paid Comparison</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #1a1a2e; padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+    .comparison-table th { background-color: #1a1a2e; color: #ffffff; padding: 10px 14px; font-size: 13px; text-align: left; }
+    .comparison-table td { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+    .comparison-table tr:nth-child(even) td { background-color: #f9fafb; }
+    .check { color: #16a34a; font-weight: bold; }
+    .limit { color: #d97706; }
+    .no { color: #dc2626; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .pricing-box { background-color: #f0f4ff; border-radius: 8px; padding: 20px 24px; margin: 16px 0 24px; text-align: center; }
+    .pricing-box .price { font-size: 32px; font-weight: 700; color: #4f46e5; margin: 8px 0 4px; }
+    .pricing-box .period { font-size: 14px; color: #6b7280; }
+    .pricing-box .note { font-size: 13px; color: #6b7280; margin-top: 8px; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Free vs. Paid</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>You have been using RE Data Metrix for about three weeks now. We want to make sure you know exactly what the free plan includes &mdash; and what opens up when you upgrade.</p>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Free</th>
+              <th>Paid</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Property Lookups</td>
+              <td class="limit">2/month</td>
+              <td class="check">Unlimited</td>
+            </tr>
+            <tr>
+              <td>Wholesale Calculator</td>
+              <td class="limit">2/month</td>
+              <td class="check">Unlimited</td>
+            </tr>
+            <tr>
+              <td>ARV/Comp Reports</td>
+              <td class="limit">2/month</td>
+              <td class="check">Unlimited</td>
+            </tr>
+            <tr>
+              <td>Deal Analysis</td>
+              <td class="limit">2 auto + manual</td>
+              <td class="check">Unlimited</td>
+            </tr>
+            <tr>
+              <td>Lender Comparisons</td>
+              <td class="limit">First 2 lookups</td>
+              <td class="check">Unlimited</td>
+            </tr>
+            <tr>
+              <td>Save Deals &amp; Lenders</td>
+              <td class="no">Not available</td>
+              <td class="check">Unlimited</td>
+            </tr>
+            <tr>
+              <td>Export PDF/CSV</td>
+              <td class="no">Not available</td>
+              <td class="check">Included</td>
+            </tr>
+            <tr>
+              <td>State-Specific Calcs</td>
+              <td class="no">Not available</td>
+              <td class="check">Included</td>
+            </tr>
+            <tr>
+              <td>Priority Support</td>
+              <td class="no">Standard</td>
+              <td class="check">Priority</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>Simple Pricing</h2>
+
+        <div class="pricing-box">
+          <div class="price">$25/month</div>
+          <div class="period">Cancel anytime. No contracts.</div>
+          <div class="note">Or save with annual billing at $250/year (2 months free).</div>
+        </div>
+
+        <p>If you are actively analyzing deals, the upgrade pays for itself with a single property lookup that saves you an hour of manual research.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Pricing}" class="cta-button">See Upgrade Options</a>
+        </div>
+
+        <hr class="divider">
+
+        <p>No pressure &mdash; your free account is yours to keep forever. But if the limits are slowing you down, now you know what is available.</p>
+
+        <p>Best,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

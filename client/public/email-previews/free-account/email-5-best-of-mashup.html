@@ -1,0 +1,90 @@
+<!--
+  WORKFLOW: Free Account Sign-up
+  EMAIL: 5 of 5 — Best-of Mashup + Upgrade CTA
+  TIMING: 4 weeks after signup
+  SUBJECT: Your month-one recap (and what is next)
+  PREHEADER: The highlights from your first 30 days, plus a look ahead.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Month One Recap</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #1a1a2e; padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .recap-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+    .recap-card h3 { color: #1a1a2e; font-size: 16px; margin: 0 0 8px; }
+    .recap-card p { font-size: 14px; color: #4b5563; margin: 0; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .upgrade-banner { background: linear-gradient(135deg, #4f46e5, #6366f1); border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0; }
+    .upgrade-banner h2 { color: #ffffff; font-size: 20px; margin: 0 0 8px; }
+    .upgrade-banner p { color: #e0e7ff; font-size: 14px; margin: 0 0 16px; }
+    .upgrade-banner .cta-button { background-color: #ffffff; color: #4f46e5; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Your First Month</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>You have had RE Data Metrix for a month now. Here is a quick recap of the tools available to you &mdash; and some you might not have tried yet.</p>
+
+        <div class="recap-card">
+          <h3>Deal Analysis Wizard</h3>
+          <p>Walk through any fix-and-flip or rental property to see projected ROI, holding costs, and profit. Your free plan includes 2 automated lookups per month plus unlimited manual entry.</p>
+        </div>
+
+        <div class="recap-card">
+          <h3>Investor Toolbox</h3>
+          <p>20+ categories of vetted tools with exclusive member discounts. Lead generation, comps, skip tracing, project management, and more &mdash; all in one place.</p>
+        </div>
+
+        <div class="recap-card">
+          <h3>Lender Network</h3>
+          <p>Compare verified private lenders side by side. Filter by state, loan type, closing speed, and specific criteria. Hard money, DSCR, bridge, transactional, and conventional options available.</p>
+        </div>
+
+        <div class="recap-card">
+          <h3>Training Library</h3>
+          <p>Short video walkthroughs for every platform feature. Get up to speed fast or revisit specific tools when you need a refresher.</p>
+        </div>
+
+        <hr class="divider">
+
+        <div class="upgrade-banner">
+          <h2>Ready for More?</h2>
+          <p>Unlimited lookups, saved deals and lenders, PDF exports, state-specific calculators, and priority support &mdash; starting at $25/month.</p>
+          <a href="${URL.Pricing}" class="cta-button">Upgrade Your Account</a>
+        </div>
+
+        <p>Whether you stay on the free plan or decide to upgrade, we are glad you are here. If there is anything we can do to help you close your next deal, just reply to this email.</p>
+
+        <p>Here is to deal number one,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

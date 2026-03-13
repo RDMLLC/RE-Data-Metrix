@@ -1,0 +1,108 @@
+<!--
+  WORKFLOW: Monthly Account Sign-up
+  EMAIL: 3 of 5 — Value Check-in + Saved Deals Pitch + Lender Overview
+  TIMING: 2 weeks after signup
+  SUBJECT: Your deals, your lenders, all in one place
+  PREHEADER: Build your investment portfolio inside the platform.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saved Deals and Lenders</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background-color: #1a1a2e; padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .feature-spotlight { background-color: #f0f4ff; border-radius: 8px; padding: 20px 24px; margin: 16px 0 24px; }
+    .feature-spotlight h3 { color: #4f46e5; font-size: 16px; margin: 0 0 8px; }
+    .feature-spotlight p { font-size: 14px; color: #4b5563; margin: 0 0 8px; }
+    .feature-spotlight ul { margin: 8px 0 0; padding-left: 20px; }
+    .feature-spotlight li { font-size: 14px; color: #4b5563; margin-bottom: 4px; }
+    .lender-type { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px 18px; margin-bottom: 10px; }
+    .lender-type strong { color: #1a1a2e; font-size: 15px; }
+    .lender-type span { display: block; font-size: 13px; color: #6b7280; margin-top: 4px; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Your Investment Hub</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Two weeks in &mdash; how are the numbers looking on the deals you have been analyzing? As a paid member, every analysis you run can be saved, tracked, and referenced later. Here is how to get the most out of that.</p>
+
+        <div class="feature-spotlight">
+          <h3>Saved Deals Portal</h3>
+          <p>Every deal you analyze can be saved to your personal portal with full lifecycle tracking:</p>
+          <ul>
+            <li><strong>Analyzing</strong> &mdash; Deals you are still evaluating</li>
+            <li><strong>Under Contract</strong> &mdash; Deals you have committed to</li>
+            <li><strong>Purchased</strong> &mdash; Active projects in progress</li>
+            <li><strong>Sold</strong> &mdash; Completed deals with actual vs. projected performance</li>
+          </ul>
+        </div>
+
+        <p>This becomes your track record over time. When you mark a deal as "Sold," the platform calculates your actual ROI and profit against your original projections.</p>
+
+        <div class="cta-section">
+          <a href="${URL.SavedDeals}" class="cta-button">View Your Saved Deals</a>
+        </div>
+
+        <hr class="divider">
+
+        <h2>Lender Network</h2>
+        <p>With unlimited lender comparisons, you can build a shortlist of go-to financing partners. Here is what is available:</p>
+
+        <div class="lender-type">
+          <strong>Hard Money / Bridge</strong>
+          <span>Fast closings for fix-and-flip. Asset-based underwriting, flexible terms.</span>
+        </div>
+
+        <div class="lender-type">
+          <strong>DSCR (Rental)</strong>
+          <span>Qualified on rental income. Ideal for buy-and-hold portfolios.</span>
+        </div>
+
+        <div class="lender-type">
+          <strong>Transactional</strong>
+          <span>Same-day funding for wholesale double closes.</span>
+        </div>
+
+        <p>Filter by state, loan type, closing speed, and requirements like "works with new investors" or "100% funding." Save the lenders that fit your strategy for quick access later.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Lenders}" class="cta-button" style="background-color: #6b7280;">Browse Lenders</a>
+        </div>
+
+        <hr class="divider">
+
+        <p>Are you getting the value you expected from your membership? We would love to hear what is working and what could be better. Just reply to this email.</p>
+
+        <p>Best,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
