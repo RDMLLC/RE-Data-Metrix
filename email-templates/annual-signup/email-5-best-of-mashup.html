@@ -1,0 +1,108 @@
+<!--
+  WORKFLOW: Annual Account Sign-up
+  EMAIL: 5 of 5 — Best-of Mashup
+  TIMING: 4 weeks after signup
+  SUBJECT: Your month-one member recap
+  PREHEADER: A look at everything available to you as an annual member.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Month One Recap</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .header p { color: #c7d2fe; font-size: 14px; margin: 8px 0 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .recap-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+    .recap-card h3 { color: #1a1a2e; font-size: 16px; margin: 0 0 8px; }
+    .recap-card p { font-size: 14px; color: #4b5563; margin: 0 0 8px; }
+    .recap-card a { font-size: 14px; color: #4f46e5; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .feedback-section { background-color: #fef9c3; border-radius: 8px; padding: 20px 24px; margin: 24px 0; }
+    .feedback-section h2 { color: #713f12; margin-top: 0; }
+    .feedback-section p { color: #713f12; font-size: 14px; }
+    .feedback-section ol { color: #713f12; font-size: 14px; padding-left: 20px; margin: 8px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>One Month as an Annual Member</h1>
+        <p>Here is a recap of everything at your fingertips.</p>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>You have had RE Data Metrix for a full month. Here is a quick look at everything that is available to you as an annual member &mdash; including a few tools you might not have tried yet.</p>
+
+        <div class="recap-card">
+          <h3>Deal Analysis Wizard</h3>
+          <p>Unlimited automated lookups, ARV/comp reports, and wholesale calculations. Walk any property through a step-by-step analysis to get projected ROI, holding costs, and profit.</p>
+          <a href="${URL.Portal}">Run a deal analysis &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Saved Deals Portal</h3>
+          <p>Every deal you save is stored in your personal portal. Revisit, compare, and export as professional PDF or CSV reports to share with partners and lenders.</p>
+          <a href="${URL.SavedDeals}">View saved deals &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Lender Network</h3>
+          <p>Unlimited comparisons across hard money, DSCR, bridge, transactional, and conventional lenders. Filter by state, loan type, and closing speed. Save preferred lenders to your portal.</p>
+          <a href="${URL.Lenders}">Browse lenders &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Investor Toolbox</h3>
+          <p>20+ categories of vetted partner tools for lead generation, comps, skip tracing, project management, and more. Exclusive member discounts included.</p>
+          <a href="${URL.Toolbox}">Explore tools &rarr;</a>
+        </div>
+
+        <div class="recap-card">
+          <h3>Training Library</h3>
+          <p>Short video walkthroughs for every feature on the platform. Each one is under 5 minutes.</p>
+          <a href="${URL.Training}">Watch videos &rarr;</a>
+        </div>
+
+        <hr class="divider">
+
+        <div class="feedback-section">
+          <h2>Quick Feedback</h2>
+          <p>We build this platform based on what investors tell us they need. If you have a minute, we would love to hear:</p>
+          <ol>
+            <li>What feature has been most useful to you?</li>
+            <li>What is one thing you wish worked differently?</li>
+            <li>Is there a tool or resource we should add?</li>
+          </ol>
+          <p>Just hit reply &mdash; we read every response.</p>
+        </div>
+
+        <p>Thanks for being a member. We are glad you are here.</p>
+
+        <p>Onward,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

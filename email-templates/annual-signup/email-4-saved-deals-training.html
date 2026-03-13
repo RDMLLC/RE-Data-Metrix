@@ -1,0 +1,124 @@
+<!--
+  WORKFLOW: Annual Account Sign-up
+  EMAIL: 4 of 5 — Saved Deals Deep-Dive + Training Library
+  TIMING: 3 weeks after signup
+  SUBJECT: Are you tracking your deals inside the platform?
+  PREHEADER: Your saved deals portal keeps your entire pipeline in one place.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saved Deals and Training</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .step { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
+    .step-number { background-color: #4f46e5; color: #ffffff; font-weight: 700; font-size: 14px; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-content strong { display: block; color: #1a1a2e; font-size: 15px; margin-bottom: 4px; }
+    .step-content p { font-size: 14px; color: #4b5563; margin: 0; }
+    .training-card { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px 20px; margin-bottom: 10px; }
+    .training-card strong { color: #1a1a2e; font-size: 15px; }
+    .training-card span { display: block; font-size: 13px; color: #6b7280; margin-top: 4px; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Your Deal Pipeline</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Three weeks in &mdash; this is a good time to make sure you are getting the most out of your membership. One of the most underused features is the saved deals portal, and it is worth setting up now while your deals are fresh.</p>
+
+        <h2>How Saved Deals Work</h2>
+
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <strong>Run a deal analysis</strong>
+            <p>Walk any property through the Deal Analysis Wizard to generate your projected ROI, holding costs, and profit estimate.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <strong>Save it to your portal</strong>
+            <p>Hit save and the deal is stored in your personal portal. Name it, tag it, and come back to it anytime.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <strong>Export when you need it</strong>
+            <p>Download any saved deal as a professional PDF or CSV to share with partners, lenders, or for your own records.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <strong>Track your lenders alongside your deals</strong>
+            <p>Save preferred lenders from the network to your portal so your financing options are always alongside your deal pipeline.</p>
+          </div>
+        </div>
+
+        <div class="cta-section">
+          <a href="${URL.SavedDeals}" class="cta-button">View Your Saved Deals</a>
+        </div>
+
+        <hr class="divider">
+
+        <h2>Training Library</h2>
+        <p>If there are features you have not explored yet, the training library has short video walkthroughs for everything. A few you might find useful at this stage:</p>
+
+        <div class="training-card">
+          <strong>Deal Analysis Wizard Walkthrough</strong>
+          <span>A full walkthrough of entering a property and interpreting the results.</span>
+        </div>
+
+        <div class="training-card">
+          <strong>Using the Lender Network</strong>
+          <span>How to filter, compare, and save lenders for your specific deal type.</span>
+        </div>
+
+        <div class="training-card">
+          <strong>Exporting Reports</strong>
+          <span>How to generate and download PDF and CSV reports from your saved deals.</span>
+        </div>
+
+        <div class="cta-section">
+          <a href="${URL.Training}" class="cta-button" style="background-color: #6b7280;">Watch Training Videos</a>
+        </div>
+
+        <p>If there is anything we can help with, just hit reply.</p>
+
+        <p>Best,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

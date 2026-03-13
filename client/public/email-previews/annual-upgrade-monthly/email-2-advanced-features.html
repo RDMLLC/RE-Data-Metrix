@@ -1,0 +1,113 @@
+<!--
+  WORKFLOW: Annual Account Upgrade (Monthly to Annual)
+  EMAIL: 2 of 5 — Advanced Features Deep-Dive
+  TIMING: 1 week after upgrade
+  SUBJECT: Features you might not be using yet
+  PREHEADER: You have full access — here are a few things worth exploring.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Features</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .feature-spotlight { background-color: #f0f4ff; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; }
+    .feature-spotlight h3 { color: #4f46e5; font-size: 16px; margin: 0 0 8px; }
+    .feature-spotlight p { font-size: 14px; color: #4b5563; margin: 0 0 10px; }
+    .feature-spotlight a { font-size: 14px; color: #4f46e5; font-weight: 600; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .tip-box { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 0 6px 6px 0; margin: 16px 0 24px; }
+    .tip-box p { margin: 0; font-size: 14px; color: #15803d; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div style="background:#1e293b;color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;font-size:13px;padding:16px 24px;border-bottom:4px solid #4f46e5;position:sticky;top:0;z-index:9999;">
+    <div style="max-width:700px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#4f46e5;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:0.05em;">Email Preview</span>
+        <span style="color:#94a3b8;font-size:11px;">This bar is for review only — not part of the email</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;width:100px;vertical-align:top;">Workflow</td>
+          <td style="padding:3px 0;color:#f1f5f9;font-weight:600;">Annual Account Upgrade (Monthly to Annual)</td>
+          <td style="padding:3px 12px;color:#94a3b8;width:80px;vertical-align:top;">Email</td>
+          <td style="padding:3px 0;color:#f1f5f9;font-weight:600;">2 of 5 — Advanced Features Deep-Dive</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Timing</td>
+          <td style="padding:3px 0;color:#f1f5f9;" colspan="3">1 week after upgrade</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Subject</td>
+          <td style="padding:3px 0;color:#f1f5f9;" colspan="3">Features you might not be using yet</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Preheader</td>
+          <td style="padding:3px 0;color:#cbd5e1;" colspan="3">You have full access — here are a few things worth exploring.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Getting More From the Platform</h1>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>You already know the core features well. This week, we want to highlight a few things that monthly members often overlook &mdash; but that annual members tend to use consistently once they discover them.</p>
+
+        <div class="feature-spotlight">
+          <h3>State-Specific Calculators</h3>
+          <p>Standard deal calculators use national averages for closing costs and transfer taxes. State-specific calculators use your actual state's rates &mdash; which means more accurate profit projections, especially in high-tax states.</p>
+          <a href="${URL.Portal}">Try it in your next analysis &rarr;</a>
+        </div>
+
+        <div class="feature-spotlight">
+          <h3>PDF &amp; CSV Report Exports</h3>
+          <p>Any saved deal can be exported as a professional PDF to share with partners or lenders, or as a CSV for your own tracking spreadsheets. If you are presenting deals to other investors or building a portfolio, this feature alone saves significant time.</p>
+          <a href="${URL.SavedDeals}">Export a saved deal &rarr;</a>
+        </div>
+
+        <div class="feature-spotlight">
+          <h3>Saved Deals as a Pipeline</h3>
+          <p>Rather than running each analysis in isolation, try saving every property you evaluate &mdash; even ones you pass on. Over time, your saved deals become a searchable record of your market activity and decision-making history.</p>
+          <a href="${URL.SavedDeals}">View your pipeline &rarr;</a>
+        </div>
+
+        <hr class="divider">
+
+        <div class="tip-box">
+          <p><strong>Pro tip:</strong> When you save a lender alongside a saved deal, your deal file includes both the analysis and the financing source &mdash; making it easy to pick back up on a deal months later without losing context.</p>
+        </div>
+
+        <p>If there is a feature you have wanted to explore but have not had time for, reply and let us know. We are happy to point you in the right direction.</p>
+
+        <p>Best,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

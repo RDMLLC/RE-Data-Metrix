@@ -1,0 +1,130 @@
+<!--
+  WORKFLOW: Annual Account Upgrade (Monthly to Annual)
+  EMAIL: 1 of 5 — Thank You for Upgrading to Annual
+  TIMING: Immediate (upon upgrade from monthly to annual)
+  SUBJECT: You locked in the best rate, ${Contact.First Name}
+  PREHEADER: Your annual membership is active. Here is what that means for you.
+
+  ZOHO NOTE: This workflow should unenroll the contact from any active
+  Monthly Account Sign-up or Monthly Account Upgrade email sequence upon
+  entry. Configure this in the Zoho workflow "Entry Criteria" or "Exit
+  Criteria" of the relevant monthly workflows.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annual Upgrade Confirmed</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .header p { color: #a5b4fc; font-size: 14px; margin: 8px 0 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .savings-banner { background: linear-gradient(135deg, #059669, #047857); border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0; }
+    .savings-banner .amount { color: #ffffff; font-size: 36px; font-weight: 700; margin: 0; }
+    .savings-banner .label { color: #a7f3d0; font-size: 14px; margin: 6px 0 0; }
+    .breakdown { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px 24px; margin: 16px 0 24px; }
+    .breakdown-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid #e5e7eb; }
+    .breakdown-row:last-child { border-bottom: none; font-weight: 700; color: #059669; }
+    .breakdown-row span:first-child { color: #4b5563; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div style="background:#1e293b;color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;font-size:13px;padding:16px 24px;border-bottom:4px solid #4f46e5;position:sticky;top:0;z-index:9999;">
+    <div style="max-width:700px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#4f46e5;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:0.05em;">Email Preview</span>
+        <span style="color:#94a3b8;font-size:11px;">This bar is for review only — not part of the email</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;width:100px;vertical-align:top;">Workflow</td>
+          <td style="padding:3px 0;color:#f1f5f9;font-weight:600;">Annual Account Upgrade (Monthly to Annual)</td>
+          <td style="padding:3px 12px;color:#94a3b8;width:80px;vertical-align:top;">Email</td>
+          <td style="padding:3px 0;color:#f1f5f9;font-weight:600;">1 of 5 — Thank You for Upgrading to Annual</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Timing</td>
+          <td style="padding:3px 0;color:#f1f5f9;" colspan="3">Immediate (upon upgrade from monthly to annual)</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Subject</td>
+          <td style="padding:3px 0;color:#f1f5f9;" colspan="3">You locked in the best rate, ${Contact.First Name}</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Preheader</td>
+          <td style="padding:3px 0;color:#cbd5e1;" colspan="3">Your annual membership is active. Here is what that means for you.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Upgraded to Annual</h1>
+        <p>Annual Membership &mdash; Active</p>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Thank you for switching to annual billing. Your membership continues without interruption &mdash; same features, same access &mdash; and you have now locked in our best rate for the year.</p>
+
+        <div class="savings-banner">
+          <p class="amount">$50 saved</p>
+          <p class="label">That is 2 months free compared to monthly billing.</p>
+        </div>
+
+        <h2>What Just Changed</h2>
+
+        <div class="breakdown">
+          <div class="breakdown-row">
+            <span>Previous billing</span>
+            <span>$25/month ($300/year)</span>
+          </div>
+          <div class="breakdown-row">
+            <span>Annual billing</span>
+            <span>$250/year</span>
+          </div>
+          <div class="breakdown-row">
+            <span>You save</span>
+            <span>$50 per year</span>
+          </div>
+        </div>
+
+        <p>Your access to every feature remains exactly the same. Nothing has changed except the billing cycle &mdash; and the savings.</p>
+
+        <h2>Pick Up Where You Left Off</h2>
+        <p>Your saved deals, preferred lenders, and deal history are all still in your portal, exactly as you left them.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Portal}" class="cta-button">Go to Your Portal</a>
+        </div>
+
+        <hr class="divider">
+
+        <p>Over the next few weeks, we will share some platform features that monthly members sometimes overlook. You have full access to everything &mdash; let us make sure you are getting the most from it.</p>
+
+        <p>Thanks for your continued membership,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

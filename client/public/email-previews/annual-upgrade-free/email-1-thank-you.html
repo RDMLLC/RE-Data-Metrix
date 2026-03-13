@@ -1,0 +1,146 @@
+<!--
+  WORKFLOW: Annual Account Upgrade (Free to Annual)
+  EMAIL: 1 of 5 — Thank You for Upgrading + New Features Overview
+  TIMING: Immediate (upon upgrade from free to annual)
+  SUBJECT: Your annual membership is live, ${Contact.First Name}
+  PREHEADER: Here is everything you just unlocked — and you already saved $50.
+
+  ZOHO NOTE: This workflow should unenroll the contact from the
+  Free Account Sign-up email sequence upon entry. Configure this
+  in the Zoho workflow "Entry Criteria" or "Exit Criteria" of
+  the Free Account workflow.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Annual Membership Is Live</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: Arial, Helvetica, sans-serif; }
+    .email-wrapper { width: 100%; background-color: #f4f4f7; padding: 40px 0; }
+    .email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #2d2b55); padding: 32px 40px; text-align: center; }
+    .header h1 { color: #ffffff; font-size: 24px; margin: 0; }
+    .header p { color: #a5b4fc; font-size: 14px; margin: 8px 0 0; }
+    .body-content { padding: 32px 40px; color: #333333; line-height: 1.6; }
+    .body-content h2 { color: #1a1a2e; font-size: 20px; margin-top: 28px; margin-bottom: 12px; }
+    .body-content p { font-size: 15px; margin: 0 0 16px; }
+    .savings-banner { background: linear-gradient(135deg, #059669, #047857); border-radius: 8px; padding: 20px 24px; text-align: center; margin: 24px 0; }
+    .savings-banner p { color: #ffffff; font-size: 15px; margin: 0; }
+    .savings-banner strong { font-size: 18px; }
+    .unlocked-item { background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 14px 18px; border-radius: 0 6px 6px 0; margin-bottom: 10px; }
+    .unlocked-item strong { color: #15803d; font-size: 15px; }
+    .unlocked-item span { display: block; font-size: 13px; color: #4b5563; margin-top: 4px; }
+    .cta-button { display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600; margin: 8px 0; }
+    .cta-section { text-align: center; padding: 8px 0 16px; }
+    .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+    .footer { padding: 24px 40px; text-align: center; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+    .footer a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div style="background:#1e293b;color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;font-size:13px;padding:16px 24px;border-bottom:4px solid #4f46e5;position:sticky;top:0;z-index:9999;">
+    <div style="max-width:700px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="background:#4f46e5;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:0.05em;">Email Preview</span>
+        <span style="color:#94a3b8;font-size:11px;">This bar is for review only — not part of the email</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;width:100px;vertical-align:top;">Workflow</td>
+          <td style="padding:3px 0;color:#f1f5f9;font-weight:600;">Annual Account Upgrade (Free to Annual)</td>
+          <td style="padding:3px 12px;color:#94a3b8;width:80px;vertical-align:top;">Email</td>
+          <td style="padding:3px 0;color:#f1f5f9;font-weight:600;">1 of 5 — Thank You for Upgrading + New Features Overview</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Timing</td>
+          <td style="padding:3px 0;color:#f1f5f9;" colspan="3">Immediate (upon upgrade from free to annual)</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Subject</td>
+          <td style="padding:3px 0;color:#f1f5f9;" colspan="3">Your annual membership is live, ${Contact.First Name}</td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;color:#94a3b8;vertical-align:top;">Preheader</td>
+          <td style="padding:3px 0;color:#cbd5e1;" colspan="3">Here is everything you just unlocked — and you already saved $50.</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="email-wrapper">
+    <div class="email-container">
+      <div class="header">
+        <h1>Annual Membership Active</h1>
+        <p>Upgrade Complete</p>
+      </div>
+
+      <div class="body-content">
+        <p>Hi ${Contact.First Name},</p>
+
+        <p>Thank you for upgrading &mdash; and for going straight to annual. Your membership is now active, all limits on your account have been removed, and you already locked in the best rate we offer.</p>
+
+        <div class="savings-banner">
+          <p><strong>You saved $50 by choosing annual.</strong><br>That is 2 months free compared to monthly billing. Well played.</p>
+        </div>
+
+        <h2>Here Is What You Just Unlocked</h2>
+
+        <div class="unlocked-item">
+          <strong>Unlimited Property Lookups</strong>
+          <span>No more 2-per-month cap. Run as many automated lookups, ARV/comp reports, and wholesale calculations as you need.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Unlimited Deal Analysis</strong>
+          <span>Full automation on every analysis. The wizard handles data population &mdash; no manual entry required.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Save Deals &amp; Lenders</strong>
+          <span>Build your personal investment portfolio. Save deal analyses and preferred lenders to your portal for quick reference.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Export PDF &amp; CSV Reports</strong>
+          <span>Download professional reports to share with partners, lenders, or for your own records.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>State-Specific Calculators</strong>
+          <span>Accurate calculations tailored to your state's closing costs, transfer taxes, and location-specific factors.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Full Lender Network Access</strong>
+          <span>Unlimited comparisons across hard money, DSCR, bridge, transactional, and conventional lenders.</span>
+        </div>
+
+        <div class="unlocked-item">
+          <strong>Priority Support</strong>
+          <span>Your questions go to the front of the line. Reply to any email or reach out through the platform.</span>
+        </div>
+
+        <hr class="divider">
+
+        <h2>Start With a Deal</h2>
+        <p>The fastest way to put your membership to work is to run a real property through the Deal Analysis Wizard. Pick an address you are evaluating and let the platform do the heavy lifting.</p>
+
+        <div class="cta-section">
+          <a href="${URL.Portal}" class="cta-button">Go to Your Portal</a>
+        </div>
+
+        <p>If you have any questions, just hit reply. We are here.</p>
+
+        <p>Welcome aboard,<br>The RE Data Metrix Team</p>
+      </div>
+
+      <div class="footer">
+        <p>&copy; ${Current Year} RE Data Metrix. All rights reserved.</p>
+        <p><a href="${URL.Unsubscribe}">Unsubscribe</a> | <a href="${URL.Preferences}">Email Preferences</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
