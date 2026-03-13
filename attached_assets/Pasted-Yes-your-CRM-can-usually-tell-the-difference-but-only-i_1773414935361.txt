@@ -1,0 +1,86 @@
+Yes—your CRM can usually tell the difference, but only if you pass it the right data from your billing/product system and use that data in workflow logic.
+How the CRM can know
+Use subscription fields: Sync plan type (free/monthly/annual), start date, and status into CRM properties like “Current plan,” “Previous plan,” “Subscription start date,” “Last upgrade date.”
+Listen to billing events: Billing tools (for example, Stripe, Chargebee, Paddle) emit different events for “subscription created,” “subscription updated/plan changed,” and “subscription canceled,” which integrations or webhooks can map into CRM fields or triggers.
+Drive workflows off changes: In the CRM, use “if/then” branches like “If plan changed from Free to Monthly, enter Upgrade workflow” vs. “If plan is Monthly and user is new, enter New Monthly workflow.”
+Practical approach
+Treat “new signup” and “upgrade” as separate triggers:
+New monthly/annual from scratch: Trigger when contact is created or when “Current plan” is set for the first time.
+Upgrade: Trigger when “Current plan” changes and “Previous plan” is not empty or equals a lower tier (for example, Free → Monthly, Monthly → Annual).
+Make sure your billing and CRM stay in sync: A proper integration or webhook layer is what actually lets the CRM see those “upgrade vs new” differences reliably.
+Which billing system are you using today (for example, Stripe, Chargebee, Paddle, or something custom)?
+I'm using Stripe
+Perfect—Stripe makes this doable. Yes, your CRM can know if a monthly/annual signup is new or an upgrade, as long as you wire Stripe events into it correctly.
+Key Stripe events to use
+New signup from scratch: Use customer.created plus customer.subscription.created to identify brand‑new customers and their first subscription (monthly or annual).​
+Upgrade/downgrade: Use customer.subscription.updated; check if the plan or items changed from a lower tier (for example, free/monthly) to a higher one (monthly/annual).
+Cancellation: Use customer.subscription.deleted (or canceled) events to trigger your cancel/churn workflows.​
+How to reflect this in your CRM
+Sync fields: Map Stripe data into CRM properties like Current plan, Previous plan, Subscription status, Subscription start date, Last plan change date.
+Define workflow logic:
+New monthly: Trigger when customer.subscription.created fires and Previous plan is empty.
+New annual: Same event, but plan = annual and Previous plan is empty.
+Upgrade to monthly/annual: Trigger when customer.subscription.updated fires and Current plan is higher tier than Previous plan.
+Cancellation: Trigger when customer.subscription.deleted fires or Subscription status becomes “canceled.”
+Implementation options
+Native integration: If your CRM has a Stripe connector, configure it to pull subscription events and populate those fields.
+Webhooks/automation: If not, set up Stripe webhooks (via your backend or tools like Zapier/Make) to listen for the events above and update the correct contact in your CRM.
+Which CRM are you using (HubSpot, Salesforce, Pipedrive, something else)?
+es—Zoho CRM can tell the difference, but you have to bring Stripe data in and use it in workflow conditions.
+How to let Zoho “see” new vs. upgrade
+Connect Stripe to Zoho: Use Zoho Flow, Zapier, Pabbly, or a marketplace extension so Stripe events like “Subscription Created,” “Subscription Updated,” and “Subscription Canceled” update the matching contact in Zoho CRM.
+Store plan info in fields: Create fields such as Current Plan, Previous Plan, Subscription Status, Plan Start Date, Last Plan Change Date on the Contact/Account record and fill them from Stripe data each time an event fires.
+Logic to distinguish scenarios
+In Zoho CRM workflows you can then use conditions like:​
+New monthly from scratch:
+Trigger when a record is created or updated,
+Condition: Current Plan = “Monthly” AND Previous Plan is empty (or “Free/None”).
+New annual from scratch:
+Current Plan = “Annual” AND Previous Plan is empty.
+Upgrade free → monthly or monthly → annual:
+Workflow on record update,
+Condition: Previous Plan = “Free” AND Current Plan = “Monthly”, or Previous Plan = “Monthly” AND Current Plan = “Annual”.
+Cancellation:
+Trigger when Subscription Status changes to “Canceled” (or when you receive a Stripe “subscription canceled/deleted” event and push that into a field).
+Practically, you’ll set up your Stripe → Zoho integration first so those fields are always accurate, and then build Zoho workflows that fire based on “field updated” plus the Previous/Current Plan combo you care about.
+
+What does this look like when upgrading from a monthly account to an annual account versus upgrading to an annual account from a free account?
+
+Your CRM can treat those as two different upgrade paths by comparing Previous Plan and Current Plan, and then firing different workflows. The Stripe events are similar, but the Zoho logic and emails change.
+High-level differences
+Scenario
+Previous Plan value
+Current Plan value
+Main goal of workflow
+Free → Annual upgrade
+Free / None
+Annual
+Welcome, onboarding, first‑value activation
+Monthly → Annual upgrade
+Monthly
+Annual
+Lock‑in, appreciation, long‑term value, retention
+
+Example Zoho + Stripe logic
+Stripe side (both cases): You will typically see a customer.subscription.updated event showing the subscription’s plan changed to your annual plan.
+Zoho side: Your integration updates Previous Plan and Current Plan on the contact when that event comes in.
+Then you create two separate Zoho workflows:
+Free → Annual upgrade workflow
+Trigger: Record updated.
+Condition: Previous Plan = “Free” (or empty) AND Current Plan = “Annual”.
+Emails focus on:
+“Welcome to your first paid plan” messaging.
+Core onboarding (getting set up, key features, quick‑start checklist).
+Initial trust and success stories, because this is their first time paying you.
+Monthly → Annual upgrade workflow
+Trigger: Record updated.
+Condition: Previous Plan = “Monthly” AND Current Plan = “Annual”.
+Emails focus on:
+Appreciation and confirmation of the upgrade (“Thanks for committing annually”).
+Reinforcing the benefit they just chose (savings, bonuses, fewer billing hassles).
+Deepening usage and retention, not basic onboarding, since they already know the product.
+How this feels to the user
+Free → Annual: The messaging feels like “You’re new as a paying customer; let us show you around and prove your decision right.”
+Monthly → Annual: The messaging feels like “You already see value; let’s make sure you get the most from your long‑term commitment.”
+Once your Stripe → Zoho integration is populating Previous/Current Plan correctly, this is just a matter of setting two different workflow rules and pointing each to its own email sequence.
+Are you planning to keep the same number of emails in both upgrade workflows, or do you want a shorter sequence for monthly → annual since they already know the product?
