@@ -57,6 +57,7 @@ export class WebhookHandlers {
                   const firstName = nameParts[0] || '';
                   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
+                  const webhookPlan = user.subscriptionPlan || 'monthly';
                   const webhookPayload = {
                     userId: user.id,
                     email: user.email,
@@ -65,11 +66,16 @@ export class WebhookHandlers {
                     lastName,
                     fullName,
                     phone: profile?.phone || '',
-                    subscriptionType: user.subscriptionPlan || 'monthly',
+                    subscriptionType: webhookPlan,
                     subscriptionStatus: user.subscriptionStatus || 'active',
                     stripeCustomerId: user.stripeCustomerId || '',
                     stripeSubscriptionId: user.stripeSubscriptionId || '',
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    workflowTrigger: webhookPlan === 'annual' ? 'annual_signup' : 'monthly_signup',
+                    previousPlan: null,
+                    currentPlan: webhookPlan,
+                    isNewSignup: true,
+                    isUpgrade: false,
                   };
 
                   if (!result.alreadyProcessed) {

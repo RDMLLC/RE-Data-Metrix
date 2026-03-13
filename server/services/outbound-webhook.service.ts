@@ -97,7 +97,12 @@ export class OutboundWebhookService {
       data: {
         message: "This is a test webhook from RE Data Metrix",
         webhookId: webhook.id,
-        webhookName: webhook.name
+        webhookName: webhook.name,
+        workflowTrigger: "free_signup",
+        previousPlan: null,
+        currentPlan: "free",
+        isNewSignup: true,
+        isUpgrade: false,
       }
     };
 

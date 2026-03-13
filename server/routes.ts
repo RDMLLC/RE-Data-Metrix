@@ -93,7 +93,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionType,
           subscriptionStatus: result.user.subscriptionStatus || 'free',
           isComped: result.isComped,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          workflowTrigger: 'free_signup',
+          previousPlan: null,
+          currentPlan: 'free',
+          isNewSignup: true,
+          isUpgrade: false,
         }).catch(err => console.error('[Webhook] user_signup trigger error:', err));
       }
 
@@ -1562,7 +1567,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCustomerId: '',
         stripeSubscriptionId: '',
         isComped: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        workflowTrigger: selectedPlan === 'annual' ? 'annual_signup' : 'monthly_signup',
+        previousPlan: null,
+        currentPlan: selectedPlan,
+        isNewSignup: true,
+        isUpgrade: false,
       };
 
       outboundWebhookService.triggerWebhooks('user_signup', discountWebhookPayload)
@@ -1648,6 +1658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const completedFirstName = completedNameParts[0] || '';
               const completedLastName = completedNameParts.length > 1 ? completedNameParts.slice(1).join(' ') : '';
 
+              const completedPlan = completedUser.subscriptionPlan || 'monthly';
               const completedWebhookPayload = {
                 userId: completedUser.id,
                 email: completedUser.email,
@@ -1656,12 +1667,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 lastName: completedLastName,
                 fullName: completedFullName,
                 phone: completedProfile?.phone || '',
-                subscriptionType: completedUser.subscriptionPlan || 'monthly',
+                subscriptionType: completedPlan,
                 subscriptionStatus: completedUser.subscriptionStatus || 'active',
                 stripeCustomerId: completedUser.stripeCustomerId || '',
                 stripeSubscriptionId: completedUser.stripeSubscriptionId || '',
                 isComped: false,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                workflowTrigger: completedPlan === 'annual' ? 'annual_signup' : 'monthly_signup',
+                previousPlan: null,
+                currentPlan: completedPlan,
+                isNewSignup: true,
+                isUpgrade: false,
               };
 
               outboundWebhookService.triggerWebhooks('user_signup', completedWebhookPayload)
@@ -2070,6 +2086,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
         const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
 
+        // Capture the user's current plan BEFORE the DB update for webhook enrichment
+        const previousPlan = user.subscriptionPlan || 'free';
+
         await db
           .update(users)
           .set({ 
@@ -2082,6 +2101,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id} (plan: ${subscriptionPlan})`);
 
         // Trigger subscription_completed webhook for upgrade flow
+        const upgradeWorkflowTrigger =
+          previousPlan === 'free' && subscriptionPlan === 'monthly' ? 'upgrade_free_to_monthly' :
+          previousPlan === 'free' && subscriptionPlan === 'annual' ? 'upgrade_free_to_annual' :
+          previousPlan === 'monthly' && subscriptionPlan === 'annual' ? 'upgrade_monthly_to_annual' :
+          `upgrade_${previousPlan}_to_${subscriptionPlan}`;
+
         try {
           const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
           const upgradeName = (profile?.fullName || user.username || '').trim();
@@ -2101,7 +2126,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subscriptionStatus: 'active',
             stripeCustomerId: user.stripeCustomerId || '',
             stripeSubscriptionId: subscription.id,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            workflowTrigger: upgradeWorkflowTrigger,
+            previousPlan,
+            currentPlan: subscriptionPlan,
+            isNewSignup: false,
+            isUpgrade: true,
           }).catch(err => console.error('[Webhook] subscription_completed trigger error (upgrade):', err));
         } catch (webhookErr) {
           console.error('[Webhook] Error preparing upgrade webhook:', webhookErr);
