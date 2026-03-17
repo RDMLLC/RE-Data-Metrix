@@ -288,19 +288,23 @@ export class HasDataAPIService implements IPropertyAPIService {
   private normalizePropertyType(rawType: string | undefined): string | undefined {
     if (!rawType) return undefined;
     
-    const normalized = rawType.toLowerCase().trim();
+    const normalized = rawType.toLowerCase().trim().replace(/[_\s-]+/g, '');
     
-    // Map common API values to human-readable display values
-    if (normalized.includes('townhouse') || normalized.includes('town house') || normalized.includes('townhome')) {
+    // Check attached/townhouse FIRST (before "house" check) since "townhouse" contains "house"
+    if (normalized.includes('townhouse') || normalized.includes('townhome') || normalized.includes('townhm')) {
       return 'Townhouse';
     }
-    if (normalized.includes('single') && normalized.includes('family')) {
-      return 'Single Family';
-    }
-    if (normalized.includes('condo') || normalized.includes('co-op') || normalized.includes('coop')) {
+    if (normalized.includes('condo') || normalized.includes('condominium') || normalized.includes('coop') || normalized.includes('co-op')) {
       return 'Condo';
     }
+    // Single family — catches "single_family", "singlefamily", "SingleFamilyResidence", "Houses", "house"
+    if ((normalized.includes('single') && normalized.includes('family')) || normalized === 'houses' || normalized === 'house' || normalized.includes('singlefamily') || normalized.includes('detached')) {
+      return 'Single Family';
+    }
     if (normalized.includes('multi') && normalized.includes('family')) {
+      return 'Multi-Family';
+    }
+    if (normalized.includes('duplex') || normalized.includes('triplex') || normalized.includes('fourplex') || normalized.includes('quadplex')) {
       return 'Multi-Family';
     }
     if (normalized.includes('apartment')) {
@@ -618,19 +622,56 @@ export class HasDataAPIService implements IPropertyAPIService {
       rentZestimate: property.rentZestimate
     });
     
+    // Extract property type with multiple fallbacks (Zillow uses several field names)
+    const zillowPropertyType = 
+      property.homeType ||
+      property.propertyTypeDimension ||
+      property.resoFacts?.propertyType ||
+      property.type;
+
+    // Extract sqft with multiple fallbacks (Zillow commonly uses livingArea)
+    const zillowSqft = this.parseNumber(
+      property.area ||
+      property.livingArea ||
+      property.resoFacts?.livingArea ||
+      property.sqFt ||
+      property.squareFeet ||
+      property.resoFacts?.aboveGradeFinishedArea
+    );
+
+    // Round annual tax to nearest dollar (Zillow can return floats like 2871.34)
+    const roundedAnnualTax = annualTax !== undefined ? Math.round(annualTax) : undefined;
+
+    console.log("Zillow property type fields:", {
+      homeType: property.homeType,
+      propertyTypeDimension: property.propertyTypeDimension,
+      resoFactsPropertyType: property.resoFacts?.propertyType,
+      type: property.type,
+      resolved: zillowPropertyType
+    });
+
+    console.log("Zillow sqft fields:", {
+      area: property.area,
+      livingArea: property.livingArea,
+      resoFactsLivingArea: property.resoFacts?.livingArea,
+      sqFt: property.sqFt,
+      squareFeet: property.squareFeet,
+      resolved: zillowSqft
+    });
+
     return {
       address: property.address?.street || property.addressRaw || '',
       city: property.address?.city || '',
       state: property.address?.state || '',
       zipCode: property.address?.zipcode || '',
-      propertyType: this.normalizePropertyType(property.homeType),
+      propertyType: this.normalizePropertyType(zillowPropertyType),
       bedrooms: this.parseNumber(property.beds),
       bathrooms: this.parseNumber(property.baths),
-      sqft: this.parseNumber(property.area),
+      sqft: zillowSqft,
       lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
-      annualTax,
+      annualTax: roundedAnnualTax,
       estimatedValue: this.parseNumber(property.zestimate || property.price),
       estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
