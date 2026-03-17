@@ -47,7 +47,72 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
+  // ─── Public Health Check ─────────────────────────────────────────────────────
+  // No auth required — designed for external uptime monitors (UptimeRobot, etc.)
+  // Returns 200 + { status: "ok" } when the property data pipeline is healthy.
+  // Returns 503 + { status: "degraded", failedChecks: [...] } when fields are missing.
+  //
+  // Use ?force=true to bypass the property cache and hit the live Zillow API.
+  // Recommended: hit without ?force every 5 min (fast/free), and with ?force once/day.
+  app.get("/api/health/property-lookup", async (req, res) => {
+    const TEST_URL = "https://www.zillow.com/homedetails/3127-Snapfinger-Ct-Decatur-GA-30034/14435242_zpid/";
+    const force = req.query.force === "true";
+    const started = Date.now();
+    try {
+      const data = await propertyAPIService.getPropertyByUrl(TEST_URL, force);
+
+      if (!data) {
+        return res.status(503).json({
+          status: "error",
+          message: "Property lookup returned no data",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const checks: Record<string, boolean> = {
+        address:      !!(data.address && data.address.length > 0),
+        sqft:         !!(data.sqft && data.sqft > 0),
+        bedrooms:     !!(data.bedrooms && data.bedrooms > 0),
+        bathrooms:    !!(data.bathrooms && data.bathrooms > 0),
+        propertyType: !!(data.propertyType),
+        annualTaxIsWhole: data.annualTax !== undefined
+          ? Number.isInteger(data.annualTax)
+          : true,
+      };
+
+      const failedChecks = Object.entries(checks)
+        .filter(([, v]) => v === false)
+        .map(([k]) => k);
+
+      const status = failedChecks.length === 0 ? "ok" : "degraded";
+      const elapsed = Date.now() - started;
+
+      if (status === "degraded") {
+        console.warn(`[HEALTH] Property data pipeline DEGRADED — failed checks: ${failedChecks.join(", ")}`);
+      }
+
+      return res.status(status === "ok" ? 200 : 503).json({
+        status,
+        checks,
+        failedChecks,
+        elapsed_ms: elapsed,
+        cached: !force,
+        sample: { address: data.address, sqft: data.sqft, bedrooms: data.bedrooms, annualTax: data.annualTax },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.error("[HEALTH] Property lookup health check failed:", err.message);
+      return res.status(503).json({
+        status: "error",
+        message: err.message,
+        elapsed_ms: Date.now() - started,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────────
+
   // Authentication Routes - Using authService for centralized logic
   app.post("/api/auth/register", async (req, res) => {
     try {

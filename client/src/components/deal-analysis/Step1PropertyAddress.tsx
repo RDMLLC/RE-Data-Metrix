@@ -34,6 +34,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [propertyImage, setPropertyImage] = useState<string | null>(null);
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
   const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
+  const [missingAutoFillFields, setMissingAutoFillFields] = useState<string[]>([]);
 
   const { data: usageData, isLoading: usageLoading, isError: usageError } = useQuery<{
     isSubscriber: boolean;
@@ -175,9 +176,17 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       
       onPropertyDataLoaded(data);
       setIsLookupComplete(true);
-      
+
+      // Detect fields the API couldn't populate so we can warn the user
+      const missing: string[] = [];
+      if (!data.sqft || data.sqft <= 0) missing.push("Square footage");
+      if (!data.bedrooms || data.bedrooms <= 0) missing.push("Bedrooms");
+      if (!data.bathrooms || data.bathrooms <= 0) missing.push("Bathrooms");
+      if (!data.yearBuilt || data.yearBuilt <= 0) missing.push("Year built");
+      setMissingAutoFillFields(missing);
+
       queryClient.invalidateQueries({ queryKey: ['/api/user/usage'] });
-      
+
       toast({
         title: "Property Found",
         description: "Property details have been loaded successfully.",
@@ -470,6 +479,17 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       </p>
                     </div>
                     
+                    {missingAutoFillFields.length > 0 && (
+                      <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20" data-testid="alert-missing-autofill">
+                        <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        <AlertDescription className="text-yellow-800 dark:text-yellow-300">
+                          <span className="font-medium">Some data couldn't be retrieved automatically:</span>{" "}
+                          {missingAutoFillFields.join(", ")}.{" "}
+                          Please enter these fields manually on the next step before proceeding.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     <div className="flex gap-3 flex-wrap">
                       <Button
                         type="button"
