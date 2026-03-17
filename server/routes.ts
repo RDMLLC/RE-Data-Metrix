@@ -70,35 +70,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const checks: Record<string, boolean> = {
-        address:      !!(data.address && data.address.length > 0),
-        sqft:         !!(data.sqft && data.sqft > 0),
-        bedrooms:     !!(data.bedrooms && data.bedrooms > 0),
-        bathrooms:    !!(data.bathrooms && data.bathrooms > 0),
-        propertyType: !!(data.propertyType),
+      // Required: these fields are essential for the deal analysis to function.
+      // A 503 is returned if any of these fail.
+      const required: Record<string, boolean> = {
+        address:          !!(data.address && data.address.length > 0),
+        city:             !!(data.city && data.city.length > 0),
+        state:            !!(data.state && data.state.length > 0),
+        sqft:             !!(data.sqft && data.sqft > 0),
+        bedrooms:         !!(data.bedrooms && data.bedrooms > 0),
+        bathrooms:        !!(data.bathrooms && data.bathrooms > 0),
+        propertyType:     !!(data.propertyType),
+        annualTax:        !!(data.annualTax && data.annualTax > 0),
         annualTaxIsWhole: data.annualTax !== undefined
           ? Number.isInteger(data.annualTax)
           : true,
       };
 
-      const failedChecks = Object.entries(checks)
+      // Informational: useful but legitimately absent for some properties
+      // (e.g. Zestimate not available for off-market properties, coordinates
+      //  not always returned by the upstream API). Reported but do not cause 503.
+      const informational: Record<string, boolean> = {
+        yearBuilt:      !!(data.yearBuilt && data.yearBuilt > 0),
+        estimatedValue: !!(data.estimatedValue && data.estimatedValue > 0),
+        latitude:       !!(data.latitude),
+        longitude:      !!(data.longitude),
+      };
+
+      const failedRequired = Object.entries(required)
         .filter(([, v]) => v === false)
         .map(([k]) => k);
 
-      const status = failedChecks.length === 0 ? "ok" : "degraded";
+      const missingInformational = Object.entries(informational)
+        .filter(([, v]) => v === false)
+        .map(([k]) => k);
+
+      const status = failedRequired.length === 0 ? "ok" : "degraded";
       const elapsed = Date.now() - started;
 
       if (status === "degraded") {
-        console.warn(`[HEALTH] Property data pipeline DEGRADED — failed checks: ${failedChecks.join(", ")}`);
+        console.warn(`[HEALTH] Property data pipeline DEGRADED — failed required checks: ${failedRequired.join(", ")}`);
       }
 
       return res.status(status === "ok" ? 200 : 503).json({
         status,
-        checks,
-        failedChecks,
+        required,
+        informational,
+        failedChecks: failedRequired,
+        missingInformational,
         elapsed_ms: elapsed,
         cached: !force,
-        sample: { address: data.address, sqft: data.sqft, bedrooms: data.bedrooms, annualTax: data.annualTax },
+        sample: { address: data.address, city: data.city, state: data.state, sqft: data.sqft, bedrooms: data.bedrooms, bathrooms: data.bathrooms, propertyType: data.propertyType, annualTax: data.annualTax },
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
