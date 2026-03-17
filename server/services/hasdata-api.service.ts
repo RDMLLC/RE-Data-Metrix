@@ -415,6 +415,16 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedAnnualTax: annualTax
     });
     
+    // Handle area as object or number (Redfin path)
+    const redfinAreaObj = typeof property.area === 'object' && property.area !== null ? property.area : null;
+    const redfinAreaNum = typeof property.area === 'number' ? property.area : null;
+    const redfinSqft = this.parseNumber(
+      redfinAreaObj?.livingArea || redfinAreaNum || property.sqFt || property.squareFeet
+    );
+    const redfinLotSize = this.parseNumber(
+      redfinAreaObj?.lotSize || property.lotSize || property.lotAreaValue
+    );
+
     return {
       address: property.address?.street || '',
       city: property.address?.city || '',
@@ -423,11 +433,11 @@ export class HasDataAPIService implements IPropertyAPIService {
       propertyType: this.normalizePropertyType(propertyType),
       bedrooms: this.parseNumber(property.beds || property.bedrooms),
       bathrooms: this.parseNumber(property.baths || property.bathrooms),
-      sqft: this.parseNumber(property.area || property.sqFt || property.squareFeet),
-      lotSize: this.parseNumber(property.lotSize),
+      sqft: redfinSqft,
+      lotSize: redfinLotSize,
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
-      annualTax,
+      annualTax: annualTax !== undefined ? Math.round(annualTax) : undefined,
       estimatedValue: this.parseNumber(property.price || property.listPrice),
       lastSalePrice: this.parseNumber(property.lastSoldPrice),
       lastSaleDate: property.lastSoldDate,
@@ -629,17 +639,30 @@ export class HasDataAPIService implements IPropertyAPIService {
       property.resoFacts?.propertyType ||
       property.type;
 
-    // Extract sqft with multiple fallbacks (Zillow commonly uses livingArea)
+    // Zillow's `area` field changed from a number to a nested object: { livingArea: 1879, lotSize: 22215, ... }
+    // Handle both old (number) and new (object) formats
+    const areaObj = typeof property.area === 'object' && property.area !== null ? property.area : null;
+    const areaNum = typeof property.area === 'number' ? property.area : null;
+
     const zillowSqft = this.parseNumber(
-      property.area ||
+      areaObj?.livingArea ||
+      areaNum ||
       property.livingArea ||
       property.resoFacts?.livingArea ||
       property.sqFt ||
       property.squareFeet ||
-      property.resoFacts?.aboveGradeFinishedArea
+      property.resoFacts?.aboveGradeFinishedArea ||
+      property.resoFacts?.finishedSqFt
     );
 
-    // Round annual tax to nearest dollar (Zillow can return floats like 2871.34)
+    const zillowLotSize = this.parseNumber(
+      areaObj?.lotSize ||
+      property.lotSize ||
+      property.lotAreaValue ||
+      areaObj?.lotAreaValue
+    );
+
+    // Round annual tax to nearest dollar — taxHistory returns floats like 4795.74
     const roundedAnnualTax = annualTax !== undefined ? Math.round(annualTax) : undefined;
 
     console.log("Zillow property type fields:", {
@@ -668,7 +691,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       bedrooms: this.parseNumber(property.beds),
       bathrooms: this.parseNumber(property.baths),
       sqft: zillowSqft,
-      lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
+      lotSize: zillowLotSize,
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
       annualTax: roundedAnnualTax,
