@@ -22,7 +22,6 @@ const MobileDealAnalysis = lazy(() => import("@/pages/mobile/MobileDealAnalysis"
 const MobileLenders = lazy(() => import("@/pages/mobile/MobileLenders"));
 const MobileToolbox = lazy(() => import("@/pages/mobile/MobileToolbox"));
 const MobileWebinar = lazy(() => import("@/pages/mobile/MobileWebinar"));
-const MobileMetaOffer = lazy(() => import("@/pages/mobile/MobileMetaOffer"));
 const About = lazy(() => import("@/pages/About"));
 const Company = lazy(() => import("@/pages/Company"));
 const DealAnalysis = lazy(() => import("@/pages/DealAnalysis"));
@@ -151,7 +150,7 @@ function Router() {
         <Route path="/m/lenders" component={MobileLenders} />
         <Route path="/m/toolbox" component={MobileToolbox} />
         <Route path="/m/webinar" component={MobileWebinar} />
-        <Route path="/m/meta-offer" component={MobileMetaOffer} />
+        <Route path="/m/meta-offer">{() => { window.location.replace("/meta-offer" + window.location.search); return null; }}</Route>
         
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />

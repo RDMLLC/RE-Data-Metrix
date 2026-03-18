@@ -7,7 +7,6 @@ const MOBILE_ROUTE_MAP: Record<string, string> = {
   "/toolbox": "/m/toolbox",
   "/lenders": "/m/lenders",
   "/webinar": "/m/webinar",
-  "/meta-offer": "/m/meta-offer",
 };
 
 const DESKTOP_ROUTE_MAP: Record<string, string> = {
@@ -15,7 +14,6 @@ const DESKTOP_ROUTE_MAP: Record<string, string> = {
   "/m/toolbox": "/toolbox",
   "/m/lenders": "/lenders",
   "/m/webinar": "/webinar",
-  "/m/meta-offer": "/meta-offer",
 };
 
 export function useMobileRedirect() {
