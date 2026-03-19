@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Building2, MapPin, Mail, Phone } from "lucide-react";
 import companyImg from "@assets/generated_images/Company_headquarters_building_0830ca98.png";
 import { SEO } from "@/components/SEO";
+import { AboutPageSchema } from "@/components/StructuredData";
 
 export default function Company() {
   return (
@@ -13,6 +14,7 @@ export default function Company() {
         keywords="RE Data Metrix company, real estate analytics platform, Atlanta Georgia, investment tools, lender network, real estate LLC"
         canonicalUrl="https://redatametrix.com/company"
       />
+      <AboutPageSchema />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">

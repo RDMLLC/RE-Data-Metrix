@@ -1,6 +1,14 @@
 import { Helmet } from 'react-helmet-async';
 
 const BASE_URL = 'https://redatametrix.com';
+const COMPANY_ADDRESS = {
+  "@type": "PostalAddress",
+  "streetAddress": "8735 Dunwoody Pl, Suite R",
+  "addressLocality": "Atlanta",
+  "addressRegion": "GA",
+  "postalCode": "30350",
+  "addressCountry": "US"
+};
 
 export function OrganizationSchema() {
   const schema = {
@@ -80,6 +88,67 @@ export function FAQSchema({ faqs }: FAQSchemaProps) {
         "text": faq.answer
       }
     }))
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(schema)}
+      </script>
+    </Helmet>
+  );
+}
+
+export function AboutPageSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About RE Data Metrix",
+    "url": `${BASE_URL}/about`,
+    "description": "RE Data Metrix™, LLC is a technology-driven real estate analytics platform headquartered in Atlanta, Georgia, empowering investors with data-driven deal analysis and lender connections.",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "RE Data Metrix, LLC",
+      "url": BASE_URL,
+      "logo": `${BASE_URL}/logo.png`,
+      "address": COMPANY_ADDRESS,
+      "telephone": "+18884504408",
+      "email": "info@redatametrix.com",
+      "foundingLocation": "Atlanta, Georgia",
+      "description": "Technology-driven real estate analytics platform providing sophisticated deal analysis tools and direct connections to funding sources."
+    }
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(schema)}
+      </script>
+    </Helmet>
+  );
+}
+
+export function ContactPageSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Contact RE Data Metrix",
+    "url": `${BASE_URL}/contact`,
+    "description": "Contact RE Data Metrix for questions about our real estate investment analysis platform.",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "RE Data Metrix, LLC",
+      "url": BASE_URL,
+      "address": COMPANY_ADDRESS,
+      "telephone": "+18884504408",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": "English",
+        "areaServed": "US",
+        "contactOption": "TollFree"
+      }
+    }
   };
 
   return (

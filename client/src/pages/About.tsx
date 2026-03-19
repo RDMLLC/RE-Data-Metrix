@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Building2, MapPin, Phone, Mail, Layers, Users, Zap } from "lucide-react";
 import companyImg from "@assets/generated_images/Company_headquarters_building_0830ca98.png";
 import { SEO } from "@/components/SEO";
+import { AboutPageSchema } from "@/components/StructuredData";
 
 export default function About() {
   return (
@@ -13,6 +14,7 @@ export default function About() {
         keywords="about RE Data Metrix, real estate analytics company, Atlanta Georgia, real estate investment platform, deal analysis company"
         canonicalUrl="https://redatametrix.com/about"
       />
+      <AboutPageSchema />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">

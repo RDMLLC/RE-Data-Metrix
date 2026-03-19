@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { SEO } from "@/components/SEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
@@ -320,6 +321,12 @@ export default function Resources() {
 
   return (
     <Layout>
+      <SEO
+        title="Investor Toolbox & Resources"
+        description="Access RE Data Metrix's comprehensive real estate investor toolbox. Explore partner tools for lead generation, property management, contractors, comps, legal resources, and training videos — all in one place."
+        keywords="real estate investor tools, investor resources, lead generation tools, property management software, real estate education, rehab estimating, contractor search, investor toolbox"
+        canonicalUrl="https://redatametrix.com/toolbox"
+      />
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">

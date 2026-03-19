@@ -3,6 +3,7 @@ import ContactForm from "@/components/ContactForm";
 import { Card } from "@/components/ui/card";
 import { MapPin, Mail, Clock } from "lucide-react";
 import { SEO } from "@/components/SEO";
+import { ContactPageSchema } from "@/components/StructuredData";
 
 export default function Contact() {
   return (
@@ -13,6 +14,7 @@ export default function Contact() {
         keywords="contact RE Data Metrix, real estate software support, investor tools help, customer service"
         canonicalUrl="https://redatametrix.com/contact"
       />
+      <ContactPageSchema />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">

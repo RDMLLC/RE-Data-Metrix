@@ -64,7 +64,7 @@ export default function MetaOffer() {
   return (
     <div className="min-h-screen bg-background" data-testid="page-meta-offer">
       <SEO
-        title="Analyze Deals & Find Lenders | RE Data Metrix"
+        title="Analyze Deals & Find the Right Lender"
         description="Stop guessing on real estate deals. Analyze profitability, compare lenders, and close with confidence — free to start, no credit card required."
         keywords="real estate deal analysis, investment calculator, private lenders, fix and flip, DSCR loans, ROI calculator"
         canonicalUrl="https://redatametrix.com/meta-offer"
