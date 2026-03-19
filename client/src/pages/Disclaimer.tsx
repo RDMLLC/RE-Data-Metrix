@@ -1,10 +1,16 @@
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 
 export default function Disclaimer() {
   return (
     <Layout>
+      <SEO
+        title="Investment Disclaimer"
+        description="Read the RE Data Metrix Investment Disclaimer. Our platform provides analytical tools for informational purposes only — not financial, legal, or investment advice."
+        noIndex={true}
+      />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Investment Disclaimer</h1>

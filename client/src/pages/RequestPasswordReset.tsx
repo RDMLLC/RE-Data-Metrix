@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Layout from "@/components/Layout";
+import { SEO } from "@/components/SEO";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,11 @@ export default function RequestPasswordReset() {
 
   return (
     <Layout>
+      <SEO
+        title="Reset Password"
+        description="Reset your RE Data Metrix account password."
+        noIndex={true}
+      />
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <Card className="p-8">
           <div className="text-center mb-8">

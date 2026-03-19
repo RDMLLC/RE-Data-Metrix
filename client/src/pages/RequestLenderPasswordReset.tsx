@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CheckCircle2, Mail, Building2 } from "lucide-react";
+import { SEO } from "@/components/SEO";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -43,6 +44,7 @@ export default function RequestLenderPasswordReset() {
 
   return (
     <Layout>
+      <SEO title="Reset Lender Password" description="Reset your RE Data Metrix lender account password." noIndex={true} />
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <Card className="p-8">
           <div className="text-center mb-8">

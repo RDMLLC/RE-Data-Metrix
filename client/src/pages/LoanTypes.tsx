@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, TrendingUp, DollarSign, Clock, Users, Zap } from 
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import MembershipPaywall from "@/components/MembershipPaywall";
+import { SEO } from "@/components/SEO";
 
 interface LoanType {
   id: string;
@@ -374,6 +375,12 @@ export default function LoanTypes() {
   if (!isSubscriber) {
     return (
       <Layout>
+        <SEO
+          title="Real Estate Loan Types Explained"
+          description="Understand hard money, DSCR, transactional funding, conventional, and private/seller financing loans. Learn which loan type is right for your real estate investment strategy."
+          keywords="hard money loans, DSCR loans, transactional funding, private lending, conventional mortgages, real estate loan types, fix and flip financing, rental property loans"
+          canonicalUrl="https://redatametrix.com/loan-types"
+        />
         <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-12">
@@ -397,6 +404,12 @@ export default function LoanTypes() {
 
   return (
     <Layout>
+      <SEO
+        title="Real Estate Loan Types Explained"
+        description="Understand hard money, DSCR, transactional funding, conventional, and private/seller financing loans. Learn which loan type is right for your real estate investment strategy."
+        keywords="hard money loans, DSCR loans, transactional funding, private lending, conventional mortgages, real estate loan types, fix and flip financing, rental property loans"
+        canonicalUrl="https://redatametrix.com/loan-types"
+      />
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}

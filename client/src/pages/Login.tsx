@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
+import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle, Building2, ShieldCheck, Eye, EyeOff, HardHat, Loader2 } from "lucide-react";
@@ -276,6 +277,11 @@ export default function Login() {
 
   return (
     <Layout>
+      <SEO
+        title="Log In"
+        description="Log in to your RE Data Metrix account to access your deal analyses, lender comparisons, and investment tools."
+        noIndex={true}
+      />
       <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
         <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6">

@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import Layout from "@/components/Layout";
+import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle, ArrowRight, Loader2, FileText, Eye, EyeOff, UserCheck } from "lucide-react";
@@ -202,6 +203,11 @@ export default function Register() {
 
   return (
     <Layout>
+      <SEO
+        title="Create Account"
+        description="Create your free RE Data Metrix account. Get access to real estate deal analysis tools, lender directory, wholesale calculators, and more — free to start, no credit card required."
+        noIndex={true}
+      />
       <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center py-16">
         <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">

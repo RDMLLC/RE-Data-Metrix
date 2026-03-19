@@ -2,10 +2,17 @@ import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Building2, MapPin, Phone, Mail, Layers, Users, Zap } from "lucide-react";
 import companyImg from "@assets/generated_images/Company_headquarters_building_0830ca98.png";
+import { SEO } from "@/components/SEO";
 
 export default function About() {
   return (
     <Layout>
+      <SEO
+        title="About Us"
+        description="Learn about RE Data Metrix — a technology-driven real estate analytics platform headquartered in Atlanta, GA. Our mission is to empower investors with data-driven deal analysis and lender connections."
+        keywords="about RE Data Metrix, real estate analytics company, Atlanta Georgia, real estate investment platform, deal analysis company"
+        canonicalUrl="https://redatametrix.com/about"
+      />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">

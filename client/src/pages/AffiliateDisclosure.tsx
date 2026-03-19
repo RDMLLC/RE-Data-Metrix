@@ -1,10 +1,16 @@
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 
 export default function AffiliateDisclosure() {
   return (
     <Layout>
+      <SEO
+        title="Affiliate Disclosure"
+        description="Read the RE Data Metrix Affiliate Disclosure. We participate in affiliate and referral programs with third-party real estate services. Full transparency about our relationships."
+        noIndex={true}
+      />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Affiliate Disclosure</h1>

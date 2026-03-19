@@ -1,10 +1,16 @@
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 
 export default function Privacy() {
   return (
     <Layout>
+      <SEO
+        title="Privacy Policy"
+        description="Read the RE Data Metrix Privacy Policy — how we collect, use, and protect your information when you use our real estate investment platform."
+        noIndex={true}
+      />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Privacy Policy</h1>

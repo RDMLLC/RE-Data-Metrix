@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Users, TrendingUp, Clock, Shield, Zap, DollarSign, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 
 const referralPlatforms = [
   {
@@ -60,6 +61,12 @@ const lenderSources = [
 export default function AboutPrivateLenders() {
   return (
     <Layout>
+      <SEO
+        title="About Private Lenders"
+        description="Learn how to find and work with private lenders for real estate investing. Discover sources for private capital including local networks, referrals, and online platforms — and how RE Data Metrix connects you to vetted lenders."
+        keywords="private lenders, private lending, private money, real estate private lender, hard money alternative, private capital, lender networks, investor funding"
+        canonicalUrl="https://redatametrix.com/about-private-lenders"
+      />
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
