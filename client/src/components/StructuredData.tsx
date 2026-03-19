@@ -99,13 +99,23 @@ export function FAQSchema({ faqs }: FAQSchemaProps) {
   );
 }
 
-export function AboutPageSchema() {
+interface AboutPageSchemaProps {
+  pageUrl?: string;
+  pageName?: string;
+  pageDescription?: string;
+}
+
+export function AboutPageSchema({
+  pageUrl = `${BASE_URL}/about`,
+  pageName = "About RE Data Metrix",
+  pageDescription = "RE Data Metrix™, LLC is a technology-driven real estate analytics platform headquartered in Atlanta, Georgia, empowering investors with data-driven deal analysis and lender connections."
+}: AboutPageSchemaProps = {}) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    "name": "About RE Data Metrix",
-    "url": `${BASE_URL}/about`,
-    "description": "RE Data Metrix™, LLC is a technology-driven real estate analytics platform headquartered in Atlanta, Georgia, empowering investors with data-driven deal analysis and lender connections.",
+    "name": pageName,
+    "url": pageUrl,
+    "description": pageDescription,
     "mainEntity": {
       "@type": "Organization",
       "name": "RE Data Metrix, LLC",
@@ -116,6 +126,97 @@ export function AboutPageSchema() {
       "email": "info@redatametrix.com",
       "foundingLocation": "Atlanta, Georgia",
       "description": "Technology-driven real estate analytics platform providing sophisticated deal analysis tools and direct connections to funding sources."
+    }
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(schema)}
+      </script>
+    </Helmet>
+  );
+}
+
+export function PricingPageSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "RE Data Metrix",
+    "url": BASE_URL,
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "description": "Real estate investment analysis platform with deal calculators, lender directory, and profitability tools.",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Monthly Subscription",
+        "price": "25.00",
+        "priceCurrency": "USD",
+        "priceValidUntil": "2027-12-31",
+        "availability": "https://schema.org/InStock",
+        "description": "Full access to all RE Data Metrix tools on a monthly basis."
+      },
+      {
+        "@type": "Offer",
+        "name": "Annual Subscription",
+        "price": "250.00",
+        "priceCurrency": "USD",
+        "priceValidUntil": "2027-12-31",
+        "availability": "https://schema.org/InStock",
+        "description": "Full access to all RE Data Metrix tools on an annual basis — save $50 vs monthly."
+      }
+    ],
+    "featureList": [
+      "Fix & Flip Deal Analysis",
+      "DSCR Rental Calculator",
+      "ARV Helper with Comparable Sales",
+      "Wholesale Max Offer Calculator",
+      "Private Lender Directory",
+      "Loan Comparison Tools",
+      "State-Specific Investment Calculations",
+      "Investor Toolbox & Partner Resources"
+    ]
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(schema)}
+      </script>
+    </Helmet>
+  );
+}
+
+export function LendersPageSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Private Lender Directory — RE Data Metrix",
+    "url": `${BASE_URL}/lenders`,
+    "description": "Search and connect with verified private lenders specializing in real estate investment financing including hard money, DSCR, bridge, and fix-and-flip loans.",
+    "serviceType": "Real Estate Lending Marketplace",
+    "areaServed": {
+      "@type": "Country",
+      "name": "United States"
+    },
+    "provider": {
+      "@type": "Organization",
+      "name": "RE Data Metrix, LLC",
+      "url": BASE_URL,
+      "address": COMPANY_ADDRESS
+    },
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Loan Types",
+      "itemListElement": [
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Hard Money Loans" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "DSCR Loans" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Bridge Loans" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Fix and Flip Loans" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Rental Portfolio Loans" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "New Construction Loans" } }
+      ]
     }
   };
 

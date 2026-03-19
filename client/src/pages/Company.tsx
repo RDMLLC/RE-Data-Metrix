@@ -14,7 +14,11 @@ export default function Company() {
         keywords="RE Data Metrix company, real estate analytics platform, Atlanta Georgia, investment tools, lender network, real estate LLC"
         canonicalUrl="https://redatametrix.com/company"
       />
-      <AboutPageSchema />
+      <AboutPageSchema
+        pageUrl="https://redatametrix.com/company"
+        pageName="RE Data Metrix — The Company"
+        pageDescription="RE Data Metrix, LLC revolutionizes how real estate investors analyze deals and connect with funding sources. Based in Atlanta, GA, we provide sophisticated investment analysis tools and lender connections."
+      />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video, Tag, Copy, CheckCheck } from "lucide-react";
 import { SEO } from "@/components/SEO";
+import { PricingPageSchema } from "@/components/StructuredData";
 
 const featureComparison = [
   { feature: "Property Lookups", free: "2 per month", paid: "Unlimited" },
@@ -65,6 +66,7 @@ export default function Pricing() {
         keywords="real estate software pricing, deal analysis subscription, investment tools cost, real estate platform"
         canonicalUrl="https://redatametrix.com/pricing"
       />
+      <PricingPageSchema />
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">

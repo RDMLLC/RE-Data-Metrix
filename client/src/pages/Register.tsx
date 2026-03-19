@@ -214,7 +214,7 @@ export default function Register() {
             {/* Left Side - Navy Value Prop Panel */}
             <div className="lg:col-span-2 bg-primary text-primary-foreground rounded-lg p-12 space-y-8">
               <div>
-                <h2 className="text-4xl font-bold mb-6">Join RE Data Metrix</h2>
+                <h1 className="text-4xl font-bold mb-6">Join RE Data Metrix</h1>
                 <div className="h-1 w-24 bg-accent mb-8"></div>
                 <div className="space-y-4 text-lg">
                   <p className="flex items-start gap-3">

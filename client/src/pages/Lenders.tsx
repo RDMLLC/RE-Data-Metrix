@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
+import { LendersPageSchema } from "@/components/StructuredData";
 
 const loanTypesData = [
   {
@@ -377,6 +378,7 @@ export default function Lenders() {
         keywords="private lenders, hard money loans, DSCR loans, bridge loans, real estate financing, investment lending, fix and flip loans"
         canonicalUrl="https://redatametrix.com/lenders"
       />
+      <LendersPageSchema />
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4">Lender Network</h1>

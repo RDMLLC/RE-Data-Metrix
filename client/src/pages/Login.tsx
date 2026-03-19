@@ -287,7 +287,7 @@ export default function Login() {
           <div className="flex flex-col gap-6">
             <div className="bg-primary text-primary-foreground rounded-md p-8 sm:p-12 space-y-6">
               <div>
-                <h2 className="text-3xl sm:text-4xl font-bold mb-4">Welcome Back</h2>
+                <h1 className="text-3xl sm:text-4xl font-bold mb-4">Welcome Back</h1>
                 <div className="h-1 w-24 bg-accent mb-6"></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-base">
                   <p className="flex items-start gap-3">
