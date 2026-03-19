@@ -41,6 +41,9 @@ Allow users to create custom follow-up reminder emails tied to their deals. Key 
 - **Read Receipts**: Embed tracking pixel in sent emails; display read/unread status per recipient in the UI
 - **Implementation Notes**: Extends existing closing reminder scheduler and Zoho SMTP email infrastructure. New tables: `custom_deal_reminders` (deal ID, days before closing, talking points, subject, status, sent_at) and `custom_reminder_recipients` (reminder ID, email, name, role label, read status, read_at). Tracking pixel endpoint records opens. Minimal cost impact — uses existing SMTP service and lightweight tracking requests.
 
+## Analytics
+- **Google Analytics 4**: Measurement ID `G-49SJERQFW1` — tag added to `client/index.html`, covers all pages automatically
+
 ## Monitoring
 - **Uptime Status Page**: https://stats.uptimerobot.com/3ljz5Q7gkq
 - **Health Check Endpoint**: https://redatametrix.com/api/health/property-lookup (public, no auth — returns `{ status: "ok" }` on success, `{ status: "degraded", failedChecks: [...] }` on failure)
