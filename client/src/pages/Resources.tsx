@@ -323,7 +323,7 @@ export default function Resources() {
     <Layout>
       <SEO
         title="Investor Toolbox & Resources"
-        description="Access RE Data Metrix's comprehensive real estate investor toolbox. Explore partner tools for lead generation, property management, contractors, comps, legal resources, and training videos — all in one place."
+        description="Access RE Data Metrix's investor toolbox. Partner tools for lead generation, property management, contractors, comps, and training videos — all in one place."
         keywords="real estate investor tools, investor resources, lead generation tools, property management software, real estate education, rehab estimating, contractor search, investor toolbox"
         canonicalUrl="https://redatametrix.com/toolbox"
       />

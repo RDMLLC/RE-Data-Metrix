@@ -167,7 +167,7 @@ export default function Privacy() {
           </p>
           <div className="text-foreground bg-muted/50 p-6 rounded-lg mt-4">
             <p className="font-semibold">RE Data Metrix</p>
-            <p>8375 Dunwoody Place, STE R<br />Atlanta, GA 30350</p>
+            <p>8735 Dunwoody Pl, Suite R<br />Atlanta, GA 30350</p>
             <p className="mt-4"><strong>Email:</strong> info@redatametrix.com</p>
             <p><strong>Phone:</strong> +1 (888) 450-4408</p>
           </div>
