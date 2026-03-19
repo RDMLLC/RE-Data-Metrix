@@ -63,7 +63,7 @@ export default function AboutPrivateLenders() {
     <Layout>
       <SEO
         title="About Private Lenders"
-        description="Learn how to find and work with private lenders for real estate investing. Discover sources for private capital including local networks, referrals, and online platforms — and how RE Data Metrix connects you to vetted lenders."
+        description="Learn how to find and work with private lenders for real estate investing. Discover sources for private capital and how RE Data Metrix connects you to vetted lenders."
         keywords="private lenders, private lending, private money, real estate private lender, hard money alternative, private capital, lender networks, investor funding"
         canonicalUrl="https://redatametrix.com/about-private-lenders"
       />

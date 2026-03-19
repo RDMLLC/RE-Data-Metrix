@@ -5,6 +5,7 @@ import compression from "compression";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { runPrerender, registerPrerenderRoutes } from "./prerender";
 import { pool, db } from "./db";
 import { affiliates, serviceRegions, discountCodes } from "@shared/schema";
 import { eq, count } from "drizzle-orm";
@@ -376,6 +377,10 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
+    await runPrerender().catch(err => {
+      console.error('[prerender] Non-fatal error during prerender:', err);
+    });
+    registerPrerenderRoutes(app);
     serveStatic(app);
   }
 

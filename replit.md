@@ -41,6 +41,11 @@ Allow users to create custom follow-up reminder emails tied to their deals. Key 
 - **Read Receipts**: Embed tracking pixel in sent emails; display read/unread status per recipient in the UI
 - **Implementation Notes**: Extends existing closing reminder scheduler and Zoho SMTP email infrastructure. New tables: `custom_deal_reminders` (deal ID, days before closing, talking points, subject, status, sent_at) and `custom_reminder_recipients` (reminder ID, email, name, role label, read status, read_at). Tracking pixel endpoint records opens. Minimal cost impact — uses existing SMTP service and lightweight tracking requests.
 
+## SEO & Prerendering
+- **SEO Component**: `client/src/components/SEO.tsx` — wraps `react-helmet-async`; title prop auto-appends `| RE Data Metrix`. All public pages have SEO; auth/legal pages use `noIndex={true}`.
+- **Structured Data**: `client/src/components/StructuredData.tsx` — exports `OrganizationSchema`, `WebApplicationSchema`, `FAQSchema`, `AboutPageSchema` (parameterized), `ContactPageSchema`, `PricingPageSchema`, `LendersPageSchema`, `BreadcrumbSchema`.
+- **Static Prerender (SSG)**: `server/prerender.ts` — runs automatically at production startup (before `serveStatic`). Reads `dist/public/index.html`, injects per-route `<title>`, `<meta>`, canonical, OG tags, and JSON-LD schemas, then writes `dist/public/{route}/index.html` for 19 routes. Express routes are registered via `registerPrerenderRoutes(app)` so `/about` is served directly from `dist/public/about/index.html` without redirect. Unknown routes fall through to the SPA for 404 handling. Source of truth for route metadata: `PRERENDER_ROUTES` array in `server/prerender.ts`.
+
 ## Analytics
 - **Google Analytics 4**: Measurement ID `G-49SJERQFW1` — tag added to `client/index.html`, covers all pages automatically
 
