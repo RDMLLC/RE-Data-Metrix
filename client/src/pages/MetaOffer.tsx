@@ -110,6 +110,14 @@ export default function MetaOffer() {
               <source src={heroVideo} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
+            {/* Transparent overlay — clicking anywhere on the video goes to register */}
+            <div
+              className="absolute inset-0 cursor-pointer z-10"
+              onClick={handleCta}
+              data-testid="overlay-video-cta"
+              aria-label="Start Analyzing Free"
+              role="link"
+            />
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <Button
