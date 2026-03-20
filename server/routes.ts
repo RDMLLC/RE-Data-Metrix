@@ -132,6 +132,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  // ─── Comps distance pipeline health check ────────────────────────────────────
+  // Lightweight check: verifies RentCast geocoding returns lat/lng for a known
+  // address. This is the critical path for the ARV Helper distance filter.
+  // UptimeRobot should monitor this endpoint (no auth required).
+  app.get("/api/health/comps", async (req, res) => {
+    const TEST_ADDRESS = "3127 Snapfinger Ct";
+    const TEST_CITY = "Decatur";
+    const TEST_STATE = "GA";
+    const TEST_ZIP = "30034";
+    const started = Date.now();
+
+    try {
+      const rentCastKeyPresent = !!process.env.RENTCAST_API_KEY;
+      const hasDataKeyPresent  = !!process.env.HASDATA_API_KEY;
+
+      if (!rentCastKeyPresent) {
+        return res.status(503).json({
+          status: "error",
+          message: "RENTCAST_API_KEY not configured — geocoding fallback unavailable",
+          elapsed_ms: Date.now() - started,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Geocoding-only call — no full comps search, no HasData quota used
+      const { RentCastAPIService } = await import("./services/rentcast-api.service");
+      const rentCast = new RentCastAPIService();
+      const geoResult = await rentCast.getPropertyByAddress(TEST_ADDRESS, TEST_CITY, TEST_STATE, TEST_ZIP);
+
+      const checks: Record<string, boolean> = {
+        rentcast_api_key:    rentCastKeyPresent,
+        hasdata_api_key:     hasDataKeyPresent,
+        geocoding_succeeded: !!geoResult,
+        latitude_returned:   !!(geoResult?.latitude != null),
+        longitude_returned:  !!(geoResult?.longitude != null),
+      };
+
+      const failedChecks = Object.entries(checks)
+        .filter(([, v]) => v === false)
+        .map(([k]) => k);
+
+      const status = failedChecks.length === 0 ? "ok" : "degraded";
+      const elapsed = Date.now() - started;
+
+      if (status === "degraded") {
+        console.warn(`[HEALTH] Comps distance pipeline DEGRADED — failed: ${failedChecks.join(", ")}`);
+      }
+
+      return res.status(status === "ok" ? 200 : 503).json({
+        status,
+        checks,
+        failedChecks,
+        elapsed_ms: elapsed,
+        sample: geoResult ? {
+          address:   geoResult.address,
+          city:      geoResult.city,
+          state:     geoResult.state,
+          latitude:  geoResult.latitude,
+          longitude: geoResult.longitude,
+        } : null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.error("[HEALTH] Comps distance health check failed:", err.message);
+      return res.status(503).json({
+        status: "error",
+        message: err.message,
+        elapsed_ms: Date.now() - started,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
   // ─────────────────────────────────────────────────────────────────────────────
 
   // Authentication Routes - Using authService for centralized logic
