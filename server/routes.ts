@@ -8964,16 +8964,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Comps Search] Subject property type: "${propertyType}" - Using dual-API strategy`);
 
       // Resolve subject coordinates — try geocoding fallback when lat/lng are not provided
-      let resolvedLat: number | undefined = subjectLat || undefined;
-      let resolvedLng: number | undefined = subjectLng || undefined;
+      let resolvedLat: number | undefined = subjectLat != null ? subjectLat : undefined;
+      let resolvedLng: number | undefined = subjectLng != null ? subjectLng : undefined;
 
-      if ((!resolvedLat || !resolvedLng) && address && city && state) {
+      if ((resolvedLat == null || resolvedLng == null) && address && city && state) {
         try {
           console.log(`[Comps Search] Subject coordinates missing — attempting geocoding fallback for: ${address}, ${city}, ${state} ${zipCode || ''}`);
           const { RentCastAPIService } = await import("./services/rentcast-api.service");
           const rentCastGeo = new RentCastAPIService();
           const geoResult = await rentCastGeo.getPropertyByAddress(address, city, state, zipCode || '');
-          if (geoResult?.latitude && geoResult?.longitude) {
+          if (geoResult?.latitude != null && geoResult?.longitude != null) {
             resolvedLat = geoResult.latitude;
             resolvedLng = geoResult.longitude;
             console.log(`[Comps Search] Geocoding fallback succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
