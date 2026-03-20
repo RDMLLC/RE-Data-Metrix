@@ -58,7 +58,7 @@ export default function Hero() {
               onClick={handleGetStarted}
               data-testid="button-get-started-mobile"
             >
-              Get a Free Account
+              Start analyzing deals for free
             </Button>
             <Button
               size="lg"
@@ -108,7 +108,7 @@ export default function Hero() {
                 onClick={handleGetStarted}
                 data-testid="button-get-started"
               >
-                Get a Free Account
+                Start analyzing deals for free
               </Button>
               <Button
                 size="lg"

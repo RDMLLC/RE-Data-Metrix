@@ -115,7 +115,7 @@ export default function MetaOffer() {
               className="absolute inset-0 cursor-pointer z-10"
               onClick={handleCta}
               data-testid="overlay-video-cta"
-              aria-label="Start Analyzing Free"
+              aria-label="Start analyzing deals for free"
               role="link"
             />
           </div>
@@ -126,7 +126,7 @@ export default function MetaOffer() {
               onClick={handleCta}
               data-testid="button-cta-hero"
             >
-              Start Analyzing Free
+              Start analyzing deals for free
             </Button>
             <p className="text-sm text-white/70" data-testid="text-no-card">
               No credit card required.
@@ -168,7 +168,7 @@ export default function MetaOffer() {
               onClick={handleCta}
               data-testid="button-cta-bottom"
             >
-              Start Analyzing Free
+              Start analyzing deals for free
             </Button>
             <p className="text-sm text-muted-foreground" data-testid="text-no-card-bottom">
               No credit card required.
