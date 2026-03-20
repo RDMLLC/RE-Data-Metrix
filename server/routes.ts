@@ -8962,7 +8962,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hybridService = new HybridCompsService();
 
       console.log(`[Comps Search] Subject property type: "${propertyType}" - Using dual-API strategy`);
-      
+
+      // Resolve subject coordinates — try geocoding fallback when lat/lng are not provided
+      let resolvedLat: number | undefined = subjectLat || undefined;
+      let resolvedLng: number | undefined = subjectLng || undefined;
+
+      if ((!resolvedLat || !resolvedLng) && address && city && state) {
+        try {
+          console.log(`[Comps Search] Subject coordinates missing — attempting geocoding fallback for: ${address}, ${city}, ${state} ${zipCode || ''}`);
+          const { RentCastAPIService } = await import("./services/rentcast-api.service");
+          const rentCastGeo = new RentCastAPIService();
+          const geoResult = await rentCastGeo.getPropertyByAddress(address, city, state, zipCode || '');
+          if (geoResult?.latitude && geoResult?.longitude) {
+            resolvedLat = geoResult.latitude;
+            resolvedLng = geoResult.longitude;
+            console.log(`[Comps Search] Geocoding fallback succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
+          } else {
+            console.log(`[Comps Search] Geocoding fallback returned no coordinates — proceeding without distance filtering`);
+          }
+        } catch (geoErr: any) {
+          console.log(`[Comps Search] Geocoding fallback failed (${geoErr?.message}) — proceeding without distance filtering`);
+        }
+      }
+
       const result = await hybridService.searchComps({
         address: address || '',
         city,
@@ -8972,8 +8994,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bathrooms: bathrooms || 2,
         sqft: sqft || 1500,
         propertyType: propertyType || undefined,
-        subjectLat: subjectLat || undefined,
-        subjectLng: subjectLng || undefined,
+        subjectLat: resolvedLat,
+        subjectLng: resolvedLng,
         radiusMiles: radiusMiles || undefined,
         saleDateRangeDays: saleDateRangeDays || undefined,
         maxResults: 10,

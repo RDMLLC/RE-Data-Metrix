@@ -583,6 +583,8 @@ export class RentCastAPIService implements IPropertyAPIService {
       lastSaleDate: property.lastSaleDate,
       imageUrl: undefined,
       hoaFees,
+      latitude: property.latitude,
+      longitude: property.longitude,
     };
   }
 
