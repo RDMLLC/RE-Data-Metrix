@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
-import heroVideo from "@assets/A_better_way_for_investors_to_analyze_and_fund_their_deals_vid_1769901175597.mp4";
+import heroVideo from "@assets/0319_1774030912917.mp4";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
 
 const benefits = [

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import heroVideo from "@assets/A_better_way_for_investors_to_analyze_and_fund_their_deals_vid_1769901175597.mp4";
+import heroVideo from "@assets/0319_1774030912917.mp4";
 
 export default function Hero() {
   const videoRefMobile = useRef<HTMLVideoElement>(null);
