@@ -322,18 +322,28 @@ export default function Resources() {
   return (
     <Layout>
       <SEO
-        title="Investor Toolbox & Resources"
-        description="Access RE Data Metrix's investor toolbox. Partner tools for lead generation, property management, contractors, comps, and training videos — all in one place."
+        title="Real Estate Investing Tools & Resources"
+        description="Discover real estate investing tools for deal analysis, lead generation, project management, and more. Built for serious investors."
         canonicalUrl="https://redatametrix.com/toolbox"
       />
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
             <Wrench className="h-8 w-8 text-accent" />
-            <h1 className="text-3xl font-bold">Toolbox & Resources</h1>
+            <h1 className="text-3xl font-bold">Real Estate Investing Tools and Resources for Investors</h1>
           </div>
-          <p className="text-lg text-muted-foreground">
-            Your comprehensive toolkit for real estate investment success
+          <p className="text-lg text-muted-foreground mb-3">
+            <strong><em>real estate investing tools</em></strong> curated to help investors analyze deals, manage projects, generate leads, and scale their business with the right systems in place.
+          </p>
+          <p className="text-lg text-muted-foreground mb-6">
+            Explore tools across categories like deal analysis, property management, marketing, and data so you can build a more efficient and profitable real estate operation.
+          </p>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-primary mb-3">Build Your Real Estate Investing Stack</h2>
+          <p className="text-muted-foreground">
+            Successful investors rely on the right combination of tools to manage deals, analyze opportunities, and streamline operations. Our toolbox helps you identify which platforms best fit your strategy.
           </p>
         </div>
 
@@ -509,6 +519,35 @@ export default function Resources() {
             {renderAffiliateContent("comps", categoryInfo.comps)}
           </TabsContent>
         </Tabs>
+
+        <section className="mt-12 mb-8">
+          <h2 className="text-2xl font-bold text-primary mb-6">Categories of Real Estate Investing Tools</h2>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Deal Analysis and Financial Modeling</h3>
+          <p className="text-muted-foreground mb-6">
+            Analyze potential investments, calculate ROI, and compare financing options to make smarter purchasing decisions.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Lead Generation and Marketing Tools</h3>
+          <p className="text-muted-foreground mb-6">
+            Find off-market deals, build targeted lists, and automate outreach to generate consistent deal flow.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Project and Property Management</h3>
+          <p className="text-muted-foreground mb-6">
+            Manage renovations, contractors, and rental properties efficiently with systems designed for real estate investors.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Data, Comps, and Market Insights</h3>
+          <p className="text-muted-foreground mb-8">
+            Access property data, comparable sales, and market trends to support accurate deal analysis and pricing decisions.
+          </p>
+
+          <h2 className="text-2xl font-bold text-primary mb-4">Use These Tools with Deal Analysis and Funding</h2>
+          <p className="text-muted-foreground">
+            Pair your tools with our <a href="/deal-analysis" className="text-primary hover:underline">deal analysis software</a> to evaluate opportunities and connect with <a href="/lenders" className="text-primary hover:underline">real estate investment lenders</a> to secure funding faster.
+          </p>
+        </section>
       </div>
     </Layout>
   );

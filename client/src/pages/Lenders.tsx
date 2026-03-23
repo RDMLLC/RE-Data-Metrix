@@ -373,17 +373,20 @@ export default function Lenders() {
   return (
     <Layout>
       <SEO 
-        title="Private Lender Directory"
-        description="Find and connect with private lenders for real estate investments. Search by loan type, state, and criteria. Compare hard money, DSCR, bridge loans and more."
+        title="Real Estate Investment Lenders"
+        description="Find real estate investment lenders, compare loan options, and connect with funding sources for fix and flip, DSCR, and wholesale deals."
         canonicalUrl="https://redatametrix.com/lenders"
       />
       <LendersPageSchema />
       <div className="max-w-6xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4">Lender Network</h1>
-          <div className="h-1 w-32 bg-accent mx-auto mb-8"></div>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Connect with verified lenders who specialize in real estate investment financing. Search by criteria, compare options, and submit applications directly through our platform. Creative financing solutions for every deal type.
+        <div className="text-center mb-8">
+          <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4">Real Estate Investment Lenders for Every Deal Type</h1>
+          <div className="h-1 w-32 bg-accent mx-auto mb-6"></div>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-3">
+            <strong><em>real estate investment lenders</em></strong> matched to your deal type, experience level, and financing needs so you can secure funding faster and with better terms.
+          </p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+            Search, compare, and connect with verified lenders offering hard money, DSCR, transactional funding, and other creative financing solutions for fix and flip and wholesale deals.
           </p>
         </div>
 
@@ -925,8 +928,34 @@ export default function Lenders() {
                 View All Loan Types with Full Details
               </Button>
             </Link>
+            <p className="text-sm text-muted-foreground mt-3">
+              Not sure which loan fits your deal? <a href="/loan-types" className="text-primary hover:underline">Explore all real estate loan types</a> to find the best financing strategy.
+            </p>
           </div>
         </Card>
+
+        {/* SEO Content Section */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-primary mb-4">How to Find the Right Lender for Your Deal</h2>
+          <p className="text-muted-foreground mb-6">
+            Choosing the right lender can significantly impact your profitability, timeline, and overall investment success. Our platform helps you quickly identify lenders that align with your strategy and deal structure.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Filter by Loan Type and Criteria</h3>
+          <p className="text-muted-foreground mb-6">
+            Search lenders based on loan type, funding speed, credit requirements, and other key criteria to find options that fit your deal.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Compare Financing Options</h3>
+          <p className="text-muted-foreground mb-6">
+            Evaluate multiple lenders side by side to understand differences in rates, terms, and flexibility.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Connect Directly with Verified Lenders</h3>
+          <p className="text-muted-foreground">
+            Submit applications and connect with lenders who are actively funding deals like yours.
+          </p>
+        </section>
 
         {/* Call to Action - Only show for non-subscribers */}
         {!isSubscriber && (

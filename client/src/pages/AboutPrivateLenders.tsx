@@ -62,20 +62,27 @@ export default function AboutPrivateLenders() {
   return (
     <Layout>
       <SEO
-        title="About Private Lenders"
-        description="Learn how to find and work with private lenders for real estate investing. Discover sources for private capital and how RE Data Metrix connects you to vetted lenders."
+        title="Private Lenders for Real Estate Investing Explained"
+        description="Learn how private lenders work for real estate investing. Compare options, benefits, and how to find funding for your deals."
         canonicalUrl="https://redatametrix.com/about-private-lenders"
       />
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-12">
+          <div className="mb-8">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4">
-              About Private Lenders
+              Private Lenders for Real Estate Investing Explained
             </h1>
             <div className="h-1 w-24 bg-accent mb-6"></div>
+            <p className="text-lg text-muted-foreground max-w-3xl mb-3">
+              <strong><em>private lenders for real estate</em></strong> offer fast, flexible funding options for investors who need to close deals quickly and structure financing around their strategy.
+            </p>
+            <p className="text-lg text-muted-foreground max-w-3xl mb-6">
+              Whether you're flipping properties, building a rental portfolio, or using creative financing, understanding how private lending works can help you secure better terms and scale faster.
+            </p>
+            <h2 className="text-2xl font-bold text-primary mb-3">What Are Private Lenders in Real Estate?</h2>
             <p className="text-lg text-muted-foreground max-w-3xl">
-              Many private lender/investor relationships can be truly personal. Investors seeking private lenders for real estate projects have more options than ever thanks to technology and growing networks within the real estate community.
+              Private lenders are individuals or companies that provide real estate financing outside of traditional banks. They focus more on the deal and property value rather than strict income or credit requirements.
             </p>
           </div>
 
@@ -101,6 +108,10 @@ export default function AboutPrivateLenders() {
               </Link>
             </div>
           </Card>
+
+          <p className="text-muted-foreground mb-12 max-w-3xl">
+            Looking to compare options? Use our <a href="/lenders" className="text-primary hover:underline">real estate investment lenders</a> search tool or analyze your financing with our <a href="/deal-analysis" className="text-primary hover:underline">deal analysis software</a>.
+          </p>
 
           {/* Key Benefits */}
           <div className="mb-16">
@@ -507,6 +518,14 @@ export default function AboutPrivateLenders() {
                 </ul>
               </Card>
             </div>
+          </div>
+
+          {/* SEO CTA Section */}
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-primary mb-4">Find the Right Private Lender for Your Next Deal</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl">
+              Use our platform to search lenders, compare loan options, and connect with funding sources that match your investment strategy.
+            </p>
           </div>
 
           {/* CTA Section */}

@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async';
 
 interface SEOProps {
   title?: string;
+  fullTitle?: string;
   description?: string;
   ogImage?: string;
   ogType?: 'website' | 'article';
@@ -15,13 +16,14 @@ const SITE_NAME = 'RE Data Metrix';
 
 export function SEO({
   title,
+  fullTitle: fullTitleProp,
   description = 'Turning Terms into Returns. Real estate investment analysis and funding platform connecting investors with lenders.',
   ogImage = DEFAULT_IMAGE,
   ogType = 'website',
   canonicalUrl,
   noIndex = false,
 }: SEOProps) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Real Estate Investment Analysis & Funding`;
+  const fullTitle = fullTitleProp ?? (title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Real Estate Investment Analysis & Funding`);
   
   return (
     <Helmet>

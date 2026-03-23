@@ -27,8 +27,7 @@ export default function Hero() {
         {/* Mobile layout: stacked with video right after headline */}
         <div className="lg:hidden flex flex-col items-center text-center space-y-4">
           <p className="text-2xl sm:text-3xl font-bold text-white leading-tight">
-            Changing the way real estate investors{" "}
-            <span className="text-accent">analyze and fund</span> their deals!
+            Real Estate Deal Analysis Software for Smarter Investing
           </p>
           
           {/* Video immediately after headline on mobile */}
@@ -93,12 +92,14 @@ export default function Hero() {
           {/* Right: Text Content */}
           <div className="text-left">
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
-              Changing the way real estate investors{" "}
-              <span className="text-accent">analyze and fund</span> their deals!
+              Real Estate Deal Analysis Software for Smarter Investing
             </h1>
             
+            <p className="text-xl text-white/90 mb-4">
+              <strong><em>real estate deal analysis software</em></strong> built for fix and flip and wholesale investors who need to analyze deals, compare loan options, and make faster funding decisions.
+            </p>
             <p className="text-xl text-white/90 mb-8">
-              Analyze deals and compare individual loan products to see the impact on your cash-on-cash, ROI and annualized ROI. And then connect with the lender of your choice with the click of a button!
+              Instantly see how financing impacts your cash on cash return, ROI, and overall profitability, then connect with lenders who can fund your next deal.
             </p>
 
             <div className="flex gap-4">

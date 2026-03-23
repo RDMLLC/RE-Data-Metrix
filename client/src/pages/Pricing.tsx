@@ -61,8 +61,8 @@ export default function Pricing() {
   return (
     <Layout>
       <SEO 
-        title="Pricing"
-        description="Simple, transparent pricing for RE Data Metrix. Get unlimited access to deal analysis tools, lender directory, and investment calculators for $25/month or $250/year."
+        title="Deal Analysis Software Pricing"
+        description="View pricing for real estate deal analysis software. Compare plans, features, and tools for fix and flip and wholesale investors."
         canonicalUrl="https://redatametrix.com/pricing"
       />
       <PricingPageSchema />
@@ -70,11 +70,21 @@ export default function Pricing() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4" data-testid="text-pricing-title">
-              Simple, Transparent Pricing
+              Simple Pricing for Real Estate Deal Analysis Software
             </h1>
             <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-3">
+              <strong><em>real estate deal analysis software pricing</em></strong> designed for investors who need powerful tools to analyze deals, compare lenders, and make smarter investment decisions.
+            </p>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get full access to all the tools you need to analyze deals, compare lenders, and fund your investments with confidence.
+              Choose a plan that fits your strategy, whether you're analyzing a few deals per month or scaling your investment business with unlimited access.
+            </p>
+          </div>
+
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold text-primary mb-3">Choose the Right Plan for Your Investment Strategy</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Whether you're just getting started or actively scaling your portfolio, our pricing plans are built to support every stage of your real estate investing journey.
             </p>
           </div>
 
@@ -411,6 +421,29 @@ export default function Pricing() {
               </Card>
             </div>
           </div>
+
+          <section className="mb-12">
+            <h2 className="text-2xl lg:text-3xl font-bold text-primary mb-6">What You Get with RE Data Metrix</h2>
+
+            <h3 className="text-xl font-semibold text-primary mb-2">Advanced Deal Analysis Tools</h3>
+            <p className="text-muted-foreground mb-6">
+              Analyze deals with detailed financial modeling, including ROI, cash on cash return, and full profitability breakdowns.
+            </p>
+
+            <h3 className="text-xl font-semibold text-primary mb-2">Lender Comparison and Funding Access</h3>
+            <p className="text-muted-foreground mb-6">
+              Compare loan options and connect directly with lenders who can fund your deals based on your criteria.
+            </p>
+
+            <h3 className="text-xl font-semibold text-primary mb-2">Scalable Tools for Growing Investors</h3>
+            <p className="text-muted-foreground mb-6">
+              From manual deal analysis to automated workflows and saved reports, our platform grows with your investment business.
+            </p>
+
+            <p className="text-muted-foreground">
+              Want to see how it works? Try our <a href="/deal-analysis" className="text-primary hover:underline">deal analysis tool</a> or explore <a href="/lenders" className="text-primary hover:underline">real estate investment lenders</a> to start funding your deals.
+            </p>
+          </section>
 
           <div className="bg-primary rounded-xl p-8 text-center">
             <h2 className="text-2xl font-bold text-primary-foreground mb-4">

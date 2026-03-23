@@ -9,18 +9,21 @@ export default function Contact() {
   return (
     <Layout>
       <SEO
-        title="Contact Us"
-        description="Contact RE Data Metrix with questions about our deal analysis tools, lender directory, or pricing. We typically respond within 24-48 business hours."
+        fullTitle="Contact RE Data Metrix | Real Estate Investment Platform"
+        description="Contact RE Data Metrix with questions about deal analysis tools, lenders, or your account. Our team is here to help."
         canonicalUrl="https://redatametrix.com/contact"
       />
       <ContactPageSchema />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl lg:text-6xl font-bold text-primary mb-4">Contact Us</h1>
+          <h1 className="text-5xl lg:text-6xl font-bold text-primary mb-4">Contact RE Data Metrix</h1>
           <div className="h-1 w-32 bg-accent mx-auto mb-8"></div>
           <p className="text-xl text-muted-foreground">
-            Have questions? We'd love to hear from you.
+            <strong><em>real estate investment platform</em></strong> support for investors who need help with deal analysis tools, lender connections, or account questions.
+          </p>
+          <p className="text-lg text-muted-foreground mt-4">
+            Reach out to our team and we'll respond as quickly as possible to help you move forward with your next investment.
           </p>
         </div>
 
@@ -91,6 +94,29 @@ export default function Contact() {
             </Card>
           </div>
         </div>
+
+        <section className="mt-16 max-w-3xl">
+          <h2 className="text-2xl font-bold text-primary mb-6">How We Can Help</h2>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Deal Analysis Support</h3>
+          <p className="text-muted-foreground mb-6">
+            Get help using our tools to analyze deals, calculate ROI, and compare financing options.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Lender and Funding Questions</h3>
+          <p className="text-muted-foreground mb-6">
+            Learn how to connect with lenders and find the right financing solutions for your deals.
+          </p>
+
+          <h3 className="text-xl font-semibold text-primary mb-2">Account and Platform Assistance</h3>
+          <p className="text-muted-foreground mb-6">
+            Need help with your account or features? Our team is here to guide you.
+          </p>
+
+          <p className="text-muted-foreground">
+            Want to explore first? Try our <a href="/deal-analysis" className="text-primary hover:underline">deal analysis tool</a> or browse <a href="/lenders" className="text-primary hover:underline">real estate investment lenders</a>.
+          </p>
+        </section>
       </div>
     </Layout>
   );

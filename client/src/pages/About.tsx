@@ -9,16 +9,22 @@ export default function About() {
   return (
     <Layout>
       <SEO
-        title="About Us"
-        description="Learn about RE Data Metrix, a real estate analytics platform in Atlanta, GA. We empower investors with deal analysis tools and direct lender connections."
+        fullTitle="About RE Data Metrix | Real Estate Investment Platform"
+        description="Learn about RE Data Metrix, a real estate investment platform offering deal analysis tools and direct access to private and institutional lenders."
         canonicalUrl="https://redatametrix.com/about"
       />
       <AboutPageSchema />
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-3xl font-bold text-primary mb-4">Empowering real estate investors with data-driven insights and funding solutions</h1>
-          <div className="h-1 w-32 bg-accent mx-auto"></div>
+          <h1 className="text-3xl font-bold text-primary mb-4">About RE Data Metrix</h1>
+          <div className="h-1 w-32 bg-accent mx-auto mb-6"></div>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            <strong><em>real estate investment platform</em></strong> built to help investors analyze deals, compare loan options, and connect with lenders who can fund their projects.
+          </p>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mt-4">
+            RE Data Metrix combines advanced financial modeling with direct access to verified lenders, giving investors the tools and insights needed to make smarter, faster investment decisions.
+          </p>
         </div>
 
         {/* Who We Are Section - At the top */}
