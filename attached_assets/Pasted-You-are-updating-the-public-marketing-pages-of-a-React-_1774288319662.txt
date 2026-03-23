@@ -1,0 +1,85 @@
+You are updating the public marketing pages of a React-based web app at redatametrix.com.
+Your job is to clean up the SEO/head-tag and heading issues across all public-facing pages in the sitemap.
+Target pages
+/
+/webinar
+/pricing
+/features
+/lenders
+/faq
+/about
+/resources
+/loan-types
+/about-private-lenders
+/privacy
+/terms
+Important scope rules
+Do not worry about canonical duplication right now. Leave canonicals alone for this pass.
+Only fix the issues listed below.
+Preserve the existing design, layout, and page content as much as possible.
+Do not break React hydration or SPA behavior.
+Make changes in the actual source/components/templates that generate these pages, not by patching rendered HTML files manually unless the app architecture truly requires that.
+Required fixes across all target pages
+1. Remove all meta keywords tags
+Remove every <meta name="keywords" ...> tag from every public page and from any shared SEO/head component that injects it.
+Requirements:
+No page should output a meta keywords tag.
+Remove both hardcoded and programmatically injected versions.
+Search for all variants, including:
+name="keywords"
+name='keywords'
+any SEO config object that maps to keywords meta output
+2. Ensure only one meta description per page
+Each page must output exactly one <meta name="description" ...> tag.
+Requirements:
+Remove duplicate meta descriptions.
+If descriptions are being injected from multiple places, consolidate to a single source of truth.
+Do not leave pages with zero descriptions.
+Keep current description logic in place unless duplication forces cleanup.
+3. Fix viewport meta tag globally
+Ensure every public page outputs this exact viewport meta tag:
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+Requirements:
+Remove any maximum-scale=1
+Remove conflicting duplicate viewport tags
+Only one viewport meta tag should be present per page
+Apply through the shared layout/head layer if possible
+4. Enforce only one H1 per page
+Each public page must render exactly one <h1>.
+Requirements:
+Audit each target page for multiple H1s
+Keep the most semantically correct/main page heading as the single H1
+Convert extra H1s to the next appropriate heading level, usually H2 or H3 depending on hierarchy
+Do not flatten heading structure carelessly
+Preserve visual styling when changing heading tags by updating class usage if needed
+Make sure no page renders zero H1s
+Technical approach
+First inspect the app structure and identify where:
+shared SEO/head tags are generated
+page-specific metadata is set
+layout wrappers may be injecting duplicate tags
+repeated H1s are coming from shared hero/section components
+Then make the smallest clean architectural fix that solves this across all target pages.
+Prefer centralized fixes over page-by-page duplication where appropriate.
+If a page has unique heading issues, fix that page individually after the shared layer is corrected.
+Deliverables
+After making the changes, provide:
+A list of files changed
+A short summary of what was fixed
+A verification report for each target page showing:
+meta keywords removed: yes/no
+single meta description: yes/no
+viewport correct: yes/no
+single H1: yes/no
+Validation standard
+When complete, each target page should satisfy all of the following:
+No meta keywords tag exists
+Exactly one meta description exists
+Viewport is exactly width=device-width, initial-scale=1.0, user-scalable=yes
+Exactly one H1 exists
+Do not do these things
+Do not change canonicals in this pass
+Do not rewrite page copy unless needed to fix heading structure
+Do not change routes or page URLs
+Do not redesign the UI
+Do not introduce SSR changes in this task

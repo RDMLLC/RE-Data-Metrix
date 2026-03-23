@@ -162,7 +162,6 @@ export default function FAQ() {
       <SEO 
         title="FAQ"
         description="Frequently asked questions about RE Data Metrix. Learn about our real estate investment analysis tools, pricing, private lender directory, and how to get started."
-        keywords="RE Data Metrix FAQ, real estate investing questions, deal analysis help, private lender questions"
         canonicalUrl="https://redatametrix.com/faq"
       />
       <FAQSchema faqs={allFaqs} />

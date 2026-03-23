@@ -11,7 +11,6 @@ export default function Company() {
       <SEO
         title="The Company"
         description="RE Data Metrix, LLC is revolutionizing how investors analyze deals and find funding. Based in Atlanta, GA, we provide powerful investment analysis tools and lender connections."
-        keywords="RE Data Metrix company, real estate analytics platform, Atlanta Georgia, investment tools, lender network, real estate LLC"
         canonicalUrl="https://redatametrix.com/company"
       />
       <AboutPageSchema

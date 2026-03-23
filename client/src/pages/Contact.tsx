@@ -11,7 +11,6 @@ export default function Contact() {
       <SEO
         title="Contact Us"
         description="Contact RE Data Metrix with questions about our deal analysis tools, lender directory, or pricing. We typically respond within 24-48 business hours."
-        keywords="contact RE Data Metrix, real estate software support, investor tools help, customer service"
         canonicalUrl="https://redatametrix.com/contact"
       />
       <ContactPageSchema />

@@ -26,10 +26,10 @@ export default function Hero() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-20">
         {/* Mobile layout: stacked with video right after headline */}
         <div className="lg:hidden flex flex-col items-center text-center space-y-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
+          <p className="text-2xl sm:text-3xl font-bold text-white leading-tight">
             Changing the way real estate investors{" "}
             <span className="text-accent">analyze and fund</span> their deals!
-          </h1>
+          </p>
           
           {/* Video immediately after headline on mobile */}
           <div className="w-full">

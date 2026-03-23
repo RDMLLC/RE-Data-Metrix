@@ -378,7 +378,6 @@ export default function LoanTypes() {
         <SEO
           title="Real Estate Loan Types Explained"
           description="Understand hard money, DSCR, transactional funding, conventional, and private/seller financing loans. Learn which loan type is right for your real estate investment strategy."
-          keywords="hard money loans, DSCR loans, transactional funding, private lending, conventional mortgages, real estate loan types, fix and flip financing, rental property loans"
           canonicalUrl="https://redatametrix.com/loan-types"
         />
         <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
@@ -407,7 +406,6 @@ export default function LoanTypes() {
       <SEO
         title="Real Estate Loan Types Explained"
         description="Understand hard money, DSCR, transactional funding, conventional, and private/seller financing loans. Learn which loan type is right for your real estate investment strategy."
-        keywords="hard money loans, DSCR loans, transactional funding, private lending, conventional mortgages, real estate loan types, fix and flip financing, rental property loans"
         canonicalUrl="https://redatametrix.com/loan-types"
       />
       <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">

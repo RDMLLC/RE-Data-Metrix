@@ -3,7 +3,6 @@ import { Helmet } from 'react-helmet-async';
 interface SEOProps {
   title?: string;
   description?: string;
-  keywords?: string;
   ogImage?: string;
   ogType?: 'website' | 'article';
   canonicalUrl?: string;
@@ -17,7 +16,6 @@ const SITE_NAME = 'RE Data Metrix';
 export function SEO({
   title,
   description = 'Turning Terms into Returns. Real estate investment analysis and funding platform connecting investors with lenders.',
-  keywords = 'real estate investing, deal analysis, private lenders, fix and flip, rental properties, DSCR loans, ARV calculator, wholesale deals',
   ogImage = DEFAULT_IMAGE,
   ogType = 'website',
   canonicalUrl,
@@ -29,7 +27,6 @@ export function SEO({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      <meta name="keywords" content={keywords} />
       
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
       

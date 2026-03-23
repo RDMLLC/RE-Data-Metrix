@@ -97,7 +97,6 @@ export default function Home() {
       <SEO 
         title="Home"
         description="RE Data Metrix - Turning Terms into Returns. Comprehensive real estate investment analysis platform with deal analysis tools, lender directory, and profitability calculators."
-        keywords="real estate investing, deal analysis, private lenders, fix and flip, rental properties, DSCR loans, investment calculator"
         canonicalUrl="https://redatametrix.com/"
       />
       <Hero />

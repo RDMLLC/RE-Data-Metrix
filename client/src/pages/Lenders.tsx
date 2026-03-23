@@ -375,7 +375,6 @@ export default function Lenders() {
       <SEO 
         title="Private Lender Directory"
         description="Find and connect with private lenders for real estate investments. Search by loan type, state, and criteria. Compare hard money, DSCR, bridge loans and more."
-        keywords="private lenders, hard money loans, DSCR loans, bridge loans, real estate financing, investment lending, fix and flip loans"
         canonicalUrl="https://redatametrix.com/lenders"
       />
       <LendersPageSchema />

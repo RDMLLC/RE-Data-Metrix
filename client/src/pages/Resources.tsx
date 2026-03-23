@@ -324,7 +324,6 @@ export default function Resources() {
       <SEO
         title="Investor Toolbox & Resources"
         description="Access RE Data Metrix's investor toolbox. Partner tools for lead generation, property management, contractors, comps, and training videos — all in one place."
-        keywords="real estate investor tools, investor resources, lead generation tools, property management software, real estate education, rehab estimating, contractor search, investor toolbox"
         canonicalUrl="https://redatametrix.com/toolbox"
       />
       <div className="container mx-auto px-4 py-8 max-w-7xl">

@@ -11,7 +11,6 @@ export default function About() {
       <SEO
         title="About Us"
         description="Learn about RE Data Metrix, a real estate analytics platform in Atlanta, GA. We empower investors with deal analysis tools and direct lender connections."
-        keywords="about RE Data Metrix, real estate analytics company, Atlanta Georgia, real estate investment platform, deal analysis company"
         canonicalUrl="https://redatametrix.com/about"
       />
       <AboutPageSchema />

@@ -63,7 +63,6 @@ export default function Pricing() {
       <SEO 
         title="Pricing"
         description="Simple, transparent pricing for RE Data Metrix. Get unlimited access to deal analysis tools, lender directory, and investment calculators for $25/month or $250/year."
-        keywords="real estate software pricing, deal analysis subscription, investment tools cost, real estate platform"
         canonicalUrl="https://redatametrix.com/pricing"
       />
       <PricingPageSchema />

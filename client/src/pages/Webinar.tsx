@@ -135,7 +135,6 @@ export default function Webinar() {
       <SEO 
         title="Free Webinar - Real Estate Investment Training"
         description="Join our free live webinar to learn how to analyze real estate deals, connect with private lenders, and use data-driven tools to maximize your investment returns."
-        keywords="real estate webinar, investment training, deal analysis, private lending, free training, real estate education"
         canonicalUrl="https://redatametrix.com/webinar"
       />
       {/* Hero Section */}

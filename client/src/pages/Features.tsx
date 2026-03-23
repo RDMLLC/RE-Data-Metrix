@@ -99,7 +99,6 @@ export default function Features() {
       <SEO 
         title="Features"
         description="Explore RE Data Metrix features: Fix & Flip deal analysis, DSCR rental calculators, ARV helper with comparable sales, wholesale calculator, and private lender directory."
-        keywords="deal analysis features, ARV calculator, DSCR calculator, wholesale calculator, lender comparison, real estate investment tools"
         canonicalUrl="https://redatametrix.com/features"
       />
       <div className="min-h-[calc(100vh-16rem)] bg-background">
