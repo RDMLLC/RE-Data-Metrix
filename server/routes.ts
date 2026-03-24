@@ -56,22 +56,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use ?force=true to bypass the property cache and hit the live Zillow API.
   // Recommended: hit without ?force every 5 min (fast/free), and with ?force once/day.
   app.get("/api/health/property-lookup", async (req, res) => {
-    const TEST_URL = "https://www.zillow.com/homedetails/3127-Snapfinger-Ct-Decatur-GA-30034/14435242_zpid/";
     const force = req.query.force === "true";
     const started = Date.now();
+
+    // Default (no ?force=true): key-presence check only — no API calls, no quota consumed.
+    // Used by automated monitors (UptimeRobot etc.).
+    // Pass ?force=true to run a full live end-to-end check for manual diagnostics.
+    if (!force) {
+      const hasDataKeyPresent = !!process.env.HASDATA_API_KEY;
+      const status = hasDataKeyPresent ? "ok" : "error";
+      return res.status(hasDataKeyPresent ? 200 : 503).json({
+        status,
+        mode: "key-check",
+        checks: { hasdata_api_key: hasDataKeyPresent },
+        message: hasDataKeyPresent
+          ? "API key present. Use ?force=true for a full live check."
+          : "HASDATA_API_KEY not configured.",
+        elapsed_ms: Date.now() - started,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Full live check — only runs when ?force=true is explicitly passed.
+    const TEST_URL = "https://www.zillow.com/homedetails/3127-Snapfinger-Ct-Decatur-GA-30034/14435242_zpid/";
     try {
-      const data = await propertyAPIService.getPropertyByUrl(TEST_URL, force);
+      const data = await propertyAPIService.getPropertyByUrl(TEST_URL, true);
 
       if (!data) {
         return res.status(503).json({
           status: "error",
+          mode: "live-check",
           message: "Property lookup returned no data",
           timestamp: new Date().toISOString(),
         });
       }
 
-      // Required: these fields are essential for the deal analysis to function.
-      // A 503 is returned if any of these fail.
       const required: Record<string, boolean> = {
         address:          !!(data.address && data.address.length > 0),
         city:             !!(data.city && data.city.length > 0),
@@ -81,14 +100,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bathrooms:        !!(data.bathrooms && data.bathrooms > 0),
         propertyType:     !!(data.propertyType),
         annualTax:        !!(data.annualTax && data.annualTax > 0),
-        annualTaxIsWhole: data.annualTax !== undefined
-          ? Number.isInteger(data.annualTax)
-          : true,
+        annualTaxIsWhole: data.annualTax !== undefined ? Number.isInteger(data.annualTax) : true,
       };
 
-      // Informational: useful but legitimately absent for some properties
-      // (e.g. Zestimate not available for off-market properties, coordinates
-      //  not always returned by the upstream API). Reported but do not cause 503.
       const informational: Record<string, boolean> = {
         yearBuilt:      !!(data.yearBuilt && data.yearBuilt > 0),
         estimatedValue: !!(data.estimatedValue && data.estimatedValue > 0),
@@ -96,14 +110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         longitude:      !!(data.longitude),
       };
 
-      const failedRequired = Object.entries(required)
-        .filter(([, v]) => v === false)
-        .map(([k]) => k);
-
-      const missingInformational = Object.entries(informational)
-        .filter(([, v]) => v === false)
-        .map(([k]) => k);
-
+      const failedRequired = Object.entries(required).filter(([, v]) => v === false).map(([k]) => k);
+      const missingInformational = Object.entries(informational).filter(([, v]) => v === false).map(([k]) => k);
       const status = failedRequired.length === 0 ? "ok" : "degraded";
       const elapsed = Date.now() - started;
 
@@ -113,12 +121,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return res.status(status === "ok" ? 200 : 503).json({
         status,
+        mode: "live-check",
         required,
         informational,
         failedChecks: failedRequired,
         missingInformational,
         elapsed_ms: elapsed,
-        cached: !force,
         sample: { address: data.address, city: data.city, state: data.state, sqft: data.sqft, bedrooms: data.bedrooms, bathrooms: data.bathrooms, propertyType: data.propertyType, annualTax: data.annualTax },
         timestamp: new Date().toISOString(),
       });
@@ -126,6 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("[HEALTH] Property lookup health check failed:", err.message);
       return res.status(503).json({
         status: "error",
+        mode: "live-check",
         message: err.message,
         elapsed_ms: Date.now() - started,
         timestamp: new Date().toISOString(),
@@ -133,30 +142,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // ─── Comps distance pipeline health check ────────────────────────────────────
-  // Lightweight check: verifies RentCast geocoding returns lat/lng for a known
-  // address. This is the critical path for the ARV Helper distance filter.
-  // UptimeRobot should monitor this endpoint (no auth required).
+  // Default (no ?force=true): key-presence check only — no API calls, no quota consumed.
+  // Used by automated monitors (UptimeRobot etc.).
+  // Pass ?force=true to run a full live geocoding check for manual diagnostics.
   app.get("/api/health/comps", async (req, res) => {
-    const TEST_ADDRESS = "3127 Snapfinger Ct";
-    const TEST_CITY = "Decatur";
-    const TEST_STATE = "GA";
-    const TEST_ZIP = "30034";
+    const force = req.query.force === "true";
     const started = Date.now();
 
+    const rentCastKeyPresent = !!process.env.RENTCAST_API_KEY;
+    const hasDataKeyPresent  = !!process.env.HASDATA_API_KEY;
+
+    if (!force) {
+      const allKeysPresent = rentCastKeyPresent && hasDataKeyPresent;
+      return res.status(allKeysPresent ? 200 : 503).json({
+        status: allKeysPresent ? "ok" : "error",
+        mode: "key-check",
+        checks: {
+          rentcast_api_key: rentCastKeyPresent,
+          hasdata_api_key:  hasDataKeyPresent,
+        },
+        message: allKeysPresent
+          ? "API keys present. Use ?force=true for a full live geocoding check."
+          : "One or more API keys not configured.",
+        elapsed_ms: Date.now() - started,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Full live check — only runs when ?force=true is explicitly passed.
+    if (!rentCastKeyPresent) {
+      return res.status(503).json({
+        status: "error",
+        mode: "live-check",
+        message: "RENTCAST_API_KEY not configured — geocoding unavailable",
+        elapsed_ms: Date.now() - started,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     try {
-      const rentCastKeyPresent = !!process.env.RENTCAST_API_KEY;
-      const hasDataKeyPresent  = !!process.env.HASDATA_API_KEY;
+      const TEST_ADDRESS = "3127 Snapfinger Ct";
+      const TEST_CITY = "Decatur";
+      const TEST_STATE = "GA";
+      const TEST_ZIP = "30034";
 
-      if (!rentCastKeyPresent) {
-        return res.status(503).json({
-          status: "error",
-          message: "RENTCAST_API_KEY not configured — geocoding fallback unavailable",
-          elapsed_ms: Date.now() - started,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // Geocoding-only call — no full comps search, no HasData quota used
       const { RentCastAPIService } = await import("./services/rentcast-api.service");
       const rentCast = new RentCastAPIService();
       const geoResult = await rentCast.getPropertyByAddress(TEST_ADDRESS, TEST_CITY, TEST_STATE, TEST_ZIP);
@@ -169,10 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         longitude_returned:  !!(geoResult?.longitude != null),
       };
 
-      const failedChecks = Object.entries(checks)
-        .filter(([, v]) => v === false)
-        .map(([k]) => k);
-
+      const failedChecks = Object.entries(checks).filter(([, v]) => v === false).map(([k]) => k);
       const status = failedChecks.length === 0 ? "ok" : "degraded";
       const elapsed = Date.now() - started;
 
@@ -182,6 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return res.status(status === "ok" ? 200 : 503).json({
         status,
+        mode: "live-check",
         checks,
         failedChecks,
         elapsed_ms: elapsed,
@@ -198,6 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("[HEALTH] Comps distance health check failed:", err.message);
       return res.status(503).json({
         status: "error",
+        mode: "live-check",
         message: err.message,
         elapsed_ms: Date.now() - started,
         timestamp: new Date().toISOString(),
