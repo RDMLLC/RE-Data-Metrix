@@ -27,7 +27,8 @@ import {
   Plus,
   Code,
   Eye,
-  EyeOff
+  EyeOff,
+  Download,
 } from "lucide-react";
 import {
   Tooltip,
@@ -479,9 +480,22 @@ export default function UserManagement() {
 
             <TabsContent value="directory">
               <Card>
-                <CardHeader>
-                  <CardTitle>User Directory</CardTitle>
-                  <CardDescription>Search and manage all registered users</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <CardTitle>User Directory</CardTitle>
+                    <CardDescription>Search and manage all registered users</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    data-testid="button-export-csv"
+                    onClick={() => {
+                      window.location.href = "/api/admin/users/export.csv";
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col md:flex-row gap-4 mb-6">

@@ -3943,6 +3943,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/users/export.csv", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+
+      const rows = await Promise.all(allUsers.map(async (user) => {
+        const dealsCount = await db.select({ count: count() }).from(savedDeals).where(eq(savedDeals.userId, user.id));
+        const lendersCount = await db.select({ count: count() }).from(savedLenders).where(eq(savedLenders.userId, user.id));
+        const referrals = await db.select({ count: count() }).from(users).where(eq(users.referredBy, user.id));
+        const profile = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+
+        let referredByUsername = "";
+        if (user.referredBy) {
+          const referrer = await db.select({ username: users.username }).from(users).where(eq(users.id, user.referredBy)).limit(1);
+          referredByUsername = referrer[0]?.username || "";
+        }
+
+        const sanitized = sanitizeUserForAdmin(user as any);
+
+        return {
+          fullName:        profile[0]?.fullName || "",
+          username:        sanitized.username || "",
+          email:           sanitized.email || "",
+          phone:           profile[0]?.phone || "",
+          city:            profile[0]?.city || "",
+          state:           profile[0]?.state || "",
+          subscriptionStatus: sanitized.subscriptionStatus || "",
+          subscriptionPlan:   sanitized.subscriptionPlan || "",
+          role:            sanitized.role || "",
+          emailVerified:   sanitized.isEmailVerified ? "Yes" : "No",
+          signupDate:      sanitized.createdAt ? new Date(sanitized.createdAt).toLocaleDateString("en-US") : "",
+          termsAcceptedAt: sanitized.termsAcceptedAt ? new Date(sanitized.termsAcceptedAt).toLocaleDateString("en-US") : "",
+          referralCode:    sanitized.referralCode || "",
+          referredByUsername,
+          dealsAnalyzed:   Number(dealsCount[0]?.count || 0),
+          lendersSaved:    Number(lendersCount[0]?.count || 0),
+          referralsMade:   Number(referrals[0]?.count || 0),
+        };
+      }));
+
+      const headers = [
+        "Full Name", "Username", "Email", "Phone", "City", "State",
+        "Account Status", "Plan", "Role", "Email Verified", "Signup Date",
+        "Terms Accepted", "Referral Code", "Referred By",
+        "Deals Analyzed", "Lenders Saved", "Referrals Made",
+      ];
+
+      const escape = (val: any) => {
+        const str = String(val ?? "");
+        return str.includes(",") || str.includes('"') || str.includes("\n")
+          ? `"${str.replace(/"/g, '""')}"`
+          : str;
+      };
+
+      const csvLines = [
+        headers.join(","),
+        ...rows.map(r => [
+          r.fullName, r.username, r.email, r.phone, r.city, r.state,
+          r.subscriptionStatus, r.subscriptionPlan, r.role, r.emailVerified,
+          r.signupDate, r.termsAcceptedAt, r.referralCode, r.referredByUsername,
+          r.dealsAnalyzed, r.lendersSaved, r.referralsMade,
+        ].map(escape).join(",")),
+      ];
+
+      const filename = `redatametrix-users-${new Date().toISOString().slice(0, 10)}.csv`;
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.send(csvLines.join("\n"));
+    } catch (error) {
+      console.error("User CSV export error:", error);
+      res.status(500).json({ error: "Failed to export users" });
+    }
+  });
+
   app.patch("/api/admin/users/:id/subscription", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
