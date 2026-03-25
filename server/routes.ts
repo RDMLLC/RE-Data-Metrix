@@ -2330,6 +2330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           message: "Subscription activated successfully!",
           subscriptionId: subscription.id,
+          plan: subscriptionPlan,
+          value: subscriptionPlan === 'annual' ? 250 : 25,
         });
       } else {
         res.status(400).json({ 

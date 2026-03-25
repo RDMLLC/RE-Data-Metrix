@@ -39,6 +39,22 @@ export default function CheckoutSuccess() {
           setMessage(data.message || "Your subscription is now active!");
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           trackSubscribe({ currency: "USD" });
+
+          if (typeof (window as any).gtag === "function") {
+            (window as any).gtag("event", "purchase", {
+              currency: "USD",
+              value: data.value,
+              transaction_id: data.subscriptionId,
+              items: [
+                {
+                  item_id: data.plan,
+                  item_name: data.plan === "annual" ? "Annual Plan" : "Monthly Plan",
+                  price: data.value,
+                  quantity: 1,
+                },
+              ],
+            });
+          }
           toast({
             title: "Welcome!",
             description: "Your subscription is now active. Enjoy RE Data Metrix!",
