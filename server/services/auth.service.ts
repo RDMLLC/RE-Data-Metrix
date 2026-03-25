@@ -15,7 +15,7 @@ export const registrationSchema = z.object({
   referralCode: z.string().optional(),
   compCode: z.string().optional(),
   auditorCode: z.string().optional(),
-  termsAccepted: z.boolean().optional(),
+  termsAccepted: z.literal(true, { errorMap: () => ({ message: "You must accept the terms and conditions to register" }) }),
   pendingPlan: z.enum(["monthly", "annual"]).optional(),
 });
 
