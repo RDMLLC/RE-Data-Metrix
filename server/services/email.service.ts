@@ -2471,6 +2471,64 @@ END:VCALENDAR`;
       from: await this.getFromForCategory('support'),
     });
   }
+
+  async sendVerificationReminderEmail(to: string, username: string, verificationToken: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const verificationUrl = `${baseUrl}/verify-email/${verificationToken}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .cta-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 26px;">Don't Forget to Confirm Your Account</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>You signed up for RE Data Metrix yesterday but haven't confirmed your email address yet. Your account is ready — you just need to click the button below to activate it.</p>
+            <p>Once confirmed, you'll have access to:</p>
+            <ul style="color: #374151; padding-left: 20px;">
+              <li style="margin-bottom: 8px;"><strong>Deal Analysis with Loan Comparison</strong> &mdash; run a full investment analysis on any property</li>
+              <li style="margin-bottom: 8px;"><strong>Private Lender Directory</strong> &mdash; connect with vetted lenders for your next deal</li>
+              <li style="margin-bottom: 8px;"><strong>ARV Helper &amp; Toolbox</strong> &mdash; research comps and access investor resources</li>
+            </ul>
+            <div class="cta-box">
+              <p style="margin: 0 0 16px 0; font-weight: 600; color: #1E3A8A; font-size: 17px;">Confirm your email to get started</p>
+              <a href="${verificationUrl}" class="btn-primary">Confirm My Account</a>
+              <p style="margin: 16px 0 0 0; color: #6b7280; font-size: 13px;">Button not working? Copy and paste this link:<br><a href="${verificationUrl}" style="color: #1E3A8A; word-break: break-all;">${verificationUrl}</a></p>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">If you didn't sign up for RE Data Metrix, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}" style="color: #1E3A8A;">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Please confirm your RE Data Metrix account",
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
 }
 
 export const emailService = new EmailService();

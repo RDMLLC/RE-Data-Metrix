@@ -2356,6 +2356,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: result.error || result.message });
       }
 
+      // Auto-login the user after successful verification so the location
+      // prompt can immediately save city/state via authenticated endpoints.
+      if (result.userObject && !req.isAuthenticated()) {
+        await new Promise<void>((resolve, reject) => {
+          req.login(result.userObject, (err) => {
+            if (err) {
+              console.error('[VerifyEmail] Auto-login failed (non-fatal):', err);
+            }
+            resolve();
+          });
+        });
+      }
+
       res.json({
         message: result.message,
         username: result.username,

@@ -65,6 +65,8 @@ export interface EmailVerificationResult {
   hasSubscription?: boolean;
   isComped?: boolean;
   error?: string;
+  userId?: string;
+  userObject?: any;
 }
 
 class AuthService {
@@ -515,6 +517,8 @@ class AuthService {
         username: user.username,
         hasSubscription,
         isComped: user.subscriptionStatus === 'comped',
+        userId: user.id,
+        userObject: user,
       };
     } catch (error) {
       console.error('[AuthService] Email verification error:', error);

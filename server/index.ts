@@ -16,6 +16,7 @@ import { WebhookHandlers } from './services/webhookHandlers';
 import { closingRemindersService } from './services/closingReminders.service';
 import { webinarReminderService } from './services/webinar-reminder.service';
 import { signupFollowupService } from './services/signupFollowup.service';
+import { verificationReminderService } from './services/verificationReminder.service';
 
 const app = express();
 
@@ -400,6 +401,7 @@ app.use((req, res, next) => {
     closingRemindersService.start();
     webinarReminderService.start();
     signupFollowupService.start();
+    verificationReminderService.start();
 
     // Initialize Stripe after server is already listening so health checks pass immediately
     initStripe().catch((err) => {
