@@ -41,18 +41,12 @@ export default function CheckoutSuccess() {
           trackSubscribe({ currency: "USD" });
 
           if (typeof (window as any).gtag === "function") {
-            (window as any).gtag("event", "purchase", {
+            (window as any).gtag("event", "subscription_purchase", {
               currency: "USD",
               value: data.value,
               transaction_id: data.subscriptionId,
-              items: [
-                {
-                  item_id: data.plan,
-                  item_name: data.plan === "annual" ? "Annual Plan" : "Monthly Plan",
-                  price: data.value,
-                  quantity: 1,
-                },
-              ],
+              plan: data.plan,
+              item_name: data.plan === "annual" ? "Annual Plan" : "Monthly Plan",
             });
           }
           toast({
