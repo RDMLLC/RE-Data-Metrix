@@ -32,7 +32,7 @@ export function SEO({
       
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
       
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      {canonicalUrl && <link rel="canonical" href={canonicalUrl} key="canonical" />}
       
       <meta property="og:title" content={fullTitle} />
       {description && <meta property="og:description" content={description} />}
