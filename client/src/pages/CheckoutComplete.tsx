@@ -11,7 +11,12 @@ export default function CheckoutComplete() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const { trackCompleteRegistration, trackSubscribe, pixelsLoaded } = useMarketingEvents();
-  const [pendingPixelData, setPendingPixelData] = useState<{ metaEventId?: string } | null>(null);
+  const [pendingPixelData, setPendingPixelData] = useState<{
+    metaEventId?: string;
+    plan?: string;
+    value?: number;
+    subscriptionId?: string;
+  } | null>(null);
 
   useEffect(() => {
     const completeCheckout = async () => {
@@ -34,7 +39,12 @@ export default function CheckoutComplete() {
         if (response.ok && data.success) {
           setStatus("success");
           setMessage(data.message || "Your account has been created!");
-          setPendingPixelData({ metaEventId: data.metaEventId });
+          setPendingPixelData({
+            metaEventId: data.metaEventId,
+            plan: data.plan,
+            value: data.value,
+            subscriptionId: data.subscriptionId,
+          });
         } else {
           setStatus("error");
           setMessage(data.error || "Unable to complete registration. Please contact support.");
@@ -49,11 +59,20 @@ export default function CheckoutComplete() {
     completeCheckout();
   }, [searchString]);
 
-  // Fire browser pixel events once pixels are loaded and we have the event data
+  // Fire browser pixel events and GA4 once pixels are loaded and we have the event data
   useEffect(() => {
     if (!pixelsLoaded || !pendingPixelData) return;
     trackCompleteRegistration({ eventId: pendingPixelData.metaEventId });
     trackSubscribe();
+    if (typeof (window as any).gtag === "function" && pendingPixelData.plan) {
+      (window as any).gtag("event", "subscription_purchase", {
+        currency: "USD",
+        value: pendingPixelData.value,
+        transaction_id: pendingPixelData.subscriptionId,
+        plan: pendingPixelData.plan,
+        item_name: pendingPixelData.plan === "annual" ? "Annual Plan" : "Monthly Plan",
+      });
+    }
   }, [pixelsLoaded, pendingPixelData]);
 
   return (

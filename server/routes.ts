@@ -1877,15 +1877,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Surface the meta_event_id so CheckoutComplete.tsx can fire browser pixel with matching ID
+        // Surface the meta_event_id, plan, and value so CheckoutComplete.tsx can fire
+        // browser-side pixels and GA4 events with the correct data
         const stripe = await getUncachableStripeClient();
         let metaEventId: string | undefined;
+        let plan: string | undefined;
+        let value: number | undefined;
+        let subscriptionId: string | undefined;
         try {
-          const stripeSession = await stripe.checkout.sessions.retrieve(session_id);
+          const stripeSession = await stripe.checkout.sessions.retrieve(session_id, {
+            expand: ['subscription'],
+          });
           metaEventId = stripeSession.metadata?.meta_event_id || undefined;
+          const subscription = stripeSession.subscription as any;
+          if (subscription) {
+            const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+            plan = priceInterval === 'year' ? 'annual' : 'monthly';
+            value = plan === 'annual' ? 250 : 25;
+            subscriptionId = subscription.id;
+          }
         } catch (_) {}
 
-        res.json({ ...result, metaEventId });
+        res.json({ ...result, metaEventId, plan, value, subscriptionId });
       } else {
         res.status(400).json({ error: result.error || result.message });
       }
