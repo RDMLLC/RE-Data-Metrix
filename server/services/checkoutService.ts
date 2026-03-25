@@ -113,6 +113,42 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
     };
   }
 
+  // For authenticated checkouts, the session metadata contains the userId directly.
+  // This handles the case where the user changed their email inside Stripe checkout,
+  // which creates a new Stripe customer that can't be matched by customer ID or email.
+  const metaUserId = session.metadata?.userId;
+  if (metaUserId) {
+    const [userById] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, metaUserId))
+      .limit(1);
+
+    if (userById) {
+      const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+      const subscriptionPlan = priceInterval === 'year' ? 'annual' : 'monthly';
+
+      await db
+        .update(users)
+        .set({
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscription.id,
+          subscriptionStatus: 'active',
+          subscriptionPlan,
+        })
+        .where(eq(users.id, userById.id));
+
+      console.log(`[CHECKOUT] Linked subscription to authenticated user ${userById.email} via userId metadata (plan: ${subscriptionPlan})`);
+
+      return {
+        success: true,
+        message: 'Subscription linked to your account.',
+        userId: userById.id,
+        alreadyProcessed: true,
+      };
+    }
+  }
+
   const pendingId = session.metadata?.pendingRegistrationId;
   let pending: any = null;
 
