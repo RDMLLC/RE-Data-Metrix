@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, FileText, Shield } from "lucide-react";
+import { CheckCircle, FileText, Shield, ArrowDown } from "lucide-react";
 
 interface TermsModalProps {
   open: boolean;
@@ -29,12 +29,17 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
 
   const canAccept = termsScrolledToBottom && privacyScrolledToBottom;
 
-  const handleScroll = (ref: React.RefObject<HTMLDivElement>, setScrolled: (value: boolean) => void) => {
+  const handleScroll = (
+    ref: React.RefObject<HTMLDivElement>,
+    setScrolled: (value: boolean) => void,
+    afterScrolled?: () => void
+  ) => {
     const element = ref.current;
     if (element) {
       const isAtBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 50;
       if (isAtBottom) {
         setScrolled(true);
+        afterScrolled?.();
       }
     }
   };
@@ -52,6 +57,8 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
     onOpenChange(false);
   };
 
+  const step = !termsScrolledToBottom ? 1 : !privacyScrolledToBottom ? 2 : 3;
+
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col" data-testid="dialog-terms-modal">
@@ -60,8 +67,23 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
             <FileText className="h-5 w-5" />
             Review and Accept Terms
           </DialogTitle>
-          <DialogDescription>
-            Please read both documents completely. You must scroll to the bottom of each document before accepting.
+          <DialogDescription asChild>
+            <div className="flex items-center gap-3 mt-1">
+              <div className={`flex items-center gap-1.5 text-sm font-medium px-2 py-1 rounded-md ${step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground line-through"}`}>
+                {termsScrolledToBottom ? <CheckCircle className="h-3.5 w-3.5" /> : <span className="text-xs font-bold">1</span>}
+                Read User Agreement
+              </div>
+              <span className="text-muted-foreground">→</span>
+              <div className={`flex items-center gap-1.5 text-sm font-medium px-2 py-1 rounded-md ${step === 2 ? "bg-primary text-primary-foreground" : step === 3 ? "bg-muted text-muted-foreground line-through" : "bg-muted text-muted-foreground"}`}>
+                {privacyScrolledToBottom ? <CheckCircle className="h-3.5 w-3.5" /> : <span className="text-xs font-bold">2</span>}
+                Read Privacy Policy
+              </div>
+              <span className="text-muted-foreground">→</span>
+              <div className={`flex items-center gap-1.5 text-sm font-medium px-2 py-1 rounded-md ${step === 3 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                <span className="text-xs font-bold">3</span>
+                Accept
+              </div>
+            </div>
           </DialogDescription>
         </DialogHeader>
 
@@ -82,56 +104,62 @@ export function TermsModal({ open, onOpenChange, onAccept }: TermsModalProps) {
           <TabsContent value="terms" className="flex-1 min-h-0 mt-4">
             <div 
               ref={termsScrollRef}
-              className="h-[400px] overflow-y-auto border rounded-md p-4 bg-muted/30"
-              onScroll={() => handleScroll(termsScrollRef, setTermsScrolledToBottom)}
+              className="h-[380px] overflow-y-auto border rounded-md p-4 bg-muted/30"
+              onScroll={() => handleScroll(termsScrollRef, setTermsScrolledToBottom, () => setActiveTab("privacy"))}
               data-testid="scroll-terms-content"
             >
               <div className="terms-fine-print">
                 <TermsContent />
               </div>
-              {!termsScrolledToBottom && (
-                <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-background to-transparent pt-8 pb-2 text-center">
-                  <p className="text-xs text-muted-foreground animate-pulse">
-                    Scroll down to read the complete User Agreement
-                  </p>
-                </div>
-              )}
             </div>
+            {!termsScrolledToBottom && (
+              <div className="flex items-center justify-center gap-2 mt-2 text-sm text-primary font-medium animate-pulse">
+                <ArrowDown className="h-4 w-4" />
+                Scroll to the bottom to continue
+                <ArrowDown className="h-4 w-4" />
+              </div>
+            )}
+            {termsScrolledToBottom && (
+              <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600 font-medium">
+                <CheckCircle className="h-4 w-4" />
+                Done — now read the Privacy Policy
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="privacy" className="flex-1 min-h-0 mt-4">
             <div 
               ref={privacyScrollRef}
-              className="h-[400px] overflow-y-auto border rounded-md p-4 bg-muted/30"
+              className="h-[380px] overflow-y-auto border rounded-md p-4 bg-muted/30"
               onScroll={() => handleScroll(privacyScrollRef, setPrivacyScrolledToBottom)}
               data-testid="scroll-privacy-content"
             >
               <div className="terms-fine-print">
                 <PrivacyContent />
               </div>
-              {!privacyScrolledToBottom && (
-                <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-background to-transparent pt-8 pb-2 text-center">
-                  <p className="text-xs text-muted-foreground animate-pulse">
-                    Scroll down to read the complete Privacy Policy
-                  </p>
-                </div>
-              )}
             </div>
+            {!privacyScrolledToBottom && (
+              <div className="flex items-center justify-center gap-2 mt-2 text-sm text-primary font-medium animate-pulse">
+                <ArrowDown className="h-4 w-4" />
+                Scroll to the bottom to continue
+                <ArrowDown className="h-4 w-4" />
+              </div>
+            )}
+            {privacyScrolledToBottom && (
+              <div className="flex items-center justify-center gap-2 mt-2 text-sm text-green-600 font-medium">
+                <CheckCircle className="h-4 w-4" />
+                Done — you can now accept
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
         <DialogFooter className="flex-col sm:flex-row gap-2 pt-4 border-t">
-          <div className="flex-1 text-xs text-muted-foreground">
-            {!canAccept ? (
-              <span>
-                {!termsScrolledToBottom && !privacyScrolledToBottom && "Please read both documents completely"}
-                {termsScrolledToBottom && !privacyScrolledToBottom && "Now please read the Privacy Policy"}
-                {!termsScrolledToBottom && privacyScrolledToBottom && "Now please read the User Agreement"}
-              </span>
-            ) : (
-              <span className="text-green-600 flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" />
-                You've reviewed both documents
+          <div className="flex-1 text-sm text-muted-foreground flex items-center">
+            {canAccept && (
+              <span className="text-green-600 flex items-center gap-1 font-medium">
+                <CheckCircle className="h-4 w-4" />
+                Both documents reviewed — ready to accept
               </span>
             )}
           </div>
