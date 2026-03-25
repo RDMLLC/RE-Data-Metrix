@@ -182,7 +182,6 @@ interface RouteConfig {
   path: string;
   title: string | null;
   description: string;
-  keywords: string;
   canonicalUrl: string;
   noIndex?: boolean;
   schemas: object[];
@@ -195,7 +194,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/',
     title: null,
     description: 'RE Data Metrix - Turning Terms into Returns. Comprehensive real estate investment analysis platform with deal analysis tools, lender directory, and profitability calculators.',
-    keywords: 'real estate investing, deal analysis, private lenders, fix and flip, rental properties, DSCR loans, investment calculator',
     canonicalUrl: `${BASE_URL}/`,
     schemas: BASE_SCHEMAS
   },
@@ -203,7 +201,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/about',
     title: 'About Us',
     description: 'Learn about RE Data Metrix, a real estate analytics platform in Atlanta, GA. We empower investors with deal analysis tools and direct lender connections.',
-    keywords: 'about RE Data Metrix, real estate analytics company, Atlanta Georgia, real estate investment platform, deal analysis company',
     canonicalUrl: `${BASE_URL}/about`,
     schemas: [
       ...BASE_SCHEMAS,
@@ -214,7 +211,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/company',
     title: 'The Company',
     description: 'RE Data Metrix, LLC is revolutionizing how investors analyze deals and find funding. Based in Atlanta, GA, we provide powerful investment analysis tools and lender connections.',
-    keywords: 'RE Data Metrix company, real estate analytics platform, Atlanta Georgia, investment tools, lender network, real estate LLC',
     canonicalUrl: `${BASE_URL}/company`,
     schemas: [
       ...BASE_SCHEMAS,
@@ -225,7 +221,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/contact',
     title: 'Contact Us',
     description: 'Contact RE Data Metrix with questions about our deal analysis tools, lender directory, or pricing. We typically respond within 24-48 business hours.',
-    keywords: 'contact RE Data Metrix, real estate software support, investor tools help, customer service',
     canonicalUrl: `${BASE_URL}/contact`,
     schemas: [...BASE_SCHEMAS, contactPageSchema]
   },
@@ -233,7 +228,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/faq',
     title: 'FAQ',
     description: 'Frequently asked questions about RE Data Metrix. Learn about our real estate investment analysis tools, pricing, private lender directory, and how to get started.',
-    keywords: 'RE Data Metrix FAQ, real estate investing questions, deal analysis help, private lender questions',
     canonicalUrl: `${BASE_URL}/faq`,
     schemas: [...BASE_SCHEMAS, faqPageSchema]
   },
@@ -241,7 +235,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/features',
     title: 'Features',
     description: 'Explore RE Data Metrix features: Fix & Flip deal analysis, DSCR rental calculators, ARV helper with comparable sales, wholesale calculator, and private lender directory.',
-    keywords: 'deal analysis features, ARV calculator, DSCR calculator, wholesale calculator, lender comparison, real estate investment tools',
     canonicalUrl: `${BASE_URL}/features`,
     schemas: BASE_SCHEMAS
   },
@@ -249,7 +242,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/pricing',
     title: 'Pricing',
     description: 'Simple, transparent pricing for RE Data Metrix. Get unlimited access to deal analysis tools, lender directory, and investment calculators for $25/month or $250/year.',
-    keywords: 'real estate software pricing, deal analysis subscription, investment tools cost, real estate platform',
     canonicalUrl: `${BASE_URL}/pricing`,
     schemas: [...BASE_SCHEMAS, pricingPageSchema]
   },
@@ -257,7 +249,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/lenders',
     title: 'Private Lender Directory',
     description: 'Find and connect with private lenders for real estate investments. Search by loan type, state, and criteria. Compare hard money, DSCR, bridge loans and more.',
-    keywords: 'private lenders, hard money loans, DSCR loans, bridge loans, real estate financing, investment lending, fix and flip loans',
     canonicalUrl: `${BASE_URL}/lenders`,
     schemas: [...BASE_SCHEMAS, lendersPageSchema]
   },
@@ -265,7 +256,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/loan-types',
     title: 'Real Estate Loan Types Explained',
     description: 'Understand hard money, DSCR, transactional funding, conventional, and private/seller financing loans. Learn which loan type fits your real estate investment strategy.',
-    keywords: 'hard money loans, DSCR loans, transactional funding, private lending, conventional mortgages, real estate loan types, fix and flip financing',
     canonicalUrl: `${BASE_URL}/loan-types`,
     schemas: BASE_SCHEMAS
   },
@@ -273,7 +263,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/about-private-lenders',
     title: 'About Private Lenders',
     description: 'Learn how to find and work with private lenders for real estate investing. Discover sources for private capital and how RE Data Metrix connects you to vetted lenders.',
-    keywords: 'private lenders, private lending, private money, real estate private lender, hard money alternative, private capital, lender networks',
     canonicalUrl: `${BASE_URL}/about-private-lenders`,
     schemas: BASE_SCHEMAS
   },
@@ -281,7 +270,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/toolbox',
     title: 'Investor Toolbox & Resources',
     description: "Access RE Data Metrix's investor toolbox. Partner tools for lead generation, property management, contractors, comps, and training videos — all in one place.",
-    keywords: 'real estate investor tools, investor resources, lead generation tools, property management software, real estate education, rehab estimating',
     canonicalUrl: `${BASE_URL}/toolbox`,
     schemas: BASE_SCHEMAS
   },
@@ -289,7 +277,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/webinar',
     title: 'Free Webinar - Real Estate Investment Training',
     description: 'Join our free live webinar to learn how to analyze real estate deals, connect with private lenders, and use data-driven tools to maximize your investment returns.',
-    keywords: 'real estate webinar, investment training, deal analysis, private lending, free training, real estate education',
     canonicalUrl: `${BASE_URL}/webinar`,
     schemas: BASE_SCHEMAS
   },
@@ -297,7 +284,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/meta-offer',
     title: 'Analyze Deals & Find the Right Lender',
     description: 'Stop guessing on real estate deals. Analyze profitability, compare lenders, and close with confidence — free to start, no credit card required.',
-    keywords: 'real estate deal analysis, investment calculator, private lenders, fix and flip, DSCR loans, ROI calculator',
     canonicalUrl: `${BASE_URL}/meta-offer`,
     schemas: BASE_SCHEMAS
   },
@@ -305,7 +291,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/privacy',
     title: 'Privacy Policy',
     description: 'RE Data Metrix privacy policy. Learn how we collect, use, and protect your personal information.',
-    keywords: 'privacy policy, data protection, RE Data Metrix',
     canonicalUrl: `${BASE_URL}/privacy`,
     noIndex: true,
     schemas: []
@@ -314,7 +299,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/terms',
     title: 'Terms of Service',
     description: 'RE Data Metrix terms of service and user agreement.',
-    keywords: 'terms of service, user agreement, RE Data Metrix',
     canonicalUrl: `${BASE_URL}/terms`,
     noIndex: true,
     schemas: []
@@ -323,7 +307,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/disclaimer',
     title: 'Disclaimer',
     description: 'RE Data Metrix disclaimer and limitations of liability for our real estate investment analysis tools.',
-    keywords: 'disclaimer, liability, RE Data Metrix',
     canonicalUrl: `${BASE_URL}/disclaimer`,
     noIndex: true,
     schemas: []
@@ -332,7 +315,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/affiliate-disclosure',
     title: 'Affiliate Disclosure',
     description: 'RE Data Metrix affiliate disclosure policy for partner tool relationships.',
-    keywords: 'affiliate disclosure, partner relationships, RE Data Metrix',
     canonicalUrl: `${BASE_URL}/affiliate-disclosure`,
     noIndex: true,
     schemas: []
@@ -341,7 +323,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/login',
     title: 'Log In',
     description: 'Log in to your RE Data Metrix account to access your deal analyses, lender comparisons, and investment tools.',
-    keywords: 'login, RE Data Metrix account, investor login',
     canonicalUrl: `${BASE_URL}/login`,
     noIndex: true,
     schemas: []
@@ -350,7 +331,6 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     path: '/register',
     title: 'Create Account',
     description: 'Create your free RE Data Metrix account. Access real estate deal analysis tools, lender directory, and investment calculators — free to start.',
-    keywords: 'register, create account, RE Data Metrix signup',
     canonicalUrl: `${BASE_URL}/register`,
     noIndex: true,
     schemas: []
@@ -377,7 +357,6 @@ function buildHeadTags(route: RouteConfig): string {
   lines.push(`  <!-- Prerendered SEO: ${route.path} -->`);
   lines.push(`  <title>${fullTitle}</title>`);
   lines.push(`  <meta name="description" content="${escapeAttr(route.description)}" />`);
-  lines.push(`  <meta name="keywords" content="${escapeAttr(route.keywords)}" />`);
 
   if (route.noIndex) {
     lines.push(`  <meta name="robots" content="noindex, nofollow" />`);
