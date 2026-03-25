@@ -232,8 +232,17 @@ class EmailService {
     });
   }
 
-  async sendPasswordResetEmail(to: string, username: string, token: string, customResetUrl?: string): Promise<boolean> {
+  async sendPasswordResetEmail(to: string, username: string, token: string, customResetUrl?: string, isNewAccount?: boolean): Promise<boolean> {
     const resetUrl = customResetUrl || `${this.getBaseUrl()}/reset-password/${token}`;
+
+    const heading = isNewAccount ? 'Set Your Password' : 'Password Reset Request';
+    const intro = isNewAccount
+      ? `Your RE Data Metrix account has been created and your subscription is active. Click the button below to set your password and log in:`
+      : `We received a request to reset your password for your RE Data Metrix account. Click the button below to create a new password:`;
+    const buttonLabel = isNewAccount ? 'Set My Password' : 'Reset Password';
+    const footer = isNewAccount
+      ? `<p>This link will expire in 1 hour. If you have any trouble, contact us at info@redatametrix.com.</p>`
+      : `<div class="alert"><strong>Security Notice:</strong> This password reset link will expire in 1 hour.</div><p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -252,20 +261,17 @@ class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="margin: 0; font-size: 28px;">Password Reset Request</h1>
+            <h1 style="margin: 0; font-size: 28px;">${heading}</h1>
           </div>
           <div class="content">
             <p>Hi ${username},</p>
-            <p>We received a request to reset your password for your RE Data Metrix account. Click the button below to create a new password:</p>
+            <p>${intro}</p>
             <div style="text-align: center;">
-              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">Reset Password</a>
+              <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600;">${buttonLabel}</a>
             </div>
             <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
             <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${resetUrl}</p>
-            <div class="alert">
-              <strong>Security Notice:</strong> This password reset link will expire in 1 hour.
-            </div>
-            <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+            ${footer}
           </div>
           <div class="footer">
             <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
@@ -277,9 +283,8 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: 'Reset Your Password - RE Data Metrix',
+      subject: isNewAccount ? 'Set Your Password - RE Data Metrix' : 'Reset Your Password - RE Data Metrix',
       html: htmlContent,
-    
       from: await this.getFromForCategory('transactional'),
     });
   }
