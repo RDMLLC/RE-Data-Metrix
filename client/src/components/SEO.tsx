@@ -17,7 +17,7 @@ const SITE_NAME = 'RE Data Metrix';
 export function SEO({
   title,
   fullTitle: fullTitleProp,
-  description = 'Turning Terms into Returns. Real estate investment analysis and funding platform connecting investors with lenders.',
+  description,
   ogImage = DEFAULT_IMAGE,
   ogType = 'website',
   canonicalUrl,
@@ -28,14 +28,14 @@ export function SEO({
   return (
     <Helmet>
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      {description && <meta name="description" content={description} />}
       
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
       
       {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
       
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      {description && <meta property="og:description" content={description} />}
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={ogImage} />
       <meta property="og:site_name" content={SITE_NAME} />
@@ -43,7 +43,7 @@ export function SEO({
       
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      {description && <meta name="twitter:description" content={description} />}
       <meta name="twitter:image" content={ogImage} />
     </Helmet>
   );
