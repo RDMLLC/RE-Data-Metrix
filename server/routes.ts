@@ -22,29 +22,33 @@ import signature from "cookie-signature";
 import { getUncachableStripeClient } from "./services/stripeClient";
 
 // Cached portal configuration ID that disables the cancel button.
-// Created once on first use and reused for all subsequent portal sessions.
-let _noCancelPortalConfigId: string | null = null;
+// Set STRIPE_PORTAL_NO_CANCEL_CONFIG_ID in env to avoid creating a new config
+// on every cold start (preferred for production stability).
+let _noCancelPortalConfigId: string | null = process.env.STRIPE_PORTAL_NO_CANCEL_CONFIG_ID || null;
 
-async function getOrCreateNoCancelPortalConfig(stripe: any): Promise<string | null> {
+// Returns the ID of a Stripe portal configuration with subscription cancellation
+// disabled. Throws if the configuration cannot be obtained — callers must fail
+// closed (do not create a default portal session without this config).
+async function getOrCreateNoCancelPortalConfig(stripe: any): Promise<string> {
   if (_noCancelPortalConfigId) return _noCancelPortalConfigId;
-  try {
-    const config = await stripe.billingPortal.configurations.create({
-      business_profile: {
-        headline: 'Manage your billing information',
+
+  const config = await stripe.billingPortal.configurations.create({
+    business_profile: {
+      headline: 'Manage your billing information',
+    },
+    features: {
+      subscription_cancel: { enabled: false },
+      payment_method_update: { enabled: true },
+      invoice_history: { enabled: true },
+      customer_update: {
+        enabled: true,
+        allowed_updates: ['email', 'address', 'phone', 'tax_id'],
       },
-      features: {
-        subscription_cancel: { enabled: false },
-        payment_method_update: { enabled: true },
-        invoice_history: { enabled: true },
-      },
-    });
-    _noCancelPortalConfigId = config.id;
-    console.log(`[STRIPE] Created no-cancel portal configuration: ${config.id}`);
-    return config.id;
-  } catch (err: any) {
-    console.error('[STRIPE] Failed to create portal configuration:', err?.message || err);
-    return null;
-  }
+    },
+  });
+  _noCancelPortalConfigId = config.id;
+  console.log(`[STRIPE] Created no-cancel portal configuration: ${config.id} — set STRIPE_PORTAL_NO_CANCEL_CONFIG_ID=${config.id} in env to reuse across restarts`);
+  return config.id;
 }
 
 function generateReferralCode(): string {
@@ -2275,21 +2279,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = process.env.VITE_APP_URL || 
         (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000');
 
-      // Get or create a portal configuration that disables the cancel button.
-      // Users must use the in-app cancellation flow instead.
+      // Obtain the portal configuration that disables the cancel button.
+      // This call throws if the configuration cannot be obtained — we fail
+      // closed here rather than exposing a portal with cancel enabled.
       const portalConfigId = await getOrCreateNoCancelPortalConfig(stripe);
 
-      const sessionParams: any = {
+      const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
         return_url: `${baseUrl}/portal/profile`,
-      };
-      if (portalConfigId) {
-        sessionParams.configuration = portalConfigId;
-      }
+        configuration: portalConfigId,
+      });
 
-      const session = await stripe.billingPortal.sessions.create(sessionParams);
-
-      console.log(`[STRIPE] Billing portal session created for user ${user.id} (cancel disabled: ${!!portalConfigId})`);
+      console.log(`[STRIPE] Billing portal session created for user ${user.id} (no-cancel config: ${portalConfigId})`);
 
       res.json({
         success: true,
