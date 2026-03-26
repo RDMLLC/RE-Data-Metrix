@@ -8,7 +8,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { runPrerender, registerPrerenderRoutes } from "./prerender";
 import { pool, db } from "./db";
 import { affiliates, serviceRegions, discountCodes } from "@shared/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, sql } from "drizzle-orm";
 import passport from "./auth";
 import { runMigrations } from 'stripe-replit-sync';
 import { getStripeSync, isStripeConfigured, getStripeSecretKey } from './services/stripeClient';
@@ -84,6 +84,15 @@ async function initStripe() {
 }
 
 // Seed FREEMONTH discount code if it doesn't exist
+async function runStartupMigrations() {
+  try {
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_cancellation_choice text`);
+    console.log('[Migrations] pending_cancellation_choice column ensured');
+  } catch (err) {
+    console.error('[Migrations] Startup migration error (non-fatal):', err);
+  }
+}
+
 async function seedFreeMonthDiscount() {
   try {
     const [existing] = await db.select().from(discountCodes).where(eq(discountCodes.code, 'FREEMONTH'));
@@ -263,6 +272,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await runStartupMigrations();
+
   const server = await registerRoutes(app);
 
   // Data fixes: correct affiliate data on startup
