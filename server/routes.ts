@@ -2188,7 +2188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const stripe = await getUncachableStripeClient();
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+      const baseUrl = process.env.VITE_APP_URL || 
+        (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000');
 
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
@@ -2201,9 +2202,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         url: session.url,
       });
-    } catch (error) {
-      console.error('Manage billing error:', error);
-      res.status(500).json({ error: "Failed to open billing portal" });
+    } catch (error: any) {
+      console.error('Manage billing error:', error?.message || error);
+      // Surface the Stripe error message if available
+      const stripeMessage = error?.raw?.message || error?.message;
+      res.status(500).json({ 
+        error: "Failed to open billing portal",
+        detail: stripeMessage || undefined,
+      });
     }
   });
 

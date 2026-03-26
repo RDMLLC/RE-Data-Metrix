@@ -127,7 +127,8 @@ export default function Navigation() {
       if (data.url) {
         window.location.href = data.url;
       } else if (data.error) {
-        toast({ title: "Subscription", description: data.error, variant: "destructive" });
+        const description = data.detail ? `${data.error}: ${data.detail}` : data.error;
+        toast({ title: "Subscription", description, variant: "destructive" });
       }
     } catch (error) {
       console.error("Failed to open billing portal:", error);
