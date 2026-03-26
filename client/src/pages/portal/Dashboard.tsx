@@ -195,6 +195,11 @@ export default function MemberDashboard() {
         return <Badge className="bg-gray-500/10 text-gray-600 border-gray-200">Free</Badge>;
       case "comped":
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-200">Comped</Badge>;
+      case "cancelling":
+        if (plan === 'annual') {
+          return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Annual (Cancelling)</Badge>;
+        }
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Monthly (Cancelling)</Badge>;
       case "referral_trial":
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200">Trial</Badge>;
       case "free":
