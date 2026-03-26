@@ -6106,11 +6106,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validDuration = ['once', 'repeating', 'forever'].includes(stripeDuration) ? stripeDuration : 'repeating';
+      let resolvedMonths: number | null = null;
       if (validDuration === 'repeating') {
-        const numMonths = stripeDurationInMonths ? Number(stripeDurationInMonths) : 12;
-        if (!Number.isFinite(numMonths) || numMonths <= 0 || !Number.isInteger(numMonths)) {
+        const rawMonths = stripeDurationInMonths !== undefined && stripeDurationInMonths !== null && stripeDurationInMonths !== '' ? Number(stripeDurationInMonths) : 12;
+        if (!Number.isFinite(rawMonths) || rawMonths <= 0 || !Number.isInteger(rawMonths)) {
           return res.status(400).json({ error: "Duration in months must be a positive integer" });
         }
+        resolvedMonths = rawMonths;
       }
       const newCode = await storage.createDiscountCode({
         code,
@@ -6126,7 +6128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: isActive ?? true,
         createdBy: adminUser.id,
         stripeDuration: validDuration,
-        stripeDurationInMonths: validDuration === 'repeating' ? (stripeDurationInMonths ? Number(stripeDurationInMonths) : 12) : null,
+        stripeDurationInMonths: resolvedMonths,
       });
       
       res.status(201).json(newCode);
@@ -6216,14 +6218,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isActive !== undefined) updateData.isActive = isActive;
       if (stripeDuration !== undefined) {
         const validDur = ['once', 'repeating', 'forever'].includes(stripeDuration) ? stripeDuration : 'repeating';
+        let resolvedPatchMonths: number | null = null;
         if (validDur === 'repeating') {
-          const numMonths = stripeDurationInMonths ? Number(stripeDurationInMonths) : 12;
-          if (!Number.isFinite(numMonths) || numMonths <= 0 || !Number.isInteger(numMonths)) {
+          const rawM = stripeDurationInMonths !== undefined && stripeDurationInMonths !== null && stripeDurationInMonths !== '' ? Number(stripeDurationInMonths) : 12;
+          if (!Number.isFinite(rawM) || rawM <= 0 || !Number.isInteger(rawM)) {
             return res.status(400).json({ error: "Duration in months must be a positive integer" });
           }
+          resolvedPatchMonths = rawM;
         }
         updateData.stripeDuration = validDur;
-        updateData.stripeDurationInMonths = validDur === 'repeating' ? (stripeDurationInMonths ? Number(stripeDurationInMonths) : 12) : null;
+        updateData.stripeDurationInMonths = resolvedPatchMonths;
       }
       
       // Validate date ordering
@@ -6321,8 +6325,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: `${discountCode.code} - ${discountCode.displayName}`,
         duration,
       };
-      if (duration === 'repeating' && discountCode.stripeDurationInMonths) {
-        couponParams.duration_in_months = discountCode.stripeDurationInMonths;
+      if (duration === 'repeating') {
+        couponParams.duration_in_months = discountCode.stripeDurationInMonths ?? 12;
       }
       
       if (discountCode.percentOff) {
