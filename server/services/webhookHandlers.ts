@@ -197,7 +197,9 @@ export class WebhookHandlers {
           if (user && user.subscriptionStatus !== 'free' && user.subscriptionStatus !== 'archived') {
             const now = new Date();
             await db.update(users).set({
-              subscriptionStatus: 'canceled',
+              subscriptionStatus: 'free',
+              subscriptionPlan: null,
+              stripeSubscriptionId: null,
               downgradedAt: now,
               paymentFailedAt: null,
             }).where(eq(users.id, user.id));

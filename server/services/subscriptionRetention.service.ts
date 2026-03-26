@@ -1,8 +1,12 @@
 import { db } from '../db';
-import { users, userProfiles, savedDeals as savedDealsTable, savedLenders as savedLendersTable } from '@shared/schema';
-import { eq, and, lte, isNotNull, isNull, or } from 'drizzle-orm';
+import { users, userProfiles, savedDeals as savedDealsTable, savedLenders as savedLendersTable, sentSignupFollowups } from '@shared/schema';
+import { eq, and, lte, isNotNull, isNull } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { emailService } from './email.service';
+
+const EMAIL_TYPE_DAY5 = 'retention_day5';
+const EMAIL_TYPE_DAY10 = 'retention_day10';
+const EMAIL_TYPE_DAY23 = 'retention_day23';
 
 class SubscriptionRetentionService {
   private checkInterval: NodeJS.Timeout | null = null;
@@ -26,6 +30,22 @@ class SubscriptionRetentionService {
     }
   }
 
+  private async hasEmailBeenSent(userId: string, emailType: string): Promise<boolean> {
+    const existing = await db
+      .select({ id: sentSignupFollowups.id })
+      .from(sentSignupFollowups)
+      .where(and(
+        eq(sentSignupFollowups.userId, userId),
+        eq(sentSignupFollowups.emailType, emailType),
+      ))
+      .limit(1);
+    return existing.length > 0;
+  }
+
+  private async markEmailSent(userId: string, emailType: string): Promise<void> {
+    await db.insert(sentSignupFollowups).values({ userId, emailType }).onConflictDoNothing();
+  }
+
   private async runChecks() {
     try {
       await this.sendDay5PreDowngradeWarnings();
@@ -40,33 +60,37 @@ class SubscriptionRetentionService {
   /**
    * Day 5 after first payment failure: send pre-downgrade warning to users who
    * still have an active subscription but whose payment has been failing for 5+ days.
+   * Each user receives this email at most once (idempotent via sentSignupFollowups).
    */
   private async sendDay5PreDowngradeWarnings() {
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
-    const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
 
     const candidates = await db
       .select()
       .from(users)
+      .leftJoin(sentSignupFollowups, and(
+        eq(sentSignupFollowups.userId, users.id),
+        eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPE_DAY5}`),
+      ))
       .where(
         and(
           isNotNull(users.paymentFailedAt),
           lte(users.paymentFailedAt, fiveDaysAgo),
-          sql`${users.paymentFailedAt} > ${sixDaysAgo}`,
-          or(
-            eq(users.subscriptionStatus, 'active'),
-            eq(users.subscriptionStatus, 'referral_trial'),
-            eq(users.subscriptionStatus, 'comped'),
-          ),
+          isNull(sentSignupFollowups.id),
         )
       );
 
-    for (const user of candidates) {
+    for (const row of candidates) {
+      const user = row.users;
+      if (!['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus)) continue;
       try {
         const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
         const firstName = ((profile?.fullName || '').trim().split(/\s+/)[0] || user.username);
-        await emailService.sendPreDowngradeWarningEmail(user.email, firstName);
-        console.log(`[Retention] Sent Day 5 pre-downgrade warning to ${user.email}`);
+        const sent = await emailService.sendPreDowngradeWarningEmail(user.email, firstName);
+        if (sent) {
+          await this.markEmailSent(user.id, EMAIL_TYPE_DAY5);
+          console.log(`[Retention] Sent Day 5 pre-downgrade warning to ${user.email}`);
+        }
       } catch (err) {
         console.error(`[Retention] Failed to send Day 5 warning to ${user.email}:`, err);
       }
@@ -74,31 +98,40 @@ class SubscriptionRetentionService {
   }
 
   /**
-   * Day 10 after downgrade: send resubscribe CTA.
+   * Day 10 after downgrade: send resubscribe CTA (idempotent).
    */
   private async sendDay10ResubscribeCTAs() {
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
-    const elevenDaysAgo = new Date(Date.now() - 11 * 24 * 60 * 60 * 1000);
 
     const candidates = await db
       .select()
       .from(users)
+      .leftJoin(sentSignupFollowups, and(
+        eq(sentSignupFollowups.userId, users.id),
+        eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPE_DAY10}`),
+      ))
       .where(
         and(
           isNotNull(users.downgradedAt),
           lte(users.downgradedAt, tenDaysAgo),
-          sql`${users.downgradedAt} > ${elevenDaysAgo}`,
-          eq(users.subscriptionStatus, 'canceled'),
+          eq(users.subscriptionStatus, 'free'),
+          isNull(sentSignupFollowups.id),
         )
       );
 
-    for (const user of candidates) {
+    for (const row of candidates) {
+      const user = row.users;
       try {
         const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
         const firstName = ((profile?.fullName || '').trim().split(/\s+/)[0] || user.username);
-        const daysUntilDeletion = 20;
-        await emailService.sendResubscribeCTAEmail(user.email, firstName, daysUntilDeletion);
-        console.log(`[Retention] Sent Day 10 resubscribe CTA to ${user.email}`);
+        const downgradedMs = user.downgradedAt ? user.downgradedAt.getTime() : Date.now();
+        const daysSinceDowngrade = Math.floor((Date.now() - downgradedMs) / (24 * 60 * 60 * 1000));
+        const daysUntilDeletion = Math.max(0, 30 - daysSinceDowngrade);
+        const sent = await emailService.sendResubscribeCTAEmail(user.email, firstName, daysUntilDeletion);
+        if (sent) {
+          await this.markEmailSent(user.id, EMAIL_TYPE_DAY10);
+          console.log(`[Retention] Sent Day 10 resubscribe CTA to ${user.email}`);
+        }
       } catch (err) {
         console.error(`[Retention] Failed to send Day 10 CTA to ${user.email}:`, err);
       }
@@ -106,30 +139,37 @@ class SubscriptionRetentionService {
   }
 
   /**
-   * Day 23 after downgrade: send final deletion warning (7 days left).
+   * Day 23 after downgrade: send final deletion warning (7 days left, idempotent).
    */
   private async sendDay23FinalDeletionWarnings() {
     const twentyThreeDaysAgo = new Date(Date.now() - 23 * 24 * 60 * 60 * 1000);
-    const twentyFourDaysAgo = new Date(Date.now() - 24 * 24 * 60 * 60 * 1000);
 
     const candidates = await db
       .select()
       .from(users)
+      .leftJoin(sentSignupFollowups, and(
+        eq(sentSignupFollowups.userId, users.id),
+        eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPE_DAY23}`),
+      ))
       .where(
         and(
           isNotNull(users.downgradedAt),
           lte(users.downgradedAt, twentyThreeDaysAgo),
-          sql`${users.downgradedAt} > ${twentyFourDaysAgo}`,
-          eq(users.subscriptionStatus, 'canceled'),
+          eq(users.subscriptionStatus, 'free'),
+          isNull(sentSignupFollowups.id),
         )
       );
 
-    for (const user of candidates) {
+    for (const row of candidates) {
+      const user = row.users;
       try {
         const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
         const firstName = ((profile?.fullName || '').trim().split(/\s+/)[0] || user.username);
-        await emailService.sendFinalDataDeletionWarningEmail(user.email, firstName);
-        console.log(`[Retention] Sent Day 23 final deletion warning to ${user.email}`);
+        const sent = await emailService.sendFinalDataDeletionWarningEmail(user.email, firstName);
+        if (sent) {
+          await this.markEmailSent(user.id, EMAIL_TYPE_DAY23);
+          console.log(`[Retention] Sent Day 23 final deletion warning to ${user.email}`);
+        }
       } catch (err) {
         console.error(`[Retention] Failed to send Day 23 warning to ${user.email}:`, err);
       }
@@ -138,7 +178,8 @@ class SubscriptionRetentionService {
 
   /**
    * Day 30 after downgrade: delete saved deals and lenders for users who
-   * are still canceled and have been downgraded 30+ days ago.
+   * are still on the free plan and have been downgraded 30+ days ago.
+   * Clears downgradedAt so this user won't be processed again.
    */
   private async runDay30DataDeletion() {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -150,7 +191,7 @@ class SubscriptionRetentionService {
         and(
           isNotNull(users.downgradedAt),
           lte(users.downgradedAt, thirtyDaysAgo),
-          eq(users.subscriptionStatus, 'canceled'),
+          eq(users.subscriptionStatus, 'free'),
         )
       );
 
@@ -175,7 +216,7 @@ class SubscriptionRetentionService {
           console.log(`[Retention] Day 30: deleted ${nDeals} deals and ${nLenders} saved lenders for ${user.email}`);
         }
 
-        // Null out downgradedAt so this user doesn't get processed again
+        // Null out downgradedAt so this user isn't processed again
         await db.update(users).set({ downgradedAt: null }).where(eq(users.id, user.id));
       } catch (err) {
         console.error(`[Retention] Failed Day 30 deletion for ${user.email}:`, err);
