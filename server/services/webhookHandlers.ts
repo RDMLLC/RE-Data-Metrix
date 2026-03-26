@@ -222,7 +222,15 @@ export class WebhookHandlers {
         }
         const [user] = userRows;
 
-        if (user && user.subscriptionStatus !== 'free' && user.subscriptionStatus !== 'archived') {
+        if (user && user.subscriptionStatus === 'free') {
+          // Idempotency guard: our cancel API already set the user to 'free' when they
+          // chose to downgrade or cancel completely. Skip re-processing to avoid duplicate
+          // emails and to prevent resetting downgradedAt (which controls the 30-day
+          // deletion clock for the "cancel completely" path).
+          console.log(`[WEBHOOK] Skipping customer.subscription.deleted for ${user.email} — status already 'free' (handled by cancel API)`);
+        } else if (user && user.subscriptionStatus !== 'archived') {
+          // Subscription was deleted by Stripe externally (e.g. payment failure leading
+          // to eventual deletion). Process normally.
           const now = new Date();
           await db.update(users).set({
             subscriptionStatus: 'free',
@@ -232,7 +240,7 @@ export class WebhookHandlers {
             paymentFailedAt: null,
           }).where(eq(users.id, user.id));
 
-          console.log(`[WEBHOOK] Downgraded user ${user.email} to free after subscription deleted`);
+          console.log(`[WEBHOOK] Downgraded user ${user.email} to free after subscription deleted externally`);
 
           try {
             const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);

@@ -2174,10 +2174,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
 
       if (choice === 'downgrade') {
-        // Downgrade to free: no downgradedAt, data is kept indefinitely but inaccessible
+        // Downgrade to free: explicitly clear downgradedAt so there is no deletion clock —
+        // data is kept indefinitely but inaccessible until the user resubscribes.
         await db.update(users).set({
           subscriptionStatus: 'free',
           subscriptionPlan: null,
+          downgradedAt: null,
         }).where(eq(users.id, user.id));
 
         console.log(`[CANCEL] User ${user.email} downgraded to free (data preserved indefinitely)`);
