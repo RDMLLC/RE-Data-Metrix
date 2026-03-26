@@ -13,18 +13,16 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { 
   Pencil, Check, X, CreditCard, Crown, AlertCircle, 
-  Loader2, ExternalLink, Calendar, Shield, FileText, Scale, Home, Phone 
+  Loader2, ExternalLink, Calendar, Shield, FileText, Scale, Home, Phone,
+  ArrowDownCircle, XCircle, AlertTriangle
 } from "lucide-react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Profile() {
   const { user, logout, refetchUser, isSubscriber } = useAuth();
@@ -33,7 +31,7 @@ export default function Profile() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelStep, setCancelStep] = useState<'closed' | 'choice' | 'confirm-cancel'>('closed');
   const [editForm, setEditForm] = useState({
     username: "",
     fullName: "",
@@ -50,20 +48,20 @@ export default function Profile() {
   });
 
   const cancelSubscriptionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/subscription/cancel");
+    mutationFn: async (choice: 'downgrade' | 'cancel') => {
+      const response = await apiRequest("POST", "/api/subscription/cancel", { choice });
       return await response.json();
     },
     onSuccess: (data: { success?: boolean; message?: string }) => {
       if (data.success) {
         toast({
-          title: "Subscription Canceled",
-          description: data.message || "Your subscription has been canceled. You'll retain access until the end of your billing period.",
+          title: "Subscription Cancelled",
+          description: data.message || "Your subscription has been cancelled.",
         });
         refetchUser();
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       }
-      setShowCancelDialog(false);
+      setCancelStep('closed');
     },
     onError: (error: Error) => {
       toast({
@@ -71,7 +69,7 @@ export default function Profile() {
         description: error.message || "Failed to cancel subscription",
         variant: "destructive",
       });
-      setShowCancelDialog(false);
+      setCancelStep('closed');
     },
   });
 
@@ -521,7 +519,7 @@ export default function Profile() {
                             </Button>
                             <Button
                               variant="ghost"
-                              onClick={() => setShowCancelDialog(true)}
+                              onClick={() => setCancelStep('choice')}
                               className="text-muted-foreground hover:text-destructive"
                               data-testid="button-cancel-subscription"
                             >
@@ -728,35 +726,107 @@ export default function Profile() {
         </div>
       </div>
 
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel your subscription? You'll retain access 
-              until the end of your current billing period, but won't be charged again.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => cancelSubscriptionMutation.mutate()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      {/* Step 1: Choice dialog */}
+      <Dialog open={cancelStep === 'choice'} onOpenChange={(open) => { if (!open) setCancelStep('closed'); }}>
+        <DialogContent className="sm:max-w-lg" data-testid="dialog-cancel-choice">
+          <DialogHeader>
+            <DialogTitle>Cancel Subscription</DialogTitle>
+            <DialogDescription>
+              Choose how you'd like to proceed with your cancellation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-2">
+            <button
+              className="w-full text-left rounded-md border p-4 hover-elevate active-elevate-2 transition-colors cursor-pointer"
+              onClick={() => cancelSubscriptionMutation.mutate('downgrade')}
               disabled={cancelSubscriptionMutation.isPending}
-              data-testid="button-confirm-cancel"
+              data-testid="button-choice-downgrade"
+            >
+              <div className="flex items-start gap-3">
+                <ArrowDownCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Downgrade to Free</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Keep your account on the free plan. Your saved deals and lenders will be held for you — available again the moment you resubscribe.
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              className="w-full text-left rounded-md border border-destructive/30 p-4 hover-elevate active-elevate-2 transition-colors cursor-pointer"
+              onClick={() => setCancelStep('confirm-cancel')}
+              disabled={cancelSubscriptionMutation.isPending}
+              data-testid="button-choice-cancel-account"
+            >
+              <div className="flex items-start gap-3">
+                <XCircle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-destructive">Cancel My Account Completely</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Close your account. Your saved deals and lenders will be permanently deleted in 30 days.
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button variant="ghost" onClick={() => setCancelStep('closed')} data-testid="button-keep-subscription">
+              Keep My Subscription
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 2: Full cancel confirmation */}
+      <Dialog open={cancelStep === 'confirm-cancel'} onOpenChange={(open) => { if (!open) setCancelStep('closed'); }}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-cancel-confirm">
+          <DialogHeader>
+            <DialogTitle>Confirm Account Cancellation</DialogTitle>
+          </DialogHeader>
+
+          <div className="rounded-md bg-destructive/5 border border-destructive/20 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+            <div className="space-y-1.5">
+              <p className="font-medium text-foreground text-sm">Your data will be permanently deleted</p>
+              <p className="text-sm text-muted-foreground">
+                All saved deals, deal analyses, and saved lenders will be permanently removed from our systems 30 days from today. This cannot be undone.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                If you change your mind before then, resubscribing will restore everything.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setCancelStep('choice')}
+              disabled={cancelSubscriptionMutation.isPending}
+              data-testid="button-back-to-choice"
+            >
+              Go Back
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => cancelSubscriptionMutation.mutate('cancel')}
+              disabled={cancelSubscriptionMutation.isPending}
+              data-testid="button-confirm-cancel-account"
             >
               {cancelSubscriptionMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Canceling...
+                  Cancelling...
                 </>
               ) : (
-                "Yes, Cancel"
+                "Click to Cancel My Account"
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

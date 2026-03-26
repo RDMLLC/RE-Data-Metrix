@@ -2157,6 +2157,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      const { choice } = req.body as { choice?: 'downgrade' | 'cancel' };
+      if (!choice || (choice !== 'downgrade' && choice !== 'cancel')) {
+        return res.status(400).json({ error: "Invalid choice. Must be 'downgrade' or 'cancel'." });
+      }
+
       const stripe = await getUncachableStripeClient();
       
       // Cancel at end of billing period
@@ -2164,12 +2169,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_at_period_end: true,
       });
 
-      console.log(`[STRIPE] Subscription ${user.stripeSubscriptionId} set to cancel at period end`);
+      console.log(`[STRIPE] Subscription ${user.stripeSubscriptionId} set to cancel at period end (choice: ${choice})`);
 
-      res.json({
-        success: true,
-        message: "Your subscription has been canceled. You'll retain access until the end of your billing period.",
-      });
+      const now = new Date();
+
+      if (choice === 'downgrade') {
+        // Downgrade to free: no downgradedAt, data is kept indefinitely but inaccessible
+        await db.update(users).set({
+          subscriptionStatus: 'free',
+          subscriptionPlan: null,
+        }).where(eq(users.id, user.id));
+
+        console.log(`[CANCEL] User ${user.email} downgraded to free (data preserved indefinitely)`);
+
+        try {
+          const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+          const fullName = (profile?.fullName || '').trim();
+          const firstName = fullName.split(/\s+/)[0] || user.username;
+          await emailService.sendDowngradeToFreeEmail(user.email, firstName);
+        } catch (emailErr) {
+          console.error('[CANCEL] Failed to send downgrade confirmation email:', emailErr);
+        }
+
+        res.json({
+          success: true,
+          message: "Your subscription has been cancelled and your account moved to the free plan. Your saved data is being held for you.",
+        });
+      } else {
+        // Cancel completely: set downgradedAt now to start 30-day deletion clock
+        await db.update(users).set({
+          subscriptionStatus: 'free',
+          subscriptionPlan: null,
+          downgradedAt: now,
+        }).where(eq(users.id, user.id));
+
+        console.log(`[CANCEL] User ${user.email} fully cancelled account, downgradedAt set to ${now.toISOString()}`);
+
+        try {
+          const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+          const fullName = (profile?.fullName || '').trim();
+          const firstName = fullName.split(/\s+/)[0] || user.username;
+          await emailService.sendCancellationConfirmationEmail(user.email, firstName);
+        } catch (emailErr) {
+          console.error('[CANCEL] Failed to send cancellation confirmation email:', emailErr);
+        }
+
+        res.json({
+          success: true,
+          message: "Your account has been cancelled. Your saved data will be permanently deleted in 30 days.",
+        });
+      }
     } catch (error) {
       console.error('Subscription cancel error:', error);
       res.status(500).json({ error: "Failed to cancel subscription" });
@@ -9769,7 +9818,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get member deals
   app.get("/api/member/deals", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as User).id;
+      const user = req.user as User;
+      const userId = user.id;
+
+      if (user.subscriptionStatus === 'free') {
+        return res.status(403).json({ error: "Upgrade to access your saved deals", upgradeRequired: true });
+      }
+
       const statusFilter = req.query.status as string | undefined;
       const includeHidden = req.query.includeHidden === "true";
       
@@ -9822,8 +9877,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get single deal by ID
   app.get("/api/member/deals/:dealId", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as User).id;
+      const user = req.user as User;
+      const userId = user.id;
       const { dealId } = req.params;
+
+      if (user.subscriptionStatus === 'free') {
+        return res.status(403).json({ error: "Upgrade to access your saved deals", upgradeRequired: true });
+      }
       
       const [deal] = await db
         .select()
@@ -10059,7 +10119,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get saved lenders
   app.get("/api/member/saved-lenders", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as User).id;
+      const user = req.user as User;
+      const userId = user.id;
+
+      if (user.subscriptionStatus === 'free') {
+        return res.status(403).json({ error: "Upgrade to access your saved lenders", upgradeRequired: true });
+      }
       
       const saved = await db
         .select({
