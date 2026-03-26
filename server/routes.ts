@@ -682,8 +682,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const user = req.user as User;
     
-    // Check if user is a subscriber
-    if (user.subscriptionStatus !== 'active') {
+    // Check if user is a subscriber (active or in cancelling grace period)
+    if (user.subscriptionStatus !== 'active' && user.subscriptionStatus !== 'cancelling') {
       return res.status(403).json({ error: "Active subscription required to save investor information" });
     }
     
@@ -2145,9 +2145,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as User;
 
-      if (user.subscriptionStatus !== 'active') {
+      if (user.subscriptionStatus !== 'active' && user.subscriptionStatus !== 'cancelling') {
         return res.status(400).json({ 
           error: "No active subscription to cancel" 
+        });
+      }
+
+      if (user.subscriptionStatus === 'cancelling') {
+        return res.status(400).json({
+          error: "Your subscription is already scheduled for cancellation at the end of your billing period.",
         });
       }
 
@@ -2174,15 +2180,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
 
       if (choice === 'downgrade') {
-        // Downgrade to free: explicitly clear downgradedAt so there is no deletion clock —
-        // data is kept indefinitely but inaccessible until the user resubscribes.
+        // Downgrade to free at period end: keep access (status='cancelling') until Stripe
+        // fires customer.subscription.deleted. The webhook reads pendingCancellationChoice
+        // to know it should set status='free' without a downgradedAt (data preserved indefinitely).
         await db.update(users).set({
-          subscriptionStatus: 'free',
-          subscriptionPlan: null,
-          downgradedAt: null,
+          subscriptionStatus: 'cancelling',
+          pendingCancellationChoice: 'downgrade',
         }).where(eq(users.id, user.id));
 
-        console.log(`[CANCEL] User ${user.email} downgraded to free (data preserved indefinitely)`);
+        console.log(`[CANCEL] User ${user.email} set to cancelling (downgrade) — access until period end`);
 
         try {
           const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
@@ -2195,17 +2201,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: "Your subscription has been cancelled and your account moved to the free plan. Your saved data is being held for you.",
+          message: "Your subscription has been cancelled. You will retain full access until the end of your current billing period, then your account will move to the free plan.",
         });
       } else {
-        // Cancel completely: set downgradedAt now to start 30-day deletion clock
+        // Cancel completely at period end: keep access until period end, then at webhook
+        // fire set status='free' and downgradedAt=now to start 30-day deletion clock.
         await db.update(users).set({
-          subscriptionStatus: 'free',
-          subscriptionPlan: null,
-          downgradedAt: now,
+          subscriptionStatus: 'cancelling',
+          pendingCancellationChoice: 'cancel',
         }).where(eq(users.id, user.id));
 
-        console.log(`[CANCEL] User ${user.email} fully cancelled account, downgradedAt set to ${now.toISOString()}`);
+        console.log(`[CANCEL] User ${user.email} set to cancelling (full cancel) — access until period end`);
 
         try {
           const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
@@ -2218,7 +2224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         res.json({
           success: true,
-          message: "Your account has been cancelled. Your saved data will be permanently deleted in 30 days.",
+          message: "Your account has been cancelled. You will retain full access until the end of your current billing period, after which your saved data will be permanently deleted in 30 days.",
         });
       }
     } catch (error) {
@@ -2293,7 +2299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         status: user.subscriptionStatus,
-        isActive: ['active', 'comped', 'referral_trial'].includes(user.subscriptionStatus),
+        isActive: ['active', 'cancelling', 'comped', 'referral_trial'].includes(user.subscriptionStatus),
         stripeCustomerId: user.stripeCustomerId,
         subscription: subscriptionDetails,
       });
@@ -4107,7 +4113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { subscriptionStatus, subscriptionPlan } = req.body;
       
-      if (!['active', 'free', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
+      if (!['active', 'cancelling', 'free', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
         return res.status(400).json({ error: "Invalid subscription status" });
       }
       
@@ -8446,7 +8452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const isSubscriber = isAuthenticated && (
         user?.role === 'admin' || 
-        ['active', 'referral_trial', 'comped'].includes(user?.subscriptionStatus)
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user?.subscriptionStatus)
       );
 
       const { purchasePrice, rehabBudget, arv, projectLength, closingCostsBuy, carryingCosts, sellPrice, closingCostsSell, commission } = dealInputs;
@@ -9087,7 +9093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Paid subscribers, admins, and auditors have unlimited access
       const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || 
-        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       if (isPaidSubscriber) {
         return res.json({
@@ -9137,7 +9143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Subscribers, admins, and auditors have unlimited calculations
       const isSubscriber = user.role === 'admin' || user.role === 'auditor' || 
-        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       if (isSubscriber) {
         return res.json({
@@ -9177,7 +9183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Paid subscribers, admins, and auditors have unlimited downloads
       const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || 
-        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       if (isPaidSubscriber) {
         return res.json({
@@ -9230,7 +9236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check subscription status - paid subscribers get unlimited access
       const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || 
-        ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       // For free users, check ARV helper usage
       let usageResult = null;
@@ -9505,7 +9511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (user) {
         const isSubscriber = user.role === 'admin' || user.role === 'auditor' || 
-          ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+          ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
         
         if (!isSubscriber) {
           // Check and increment usage for free users
@@ -9757,7 +9763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as User;
       
       // Only paid subscribers can save deals
-      const isSubscriber = ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus) || 
+      const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus) || 
                            user.role === 'admin' || user.role === 'developer' || user.role === 'auditor';
       if (!isSubscriber) {
         return res.status(403).json({ error: "Active subscription required to save deals" });

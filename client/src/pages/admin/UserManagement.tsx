@@ -322,6 +322,7 @@ export default function UserManagement() {
 
   const getDisplayLabel = (status: string, plan?: string | null): string => {
     if (status === 'active') return plan === 'annual' ? 'Annual' : 'Monthly';
+    if (status === 'cancelling') return plan === 'annual' ? 'Annual (Cancelling)' : 'Monthly (Cancelling)';
     const labels: Record<string, string> = {
       free: 'Free', comped: 'Comped', referral_trial: 'Referral Trial', archived: 'Archived',
     };
@@ -334,6 +335,12 @@ export default function UserManagement() {
         return (
           <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
             {plan === 'annual' ? 'Annual' : 'Monthly'}
+          </Badge>
+        );
+      case 'cancelling':
+        return (
+          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+            {plan === 'annual' ? 'Annual (Cancelling)' : 'Monthly (Cancelling)'}
           </Badge>
         );
       case 'comped':
@@ -533,6 +540,7 @@ export default function UserManagement() {
                         <SelectItem value="all">All Subscriptions</SelectItem>
                         <SelectItem value="monthly">Monthly</SelectItem>
                         <SelectItem value="annual">Annual</SelectItem>
+                        <SelectItem value="cancelling">Cancelling</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="comped">Comped</SelectItem>
                         <SelectItem value="referral_trial">Referral Trial</SelectItem>
@@ -599,6 +607,7 @@ export default function UserManagement() {
                                     <SelectContent>
                                       <SelectItem value="monthly">Monthly</SelectItem>
                                       <SelectItem value="annual">Annual</SelectItem>
+                                      <SelectItem value="cancelling">Cancelling</SelectItem>
                                       <SelectItem value="free">Free</SelectItem>
                                       <SelectItem value="comped">Comped</SelectItem>
                                       <SelectItem value="referral_trial">Referral Trial</SelectItem>

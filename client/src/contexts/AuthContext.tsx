@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isSubscriber = !!user && (
     user.role === 'admin' || 
     user.role === 'auditor' ||
-    ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus)
+    ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus)
   );
 
   return (

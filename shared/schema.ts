@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   pendingPlan: text("pending_plan"),
   downgradedAt: timestamp("downgraded_at"),
   paymentFailedAt: timestamp("payment_failed_at"),
+  pendingCancellationChoice: text("pending_cancellation_choice"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

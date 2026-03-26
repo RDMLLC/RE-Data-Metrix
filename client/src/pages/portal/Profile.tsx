@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   Pencil, Check, X, CreditCard, Crown, AlertCircle, 
   Loader2, ExternalLink, Calendar, Shield, FileText, Scale, Home, Phone,
@@ -102,6 +102,24 @@ export default function Profile() {
     },
   });
 
+  const { data: subscriptionData } = useQuery<{
+    status: string;
+    isActive: boolean;
+    subscription?: {
+      cancelAtPeriodEnd?: boolean;
+      currentPeriodEnd?: string;
+    } | null;
+  }>({
+    queryKey: ["/api/subscription/status"],
+    enabled: user?.subscriptionStatus === 'cancelling',
+  });
+
+  const periodEndDate = subscriptionData?.subscription?.currentPeriodEnd
+    ? new Date(subscriptionData.subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric',
+      })
+    : null;
+
   const getSubscriptionBadge = () => {
     switch (user?.subscriptionStatus) {
       case 'active':
@@ -112,6 +130,11 @@ export default function Profile() {
           return <Badge className="bg-green-500/10 text-green-600 border-green-200">Monthly Member</Badge>;
         }
         return <Badge className="bg-gray-500/10 text-gray-600 border-gray-200">Free Account</Badge>;
+      case 'cancelling':
+        if (user?.subscriptionPlan === 'annual') {
+          return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Annual Member (Cancelling)</Badge>;
+        }
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Monthly Member (Cancelling)</Badge>;
       case 'comped':
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Complimentary</Badge>;
       case 'referral_trial':
@@ -481,6 +504,7 @@ export default function Profile() {
                         <div>
                           <p className="font-medium text-foreground">
                             {user.subscriptionStatus === 'active' && 'Full Membership Active'}
+                            {user.subscriptionStatus === 'cancelling' && 'Full Membership Active'}
                             {user.subscriptionStatus === 'comped' && 'Complimentary Access'}
                             {user.subscriptionStatus === 'referral_trial' && 'Referral Trial Active'}
                           </p>
@@ -491,7 +515,25 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {user.subscriptionStatus === 'active' && (
+                    {user.subscriptionStatus === 'cancelling' && (
+                      <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-medium text-foreground">Cancellation Scheduled</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Your subscription is scheduled to end at the close of your current billing period.
+                              {periodEndDate && (
+                                <> Your access will remain active until <span className="font-medium text-foreground">{periodEndDate}</span>.</>
+                              )}
+                              {!periodEndDate && ' You have full access until your billing period ends.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(user.subscriptionStatus === 'active' || user.subscriptionStatus === 'cancelling') && (
                       <>
                         <Separator />
                         <div className="space-y-4">
@@ -517,14 +559,16 @@ export default function Profile() {
                               )}
                               Manage Billing
                             </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => setCancelStep('choice')}
-                              className="text-muted-foreground hover:text-destructive"
-                              data-testid="button-cancel-subscription"
-                            >
-                              Cancel Subscription
-                            </Button>
+                            {user.subscriptionStatus === 'active' && (
+                              <Button
+                                variant="ghost"
+                                onClick={() => setCancelStep('choice')}
+                                className="text-muted-foreground hover:text-destructive"
+                                data-testid="button-cancel-subscription"
+                              >
+                                Cancel Subscription
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </>

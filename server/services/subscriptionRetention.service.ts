@@ -70,7 +70,7 @@ class SubscriptionRetentionService {
 
     for (const row of candidates) {
       const user = row.users;
-      if (!['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus)) continue;
+      if (!['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus)) continue;
       try {
         const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
         const firstName = ((profile?.fullName || '').trim().split(/\s+/)[0] || user.username);
