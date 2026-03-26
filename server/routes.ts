@@ -38,6 +38,7 @@ async function getOrCreateNoCancelPortalConfig(stripe: any): Promise<string> {
     },
     features: {
       subscription_cancel: { enabled: false },
+      subscription_update: { enabled: false },
       payment_method_update: { enabled: true },
       invoice_history: { enabled: true },
       customer_update: {
