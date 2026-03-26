@@ -19,6 +19,33 @@ import { outboundWebhookService } from "./services/outbound-webhook.service";
 import { sendMetaCapiEvent } from "./services/metaCapi";
 // @ts-ignore
 import signature from "cookie-signature";
+import { getUncachableStripeClient } from "./services/stripeClient";
+
+// Cached portal configuration ID that disables the cancel button.
+// Created once on first use and reused for all subsequent portal sessions.
+let _noCancelPortalConfigId: string | null = null;
+
+async function getOrCreateNoCancelPortalConfig(stripe: any): Promise<string | null> {
+  if (_noCancelPortalConfigId) return _noCancelPortalConfigId;
+  try {
+    const config = await stripe.billingPortal.configurations.create({
+      business_profile: {
+        headline: 'Manage your billing information',
+      },
+      features: {
+        subscription_cancel: { enabled: false },
+        payment_method_update: { enabled: true },
+        invoice_history: { enabled: true },
+      },
+    });
+    _noCancelPortalConfigId = config.id;
+    console.log(`[STRIPE] Created no-cancel portal configuration: ${config.id}`);
+    return config.id;
+  } catch (err: any) {
+    console.error('[STRIPE] Failed to create portal configuration:', err?.message || err);
+    return null;
+  }
+}
 
 function generateReferralCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2248,12 +2275,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = process.env.VITE_APP_URL || 
         (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000');
 
-      const session = await stripe.billingPortal.sessions.create({
+      // Get or create a portal configuration that disables the cancel button.
+      // Users must use the in-app cancellation flow instead.
+      const portalConfigId = await getOrCreateNoCancelPortalConfig(stripe);
+
+      const sessionParams: any = {
         customer: user.stripeCustomerId,
         return_url: `${baseUrl}/portal/profile`,
-      });
+      };
+      if (portalConfigId) {
+        sessionParams.configuration = portalConfigId;
+      }
 
-      console.log(`[STRIPE] Billing portal session created for user ${user.id}`);
+      const session = await stripe.billingPortal.sessions.create(sessionParams);
+
+      console.log(`[STRIPE] Billing portal session created for user ${user.id} (cancel disabled: ${!!portalConfigId})`);
 
       res.json({
         success: true,

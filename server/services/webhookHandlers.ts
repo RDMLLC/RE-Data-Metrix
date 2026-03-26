@@ -207,6 +207,45 @@ export class WebhookHandlers {
       }
     }
 
+    // Safety net: if cancel_at_period_end was set to true externally (Stripe dashboard,
+    // API, or an old portal session), ensure our DB reflects the cancelling state so
+    // the period-end deletion webhook can complete the transition correctly.
+    if (event.type === 'customer.subscription.updated') {
+      const subscription = event.data.object as Stripe.Subscription;
+      const previousAttributes = (event.data as any).previous_attributes as Record<string, any> | undefined;
+
+      const cancelAtPeriodEnd = subscription.cancel_at_period_end;
+      const previousCancelAtPeriodEnd = previousAttributes?.cancel_at_period_end;
+
+      // Only act when cancel_at_period_end just flipped from false → true
+      if (cancelAtPeriodEnd === true && previousCancelAtPeriodEnd === false) {
+        const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+        const subscriptionId = subscription.id;
+
+        try {
+          let userRows = customerId
+            ? await db.select().from(users).where(eq(users.stripeCustomerId, customerId)).limit(1)
+            : [];
+          if (!userRows.length) {
+            userRows = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId)).limit(1);
+          }
+          const [user] = userRows;
+
+          if (user && user.subscriptionStatus !== 'cancelling') {
+            await db.update(users).set({
+              subscriptionStatus: 'cancelling',
+              pendingCancellationChoice: 'cancel',
+            }).where(eq(users.id, user.id));
+            console.log(`[WEBHOOK] External cancellation detected for ${user.email} — set status='cancelling', choice='cancel'`);
+          } else if (user) {
+            console.log(`[WEBHOOK] subscription.updated cancel_at_period_end=true for ${user.email} — already 'cancelling', no action needed`);
+          }
+        } catch (err) {
+          console.error('[WEBHOOK] Error handling customer.subscription.updated (cancel fallback):', err);
+        }
+      }
+    }
+
     if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
