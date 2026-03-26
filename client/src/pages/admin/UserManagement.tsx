@@ -668,28 +668,37 @@ export default function UserManagement() {
                               </TableCell>
                               <TableCell>
                                 {!isAuditor && (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1">
                                     {!user.isEmailVerified && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setUserToResendVerification(user)}
-                                        data-testid={`button-resend-${user.id}`}
-                                      >
-                                        <Mail className="h-4 w-4 mr-1" />
-                                        Resend
-                                      </Button>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="icon"
+                                            variant="outline"
+                                            onClick={() => setUserToResendVerification(user)}
+                                            data-testid={`button-resend-${user.id}`}
+                                          >
+                                            <Mail className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Resend verification email</TooltipContent>
+                                      </Tooltip>
                                     )}
                                     {user.referralCount === 0 && user.role !== 'admin' && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => setUserToDelete(user)}
-                                        data-testid={`button-delete-${user.id}`}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="icon"
+                                            variant="outline"
+                                            className="text-red-600"
+                                            onClick={() => setUserToDelete(user)}
+                                            data-testid={`button-delete-${user.id}`}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Delete user</TooltipContent>
+                                      </Tooltip>
                                     )}
                                   </div>
                                 )}
