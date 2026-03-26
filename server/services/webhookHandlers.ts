@@ -180,54 +180,71 @@ export class WebhookHandlers {
       }
     }
 
+    // When a payment succeeds, clear paymentFailedAt so users who fix billing don't get stale warnings
+    if (event.type === 'invoice.payment_succeeded' || event.type === 'invoice.paid') {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+      if (customerId) {
+        try {
+          const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, customerId)).limit(1);
+          if (user && user.paymentFailedAt) {
+            await db.update(users).set({ paymentFailedAt: null }).where(eq(users.id, user.id));
+            console.log(`[WEBHOOK] Cleared paymentFailedAt for ${user.email} — payment recovered`);
+          }
+        } catch (err) {
+          console.error('[WEBHOOK] Error clearing paymentFailedAt on payment success:', err);
+        }
+      }
+    }
+
     if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
       const subscriptionId = subscription.id;
 
-      if (customerId) {
-        try {
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.stripeCustomerId, customerId))
-            .limit(1)
-            .then(r => r.length ? r : db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId)).limit(1));
-
-          if (user && user.subscriptionStatus !== 'free' && user.subscriptionStatus !== 'archived') {
-            const now = new Date();
-            await db.update(users).set({
-              subscriptionStatus: 'free',
-              subscriptionPlan: null,
-              stripeSubscriptionId: null,
-              downgradedAt: now,
-              paymentFailedAt: null,
-            }).where(eq(users.id, user.id));
-
-            console.log(`[WEBHOOK] Downgraded user ${user.email} to canceled after subscription deleted`);
-
-            try {
-              const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
-              const fullName = (profile?.fullName || '').trim();
-              const firstName = fullName.split(/\s+/)[0] || user.username;
-              await emailService.sendAccountDowngradedEmail(user.email, firstName);
-              console.log(`[WEBHOOK] Sent account downgraded email to ${user.email}`);
-            } catch (emailErr) {
-              console.error('[WEBHOOK] Failed to send account downgraded email:', emailErr);
-            }
-
-            outboundWebhookService.triggerWebhooks('subscription_cancelled', {
-              userId: user.id,
-              email: user.email,
-              username: user.username,
-              stripeCustomerId: customerId,
-              stripeSubscriptionId: subscriptionId,
-              cancelledAt: now.toISOString(),
-            }).catch(err => console.error('[Webhook] subscription_cancelled trigger error:', err));
-          }
-        } catch (err) {
-          console.error('[WEBHOOK] Error handling customer.subscription.deleted:', err);
+      try {
+        // Try by customer ID first, then fall back to subscription ID
+        let userRows = customerId
+          ? await db.select().from(users).where(eq(users.stripeCustomerId, customerId)).limit(1)
+          : [];
+        if (!userRows.length) {
+          userRows = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId)).limit(1);
         }
+        const [user] = userRows;
+
+        if (user && user.subscriptionStatus !== 'free' && user.subscriptionStatus !== 'archived') {
+          const now = new Date();
+          await db.update(users).set({
+            subscriptionStatus: 'free',
+            subscriptionPlan: null,
+            stripeSubscriptionId: null,
+            downgradedAt: now,
+            paymentFailedAt: null,
+          }).where(eq(users.id, user.id));
+
+          console.log(`[WEBHOOK] Downgraded user ${user.email} to free after subscription deleted`);
+
+          try {
+            const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+            const fullName = (profile?.fullName || '').trim();
+            const firstName = fullName.split(/\s+/)[0] || user.username;
+            await emailService.sendAccountDowngradedEmail(user.email, firstName);
+            console.log(`[WEBHOOK] Sent account downgraded email to ${user.email}`);
+          } catch (emailErr) {
+            console.error('[WEBHOOK] Failed to send account downgraded email:', emailErr);
+          }
+
+          outboundWebhookService.triggerWebhooks('subscription_cancelled', {
+            userId: user.id,
+            email: user.email,
+            username: user.username,
+            stripeCustomerId: customerId ?? '',
+            stripeSubscriptionId: subscriptionId,
+            cancelledAt: now.toISOString(),
+          }).catch(err => console.error('[Webhook] subscription_cancelled trigger error:', err));
+        }
+      } catch (err) {
+        console.error('[WEBHOOK] Error handling customer.subscription.deleted:', err);
       }
     }
 
