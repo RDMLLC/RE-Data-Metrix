@@ -224,9 +224,14 @@ export class WebhookHandlers {
 
         if (user && user.subscriptionStatus === 'free') {
           // Idempotency guard: our cancel API already set the user to 'free' when they
-          // chose to downgrade or cancel completely. Skip re-processing to avoid duplicate
-          // emails and to prevent resetting downgradedAt (which controls the 30-day
-          // deletion clock for the "cancel completely" path).
+          // chose to downgrade or cancel completely in-app. The guard is intentionally
+          // broad (status === 'free', not 'free + downgradedAt set') so that BOTH paths
+          // are protected:
+          //   - Downgrade path: status=free, downgradedAt=null — no deletion clock; skip
+          //     avoids incorrectly setting downgradedAt=now on webhook fire.
+          //   - Cancel-completely path: status=free, downgradedAt=now — clock already
+          //     running; skip avoids resetting downgradedAt to a later timestamp and
+          //     avoids sending a duplicate downgrade email.
           // Still clear the stripeSubscriptionId now that Stripe has confirmed deletion.
           await db.update(users).set({
             stripeSubscriptionId: null,
