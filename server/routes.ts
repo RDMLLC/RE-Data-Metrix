@@ -6106,6 +6106,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validDuration = ['once', 'repeating', 'forever'].includes(stripeDuration) ? stripeDuration : 'repeating';
+      if (validDuration === 'repeating') {
+        const numMonths = stripeDurationInMonths ? Number(stripeDurationInMonths) : 12;
+        if (!Number.isFinite(numMonths) || numMonths <= 0 || !Number.isInteger(numMonths)) {
+          return res.status(400).json({ error: "Duration in months must be a positive integer" });
+        }
+      }
       const newCode = await storage.createDiscountCode({
         code,
         displayName,
@@ -6210,6 +6216,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isActive !== undefined) updateData.isActive = isActive;
       if (stripeDuration !== undefined) {
         const validDur = ['once', 'repeating', 'forever'].includes(stripeDuration) ? stripeDuration : 'repeating';
+        if (validDur === 'repeating') {
+          const numMonths = stripeDurationInMonths ? Number(stripeDurationInMonths) : 12;
+          if (!Number.isFinite(numMonths) || numMonths <= 0 || !Number.isInteger(numMonths)) {
+            return res.status(400).json({ error: "Duration in months must be a positive integer" });
+          }
+        }
         updateData.stripeDuration = validDur;
         updateData.stripeDurationInMonths = validDur === 'repeating' ? (stripeDurationInMonths ? Number(stripeDurationInMonths) : 12) : null;
       }

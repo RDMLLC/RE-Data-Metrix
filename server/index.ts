@@ -89,6 +89,8 @@ async function runStartupMigrations() {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_cancellation_choice text`);
     await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration text DEFAULT 'repeating'`);
     await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration_in_months integer DEFAULT 12`);
+    // Ensure FREEMONTH always stays 'once' regardless of column default
+    await db.execute(sql`UPDATE discount_codes SET stripe_duration = 'once', stripe_duration_in_months = NULL WHERE code = 'FREEMONTH'`);
     console.log('[Migrations] pending_cancellation_choice, stripe_duration, stripe_duration_in_months columns ensured');
   } catch (err) {
     console.error('[Migrations] Startup migration error (non-fatal):', err);
@@ -135,6 +137,8 @@ async function seedFreeMonthDiscount() {
       amountOff: '25.00',
       stripeCouponId: couponId,
       isActive: true,
+      stripeDuration: 'once',
+      stripeDurationInMonths: null,
     });
     console.log('[SEED] Inserted FREEMONTH discount code into database');
   } catch (err) {
