@@ -17,6 +17,7 @@ import { closingRemindersService } from './services/closingReminders.service';
 import { webinarReminderService } from './services/webinar-reminder.service';
 import { signupFollowupService } from './services/signupFollowup.service';
 import { verificationReminderService } from './services/verificationReminder.service';
+import { subscriptionRetentionService } from './services/subscriptionRetention.service';
 
 const app = express();
 
@@ -402,6 +403,7 @@ app.use((req, res, next) => {
     webinarReminderService.start();
     signupFollowupService.start();
     verificationReminderService.start();
+    subscriptionRetentionService.start();
 
     // Initialize Stripe after server is already listening so health checks pass immediately
     initStripe().catch((err) => {

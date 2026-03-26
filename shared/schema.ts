@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionPlan: text("subscription_plan"), // 'free', 'monthly', 'annual'
   pendingPlan: text("pending_plan"),
+  downgradedAt: timestamp("downgraded_at"),
+  paymentFailedAt: timestamp("payment_failed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

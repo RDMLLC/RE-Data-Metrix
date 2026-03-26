@@ -2,6 +2,7 @@ import { getStripeSync, getUncachableStripeClient } from './stripeClient';
 import { completeCheckoutSession } from './checkoutService';
 import { outboundWebhookService } from './outbound-webhook.service';
 import { sendMetaCapiEvent } from './metaCapi';
+import { emailService } from './email.service';
 import { db } from '../db';
 import { users, userProfiles } from '@shared/schema';
 import { eq } from 'drizzle-orm';
@@ -128,6 +129,102 @@ export class WebhookHandlers {
           }
         } catch (error) {
           console.error(`[WEBHOOK] Error processing checkout.session.completed:`, error);
+        }
+      }
+    }
+
+    if (event.type === 'invoice.payment_failed') {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+      const attemptCount = invoice.attempt_count ?? 1;
+
+      if (customerId) {
+        try {
+          const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, customerId)).limit(1);
+          if (user && (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'comped' || user.subscriptionStatus === 'referral_trial')) {
+            // Only record paymentFailedAt on the first failure
+            if (!user.paymentFailedAt) {
+              await db.update(users).set({ paymentFailedAt: new Date() }).where(eq(users.id, user.id));
+              console.log(`[WEBHOOK] Recorded first payment failure for user ${user.email}`);
+            }
+
+            // Send payment failed email on first attempt only
+            if (attemptCount <= 1) {
+              try {
+                const stripe = await getUncachableStripeClient();
+                let billingPortalUrl = `${process.env.VITE_APP_URL || 'https://redatametrix.com'}/settings`;
+                try {
+                  const portalSession = await stripe.billingPortal.sessions.create({
+                    customer: customerId,
+                    return_url: `${process.env.VITE_APP_URL || 'https://redatametrix.com'}/settings`,
+                  });
+                  billingPortalUrl = portalSession.url;
+                } catch (portalErr) {
+                  console.warn('[WEBHOOK] Could not create billing portal session:', portalErr);
+                }
+
+                const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+                const fullName = (profile?.fullName || '').trim();
+                const firstName = fullName.split(/\s+/)[0] || user.username;
+
+                await emailService.sendPaymentFailedEmail(user.email, firstName, billingPortalUrl);
+                console.log(`[WEBHOOK] Sent payment failed email to ${user.email}`);
+              } catch (emailErr) {
+                console.error('[WEBHOOK] Failed to send payment failed email:', emailErr);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[WEBHOOK] Error handling invoice.payment_failed:', err);
+        }
+      }
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+      const subscriptionId = subscription.id;
+
+      if (customerId) {
+        try {
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.stripeCustomerId, customerId))
+            .limit(1)
+            .then(r => r.length ? r : db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId)).limit(1));
+
+          if (user && user.subscriptionStatus !== 'free' && user.subscriptionStatus !== 'archived') {
+            const now = new Date();
+            await db.update(users).set({
+              subscriptionStatus: 'canceled',
+              downgradedAt: now,
+              paymentFailedAt: null,
+            }).where(eq(users.id, user.id));
+
+            console.log(`[WEBHOOK] Downgraded user ${user.email} to canceled after subscription deleted`);
+
+            try {
+              const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+              const fullName = (profile?.fullName || '').trim();
+              const firstName = fullName.split(/\s+/)[0] || user.username;
+              await emailService.sendAccountDowngradedEmail(user.email, firstName);
+              console.log(`[WEBHOOK] Sent account downgraded email to ${user.email}`);
+            } catch (emailErr) {
+              console.error('[WEBHOOK] Failed to send account downgraded email:', emailErr);
+            }
+
+            outboundWebhookService.triggerWebhooks('subscription_cancelled', {
+              userId: user.id,
+              email: user.email,
+              username: user.username,
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+              cancelledAt: now.toISOString(),
+            }).catch(err => console.error('[Webhook] subscription_cancelled trigger error:', err));
+          }
+        } catch (err) {
+          console.error('[WEBHOOK] Error handling customer.subscription.deleted:', err);
         }
       }
     }

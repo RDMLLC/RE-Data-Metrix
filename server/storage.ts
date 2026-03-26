@@ -183,6 +183,9 @@ export interface IStorage {
     createdAt: Date | null;
     isEmailVerified: boolean;
   }>>;
+  getUserByStripeCustomerId(customerId: string): Promise<User | undefined>;
+  getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
+  deleteUserSavedData(userId: string): Promise<void>;
   
   // Affiliate Clicks
   trackAffiliateClick(data: {
@@ -638,6 +641,22 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUserByStripeCustomerId(customerId: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.stripeCustomerId === customerId,
+    );
+  }
+
+  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.stripeSubscriptionId === subscriptionId,
+    );
+  }
+
+  async deleteUserSavedData(userId: string): Promise<void> {
+    // In-memory stub — no-op for MemStorage
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
@@ -659,6 +678,8 @@ export class MemStorage implements IStorage {
       stripeCustomerId: insertUser.stripeCustomerId ?? null,
       stripeSubscriptionId: insertUser.stripeSubscriptionId ?? null,
       subscriptionPlan: insertUser.subscriptionPlan ?? null,
+      downgradedAt: null,
+      paymentFailedAt: null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -1371,6 +1392,21 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await db.select().from(usersTable).where(sql`LOWER(${usersTable.email}) = LOWER(${email})`).limit(1);
     return result[0];
+  }
+
+  async getUserByStripeCustomerId(customerId: string): Promise<User | undefined> {
+    const result = await db.select().from(usersTable).where(eq(usersTable.stripeCustomerId, customerId)).limit(1);
+    return result[0];
+  }
+
+  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
+    const result = await db.select().from(usersTable).where(eq(usersTable.stripeSubscriptionId, subscriptionId)).limit(1);
+    return result[0];
+  }
+
+  async deleteUserSavedData(userId: string): Promise<void> {
+    await db.delete(savedDealsTable).where(eq(savedDealsTable.userId, userId));
+    await db.delete(savedLendersTable).where(eq(savedLendersTable.userId, userId));
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

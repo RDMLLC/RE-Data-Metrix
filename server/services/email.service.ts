@@ -2477,6 +2477,289 @@ END:VCALENDAR`;
     });
   }
 
+  async sendPaymentFailedEmail(to: string, username: string, billingPortalUrl: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .alert-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">Payment Issue — Action Required</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>We were unable to process your RE Data Metrix subscription payment. Your access remains active for now, but we need you to update your payment information to avoid any interruption.</p>
+            <div class="alert-box">
+              <p style="margin: 0 0 12px; font-weight: 600; color: #dc2626;">What happens if payment isn't resolved?</p>
+              <ul style="margin: 0; padding-left: 20px; color: #374151;">
+                <li style="margin-bottom: 6px;">In 5 days — your account will be scheduled for downgrade</li>
+                <li style="margin-bottom: 6px;">At downgrade — your saved deals and lenders will be preserved for 30 days</li>
+                <li>After 30 days — saved data will be permanently removed</li>
+              </ul>
+            </div>
+            <p>To keep uninterrupted access to your deal analysis tools, lender directory, and all saved data, please update your payment method now:</p>
+            <p style="text-align: center; margin: 28px 0;">
+              <a href="${billingPortalUrl}" class="btn-primary">Update Payment Method</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">If you have questions or need help, just reply to this email — we're happy to assist.</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}" style="color: #1E3A8A;">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Action Required: Payment Failed — Update Your Billing Info',
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
+
+  async sendPreDowngradeWarningEmail(to: string, username: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const billingUrl = `${baseUrl}/settings`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .warning-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">Your Account Will Be Downgraded Soon</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>We still haven't been able to process your subscription payment. <strong>If this isn't resolved, your account will be downgraded to the free plan when your billing cycle ends.</strong></p>
+            <div class="warning-box">
+              <p style="margin: 0 0 8px; font-weight: 600; color: #92400e;">What you'll lose access to:</p>
+              <ul style="margin: 0; padding-left: 20px; color: #374151;">
+                <li style="margin-bottom: 6px;">Full deal analysis with loan comparison</li>
+                <li style="margin-bottom: 6px;">Unlimited property lookups and ARV helper runs</li>
+                <li style="margin-bottom: 6px;">Saved deals and lender connections (30-day grace period after downgrade)</li>
+              </ul>
+            </div>
+            <p>The easiest fix is to update your payment method now. It only takes a minute:</p>
+            <p style="text-align: center; margin: 28px 0;">
+              <a href="${billingUrl}" class="btn-primary">Resolve Payment Issue</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">Need help? Reply to this email or contact us at <a href="mailto:info@redatametrix.com" style="color: #1E3A8A;">info@redatametrix.com</a>.</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}" style="color: #1E3A8A;">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Your Account Is About to Be Downgraded — Resolve Now',
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
+
+  async sendAccountDowngradedEmail(to: string, username: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const resubscribeUrl = `${baseUrl}/pricing`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .info-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #0F7B49; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">Your Account Has Been Downgraded</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>Your RE Data Metrix subscription has been cancelled and your account has been moved to the free plan.</p>
+            <div class="info-box">
+              <p style="margin: 0 0 8px; font-weight: 600; color: #0369a1;">Your data is safe for now</p>
+              <p style="margin: 0; color: #374151;">Your saved deals and lender connections will be kept for <strong>30 days</strong> from today. If you resubscribe before then, everything will be exactly as you left it.</p>
+            </div>
+            <p>We'd love to have you back. Resubscribing takes less than two minutes and you'll instantly regain access to:</p>
+            <ul style="color: #374151; padding-left: 20px;">
+              <li style="margin-bottom: 6px;">Full deal analysis with loan comparison tools</li>
+              <li style="margin-bottom: 6px;">Unlimited property lookups and ARV helper</li>
+              <li style="margin-bottom: 6px;">Private lender directory and all saved lenders</li>
+              <li style="margin-bottom: 6px;">All your saved deals restored immediately</li>
+            </ul>
+            <p style="text-align: center; margin: 28px 0;">
+              <a href="${resubscribeUrl}" class="btn-primary">Resubscribe Now</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">Questions? We're here to help at <a href="mailto:info@redatametrix.com" style="color: #1E3A8A;">info@redatametrix.com</a>.</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}" style="color: #1E3A8A;">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Your Account Has Been Downgraded — Your Data Is Safe for 30 Days',
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
+
+  async sendResubscribeCTAEmail(to: string, username: string, daysUntilDeletion: number): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const resubscribeUrl = `${baseUrl}/pricing`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .countdown-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #0F7B49; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">We Miss You — Come Back to RE Data Metrix</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>It's been a little while since your subscription ended. Your saved deals and lender data are still safe — but the clock is ticking.</p>
+            <div class="countdown-box">
+              <p style="margin: 0; font-size: 22px; font-weight: 700; color: #92400e;">${daysUntilDeletion} days remaining</p>
+              <p style="margin: 6px 0 0; color: #78350f; font-size: 15px;">until your saved data is permanently removed</p>
+            </div>
+            <p>Resubscribe now and pick up right where you left off — all your deals and lenders fully restored the moment you're back.</p>
+            <p style="text-align: center; margin: 28px 0;">
+              <a href="${resubscribeUrl}" class="btn-primary">Restore My Account</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">Have questions about getting back started? Just reply to this email — we'd love to help.</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}" style="color: #1E3A8A;">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: `${daysUntilDeletion} Days Left to Restore Your Saved Deals — Come Back to RE Data Metrix`,
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
+
+  async sendFinalDataDeletionWarningEmail(to: string, username: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const resubscribeUrl = `${baseUrl}/pricing`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #991B1B 0%, #7C2D12 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .urgent-box { background: #fef2f2; border: 2px solid #fca5a5; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #dc2626; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 24px;">Final Warning: Your Data Will Be Deleted in 7 Days</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi ${username},</p>
+            <p>This is your final notice. Your RE Data Metrix account has been on the free plan for 23 days and your saved data — including all deals and lender connections — will be permanently and irreversibly deleted in <strong>7 days</strong>.</p>
+            <div class="urgent-box">
+              <p style="margin: 0; font-size: 20px; font-weight: 700; color: #dc2626;">7 days until permanent deletion</p>
+              <p style="margin: 8px 0 0; color: #7f1d1d; font-size: 14px;">This action cannot be undone. Once deleted, your data cannot be recovered.</p>
+            </div>
+            <p>Resubscribe before the deadline to save everything:</p>
+            <p style="text-align: center; margin: 28px 0;">
+              <a href="${resubscribeUrl}" class="btn-primary">Save My Data — Resubscribe Now</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px;">After resubscribing, all your saved deals and lenders will be immediately restored. Have questions? Email us at <a href="mailto:info@redatametrix.com" style="color: #1E3A8A;">info@redatametrix.com</a>.</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}" style="color: #1E3A8A;">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'FINAL NOTICE: Your Saved Deals Will Be Deleted in 7 Days',
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
+
   async sendVerificationReminderEmail(to: string, username: string, verificationToken: string): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
     const verificationUrl = `${baseUrl}/verify-email/${verificationToken}`;
