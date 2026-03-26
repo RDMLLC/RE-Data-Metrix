@@ -645,6 +645,8 @@ export const discountCodes = pgTable("discount_codes", {
   isActive: boolean("is_active").notNull().default(true),
   createdBy: varchar("created_by").references(() => users.id),
   stripeCouponId: varchar("stripe_coupon_id", { length: 100 }),
+  stripeDuration: text("stripe_duration").default('repeating'), // 'once', 'repeating', or 'forever'
+  stripeDurationInMonths: integer("stripe_duration_in_months").default(12), // used when stripeDuration = 'repeating'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

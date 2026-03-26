@@ -87,7 +87,9 @@ async function initStripe() {
 async function runStartupMigrations() {
   try {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_cancellation_choice text`);
-    console.log('[Migrations] pending_cancellation_choice column ensured');
+    await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration text DEFAULT 'repeating'`);
+    await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration_in_months integer DEFAULT 12`);
+    console.log('[Migrations] pending_cancellation_choice, stripe_duration, stripe_duration_in_months columns ensured');
   } catch (err) {
     console.error('[Migrations] Startup migration error (non-fatal):', err);
   }

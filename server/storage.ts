@@ -414,6 +414,8 @@ export interface IStorage {
     endAt?: Date;
     isActive?: boolean;
     createdBy?: string;
+    stripeDuration?: string;
+    stripeDurationInMonths?: number | null;
   }): Promise<{
     id: string;
     code: string;
@@ -429,6 +431,8 @@ export interface IStorage {
     endAt: Date | null;
     isActive: boolean;
     createdBy: string | null;
+    stripeDuration: string | null;
+    stripeDurationInMonths: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
   }>;
@@ -448,6 +452,8 @@ export interface IStorage {
     endAt: Date | null;
     isActive: boolean;
     createdBy: string | null;
+    stripeDuration: string | null;
+    stripeDurationInMonths: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
   } | undefined>;
@@ -528,6 +534,8 @@ export interface IStorage {
     endAt?: Date | null;
     isActive?: boolean;
     stripeCouponId?: string | null;
+    stripeDuration?: string;
+    stripeDurationInMonths?: number | null;
   }): Promise<{
     id: string;
     code: string;
@@ -543,6 +551,8 @@ export interface IStorage {
     endAt: Date | null;
     isActive: boolean;
     createdBy: string | null;
+    stripeDuration: string | null;
+    stripeDurationInMonths: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
   } | undefined>;
@@ -3007,6 +3017,8 @@ export class DatabaseStorage implements IStorage {
     endAt?: Date;
     isActive?: boolean;
     createdBy?: string;
+    stripeDuration?: string;
+    stripeDurationInMonths?: number | null;
   }): Promise<DiscountCode> {
     const result = await db.insert(discountCodesTable).values({
       code: data.code.toUpperCase(),
@@ -3021,6 +3033,8 @@ export class DatabaseStorage implements IStorage {
       endAt: data.endAt || null,
       isActive: data.isActive ?? true,
       createdBy: data.createdBy || null,
+      stripeDuration: data.stripeDuration || 'repeating',
+      stripeDurationInMonths: data.stripeDuration === 'repeating' ? (data.stripeDurationInMonths ?? 12) : null,
     }).returning();
     return result[0];
   }
@@ -3108,6 +3122,8 @@ export class DatabaseStorage implements IStorage {
     endAt?: Date | null;
     isActive?: boolean;
     stripeCouponId?: string | null;
+    stripeDuration?: string;
+    stripeDurationInMonths?: number | null;
   }): Promise<DiscountCode | undefined> {
     const updateData: any = { updatedAt: new Date() };
     if (data.code !== undefined) updateData.code = data.code.toUpperCase();
@@ -3122,6 +3138,10 @@ export class DatabaseStorage implements IStorage {
     if (data.endAt !== undefined) updateData.endAt = data.endAt;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
     if (data.stripeCouponId !== undefined) updateData.stripeCouponId = data.stripeCouponId;
+    if (data.stripeDuration !== undefined) {
+      updateData.stripeDuration = data.stripeDuration;
+      updateData.stripeDurationInMonths = data.stripeDuration === 'repeating' ? (data.stripeDurationInMonths ?? 12) : null;
+    }
 
     const result = await db.update(discountCodesTable)
       .set(updateData)

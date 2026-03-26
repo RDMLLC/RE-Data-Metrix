@@ -6041,7 +6041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/discount-codes", ensureAdmin, async (req, res) => {
     try {
       const adminUser = req.user as User;
-      const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive } = req.body;
+      const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive, stripeDuration, stripeDurationInMonths } = req.body;
       
       if (!code || typeof code !== 'string' || code.trim().length === 0) {
         return res.status(400).json({ error: "Code is required" });
@@ -6105,6 +6105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ error: "A discount code with this code already exists" });
       }
       
+      const validDuration = ['once', 'repeating', 'forever'].includes(stripeDuration) ? stripeDuration : 'repeating';
       const newCode = await storage.createDiscountCode({
         code,
         displayName,
@@ -6118,6 +6119,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endAt: endAt ? new Date(endAt) : undefined,
         isActive: isActive ?? true,
         createdBy: adminUser.id,
+        stripeDuration: validDuration,
+        stripeDurationInMonths: validDuration === 'repeating' ? (stripeDurationInMonths ? Number(stripeDurationInMonths) : 12) : null,
       });
       
       res.status(201).json(newCode);
@@ -6136,7 +6139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid discount code ID" });
       }
       
-      const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive } = req.body;
+      const { code, displayName, partnerName, description, planApplicability, percentOff, amountOff, maxRedemptions, startAt, endAt, isActive, stripeDuration, stripeDurationInMonths } = req.body;
       
       const updateData: any = {};
       if (code !== undefined) {
@@ -6205,6 +6208,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (startAt !== undefined) updateData.startAt = startAt ? new Date(startAt) : null;
       if (endAt !== undefined) updateData.endAt = endAt ? new Date(endAt) : null;
       if (isActive !== undefined) updateData.isActive = isActive;
+      if (stripeDuration !== undefined) {
+        const validDur = ['once', 'repeating', 'forever'].includes(stripeDuration) ? stripeDuration : 'repeating';
+        updateData.stripeDuration = validDur;
+        updateData.stripeDurationInMonths = validDur === 'repeating' ? (stripeDurationInMonths ? Number(stripeDurationInMonths) : 12) : null;
+      }
       
       // Validate date ordering
       if (updateData.startAt && updateData.endAt && updateData.startAt >= updateData.endAt) {
@@ -6295,11 +6303,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stripe = await getUncachableStripeClient();
       
       // Build coupon params
+      const duration = discountCode.stripeDuration || 'repeating';
       const couponParams: any = {
         id: discountCode.code, // Use code as coupon ID for easy reference
         name: `${discountCode.code} - ${discountCode.displayName}`,
-        duration: 'once', // Apply once per subscription
+        duration,
       };
+      if (duration === 'repeating' && discountCode.stripeDurationInMonths) {
+        couponParams.duration_in_months = discountCode.stripeDurationInMonths;
+      }
       
       if (discountCode.percentOff) {
         couponParams.percent_off = Number(discountCode.percentOff);

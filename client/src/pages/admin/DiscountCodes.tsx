@@ -82,6 +82,8 @@ interface DiscountCode {
   totalAmountDiscounted: number;
   lastUsedAt: string | null;
   stripeCouponId: string | null;
+  stripeDuration: string | null;
+  stripeDurationInMonths: number | null;
 }
 
 interface DiscountCodeStats {
@@ -122,6 +124,8 @@ interface CodeFormData {
   startAt: string;
   endAt: string;
   isActive: boolean;
+  stripeDuration: 'once' | 'repeating' | 'forever';
+  stripeDurationInMonths: string;
 }
 
 const emptyFormData: CodeFormData = {
@@ -137,6 +141,8 @@ const emptyFormData: CodeFormData = {
   startAt: '',
   endAt: '',
   isActive: true,
+  stripeDuration: 'repeating',
+  stripeDurationInMonths: '12',
 };
 
 export default function DiscountCodes() {
@@ -213,6 +219,8 @@ export default function DiscountCodes() {
           startAt: data.startAt || null,
           endAt: data.endAt || null,
           isActive: data.isActive,
+          stripeDuration: data.stripeDuration,
+          stripeDurationInMonths: data.stripeDuration === 'repeating' ? Number(data.stripeDurationInMonths) : null,
         }),
       });
       if (!response.ok) {
@@ -257,6 +265,8 @@ export default function DiscountCodes() {
           startAt: data.startAt || null,
           endAt: data.endAt || null,
           isActive: data.isActive,
+          stripeDuration: data.stripeDuration,
+          stripeDurationInMonths: data.stripeDuration === 'repeating' ? Number(data.stripeDurationInMonths) : null,
         }),
       });
       if (!response.ok) {
@@ -352,6 +362,7 @@ export default function DiscountCodes() {
   };
 
   const handleEdit = (code: DiscountCode) => {
+    const duration = (code.stripeDuration as 'once' | 'repeating' | 'forever') || 'repeating';
     setFormData({
       code: code.code,
       displayName: code.displayName,
@@ -365,6 +376,8 @@ export default function DiscountCodes() {
       startAt: code.startAt ? code.startAt.split('T')[0] : '',
       endAt: code.endAt ? code.endAt.split('T')[0] : '',
       isActive: code.isActive,
+      stripeDuration: duration,
+      stripeDurationInMonths: code.stripeDurationInMonths?.toString() || '12',
     });
     setEditingCode(code);
   };
@@ -742,6 +755,14 @@ export default function DiscountCodes() {
                                   ${code.amountOff} off
                                 </>
                               )}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {code.stripeDuration === 'forever'
+                                ? 'Forever'
+                                : code.stripeDuration === 'repeating'
+                                  ? `${code.stripeDurationInMonths ?? 12} months`
+                                  : 'First invoice only'}
                             </span>
                             <span className="flex items-center gap-1">
                               <Users className="h-3 w-3" />
@@ -1160,6 +1181,44 @@ export default function DiscountCodes() {
                   onChange={(e) => setFormData(prev => ({ ...prev, maxRedemptions: e.target.value }))}
                   placeholder="Unlimited"
                   data-testid="input-max-redemptions"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Discount Duration</Label>
+                <Select
+                  value={formData.stripeDuration}
+                  onValueChange={(v: 'once' | 'repeating' | 'forever') => setFormData(prev => ({
+                    ...prev,
+                    stripeDuration: v,
+                    stripeDurationInMonths: v === 'repeating' ? (prev.stripeDurationInMonths || '12') : '',
+                  }))}
+                >
+                  <SelectTrigger data-testid="select-duration">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="once">First invoice only</SelectItem>
+                    <SelectItem value="repeating">Set number of months</SelectItem>
+                    <SelectItem value="forever">Forever (every billing cycle)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="durationMonths">
+                  {formData.stripeDuration === 'repeating' ? 'Number of months' : '\u00a0'}
+                </Label>
+                <Input
+                  id="durationMonths"
+                  type="number"
+                  min="1"
+                  value={formData.stripeDuration === 'repeating' ? formData.stripeDurationInMonths : ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, stripeDurationInMonths: e.target.value }))}
+                  placeholder="12"
+                  disabled={formData.stripeDuration !== 'repeating'}
+                  data-testid="input-duration-months"
                 />
               </div>
             </div>
