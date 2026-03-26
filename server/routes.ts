@@ -10237,8 +10237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check if lender is saved
   app.get("/api/member/saved-lenders/:lenderId/status", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as User).id;
+      const user = req.user as User;
+      const userId = user.id;
       const { lenderId } = req.params;
+
+      if (user.subscriptionStatus === 'free') {
+        return res.status(403).json({ error: "Upgrade to access your saved lenders", upgradeRequired: true });
+      }
       
       const [existing] = await db
         .select()
