@@ -4048,14 +4048,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/users/:id/subscription", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { subscriptionStatus } = req.body;
+      const { subscriptionStatus, subscriptionPlan } = req.body;
       
       if (!['active', 'free', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
         return res.status(400).json({ error: "Invalid subscription status" });
       }
       
+      const updateFields: Record<string, any> = { subscriptionStatus };
+      if (subscriptionStatus === 'active' && subscriptionPlan) {
+        updateFields.subscriptionPlan = subscriptionPlan;
+      } else if (subscriptionStatus !== 'active') {
+        updateFields.subscriptionPlan = null;
+      }
+      
       const [updated] = await db.update(users)
-        .set({ subscriptionStatus })
+        .set(updateFields)
         .where(eq(users.id, id))
         .returning();
       

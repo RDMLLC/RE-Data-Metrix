@@ -125,7 +125,7 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<string>("all");
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
-  const [userToUpdate, setUserToUpdate] = useState<{user: UserWithStats, status: string} | null>(null);
+  const [userToUpdate, setUserToUpdate] = useState<{user: UserWithStats, status: string, plan?: string | null} | null>(null);
   const [userToResendVerification, setUserToResendVerification] = useState<UserWithStats | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
   const [showCreateDeveloper, setShowCreateDeveloper] = useState(false);
@@ -169,8 +169,8 @@ export default function UserManagement() {
   });
 
   const updateSubscriptionMutation = useMutation({
-    mutationFn: async ({ userId, subscriptionStatus }: { userId: string; subscriptionStatus: string }) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/subscription`, { subscriptionStatus });
+    mutationFn: async ({ userId, subscriptionStatus, subscriptionPlan }: { userId: string; subscriptionStatus: string; subscriptionPlan?: string | null }) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/subscription`, { subscriptionStatus, subscriptionPlan });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -313,16 +313,28 @@ export default function UserManagement() {
     }
   };
 
+  const getDisplayStatus = (status: string, plan?: string | null): string => {
+    if (status === 'active') {
+      return plan === 'annual' ? 'annual' : 'monthly';
+    }
+    return status;
+  };
+
+  const getDisplayLabel = (status: string, plan?: string | null): string => {
+    if (status === 'active') return plan === 'annual' ? 'Annual' : 'Monthly';
+    const labels: Record<string, string> = {
+      free: 'Free', comped: 'Comped', referral_trial: 'Referral Trial', archived: 'Archived',
+    };
+    return labels[status] || status;
+  };
+
   const getSubscriptionBadge = (status: string, plan?: string | null) => {
     switch (status) {
       case 'active':
         return (
-          <div className="flex flex-col gap-0.5">
-            <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Active</Badge>
-            {plan && (
-              <span className="text-xs text-muted-foreground capitalize">{plan}</span>
-            )}
-          </div>
+          <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+            {plan === 'annual' ? 'Annual' : 'Monthly'}
+          </Badge>
         );
       case 'comped':
         return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">Comped</Badge>;
@@ -342,7 +354,11 @@ export default function UserManagement() {
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.fullName && user.fullName.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesSubscription = subscriptionFilter === "all" || user.subscriptionStatus === subscriptionFilter;
+    const matchesSubscription =
+      subscriptionFilter === "all" ||
+      (subscriptionFilter === 'monthly' && user.subscriptionStatus === 'active' && user.subscriptionPlan !== 'annual') ||
+      (subscriptionFilter === 'annual' && user.subscriptionStatus === 'active' && user.subscriptionPlan === 'annual') ||
+      user.subscriptionStatus === subscriptionFilter;
     const matchesVerification = 
       verificationFilter === "all" || 
       (verificationFilter === "verified" && user.isEmailVerified) ||
@@ -515,7 +531,8 @@ export default function UserManagement() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Subscriptions</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="annual">Annual</SelectItem>
                         <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="comped">Comped</SelectItem>
                         <SelectItem value="referral_trial">Referral Trial</SelectItem>
@@ -565,14 +582,23 @@ export default function UserManagement() {
                               <TableCell>
                                 {!isAuditor ? (
                                   <Select
-                                    value={user.subscriptionStatus}
-                                    onValueChange={(value) => setUserToUpdate({ user, status: value })}
+                                    value={getDisplayStatus(user.subscriptionStatus, user.subscriptionPlan)}
+                                    onValueChange={(value) => {
+                                      if (value === 'monthly') {
+                                        setUserToUpdate({ user, status: 'active', plan: 'monthly' });
+                                      } else if (value === 'annual') {
+                                        setUserToUpdate({ user, status: 'active', plan: 'annual' });
+                                      } else {
+                                        setUserToUpdate({ user, status: value, plan: null });
+                                      }
+                                    }}
                                   >
                                     <SelectTrigger className="w-[130px]">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="active">Active</SelectItem>
+                                      <SelectItem value="monthly">Monthly</SelectItem>
+                                      <SelectItem value="annual">Annual</SelectItem>
                                       <SelectItem value="free">Free</SelectItem>
                                       <SelectItem value="comped">Comped</SelectItem>
                                       <SelectItem value="referral_trial">Referral Trial</SelectItem>
@@ -978,7 +1004,7 @@ export default function UserManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Update Subscription Status</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to change {userToUpdate?.user.email}'s subscription status to "{userToUpdate?.status}"?
+              Are you sure you want to change {userToUpdate?.user.email}'s subscription to "{userToUpdate ? getDisplayLabel(userToUpdate.status, userToUpdate.plan) : ''}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -989,6 +1015,7 @@ export default function UserManagement() {
                   updateSubscriptionMutation.mutate({
                     userId: userToUpdate.user.id,
                     subscriptionStatus: userToUpdate.status,
+                    subscriptionPlan: userToUpdate.plan,
                   });
                 }
               }}
