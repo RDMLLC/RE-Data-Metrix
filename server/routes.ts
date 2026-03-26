@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, sentSignupFollowups, userUsageCounters, promoWaitlist, apiUsageLogs, demoTokens, integrationConfigs, outboundWebhooks, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -4241,13 +4241,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete related records first (cascade)
       await db.delete(userProfiles).where(eq(userProfiles.userId, id));
       await db.delete(userInvestmentPreferences).where(eq(userInvestmentPreferences.userId, id));
+      await db.delete(userUsageCounters).where(eq(userUsageCounters.userId, id));
       await db.delete(savedDeals).where(eq(savedDeals.userId, id));
       await db.delete(savedLenders).where(eq(savedLenders.userId, id));
       await db.delete(lenderReferrals).where(eq(lenderReferrals.userId, id));
       await db.delete(affiliateClicks).where(eq(affiliateClicks.userId, id));
+      await db.delete(applyClicks).where(eq(applyClicks.userId, id));
       await db.delete(dealAnalyses).where(eq(dealAnalyses.userId, id));
       await db.delete(discountCodeUses).where(eq(discountCodeUses.userId, id));
       await db.delete(lenderInquiries).where(eq(lenderInquiries.userId, id));
+      await db.delete(featureFeedback).where(eq(featureFeedback.userId, id));
+      await db.delete(promoRedemptions).where(eq(promoRedemptions.userId, id));
+      await db.delete(promoWaitlist).where(eq(promoWaitlist.userId, id));
+      await db.delete(contractorDocuments).where(eq(contractorDocuments.userId, id));
+      await db.delete(userSubmissions).where(eq(userSubmissions.userId, id));
+      await db.delete(apiUsageLogs).where(eq(apiUsageLogs.userId, id));
+      await db.delete(sentSignupFollowups).where(eq(sentSignupFollowups.userId, id));
+      // Clear created_by references (set to null to preserve records created by this user)
+      await db.update(demoTokens).set({ createdBy: null }).where(eq(demoTokens.createdBy, id));
+      await db.update(discountCodes).set({ createdBy: null }).where(eq(discountCodes.createdBy, id));
+      await db.update(promoCodes).set({ createdBy: null }).where(eq(promoCodes.createdBy, id));
+      await db.update(integrationConfigs).set({ createdBy: null }).where(eq(integrationConfigs.createdBy, id));
+      await db.update(outboundWebhooks).set({ createdBy: null }).where(eq(outboundWebhooks.createdBy, id));
       // Clear comp invite references (set to null instead of deleting the invites)
       await db.update(compInvites).set({ invitedBy: null }).where(eq(compInvites.invitedBy, id));
       await db.update(compInvites).set({ acceptedBy: null }).where(eq(compInvites.acceptedBy, id));
