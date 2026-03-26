@@ -177,6 +177,9 @@ export interface IStorage {
     email: string;
     role: string;
     subscriptionStatus: string;
+    subscriptionPlan: string | null;
+    referralCode: string | null;
+    termsAcceptedAt: Date | null;
     createdAt: Date | null;
     isEmailVerified: boolean;
   }>>;
@@ -1063,6 +1066,9 @@ export class MemStorage implements IStorage {
     email: string;
     role: string;
     subscriptionStatus: string;
+    subscriptionPlan: string | null;
+    referralCode: string | null;
+    termsAcceptedAt: Date | null;
     createdAt: Date | null;
     isEmailVerified: boolean;
   }>> {
@@ -2313,6 +2319,9 @@ export class DatabaseStorage implements IStorage {
     email: string;
     role: string;
     subscriptionStatus: string;
+    subscriptionPlan: string | null;
+    referralCode: string | null;
+    termsAcceptedAt: Date | null;
     createdAt: Date | null;
     isEmailVerified: boolean;
   }>> {
@@ -2322,6 +2331,9 @@ export class DatabaseStorage implements IStorage {
       email: usersTable.email,
       role: usersTable.role,
       subscriptionStatus: usersTable.subscriptionStatus,
+      subscriptionPlan: usersTable.subscriptionPlan,
+      referralCode: usersTable.referralCode,
+      termsAcceptedAt: usersTable.termsAcceptedAt,
       createdAt: usersTable.createdAt,
       isEmailVerified: usersTable.isEmailVerified,
     }).from(usersTable).orderBy(desc(usersTable.createdAt));
