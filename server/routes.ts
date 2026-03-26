@@ -8328,8 +8328,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/deal-analyses", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as User).id;
-      const deals = await storage.getDealAnalysesByUser(userId);
+      const user = req.user as User;
+      if (user.subscriptionStatus === 'free') {
+        return res.status(403).json({ error: "Upgrade to access your deal analyses", upgradeRequired: true });
+      }
+      const deals = await storage.getDealAnalysesByUser(user.id);
       res.json(deals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch deal analyses" });
@@ -8339,7 +8342,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/deal-analyses/:dealId", ensureAuthenticated, async (req, res) => {
     try {
       const { dealId } = req.params;
-      const userId = (req.user as User).id;
+      const user = req.user as User;
+      const userId = user.id;
+
+      if (user.subscriptionStatus === 'free') {
+        return res.status(403).json({ error: "Upgrade to access your deal analyses", upgradeRequired: true });
+      }
 
       const deal = await storage.getDealAnalysis(dealId);
       if (!deal || deal.userId !== userId) {

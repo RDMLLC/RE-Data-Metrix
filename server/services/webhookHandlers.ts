@@ -227,7 +227,11 @@ export class WebhookHandlers {
           // chose to downgrade or cancel completely. Skip re-processing to avoid duplicate
           // emails and to prevent resetting downgradedAt (which controls the 30-day
           // deletion clock for the "cancel completely" path).
-          console.log(`[WEBHOOK] Skipping customer.subscription.deleted for ${user.email} — status already 'free' (handled by cancel API)`);
+          // Still clear the stripeSubscriptionId now that Stripe has confirmed deletion.
+          await db.update(users).set({
+            stripeSubscriptionId: null,
+          }).where(eq(users.id, user.id));
+          console.log(`[WEBHOOK] Cleared stripeSubscriptionId for ${user.email} — status was already 'free' (handled by cancel API)`);
         } else if (user && user.subscriptionStatus !== 'archived') {
           // Subscription was deleted by Stripe externally (e.g. payment failure leading
           // to eventual deletion). Process normally.
