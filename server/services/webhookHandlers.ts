@@ -4,9 +4,11 @@ import { outboundWebhookService } from './outbound-webhook.service';
 import { sendMetaCapiEvent } from './metaCapi';
 import { emailService } from './email.service';
 import { db } from '../db';
-import { users, userProfiles } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, userProfiles, sentSignupFollowups } from '@shared/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import Stripe from 'stripe';
+
+const RETENTION_EMAIL_TYPES = ['retention_day5', 'retention_day10', 'retention_day23'];
 
 export class WebhookHandlers {
   static async processWebhook(payload: Buffer, signature: string, uuid: string): Promise<void> {
@@ -180,7 +182,8 @@ export class WebhookHandlers {
       }
     }
 
-    // When a payment succeeds, clear paymentFailedAt so users who fix billing don't get stale warnings
+    // When a payment succeeds, clear paymentFailedAt and retention email markers
+    // so users who fix billing (or resubscribe after a churn cycle) get the full lifecycle again
     if (event.type === 'invoice.payment_succeeded' || event.type === 'invoice.paid') {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
@@ -189,7 +192,14 @@ export class WebhookHandlers {
           const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, customerId)).limit(1);
           if (user && user.paymentFailedAt) {
             await db.update(users).set({ paymentFailedAt: null }).where(eq(users.id, user.id));
-            console.log(`[WEBHOOK] Cleared paymentFailedAt for ${user.email} — payment recovered`);
+            // Also clear retention email markers so future churn cycles get fresh emails
+            await db.delete(sentSignupFollowups).where(
+              and(
+                eq(sentSignupFollowups.userId, user.id),
+                inArray(sentSignupFollowups.emailType, RETENTION_EMAIL_TYPES),
+              )
+            );
+            console.log(`[WEBHOOK] Cleared paymentFailedAt and retention markers for ${user.email} — payment recovered`);
           }
         } catch (err) {
           console.error('[WEBHOOK] Error clearing paymentFailedAt on payment success:', err);

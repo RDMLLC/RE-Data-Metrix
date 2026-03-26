@@ -30,18 +30,6 @@ class SubscriptionRetentionService {
     }
   }
 
-  private async hasEmailBeenSent(userId: string, emailType: string): Promise<boolean> {
-    const existing = await db
-      .select({ id: sentSignupFollowups.id })
-      .from(sentSignupFollowups)
-      .where(and(
-        eq(sentSignupFollowups.userId, userId),
-        eq(sentSignupFollowups.emailType, emailType),
-      ))
-      .limit(1);
-    return existing.length > 0;
-  }
-
   private async markEmailSent(userId: string, emailType: string): Promise<void> {
     await db.insert(sentSignupFollowups).values({ userId, emailType }).onConflictDoNothing();
   }
