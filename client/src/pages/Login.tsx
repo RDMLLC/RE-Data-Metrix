@@ -93,7 +93,7 @@ export default function Login() {
       if (currentUser.role === 'admin' || currentUser.role === 'developer' || currentUser.role === 'auditor') {
         setLocation(returnTo || "/admin");
       } else {
-        const isSubscriber = ['active', 'referral_trial', 'comped'].includes(currentUser.subscriptionStatus);
+        const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(currentUser.subscriptionStatus);
         if (isSubscriber) {
           setLocation(returnTo || "/portal/dashboard");
         } else if ((currentUser as any).pendingPlan) {
@@ -138,7 +138,7 @@ export default function Login() {
       if (user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') {
         window.location.href = returnTo || "/admin";
       } else {
-        const isSubscriber = ['active', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+        const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
         if (isSubscriber) {
           window.location.href = returnTo || "/portal/dashboard";
         } else if ((user as any).pendingPlan) {

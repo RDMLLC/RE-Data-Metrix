@@ -227,7 +227,7 @@ export class WebhookHandlers {
           // user's choice in pendingCancellationChoice. Now that the billing period has
           // ended and Stripe has confirmed deletion, complete the transition.
           const now = new Date();
-          const choice = (user as any).pendingCancellationChoice as string | null;
+          const choice = user.pendingCancellationChoice;
 
           if (choice === 'downgrade') {
             // Downgrade to free: data preserved indefinitely, no deletion clock.
@@ -254,9 +254,10 @@ export class WebhookHandlers {
           }
         } else if (user && user.subscriptionStatus === 'free') {
           // Idempotency guard: status is already 'free' (e.g. legacy cancel path or
-          // double webhook). Just clear the stripeSubscriptionId to be safe.
+          // double webhook). Clear stripeSubscriptionId and any stale pendingCancellationChoice.
           await db.update(users).set({
             stripeSubscriptionId: null,
+            pendingCancellationChoice: null,
           }).where(eq(users.id, user.id));
           console.log(`[WEBHOOK] Cleared stripeSubscriptionId for ${user.email} — status was already 'free'`);
         } else if (user && user.subscriptionStatus !== 'archived') {

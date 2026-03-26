@@ -36,7 +36,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack }: Step4Investo
   const [saveToProfile, setSaveToProfile] = useState(false);
   const [hasAutoFilled, setHasAutoFilled] = useState(false);
   
-  const isSubscriber = user?.subscriptionStatus === 'active';
+  const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user?.subscriptionStatus ?? '');
 
   // Fetch saved investor info
   const { data: investorInfoData } = useQuery<InvestorInfoResponse>({
