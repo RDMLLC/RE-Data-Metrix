@@ -245,7 +245,6 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const [showPdfQuotaModal, setShowPdfQuotaModal] = useState(false);
   // PDF column selection dialog state
   const [pdfColumnDialogOpen, setPdfColumnDialogOpen] = useState(false);
-  const [pendingPdfDetailed, setPendingPdfDetailed] = useState(false);
   const [selectedPdfColumnIds, setSelectedPdfColumnIds] = useState<string[]>([]);
   // Single-column export state
   const [singleColumnExportData, setSingleColumnExportData] = useState<{ column: LoanComparisonColumn; name: string } | null>(null);
@@ -1041,13 +1040,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   };
 
   // Open PDF column selection dialog before generating PDF
-  const openPdfDialog = (detailed: boolean) => {
+  const openPdfDialog = () => {
     if (!results) return;
     const cols: string[] = ['cash-sale'];
     if (results.userLoanColumn) cols.push('user-loan');
     visibleLenders.forEach((_, i) => cols.push(`lender-${i}`));
     setSelectedPdfColumnIds(cols.slice(0, 4));
-    setPendingPdfDetailed(detailed);
     setPdfColumnDialogOpen(true);
   };
 
@@ -1087,6 +1085,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     await new Promise(resolve => setTimeout(resolve, 100));
     await toPDF();
     setIsGeneratingPdf(false);
+    setSelectedPdfColumnIds([]);
     
     if (detailed) {
       // Collapse sections back after PDF generation
@@ -1505,11 +1504,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openPdfDialog(false)} data-testid="pdf-overview">
+                <DropdownMenuItem onClick={() => openPdfDialog()} data-testid="pdf-overview">
                   <FileText className="h-4 w-4 mr-2" />
                   Overview (Summary)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openPdfDialog(true)} data-testid="pdf-detailed">
+                <DropdownMenuItem onClick={() => openPdfDialog()} data-testid="pdf-detailed">
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Detailed (All Expanded)
                 </DropdownMenuItem>
@@ -1923,7 +1922,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                               <TableCell key={index} className="text-center text-sm">{lender.maxLoanArv ? `${lender.maxLoanArv}%` : '—'}</TableCell>
                             ))}
                           </TableRow>
-                          {visibleLenders.some(l => l.isLtcWeighted && l.maxLtcPercent) && (
+                          {pdfLenders.some(l => l.isLtcWeighted && l.maxLtcPercent) && (
                             <TableRow className="bg-muted/20">
                               <TableCell className="pl-8 text-sm text-muted-foreground">Max LTC %</TableCell>
                               <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
@@ -3409,15 +3408,27 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               Cancel
             </Button>
             <Button
+              variant="outline"
               disabled={selectedPdfColumnIds.length === 0}
               onClick={async () => {
                 setPdfColumnDialogOpen(false);
-                await handleDownloadPDF(pendingPdfDetailed);
+                await handleDownloadPDF(false);
               }}
-              data-testid="button-pdf-col-confirm"
+              data-testid="button-pdf-col-overview"
             >
               <FileText className="h-4 w-4 mr-2" />
-              {pendingPdfDetailed ? 'Detailed PDF' : 'Overview PDF'}
+              Overview PDF
+            </Button>
+            <Button
+              disabled={selectedPdfColumnIds.length === 0}
+              onClick={async () => {
+                setPdfColumnDialogOpen(false);
+                await handleDownloadPDF(true);
+              }}
+              data-testid="button-pdf-col-detailed"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Detailed PDF
             </Button>
           </DialogFooter>
         </DialogContent>
