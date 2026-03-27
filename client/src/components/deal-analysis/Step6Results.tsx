@@ -242,6 +242,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // PDF generation state - controls visibility of elements during PDF capture
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showPdfQuotaModal, setShowPdfQuotaModal] = useState(false);
+  // Single-column export state
+  const [singleColumnExportData, setSingleColumnExportData] = useState<{ column: LoanComparisonColumn; name: string } | null>(null);
 
   // Contact lender state
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -284,6 +286,15 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       pdf: { compress: true },
       canvas: { useCORS: true },
     }
+  });
+  // Second PDF hook for single-column export
+  const { toPDF: toSingleColumnPDF, targetRef: singleColumnPdfRef } = usePDF({
+    filename: 'loan-analysis.pdf',
+    method: 'save',
+    resolution: 2,
+    page: { margin: 12, format: 'letter', orientation: 'portrait' },
+    canvas: { mimeType: 'image/png', qualityRatio: 0.95 },
+    overrides: { pdf: { compress: true }, canvas: { useCORS: true } },
   });
 
   // Reference for scrolling to new loans
@@ -1068,6 +1079,100 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       setShowCashOnCashBreakdown(false);
       setShowLoanTerms(false);
     }
+  };
+
+  // Single-column CSV export
+  const generateSingleColumnCSV = (column: LoanComparisonColumn, columnName: string) => {
+    if (!results) return;
+    const formData = form.getValues();
+    const rows: string[][] = [];
+
+    rows.push(['Metric', columnName]);
+    rows.push(['--- PROPERTY INFO ---']);
+    rows.push(['Address', formData.address || '']);
+    rows.push(['City', formData.city || '']);
+    rows.push(['State', formData.state || '']);
+    rows.push(['Zip', formData.zipCode || '']);
+    rows.push(['']);
+
+    rows.push(['--- DEAL INPUTS ---']);
+    rows.push(['Purchase Price', String(editBuyPrice)]);
+    rows.push(['Rehab Budget', String(editRehab)]);
+    rows.push(['Project Length (months)', String(editProjectLength)]);
+    rows.push(['ARV (Est. Sale Price)', String(editArv)]);
+    rows.push(['']);
+
+    rows.push(['--- SUMMARY ---']);
+    rows.push(['Net Profit', String(column.profit)]);
+    rows.push(['Out-of-Pocket', String(column.outOfPocketCost)]);
+    rows.push(['Cash-on-Cash ROI', column.cashOnCashRoi.toFixed(2) + '%']);
+    rows.push(['Annualized ROI', column.annualizedRoi.toFixed(2) + '%']);
+    rows.push(['']);
+
+    if (column.interestRate && column.interestRate > 0) {
+      rows.push(['--- LOAN TERMS ---']);
+      rows.push(['Interest Rate', column.interestRate + '%']);
+      rows.push(['Points', column.points !== undefined ? column.points + '%' : '']);
+      rows.push(['Total Loan Amount', String(column.totalLoanAmount || '')]);
+      if (column.maxLtvBuy) rows.push(['Max LTV (Buy)', column.maxLtvBuy + '%']);
+      if (column.maxLendRehab) rows.push(['Max Loan % (Rehab)', column.maxLendRehab + '%']);
+      if (column.maxLoanArv) rows.push(['Max ARV %', column.maxLoanArv + '%']);
+      rows.push(['']);
+    }
+
+    rows.push(['--- COST BREAKDOWN ---']);
+    rows.push(['Total Project Cost', String(column.totalProjectCost)]);
+    rows.push(['  Purchase Price', String(column.purchasePrice)]);
+    rows.push(['  Rehab Budget', String(column.rehabBudget)]);
+    rows.push(['Closing Costs (Buy)', String(column.closingCostsBuy)]);
+    if (column.outOfPocketBreakdown?.lenderFees) rows.push(['Lender Fees', String(column.outOfPocketBreakdown.lenderFees)]);
+    if (column.interestCost) rows.push(['Interest Cost', String(column.interestCost)]);
+    rows.push(['Carrying Costs', String(column.carryingCosts)]);
+    rows.push(['Selling Costs', String(column.closingCostsSell + column.commission)]);
+    rows.push(['']);
+
+    rows.push(['--- OUT-OF-POCKET BREAKDOWN ---']);
+    rows.push(['Total Out-of-Pocket', String(column.outOfPocketCost)]);
+    if (column.outOfPocketBreakdown) {
+      rows.push(['  Down Payment', String(column.outOfPocketBreakdown.downPayment || 0)]);
+      rows.push(['  Closing Costs (Buy)', String(column.outOfPocketBreakdown.totalClosingCostsBuy || 0)]);
+      rows.push(['  Carrying Costs', String(column.outOfPocketBreakdown.carryingCosts || 0)]);
+      if (column.outOfPocketBreakdown.pointsCost) rows.push(['  Points Cost', String(column.outOfPocketBreakdown.pointsCost)]);
+    }
+
+    const csvContent = rows
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const safeName = columnName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    link.setAttribute('download', `deal-analysis-${safeName}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: 'CSV Exported', description: `${columnName} data exported to CSV.` });
+  };
+
+  // Single-column PDF export
+  const handleSingleColumnPDF = async (column: LoanComparisonColumn, columnName: string) => {
+    if (isAuthenticated && !effectiveIsSubscriber) {
+      try {
+        await apiRequest('POST', '/api/user/pdf-download');
+      } catch (error: any) {
+        const errorMessage = error?.message || '';
+        if (errorMessage.includes('PDF_DOWNLOAD_LIMIT_REACHED')) {
+          setShowPdfQuotaModal(true);
+          return;
+        }
+        console.error('PDF limit check error:', error);
+      }
+    }
+    setSingleColumnExportData({ column, name: columnName });
+    await new Promise(resolve => setTimeout(resolve, 150));
+    await toSingleColumnPDF();
+    setSingleColumnExportData(null);
   };
 
   const handleViewMoreLoans = () => {
@@ -1858,7 +1963,28 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               <div className="lg:hidden space-y-4">
                 {/* Cash Sale Card */}
                 <div className="border rounded-lg p-4 bg-card">
-                  <h3 className="font-semibold text-lg mb-3">Cash Sale</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-lg">Cash Sale</h3>
+                    {!isGeneratingPdf && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid="button-export-mobile-cashsale">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => generateSingleColumnCSV(results.cashSaleColumn, 'Cash Sale')}>
+                            <FileSpreadsheet className="h-4 w-4 mr-2" />
+                            Export CSV
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSingleColumnPDF(results.cashSaleColumn, 'Cash Sale')}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Export PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Net Profit</span>
@@ -1902,7 +2028,28 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 {/* Entered Loan Card */}
                 {results.userLoanColumn && (
                   <div className="border rounded-lg p-4 bg-card">
-                    <h3 className="font-semibold text-lg mb-3">Entered Loan</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-lg">Entered Loan</h3>
+                      {!isGeneratingPdf && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" data-testid="button-export-mobile-enteredloan">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => generateSingleColumnCSV(results.userLoanColumn!, 'Entered Loan')}>
+                              <FileSpreadsheet className="h-4 w-4 mr-2" />
+                              Export CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSingleColumnPDF(results.userLoanColumn!, 'Entered Loan')}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Export PDF
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Net Profit</span>
@@ -1950,6 +2097,25 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           <p className="text-sm text-muted-foreground">{lender.productName}</p>
                         )}
                       </div>
+                      {!isGeneratingPdf && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" data-testid={`button-export-mobile-lender-${index}`}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => generateSingleColumnCSV(lender, lender.lenderName || `Lender ${index + 1}`)}>
+                              <FileSpreadsheet className="h-4 w-4 mr-2" />
+                              Export CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSingleColumnPDF(lender, lender.lenderName || `Lender ${index + 1}`)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Export PDF
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
@@ -2101,14 +2267,56 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                     className="text-center min-w-[100px] sticky z-10 bg-background"
                     style={{ left: `${metricColWidth}px`, minWidth: `${cashSaleColWidth}px` }}
                   >
-                    Cash Sale
+                    <div className="flex flex-col items-center gap-1">
+                      <span>Cash Sale</span>
+                      {!isGeneratingPdf && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" data-testid="button-export-col-cashsale">
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="center">
+                            <DropdownMenuItem onClick={() => generateSingleColumnCSV(results.cashSaleColumn, 'Cash Sale')}>
+                              <FileSpreadsheet className="h-4 w-4 mr-2" />
+                              Export CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSingleColumnPDF(results.cashSaleColumn, 'Cash Sale')}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Export PDF
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </TableHead>
                   {results.userLoanColumn && (
                     <TableHead 
                       className="text-center min-w-[100px] sticky z-10 bg-background"
                       style={{ left: `${metricColWidth + cashSaleColWidth}px`, minWidth: `${yourLoanColWidth}px` }}
                     >
-                      Entered Loan
+                      <div className="flex flex-col items-center gap-1">
+                        <span>Entered Loan</span>
+                        {!isGeneratingPdf && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" data-testid="button-export-col-enteredloan">
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center">
+                              <DropdownMenuItem onClick={() => generateSingleColumnCSV(results.userLoanColumn!, 'Entered Loan')}>
+                                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                Export CSV
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleSingleColumnPDF(results.userLoanColumn!, 'Entered Loan')}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Export PDF
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </TableHead>
                   )}
                   {visibleLenders.map((lender, index) => (
@@ -2117,6 +2325,25 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                         <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
                         {lender.productName && (
                           <span className="text-muted-foreground font-normal">{lender.productName}</span>
+                        )}
+                        {!isGeneratingPdf && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" data-testid={`button-export-col-lender-${index}`}>
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="center">
+                              <DropdownMenuItem onClick={() => generateSingleColumnCSV(lender, lender.lenderName || `Lender ${index + 1}`)}>
+                                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                Export CSV
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleSingleColumnPDF(lender, lender.lenderName || `Lender ${index + 1}`)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Export PDF
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </div>
                     </TableHead>
@@ -3101,6 +3328,114 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         open={showPdfQuotaModal}
         onOpenChange={setShowPdfQuotaModal}
       />
+
+      {/* Hidden single-column PDF capture target */}
+      <div
+        ref={singleColumnPdfRef as React.RefObject<HTMLDivElement>}
+        style={{ position: 'absolute', left: '-9999px', top: 0, width: '750px', backgroundColor: 'white', color: '#111' }}
+        aria-hidden="true"
+      >
+        {singleColumnExportData && (() => {
+          const { column, name } = singleColumnExportData;
+          const formData = form.getValues();
+          const isLoanType = column.interestRate && column.interestRate > 0;
+          const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+          return (
+            <div style={{ fontFamily: 'Arial, sans-serif', padding: '24px' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '12px', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1d4ed8' }}>RE Data Metrix</div>
+                  <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
+                  <div style={{ fontWeight: '600' }}>www.redatametrix.com</div>
+                  <div>Deal Analysis Report</div>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>Loan Analysis: {name}</h2>
+              <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
+                {formData.address}{formData.city ? `, ${formData.city}` : ''}{formData.state ? `, ${formData.state}` : ''}
+              </p>
+
+              {/* Deal Inputs */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', backgroundColor: '#f3f4f6', padding: '6px 10px', marginBottom: '8px', borderRadius: '4px' }}>Deal Inputs</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
+                  <div style={{ color: '#6b7280' }}>Purchase Price</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(editBuyPrice)}</div>
+                  <div style={{ color: '#6b7280' }}>Rehab Budget</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(editRehab)}</div>
+                  <div style={{ color: '#6b7280' }}>Project Length</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{editProjectLength} months</div>
+                  <div style={{ color: '#6b7280' }}>ARV (Est. Sale Price)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(editArv)}</div>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', backgroundColor: '#f3f4f6', padding: '6px 10px', marginBottom: '8px', borderRadius: '4px' }}>Summary</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
+                  <div style={{ color: '#6b7280' }}>Net Profit</div>
+                  <div style={{ textAlign: 'right', fontWeight: '700', color: column.profit >= 0 ? '#059669' : '#dc2626' }}>{fmt(column.profit)}</div>
+                  <div style={{ color: '#6b7280' }}>Out-of-Pocket Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.outOfPocketCost)}</div>
+                  <div style={{ color: '#6b7280' }}>Cash-on-Cash ROI</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.cashOnCashRoi.toFixed(2)}%</div>
+                  <div style={{ color: '#6b7280' }}>Annualized ROI</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.annualizedRoi.toFixed(2)}%</div>
+                </div>
+              </div>
+
+              {/* Loan Terms (only for loan types) */}
+              {isLoanType && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', backgroundColor: '#f3f4f6', padding: '6px 10px', marginBottom: '8px', borderRadius: '4px' }}>Loan Terms</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
+                    <div style={{ color: '#6b7280' }}>Interest Rate</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.interestRate}%</div>
+                    {column.points !== undefined && <><div style={{ color: '#6b7280' }}>Points</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.points}%</div></>}
+                    {column.totalLoanAmount ? <><div style={{ color: '#6b7280' }}>Total Loan Amount</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.totalLoanAmount)}</div></> : null}
+                    {column.maxLtvBuy ? <><div style={{ color: '#6b7280' }}>Max LTV (Buy)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.maxLtvBuy}%</div></> : null}
+                    {column.maxLendRehab ? <><div style={{ color: '#6b7280' }}>Max Loan % (Rehab)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.maxLendRehab}%</div></> : null}
+                    {column.timeToClose ? <><div style={{ color: '#6b7280' }}>Time to Close</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.timeToClose} days</div></> : null}
+                  </div>
+                </div>
+              )}
+
+              {/* Cost Breakdown */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', backgroundColor: '#f3f4f6', padding: '6px 10px', marginBottom: '8px', borderRadius: '4px' }}>Cost Breakdown</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
+                  <div style={{ color: '#6b7280' }}>Total Project Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.totalProjectCost)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Purchase Price</div><div style={{ textAlign: 'right' }}>{fmt(column.purchasePrice)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Rehab Budget</div><div style={{ textAlign: 'right' }}>{fmt(column.rehabBudget)}</div>
+                  <div style={{ color: '#6b7280' }}>Closing Costs (Buy)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.closingCostsBuy)}</div>
+                  {column.outOfPocketBreakdown?.lenderFees ? <><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Lender Fees</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.lenderFees)}</div></> : null}
+                  {column.interestCost ? <><div style={{ color: '#6b7280' }}>Interest Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.interestCost)}</div></> : null}
+                  <div style={{ color: '#6b7280' }}>Carrying Costs</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.carryingCosts)}</div>
+                  <div style={{ color: '#6b7280' }}>Selling Costs</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.closingCostsSell + column.commission)}</div>
+                </div>
+              </div>
+
+              {/* Out-of-Pocket Breakdown */}
+              {column.outOfPocketBreakdown && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', backgroundColor: '#f3f4f6', padding: '6px 10px', marginBottom: '8px', borderRadius: '4px' }}>Out-of-Pocket Breakdown</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
+                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Down Payment</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.downPayment || 0)}</div>
+                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Closing Costs (Buy)</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.totalClosingCostsBuy || 0)}</div>
+                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Carrying Costs</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.carryingCosts || 0)}</div>
+                    {column.outOfPocketBreakdown.pointsCost ? <><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Points Cost</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.pointsCost)}</div></> : null}
+                    <div style={{ color: '#111', fontWeight: '700', borderTop: '1px solid #e5e7eb', paddingTop: '4px' }}>Total Out-of-Pocket</div>
+                    <div style={{ textAlign: 'right', fontWeight: '700', borderTop: '1px solid #e5e7eb', paddingTop: '4px' }}>{fmt(column.outOfPocketCost)}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px', marginTop: '16px', fontSize: '10px', color: '#9ca3af', textAlign: 'center' }}>
+                Generated by RE Data Metrix &bull; www.redatametrix.com
+              </div>
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }
