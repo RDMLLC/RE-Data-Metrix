@@ -741,12 +741,28 @@ export default function Step3PurchaseRenovation({
   }, [form]);
 
   const handleSubmit = form.handleSubmit(() => {
+    const purchasePrice = form.getValues("purchasePrice");
+    const arv = form.getValues("arv");
     const projectLength = form.getValues("projectLength");
     
     const errors: string[] = [];
     
+    // Clear any stale field errors from a previous attempt
+    form.clearErrors(["purchasePrice", "arv", "projectLength"]);
+
+    if (!purchasePrice || purchasePrice <= 0) {
+      errors.push("Purchase Price is required");
+      form.setError("purchasePrice", { message: "Purchase Price is required" });
+    }
+
+    if (!arv || arv <= 0) {
+      errors.push("ARV (After Repair Value) is required");
+      form.setError("arv", { message: "ARV is required" });
+    }
+
     if (!projectLength || projectLength <= 0) {
       errors.push("Project Length is required");
+      form.setError("projectLength", { message: "Project Length is required" });
     }
     
     if (errors.length > 0) {
