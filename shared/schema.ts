@@ -27,6 +27,8 @@ export const users = pgTable("users", {
   downgradedAt: timestamp("downgraded_at"),
   paymentFailedAt: timestamp("payment_failed_at"),
   pendingCancellationChoice: text("pending_cancellation_choice"),
+  reportLogoUrl: text("report_logo_url"),       // user's logo URL for PDF reports
+  reportCompanyName: text("report_company_name"), // user's company name for PDF reports
   createdAt: timestamp("created_at").defaultNow(),
 });
 

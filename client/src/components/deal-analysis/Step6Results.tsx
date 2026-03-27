@@ -1974,17 +1974,38 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           <Card ref={targetRef}>
             {/* Company Header for PDF */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
-              <div className="flex items-center gap-3">
-                <img src={logoImg} alt="RE Data Metrix" className="h-12 w-12" />
-                <div>
-                  <div className="font-bold text-lg text-primary">RE Data Metrix</div>
-                  <div className="text-xs text-muted-foreground italic">Turning Terms into Returns</div>
+              {/* Left side: user branding if set, otherwise RE Data Metrix */}
+              {user?.reportLogoUrl ? (
+                <div className="flex items-center gap-3">
+                  <img src={user.reportLogoUrl} alt={user.reportCompanyName || "Company logo"} className="h-12 w-auto object-contain max-w-[120px]" />
+                  {user.reportCompanyName && (
+                    <div className="font-bold text-lg">{user.reportCompanyName}</div>
+                  )}
                 </div>
-              </div>
-              <div className="text-right text-sm text-muted-foreground">
-                <div className="font-medium">www.redatametrix.com</div>
-                <div className="text-xs">Deal Analysis Report</div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <img src={logoImg} alt="RE Data Metrix" className="h-12 w-12" />
+                  <div>
+                    <div className="font-bold text-lg text-primary">RE Data Metrix</div>
+                    <div className="text-xs text-muted-foreground italic">Turning Terms into Returns</div>
+                  </div>
+                </div>
+              )}
+              {/* Right side: RE Data Metrix attribution (always shown when user branding is active) or report label */}
+              {user?.reportLogoUrl ? (
+                <div className="flex items-center gap-2 text-right text-sm text-muted-foreground">
+                  <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8 opacity-70" />
+                  <div>
+                    <div className="text-xs font-medium text-primary/70">RE Data Metrix</div>
+                    <div className="text-xs">Deal Analysis Report</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-right text-sm text-muted-foreground">
+                  <div className="font-medium">www.redatametrix.com</div>
+                  <div className="text-xs">Deal Analysis Report</div>
+                </div>
+              )}
             </div>
             <CardHeader>
               <CardTitle>Loan Comparison Results</CardTitle>
@@ -3454,14 +3475,35 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             <div style={{ fontFamily: 'Arial, sans-serif', padding: '24px' }}>
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '12px', marginBottom: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1d4ed8' }}>RE Data Metrix</div>
-                  <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
-                  <div style={{ fontWeight: '600' }}>www.redatametrix.com</div>
-                  <div>Deal Analysis Report</div>
-                </div>
+                {/* Left: user logo + company name, or RE Data Metrix */}
+                {user?.reportLogoUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <img src={user.reportLogoUrl} alt={user.reportCompanyName || 'Company logo'} style={{ height: '40px', width: 'auto', objectFit: 'contain', maxWidth: '120px' }} />
+                    {user.reportCompanyName && (
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#111' }}>{user.reportCompanyName}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1d4ed8' }}>RE Data Metrix</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
+                  </div>
+                )}
+                {/* Right: RE Data Metrix attribution when user branding active, otherwise domain */}
+                {user?.reportLogoUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'right' }}>
+                    <img src={logoImg} alt="RE Data Metrix" style={{ height: '28px', width: '28px', opacity: 0.65 }} />
+                    <div>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>RE Data Metrix</div>
+                      <div style={{ fontSize: '11px', color: '#6b7280' }}>Deal Analysis Report</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
+                    <div style={{ fontWeight: '600' }}>www.redatametrix.com</div>
+                    <div>Deal Analysis Report</div>
+                  </div>
+                )}
               </div>
 
               {/* Title */}

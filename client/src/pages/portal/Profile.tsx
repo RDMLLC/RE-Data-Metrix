@@ -14,7 +14,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { 
   Pencil, Check, X, CreditCard, Crown, AlertCircle, 
   Loader2, ExternalLink, Calendar, Shield, FileText, Scale, Home, Phone,
-  ArrowDownCircle, XCircle, AlertTriangle
+  ArrowDownCircle, XCircle, AlertTriangle, ImageIcon
 } from "lucide-react";
 import {
   Dialog,
@@ -45,6 +45,13 @@ export default function Profile() {
     state: "",
     zipCode: "",
     phone: "",
+  });
+
+  const [isEditingBranding, setIsEditingBranding] = useState(false);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [brandingForm, setBrandingForm] = useState({
+    reportLogoUrl: "",
+    reportCompanyName: "",
   });
 
   const cancelSubscriptionMutation = useMutation({
@@ -222,6 +229,44 @@ export default function Profile() {
       });
     } finally {
       setIsSavingAddress(false);
+    }
+  };
+
+  const startEditingBranding = () => {
+    setBrandingForm({
+      reportLogoUrl: user?.reportLogoUrl || "",
+      reportCompanyName: user?.reportCompanyName || "",
+    });
+    setIsEditingBranding(true);
+  };
+
+  const cancelEditingBranding = () => {
+    setIsEditingBranding(false);
+    setBrandingForm({ reportLogoUrl: "", reportCompanyName: "" });
+  };
+
+  const saveBrandingChanges = async () => {
+    setIsSavingBranding(true);
+    try {
+      await apiRequest("PATCH", "/api/user/report-branding", {
+        reportLogoUrl: brandingForm.reportLogoUrl.trim() || null,
+        reportCompanyName: brandingForm.reportCompanyName.trim() || null,
+      });
+      await refetchUser();
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      setIsEditingBranding(false);
+      toast({
+        title: "Branding Saved",
+        description: "Your report branding has been updated.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save branding",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingBranding(false);
     }
   };
 
@@ -748,6 +793,128 @@ export default function Profile() {
                     </Link>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Report Branding Card */}
+            <Card data-testid="card-report-branding">
+              <CardHeader className="flex flex-row items-start justify-between gap-2">
+                <div>
+                  <CardTitle>Report Branding</CardTitle>
+                  <CardDescription>
+                    Add your logo and company name to PDF deal analysis reports
+                  </CardDescription>
+                </div>
+                {!isEditingBranding ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={startEditingBranding}
+                    data-testid="button-edit-branding"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={saveBrandingChanges}
+                      disabled={isSavingBranding}
+                      data-testid="button-save-branding"
+                    >
+                      {isSavingBranding ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4 text-green-600" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={cancelEditingBranding}
+                      disabled={isSavingBranding}
+                      data-testid="button-cancel-branding"
+                    >
+                      <X className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isEditingBranding ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="reportCompanyName">Company Name</Label>
+                      <Input
+                        id="reportCompanyName"
+                        value={brandingForm.reportCompanyName}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, reportCompanyName: e.target.value })}
+                        placeholder="Your Company LLC"
+                        maxLength={100}
+                        data-testid="input-report-company-name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="reportLogoUrl">Logo URL</Label>
+                      <Input
+                        id="reportLogoUrl"
+                        value={brandingForm.reportLogoUrl}
+                        onChange={(e) => setBrandingForm({ ...brandingForm, reportLogoUrl: e.target.value })}
+                        placeholder="https://yoursite.com/logo.png"
+                        data-testid="input-report-logo-url"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter the direct URL to your logo image. It will appear on the left side of PDF reports.
+                      </p>
+                    </div>
+                    {brandingForm.reportLogoUrl && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Preview:</p>
+                        <div className="flex items-center gap-3 border rounded-md p-3 bg-muted/30">
+                          <img
+                            src={brandingForm.reportLogoUrl}
+                            alt="Logo preview"
+                            className="h-10 w-auto object-contain"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                          {brandingForm.reportCompanyName && (
+                            <span className="font-semibold text-sm">{brandingForm.reportCompanyName}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {user.reportLogoUrl || user.reportCompanyName ? (
+                      <div className="flex items-center gap-3">
+                        {user.reportLogoUrl && (
+                          <img
+                            src={user.reportLogoUrl}
+                            alt="Report logo"
+                            className="h-10 w-auto object-contain"
+                          />
+                        )}
+                        <div>
+                          {user.reportCompanyName && (
+                            <p className="font-semibold text-sm" data-testid="text-report-company-name">{user.reportCompanyName}</p>
+                          )}
+                          {user.reportLogoUrl && (
+                            <p className="text-xs text-muted-foreground truncate max-w-xs" data-testid="text-report-logo-url">{user.reportLogoUrl}</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-3 bg-muted/50 rounded-lg p-4">
+                        <ImageIcon className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                        <p className="text-sm text-muted-foreground">
+                          No branding set. Click the edit icon to add your company logo and name to PDF reports.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

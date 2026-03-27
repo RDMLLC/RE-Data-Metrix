@@ -15,6 +15,8 @@ interface User {
   termsAcceptedAt?: string | null;
   termsVersion?: string | null;
   privacyVersion?: string | null;
+  reportLogoUrl?: string | null;
+  reportCompanyName?: string | null;
   isContractor?: boolean;
   profile?: {
     fullName: string;

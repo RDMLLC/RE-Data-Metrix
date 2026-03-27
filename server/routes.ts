@@ -539,6 +539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       termsAcceptedAt: user.termsAcceptedAt,
       termsVersion: user.termsVersion,
       privacyVersion: user.privacyVersion,
+      reportLogoUrl: user.reportLogoUrl || null,
+      reportCompanyName: user.reportCompanyName || null,
       isContractor,
       profile: userProfile ? {
         fullName: userProfile.fullName || "",
@@ -550,6 +552,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: userProfile.phone || "",
       } : null,
     });
+  });
+
+  // ─── Report Branding (logo & company name for PDF reports) ───────────────────
+  app.patch("/api/user/report-branding", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const currentUser = req.user as User;
+    const schema = z.object({
+      reportLogoUrl: z.string().url("Must be a valid URL").nullable().optional(),
+      reportCompanyName: z.string().max(100).nullable().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0]?.message || "Invalid data" });
+    }
+    const { reportLogoUrl, reportCompanyName } = parsed.data;
+    const updates: Record<string, any> = {};
+    if (reportLogoUrl !== undefined) updates.reportLogoUrl = reportLogoUrl || null;
+    if (reportCompanyName !== undefined) updates.reportCompanyName = reportCompanyName || null;
+    await db.update(users).set(updates).where(eq(users.id, currentUser.id));
+    res.json({ success: true });
   });
 
   app.patch("/api/user/profile", async (req, res) => {
