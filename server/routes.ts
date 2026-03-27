@@ -8536,12 +8536,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }).optional(),
     numberOfDraws: z.number().default(3),
     excludeProductIds: z.array(z.string()).optional(),
+    investorProfile: z.object({
+      creditScoreRange: z.enum(['below-600', '600-649', '650-699', '700-749', '750+']).optional(),
+      isNewInvestor: z.boolean().optional(),
+    }).optional(),
   });
 
   app.post("/api/deal-analysis/results", async (req, res) => {
     try {
       const validatedData = dealAnalysisResultsSchema.parse(req.body);
-      const { dealInputs, criteriaSelection, userLoan, numberOfDraws, excludeProductIds } = validatedData;
+      const { dealInputs, criteriaSelection, userLoan, numberOfDraws, excludeProductIds, investorProfile } = validatedData;
       
       // Check if user is authenticated and is a subscriber
       // isSubscriber = admin role OR subscriptionStatus is active/referral_trial/comped
@@ -8736,10 +8740,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lenderMap.set(lender.id || lender.lenderId, lender);
       });
 
+      // Convert investor credit score range to effective numeric score (midpoint approach)
+      const creditScoreRangeToEffective = (range: string | null | undefined): number | null => {
+        if (!range) return null;
+        switch (range) {
+          case 'below-600': return 575;
+          case '600-649': return 624;
+          case '650-699': return 674;
+          case '700-749': return 724;
+          case '750+': return 750;
+          default: return null;
+        }
+      };
+      const effectiveCreditScore = creditScoreRangeToEffective(investorProfile?.creditScoreRange);
+      const investorIsNew = investorProfile?.isNewInvestor;
+
       // Filter products (exclude specified, only bridge/hard money for now)
       let filteredProducts = allProducts.filter(p => {
         if (excludeProductIds?.includes(p.id)) return false;
         if (p.loanType !== 'bridge') return false;
+        // Credit score filter: hide products whose minimum exceeds the investor's effective score
+        if (effectiveCreditScore !== null && p.minCreditScore !== null && p.minCreditScore !== undefined && p.minCreditScore > effectiveCreditScore) return false;
+        // New investor filter: hide products not open to new investors when investor is new
+        if (investorIsNew === true && !p.newInvestorOk) return false;
         return true;
       });
 
@@ -9026,7 +9049,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DSCR Lenders - for Rental Analysis
   app.get("/api/dscr-lenders", async (req, res) => {
     try {
-      const { state } = req.query;
+      const { state, creditScoreRange, isNewInvestor } = req.query;
+
+      // Convert investor credit score range to effective numeric score (midpoint approach)
+      const creditScoreRangeToEffective = (range: string | null | undefined): number | null => {
+        if (!range) return null;
+        switch (range) {
+          case 'below-600': return 575;
+          case '600-649': return 624;
+          case '650-699': return 674;
+          case '700-749': return 724;
+          case '750+': return 750;
+          default: return null;
+        }
+      };
+      const effectiveCreditScore = creditScoreRangeToEffective(typeof creditScoreRange === 'string' ? creditScoreRange : null);
+      const investorIsNew = isNewInvestor === 'true';
       
       // Get all active loan products
       const allProducts = await storage.getAllActiveLoanProducts();
@@ -9065,9 +9103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Filter for DSCR products only (dscr-purchase and dscr-refi)
-      const dscrProducts = allProducts.filter(p => 
-        p.loanType === 'dscr-purchase' || p.loanType === 'dscr-refi'
-      );
+      // Also apply credit score and new investor eligibility filters when provided
+      const dscrProducts = allProducts.filter(p => {
+        if (p.loanType !== 'dscr-purchase' && p.loanType !== 'dscr-refi') return false;
+        if (effectiveCreditScore !== null && p.minCreditScore !== null && p.minCreditScore !== undefined && p.minCreditScore > effectiveCreditScore) return false;
+        if (investorIsNew && !p.newInvestorOk) return false;
+        return true;
+      });
       
       // Map products to response format with lender info
       const results = dscrProducts.map(product => {

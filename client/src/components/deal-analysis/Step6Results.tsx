@@ -767,6 +767,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       })() : undefined,
       numberOfDraws: 3,
       excludeProductIds: [],
+      investorProfile: {
+        creditScoreRange: formData.creditScore as 'below-600' | '600-649' | '650-699' | '700-749' | '750+' | undefined || undefined,
+        isNewInvestor: formData.isNewInvestor,
+      },
     };
   };
 
@@ -1294,12 +1298,17 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     : null;
 
   // Fetch DSCR lenders when in rental-dscr mode
+  const dscrCreditScore = form.watch('creditScore');
+  const dscrIsNewInvestor = form.watch('isNewInvestor');
   const { data: dscrLenders, isLoading: isLoadingDscrLenders } = useQuery<DSCRLender[]>({
-    queryKey: ['/api/dscr-lenders', propertyState],
+    queryKey: ['/api/dscr-lenders', propertyState, dscrCreditScore, dscrIsNewInvestor],
     queryFn: async () => {
-      const url = propertyState 
-        ? `/api/dscr-lenders?state=${encodeURIComponent(propertyState)}`
-        : '/api/dscr-lenders';
+      const params = new URLSearchParams();
+      if (propertyState) params.set('state', propertyState);
+      if (dscrCreditScore) params.set('creditScoreRange', dscrCreditScore);
+      if (dscrIsNewInvestor !== undefined) params.set('isNewInvestor', String(dscrIsNewInvestor));
+      const query = params.toString();
+      const url = query ? `/api/dscr-lenders?${query}` : '/api/dscr-lenders';
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch DSCR lenders');
       return res.json();
