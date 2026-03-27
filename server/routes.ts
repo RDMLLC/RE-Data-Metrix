@@ -1799,6 +1799,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       outboundWebhookService.triggerWebhooks('subscription_completed', discountWebhookPayload)
         .catch(err => console.error('[Webhook] subscription_completed trigger error (discount signup):', err));
 
+      // Fire Meta CAPI events for discount-code paid signup
+      const discountCapiUserData = {
+        email: newUser.email,
+        firstName: firstNamePart,
+        lastName: lastNamePart,
+        clientIp: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '',
+        clientUserAgent: req.headers['user-agent'] || '',
+      };
+      const discountPlanValue = selectedPlan === 'annual' ? 250 : 25;
+      sendMetaCapiEvent('CompleteRegistration', discountCapiUserData, { contentName: 'paid_signup' })
+        .catch(err => console.error('[CAPI] CompleteRegistration (discount) error:', err));
+      sendMetaCapiEvent('Subscribe', discountCapiUserData, { value: discountPlanValue, currency: 'USD', contentName: selectedPlan })
+        .catch(err => console.error('[CAPI] Subscribe (discount) error:', err));
+
       // Check if email verification is required
       if (process.env.REQUIRE_EMAIL_VERIFICATION === 'true') {
         const verificationToken = crypto.randomBytes(32).toString('base64url');
@@ -1865,7 +1879,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await completeCheckoutSession(session_id);
 
       if (result.success) {
-        // Trigger webhooks for paid signup (fire and forget) if this is a new user (not already processed)
+        // Retrieve Stripe session first so we have metaEventId and plan for both webhooks and CAPI
+        const stripe = await getUncachableStripeClient();
+        let metaEventId: string | undefined;
+        let plan: string | undefined;
+        let value: number | undefined;
+        let subscriptionId: string | undefined;
+        try {
+          const stripeSession = await stripe.checkout.sessions.retrieve(session_id, {
+            expand: ['subscription'],
+          });
+          metaEventId = stripeSession.metadata?.meta_event_id || undefined;
+          const subscription = stripeSession.subscription as any;
+          if (subscription) {
+            const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
+            plan = priceInterval === 'year' ? 'annual' : 'monthly';
+            value = plan === 'annual' ? 250 : 25;
+            subscriptionId = subscription.id;
+          }
+        } catch (_) {}
+
+        // Trigger webhooks and CAPI for paid signup (fire and forget) if this is a new user (not already processed)
         if (result.userId && !result.alreadyProcessed) {
           try {
             const [completedUser] = await db.select().from(users).where(eq(users.id, result.userId)).limit(1);
@@ -1903,32 +1937,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               outboundWebhookService.triggerWebhooks('subscription_completed', completedWebhookPayload)
                 .catch(err => console.error('[Webhook] subscription_completed trigger error (paid signup complete):', err));
+
+              const capiClientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || '';
+              const capiUserAgent = req.headers['user-agent'] || '';
+              const capiUserData = {
+                email: completedUser.email,
+                firstName: completedFirstName,
+                lastName: completedLastName,
+                clientIp: capiClientIp,
+                clientUserAgent: capiUserAgent,
+              };
+
+              // CompleteRegistration (deduplicates with browser pixel via shared metaEventId)
+              sendMetaCapiEvent('CompleteRegistration', capiUserData, { contentName: 'paid_signup' }, metaEventId)
+                .catch(err => console.error('[CAPI] CompleteRegistration (paid) error:', err));
+
+              // Subscribe event
+              sendMetaCapiEvent('Subscribe', capiUserData, { value: value ?? 25, currency: 'USD', contentName: completedPlan })
+                .catch(err => console.error('[CAPI] Subscribe error:', err));
             }
           } catch (webhookErr) {
-            console.error('[Webhook] Error preparing paid signup webhook:', webhookErr);
+            console.error('[Webhook/CAPI] Error preparing paid signup events:', webhookErr);
           }
         }
-
-        // Surface the meta_event_id, plan, and value so CheckoutComplete.tsx can fire
-        // browser-side pixels and GA4 events with the correct data
-        const stripe = await getUncachableStripeClient();
-        let metaEventId: string | undefined;
-        let plan: string | undefined;
-        let value: number | undefined;
-        let subscriptionId: string | undefined;
-        try {
-          const stripeSession = await stripe.checkout.sessions.retrieve(session_id, {
-            expand: ['subscription'],
-          });
-          metaEventId = stripeSession.metadata?.meta_event_id || undefined;
-          const subscription = stripeSession.subscription as any;
-          if (subscription) {
-            const priceInterval = subscription.items?.data?.[0]?.price?.recurring?.interval;
-            plan = priceInterval === 'year' ? 'annual' : 'monthly';
-            value = plan === 'annual' ? 250 : 25;
-            subscriptionId = subscription.id;
-          }
-        } catch (_) {}
 
         res.json({ ...result, metaEventId, plan, value, subscriptionId });
       } else {

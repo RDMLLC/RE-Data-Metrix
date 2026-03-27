@@ -152,8 +152,10 @@ export default function Register() {
     setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = data;
+      const metaEventId = crypto.randomUUID();
       const finalData = {
         ...registerData,
+        metaEventId,
         compCode: compCode || undefined,
         auditorCode: auditorCode || undefined,
         referralCode: contractorRefCode || undefined,
@@ -166,9 +168,9 @@ export default function Register() {
       
       const loginUrl = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login";
 
-      // Fire browser pixel for CompleteRegistration (free signup)
+      // Fire browser pixel for CompleteRegistration (free signup) with shared event ID for CAPI deduplication
       if (!isComped) {
-        trackCompleteRegistration();
+        trackCompleteRegistration({ eventId: metaEventId });
       }
       
       if (isComped && !requiresVerification) {
