@@ -629,7 +629,12 @@ export class HasDataAPIService implements IPropertyAPIService {
       zestimate: property.zestimate,
       price: property.price,
       listPrice: property.listPrice,
-      rentZestimate: property.rentZestimate
+      rentZestimate: property.rentZestimate,
+      resoFactsRentZestimate: property.resoFacts?.rentZestimate,
+      hdpRentZestimate: property.hdpData?.homeInfo?.rentZestimate,
+      rentalValue: property.rentalValue,
+      monthlyRent: property.monthlyRent,
+      rentValue: property.rentValue,
     });
     
     // Extract property type with multiple fallbacks (Zillow uses several field names)
@@ -696,7 +701,14 @@ export class HasDataAPIService implements IPropertyAPIService {
       taxAssessedValue,
       annualTax: roundedAnnualTax,
       estimatedValue: this.parseNumber(property.zestimate || property.price),
-      estimatedRent: this.parseNumber(property.rentZestimate),
+      estimatedRent: this.parseNumber(
+        property.rentZestimate ||
+        property.resoFacts?.rentZestimate ||
+        property.hdpData?.homeInfo?.rentZestimate ||
+        property.rentalValue ||
+        property.rentValue ||
+        property.monthlyRent
+      ),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
       listPrice: this.parseNumber(property.price || property.listPrice), // Current listing price for active/pending

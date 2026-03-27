@@ -3,13 +3,14 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Building, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
+import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Building, ArrowLeft, Loader2, ExternalLink, RefreshCw } from "lucide-react";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { useLocation } from "wouter";
 import LoanTypeEducation from "./LoanTypeEducation";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 
 interface DSCRLender {
@@ -60,12 +61,46 @@ interface DSCRProductWithCalculation {
 }
 
 export default function RentalAnalysisWizard() {
-  const { wizardData, hasPropertyData, clearWizardData } = useWizardData();
+  const { wizardData, hasPropertyData, clearWizardData, updatePropertyData } = useWizardData();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
   const [interestRate, setInterestRate] = useState<number>(7.5);
   const [showLenders, setShowLenders] = useState(false);
+
+  const retryRentMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const response = await apiRequest("POST", "/api/property/lookup", { url });
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      const rent = data.estimatedRent || 0;
+      if (rent > 0) {
+        updatePropertyData({
+          estimatedRent: rent,
+          estimatedRentSource: data.estimatedRentSource || undefined,
+        });
+        setMonthlyRent(rent);
+        toast({
+          title: "Rent Estimate Found",
+          description: `${data.estimatedRentSource || "Estimated"} rent: $${rent.toLocaleString()}/mo`,
+        });
+      } else {
+        toast({
+          title: "No Rent Estimate Available",
+          description: "The listing does not have a rent estimate. Please enter the rent manually.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Re-check Failed",
+        description: "Unable to fetch rent estimate. Please enter the rent manually.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleStartNewAnalysis = () => {
     clearWizardData();
@@ -471,14 +506,34 @@ export default function RentalAnalysisWizard() {
                 {property.estimatedRent && property.estimatedRent > 0 && (
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
-                    Zillow RentZestimate: ${property.estimatedRent.toLocaleString()} (editable)
+                    {property.estimatedRentSource
+                      ? `${property.estimatedRentSource} estimate`
+                      : "Rent estimate"}: ${property.estimatedRent.toLocaleString()} (editable)
                   </p>
                 )}
                 {(!property.estimatedRent || property.estimatedRent === 0) && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                    No estimated rent available from property data - please enter manually
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      No estimated rent available from property data
+                    </p>
+                    {property.propertyUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => retryRentMutation.mutate(property.propertyUrl!)}
+                        disabled={retryRentMutation.isPending}
+                        data-testid="button-retry-rent"
+                      >
+                        {retryRentMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                        )}
+                        Re-check
+                      </Button>
+                    )}
+                  </div>
                 )}
                 <div className="relative max-w-xs">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>

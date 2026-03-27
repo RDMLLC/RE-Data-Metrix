@@ -156,6 +156,8 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         squareFootage: data.sqft,
         taxAssessedValue: data.taxAssessedValue,
         estimatedRent: data.estimatedRent,
+        estimatedRentSource: data.estimatedRentSource || undefined,
+        propertyUrl: url,
         // Explicitly clear financial fields in context
         purchasePrice: undefined,
         arv: undefined,
