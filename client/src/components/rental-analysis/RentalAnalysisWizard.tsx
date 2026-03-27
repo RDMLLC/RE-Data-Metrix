@@ -60,6 +60,11 @@ interface DSCRProductWithCalculation {
   };
 }
 
+interface PropertyLookupResponse {
+  estimatedRent?: number;
+  estimatedRentSource?: string;
+}
+
 export default function RentalAnalysisWizard() {
   const { wizardData, hasPropertyData, clearWizardData, updatePropertyData } = useWizardData();
   const [, setLocation] = useLocation();
@@ -71,9 +76,9 @@ export default function RentalAnalysisWizard() {
   const retryRentMutation = useMutation({
     mutationFn: async (url: string) => {
       const response = await apiRequest("POST", "/api/property/lookup", { url });
-      return response.json();
+      return response.json() as Promise<PropertyLookupResponse>;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: PropertyLookupResponse) => {
       const rent = data.estimatedRent || 0;
       if (rent > 0) {
         updatePropertyData({
@@ -511,7 +516,7 @@ export default function RentalAnalysisWizard() {
                       : "Rent estimate"}: ${property.estimatedRent.toLocaleString()} (editable)
                   </p>
                 )}
-                {(!property.estimatedRent || property.estimatedRent === 0) && (
+                {monthlyRent <= 0 && (
                   <div className="flex items-center gap-3">
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
