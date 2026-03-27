@@ -633,6 +633,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       resoFactsRentZestimate: property.resoFacts?.rentZestimate,
       hdpRentZestimate: property.hdpData?.homeInfo?.rentZestimate,
       rentalValue: property.rentalValue,
+      rentalPrice: property.rentalPrice,
       monthlyRent: property.monthlyRent,
       rentValue: property.rentValue,
     });
@@ -706,6 +707,7 @@ export class HasDataAPIService implements IPropertyAPIService {
         property.resoFacts?.rentZestimate ||
         property.hdpData?.homeInfo?.rentZestimate ||
         property.rentalValue ||
+        property.rentalPrice ||
         property.rentValue ||
         property.monthlyRent
       ),
