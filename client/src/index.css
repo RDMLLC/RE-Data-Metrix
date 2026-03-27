@@ -201,6 +201,13 @@
  */
 @layer utilities {
 
+  /* PDF column hiding utilities - used during PDF generation to hide selected table columns */
+  .pdf-hide-col2 th:nth-child(2),
+  .pdf-hide-col2 td:nth-child(2) { display: none !important; }
+
+  .pdf-hide-col3 th:nth-child(3),
+  .pdf-hide-col3 td:nth-child(3) { display: none !important; }
+
   /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;

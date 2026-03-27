@@ -36,6 +36,7 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useDemoAccess } from "@/hooks/use-demo-access";
 import PdfQuotaExhaustedModal from "./PdfQuotaExhaustedModal";
@@ -242,6 +243,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // PDF generation state - controls visibility of elements during PDF capture
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showPdfQuotaModal, setShowPdfQuotaModal] = useState(false);
+  // PDF column selection dialog state
+  const [pdfColumnDialogOpen, setPdfColumnDialogOpen] = useState(false);
+  const [pendingPdfDetailed, setPendingPdfDetailed] = useState(false);
+  const [selectedPdfColumnIds, setSelectedPdfColumnIds] = useState<string[]>([]);
   // Single-column export state
   const [singleColumnExportData, setSingleColumnExportData] = useState<{ column: LoanComparisonColumn; name: string } | null>(null);
 
@@ -1035,6 +1040,17 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     });
   };
 
+  // Open PDF column selection dialog before generating PDF
+  const openPdfDialog = (detailed: boolean) => {
+    if (!results) return;
+    const cols: string[] = ['cash-sale'];
+    if (results.userLoanColumn) cols.push('user-loan');
+    visibleLenders.forEach((_, i) => cols.push(`lender-${i}`));
+    setSelectedPdfColumnIds(cols.slice(0, 4));
+    setPendingPdfDetailed(detailed);
+    setPdfColumnDialogOpen(true);
+  };
+
   // PDF generation with detailed mode
   const handleDownloadPDF = async (detailed: boolean) => {
     // For authenticated free users (not paid subscribers), check PDF download limits
@@ -1404,6 +1420,13 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const visibleLenders = effectiveIsSubscriber ? displayLenderColumns.slice(0, visibleLenderCount) : [];
   const hasMoreLenders = effectiveIsSubscriber && visibleLenderCount < results.lenderColumns.length;
 
+  // PDF column filtering - only active during PDF generation when user has made a selection
+  const pdfHideCash = isGeneratingPdf && selectedPdfColumnIds.length > 0 && !selectedPdfColumnIds.includes('cash-sale');
+  const pdfHideUserLoan = isGeneratingPdf && !!results.userLoanColumn && selectedPdfColumnIds.length > 0 && !selectedPdfColumnIds.includes('user-loan');
+  const pdfLenders = isGeneratingPdf && selectedPdfColumnIds.length > 0
+    ? visibleLenders.filter((_, i) => selectedPdfColumnIds.includes(`lender-${i}`))
+    : visibleLenders;
+
   // Solid background color classes for sticky columns (z-index 20 for first column, 15 for Cash Sale & Your Loan)
   const stickyFirstColBase = "sticky left-0 z-20 bg-background shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
   const stickyFirstColMuted = "sticky left-0 z-20 bg-muted shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]";
@@ -1482,11 +1505,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleDownloadPDF(false)} data-testid="pdf-overview">
+                <DropdownMenuItem onClick={() => openPdfDialog(false)} data-testid="pdf-overview">
                   <FileText className="h-4 w-4 mr-2" />
                   Overview (Summary)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownloadPDF(true)} data-testid="pdf-detailed">
+                <DropdownMenuItem onClick={() => openPdfDialog(true)} data-testid="pdf-detailed">
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Detailed (All Expanded)
                 </DropdownMenuItem>
@@ -1661,7 +1684,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="pt-4 pb-4">
                 <div className="overflow-x-auto">
-                  <Table className="min-w-full">
+                  <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[120px]">Summary</TableHead>
@@ -1669,7 +1692,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                         {results.userLoanColumn && (
                           <TableHead className="text-center min-w-[100px]">Entered Loan</TableHead>
                         )}
-                        {visibleLenders.map((lender, index) => (
+                        {pdfLenders.map((lender, index) => (
                           <TableHead key={index} className="text-center min-w-[140px] text-xs">
                             <div className="flex flex-col items-center gap-1">
                               <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
@@ -1692,7 +1715,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {formatCurrency(results.userLoanColumn.profit)}
                           </TableCell>
                         )}
-                        {visibleLenders.map((lender, index) => (
+                        {pdfLenders.map((lender, index) => (
                           <TableCell key={index} className="text-center font-bold text-green-600">
                             {formatCurrency(lender.profit)}
                           </TableCell>
@@ -1716,7 +1739,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {formatCurrency(results.userLoanColumn.outOfPocketCost)}
                           </TableCell>
                         )}
-                        {visibleLenders.map((lender, index) => (
+                        {pdfLenders.map((lender, index) => (
                           <TableCell key={index} className="text-center font-bold">
                             {formatCurrency(lender.outOfPocketCost)}
                           </TableCell>
@@ -1730,7 +1753,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
                             ))}
                           </TableRow>
@@ -1740,7 +1763,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.totalClosingCostsBuy || results.userLoanColumn.closingCostsBuy)}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.outOfPocketBreakdown?.totalClosingCostsBuy || lender.closingCostsBuy)}</TableCell>
                             ))}
                           </TableRow>
@@ -1750,7 +1773,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.carryingCosts || results.userLoanColumn.carryingCosts)}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.outOfPocketBreakdown?.carryingCosts || lender.carryingCosts)}</TableCell>
                             ))}
                           </TableRow>
@@ -1774,7 +1797,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {formatPercent(results.userLoanColumn.cashOnCashRoi)}
                           </TableCell>
                         )}
-                        {visibleLenders.map((lender, index) => (
+                        {pdfLenders.map((lender, index) => (
                           <TableCell key={index} className="text-center font-bold text-primary">
                             {formatPercent(lender.cashOnCashRoi)}
                           </TableCell>
@@ -1793,7 +1816,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                               {formatCurrency(results.userLoanColumn.profit)} ÷ {formatCurrency(results.userLoanColumn.outOfPocketCost)}
                             </TableCell>
                           )}
-                          {visibleLenders.map((lender, index) => (
+                          {pdfLenders.map((lender, index) => (
                             <TableCell key={index} className="text-center text-xs text-muted-foreground">
                               {formatCurrency(lender.profit)} ÷ {formatCurrency(lender.outOfPocketCost)}
                             </TableCell>
@@ -1810,7 +1833,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {formatPercent(results.userLoanColumn.annualizedRoi)}
                           </TableCell>
                         )}
-                        {visibleLenders.map((lender, index) => (
+                        {pdfLenders.map((lender, index) => (
                           <TableCell key={index} className="text-center font-bold text-primary">
                             {formatPercent(lender.annualizedRoi)}
                           </TableCell>
@@ -1832,7 +1855,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}
                           </TableCell>
                         )}
-                        {visibleLenders.map((lender, index) => (
+                        {pdfLenders.map((lender, index) => (
                           <TableCell key={index} className="text-center text-sm">
                             {lender.interestRate ? `${lender.interestRate}%` : '—'}
                           </TableCell>
@@ -1846,7 +1869,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{lender.interestRate ? `${lender.interestRate}%` : '—'}</TableCell>
                             ))}
                           </TableRow>
@@ -1856,7 +1879,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{results.userLoanColumn.points !== undefined ? `${results.userLoanColumn.points}%` : '—'}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{lender.points !== undefined ? `${lender.points}%` : '—'}</TableCell>
                             ))}
                           </TableRow>
@@ -1866,7 +1889,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{results.userLoanColumn.totalLoanAmount ? formatCurrency(results.userLoanColumn.totalLoanAmount) : '—'}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{lender.totalLoanAmount ? formatCurrency(lender.totalLoanAmount) : '—'}</TableCell>
                             ))}
                           </TableRow>
@@ -1876,7 +1899,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{results.userLoanColumn.maxLtvBuy ? `${results.userLoanColumn.maxLtvBuy}%` : '—'}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{lender.maxLtvBuy ? `${lender.maxLtvBuy}%` : '—'}</TableCell>
                             ))}
                           </TableRow>
@@ -1886,7 +1909,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{results.userLoanColumn.maxLendRehab ? `${results.userLoanColumn.maxLendRehab}%` : '—'}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{lender.maxLendRehab ? `${lender.maxLendRehab}%` : '—'}</TableCell>
                             ))}
                           </TableRow>
@@ -1896,7 +1919,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             {results.userLoanColumn && (
                               <TableCell className="text-center text-sm">{results.userLoanColumn.maxLoanArv ? `${results.userLoanColumn.maxLoanArv}%` : '—'}</TableCell>
                             )}
-                            {visibleLenders.map((lender, index) => (
+                            {pdfLenders.map((lender, index) => (
                               <TableCell key={index} className="text-center text-sm">{lender.maxLoanArv ? `${lender.maxLoanArv}%` : '—'}</TableCell>
                             ))}
                           </TableRow>
@@ -1907,7 +1930,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                               {results.userLoanColumn && (
                                 <TableCell className="text-center text-sm">—</TableCell>
                               )}
-                              {visibleLenders.map((lender, index) => (
+                              {pdfLenders.map((lender, index) => (
                                 <TableCell key={index} className="text-center text-sm">
                                   {lender.isLtcWeighted && lender.maxLtcPercent ? `${lender.maxLtcPercent}%` : '—'}
                                 </TableCell>
@@ -1971,7 +1994,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               {/* Mobile Card View - visible only on small screens */}
               <div className="lg:hidden space-y-4">
                 {/* Cash Sale Card */}
-                <div className="border rounded-lg p-4 bg-card">
+                {!pdfHideCash && <div className="border rounded-lg p-4 bg-card">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-lg">Cash Sale</h3>
                     {!isGeneratingPdf && (
@@ -2032,10 +2055,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </div>
                     </div>
                   </div>
-                </div>
+                </div>}
 
                 {/* Entered Loan Card */}
-                {results.userLoanColumn && (
+                {results.userLoanColumn && !pdfHideUserLoan && (
                   <div className="border rounded-lg p-4 bg-card">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-lg">Entered Loan</h3>
@@ -2097,7 +2120,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 )}
 
                 {/* Lender Cards */}
-                {visibleLenders.map((lender, index) => (
+                {pdfLenders.map((lender, index) => (
                   <div key={index} className="border rounded-lg p-4 bg-card">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -2263,7 +2286,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               
               {/* Desktop Table View - hidden on mobile */}
               <div className="hidden lg:block overflow-x-auto relative" ref={scrollContainerRef}>
-                <Table className="min-w-full">
+                <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
               <TableHeader>
                 <TableRow>
                   <TableHead 
@@ -2328,7 +2351,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </div>
                     </TableHead>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableHead key={index} className="text-center min-w-[140px] text-xs">
                       <div className="flex flex-col items-center gap-1">
                         <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
@@ -2378,7 +2401,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.totalProjectCost)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.totalProjectCost)}</TableCell>
                   ))}
                 </TableRow>
@@ -2394,7 +2417,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.purchasePrice)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.purchasePrice)}</TableCell>
                       ))}
                     </TableRow>
@@ -2408,7 +2431,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.rehabBudget)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.rehabBudget)}</TableCell>
                       ))}
                     </TableRow>
@@ -2433,7 +2456,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.closingCostsBuy)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.closingCostsBuy)}</TableCell>
                   ))}
                 </TableRow>
@@ -2449,7 +2472,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(formData.attorneyFees || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(formData.attorneyFees || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2463,7 +2486,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(formData.titleExam || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(formData.titleExam || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2477,7 +2500,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(formData.titleInsurance || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(formData.titleInsurance || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2491,7 +2514,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(formData.transferFee || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(formData.transferFee || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2521,7 +2544,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       )}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">
                       {formatCurrency(
                         (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) + 
@@ -2545,7 +2568,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred && <span className="text-xs text-muted-foreground ml-1">(deferred)</span>}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">
                           {formatCurrency(lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0)}
                           {lender.outOfPocketBreakdown?.pointsDeferred && <span className="text-xs text-muted-foreground ml-1">(deferred)</span>}
@@ -2562,7 +2585,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.docPrepFee || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2576,7 +2599,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.appraisalCost || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2590,7 +2613,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.lenderDrawFees || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.lenderDrawFees || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2615,7 +2638,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.carryingCosts)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.carryingCosts)}</TableCell>
                   ))}
                 </TableRow>
@@ -2631,7 +2654,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.interestCost || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.interestCost || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2645,7 +2668,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(((formData.annualInsurance || 0) / 12) * (formData.projectLength || 6))}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(((formData.annualInsurance || 0) / 12) * (formData.projectLength || 6))}</TableCell>
                       ))}
                     </TableRow>
@@ -2659,7 +2682,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency((formData.monthlyUtilities || 0) * (formData.projectLength || 6))}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency((formData.monthlyUtilities || 0) * (formData.projectLength || 6))}</TableCell>
                       ))}
                     </TableRow>
@@ -2673,7 +2696,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency((formData.hoaFees || 0) * (formData.projectLength || 6))}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency((formData.hoaFees || 0) * (formData.projectLength || 6))}</TableCell>
                       ))}
                     </TableRow>
@@ -2687,7 +2710,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(formData.hoaTransferFee || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(formData.hoaTransferFee || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2701,7 +2724,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(((formData.annualTax || 0) / 12) * (formData.projectLength || 6))}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(((formData.annualTax || 0) / 12) * (formData.projectLength || 6))}</TableCell>
                       ))}
                     </TableRow>
@@ -2715,7 +2738,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(formData.otherCarryingCosts || 0)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((_, index) => (
+                      {pdfLenders.map((_, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(formData.otherCarryingCosts || 0)}</TableCell>
                       ))}
                     </TableRow>
@@ -2733,7 +2756,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.totalInvestment)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.totalInvestment)}</TableCell>
                   ))}
                 </TableRow>
@@ -2749,7 +2772,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.sellPrice)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">{formatCurrency(lender.sellPrice)}</TableCell>
                   ))}
                 </TableRow>
@@ -2766,7 +2789,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.sellPrice - results.userLoanColumn.totalProjectCost - results.userLoanColumn.closingCostsBuy - (results.userLoanColumn.outOfPocketBreakdown?.lenderFees || 0) - results.userLoanColumn.carryingCosts)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.sellPrice - lender.totalProjectCost - lender.closingCostsBuy - (lender.outOfPocketBreakdown?.lenderFees || 0) - lender.carryingCosts)}</TableCell>
                   ))}
                 </TableRow>
@@ -2789,7 +2812,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.closingCostsSell + results.userLoanColumn.commission)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center text-sm">
                       {formatCurrency(lender.closingCostsSell + lender.commission)}
                     </TableCell>
@@ -2807,7 +2830,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.commission)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.commission)}</TableCell>
                       ))}
                     </TableRow>
@@ -2821,7 +2844,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                           {formatCurrency(results.userLoanColumn.closingCostsSell)}
                         </TableCell>
                       )}
-                      {visibleLenders.map((lender, index) => (
+                      {pdfLenders.map((lender, index) => (
                         <TableCell key={index} className="text-center">{formatCurrency(lender.closingCostsSell)}</TableCell>
                       ))}
                     </TableRow>
@@ -2839,7 +2862,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       {formatCurrency(results.userLoanColumn.profit)}
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.profit)}</TableCell>
                   ))}
                 </TableRow>
@@ -2862,7 +2885,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       -
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">
                       <div className="flex flex-col items-center" data-testid={`qrcode-lender${index + 1}`}>
                         {lender.referralLink ? (
@@ -2901,7 +2924,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       -
                     </TableCell>
                   )}
-                  {visibleLenders.map((lender, index) => (
+                  {pdfLenders.map((lender, index) => (
                     <TableCell key={index} className="text-center">
                       {lender.lenderId && lender.productId ? (
                         <Button
@@ -3328,6 +3351,73 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   Send Inquiry
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Column Selection Dialog */}
+      <Dialog open={pdfColumnDialogOpen} onOpenChange={setPdfColumnDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Select Columns for PDF</DialogTitle>
+            <DialogDescription>
+              Choose up to 4 columns to include. Fewer columns produce a cleaner, more readable PDF.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {[
+              { id: 'cash-sale', label: 'Cash Sale' },
+              ...(results?.userLoanColumn ? [{ id: 'user-loan', label: 'Entered Loan' }] : []),
+              ...pdfLenders.map((l, i) => ({
+                id: `lender-${i}`,
+                label: `${l.lenderName || `Lender ${i + 1}`}${l.productName ? ` — ${l.productName}` : ''}`,
+              })),
+            ].map(col => {
+              const isSelected = selectedPdfColumnIds.includes(col.id);
+              const wouldExceedMax = !isSelected && selectedPdfColumnIds.length >= 4;
+              return (
+                <div key={col.id} className="flex items-center gap-3">
+                  <Checkbox
+                    id={`pdf-col-${col.id}`}
+                    checked={isSelected}
+                    disabled={wouldExceedMax}
+                    onCheckedChange={(checked) => {
+                      if (checked && selectedPdfColumnIds.length < 4) {
+                        setSelectedPdfColumnIds(prev => [...prev, col.id]);
+                      } else if (!checked) {
+                        setSelectedPdfColumnIds(prev => prev.filter(id => id !== col.id));
+                      }
+                    }}
+                    data-testid={`checkbox-pdf-col-${col.id}`}
+                  />
+                  <label
+                    htmlFor={`pdf-col-${col.id}`}
+                    className={`text-sm cursor-pointer select-none${wouldExceedMax ? ' text-muted-foreground' : ''}`}
+                  >
+                    {col.label}
+                  </label>
+                </div>
+              );
+            })}
+            {selectedPdfColumnIds.length >= 4 && (
+              <p className="text-xs text-muted-foreground pt-1">Maximum of 4 columns reached.</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-end flex-wrap">
+            <Button variant="outline" onClick={() => setPdfColumnDialogOpen(false)} data-testid="button-pdf-col-cancel">
+              Cancel
+            </Button>
+            <Button
+              disabled={selectedPdfColumnIds.length === 0}
+              onClick={async () => {
+                setPdfColumnDialogOpen(false);
+                await handleDownloadPDF(pendingPdfDetailed);
+              }}
+              data-testid="button-pdf-col-confirm"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {pendingPdfDetailed ? 'Detailed PDF' : 'Overview PDF'}
             </Button>
           </DialogFooter>
         </DialogContent>
