@@ -1,7 +1,8 @@
 import type { IPropertyAPIService, PropertyData } from "./property-api.interface";
 import { storage } from "../storage";
 
-const CACHE_TTL_HOURS = 24;
+const CACHE_TTL_DAYS = 30;
+const CACHE_TTL_HOURS = CACHE_TTL_DAYS * 24;
 
 function normalizeUrl(url: string): string {
   try {
