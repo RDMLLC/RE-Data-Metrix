@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const currentUser = req.user as User;
     const schema = z.object({
-      reportLogoUrl: z.string().url("Must be a valid URL").nullable().optional(),
+      reportLogoUrl: z.string().max(5_000_000).nullable().optional(), // supports both https:// URLs and base64 data URLs
       reportCompanyName: z.string().max(100).nullable().optional(),
     });
     const parsed = schema.safeParse(req.body);

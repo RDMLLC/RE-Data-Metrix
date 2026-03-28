@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import logoPath from "@assets/Transparent Logo_1762969260481.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SoldPropertyComp {
   address: string;
@@ -138,6 +139,7 @@ export default function CompReportPdf({
   selectedComps,
 }: CompReportPdfProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const { user } = useAuth();
 
   const safeAddress = subjectAddress || 'property';
   const { toPDF, targetRef } = usePDF({
@@ -245,9 +247,42 @@ export default function CompReportPdf({
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <img src={logoPath} alt="RE Data Metrix" style={{ height: '36px', width: 'auto' }} />
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>RE Data Metrix</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '12px', marginBottom: '20px' }}>
+            {/* Left: user logo + company name, or RE Data Metrix */}
+            {user?.reportLogoUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src={user.reportLogoUrl} alt={user.reportCompanyName || 'Company logo'} style={{ height: '40px', width: 'auto', objectFit: 'contain', maxWidth: '120px' }} />
+                {user.reportCompanyName && (
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#111' }}>{user.reportCompanyName}</div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src={logoPath} alt="RE Data Metrix" style={{ height: '36px', width: 'auto' }} />
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>RE Data Metrix</div>
+                  <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
+                </div>
+              </div>
+            )}
+            {/* Right: RE Data Metrix branding */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'right' }}>
+              {user?.reportLogoUrl && (
+                <img src={logoPath} alt="RE Data Metrix" style={{ height: '28px', width: 'auto', opacity: 0.65 }} />
+              )}
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                  {user?.reportLogoUrl ? 'RE Data Metrix' : 'www.redatametrix.com'}
+                </div>
+                {user?.reportLogoUrl && (
+                  <div style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
+                )}
+                {user?.reportLogoUrl && (
+                  <div style={{ fontSize: '10px', color: '#6b7280' }}>www.redatametrix.com</div>
+                )}
+                <div style={{ fontSize: '11px', color: '#6b7280' }}>Comp Report</div>
+              </div>
+            </div>
           </div>
 
           {/* Title */}

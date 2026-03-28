@@ -856,17 +856,58 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reportLogoUrl">Logo URL</Label>
-                      <Input
-                        id="reportLogoUrl"
-                        value={brandingForm.reportLogoUrl}
-                        onChange={(e) => setBrandingForm({ ...brandingForm, reportLogoUrl: e.target.value })}
-                        placeholder="https://yoursite.com/logo.png"
-                        data-testid="input-report-logo-url"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Enter the direct URL to your logo image. It will appear on the left side of PDF reports.
-                      </p>
+                      <Label>Logo</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor="logoFileUpload"
+                            className="inline-flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 text-sm font-medium hover-elevate"
+                            data-testid="button-upload-logo"
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                            Upload Logo
+                          </label>
+                          <input
+                            id="logoFileUpload"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            className="sr-only"
+                            data-testid="input-logo-file"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 2 * 1024 * 1024) {
+                                toast({ title: "File too large", description: "Logo must be under 2MB.", variant: "destructive" });
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const dataUrl = ev.target?.result as string;
+                                setBrandingForm(prev => ({ ...prev, reportLogoUrl: dataUrl }));
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                          {brandingForm.reportLogoUrl && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setBrandingForm(prev => ({ ...prev, reportLogoUrl: "" }))}
+                              data-testid="button-remove-logo"
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, WebP or SVG — max 2MB. Or paste a URL below.</p>
+                        <Input
+                          value={brandingForm.reportLogoUrl.startsWith('data:') ? '' : brandingForm.reportLogoUrl}
+                          onChange={(e) => setBrandingForm({ ...brandingForm, reportLogoUrl: e.target.value })}
+                          placeholder="https://yoursite.com/logo.png"
+                          data-testid="input-report-logo-url"
+                        />
+                      </div>
                     </div>
                     {brandingForm.reportLogoUrl && (
                       <div>
@@ -901,7 +942,9 @@ export default function Profile() {
                             <p className="font-semibold text-sm" data-testid="text-report-company-name">{user.reportCompanyName}</p>
                           )}
                           {user.reportLogoUrl && (
-                            <p className="text-xs text-muted-foreground truncate max-w-xs" data-testid="text-report-logo-url">{user.reportLogoUrl}</p>
+                            <p className="text-xs text-muted-foreground" data-testid="text-report-logo-url">
+                              {user.reportLogoUrl.startsWith('data:') ? 'Uploaded logo' : user.reportLogoUrl}
+                            </p>
                           )}
                         </div>
                       </div>

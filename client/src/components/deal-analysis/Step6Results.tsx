@@ -1991,21 +1991,24 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </div>
                 </div>
               )}
-              {/* Right side: RE Data Metrix attribution (always shown when user branding is active) or report label */}
-              {user?.reportLogoUrl ? (
-                <div className="flex items-center gap-2 text-right text-sm text-muted-foreground">
+              {/* Right side: RE Data Metrix branding */}
+              <div className="flex items-center gap-2 text-right text-sm text-muted-foreground">
+                {user?.reportLogoUrl && (
                   <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8 opacity-70" />
-                  <div>
-                    <div className="text-xs font-medium text-primary/70">RE Data Metrix</div>
-                    <div className="text-xs">Deal Analysis Report</div>
+                )}
+                <div>
+                  <div className={`font-medium ${user?.reportLogoUrl ? 'text-xs text-primary/70' : ''}`}>
+                    {user?.reportLogoUrl ? 'RE Data Metrix' : 'www.redatametrix.com'}
                   </div>
-                </div>
-              ) : (
-                <div className="text-right text-sm text-muted-foreground">
-                  <div className="font-medium">www.redatametrix.com</div>
+                  {user?.reportLogoUrl && (
+                    <div className="text-xs italic">Turning Terms into Returns</div>
+                  )}
+                  {user?.reportLogoUrl && (
+                    <div className="text-xs">www.redatametrix.com</div>
+                  )}
                   <div className="text-xs">Deal Analysis Report</div>
                 </div>
-              )}
+              </div>
             </div>
             <CardHeader>
               <CardTitle>Loan Comparison Results</CardTitle>
@@ -3489,21 +3492,24 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                     <div style={{ fontSize: '11px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
                   </div>
                 )}
-                {/* Right: RE Data Metrix attribution when user branding active, otherwise domain */}
-                {user?.reportLogoUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'right' }}>
+                {/* Right: RE Data Metrix branding */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'right' }}>
+                  {user?.reportLogoUrl && (
                     <img src={logoImg} alt="RE Data Metrix" style={{ height: '28px', width: '28px', opacity: 0.65 }} />
-                    <div>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>RE Data Metrix</div>
-                      <div style={{ fontSize: '11px', color: '#6b7280' }}>Deal Analysis Report</div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>
+                      {user?.reportLogoUrl ? 'RE Data Metrix' : 'www.redatametrix.com'}
                     </div>
+                    {user?.reportLogoUrl && (
+                      <div style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
+                    )}
+                    {user?.reportLogoUrl && (
+                      <div style={{ fontSize: '10px', color: '#6b7280' }}>www.redatametrix.com</div>
+                    )}
+                    <div style={{ fontSize: '11px', color: '#6b7280' }}>Deal Analysis Report</div>
                   </div>
-                ) : (
-                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#6b7280' }}>
-                    <div style={{ fontWeight: '600' }}>www.redatametrix.com</div>
-                    <div>Deal Analysis Report</div>
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* Title */}
