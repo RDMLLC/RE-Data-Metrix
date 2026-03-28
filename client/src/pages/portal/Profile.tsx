@@ -870,12 +870,16 @@ export default function Profile() {
                           <input
                             id="logoFileUpload"
                             type="file"
-                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            accept="image/png,image/jpeg"
                             className="sr-only"
                             data-testid="input-logo-file"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
+                              if (!['image/png', 'image/jpeg'].includes(file.type)) {
+                                toast({ title: "Invalid file type", description: "Only PNG and JPG files are supported.", variant: "destructive" });
+                                return;
+                              }
                               if (file.size > 2 * 1024 * 1024) {
                                 toast({ title: "File too large", description: "Logo must be under 2MB.", variant: "destructive" });
                                 return;
@@ -900,7 +904,7 @@ export default function Profile() {
                             </Button>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, WebP or SVG — max 2MB. Or paste a URL below.</p>
+                        <p className="text-xs text-muted-foreground">PNG or JPG only — max 2MB. Or paste an image URL below.</p>
                         <Input
                           value={brandingForm.reportLogoUrl.startsWith('data:') ? '' : brandingForm.reportLogoUrl}
                           onChange={(e) => setBrandingForm({ ...brandingForm, reportLogoUrl: e.target.value })}

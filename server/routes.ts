@@ -561,7 +561,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const currentUser = req.user as User;
     const schema = z.object({
-      reportLogoUrl: z.string().max(5_000_000).nullable().optional(), // supports both https:// URLs and base64 data URLs
+      reportLogoUrl: z.string().max(5_000_000).nullable().optional()
+        .refine(
+          (val) => {
+            if (!val) return true;
+            // Allow https:// or http:// URLs
+            if (val.startsWith('https://') || val.startsWith('http://')) return true;
+            // Allow PNG and JPG base64 data URLs only
+            if (val.startsWith('data:image/png;base64,') || val.startsWith('data:image/jpeg;base64,')) return true;
+            return false;
+          },
+          { message: "Logo must be a valid image URL or a PNG/JPG base64 data URL" }
+        ),
       reportCompanyName: z.string().max(100).nullable().optional(),
     });
     const parsed = schema.safeParse(req.body);
