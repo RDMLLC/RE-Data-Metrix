@@ -560,18 +560,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ error: "Not authenticated" });
     }
     const currentUser = req.user as User;
+    // Base64 for 2MB binary: 2 * 1024 * 1024 * (4/3) ≈ 2,796,203 chars + ~30 char data URL prefix
+    const MAX_BASE64_LOGO_CHARS = 2_830_000;
     const schema = z.object({
-      reportLogoUrl: z.string().max(5_000_000).nullable().optional()
+      reportLogoUrl: z.string().nullable().optional()
         .refine(
           (val) => {
             if (!val) return true;
-            // Allow https:// or http:// URLs
-            if (val.startsWith('https://') || val.startsWith('http://')) return true;
-            // Allow PNG and JPG base64 data URLs only
-            if (val.startsWith('data:image/png;base64,') || val.startsWith('data:image/jpeg;base64,')) return true;
+            // Allow HTTPS URLs only (no http:// to avoid mixed-content issues)
+            if (val.startsWith('https://')) return true;
+            // Allow PNG and JPG base64 data URLs only, with 2MB size enforcement
+            if (val.startsWith('data:image/png;base64,') || val.startsWith('data:image/jpeg;base64,')) {
+              return val.length <= MAX_BASE64_LOGO_CHARS;
+            }
             return false;
           },
-          { message: "Logo must be a valid image URL or a PNG/JPG base64 data URL" }
+          { message: "Logo must be a valid HTTPS image URL or a PNG/JPG base64 data URL under 2MB" }
         ),
       reportCompanyName: z.string().max(100).nullable().optional(),
     });

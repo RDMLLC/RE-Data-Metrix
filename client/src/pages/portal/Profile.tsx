@@ -904,7 +904,7 @@ export default function Profile() {
                             </Button>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">PNG or JPG only — max 2MB. Or paste an image URL below.</p>
+                        <p className="text-xs text-muted-foreground">PNG or JPG only — max 2MB. Or paste an HTTPS image URL below.</p>
                         <Input
                           value={brandingForm.reportLogoUrl.startsWith('data:') ? '' : brandingForm.reportLogoUrl}
                           onChange={(e) => setBrandingForm({ ...brandingForm, reportLogoUrl: e.target.value })}
