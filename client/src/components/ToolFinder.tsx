@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+
 import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2, DollarSign, Video, Info } from "lucide-react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
@@ -485,7 +485,6 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = (([
 
 export default function ToolFinder({ isBlurred = false, showTutorial = true }: ToolFinderProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [searchText, setSearchText] = useState("");
 
   const { data: affiliates, isLoading: affiliatesLoading } = useQuery<Affiliate[]>({
     queryKey: ["/api/affiliates"],
@@ -534,38 +533,15 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
 
   const resetFilters = () => {
     setSelectedCategories([]);
-    setSearchText("");
   };
 
-  const normalizedSearch = searchText.trim().toLowerCase();
-
   const matchingTools = useMemo(() => {
-    const hasText = normalizedSearch.length > 0;
-    const hasCats = selectedCategories.length > 0;
+    if (selectedCategories.length === 0) return [];
 
-    if (!hasText && !hasCats) return [];
-
-    return toolAffiliates.filter(affiliate => {
-      const catMatch = hasCats
-        ? selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
-        : true;
-
-      if (!catMatch) return false;
-
-      if (hasText) {
-        const haystack = [
-          affiliate.name,
-          affiliate.description,
-          ...(affiliate.benefits || []),
-          ...(affiliate.categories || []).map((c: string) => categoryLabels[c] || c),
-          ...(affiliate.features || []),
-        ].join(" ").toLowerCase();
-        return haystack.includes(normalizedSearch);
-      }
-
-      return true;
-    }).sort((a, b) => (b.categories?.length || 0) - (a.categories?.length || 0));
-  }, [toolAffiliates, selectedCategories, normalizedSearch, categoryLabels]);
+    return toolAffiliates.filter(affiliate =>
+      selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
+    ).sort((a, b) => (b.categories?.length || 0) - (a.categories?.length || 0));
+  }, [toolAffiliates, selectedCategories]);
 
   const renderCategoryCheckbox = (categoryId: string) => (
     <div key={categoryId} className="flex items-center space-x-2">
@@ -755,7 +731,7 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
       );
     }
 
-    if (selectedCategories.length > 0 || searchText.trim()) {
+    if (selectedCategories.length > 0) {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Matching Tools</h3>
@@ -767,7 +743,7 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
           ) : (
             <Card className="p-8 text-center">
               <p className="text-muted-foreground">
-                No tools match your search. Try different keywords or removing some filters.
+                No tools match the selected categories. Try removing some filters.
               </p>
             </Card>
           )}
@@ -779,7 +755,7 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
       <Card className="p-8 text-center border-dashed">
         <Search className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
         <p className="text-muted-foreground">
-          Search by keyword or select categories above to find matching tools.
+          Select one or more categories above to find matching tools.
         </p>
       </Card>
     );
@@ -812,7 +788,7 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
       <div>
         <h2 className="text-2xl font-semibold mb-2">Tool Finder</h2>
         <p className="text-muted-foreground">
-          Search by keyword or select categories to find the right tools for your investing needs.
+          Select one or more categories to find the right tools for your investing needs.
         </p>
       </div>
 
@@ -820,9 +796,9 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Search className="h-5 w-5 text-muted-foreground" />
-            <h3 className="font-semibold">Find Tools</h3>
+            <h3 className="font-semibold">Filter by Category</h3>
           </div>
-          {(selectedCategories.length > 0 || searchText.trim()) && (
+          {selectedCategories.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -835,20 +811,6 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
           )}
         </div>
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            type="text"
-            placeholder="Search by keyword (e.g. SMS, CRM, skip tracing…)"
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            className="pl-9"
-            data-testid="input-tool-search"
-          />
-        </div>
-
-        <p className="text-sm text-muted-foreground mb-3">Or filter by category:</p>
-
         {categoriesLoading ? (
           <div className="flex items-center justify-center py-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -859,10 +821,10 @@ export default function ToolFinder({ isBlurred = false, showTutorial = true }: T
           </div>
         )}
 
-        {(selectedCategories.length > 0 || searchText.trim()) && (
+        {selectedCategories.length > 0 && (
           <div className="mt-4 pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{matchingTools.length}</span> tool{matchingTools.length !== 1 ? 's' : ''} match{matchingTools.length === 1 ? 'es' : ''} your criteria
+              <span className="font-medium text-foreground">{matchingTools.length}</span> tool{matchingTools.length !== 1 ? 's' : ''} match{matchingTools.length === 1 ? 'es' : ''} your selection
             </p>
           </div>
         )}
