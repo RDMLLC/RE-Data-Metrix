@@ -117,15 +117,30 @@ function PageLoader() {
   );
 }
 
-interface ErrorBoundaryState { hasError: boolean }
+interface ErrorBoundaryState { hasError: boolean; isChunkError: boolean }
 class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, isChunkError: false };
   }
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError(error: Error) {
+    const isChunkError =
+      error.name === "ChunkLoadError" ||
+      /Failed to fetch dynamically imported module/i.test(error.message) ||
+      /Importing a module script failed/i.test(error.message);
+    return { hasError: true, isChunkError };
+  }
+  componentDidCatch(error: Error) {
+    const isChunkError =
+      error.name === "ChunkLoadError" ||
+      /Failed to fetch dynamically imported module/i.test(error.message) ||
+      /Importing a module script failed/i.test(error.message);
+    if (isChunkError) {
+      window.location.reload();
+    }
+  }
   render() {
-    if (this.state.hasError) {
+    if (this.state.hasError && !this.state.isChunkError) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <div className="flex flex-col items-center gap-4 text-center max-w-md px-4">
@@ -135,6 +150,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
           </div>
         </div>
       );
+    }
+    if (this.state.isChunkError) {
+      return null;
     }
     return this.props.children;
   }
