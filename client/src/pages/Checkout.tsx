@@ -539,6 +539,7 @@ export default function Checkout() {
         // Check if this is a comp user (they get immediate access)
         if (result.user?.subscriptionStatus === 'comped') {
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+          window.gtag?.('event', 'sign_up', { account_type: 'free' });
           toast({
             title: "Welcome to RE Data Metrix!",
             description: "Your complimentary account has been activated.",
@@ -551,6 +552,7 @@ export default function Checkout() {
         if (result.requiresVerification) {
           setJustRegistered(true);
           trackCompleteRegistration({ eventId: freeMetaEventId });
+          window.gtag?.('event', 'sign_up', { account_type: 'free' });
           toast({
             title: "Account Created!",
             description: "Please check your email to verify your account.",
@@ -558,6 +560,7 @@ export default function Checkout() {
         } else {
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           trackCompleteRegistration({ eventId: freeMetaEventId });
+          window.gtag?.('event', 'sign_up', { account_type: 'free' });
           toast({
             title: "Welcome to RE Data Metrix!",
             description: "Your free account has been created successfully.",
@@ -597,6 +600,7 @@ export default function Checkout() {
         if (result.requiresVerification) {
           setJustRegistered(true);
           trackCompleteRegistration();
+          window.gtag?.('event', 'sign_up', { account_type: 'paid' });
           toast({
             title: "Account Created!",
             description: "Please check your email to verify your account.",
@@ -604,6 +608,7 @@ export default function Checkout() {
         } else {
           queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           trackCompleteRegistration();
+          window.gtag?.('event', 'sign_up', { account_type: 'paid' });
           toast({
             title: "Welcome to RE Data Metrix!",
             description: "Your premium account has been activated with 100% discount.",

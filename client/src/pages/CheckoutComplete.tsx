@@ -64,6 +64,7 @@ export default function CheckoutComplete() {
     if (!pixelsLoaded || !pendingPixelData) return;
     trackCompleteRegistration({ eventId: pendingPixelData.metaEventId });
     trackSubscribe();
+    window.gtag?.('event', 'sign_up', { account_type: 'paid' });
     if (typeof (window as any).gtag === "function" && pendingPixelData.plan) {
       (window as any).gtag("event", "subscription_purchase", {
         currency: "USD",
