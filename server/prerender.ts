@@ -356,13 +356,11 @@ function buildHeadTags(route: RouteConfig): string {
 
   lines.push(`  <!-- Prerendered SEO: ${route.path} -->`);
   lines.push(`  <title>${fullTitle}</title>`);
-  lines.push(`  <meta name="description" content="${escapeAttr(route.description)}" />`);
 
   if (route.noIndex) {
     lines.push(`  <meta name="robots" content="noindex, nofollow" />`);
   }
 
-  lines.push(`  <link rel="canonical" href="${route.canonicalUrl}" />`);
   lines.push(`  <meta property="og:title" content="${escapeAttr(fullTitle)}" />`);
   lines.push(`  <meta property="og:description" content="${escapeAttr(route.description)}" />`);
   lines.push(`  <meta property="og:type" content="website" />`);
