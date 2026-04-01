@@ -1392,7 +1392,9 @@ export const sentSignupFollowups = pgTable("sent_signup_followups", {
   userId: varchar("user_id").notNull().references(() => users.id),
   emailType: text("email_type").notNull(),
   sentAt: timestamp("sent_at").defaultNow(),
-});
+}, (table) => ({
+  userEmailTypeUnique: { name: "sent_signup_followups_user_email_type_unique", columns: [table.userId, table.emailType], unique: true },
+}));
 
 export const emailSenderAliases = pgTable("email_sender_aliases", {
   id: serial("id").primaryKey(),

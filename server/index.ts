@@ -88,6 +88,7 @@ async function runStartupMigrations() {
   try {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_cancellation_choice text`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamp`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS sent_signup_followups_user_email_type_unique ON sent_signup_followups (user_id, email_type)`);
     await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration text DEFAULT 'repeating'`);
     await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration_in_months integer DEFAULT 12`);
     // Ensure FREEMONTH always stays 'once' regardless of column default
