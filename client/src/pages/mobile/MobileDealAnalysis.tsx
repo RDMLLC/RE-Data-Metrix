@@ -41,7 +41,7 @@ function getYoutubeThumbnail(url: string): string {
 }
 
 export default function MobileDealAnalysis() {
-  const { user, isSubscriber } = useAuth();
+  const { user } = useAuth();
   const { wizardData } = useWizardData();
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
