@@ -288,9 +288,46 @@ export default function MemberDashboard() {
             </div>
           )}
 
+          {/* Full-width hero CTA — only when user has run 0 deals */}
+          {!statsLoading && (stats?.totalDeals ?? 0) === 0 && (
+            <Card
+              className="hover-elevate cursor-pointer mb-6 border-blue-200/60 dark:border-blue-800/40 bg-gradient-to-br from-blue-500/5 to-primary/5"
+              onClick={() => setLocation("/deal-analysis")}
+              data-testid="card-start-deal-analysis-hero"
+            >
+              <CardContent className="py-8 px-6 sm:px-10">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                  <div className="w-16 h-16 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Calculator className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-bold text-foreground mb-1">Analyze Your First Investment Property</h2>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      Enter an address and we'll pull the property data automatically. Add your numbers and get projected profit, ROI, max allowable offer, and matched lenders in minutes.
+                    </p>
+                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Automated property lookup</span>
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Profit & ROI projections</span>
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Lender comparison</span>
+                    </div>
+                  </div>
+                  <Button
+                    className="flex-shrink-0 self-start sm:self-center"
+                    onClick={(e) => { e.stopPropagation(); setLocation("/deal-analysis"); }}
+                    data-testid="button-hero-start-deal"
+                  >
+                    Start Analysis
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* 2x3 Grid of Dashboard Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Start Deal Analysis */}
+            {/* Start Deal Analysis — shown in grid only after first deal is completed */}
+            {(statsLoading || (stats?.totalDeals ?? 0) > 0) && (
             <Card 
               className="hover-elevate cursor-pointer" 
               onClick={() => setLocation("/deal-analysis")}
@@ -310,6 +347,7 @@ export default function MemberDashboard() {
                 </CardDescription>
               </CardContent>
             </Card>
+            )}
 
             {/* Deals Analyzed */}
             <Card 
