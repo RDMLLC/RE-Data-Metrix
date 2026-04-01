@@ -2352,7 +2352,7 @@ END:VCALENDAR`;
 
   async sendDay1ActivationEmail(to: string, firstName: string): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
-    const ctaUrl = `${baseUrl}/deal-analysis`;
+    const ctaUrl = `${baseUrl}/m/deal-analysis`;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -2416,7 +2416,7 @@ END:VCALENDAR`;
 
   async sendDay7FollowupEmail(to: string, firstName: string): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
-    const ctaUrl = `${baseUrl}/deal-analysis`;
+    const ctaUrl = `${baseUrl}/m/deal-analysis`;
 
     const htmlContent = `
       <!DOCTYPE html>

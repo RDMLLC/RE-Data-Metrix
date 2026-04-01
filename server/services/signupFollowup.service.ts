@@ -62,9 +62,9 @@ class SignupFollowupService {
 
       const now = new Date();
       // Send within 24 hours of registration (using createdAt as proxy for verification time).
-      // Lower bound: 1h (allow time to verify); upper bound: 48h safety net for missed checks.
+      // Lower bound: 1h (allow time to verify email); upper bound: 24h per spec.
       const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
-      const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       const eligibleUsers = await db
         .select({
@@ -85,7 +85,7 @@ class SignupFollowupService {
         .where(and(
           eq(users.isEmailVerified, true),
           lte(users.createdAt, oneHourAgo),
-          gte(users.createdAt, twoDaysAgo),
+          gte(users.createdAt, oneDayAgo),
           isNull(sentSignupFollowups.id),
           notExists(
             db.select({ id: savedDeals.id })
