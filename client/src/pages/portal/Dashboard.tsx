@@ -291,28 +291,28 @@ export default function MemberDashboard() {
           {/* Full-width hero CTA — only when user has run 0 deals */}
           {!statsLoading && (stats?.totalDeals ?? 0) === 0 && (
             <Card
-              className="hover-elevate cursor-pointer mb-6 border-blue-200/60 dark:border-blue-800/40 bg-gradient-to-br from-blue-500/5 to-primary/5"
+              className="hover-elevate cursor-pointer mb-6 bg-primary border-0"
               onClick={() => setLocation("/deal-analysis")}
               data-testid="card-start-deal-analysis-hero"
             >
               <CardContent className="py-8 px-6 sm:px-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                  <div className="w-16 h-16 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Calculator className="h-8 w-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Calculator className="h-8 w-8 text-primary-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-bold text-foreground mb-1">Analyze Your First Investment Property</h2>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      Enter an address and we'll pull the property data automatically. Add your numbers and get projected profit, ROI, max allowable offer, and matched lenders in minutes.
+                    <h2 className="text-xl font-bold text-primary-foreground mb-1">Start Here — Analyze Your First Deal in 3 Minutes</h2>
+                    <p className="text-primary-foreground/75 text-sm mb-4">
+                      Enter an address and we'll pull the property data automatically. Get projected profit, ROI, max allowable offer, and matched lenders.
                     </p>
-                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Automated property lookup</span>
-                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Profit & ROI projections</span>
-                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Lender comparison</span>
+                    <div className="flex flex-wrap gap-3 text-xs text-primary-foreground/65">
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-primary-foreground/80" /> Automated property lookup</span>
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-primary-foreground/80" /> Profit & ROI projections</span>
+                      <span className="flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5 text-primary-foreground/80" /> Lender comparison</span>
                     </div>
                   </div>
                   <Button
-                    className="flex-shrink-0 self-start sm:self-center"
+                    className="flex-shrink-0 self-start sm:self-center bg-white/90 text-primary border-white/70"
                     onClick={(e) => { e.stopPropagation(); setLocation("/deal-analysis"); }}
                     data-testid="button-hero-start-deal"
                   >

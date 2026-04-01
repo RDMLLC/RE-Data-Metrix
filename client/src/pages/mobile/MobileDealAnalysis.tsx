@@ -155,19 +155,17 @@ export default function MobileDealAnalysis() {
           </div>
         )}
 
-        {/* Only show Start/Continue Analysis for subscribers or users with in-progress deals */}
-        {(isSubscriber || hasInProgressDeal) && (
-          <Link href="/deal-analysis">
-            <Button 
-              className="w-full" 
-              size="lg"
-              data-testid="button-start-analysis"
-            >
-              <Calculator className="h-5 w-5 mr-2" />
-              {hasInProgressDeal ? "Continue Analysis" : "Start New Analysis"}
-            </Button>
-          </Link>
-        )}
+        {/* Start/Continue Analysis — available to all logged-in users */}
+        <Link href="/deal-analysis">
+          <Button 
+            className="w-full" 
+            size="lg"
+            data-testid="button-start-analysis"
+          >
+            <Calculator className="h-5 w-5 mr-2" />
+            {hasInProgressDeal ? "Continue Analysis" : "Start New Analysis"}
+          </Button>
+        </Link>
 
         {hasInProgressDeal && (
           <Card className="p-3 border-accent/50 bg-accent/5" data-testid="card-in-progress-deal">
@@ -208,47 +206,30 @@ export default function MobileDealAnalysis() {
           </div>
         </div>
 
-        {/* Only show Quick Steps for subscribers */}
-        {isSubscriber && (
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold" id="quick-steps-heading">Quick Steps</h3>
-            <ul className="space-y-1.5" aria-labelledby="quick-steps-heading" role="list" data-testid="list-wizard-steps">
-              {[
-                { step: 1, title: "Enter Property Address", desc: "Auto-lookup or manual entry" },
-                { step: 2, title: "Property Details", desc: "Beds, baths, sqft" },
-                { step: 3, title: "Purchase & Renovation", desc: "Price, rehab budget, ARV" },
-                { step: 4, title: "Your Info", desc: "Experience & credit" },
-                { step: 5, title: "Holding Period", desc: "Timeline & exit strategy" },
-                { step: 6, title: "Results", desc: "Profit & lender comparison" },
-              ].map(({ step, title, desc }) => (
-                <li key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50" data-testid={`step-${step}`}>
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
-                    <span className="text-xs font-bold text-primary">{step}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium" data-testid={`text-step-${step}-title`}>{title}</p>
-                    <p className="text-[10px] text-muted-foreground">{desc}</p>
-                  </div>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground/30" aria-hidden="true" />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {!isSubscriber && (
-          <Card className="p-3 bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
-            <p className="text-xs font-medium mb-1">Unlock Full Results</p>
-            <p className="text-[10px] text-muted-foreground mb-2">
-              Subscribe to see detailed lender comparisons
-            </p>
-            <Link href="/pricing">
-              <Button size="sm" className="w-full" data-testid="button-view-pricing">
-                View Plans
-              </Button>
-            </Link>
-          </Card>
-        )}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold" id="quick-steps-heading">Quick Steps</h3>
+          <ul className="space-y-1.5" aria-labelledby="quick-steps-heading" role="list" data-testid="list-wizard-steps">
+            {[
+              { step: 1, title: "Enter Property Address", desc: "Auto-lookup or manual entry" },
+              { step: 2, title: "Property Details", desc: "Beds, baths, sqft" },
+              { step: 3, title: "Purchase & Renovation", desc: "Price, rehab budget, ARV" },
+              { step: 4, title: "Your Info", desc: "Experience & credit" },
+              { step: 5, title: "Holding Period", desc: "Timeline & exit strategy" },
+              { step: 6, title: "Results", desc: "Profit & lender comparison" },
+            ].map(({ step, title, desc }) => (
+              <li key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50" data-testid={`step-${step}`}>
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
+                  <span className="text-xs font-bold text-primary">{step}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium" data-testid={`text-step-${step}-title`}>{title}</p>
+                  <p className="text-[10px] text-muted-foreground">{desc}</p>
+                </div>
+                <CheckCircle className="h-4 w-4 text-muted-foreground/30" aria-hidden="true" />
+              </li>
+            ))}
+          </ul>
+        </div>
       </main>
 
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
