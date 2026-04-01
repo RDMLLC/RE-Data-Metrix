@@ -1969,7 +1969,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </p>
                     </div>
                   </div>
-                  <Link href="/pricing">
+                  <Link href="/upgrade">
                     <Button data-testid="button-upgrade-loan-referrals">
                       Upgrade Now
                     </Button>
@@ -2299,16 +2299,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </Button>
                 )}
                 
-                {/* Subscribe prompt — only for manual-entry free users - Mobile */}
+                {/* Upgrade prompt — only for manual-entry free users - Mobile */}
                 {!showFullResults && !isGeneratingPdf && (
                   <div className="mt-4 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-4 text-center">
-                    <h3 className="font-semibold text-base mb-2">Subscribe to Get Lender Referrals and More</h3>
+                    <h3 className="font-semibold text-base mb-2">Upgrade to Get Lender Referrals and More</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Upgrade to compare multiple lender options and get connected with lenders who can fund your deals.
+                      Compare multiple lender options and get connected with lenders who can fund your deals.
                     </p>
-                    <Link href="/checkout">
-                      <Button size="sm" data-testid="button-subscribe-step5-mobile">
-                        Subscribe Now
+                    <Link href="/upgrade">
+                      <Button size="sm" data-testid="button-upgrade-step5-mobile">
+                        Upgrade Now
                       </Button>
                     </Link>
                   </div>
@@ -3009,16 +3009,16 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </div>
           )}
 
-          {/* Subscribe prompt — only for manual-entry free users */}
+          {/* Upgrade prompt — only for manual-entry free users */}
           {!showFullResults && !isGeneratingPdf && (
             <div className="mt-6 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
-              <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
+              <h3 className="font-semibold text-lg mb-2">Upgrade to Get Lender Referrals and More</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Upgrade to compare multiple lender options, see detailed financing comparisons, and get connected directly with lenders who can fund your deals.
+                Compare multiple lender options, see detailed financing comparisons, and get connected directly with lenders who can fund your deals.
               </p>
-              <Link href="/checkout">
-                <Button data-testid="button-subscribe-step5">
-                  Subscribe Now
+              <Link href="/upgrade">
+                <Button data-testid="button-upgrade-step5">
+                  Upgrade Now
                 </Button>
               </Link>
             </div>
@@ -3185,13 +3185,13 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               <CardContent>
                 {!showFullResults ? (
                   <div className="rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
-                    <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
+                    <h3 className="font-semibold text-lg mb-2">Upgrade to Get Lender Referrals and More</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Upgrade to compare DSCR lender options, see detailed financing comparisons, and get connected directly with lenders who can fund your deals.
+                      Compare DSCR lender options, see detailed financing comparisons, and get connected directly with lenders who can fund your deals.
                     </p>
-                    <Link href="/checkout">
-                      <Button data-testid="button-subscribe-dscr">
-                        Subscribe Now
+                    <Link href="/upgrade">
+                      <Button data-testid="button-upgrade-dscr">
+                        Upgrade Now
                       </Button>
                     </Link>
                   </div>
