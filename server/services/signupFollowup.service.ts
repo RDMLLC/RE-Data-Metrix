@@ -9,6 +9,10 @@ const EMAIL_TYPES = {
   TWO_WEEK: 'two_week_feature_poll',
 } as const;
 
+// COALESCE(email_verified_at, created_at) — uses emailVerifiedAt when available,
+// falls back to createdAt for users who verified before the column was added.
+const verifiedTime = sql`COALESCE(${users.emailVerifiedAt}, ${users.createdAt})`;
+
 class SignupFollowupService {
   private checkInterval: NodeJS.Timeout | null = null;
 
@@ -61,8 +65,7 @@ class SignupFollowupService {
       console.log('[SIGNUP FOLLOWUP] Checking for Day 1 activation emails...');
 
       const now = new Date();
-      // Send within 24 hours of registration (using createdAt as proxy for verification time).
-      // Lower bound: 1h (allow time to verify email); upper bound: 24h per spec.
+      // Day 1: send 1–24h after email verification (using emailVerifiedAt, fallback to createdAt).
       const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -84,8 +87,8 @@ class SignupFollowupService {
         )
         .where(and(
           eq(users.isEmailVerified, true),
-          lte(users.createdAt, oneHourAgo),
-          gte(users.createdAt, oneDayAgo),
+          lte(verifiedTime, oneHourAgo),
+          gte(verifiedTime, oneDayAgo),
           isNull(sentSignupFollowups.id),
           notExists(
             db.select({ id: savedDeals.id })
@@ -122,8 +125,9 @@ class SignupFollowupService {
       console.log('[SIGNUP FOLLOWUP] Checking for Day 7 followup emails...');
 
       const now = new Date();
+      // Day 7: send to all verified users 7+ days after verification with no deals.
+      // No upper bound — catch any user who was missed due to downtime or delayed rollout.
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
       const eligibleUsers = await db
         .select({
@@ -143,8 +147,7 @@ class SignupFollowupService {
         )
         .where(and(
           eq(users.isEmailVerified, true),
-          lte(users.createdAt, sevenDaysAgo),
-          gte(users.createdAt, fourteenDaysAgo),
+          lte(verifiedTime, sevenDaysAgo),
           isNull(sentSignupFollowups.id),
           notExists(
             db.select({ id: savedDeals.id })

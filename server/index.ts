@@ -87,11 +87,12 @@ async function initStripe() {
 async function runStartupMigrations() {
   try {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_cancellation_choice text`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamp`);
     await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration text DEFAULT 'repeating'`);
     await db.execute(sql`ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS stripe_duration_in_months integer DEFAULT 12`);
     // Ensure FREEMONTH always stays 'once' regardless of column default
     await db.execute(sql`UPDATE discount_codes SET stripe_duration = 'once', stripe_duration_in_months = NULL WHERE code = 'FREEMONTH'`);
-    console.log('[Migrations] pending_cancellation_choice, stripe_duration, stripe_duration_in_months columns ensured');
+    console.log('[Migrations] pending_cancellation_choice, email_verified_at, stripe_duration, stripe_duration_in_months columns ensured');
   } catch (err) {
     console.error('[Migrations] Startup migration error (non-fatal):', err);
   }

@@ -493,10 +493,12 @@ class AuthService {
         };
       }
 
+      const verifiedAt = new Date();
       await db
         .update(users)
         .set({
           isEmailVerified: true,
+          emailVerifiedAt: verifiedAt,
           verificationToken: null,
           verificationExpiry: null,
         })
