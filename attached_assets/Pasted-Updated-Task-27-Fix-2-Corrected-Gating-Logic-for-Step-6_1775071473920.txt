@@ -1,0 +1,21 @@
+Updated Task #27 — Fix #2: Corrected Gating Logic for Step 6 Results
+Context from Q17 findings:
+There are currently two independent gates that do not communicate with each other. Gate 1 (quota enforcement at the lookup API — 403 after 2 automated analyses) is working correctly and does not need to change. Gate 2 (isSubscriber in DealAnalysisWizard → Step6Results) is the problem — it incorrectly blocks all free users from full results regardless of quota status.
+The three scenarios and required behaviour:
+Scenario 1 — Free user, automated lookup, quota remaining (1st or 2nd analysis):
+Show full results identical to a paid user. No upgrade prompt anywhere in Step 6. This user has earned full output — they consumed one of their free automated analyses to get here.
+Scenario 2 — Free user, quota exhausted (attempted 3rd lookup):
+Already correctly handled by Gate 1. The server returns a 403 at URL submission and the user never reaches Step 6. No changes needed for this scenario.
+Scenario 3 — Free user, manual entry (no URL lookup, no quota consumed):
+Show deal metrics in full. Gate only the lender comparison table, replacing it with a contextual upgrade prompt: "Upgrade to see lenders matched to this deal and compare loan terms side by side" with an Upgrade Now button. Manual entry does not consume quota, so full lender results are the paid differentiator here.
+Implementation:
+Remove isSubscriber as the gating condition in Step6Results. Replace it with a new boolean prop — suggested name showFullResults — computed in DealAnalysisWizard as follows:
+showFullResults = isPaidUser OR (isFreeUser AND entryMethod === 'automated')
+To support this, thread remainingLookups from the existing GET /api/user/usage response — already fetched in Step1PropertyAddress.tsx — downstream through DealAnalysisWizard to Step6Results. The wizard already knows which entry method was used (automated URL vs. manual), so entryMethod should already be available in local state.
+No changes to the backend, the quota counter, or Gate 1 are required. This is a frontend-only change involving prop threading and a single conditional replacement.
+Acceptance criteria:
+
+A free user who completes an automated analysis (1st or 2nd of the month) sees full results including the complete lender comparison table — identical to a paid user.
+A free user who completes a manual entry analysis sees full deal metrics but sees a locked lender table with an upgrade CTA instead of lender results.
+A paid user always sees full results regardless of entry method.
+The 403 behaviour for quota-exhausted automated lookup attempts is unchanged.

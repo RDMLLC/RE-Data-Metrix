@@ -27,7 +27,9 @@ import {
   Sparkles,
   CheckCircle,
   Loader2,
-  MessageSquarePlus
+  MessageSquarePlus,
+  X,
+  Zap
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -162,11 +164,23 @@ function FeedbackModal({ open, onClose, type, userEmail }: FeedbackModalProps) {
   );
 }
 
+const BANNER_KEY = "dashboard_upgrade_banner_dismissed";
+
 export default function MemberDashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [modalType, setModalType] = useState<SubmissionType | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem(BANNER_KEY) === "1"; } catch { return false; }
+  });
+
+  const dismissBanner = () => {
+    try { sessionStorage.setItem(BANNER_KEY, "1"); } catch {}
+    setBannerDismissed(true);
+  };
+
+  const isPaidSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user?.subscriptionStatus || '');
 
   const { data: stats, isLoading: statsLoading } = useQuery<MemberStats>({
     queryKey: ["/api/member/stats"],
@@ -237,6 +251,42 @@ export default function MemberDashboard() {
               {getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)}
             </div>
           </div>
+
+          {/* Upgrade banner — free users only, dismissible per session */}
+          {!isPaidSubscriber && !bannerDismissed && (
+            <div
+              className="relative flex flex-wrap items-center justify-between gap-3 rounded-md border border-accent/30 bg-accent/5 px-4 py-3 mb-6"
+              data-testid="banner-upgrade"
+            >
+              <div className="flex items-center gap-3">
+                <Zap className="h-5 w-5 text-accent flex-shrink-0" />
+                <p className="text-sm font-medium text-foreground">
+                  You&apos;re on the free plan.{" "}
+                  <span className="text-muted-foreground font-normal">
+                    Upgrade to unlock unlimited deal analyses, lender matching, and PDF exports.
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setLocation("/upgrade")}
+                  data-testid="button-banner-upgrade"
+                >
+                  See Plans
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={dismissBanner}
+                  data-testid="button-banner-dismiss"
+                  aria-label="Dismiss banner"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* 2x3 Grid of Dashboard Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

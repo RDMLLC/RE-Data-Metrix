@@ -2349,6 +2349,146 @@ END:VCALENDAR`;
       from: await this.getFromForCategory('marketing'),
     });
   }
+
+  async sendDay1ActivationEmail(to: string, firstName: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const ctaUrl = `${baseUrl}/m/deal-analysis`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 32px 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .step-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .step-item { display: flex; margin: 10px 0; font-size: 15px; color: #1e293b; }
+          .step-num { color: #0F7B49; font-weight: 700; margin-right: 12px; flex-shrink: 0; }
+          .cta-section { text-align: center; margin: 32px 0; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #0F7B49; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 26px;">You're In. Let's Run Your First Deal.</h1>
+            <p style="margin: 10px 0 0; opacity: 0.9; font-size: 15px;">RE Data Metrix gives you the numbers before you commit.</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            <p>Your account is confirmed and ready to use. Here's how to get value from RE Data Metrix in the next 5 minutes:</p>
+
+            <div class="step-box">
+              <div class="step-item"><span class="step-num">1.</span><span>Enter any investment property address — we'll pull the property data automatically.</span></div>
+              <div class="step-item"><span class="step-num">2.</span><span>Add your purchase price, rehab estimate, and target ARV.</span></div>
+              <div class="step-item"><span class="step-num">3.</span><span>See your projected profit, ROI, max allowable offer, and lender comparison in seconds.</span></div>
+            </div>
+
+            <p>No spreadsheets. No guessing. Just clean numbers on every deal.</p>
+
+            <div class="cta-section">
+              <a href="${ctaUrl}" class="btn-primary">Run Your First Deal Analysis</a>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">If you have any questions, reply to this email and a real person will get back to you.</p>
+            <p style="margin-top: 24px;">Here to help,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px; color: #9ca3af;">8375 Dunwoody Place, STE R, Atlanta, GA 30350</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Run your first deal analysis — RE Data Metrix',
+      html: htmlContent,
+      from: await this.getFromForCategory('marketing'),
+    });
+  }
+
+  async sendDay7FollowupEmail(to: string, firstName: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const ctaUrl = `${baseUrl}/deal-analysis`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 32px 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .deal-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .deal-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #475569; }
+          .deal-row:last-child { border-bottom: none; }
+          .deal-label { font-weight: 500; }
+          .deal-value { font-weight: 700; color: #1e293b; }
+          .deal-value.green { color: #0F7B49; }
+          .cta-section { text-align: center; margin: 32px 0; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 26px;">A Sample Deal to Get You Started</h1>
+            <p style="margin: 10px 0 0; opacity: 0.9; font-size: 15px;">See what RE Data Metrix looks like in action</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            <p>You joined RE Data Metrix a week ago but haven't run a deal analysis yet. That's okay — we want to show you what one looks like.</p>
+
+            <p style="font-weight: 600; color: #1E3A8A;">Sample Deal: 3BR/2BA Fix-and-Flip in Atlanta, GA</p>
+
+            <div class="deal-card">
+              <div class="deal-row"><span class="deal-label">Purchase Price</span><span class="deal-value">$185,000</span></div>
+              <div class="deal-row"><span class="deal-label">Rehab Budget</span><span class="deal-value">$42,000</span></div>
+              <div class="deal-row"><span class="deal-label">After Repair Value (ARV)</span><span class="deal-value">$310,000</span></div>
+              <div class="deal-row"><span class="deal-label">All-In Cost</span><span class="deal-value">$243,500</span></div>
+              <div class="deal-row"><span class="deal-label">Projected Profit</span><span class="deal-value green">$47,800</span></div>
+              <div class="deal-row"><span class="deal-label">ROI</span><span class="deal-value green">19.6%</span></div>
+              <div class="deal-row"><span class="deal-label">Max Allowable Offer</span><span class="deal-value">$192,000</span></div>
+            </div>
+
+            <p>In 5 minutes, RE Data Metrix calculated all of this — including matching lender options for this exact property type and state.</p>
+
+            <p>Now plug in your own deal and see the same clarity on your numbers.</p>
+
+            <div class="cta-section">
+              <a href="${ctaUrl}" class="btn-primary">Analyze Your First Deal</a>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">Reply to this email anytime if you have questions about getting started.</p>
+            <p style="margin-top: 24px;">Happy investing,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px; color: #9ca3af;">8375 Dunwoody Place, STE R, Atlanta, GA 30350</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'You haven\'t run a deal yet — here\'s a sample | RE Data Metrix',
+      html: htmlContent,
+      from: await this.getFromForCategory('marketing'),
+    });
+  }
+
   async sendUserSubmissionConfirmation(
     to: string,
     name: string,

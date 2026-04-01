@@ -1,19 +1,23 @@
 import { db } from '../db';
-import { users, userProfiles, sentSignupFollowups } from '@shared/schema';
-import { eq, and, lte, isNull, sql } from 'drizzle-orm';
+import { users, userProfiles, sentSignupFollowups, savedDeals } from '@shared/schema';
+import { eq, and, lte, gte, isNull, sql, notExists } from 'drizzle-orm';
 import { emailService } from './email.service';
+
+const EMAIL_TYPES = {
+  DAY_1: 'day_1_activation',
+  DAY_7: 'day_7_followup',
+  TWO_WEEK: 'two_week_feature_poll',
+} as const;
 
 class SignupFollowupService {
   private checkInterval: NodeJS.Timeout | null = null;
-  private readonly FOLLOWUP_DAYS = 14;
-  private readonly EMAIL_TYPE = 'two_week_feature_poll';
 
   start() {
     console.log('Starting signup followup email service...');
-    this.checkAndSendFollowups();
+    this.runAllChecks();
 
     this.checkInterval = setInterval(() => {
-      this.checkAndSendFollowups();
+      this.runAllChecks();
     }, 6 * 60 * 60 * 1000);
 
     console.log('Signup followup service started - checking every 6 hours');
@@ -27,11 +31,19 @@ class SignupFollowupService {
     }
   }
 
-  private async markFollowupSent(userId: string): Promise<boolean> {
+  private async runAllChecks() {
+    await Promise.allSettled([
+      this.checkAndSendDay1Emails(),
+      this.checkAndSendDay7Emails(),
+      this.checkAndSendFollowups(),
+    ]);
+  }
+
+  private async markEmailSent(userId: string, emailType: string): Promise<boolean> {
     try {
       await db.insert(sentSignupFollowups).values({
         userId,
-        emailType: this.EMAIL_TYPE,
+        emailType,
       }).onConflictDoNothing();
       return true;
     } catch {
@@ -39,12 +51,18 @@ class SignupFollowupService {
     }
   }
 
-  async checkAndSendFollowups() {
-    try {
-      console.log('[SIGNUP FOLLOWUP] Checking for users needing followup emails...');
+  private getFirstName(fullName: string | null | undefined, username: string | null | undefined): string {
+    const name = (fullName || '').trim().split(/\s+/)[0];
+    return name || username || 'there';
+  }
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - this.FOLLOWUP_DAYS);
+  async checkAndSendDay1Emails() {
+    try {
+      console.log('[SIGNUP FOLLOWUP] Checking for Day 1 activation emails...');
+
+      const now = new Date();
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
 
       const eligibleUsers = await db
         .select({
@@ -54,15 +72,124 @@ class SignupFollowupService {
           fullName: userProfiles.fullName,
         })
         .from(users)
-        .leftJoin(
-          userProfiles,
-          eq(userProfiles.userId, users.id)
-        )
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
         .leftJoin(
           sentSignupFollowups,
           and(
             eq(sentSignupFollowups.userId, users.id),
-            eq(sentSignupFollowups.emailType, sql`${this.EMAIL_TYPE}`)
+            eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPES.DAY_1}`)
+          )
+        )
+        .where(and(
+          eq(users.isEmailVerified, true),
+          lte(users.createdAt, oneDayAgo),
+          gte(users.createdAt, threeDaysAgo),
+          isNull(sentSignupFollowups.id)
+        ));
+
+      console.log(`[SIGNUP FOLLOWUP] Found ${eligibleUsers.length} users for Day 1 email`);
+
+      let sentCount = 0;
+      for (const user of eligibleUsers) {
+        const firstName = this.getFirstName(user.fullName, user.username);
+        console.log(`[SIGNUP FOLLOWUP] Sending Day 1 activation email to ${user.email}`);
+
+        const sent = await emailService.sendDay1ActivationEmail(user.email, firstName);
+        if (sent) {
+          await this.markEmailSent(user.id, EMAIL_TYPES.DAY_1);
+          sentCount++;
+          console.log(`[SIGNUP FOLLOWUP] Day 1 email sent to ${user.email}`);
+        }
+      }
+
+      if (sentCount > 0) {
+        console.log(`[SIGNUP FOLLOWUP] Sent ${sentCount} Day 1 activation emails this cycle`);
+      }
+    } catch (error) {
+      console.error('[SIGNUP FOLLOWUP] Error sending Day 1 emails:', error);
+    }
+  }
+
+  async checkAndSendDay7Emails() {
+    try {
+      console.log('[SIGNUP FOLLOWUP] Checking for Day 7 followup emails...');
+
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+      const eligibleUsers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+          fullName: userProfiles.fullName,
+        })
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .leftJoin(
+          sentSignupFollowups,
+          and(
+            eq(sentSignupFollowups.userId, users.id),
+            eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPES.DAY_7}`)
+          )
+        )
+        .where(and(
+          eq(users.isEmailVerified, true),
+          lte(users.createdAt, sevenDaysAgo),
+          gte(users.createdAt, fourteenDaysAgo),
+          isNull(sentSignupFollowups.id),
+          notExists(
+            db.select({ id: savedDeals.id })
+              .from(savedDeals)
+              .where(eq(savedDeals.userId, users.id))
+          )
+        ));
+
+      console.log(`[SIGNUP FOLLOWUP] Found ${eligibleUsers.length} users for Day 7 email`);
+
+      let sentCount = 0;
+      for (const user of eligibleUsers) {
+        const firstName = this.getFirstName(user.fullName, user.username);
+        console.log(`[SIGNUP FOLLOWUP] Sending Day 7 followup email to ${user.email}`);
+
+        const sent = await emailService.sendDay7FollowupEmail(user.email, firstName);
+        if (sent) {
+          await this.markEmailSent(user.id, EMAIL_TYPES.DAY_7);
+          sentCount++;
+          console.log(`[SIGNUP FOLLOWUP] Day 7 email sent to ${user.email}`);
+        }
+      }
+
+      if (sentCount > 0) {
+        console.log(`[SIGNUP FOLLOWUP] Sent ${sentCount} Day 7 followup emails this cycle`);
+      }
+    } catch (error) {
+      console.error('[SIGNUP FOLLOWUP] Error sending Day 7 emails:', error);
+    }
+  }
+
+  async checkAndSendFollowups() {
+    try {
+      console.log('[SIGNUP FOLLOWUP] Checking for two-week followup emails...');
+
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 14);
+
+      const eligibleUsers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+          fullName: userProfiles.fullName,
+        })
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .leftJoin(
+          sentSignupFollowups,
+          and(
+            eq(sentSignupFollowups.userId, users.id),
+            eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPES.TWO_WEEK}`)
           )
         )
         .where(and(
@@ -71,28 +198,25 @@ class SignupFollowupService {
           isNull(sentSignupFollowups.id)
         ));
 
-      console.log(`[SIGNUP FOLLOWUP] Found ${eligibleUsers.length} users needing followup`);
+      console.log(`[SIGNUP FOLLOWUP] Found ${eligibleUsers.length} users needing two-week followup`);
 
       let sentCount = 0;
 
       for (const user of eligibleUsers) {
-        const firstName = (user.fullName || '').trim().split(/\s+/)[0] || user.username;
+        const firstName = this.getFirstName(user.fullName, user.username);
         console.log(`[SIGNUP FOLLOWUP] Sending two-week followup to ${user.email}`);
 
-        const sent = await emailService.sendTwoWeekFollowupEmail(
-          user.email,
-          firstName
-        );
+        const sent = await emailService.sendTwoWeekFollowupEmail(user.email, firstName);
 
         if (sent) {
-          await this.markFollowupSent(user.id);
+          await this.markEmailSent(user.id, EMAIL_TYPES.TWO_WEEK);
           sentCount++;
-          console.log(`[SIGNUP FOLLOWUP] Followup sent successfully to ${user.email}`);
+          console.log(`[SIGNUP FOLLOWUP] Two-week followup sent to ${user.email}`);
         }
       }
 
       if (sentCount > 0) {
-        console.log(`[SIGNUP FOLLOWUP] Sent ${sentCount} followup emails this cycle`);
+        console.log(`[SIGNUP FOLLOWUP] Sent ${sentCount} two-week followup emails this cycle`);
       }
 
     } catch (error) {

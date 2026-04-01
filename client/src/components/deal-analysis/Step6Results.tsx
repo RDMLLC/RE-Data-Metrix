@@ -316,6 +316,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // Demo token users get full subscriber access (with anonymized lenders)
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
 
+  // Free users who used an automated property lookup get full results as the payoff for consuming a quota unit.
+  // Manual-entry free users see deal metrics but lender matching is locked.
+  const propertyDataSource = form.watch('propertyDataSource');
+  const showFullResults = effectiveIsSubscriber || propertyDataSource === 'automated';
+
   // Function to anonymize lender columns when demo mode is active
   const getDisplayLenders = (lenderColumns: LoanComparisonColumn[]): LoanComparisonColumn[] => {
     if (!isDemoMode) return lenderColumns;
@@ -1413,11 +1418,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     return null; // Shouldn't reach here, but safety check
   }
 
-  // For non-subscribers, hide lender columns
+  // For manual-entry free users, hide lender columns (automated-lookup free users get full results)
   // Apply demo mode transformation to lender columns before slicing for visibility
   const displayLenderColumns = getDisplayLenders(results.lenderColumns);
-  const visibleLenders = effectiveIsSubscriber ? displayLenderColumns.slice(0, visibleLenderCount) : [];
-  const hasMoreLenders = effectiveIsSubscriber && visibleLenderCount < results.lenderColumns.length;
+  const visibleLenders = showFullResults ? displayLenderColumns.slice(0, visibleLenderCount) : [];
+  const hasMoreLenders = showFullResults && visibleLenderCount < results.lenderColumns.length;
 
   // PDF column filtering - only active during PDF generation when user has made a selection
   const pdfHideCash = isGeneratingPdf && selectedPdfColumnIds.length > 0 && !selectedPdfColumnIds.includes('cash-sale');
@@ -1945,8 +1950,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </Card>
           )}
 
-          {/* Upgrade CTA for non-subscribers */}
-          {!effectiveIsSubscriber && !isGeneratingPdf && (
+          {/* Upgrade CTA — only for manual-entry free users */}
+          {!showFullResults && !isGeneratingPdf && (
             <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
               <CardContent className="py-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -2291,8 +2296,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </Button>
                 )}
                 
-                {/* Subscribe prompt for non-subscribers - Mobile */}
-                {!effectiveIsSubscriber && !isGeneratingPdf && (
+                {/* Subscribe prompt — only for manual-entry free users - Mobile */}
+                {!showFullResults && !isGeneratingPdf && (
                   <div className="mt-4 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-4 text-center">
                     <h3 className="font-semibold text-base mb-2">Subscribe to Get Lender Referrals and More</h3>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -3001,8 +3006,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </div>
           )}
 
-          {/* Subscribe prompt for non-subscribers */}
-          {!effectiveIsSubscriber && !isGeneratingPdf && (
+          {/* Subscribe prompt — only for manual-entry free users */}
+          {!showFullResults && !isGeneratingPdf && (
             <div className="mt-6 rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
               <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -3175,7 +3180,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 </p>
               </CardHeader>
               <CardContent>
-                {!effectiveIsSubscriber ? (
+                {!showFullResults ? (
                   <div className="rounded-lg border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 p-6 text-center">
                     <h3 className="font-semibold text-lg mb-2">Subscribe to Get Lender Referrals and More</h3>
                     <p className="text-sm text-muted-foreground mb-4">

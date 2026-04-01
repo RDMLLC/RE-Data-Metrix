@@ -1,0 +1,10 @@
+Q17 — How does the system currently track and enforce the free user automated analysis quota?
+We need to understand the exact mechanism before updating the gating logic in Step6Results. Specifically:
+
+Where is the count stored? Is the number of automated analyses a free user has run this month stored in the database (e.g. a deals_analyzed or monthly_usage field on the user record), in a separate usage/transactions table, or somewhere else?
+When is it incremented? At what point in the flow does the system record that an automated analysis has been used — when the Zillow/Redfin URL is submitted, when the result is returned, or when the user views Step 6?
+When does it reset? Is the monthly reset based on calendar month (e.g. resets on the 1st), or rolling 30 days from the user's signup date or first usage?
+Is the quota already being enforced anywhere in the current code? For example, is there already an API endpoint or middleware that checks remaining quota and returns a flag (e.g. quotaExceeded, analysesRemaining) to the frontend? Or is enforcement currently only happening via the isSubscriber boolean — meaning the quota logic doesn't actually exist yet and needs to be built?
+What does the frontend currently receive from the API when a free user runs an analysis? Specifically, does the deal analysis API response already include any usage/quota fields, or does it only return the deal results?
+
+The reason this matters: the current isSubscriber check in DealAnalysisWizard → Step6Results is blocking all free users from seeing full results, regardless of how many analyses they've used this month. The correct behaviour is that a free user with analyses remaining should see identical results to a paid user. The gate should only trigger after their 2nd automated analysis in the month is exhausted. Understanding where and how the quota is tracked will determine whether Fix #2 is purely a frontend UI change or whether it also requires a new API field and backend quota-check logic.

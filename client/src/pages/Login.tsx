@@ -93,15 +93,12 @@ export default function Login() {
       if (currentUser.role === 'admin' || currentUser.role === 'developer' || currentUser.role === 'auditor') {
         setLocation(returnTo || "/admin");
       } else {
-        const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(currentUser.subscriptionStatus);
-        if (isSubscriber) {
-          setLocation(returnTo || "/portal/dashboard");
-        } else if ((currentUser as any).pendingPlan) {
+        if ((currentUser as any).pendingPlan) {
           setLocation(`/checkout?plan=${(currentUser as any).pendingPlan}`);
         } else if (currentUser.isContractor) {
           setLocation("/contractor-portal");
         } else {
-          setLocation("/upgrade");
+          setLocation(returnTo || "/portal/dashboard");
         }
       }
     }
@@ -138,13 +135,10 @@ export default function Login() {
       if (user.role === 'admin' || user.role === 'developer' || user.role === 'auditor') {
         window.location.href = returnTo || "/admin";
       } else {
-        const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
-        if (isSubscriber) {
-          window.location.href = returnTo || "/portal/dashboard";
-        } else if ((user as any).pendingPlan) {
+        if ((user as any).pendingPlan) {
           window.location.href = `/checkout?plan=${(user as any).pendingPlan}`;
         } else {
-          window.location.href = "/upgrade";
+          window.location.href = returnTo || "/portal/dashboard";
         }
       }
     } catch (error: any) {
