@@ -2408,7 +2408,7 @@ END:VCALENDAR`;
 
     return this.sendEmail({
       to,
-      subject: 'Run your first deal analysis — RE Data Metrix',
+      subject: 'Your first deal analysis is ready — here\'s how to run it.',
       html: htmlContent,
       from: await this.getFromForCategory('marketing'),
     });
@@ -2483,7 +2483,7 @@ END:VCALENDAR`;
 
     return this.sendEmail({
       to,
-      subject: 'You haven\'t run a deal yet — here\'s a sample | RE Data Metrix',
+      subject: 'You haven\'t run a deal yet — try this sample property.',
       html: htmlContent,
       from: await this.getFromForCategory('marketing'),
     });

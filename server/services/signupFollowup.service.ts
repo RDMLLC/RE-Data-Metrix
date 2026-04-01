@@ -61,8 +61,10 @@ class SignupFollowupService {
       console.log('[SIGNUP FOLLOWUP] Checking for Day 1 activation emails...');
 
       const now = new Date();
-      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      // Send within 24 hours of registration (using createdAt as proxy for verification time).
+      // Lower bound: 1h (allow time to verify); upper bound: 48h safety net for missed checks.
+      const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000);
+      const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
       const eligibleUsers = await db
         .select({
@@ -82,9 +84,14 @@ class SignupFollowupService {
         )
         .where(and(
           eq(users.isEmailVerified, true),
-          lte(users.createdAt, oneDayAgo),
-          gte(users.createdAt, threeDaysAgo),
-          isNull(sentSignupFollowups.id)
+          lte(users.createdAt, oneHourAgo),
+          gte(users.createdAt, twoDaysAgo),
+          isNull(sentSignupFollowups.id),
+          notExists(
+            db.select({ id: savedDeals.id })
+              .from(savedDeals)
+              .where(eq(savedDeals.userId, users.id))
+          )
         ));
 
       console.log(`[SIGNUP FOLLOWUP] Found ${eligibleUsers.length} users for Day 1 email`);
