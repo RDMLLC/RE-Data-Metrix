@@ -316,8 +316,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // Demo token users get full subscriber access (with anonymized lenders)
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
 
-  // Free users who used an automated property lookup get full results as the payoff for consuming a quota unit.
-  // Manual-entry free users see deal metrics but lender matching is locked.
+  // Three-scenario gating for Step 6 results:
+  //   Scenario 1 — Free user, automated lookup (quota consumed): showFullResults = true → full lender table shown
+  //   Scenario 2 — Free user, quota exhausted: blocked at /api/user/usage 403 before Step 6, never reaches here
+  //   Scenario 3 — Free user, manual entry: showFullResults = false → deal metrics shown, lender table locked
+  //   Paid user: effectiveIsSubscriber = true → showFullResults = true regardless of entry method
   const propertyDataSource = form.watch('propertyDataSource');
   const showFullResults = effectiveIsSubscriber || propertyDataSource === 'automated';
 
