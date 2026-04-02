@@ -2900,7 +2900,7 @@ END:VCALENDAR`;
     });
   }
 
-  async sendVerificationReminderEmail(to: string, username: string, verificationToken: string): Promise<boolean> {
+  async sendVerificationReminderEmail(to: string, username: string, verificationToken: string, subject?: string): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
     const verificationUrl = `${baseUrl}/verify-email/${verificationToken}`;
 
@@ -2952,11 +2952,78 @@ END:VCALENDAR`;
 
     return this.sendEmail({
       to,
-      subject: "Please confirm your RE Data Metrix account",
+      subject: subject ?? "Please confirm your RE Data Metrix account",
       html: htmlContent,
       from: await this.getFromForCategory('transactional'),
     });
   }
+
+  async sendFirstDealNudgeEmail(to: string, firstName: string): Promise<boolean> {
+    const baseUrl = this.getBaseUrl();
+    const ctaUrl = `${baseUrl}/deal-analysis`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f9fafb; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 32px 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .benefit-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .benefit-item { display: flex; margin: 10px 0; font-size: 15px; color: #1e293b; }
+          .check-mark { color: #0F7B49; font-weight: 700; margin-right: 10px; flex-shrink: 0; }
+          .cta-section { text-align: center; margin: 32px 0; }
+          .btn-primary { display: inline-block; padding: 14px 32px; background-color: #0F7B49; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 700; font-size: 16px; }
+          .footer { text-align: center; padding: 20px 30px; color: #6b7280; font-size: 13px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 26px;">Your Analysis Tools Are Ready</h1>
+            <p style="margin: 10px 0 0; opacity: 0.9; font-size: 15px;">Run your first deal in under 5 minutes</p>
+          </div>
+          <div class="content">
+            <p>Hi ${firstName},</p>
+            <p>You verified your account a few days ago — and your deal analysis tools have been ready and waiting ever since.</p>
+            <p>Here's what RE Data Metrix does for real estate investors:</p>
+
+            <div class="benefit-box">
+              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Instant profit and ROI calculation</strong> — enter an address, purchase price, and rehab budget and see your numbers immediately.</span></div>
+              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Max Allowable Offer</strong> — know exactly how much you can pay and still hit your profit target before you make an offer.</span></div>
+              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Loan comparison</strong> — see how different financing options affect your deal, side by side.</span></div>
+              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Private lender matching</strong> — get connected to lenders who actually work in your target market.</span></div>
+            </div>
+
+            <p>It takes about 3 minutes to run your first deal. Try it with a real property you're evaluating or one you already passed on — either way you'll see how the numbers shake out.</p>
+
+            <div class="cta-section">
+              <a href="${ctaUrl}" class="btn-primary">Run Your First Deal Analysis</a>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">Questions? Reply to this email and a real person will respond.</p>
+            <p style="margin-top: 24px;">Here to help,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 8px 0;">&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+            <p style="margin: 0; font-size: 12px; color: #9ca3af;">8375 Dunwoody Place, STE R, Atlanta, GA 30350</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: "Your analysis tools are ready — here's how to run your first deal.",
+      html: htmlContent,
+      from: await this.getFromForCategory('marketing'),
+    });
+  }
+
   async sendDowngradeToFreeEmail(to: string, username: string): Promise<boolean> {
     const baseUrl = this.getBaseUrl();
     const resubscribeUrl = `${baseUrl}/pricing`;

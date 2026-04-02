@@ -7,6 +7,7 @@ const EMAIL_TYPES = {
   DAY_1: 'day_1_activation',
   DAY_7: 'day_7_followup',
   TWO_WEEK: 'two_week_feature_poll',
+  FIRST_DEAL_NUDGE: 'first_deal_nudge',
 } as const;
 
 // COALESCE(email_verified_at, created_at) — uses emailVerifiedAt when available,
@@ -40,6 +41,7 @@ class SignupFollowupService {
       this.checkAndSendDay1Emails(),
       this.checkAndSendDay7Emails(),
       this.checkAndSendFollowups(),
+      this.checkAndSendFirstDealNudge(),
     ]);
   }
 
@@ -231,6 +233,66 @@ class SignupFollowupService {
 
     } catch (error) {
       console.error('[SIGNUP FOLLOWUP] Error checking followups:', error);
+    }
+  }
+
+  async checkAndSendFirstDealNudge() {
+    try {
+      console.log('[SIGNUP FOLLOWUP] Checking for first-deal nudge emails...');
+
+      const now = new Date();
+      // First deal nudge: 3–5 days after email verification for users with no saved deals
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+
+      const eligibleUsers = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+          fullName: userProfiles.fullName,
+        })
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .leftJoin(
+          sentSignupFollowups,
+          and(
+            eq(sentSignupFollowups.userId, users.id),
+            eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPES.FIRST_DEAL_NUDGE}`)
+          )
+        )
+        .where(and(
+          eq(users.isEmailVerified, true),
+          lte(verifiedTime, threeDaysAgo),
+          gte(verifiedTime, fiveDaysAgo),
+          isNull(sentSignupFollowups.id),
+          notExists(
+            db.select({ id: savedDeals.id })
+              .from(savedDeals)
+              .where(eq(savedDeals.userId, users.id))
+          )
+        ));
+
+      console.log(`[SIGNUP FOLLOWUP] Found ${eligibleUsers.length} users for first-deal nudge`);
+
+      let sentCount = 0;
+      for (const user of eligibleUsers) {
+        const firstName = this.getFirstName(user.fullName, user.username);
+        console.log(`[SIGNUP FOLLOWUP] Sending first-deal nudge to ${user.email}`);
+
+        const sent = await emailService.sendFirstDealNudgeEmail(user.email, firstName);
+        if (sent) {
+          await this.markEmailSent(user.id, EMAIL_TYPES.FIRST_DEAL_NUDGE);
+          sentCount++;
+          console.log(`[SIGNUP FOLLOWUP] First-deal nudge sent to ${user.email}`);
+        }
+      }
+
+      if (sentCount > 0) {
+        console.log(`[SIGNUP FOLLOWUP] Sent ${sentCount} first-deal nudge emails this cycle`);
+      }
+    } catch (error) {
+      console.error('[SIGNUP FOLLOWUP] Error sending first-deal nudge emails:', error);
     }
   }
 }
