@@ -18,7 +18,7 @@ import {
 import {
   TrendingUp, TrendingDown, Users, DollarSign, MousePointer,
   BarChart3, Plus, Edit2, Trash2, X, ChevronDown, ChevronUp,
-  HelpCircle, ExternalLink, Mail, Eye, EyeOff
+  HelpCircle, ExternalLink, Mail, Eye, EyeOff, BookOpen
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -284,6 +284,152 @@ function ToolsPanel() {
   );
 }
 
+// ── Weekly Guide Data ──────────────────────────────────────────
+const GUIDE_STEPS = [
+  {
+    title: "Step 1 — Meta Ads Manager",
+    short: "Amount spent, link clicks, impressions",
+    detail: `1. Open Meta Ads Manager → Campaigns tab
+2. Set date range to Monday–Sunday of the week you are reporting
+3. Check that these columns are visible: Amount Spent, Link Clicks, Impressions
+   → If missing: click "Columns: Performance" → Customize columns → add them
+4. Enter Amount Spent in dollars and cents (e.g. 164.94)
+5. Enter Link Clicks (not "Clicks all" — specifically Link Clicks)
+6. Enter Impressions
+7. Note: Conversions shown in Meta may differ from GA4 — use GA4 as your source of truth for signups`,
+  },
+  {
+    title: "Step 2 — Google Ads",
+    short: "Cost, clicks, impressions",
+    detail: `1. Open Google Ads → Campaigns tab
+2. Set date range to Monday–Sunday of the week you are reporting
+3. Columns needed: Cost, Clicks, Impressions
+4. Enter Cost in dollars and cents (e.g. 89.50)
+5. If Google Ads is not yet active, leave all fields at 0`,
+  },
+  {
+    title: "Step 3 — GA4 Traffic Sources",
+    short: "Total users by channel",
+    detail: `1. Open Google Analytics → Reports → Generate leads → User acquisition
+2. Set date range to Monday–Sunday
+3. Use the "Total users" column — not Sessions
+4. Map channels as follows:
+   • Total users row = Total Visitors
+   • Direct = Direct
+   • Paid Social + Paid Other = Paid Search (add them together)
+   • Organic Search = Organic Search
+   • Organic Social = Social
+   • Referral = Referral
+5. Organic Shopping and Unassigned are minor — exclude them`,
+  },
+  {
+    title: "Step 4 — GA4 Conversion Funnel",
+    short: "Key events: signups, logins",
+    detail: `1. Open Google Analytics → Admin → Events → Key events tab
+2. Set date range to Monday–Sunday
+3. Find and record each of these events:
+   • signup_free_initiated — visited /register (no plan selected)
+   • signup_free_confirmed — verified email (free users)
+   • signup_paid_initiated — visited /register?plan=monthly or annual
+   • signup_paid_complete — reached /checkout/success
+   • signup_paid_confirmed — verified email (paid users)
+   • login_success — reached /portal/dashboard
+4. Note: These events were set up April 2, 2026. Earlier weeks will show 0.`,
+  },
+  {
+    title: "Step 5 — GA4 Engagement",
+    short: "Key events: tool usage, page visits",
+    detail: `1. Still in GA4 → Admin → Events → Key events tab
+2. Find and record:
+   • deal_analysis_visited — reached /deal-analysis
+   • deal_analysis_submitted — clicked analyze/next button in tool
+     (also check PageSense → Goals → deal_analysis_submitted for this one)
+   • lenders_visited — reached /lenders
+   • toolbox_visited — reached /toolbox
+   • pricing_cta_clicked — clicked a pricing CTA button
+     (also check PageSense → Goals → pricing_cta_clicked)`,
+  },
+  {
+    title: "Step 6 — Google Search Console",
+    short: "Impressions, clicks, average position",
+    detail: `1. Open Google Search Console → Performance
+2. Click "Custom" date range → set Monday–Sunday
+3. The four boxes at the top show the numbers you need:
+   • Total impressions → enter in Organic Impressions
+   • Total clicks → enter in Organic Clicks
+   • Average position → enter as-is (e.g. 5.1, not 51)
+4. Average CTR is calculated automatically — you do not need to enter it`,
+  },
+  {
+    title: "Step 7 — Save and review",
+    short: "Notes, save, check insights",
+    detail: `1. Add a note describing anything notable this week:
+   • New campaigns launched or paused
+   • Budget changes
+   • Site updates or new pages
+   • Unusual traffic events
+2. Click Save Snapshot
+3. Review the dashboard — check the Funnel tab for drop-off
+4. Check the Ads tab for CPA trend
+5. Compare this week to last week in the Weekly History table`,
+  },
+];
+
+function WeeklyGuide() {
+  const [open, setOpen] = useState(false);
+  const [openStep, setOpenStep] = useState<number | null>(null);
+
+  return (
+    <div className="mb-6 border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left bg-muted/40 hover:bg-muted/60 transition-colors"
+      >
+        <BookOpen className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm font-medium flex-1">How to enter weekly data</span>
+        <span className="text-xs text-muted-foreground mr-2">7 steps — open each for details</span>
+        {open
+          ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        }
+      </button>
+
+      {open && (
+        <div className="divide-y">
+          {GUIDE_STEPS.map((step, i) => (
+            <div key={i}>
+              <button
+                onClick={() => setOpenStep(openStep === i ? null : i)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/20 transition-colors"
+              >
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-medium">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{step.title}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{step.short}</div>
+                </div>
+                {openStep === i
+                  ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                }
+              </button>
+
+              {openStep === i && (
+                <div className="px-4 pb-4 pt-1">
+                  <pre className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap" style={{ fontFamily: "inherit" }}>
+                    {step.detail}
+                  </pre>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────────
 export default function Reporting() {
   const [, setLocation] = useLocation();
@@ -478,6 +624,9 @@ export default function Reporting() {
 
         {/* Tools Panel */}
         <ToolsPanel />
+
+        {/* Weekly Guide */}
+        <WeeklyGuide />
 
         {/* ── Entry Form ───────────────────────────────────────── */}
         {showForm && !isAuditor && (
