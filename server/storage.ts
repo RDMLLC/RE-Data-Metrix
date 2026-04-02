@@ -93,7 +93,10 @@ import {
   promoCodes as promoCodesTable,
   type PromoCode,
   auditorInvites as auditorInvitesTable,
-  type AuditorInvite
+  type AuditorInvite,
+  reportingSnapshots,
+  type InsertReportingSnapshot,
+  type ReportingSnapshot
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -4561,6 +4564,67 @@ export class DatabaseStorage implements IStorage {
       .where(eq(marketingPixelsTable.id, id))
       .returning();
     return !!deleted;
+  }
+
+  async getAllReportingSnapshots(): Promise<ReportingSnapshot[]> {
+    return await db
+      .select()
+      .from(reportingSnapshots)
+      .orderBy(desc(reportingSnapshots.weekStart));
+  }
+
+  async getReportingSnapshot(id: string): Promise<ReportingSnapshot | undefined> {
+    const [snapshot] = await db
+      .select()
+      .from(reportingSnapshots)
+      .where(eq(reportingSnapshots.id, id))
+      .limit(1);
+    return snapshot;
+  }
+
+  async getReportingSnapshotByWeek(weekStart: string): Promise<ReportingSnapshot | undefined> {
+    const [snapshot] = await db
+      .select()
+      .from(reportingSnapshots)
+      .where(eq(reportingSnapshots.weekStart, weekStart))
+      .limit(1);
+    return snapshot;
+  }
+
+  async createReportingSnapshot(data: InsertReportingSnapshot): Promise<ReportingSnapshot> {
+    const [snapshot] = await db
+      .insert(reportingSnapshots)
+      .values(data)
+      .returning();
+    return snapshot;
+  }
+
+  async updateReportingSnapshot(
+    id: string,
+    data: Partial<InsertReportingSnapshot>
+  ): Promise<ReportingSnapshot | undefined> {
+    const [snapshot] = await db
+      .update(reportingSnapshots)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(reportingSnapshots.id, id))
+      .returning();
+    return snapshot;
+  }
+
+  async deleteReportingSnapshot(id: string): Promise<boolean> {
+    const [deleted] = await db
+      .delete(reportingSnapshots)
+      .where(eq(reportingSnapshots.id, id))
+      .returning();
+    return !!deleted;
+  }
+
+  async getRecentReportingSnapshots(limit: number = 12): Promise<ReportingSnapshot[]> {
+    return await db
+      .select()
+      .from(reportingSnapshots)
+      .orderBy(desc(reportingSnapshots.weekStart))
+      .limit(limit);
   }
 
 }
