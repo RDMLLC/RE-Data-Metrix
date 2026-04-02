@@ -538,14 +538,14 @@ export default function Reporting() {
               <FormSection title="Ad Spend" defaultOpen={false}>
                 <Field label="Meta Spend (cents)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
                   help="Meta Ads Manager → Campaigns → Amount spent. Enter in cents: $150.00 = 15000." />
-                <Field label="Google Spend (cents)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
-                  help="Google Ads → Campaigns → Cost. Enter in cents: $89.50 = 8950." />
                 <Field label="Meta Clicks" id="metaClicks" value={form.metaClicks} onChange={set("metaClicks")}
                   help="Meta Ads Manager → Campaigns → Link clicks." />
-                <Field label="Google Clicks" id="googleClicks" value={form.googleClicks} onChange={set("googleClicks")}
-                  help="Google Ads → Campaigns → Clicks." />
                 <Field label="Meta Impressions" id="metaImpressions" value={form.metaImpressions} onChange={set("metaImpressions")}
                   help="Meta Ads Manager → Campaigns → Impressions." />
+                <Field label="Google Spend (cents)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
+                  help="Google Ads → Campaigns → Cost. Enter in cents: $89.50 = 8950." />
+                <Field label="Google Clicks" id="googleClicks" value={form.googleClicks} onChange={set("googleClicks")}
+                  help="Google Ads → Campaigns → Clicks." />
                 <Field label="Google Impressions" id="googleImpressions" value={form.googleImpressions} onChange={set("googleImpressions")}
                   help="Google Ads → Campaigns → Impressions." />
               </FormSection>
