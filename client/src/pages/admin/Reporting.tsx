@@ -622,10 +622,7 @@ export default function Reporting() {
           )}
         </div>
 
-        {/* Tools Panel */}
         <ToolsPanel />
-
-        {/* Weekly Guide */}
         <WeeklyGuide />
 
         {/* ── Entry Form ───────────────────────────────────────── */}
