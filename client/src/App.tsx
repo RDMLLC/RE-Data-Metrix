@@ -60,6 +60,7 @@ const LenderManagement = lazy(() => import("@/pages/admin/LenderManagement"));
 const AdminLenderBroadcast = lazy(() => import("@/pages/admin/LenderBroadcast"));
 const AdminLenderDetail = lazy(() => import("@/pages/admin/LenderDetail"));
 const AdminReports = lazy(() => import("@/pages/admin/Reports"));
+const AdminReporting = lazy(() => import("@/pages/admin/Reporting"));
 const AdminCompUsers = lazy(() => import("@/pages/admin/CompUsers"));
 const AdminAuditorInvites = lazy(() => import("@/pages/admin/AuditorInvites"));
 const AdminFinancialProjections = lazy(() => import("@/pages/admin/FinancialProjections"));
@@ -273,6 +274,7 @@ function Router() {
         <Route path="/admin/lenders" component={LenderManagement} />
         <Route path="/admin/lender-broadcast" component={AdminLenderBroadcast} />
         <Route path="/admin/reports" component={AdminReports} />
+        <Route path="/admin/reporting" component={AdminReporting} />
         <Route path="/admin/comp-users" component={AdminCompUsers} />
         <Route path="/admin/auditor-invites" component={AdminAuditorInvites} />
         <Route path="/admin/financial-projections" component={AdminFinancialProjections} />
