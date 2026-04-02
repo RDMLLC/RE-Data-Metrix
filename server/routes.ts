@@ -542,6 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       reportLogoUrl: user.reportLogoUrl || null,
       reportCompanyName: user.reportCompanyName || null,
       isContractor,
+      isEmailVerified: user.isEmailVerified ?? false,
       profile: userProfile ? {
         fullName: userProfile.fullName || "",
         creditScoreRange: userProfile.creditScoreRange || "",
@@ -552,6 +553,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: userProfile.phone || "",
       } : null,
     });
+  });
+
+  // ─── User-facing resend verification email ───────────────────────────────────
+  app.post("/api/auth/resend-verification", ensureAuthenticated, async (req, res) => {
+    try {
+      const sessionUser = req.user as User;
+      const [user] = await db.select().from(users).where(eq(users.id, sessionUser.id)).limit(1);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      if (user.isEmailVerified) {
+        return res.status(400).json({ error: "Email is already verified" });
+      }
+      const verificationToken = crypto.randomBytes(32).toString('base64url');
+      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await db.update(users)
+        .set({ verificationToken, verificationExpiry })
+        .where(eq(users.id, user.id));
+      const [resendProfile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const firstName = (resendProfile?.fullName || '').trim().split(/\s+/)[0] || user.username;
+      const emailSent = await emailService.sendVerificationEmail(user.email, firstName, verificationToken);
+      res.json({ message: emailSent ? "Verification email sent" : "Failed to send email", emailSent });
+    } catch (error) {
+      console.error('[Resend Verification] Error:', error);
+      res.status(500).json({ error: "Failed to resend verification email" });
+    }
   });
 
   // ─── Report Branding (logo & company name for PDF reports) ───────────────────

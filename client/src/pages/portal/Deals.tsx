@@ -58,7 +58,10 @@ import {
   BellOff,
   Bell,
   EyeOff,
-  Download
+  Download,
+  CheckCircle,
+  Calculator,
+  ArrowRight
 } from "lucide-react";
 import type { SavedDeal, Lender, LoanProduct } from "@shared/schema";
 
@@ -1246,18 +1249,49 @@ export default function ViewDeals() {
                 </Card>
               ))}
             </div>
-          ) : (
-            <Card className="p-12 text-center">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No Deals Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {statusFilter === "all"
-                  ? "Start analyzing properties to see your deals here."
-                  : `No ${statusFilter.replace("_", " ")} deals found. Try a different filter.`}
+          ) : statusFilter !== "all" ? (
+            <Card className="p-12 text-center" data-testid="card-no-deals-filtered">
+              <DollarSign className="h-10 w-10 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No deals found</h3>
+              <p className="text-muted-foreground">
+                {`No ${statusFilter.replace("_", " ")} deals match your current filter. Try switching to "All".`}
               </p>
-              <Button onClick={() => setLocation("/deal-analysis")} data-testid="button-start-first-deal">
-                Start Your First Deal
-              </Button>
+            </Card>
+          ) : (
+            <Card data-testid="card-deals-empty-state">
+              <CardContent className="py-12 px-8 sm:px-12">
+                <div className="max-w-md mx-auto text-center">
+                  <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-5">
+                    <Calculator className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Run your first deal analysis</h3>
+                  <p className="text-muted-foreground text-sm mb-6">
+                    Enter any investment property address and get a complete financial breakdown in minutes. Here's what you'll get:
+                  </p>
+                  <div className="space-y-3 mb-8 text-left">
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-foreground"><span className="font-medium">Projected profit & ROI</span> — see if the numbers make sense before you make an offer</p>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-foreground"><span className="font-medium">Max allowable offer (MAO)</span> — know your ceiling so you never overpay</p>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-foreground"><span className="font-medium">Lender comparison</span> — compare financing options side by side and find the best fit</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setLocation("/deal-analysis")}
+                    data-testid="button-start-first-deal"
+                    className="w-full sm:w-auto"
+                  >
+                    Analyze Your First Deal
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
           )}
 

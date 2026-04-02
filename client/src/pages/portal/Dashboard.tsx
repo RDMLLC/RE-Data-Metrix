@@ -29,7 +29,8 @@ import {
   Loader2,
   MessageSquarePlus,
   X,
-  Zap
+  Zap,
+  MailWarning
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -165,6 +166,7 @@ function FeedbackModal({ open, onClose, type, userEmail }: FeedbackModalProps) {
 }
 
 const BANNER_KEY = "dashboard_upgrade_banner_dismissed";
+const WELCOME_CARD_KEY = "dashboard_welcome_card_dismissed";
 
 export default function MemberDashboard() {
   const { user } = useAuth();
@@ -174,10 +176,38 @@ export default function MemberDashboard() {
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try { return sessionStorage.getItem(BANNER_KEY) === "1"; } catch { return false; }
   });
+  const [welcomeCardDismissed, setWelcomeCardDismissed] = useState(() => {
+    try { return localStorage.getItem(WELCOME_CARD_KEY) === "1"; } catch { return false; }
+  });
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
 
   const dismissBanner = () => {
     try { sessionStorage.setItem(BANNER_KEY, "1"); } catch {}
     setBannerDismissed(true);
+  };
+
+  const dismissWelcomeCard = () => {
+    try { localStorage.setItem(WELCOME_CARD_KEY, "1"); } catch {}
+    setWelcomeCardDismissed(true);
+  };
+
+  const handleResendVerification = async () => {
+    setResendingVerification(true);
+    try {
+      const res = await apiRequest("POST", "/api/auth/resend-verification");
+      const data = await res.json();
+      if (res.ok && data.emailSent) {
+        setVerificationResent(true);
+        toast({ title: "Email sent", description: "Check your inbox for the verification link." });
+      } else {
+        toast({ title: "Could not send email", description: data.error || "Please try again.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   const isPaidSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user?.subscriptionStatus || '');
@@ -236,6 +266,12 @@ export default function MemberDashboard() {
   }
 
   const displayName = user.profile?.fullName || user.username || "Member";
+  const firstName = (user.profile?.fullName || '').trim().split(/\s+/)[0] || user.username;
+  const accountAgeDays = user.createdAt
+    ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+    : 999;
+  const isNewUser = accountAgeDays <= 7;
+  const showWelcomeCard = isNewUser && !welcomeCardDismissed && !statsLoading && (stats?.totalDeals ?? 0) === 0;
 
   return (
     <Layout>
@@ -251,6 +287,35 @@ export default function MemberDashboard() {
               {getSubscriptionBadge(user.subscriptionStatus || "free", user.subscriptionPlan, !!user.stripeSubscriptionId)}
             </div>
           </div>
+
+          {/* Email verification banner — shown only if email not yet verified */}
+          {user.isEmailVerified === false && (
+            <div
+              className="relative flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-400/40 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 mb-6"
+              data-testid="banner-verify-email"
+            >
+              <div className="flex items-center gap-3">
+                <MailWarning className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  Verify your email address.{" "}
+                  <span className="font-normal text-amber-800 dark:text-amber-300">
+                    Check your inbox for a confirmation link to activate your account.
+                  </span>
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleResendVerification}
+                disabled={resendingVerification || verificationResent}
+                data-testid="button-resend-verification"
+                className="border-amber-400/50 text-amber-800 dark:text-amber-300"
+              >
+                {resendingVerification && <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />}
+                {verificationResent ? "Email sent" : "Resend confirmation email"}
+              </Button>
+            </div>
+          )}
 
           {/* Upgrade banner — free users only, dismissible per session */}
           {!isPaidSubscriber && !bannerDismissed && (
@@ -318,6 +383,72 @@ export default function MemberDashboard() {
                   >
                     Start Analysis
                     <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Welcome card — new users (≤7 days, 0 deals), dismissible via localStorage */}
+          {showWelcomeCard && (
+            <Card className="mb-6 border-primary/20" data-testid="card-welcome-new-user">
+              <CardContent className="pt-6 pb-5 px-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-base font-semibold text-foreground mb-1">
+                      Welcome, {firstName}! Here's how to get started.
+                    </h2>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      You're all set. Here are the two best ways to get value out of RE Data Metrix right away:
+                    </p>
+                    <div className="space-y-3 mb-5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-primary">1</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Run your first deal analysis</p>
+                          <p className="text-xs text-muted-foreground">Enter a property address and get projected profit, ROI, max allowable offer, and financing options in minutes.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-xs font-bold text-primary">2</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Browse the lender directory</p>
+                          <p className="text-xs text-muted-foreground">Search and save private lenders, hard money lenders, and bridge loan providers who fund investment properties.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => setLocation("/deal-analysis")}
+                        data-testid="button-welcome-start-analysis"
+                      >
+                        Analyze a Deal
+                        <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setLocation("/lenders")}
+                        data-testid="button-welcome-browse-lenders"
+                      >
+                        Browse Lenders
+                      </Button>
+                    </div>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={dismissWelcomeCard}
+                    data-testid="button-welcome-dismiss"
+                    aria-label="Dismiss welcome card"
+                    className="flex-shrink-0 -mt-1"
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>

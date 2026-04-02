@@ -18,6 +18,7 @@ interface User {
   reportLogoUrl?: string | null;
   reportCompanyName?: string | null;
   isContractor?: boolean;
+  isEmailVerified?: boolean;
   profile?: {
     fullName: string;
     creditScoreRange?: string;
