@@ -1440,3 +1440,57 @@ export const insertUserSubmissionSchema = createInsertSchema(userSubmissions).om
 });
 export type InsertUserSubmission = z.infer<typeof insertUserSubmissionSchema>;
 export type UserSubmission = typeof userSubmissions.$inferSelect;
+
+export const reportingSnapshots = pgTable("reporting_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  weekStart: date("week_start").notNull(),
+
+  // Traffic
+  totalVisitors: integer("total_visitors").default(0),
+  directVisitors: integer("direct_visitors").default(0),
+  paidVisitors: integer("paid_visitors").default(0),
+  organicVisitors: integer("organic_visitors").default(0),
+  socialVisitors: integer("social_visitors").default(0),
+  referralVisitors: integer("referral_visitors").default(0),
+
+  // Funnel
+  signupFreeInitiated: integer("signup_free_initiated").default(0),
+  signupFreeConfirmed: integer("signup_free_confirmed").default(0),
+  signupPaidInitiated: integer("signup_paid_initiated").default(0),
+  signupPaidComplete: integer("signup_paid_complete").default(0),
+  signupPaidConfirmed: integer("signup_paid_confirmed").default(0),
+  loginSuccess: integer("login_success").default(0),
+
+  // Engagement
+  dealAnalysisVisited: integer("deal_analysis_visited").default(0),
+  dealAnalysisSubmitted: integer("deal_analysis_submitted").default(0),
+  lendersVisited: integer("lenders_visited").default(0),
+  toolboxVisited: integer("toolbox_visited").default(0),
+  pricingCtaClicked: integer("pricing_cta_clicked").default(0),
+
+  // Ad Spend
+  metaSpend: integer("meta_spend").default(0),
+  googleSpend: integer("google_spend").default(0),
+  metaClicks: integer("meta_clicks").default(0),
+  googleClicks: integer("google_clicks").default(0),
+  metaImpressions: integer("meta_impressions").default(0),
+  googleImpressions: integer("google_impressions").default(0),
+
+  // SEO
+  organicImpressions: integer("organic_impressions").default(0),
+  organicClicks: integer("organic_clicks").default(0),
+  avgPosition: integer("avg_position").default(0),
+
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertReportingSnapshotSchema = createInsertSchema(reportingSnapshots).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertReportingSnapshot = z.infer<typeof insertReportingSnapshotSchema>;
+export type ReportingSnapshot = typeof reportingSnapshots.$inferSelect;
