@@ -354,7 +354,11 @@ export default function Reporting() {
 
   const openEdit = (s: Snapshot) => {
     const { id, ...rest } = s;
-    setForm(rest);
+    setForm({
+      ...rest,
+      metaSpend: (rest.metaSpend || 0) / 100,
+      googleSpend: (rest.googleSpend || 0) / 100,
+    });
     setEditingId(id);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -376,7 +380,11 @@ export default function Reporting() {
       const r = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          metaSpend: Math.round((form.metaSpend || 0) * 100),
+          googleSpend: Math.round((form.googleSpend || 0) * 100),
+        }),
       });
       if (!r.ok) {
         const err = await r.json();
@@ -536,14 +544,14 @@ export default function Reporting() {
               </FormSection>
 
               <FormSection title="Ad Spend" defaultOpen={false}>
-                <Field label="Meta Spend (cents)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
-                  help="Meta Ads Manager → Campaigns → Amount spent. Enter in cents: $150.00 = 15000." />
+                <Field label="Meta Spend ($)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
+                  help="Meta Ads Manager → Campaigns → Amount spent. Enter as dollars: $150.00 → type 150." />
                 <Field label="Meta Clicks" id="metaClicks" value={form.metaClicks} onChange={set("metaClicks")}
                   help="Meta Ads Manager → Campaigns → Link clicks." />
                 <Field label="Meta Impressions" id="metaImpressions" value={form.metaImpressions} onChange={set("metaImpressions")}
                   help="Meta Ads Manager → Campaigns → Impressions." />
-                <Field label="Google Spend (cents)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
-                  help="Google Ads → Campaigns → Cost. Enter in cents: $89.50 = 8950." />
+                <Field label="Google Spend ($)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
+                  help="Google Ads → Campaigns → Cost. Enter as dollars: $89.50 → type 89.50." />
                 <Field label="Google Clicks" id="googleClicks" value={form.googleClicks} onChange={set("googleClicks")}
                   help="Google Ads → Campaigns → Clicks." />
                 <Field label="Google Impressions" id="googleImpressions" value={form.googleImpressions} onChange={set("googleImpressions")}
