@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { users, userProfiles, sentSignupFollowups } from '@shared/schema';
-import { eq, and, lte, gte, isNull, sql, isNotNull } from 'drizzle-orm';
+import { eq, and, lte, gte, isNull, sql, isNotNull, exists, notExists } from 'drizzle-orm';
 import { emailService } from './email.service';
 
 const EMAIL_TYPE_24H = 'verification_reminder_24h';
@@ -116,7 +116,9 @@ class VerificationReminderService {
       console.log('[VERIFY REMINDER] Checking for unverified users needing 96h second reminder...');
 
       const now = new Date();
-      // Second reminder: 72–96h after signup, still unverified
+      // Second reminder: 72–96h after signup, still unverified.
+      // Requires that the 24h reminder was already sent (prevents same-cycle dual sends
+      // if a user was missed by the 24h check and is now in the 72–97h window).
       const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);
       const ninetySevenHoursAgo = new Date(now.getTime() - 97 * 60 * 60 * 1000);
 
@@ -130,19 +132,29 @@ class VerificationReminderService {
         })
         .from(users)
         .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
-        .leftJoin(
-          sentSignupFollowups,
-          and(
-            eq(sentSignupFollowups.userId, users.id),
-            eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPE_96H}`)
-          )
-        )
         .where(and(
           eq(users.isEmailVerified, false),
           isNotNull(users.verificationToken),
           lte(users.createdAt, seventyTwoHoursAgo),
           gte(users.createdAt, ninetySevenHoursAgo),
-          isNull(sentSignupFollowups.id)
+          // Must have received the 24h reminder already (prevents same-cycle dual sends)
+          exists(
+            db.select({ id: sentSignupFollowups.id })
+              .from(sentSignupFollowups)
+              .where(and(
+                eq(sentSignupFollowups.userId, users.id),
+                eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPE_24H}`)
+              ))
+          ),
+          // Must not have received the 96h reminder yet
+          notExists(
+            db.select({ id: sentSignupFollowups.id })
+              .from(sentSignupFollowups)
+              .where(and(
+                eq(sentSignupFollowups.userId, users.id),
+                eq(sentSignupFollowups.emailType, sql`${EMAIL_TYPE_96H}`)
+              ))
+          )
         ));
 
       console.log(`[VERIFY REMINDER] Found ${eligibleUsers.length} users needing 96h second reminder`);
