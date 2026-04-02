@@ -195,7 +195,10 @@ export default function MemberDashboard() {
   const handleResendVerification = async () => {
     setResendingVerification(true);
     try {
-      const res = await apiRequest("POST", "/api/auth/resend-verification");
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        credentials: "include",
+      });
       const data = await res.json();
       if (res.ok && data.emailSent) {
         setVerificationResent(true);
@@ -297,7 +300,7 @@ export default function MemberDashboard() {
               <div className="flex items-center gap-3">
                 <MailWarning className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                 <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                  Verify your email address.{" "}
+                  {firstName}, please verify your email address.{" "}
                   <span className="font-normal text-amber-800 dark:text-amber-300">
                     Check your inbox for a confirmation link to activate your account.
                   </span>
