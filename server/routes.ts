@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, sentSignupFollowups, userUsageCounters, promoWaitlist, apiUsageLogs, demoTokens, integrationConfigs, outboundWebhooks, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, insertReportingSnapshotSchema, sentSignupFollowups, userUsageCounters, promoWaitlist, apiUsageLogs, demoTokens, integrationConfigs, outboundWebhooks, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -11210,6 +11210,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating email category:", error);
       res.status(500).json({ error: "Failed to update email category" });
+    }
+  });
+
+  // ── Reporting Snapshots ──────────────────────────────────────────────────────
+
+  app.get("/api/admin/reporting/snapshots", ensureAdmin, async (req, res) => {
+    try {
+      const snapshots = await storage.getRecentReportingSnapshots(12);
+      res.json(snapshots);
+    } catch (error) {
+      console.error("Get reporting snapshots error:", error);
+      res.status(500).json({ error: "Failed to fetch reporting snapshots" });
+    }
+  });
+
+  app.get("/api/admin/reporting/snapshots/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const snapshot = await storage.getReportingSnapshot(id);
+      if (!snapshot) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      res.json(snapshot);
+    } catch (error) {
+      console.error("Get reporting snapshot error:", error);
+      res.status(500).json({ error: "Failed to fetch reporting snapshot" });
+    }
+  });
+
+  app.post("/api/admin/reporting/snapshots", ensureAdmin, async (req, res) => {
+    try {
+      const data = insertReportingSnapshotSchema.parse(req.body);
+      const existing = await storage.getReportingSnapshotByWeek(data.weekStart as string);
+      if (existing) {
+        return res.status(409).json({
+          error: "A snapshot for this week already exists",
+          existingId: existing.id,
+        });
+      }
+      const snapshot = await storage.createReportingSnapshot(data);
+      res.status(201).json(snapshot);
+    } catch (error) {
+      console.error("Create reporting snapshot error:", error);
+      res.status(500).json({ error: "Failed to create reporting snapshot" });
+    }
+  });
+
+  app.put("/api/admin/reporting/snapshots/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const data = insertReportingSnapshotSchema.partial().parse(req.body);
+      const snapshot = await storage.updateReportingSnapshot(id, data);
+      if (!snapshot) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      res.json(snapshot);
+    } catch (error) {
+      console.error("Update reporting snapshot error:", error);
+      res.status(500).json({ error: "Failed to update reporting snapshot" });
+    }
+  });
+
+  app.delete("/api/admin/reporting/snapshots/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteReportingSnapshot(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      res.json({ message: "Snapshot deleted successfully" });
+    } catch (error) {
+      console.error("Delete reporting snapshot error:", error);
+      res.status(500).json({ error: "Failed to delete reporting snapshot" });
     }
   });
 
