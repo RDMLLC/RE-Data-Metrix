@@ -7,7 +7,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runPrerender, registerPrerenderRoutes } from "./prerender";
 import { pool, db } from "./db";
-import { affiliates, serviceRegions, discountCodes } from "@shared/schema";
+import { affiliates, serviceRegions, discountCodes, users } from "@shared/schema";
 import { eq, count, sql } from "drizzle-orm";
 import passport from "./auth";
 import { runMigrations } from 'stripe-replit-sync';
@@ -293,6 +293,15 @@ app.use((req, res, next) => {
   await runStartupMigrations();
 
   const server = await registerRoutes(app);
+
+  // One-time fix: ensure admin@redatametrix.com has admin role
+  try {
+    await db.update(users)
+      .set({ role: 'admin' })
+      .where(sql`LOWER(${users.email}) = 'admin@redatametrix.com' AND ${users.role} != 'admin'`);
+  } catch (e) {
+    console.error('Admin role fix error:', e);
+  }
 
   // Data fixes: correct affiliate data on startup
   try {
