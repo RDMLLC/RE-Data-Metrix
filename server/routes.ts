@@ -1731,6 +1731,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Username already taken" });
       }
 
+      let discountDuration: string | null = null;
+      let discountDurationMonths: number | null = null;
+      let discountPartnerName: string | null = null;
+
       if (isPromoCode || promoCodeId) {
         // Handle promo code (from promo_codes table)
         const promoCode = await storage.getPromoCodeByCode(normalizedCode);
@@ -1759,6 +1763,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + promoCode.durationMonths);
         codeId = promoCode.id;
         isPromoCode = true;
+        discountDuration = 'repeating';
+        discountDurationMonths = promoCode.durationMonths ?? null;
+        discountPartnerName = promoCode.name ?? null;
       } else {
         // Handle regular discount code (from discount_codes table)
         const discount = await storage.getDiscountCodeByCode(normalizedCode);
@@ -1795,6 +1802,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
         }
         codeId = discount.id;
+        discountDuration = discount.stripeDuration ?? null;
+        discountDurationMonths = discount.stripeDurationInMonths ?? null;
+        discountPartnerName = discount.partnerName ?? discount.displayName ?? null;
       }
 
       // Hash password
@@ -1870,6 +1880,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentPlan: selectedPlan,
         contactType: getCrmContactType(selectedPlan),
         emailVerified: true,
+        discountCode: normalizedCode,
+        isPromoCode: isPromoCode,
+        accessExpiryDate: subscriptionEndDate ? subscriptionEndDate.toISOString() : null,
+        discountDuration: discountDuration,
+        discountDurationMonths: discountDurationMonths,
+        discountPartnerName: discountPartnerName,
         isNewSignup: true,
         isUpgrade: false,
       };
