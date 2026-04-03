@@ -4402,6 +4402,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user email - admin only
+  app.patch("/api/admin/users/:id/email", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { email } = req.body;
+
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const emailSchema = z.string().email("Invalid email address");
+      const parsed = emailSchema.safeParse(email.trim().toLowerCase());
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid email address format" });
+      }
+      const normalizedEmail = parsed.data;
+
+      const [targetUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Check uniqueness (allow same email as the current user)
+      if (normalizedEmail !== targetUser.email.toLowerCase()) {
+        const [existing] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
+          .limit(1);
+        if (existing) {
+          return res.status(400).json({ error: "This email address is already in use by another account" });
+        }
+      }
+
+      // If the email is unchanged, bail early
+      if (normalizedEmail === targetUser.email.toLowerCase()) {
+        return res.status(400).json({ error: "The new email is the same as the current email" });
+      }
+
+      const verificationToken = crypto.randomBytes(32).toString('base64url');
+      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const [updated] = await db.update(users)
+        .set({
+          email: normalizedEmail,
+          isEmailVerified: false,
+          verificationToken,
+          verificationExpiry,
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Send verification email to the new address
+      const [emailProfile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, id)).limit(1);
+      const firstName = (emailProfile?.fullName || '').trim().split(/\s+/)[0] || updated.username;
+      const emailSent = await emailService.sendVerificationEmail(normalizedEmail, firstName, verificationToken);
+
+      console.log(`[ADMIN] Email updated for user ${id}: ${targetUser.email} -> ${normalizedEmail}, emailSent: ${emailSent}`);
+
+      res.json({
+        message: "Email updated and verification link sent.",
+        emailSent,
+        user: sanitizeUserForAdmin(updated),
+      });
+    } catch (error) {
+      console.error('Update user email error:', error);
+      res.status(500).json({ error: "Failed to update user email" });
+    }
+  });
+
   app.post("/api/admin/users/:id/resend-verification", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;

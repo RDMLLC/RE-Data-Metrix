@@ -29,6 +29,7 @@ import {
   Eye,
   EyeOff,
   Download,
+  Pencil,
 } from "lucide-react";
 import {
   Tooltip,
@@ -133,6 +134,9 @@ export default function UserManagement() {
   const [developerUsername, setDeveloperUsername] = useState("");
   const [developerPassword, setDeveloperPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [userToEditEmail, setUserToEditEmail] = useState<UserWithStats | null>(null);
+  const [editEmailValue, setEditEmailValue] = useState("");
+  const [editEmailError, setEditEmailError] = useState("");
 
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -285,6 +289,45 @@ export default function UserManagement() {
       });
     },
   });
+
+  const updateEmailMutation = useMutation({
+    mutationFn: async ({ userId, email }: { userId: string; email: string }) => {
+      const response = await apiRequest("PATCH", `/api/admin/users/${userId}/email`, { email });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update email");
+      }
+      return data;
+    },
+    onSuccess: (data: { emailSent?: boolean }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/stats"] });
+      toast({
+        title: "Email Updated",
+        description: data.emailSent
+          ? "Email updated and verification link sent."
+          : "Email updated, but the verification email could not be sent. Use Resend Verification to retry.",
+      });
+      setUserToEditEmail(null);
+      setEditEmailValue("");
+      setEditEmailError("");
+    },
+    onError: (error: any) => {
+      setEditEmailError(error.message || "Failed to update email");
+    },
+  });
+
+  const handleEditEmailOpen = (user: UserWithStats) => {
+    setUserToEditEmail(user);
+    setEditEmailValue(user.email);
+    setEditEmailError("");
+  };
+
+  const handleEditEmailSubmit = () => {
+    if (!userToEditEmail) return;
+    setEditEmailError("");
+    updateEmailMutation.mutate({ userId: userToEditEmail.id, email: editEmailValue });
+  };
 
   const handleCreateDeveloper = () => {
     if (!developerEmail || !developerUsername || !developerPassword) {
@@ -678,6 +721,19 @@ export default function UserManagement() {
                               <TableCell>
                                 {!isAuditor && (
                                   <div className="flex items-center gap-1">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          onClick={() => handleEditEmailOpen(user)}
+                                          data-testid={`button-edit-email-${user.id}`}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Edit email address</TooltipContent>
+                                    </Tooltip>
                                     {!user.isEmailVerified && (
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -1100,6 +1156,77 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Email Dialog */}
+      <Dialog
+        open={!!userToEditEmail}
+        onOpenChange={(open) => {
+          if (!open) {
+            setUserToEditEmail(null);
+            setEditEmailValue("");
+            setEditEmailError("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Edit Email Address
+            </DialogTitle>
+            <DialogDescription>
+              Update the email address for {userToEditEmail?.fullName || userToEditEmail?.username}. A new verification link will be sent to the updated address.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email Address</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmailValue}
+                onChange={(e) => {
+                  setEditEmailValue(e.target.value);
+                  setEditEmailError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleEditEmailSubmit();
+                }}
+                data-testid="input-edit-email"
+              />
+              {editEmailError && (
+                <p className="text-sm text-red-600" data-testid="text-edit-email-error">{editEmailError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUserToEditEmail(null);
+                setEditEmailValue("");
+                setEditEmailError("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditEmailSubmit}
+              disabled={updateEmailMutation.isPending}
+              data-testid="button-confirm-edit-email"
+            >
+              {updateEmailMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save & Send Verification"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Developer Account Dialog */}
       <Dialog open={showCreateDeveloper} onOpenChange={setShowCreateDeveloper}>
