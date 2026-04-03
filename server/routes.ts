@@ -327,6 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           previousPlan: null,
           currentPlan: 'free',
           contactType: getCrmContactType('free'),
+          emailVerified: false,
           isNewSignup: true,
           isUpgrade: false,
         }).catch(err => console.error('[Webhook] user_signup trigger error:', err));
@@ -1868,6 +1869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         previousPlan: null,
         currentPlan: selectedPlan,
         contactType: getCrmContactType(selectedPlan),
+        emailVerified: true,
         isNewSignup: true,
         isUpgrade: false,
       };
@@ -2008,6 +2010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 previousPlan: null,
                 currentPlan: completedPlan,
                 contactType: getCrmContactType(completedPlan),
+                emailVerified: true,
                 isNewSignup: true,
                 isUpgrade: false,
               };
@@ -2545,6 +2548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             previousPlan,
             currentPlan: subscriptionPlan,
             contactType: getCrmContactType(subscriptionPlan),
+            emailVerified: true,
             isNewSignup: false,
             isUpgrade: true,
           }).catch(err => console.error('[Webhook] subscription_completed trigger error (upgrade):', err));
@@ -2595,6 +2599,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             resolve();
           });
         });
+      }
+
+      // Fire outbound webhook on first-time email verification only.
+      // result.userObject is only set on the actual verification path,
+      // not on the "already verified" branch, so this won't double-fire.
+      if (result.userObject) {
+        outboundWebhookService.triggerWebhooks('email_verified', {
+          userId: result.userObject.id,
+          email: result.userObject.email,
+          username: result.userObject.username,
+          emailVerified: true,
+        }).catch(err => console.error('[Webhook] email_verified trigger error:', err));
       }
 
       res.json({
