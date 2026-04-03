@@ -130,7 +130,7 @@ export class WebhookHandlers {
                 console.error('[Webhook] Error fetching user for subscription webhook:', err);
               }
             }
-          } else {
+          } else if (result.error !== 'NO_PENDING') {
             console.error(`[WEBHOOK] Failed to complete checkout for session ${session.id}: ${result.error}`);
           }
         } catch (error) {
