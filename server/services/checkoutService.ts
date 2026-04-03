@@ -24,7 +24,7 @@ interface CheckoutCompletionResult {
   error?: string;
 }
 
-export async function completeCheckoutSession(sessionId: string): Promise<CheckoutCompletionResult> {
+export async function completeCheckoutSession(sessionId: string, options?: { allowFallback?: boolean }): Promise<CheckoutCompletionResult> {
   const stripe = await getUncachableStripeClient();
   
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -225,6 +225,11 @@ export async function completeCheckoutSession(sessionId: string): Promise<Checko
     passwordHash = pending.passwordHash;
     fullName = pending.fullName || customerName || '';
   } else {
+    if (options?.allowFallback === false) {
+      console.log(`[CHECKOUT] No pending registration found for session ${sessionId} — skipping fallback (webhook path). Browser redirect will handle account creation.`);
+      return { success: false, message: 'No pending registration found', error: 'NO_PENDING' };
+    }
+
     console.log(`[CHECKOUT] No pending registration found, creating fallback account for ${customerEmail}`);
     
     const baseUsername = customerEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');

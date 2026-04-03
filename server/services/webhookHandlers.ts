@@ -45,7 +45,11 @@ export class WebhookHandlers {
       
       if (session.mode === 'subscription' && session.payment_status === 'paid') {
         try {
-          const result = await completeCheckoutSession(session.id);
+          const result = await completeCheckoutSession(session.id, { allowFallback: false });
+
+          if (!result.success && result.error === 'NO_PENDING') {
+            console.log(`[WEBHOOK] No pending registration for session ${session.id} — browser redirect will handle account creation. No email sent.`);
+          }
           
           if (result.success) {
             console.log(`[WEBHOOK] Checkout completed for session ${session.id}: ${result.message}`);
