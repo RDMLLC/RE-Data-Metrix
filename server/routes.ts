@@ -21,6 +21,17 @@ import { sendMetaCapiEvent } from "./services/metaCapi";
 import signature from "cookie-signature";
 import { getUncachableStripeClient } from "./services/stripeClient";
 
+// ── CRM contact type helper ─────────────────────────────────────────────────
+function getCrmContactType(plan: string | null | undefined): string {
+  switch (plan) {
+    case 'monthly': return 'Paid-Monthly';
+    case 'annual':  return 'Paid-Annual';
+    case 'free':
+    case 'comped':
+    default:        return 'Free';
+  }
+}
+
 // Cached portal configuration ID that disables the cancel button.
 // Set STRIPE_PORTAL_NO_CANCEL_CONFIG_ID in env to avoid creating a new config
 // on every cold start (preferred for production stability).
@@ -315,6 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           workflowTrigger: 'free_signup',
           previousPlan: null,
           currentPlan: 'free',
+          contactType: getCrmContactType('free'),
           isNewSignup: true,
           isUpgrade: false,
         }).catch(err => console.error('[Webhook] user_signup trigger error:', err));
@@ -1855,6 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workflowTrigger: selectedPlan === 'annual' ? 'annual_signup' : 'monthly_signup',
         previousPlan: null,
         currentPlan: selectedPlan,
+        contactType: getCrmContactType(selectedPlan),
         isNewSignup: true,
         isUpgrade: false,
       };
@@ -1994,6 +2007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 workflowTrigger: completedPlan === 'annual' ? 'annual_signup' : 'monthly_signup',
                 previousPlan: null,
                 currentPlan: completedPlan,
+                contactType: getCrmContactType(completedPlan),
                 isNewSignup: true,
                 isUpgrade: false,
               };
@@ -2530,6 +2544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             workflowTrigger: upgradeWorkflowTrigger,
             previousPlan,
             currentPlan: subscriptionPlan,
+            contactType: getCrmContactType(subscriptionPlan),
             isNewSignup: false,
             isUpgrade: true,
           }).catch(err => console.error('[Webhook] subscription_completed trigger error (upgrade):', err));
