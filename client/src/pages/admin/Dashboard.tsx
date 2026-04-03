@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye, Mail, MessageSquare, Bug, LineChart } from "lucide-react";
+import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye, Mail, MessageSquare, Bug, LineChart, Wrench } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -773,6 +773,26 @@ export default function AdminDashboard() {
               <CardContent>
                 <CardDescription>
                   Manage educational videos displayed in the Toolbox
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="hover-elevate cursor-pointer"
+              onClick={() => setLocation("/admin/tools-tracker")}
+              data-testid="card-tools-tracker"
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center">
+                    <Wrench className="h-5 w-5 text-violet-500" />
+                  </div>
+                  <CardTitle>Tools Tracker</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Track AI tools, subscriptions, costs, and usage logs.
                 </CardDescription>
               </CardContent>
             </Card>

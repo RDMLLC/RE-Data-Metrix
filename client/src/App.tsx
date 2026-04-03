@@ -77,6 +77,7 @@ const AdminContractors = lazy(() => import("@/pages/admin/Contractors"));
 const AdminCalculationsReference = lazy(() => import("@/pages/admin/CalculationsReference"));
 const AdminTrainingVideos = lazy(() => import("@/pages/admin/TrainingVideos"));
 const AdminDemoLinks = lazy(() => import("@/pages/admin/DemoLinks"));
+import ToolsTracker from "./pages/ToolsTracker";
 const AdminMarketingPixels = lazy(() => import("@/pages/admin/MarketingPixels"));
 const AdminEmailSenders = lazy(() => import("@/pages/admin/EmailSenders"));
 const AdminUserSubmissions = lazy(() => import("@/pages/admin/UserSubmissions"));
@@ -275,6 +276,7 @@ function Router() {
         <Route path="/admin/lender-broadcast" component={AdminLenderBroadcast} />
         <Route path="/admin/reports" component={AdminReports} />
         <Route path="/admin/reporting" component={AdminReporting} />
+        <Route path="/admin/tools-tracker" component={ToolsTracker} />
         <Route path="/admin/comp-users" component={AdminCompUsers} />
         <Route path="/admin/auditor-invites" component={AdminAuditorInvites} />
         <Route path="/admin/financial-projections" component={AdminFinancialProjections} />

@@ -1,0 +1,751 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import Layout from "@/components/Layout";
+
+// ── Types ──────────────────────────────────────────────────────
+interface Tool {
+  name: string;
+  category: string;
+  status: string;
+  plan: string;
+  billing: string;
+  cost: string;
+  renewal: string;
+  email: string;
+  password: string;
+  url: string;
+  notes: string;
+}
+
+interface LogEntry {
+  tool: string;
+  date: string;
+  duration: string;
+  rating: string;
+  note: string;
+}
+
+type Tab = "dashboard" | "tools" | "add" | "log" | "addlog" | "settings";
+type ViewMode = "tiles" | "list";
+
+// ── Helpers ────────────────────────────────────────────────────
+const TOOLS_KEY = "ai_tools";
+const LOGS_KEY = "ai_logs";
+const VIEW_KEY = "ai_tools_view";
+
+function catLabel(c: string) {
+  return (
+    { chat: "Chat / LLM", image: "Image gen", code: "Coding", audio: "Audio / Video", other: "Other" }[c] || c
+  );
+}
+
+function monthlyEquiv(t: Tool) {
+  if (t.billing === "free" || !t.cost) return 0;
+  const c = parseFloat(t.cost) || 0;
+  return t.billing === "annual" ? c / 12 : c;
+}
+
+function costDisplay(t: Tool) {
+  if (t.billing === "free" || !t.cost) return "Free";
+  const c = parseFloat(t.cost);
+  if (t.billing === "annual") return `$${c.toFixed(2)}/yr (≈ $${(c / 12).toFixed(2)}/mo)`;
+  return `$${c.toFixed(2)}/mo`;
+}
+
+function today() {
+  return new Date().toISOString().split("T")[0];
+}
+
+// ── Pill component ─────────────────────────────────────────────
+function Pill({ type, label }: { type: string; label: string }) {
+  const colorMap: Record<string, string> = {
+    chat: "bg-blue-100 text-blue-700",
+    image: "bg-amber-100 text-amber-700",
+    code: "bg-green-100 text-green-700",
+    audio: "bg-red-100 text-red-700",
+    other: "bg-gray-100 text-gray-600",
+    active: "bg-green-100 text-green-700",
+    inactive: "bg-gray-100 text-gray-500",
+    trial: "bg-amber-100 text-amber-700",
+  };
+  return (
+    <span className={`text-xs px-2 py-0.5 rounded-full inline-block ${colorMap[type] || "bg-gray-100 text-gray-600"}`}>
+      {label}
+    </span>
+  );
+}
+
+// ── Main Component ─────────────────────────────────────────────
+export default function ToolsTracker() {
+  const [tools, setTools] = useState<Tool[]>(() =>
+    JSON.parse(localStorage.getItem(TOOLS_KEY) || "[]")
+  );
+  const [logs, setLogs] = useState<LogEntry[]>(() =>
+    JSON.parse(localStorage.getItem(LOGS_KEY) || "[]")
+  );
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => (localStorage.getItem(VIEW_KEY) as ViewMode) || "tiles"
+  );
+
+  // Form state
+  const [editIndex, setEditIndex] = useState(-1);
+  const [fName, setFName] = useState("");
+  const [fCategory, setFCategory] = useState("chat");
+  const [fStatus, setFStatus] = useState("active");
+  const [fPlan, setFPlan] = useState("");
+  const [fBilling, setFBilling] = useState("free");
+  const [fCost, setFCost] = useState("");
+  const [fRenewal, setFRenewal] = useState("");
+  const [fEmail, setFEmail] = useState("");
+  const [fUrl, setFUrl] = useState("");
+  const [fNotes, setFNotes] = useState("");
+
+  const [fPassword, setFPassword] = useState("");
+  const [showFPassword, setShowFPassword] = useState(false);
+  const [revealedPasswords, setRevealedPasswords] = useState<Set<number>>(new Set());
+  const [lTool, setLTool] = useState("");
+  const [lDate, setLDate] = useState(today());
+  const [lDuration, setLDuration] = useState("");
+  const [lRating, setLRating] = useState("5");
+  const [lNote, setLNote] = useState("");
+
+  // Modal state
+  const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState("");
+
+  // Persist data
+  useEffect(() => {
+    localStorage.setItem(TOOLS_KEY, JSON.stringify(tools));
+  }, [tools]);
+
+  useEffect(() => {
+    localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+  }, [logs]);
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_KEY, viewMode);
+  }, [viewMode]);
+
+  // Populate log tool on tab switch
+  useEffect(() => {
+    if (activeTab === "addlog" && tools.length && !lTool) {
+      setLTool(tools[0].name);
+    }
+  }, [activeTab]);
+
+  // Auth check
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", { credentials: "include" });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.role !== "admin" && data.role !== "auditor") {
+            toast({ title: "Access Denied", description: "Admin privileges required.", variant: "destructive" });
+            setLocation("/admin/login");
+            return;
+          }
+        } else {
+          setLocation("/admin/login");
+        }
+      } catch {
+        setLocation("/admin/login");
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    checkAdminAuth();
+  }, []);
+
+  // ── Sorted tools ────────────────────────────────────────────
+  function sortedTools() {
+    const order: Record<string, number> = { active: 0, trial: 1, inactive: 2 };
+    return [...tools].sort((a, b) => {
+      const sA = order[a.status || "active"] ?? 2;
+      const sB = order[b.status || "active"] ?? 2;
+      if (sA !== sB) return sA - sB;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+  }
+
+  // ── Tool form ────────────────────────────────────────────────
+  function loadToolIntoForm(t: Tool, idx: number) {
+    setEditIndex(idx);
+    setFName(t.name);
+    setFCategory(t.category || "chat");
+    setFStatus(t.status || "active");
+    setFPlan(t.plan || "");
+    setFBilling(t.billing || "free");
+    setFCost(t.cost || "");
+    setFRenewal(t.renewal || "");
+    setFEmail(t.email || "");
+    setFUrl(t.url || "");
+    setFNotes(t.notes || "");
+    setFPassword(t.password || "");
+    setShowFPassword(false);
+    setActiveTab("add");
+  }
+
+  function resetForm() {
+    setEditIndex(-1);
+    setFName(""); setFCategory("chat"); setFStatus("active");
+    setFPlan(""); setFBilling("free"); setFCost("");
+    setFRenewal(""); setFEmail(""); setFPassword(""); setShowFPassword(false);
+    setFUrl(""); setFNotes("");
+  }
+
+  function saveTool() {
+    if (!fName.trim()) { alert("Please enter a tool name."); return; }
+    const data: Tool = {
+      name: fName.trim(), category: fCategory, status: fStatus,
+      plan: fPlan.trim(), billing: fBilling,
+      cost: fBilling === "free" ? "" : fCost,
+      renewal: fRenewal, email: fEmail.trim(),
+      password: fPassword,
+      url: fUrl.trim(), notes: fNotes.trim(),
+    };
+    const updated = [...tools];
+    if (editIndex >= 0) updated[editIndex] = data; else updated.push(data);
+    setTools(updated);
+    resetForm();
+    setActiveTab("tools");
+  }
+
+  function deleteTool(i: number) {
+    if (!confirm("Remove this tool?")) return;
+    const updated = [...tools];
+    updated.splice(i, 1);
+    setTools(updated);
+  }
+
+  // ── Log form ─────────────────────────────────────────────────
+  function addLog() {
+    if (!lTool) { alert("Please add a tool first."); return; }
+    setLogs([...logs, { tool: lTool, date: lDate || today(), duration: lDuration, rating: lRating, note: lNote.trim() }]);
+    setLDuration(""); setLNote("");
+    setActiveTab("log");
+  }
+
+  function deleteLog(i: number) {
+    if (!confirm("Remove this log entry?")) return;
+    const updated = [...logs];
+    updated.splice(i, 1);
+    setLogs(updated);
+  }
+
+  // ── Import / Export ──────────────────────────────────────────
+  function importData() {
+    try {
+      const parsed = JSON.parse(importText.trim());
+      if (!Array.isArray(parsed.tools) || !Array.isArray(parsed.logs)) throw new Error();
+      setTools(parsed.tools); setLogs(parsed.logs);
+      setShowImport(false); setImportText("");
+      alert(`Imported ${parsed.tools.length} tool(s) and ${parsed.logs.length} log(s).`);
+    } catch { alert("Invalid data. Please paste a valid export JSON."); }
+  }
+
+  // ── Cost hint ────────────────────────────────────────────────
+  function costHint() {
+    const val = parseFloat(fCost);
+    if (!val || isNaN(val) || fBilling === "free") return "";
+    if (fBilling === "annual") return `≈ $${(val / 12).toFixed(2)}/mo`;
+    if (fBilling === "monthly") return `≈ $${(val * 12).toFixed(2)}/yr`;
+    return "";
+  }
+
+  // ── Dashboard ────────────────────────────────────────────────
+  const activeCount = tools.filter(t => t.status === "active").length;
+  const monthlyTotal = tools.filter(t => t.status === "active").reduce((s, t) => s + monthlyEquiv(t), 0);
+  const nowDate = new Date();
+  const renewalsSoon = tools
+    .filter(t => {
+      if (!t.renewal) return false;
+      const diff = (new Date(t.renewal).getTime() - nowDate.getTime()) / 86400000;
+      return diff >= 0 && diff <= 30;
+    })
+    .sort((a, b) => new Date(a.renewal).getTime() - new Date(b.renewal).getTime());
+
+  // ── Render helpers ───────────────────────────────────────────
+  const sorted = sortedTools();
+
+  function renderTileCard(t: Tool, origIndex: number) {
+    const status = t.status || "active";
+    const revealed = revealedPasswords.has(origIndex);
+    const toggleReveal = () => setRevealedPasswords(prev => {
+      const next = new Set(prev);
+      revealed ? next.delete(origIndex) : next.add(origIndex);
+      return next;
+    });
+    return (
+      <div key={origIndex} className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="flex items-start justify-between mb-2.5">
+          <div>
+            <div className="font-medium text-sm">{t.name}</div>
+            <Pill type={t.category || "other"} label={catLabel(t.category)} />
+          </div>
+          <Pill type={status} label={status} />
+        </div>
+        {[
+          ["Plan", t.plan || "—"],
+          ["Billing", t.billing || "free"],
+          ["Cost", costDisplay(t)],
+          ["Renewal", t.renewal || "—"],
+          ["Account", t.email || "—"],
+        ].map(([label, value]) => (
+          <div key={label} className="flex justify-between text-xs py-1 border-b border-gray-100 last:border-0">
+            <span className="text-gray-500">{label}</span>
+            <span className="font-medium text-right max-w-[60%] break-all">{value}</span>
+          </div>
+        ))}
+        {t.password && (
+          <div className="flex justify-between text-xs py-1 border-b border-gray-100 items-center">
+            <span className="text-gray-500">Password</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium font-mono">{revealed ? t.password : "••••••••"}</span>
+              <button onClick={toggleReveal} className="text-gray-400 hover:text-gray-600 text-xs underline">{revealed ? "hide" : "show"}</button>
+            </div>
+          </div>
+        )}
+        {t.notes && <p className="text-xs text-gray-500 mt-2 leading-relaxed">{t.notes}</p>}
+        <div className="flex gap-2 mt-3 flex-wrap items-center">
+          <button className="btn-sm" onClick={() => loadToolIntoForm(t, origIndex)}>Edit</button>
+          {t.url && <button className="btn-sm" onClick={() => window.open(t.url, "_blank")}>Open ↗</button>}
+          <button className="btn-danger-sm" onClick={() => deleteTool(origIndex)}>Remove</button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderListRow(t: Tool, origIndex: number) {
+    const status = t.status || "active";
+    const revealed = revealedPasswords.has(origIndex);
+    const toggleReveal = () => setRevealedPasswords(prev => {
+      const next = new Set(prev);
+      revealed ? next.delete(origIndex) : next.add(origIndex);
+      return next;
+    });
+    return (
+      <div key={origIndex} className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center gap-3 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <span className="font-medium text-sm mr-2">{t.name}</span>
+          <Pill type={t.category || "other"} label={catLabel(t.category)} />
+        </div>
+        <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+          <Pill type={status} label={status} />
+          <span>{t.plan || "—"}</span>
+          <span className="font-medium text-gray-700">{costDisplay(t)}</span>
+          {t.renewal && <span className="text-gray-400">renews {t.renewal}</span>}
+          {t.email && <span className="text-gray-400 hidden sm:inline">{t.email}</span>}
+          {t.password && (
+            <span className="flex items-center gap-1">
+              <span className="font-mono">{revealed ? t.password : "••••••••"}</span>
+              <button onClick={toggleReveal} className="text-gray-400 hover:text-gray-600 underline">{revealed ? "hide" : "show"}</button>
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2 items-center ml-auto">
+          <button className="btn-sm" onClick={() => loadToolIntoForm(t, origIndex)}>Edit</button>
+          {t.url && <button className="btn-sm" onClick={() => window.open(t.url, "_blank")}>Open ↗</button>}
+          <button className="btn-danger-sm" onClick={() => deleteTool(origIndex)}>Remove</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────────
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "dashboard", label: "Dashboard" },
+    { id: "tools", label: "My Tools" },
+    { id: "add", label: editIndex >= 0 ? "Edit Tool" : "Add Tool" },
+    { id: "log", label: "Usage Log" },
+    { id: "addlog", label: "Log Usage" },
+    { id: "settings", label: "Settings" },
+  ];
+
+  if (isAuthChecking) return (
+    <Layout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    </Layout>
+  );
+
+  return (
+    <Layout>
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-16">
+        <style>{`
+          .btn-sm { font-size: 12px; padding: 4px 10px; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; background: none; color: #6b7280; font-family: inherit; }
+          .btn-sm:hover { background: #f3f4f6; }
+          .btn-danger-sm { font-size: 12px; padding: 4px 0; border: none; background: none; color: #b91c1c; cursor: pointer; font-family: inherit; }
+          .btn-danger-sm:hover { text-decoration: underline; }
+          .form-input { width: 100%; font-family: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #1a1a1a; outline: none; }
+          .form-input:focus { border-color: #6b7280; }
+          textarea.form-input { resize: vertical; min-height: 70px; }
+        `}</style>
+
+        <h1 className="text-xl font-medium mb-5">Tools Tracker</h1>
+
+        {/* Tabs */}
+        <div className="flex gap-0.5 mb-5 bg-gray-100 rounded-xl p-1 w-fit flex-wrap">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`px-3.5 py-1.5 text-xs rounded-lg font-medium transition-all ${
+                activeTab === t.id
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Dashboard ── */}
+        {activeTab === "dashboard" && (
+          <div>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {[
+                ["Active Tools", activeCount],
+                ["Est. Monthly Cost", `$${monthlyTotal.toFixed(2)}`],
+                ["Sessions Logged", logs.length],
+              ].map(([label, val]) => (
+                <div key={label as string} className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">{label}</div>
+                  <div className="text-2xl font-medium">{val}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-medium text-sm">Upcoming Renewals</h2>
+            </div>
+            {!renewalsSoon.length ? (
+              <div className="text-center py-10 text-gray-400 text-sm">No renewals in the next 30 days.</div>
+            ) : renewalsSoon.map((t, i) => {
+              const diff = Math.ceil((new Date(t.renewal).getTime() - nowDate.getTime()) / 86400000);
+              return (
+                <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-3 mb-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-medium text-sm">{t.name}</span>
+                    <span className="text-xs text-amber-600 font-medium">{diff === 0 ? "Today" : `In ${diff} day${diff > 1 ? "s" : ""}`}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">{t.plan ? `${t.plan} · ` : ""}{costDisplay(t)} · renews {t.renewal}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── My Tools ── */}
+        {activeTab === "tools" && (
+          <div>
+            <div className="flex items-center justify-between mb-4 gap-3">
+              <span className="font-medium text-sm">All Tools</span>
+              <div className="flex items-center gap-2">
+                {/* View toggle */}
+                <div className="flex border border-gray-200 rounded-lg overflow-hidden text-xs">
+                  <button
+                    onClick={() => setViewMode("tiles")}
+                    className={`px-3 py-1.5 flex items-center gap-1 transition-colors ${viewMode === "tiles" ? "bg-gray-900 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+                    title="Tile view"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                      <rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/>
+                      <rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/>
+                    </svg>
+                    Tiles
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`px-3 py-1.5 flex items-center gap-1 transition-colors border-l border-gray-200 ${viewMode === "list" ? "bg-gray-900 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+                    title="List view"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+                      <rect x="1" y="2" width="14" height="2" rx="1"/><rect x="1" y="7" width="14" height="2" rx="1"/>
+                      <rect x="1" y="12" width="14" height="2" rx="1"/>
+                    </svg>
+                    List
+                  </button>
+                </div>
+                <button
+                  onClick={() => { resetForm(); setActiveTab("add"); }}
+                  className="bg-gray-900 text-white text-xs px-4 py-1.5 rounded-lg hover:opacity-85"
+                >
+                  + Add Tool
+                </button>
+              </div>
+            </div>
+
+            {!tools.length ? (
+              <div className="text-center py-10 text-gray-400 text-sm">No tools yet. Click "+ Add Tool" to get started.</div>
+            ) : (
+              (() => {
+                let lastStatus: string | null = null;
+                const els: JSX.Element[] = [];
+                sorted.forEach(t => {
+                  const origIndex = tools.indexOf(t);
+                  const status = t.status || "active";
+                  if (status !== lastStatus) {
+                    const groupLabel = status === "active" ? "Active" : status === "trial" ? "Trial" : "Inactive";
+                    if (viewMode === "tiles") {
+                      // Close previous grid and open new one — handled via grouping below
+                    }
+                    els.push(
+                      <div key={`group-${status}`} className={`text-xs font-semibold uppercase tracking-wider text-gray-400 mt-4 mb-2 ${viewMode === "tiles" ? "col-span-full" : ""}`}>
+                        {groupLabel}
+                      </div>
+                    );
+                    lastStatus = status;
+                  }
+                  els.push(viewMode === "tiles" ? renderTileCard(t, origIndex) : renderListRow(t, origIndex));
+                });
+                return viewMode === "tiles"
+                  ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{els}</div>
+                  : <div className="flex flex-col gap-2">{els}</div>;
+              })()
+            )}
+          </div>
+        )}
+
+        {/* ── Add / Edit Tool ── */}
+        {activeTab === "add" && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <h2 className="font-medium text-base mb-4">{editIndex >= 0 ? "Edit Tool" : "Add a New Tool"}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Tool name</label>
+                <input className="form-input" value={fName} onChange={e => setFName(e.target.value)} placeholder="e.g. ChatGPT" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Category</label>
+                <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
+                  <option value="chat">Chat / LLM</option>
+                  <option value="image">Image generation</option>
+                  <option value="code">Coding</option>
+                  <option value="audio">Audio / Video</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Status</label>
+                <select className="form-input" value={fStatus} onChange={e => setFStatus(e.target.value)}>
+                  <option value="active">Active</option>
+                  <option value="trial">Trial</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Plan / tier</label>
+                <input className="form-input" value={fPlan} onChange={e => setFPlan(e.target.value)} placeholder="e.g. Pro, Free, Team" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Billing cycle</label>
+                <div className="flex border border-gray-300 rounded-md overflow-hidden">
+                  {["free", "monthly", "annual"].map(b => (
+                    <button
+                      key={b}
+                      onClick={() => setFBilling(b)}
+                      className={`flex-1 py-2 text-xs capitalize transition-colors ${fBilling === b ? "bg-gray-900 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={`flex flex-col gap-1 ${fBilling === "free" ? "opacity-40 pointer-events-none" : ""}`}>
+                <label className="text-xs text-gray-500">{fBilling === "annual" ? "Annual" : "Monthly"} cost ($)</label>
+                <input className="form-input" type="number" value={fCost} onChange={e => setFCost(e.target.value)} placeholder="0.00" min="0" step="0.01" />
+                {costHint() && <span className="text-xs text-gray-400">{costHint()}</span>}
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Renewal date</label>
+                <input className="form-input" type="date" value={fRenewal} onChange={e => setFRenewal(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Account email</label>
+                <input className="form-input" type="email" value={fEmail} onChange={e => setFEmail(e.target.value)} placeholder="you@example.com" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Password</label>
+                <div className="relative">
+                  <input
+                    className="form-input pr-14"
+                    type={showFPassword ? "text" : "password"}
+                    value={fPassword}
+                    onChange={e => setFPassword(e.target.value)}
+                    placeholder="Account password"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowFPassword(p => !p)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600 px-1"
+                  >
+                    {showFPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs text-gray-500">Website / login URL</label>
+                <input className="form-input" value={fUrl} onChange={e => setFUrl(e.target.value)} placeholder="https://..." />
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs text-gray-500">Notes</label>
+                <textarea className="form-input" value={fNotes} onChange={e => setFNotes(e.target.value)} placeholder="What do you use it for?" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={saveTool} className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:opacity-85">Save Tool</button>
+              <button onClick={() => { resetForm(); setActiveTab("tools"); }} className="btn-sm py-2 px-4">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Usage Log ── */}
+        {activeTab === "log" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-medium text-sm">Usage History</span>
+              <button onClick={() => setActiveTab("addlog")} className="bg-gray-900 text-white text-xs px-4 py-1.5 rounded-lg hover:opacity-85">+ Log Usage</button>
+            </div>
+            {!logs.length ? (
+              <div className="text-center py-10 text-gray-400 text-sm">No usage logged yet.</div>
+            ) : (
+              [...logs].reverse().map((l, ri) => {
+                const i = logs.length - 1 - ri;
+                return (
+                  <div key={ri} className="bg-white border border-gray-200 rounded-xl px-4 py-3 mb-2">
+                    <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
+                      <span className="font-medium text-sm">{l.tool}</span>
+                      <span className="text-xs text-gray-400">{l.date}{l.duration ? ` · ${l.duration} min` : ""}</span>
+                    </div>
+                    {l.rating && <div className="text-amber-400 text-sm">{"★".repeat(parseInt(l.rating))}{"☆".repeat(5 - parseInt(l.rating))}</div>}
+                    {l.note && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{l.note}</p>}
+                    <button className="btn-danger-sm mt-2" onClick={() => deleteLog(i)}>Remove</button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* ── Log Usage ── */}
+        {activeTab === "addlog" && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <h2 className="font-medium text-base mb-4">Log a Usage Session</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Tool</label>
+                <select className="form-input" value={lTool} onChange={e => setLTool(e.target.value)}>
+                  {!tools.length
+                    ? <option value="">— Add a tool first —</option>
+                    : tools.map(t => <option key={t.name} value={t.name}>{t.name}</option>)
+                  }
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Date</label>
+                <input className="form-input" type="date" value={lDate} onChange={e => setLDate(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Duration (minutes)</label>
+                <input className="form-input" type="number" value={lDuration} onChange={e => setLDuration(e.target.value)} placeholder="30" min="1" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Rating</label>
+                <select className="form-input" value={lRating} onChange={e => setLRating(e.target.value)}>
+                  <option value="5">5 – Excellent</option>
+                  <option value="4">4 – Good</option>
+                  <option value="3">3 – Okay</option>
+                  <option value="2">2 – Poor</option>
+                  <option value="1">1 – Bad</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs text-gray-500">What did you use it for?</label>
+                <textarea className="form-input" value={lNote} onChange={e => setLNote(e.target.value)} placeholder="Describe the task or session..." />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={addLog} className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:opacity-85">Save Log</button>
+              <button onClick={() => setActiveTab("log")} className="btn-sm py-2 px-4">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Settings ── */}
+        {activeTab === "settings" && (
+          <div>
+            <h2 className="font-medium text-sm mb-4">Settings</h2>
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <h3 className="font-medium text-sm mb-2">Import / Export</h3>
+              <p className="text-xs text-gray-500 mb-4">Export your data to back it up or transfer it. Import to restore from a previous export.</p>
+              <div className="flex gap-2 flex-wrap items-center">
+                <button onClick={() => setShowExport(true)} className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:opacity-85">Export Data</button>
+                <button onClick={() => setShowImport(true)} className="btn-sm py-2 px-4 text-sm">Import Data</button>
+                <button
+                  onClick={() => { if (confirm("Delete all tools and usage logs? This cannot be undone.")) { setTools([]); setLogs([]); alert("All data cleared."); } }}
+                  className="btn-danger-sm ml-auto"
+                >
+                  Clear All Data
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Export Modal ── */}
+        {showExport && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) setShowExport(false); }}>
+            <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+              <h2 className="font-medium text-base mb-1">Export Data</h2>
+              <p className="text-xs text-gray-500 mb-3">Copy this JSON and save it somewhere safe.</p>
+              <textarea
+                className="form-input font-mono text-xs h-40"
+                readOnly
+                value={JSON.stringify({ tools, logs }, null, 2)}
+                onClick={e => (e.target as HTMLTextAreaElement).select()}
+              />
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => { navigator.clipboard.writeText(JSON.stringify({ tools, logs }, null, 2)); alert("Copied!"); }}
+                  className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:opacity-85"
+                >
+                  Copy to Clipboard
+                </button>
+                <button onClick={() => setShowExport(false)} className="btn-sm py-2 px-4 text-sm">Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Import Modal ── */}
+        {showImport && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) setShowImport(false); }}>
+            <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+              <h2 className="font-medium text-base mb-1">Import Data</h2>
+              <p className="text-xs text-gray-500 mb-3">Paste your previously exported JSON. This will replace all current data.</p>
+              <textarea
+                className="form-input font-mono text-xs h-40"
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+                placeholder='{"tools":[...],"logs":[]}'
+              />
+              <div className="flex gap-2 mt-4">
+                <button onClick={importData} className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg hover:opacity-85">Import</button>
+                <button onClick={() => { setShowImport(false); setImportText(""); }} className="btn-sm py-2 px-4 text-sm">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}
