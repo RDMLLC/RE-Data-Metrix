@@ -2993,9 +2993,9 @@ END:VCALENDAR`;
 
             <div class="benefit-box">
               <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Instant profit and ROI calculation</strong> — enter an address, purchase price, and rehab budget and see your numbers immediately.</span></div>
-              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Max Allowable Offer</strong> — know exactly how much you can pay and still hit your profit target before you make an offer.</span></div>
+              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Max allowable offer</strong> — know exactly how much you can pay and still hit your profit target before you make an offer.</span></div>
               <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Loan comparison</strong> — see how different financing options affect your deal, side by side.</span></div>
-              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Private lender matching</strong> — get connected to lenders who actually work in your target market.</span></div>
+              <div class="benefit-item"><span class="check-mark">&#10003;</span><span><strong>Lender matching</strong> — get connected to lenders who actually work in your target market.</span></div>
             </div>
 
             <p>It takes about 3 minutes to run your first deal. Try it with a real property you're evaluating or one you already passed on — either way you'll see how the numbers shake out.</p>
