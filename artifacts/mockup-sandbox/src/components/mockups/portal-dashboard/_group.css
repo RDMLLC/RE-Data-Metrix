@@ -1,0 +1,25 @@
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --border: 220 13% 91%;
+  --card: 0 0% 98%;
+  --card-foreground: 222 47% 11%;
+  --card-border: 220 13% 94%;
+  --sidebar: 220 9% 95%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-border: 220 13% 90%;
+  --primary: 221 65% 33%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 13% 91%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 220 13% 93%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 45 74% 53%;
+  --accent-foreground: 222 47% 11%;
+  --radius: .5rem;
+}
