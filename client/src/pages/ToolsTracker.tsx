@@ -36,7 +36,17 @@ const VIEW_KEY = "ai_tools_view";
 
 function catLabel(c: string) {
   return (
-    { chat: "Chat / LLM", image: "Image gen", code: "Coding", audio: "Audio / Video", other: "Other" }[c] || c
+    {
+      chat: "Chat / LLM",
+      image: "Image Generation",
+      code: "Coding",
+      audio: "Audio / Video",
+      marketing: "Marketing / Ads",
+      analytics: "Analytics / SEO",
+      design: "Design",
+      productivity: "Productivity",
+      other: "Other",
+    }[c] || c
   );
 }
 
@@ -64,6 +74,10 @@ function Pill({ type, label }: { type: string; label: string }) {
     image: "bg-amber-100 text-amber-700",
     code: "bg-green-100 text-green-700",
     audio: "bg-red-100 text-red-700",
+    marketing: "bg-amber-100 text-amber-700",
+    analytics: "bg-green-100 text-green-700",
+    design: "bg-red-100 text-red-700",
+    productivity: "bg-blue-100 text-blue-700",
     other: "bg-gray-100 text-gray-600",
     active: "bg-green-100 text-green-700",
     inactive: "bg-gray-100 text-gray-500",
@@ -527,9 +541,13 @@ export default function ToolsTracker() {
                 <label className="text-xs text-gray-500">Category</label>
                 <select className="form-input" value={fCategory} onChange={e => setFCategory(e.target.value)}>
                   <option value="chat">Chat / LLM</option>
-                  <option value="image">Image generation</option>
+                  <option value="image">Image Generation</option>
                   <option value="code">Coding</option>
                   <option value="audio">Audio / Video</option>
+                  <option value="marketing">Marketing / Ads</option>
+                  <option value="analytics">Analytics / SEO</option>
+                  <option value="design">Design</option>
+                  <option value="productivity">Productivity</option>
                   <option value="other">Other</option>
                 </select>
               </div>
