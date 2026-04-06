@@ -289,13 +289,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Trigger outbound webhooks and CAPI for user signup (fire and forget)
       if (result.user) {
         const fullName = (req.body.fullName || '').trim();
-        const nameParts = fullName.split(/\s+/);
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+        const nameParts = fullName.split(/\s+/).filter(Boolean);
+        const firstName = nameParts.length > 1 ? nameParts[0] : '';
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : (nameParts[0] || '');
 
         const phone = (req.body.phone || '').trim();
 
-        const subscriptionType = result.isComped ? 'comped' : (req.body.pendingPlan || 'free');
+        const subscriptionType = result.isComped ? 'comped' : 'free';
 
         // Fire Meta CAPI CompleteRegistration for free signups
         sendMetaCapiEvent(

@@ -1,0 +1,16 @@
+There are four issues with the outbound webhook and Zoho CRM contact creation for free user signups that need to be fixed:
+1. Free contacts are being created at registration instead of waiting for email verification.
+In the user_signup outbound webhook payload, the subscriptionType field is not being sent as "free" for free signups — it's likely null or missing. The Zoho CRM function filters on subscriptionType != "free" to skip contact creation, but since the value isn't arriving correctly, it falls through and creates the contact anyway. Fix the user_signup webhook payload to include subscriptionType: "free" for free account registrations.
+2. Contact Name is showing as "Web Hook" instead of the user's actual name.
+The registration form collects a single "Full Name" field, not separate first/last name fields. The webhook payload is likely sending firstName and lastName as null or empty, causing the CRM function to fall back to an incorrect value. Fix the payload to correctly split the full name into firstName and lastName. If the full name has only one word, use it as lastName.
+3. Address fields are not being included in the webhook payload.
+The registration form collects: Street Address, City, State, and Zip Code. These fields are not currently being sent in the user_signup webhook payload. Add them to the payload and map them to the correct Zoho CRM fields: Mailing_Street, Mailing_City, Mailing_State, Mailing_Zip.
+4. Phone number is being stored in the Phone field instead of the Mobile field in Zoho CRM.
+The Zoho CRM function maps the phone number to Phone. Change this mapping to use Mobile instead, as this is needed for future SMS functionality.
+Please also update the Zoho CRM function code in Developer Hub accordingly — here is the relevant section that needs updating for items 3 and 4:
+
+Add Mailing_Street, Mailing_City, Mailing_State, Mailing_Zip to the contactMap
+Change contactMap.put("Phone", phone) to contactMap.put("Mobile", phone)
+
+For item 3, also retrieve the address fields from userData at the top of the function alongside the other fields.
+Sonnet 4.6

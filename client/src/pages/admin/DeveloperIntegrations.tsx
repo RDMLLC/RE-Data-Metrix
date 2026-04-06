@@ -725,13 +725,18 @@ export default function DeveloperIntegrations() {
                   onClick={() => {
                     const csvContent = `eventType,sourceField,targetField,transformType,fixedValue
 user_signup,email,Email,none,
-user_signup,profile.fullName,Last_Name,none,
-user_signup,profile.phone,Phone,none,
+user_signup,firstName,First_Name,none,
+user_signup,lastName,Last_Name,none,
+user_signup,phone,Mobile,none,
+user_signup,street,Mailing_Street,none,
+user_signup,city,Mailing_City,none,
+user_signup,state,Mailing_State,none,
+user_signup,zipCode,Mailing_Zip,none,
 user_signup,FIXED_VALUE,Contact_Type,none,Subscriber
 user_signup,subscriptionStatus,Subscription_Type,subscription_to_type,
 lender_signup,companyName,Company_Name,none,
 lender_signup,email,Email,none,
-lender_signup,phone,Phone,none,
+lender_signup,phone,Mobile,none,
 payment_success,amount,Payment_Amount,currency_cents,
 payment_success,email,Email,none,
 subscription_created,email,Email,none,
@@ -1496,13 +1501,18 @@ inquiry_submitted,email,Email,none,`;
                   onClick={() => {
                     const csvContent = `eventType,sourceField,targetField,transformType,fixedValue
 user_signup,email,Email,none,
-user_signup,profile.fullName,Last_Name,none,
-user_signup,profile.phone,Phone,none,
+user_signup,firstName,First_Name,none,
+user_signup,lastName,Last_Name,none,
+user_signup,phone,Mobile,none,
+user_signup,street,Mailing_Street,none,
+user_signup,city,Mailing_City,none,
+user_signup,state,Mailing_State,none,
+user_signup,zipCode,Mailing_Zip,none,
 user_signup,FIXED_VALUE,Contact_Type,none,Subscriber
 user_signup,subscriptionStatus,Subscription_Type,subscription_to_type,
 lender_signup,companyName,Company_Name,none,
 lender_signup,email,Email,none,
-lender_signup,phone,Phone,none,
+lender_signup,phone,Mobile,none,
 payment_success,amount,Payment_Amount,currency_cents,
 payment_success,email,Email,none,
 subscription_created,email,Email,none,
