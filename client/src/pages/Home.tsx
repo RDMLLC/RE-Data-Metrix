@@ -203,7 +203,7 @@ export default function Home() {
             <Button 
               size="lg" 
               className="bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => window.location.href = '/pricing'}
+              onClick={() => setLocation('/pricing')}
               data-testid="button-signup-cta"
             >
               Get Started Free

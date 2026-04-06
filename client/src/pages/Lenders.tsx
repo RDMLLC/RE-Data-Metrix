@@ -178,7 +178,7 @@ const PLACEHOLDER_LENDERS: SearchResult[] = [
 export default function Lenders() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const lastHandledQueryRef = useRef<string>('');
   const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
   const { user, isSubscriber } = useAuth();
@@ -967,7 +967,7 @@ export default function Lenders() {
             <Button 
               className="bg-accent text-accent-foreground hover:bg-accent/90"
               size="lg"
-              onClick={() => window.location.href = '/pricing'}
+              onClick={() => setLocation('/pricing')}
             >
               Get Started Free
             </Button>
