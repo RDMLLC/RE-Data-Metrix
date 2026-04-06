@@ -570,14 +570,14 @@ export default function Reporting() {
   };
   const totalSpend = (s: Snapshot) => (s.metaSpend || 0) + (s.googleSpend || 0);
   const totalClicks = (s: Snapshot) => (s.metaClicks || 0) + (s.googleClicks || 0);
-  const totalPaidConversions = (s: Snapshot) => s.signupPaidComplete || 0;
+  const totalPaidConversions = (s: Snapshot) => s.signupPaidConfirmed || 0;
 
   const chartData = [...snapshots].reverse().map(s => ({
     week: formatWeek(s.weekStart),
     visitors: s.totalVisitors || 0,
-    freeSignups: s.signupFreeConfirmed || 0,
-    paidSignups: s.signupPaidComplete || 0,
-    dealAnalysis: s.dealAnalysisSubmitted || 0,
+    freeSignups: s.signupFreeInitiated || 0,
+    paidSignups: s.signupPaidConfirmed || 0,
+    dealAnalysis: s.dealAnalysisVisited || 0,
     metaSpend: (s.metaSpend || 0) / 100,
     googleSpend: (s.googleSpend || 0) / 100,
     cpa: totalPaidConversions(s) > 0 ? (totalSpend(s) / 100) / totalPaidConversions(s) : 0,
@@ -767,24 +767,24 @@ export default function Reporting() {
               />
               <MetricCard
                 title="Free Signups"
-                value={fmt(latest.signupFreeConfirmed)}
-                sub={`${pct(latest.signupFreeConfirmed, latest.totalVisitors)} conversion`}
+                value={fmt(latest.signupFreeInitiated)}
+                sub={`${pct(latest.signupFreeInitiated, latest.totalVisitors)} conversion`}
                 icon={TrendingUp} color="green"
-                trend={trend("signupFreeConfirmed")}
+                trend={trend("signupFreeInitiated")}
               />
               <MetricCard
                 title="Paid Signups"
-                value={fmt(latest.signupPaidComplete)}
+                value={fmt(latest.signupPaidConfirmed)}
                 sub={`${cpa(totalSpend(latest), totalPaidConversions(latest))} CPA`}
                 icon={DollarSign} color="amber"
-                trend={trend("signupPaidComplete")}
+                trend={trend("signupPaidConfirmed")}
               />
               <MetricCard
                 title="Deal Analyses"
-                value={fmt(latest.dealAnalysisSubmitted)}
-                sub={`${pct(latest.dealAnalysisSubmitted, latest.totalVisitors)} of visitors`}
+                value={fmt(latest.dealAnalysisVisited)}
+                sub={`${pct(latest.dealAnalysisVisited, latest.totalVisitors)} of visitors`}
                 icon={MousePointer} color="purple"
-                trend={trend("dealAnalysisSubmitted")}
+                trend={trend("dealAnalysisVisited")}
               />
             </div>
 
