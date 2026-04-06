@@ -383,7 +383,7 @@ export default function DeveloperIntegrations() {
 
   const updateOutboundMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await apiRequest("PUT", `/api/integrations/outbound-webhooks/${id}`, data);
+      const res = await apiRequest("PATCH", `/api/integrations/outbound-webhooks/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
