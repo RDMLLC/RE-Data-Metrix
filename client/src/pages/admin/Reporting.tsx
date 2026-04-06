@@ -1212,7 +1212,7 @@ export default function Reporting() {
                           <td className="text-right">{fmt(s.totalVisitors)}</td>
                           <td className="text-right">{fmt(s.signupFreeConfirmed)}</td>
                           <td className="text-right">{fmt(s.signupPaidComplete)}</td>
-                          <td className="text-right">{fmt(s.dealAnalysisSubmitted)}</td>
+                          <td className="text-right">{fmt(s.dealAnalysisVisited)}</td>
                           <td className="text-right">{dollars(totalSpend(s))}</td>
                           <td className="text-right">{cpa(totalSpend(s), totalPaidConversions(s))}</td>
                           {!isAuditor && (
