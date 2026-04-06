@@ -325,21 +325,21 @@ const GUIDE_STEPS = [
   {
     title: "Step 4 — GA4 Conversion Funnel",
     short: "Key events: signups, logins",
-    detail: `1. Open Google Analytics → Admin → Events → Key events tab
+    detail: `1. Open Google Analytics → use the search bar at the top, type "events", and select the Events report from the results
 2. Set date range to Monday–Sunday
-3. Find and record each of these events:
+3. Find and record each of these events in this order:
+   • login_success — reached /portal/dashboard
    • signup_free_initiated — visited /register (no plan selected)
    • signup_free_confirmed — verified email (free users)
    • signup_paid_initiated — visited /register?plan=monthly or annual
    • signup_paid_complete — reached /checkout/success
    • signup_paid_confirmed — verified email (paid users)
-   • login_success — reached /portal/dashboard
 4. Note: These events were set up April 2, 2026. Earlier weeks will show 0.`,
   },
   {
     title: "Step 5 — GA4 Engagement",
     short: "Key events: tool usage, page visits",
-    detail: `1. Still in GA4 → Admin → Events → Key events tab
+    detail: `1. Still in GA4 → same Events report from search bar
 2. Find and record:
    • deal_analysis_visited — reached /deal-analysis
    • deal_analysis_submitted — clicked analyze/next button in tool
@@ -357,7 +357,7 @@ const GUIDE_STEPS = [
 3. The four boxes at the top show the numbers you need:
    • Total impressions → enter in Organic Impressions
    • Total clicks → enter in Organic Clicks
-   • Average position → enter as-is (e.g. 5.1, not 51)
+   • Average position → multiply by 10 before entering (e.g. position 3.7 → enter 37)
 4. Average CTR is calculated automatically — you do not need to enter it`,
   },
   {
