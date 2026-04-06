@@ -243,14 +243,6 @@ export default function Navigation() {
                               <HardHat className="mr-2 h-4 w-4" />
                               Contractor Portal
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => setLocation("/admin/developer-integrations")}
-                              className="cursor-pointer"
-                              data-testid="menu-item-developer-dashboard"
-                            >
-                              <Code className="mr-2 h-4 w-4" />
-                              Developer Dashboard
-                            </DropdownMenuItem>
                           </>
                         )}
                         <DropdownMenuSeparator />
