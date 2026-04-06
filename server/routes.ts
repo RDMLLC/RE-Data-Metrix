@@ -293,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
-        let phone = '';
+        const phone = (req.body.phone || '').trim();
 
         const subscriptionType = result.isComped ? 'comped' : (req.body.pendingPlan || 'free');
 
@@ -319,6 +319,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName,
           fullName,
           phone,
+          city: (req.body.city || '').trim(),
+          state: (req.body.state || '').trim(),
+          street: (req.body.street || '').trim(),
+          zipCode: (req.body.zipCode || '').trim(),
           subscriptionType,
           subscriptionStatus: result.user.subscriptionStatus || 'free',
           isComped: result.isComped,

@@ -12,6 +12,11 @@ export const registrationSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(1, "Full name is required"),
+  phone: z.string().min(7, "Phone number is required"),
+  street: z.string().optional(),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zipCode: z.string().optional(),
   referralCode: z.string().optional(),
   compCode: z.string().optional(),
   auditorCode: z.string().optional(),
@@ -258,6 +263,11 @@ class AuthService {
       await db.insert(userProfiles).values({
         userId: newUser.id,
         fullName: validatedData.fullName,
+        phone: validatedData.phone || null,
+        street: validatedData.street || null,
+        city: validatedData.city || null,
+        state: validatedData.state || null,
+        zipCode: validatedData.zipCode || null,
       });
 
       if (auditorInviteToAccept) {

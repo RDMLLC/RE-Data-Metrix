@@ -36,6 +36,11 @@ const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
+    phone: z.string().min(7, "Phone number is required"),
+    street: z.string().optional(),
+    city: z.string().min(1, "City is required"),
+    state: z.string().min(1, "State is required"),
+    zipCode: z.string().optional(),
     termsAccepted: z.literal(true, {
       errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
     }),
@@ -136,6 +141,11 @@ export default function Register() {
       password: "",
       confirmPassword: "",
       fullName: "",
+      phone: "",
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
       termsAccepted: false as unknown as true,
     },
   });
@@ -270,6 +280,101 @@ export default function Register() {
                                 placeholder="John Doe"
                                 autoComplete="name"
                                 data-testid="input-fullname"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="tel"
+                                placeholder="(555) 555-5555"
+                                autoComplete="tel"
+                                data-testid="input-phone"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="street"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Street Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="123 Main St"
+                                autoComplete="street-address"
+                                data-testid="input-street"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="Atlanta"
+                                  autoComplete="address-level2"
+                                  data-testid="input-city"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="GA"
+                                  maxLength={2}
+                                  autoComplete="address-level1"
+                                  data-testid="input-state"
+                                  onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="zipCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Zip Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="30301"
+                                autoComplete="postal-code"
+                                data-testid="input-zipcode"
                               />
                             </FormControl>
                             <FormMessage />
