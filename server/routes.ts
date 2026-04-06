@@ -2626,6 +2626,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: result.userObject.email,
           username: result.userObject.username,
           emailVerified: true,
+          subscriptionStatus: result.userObject.subscriptionStatus,
+          subscriptionPlan: result.userObject.subscriptionPlan,
         }).catch(err => console.error('[Webhook] email_verified trigger error:', err));
       }
 
