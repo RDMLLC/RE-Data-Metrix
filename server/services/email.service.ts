@@ -130,13 +130,15 @@ class EmailService {
           </div>
           <div class="content">
             <p>Hi ${username},</p>
-            <p>Your email has been verified successfully! Welcome to the RE Data Metrix platform - your complete solution for real estate investment analysis and private lending connections.</p>
+            <p>Please verify your email address to activate your account and get started.</p>
             
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Verify Email & Get Started</a>
+              <a href="${verificationUrl}" style="display: inline-block; padding: 14px 32px; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; mso-padding-alt: 0; text-underline-color: #1E3A8A;">Verify Email &amp; Get Started</a>
             </div>
-            
-            <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Get Started:</h2>
+
+            <div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 6px; padding: 14px 16px; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;"><strong>Can't find our welcome email?</strong> Check your <strong>Spam</strong> or <strong>Promotions</strong> folder — our welcome email may have been filtered there.</p>
+            </div>
             
             <div class="feature-card">
               <a href="${baseUrl}/deal-analysis" style="text-decoration: none;">
@@ -158,53 +160,13 @@ class EmailService {
               </a>
               <p class="feature-desc">Access our investment glossary, affiliate programs, and educational content to level up your investing game.</p>
             </div>
-            
-            ${!isPremiumSignup ? `
-            <h2 style="color: #1E3A8A; margin-top: 30px; font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Free vs Premium:</h2>
-            
-            <table class="comparison-table">
-              <tr>
-                <th>Feature</th>
-                <th>Free</th>
-                <th>Premium</th>
-              </tr>
-              <tr>
-                <td>Property Lookups</td>
-                <td>2/month</td>
-                <td><span class="check">Unlimited</span></td>
-              </tr>
-              <tr>
-                <td>Wholesale Calculator</td>
-                <td>2/month</td>
-                <td><span class="check">Unlimited</span></td>
-              </tr>
-              <tr>
-                <td>Save Deals</td>
-                <td><span class="x">No</span></td>
-                <td><span class="check">Unlimited</span></td>
-              </tr>
-              <tr>
-                <td>PDF/CSV Export</td>
-                <td><span class="x">No</span></td>
-                <td><span class="check">Yes</span></td>
-              </tr>
-              <tr>
-                <td>Lender Search</td>
-                <td><span class="check">Yes</span></td>
-                <td><span class="check">Yes</span></td>
-              </tr>
-            </table>
-            
-            <div style="text-align: center; margin: 24px 0;">
-              <a href="${baseUrl}/upgrade" class="btn-primary">Upgrade to Premium</a>
-              <a href="${baseUrl}/portal/dashboard" class="btn-secondary">Go to My Free Account</a>
-            </div>
-            ` : `
+
+            ${isPremiumSignup ? `
             <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-top: 24px;">
               <p style="margin: 0; color: #065f46; font-weight: 600;">Next Step: Complete Your Subscription</p>
               <p style="margin: 8px 0 0 0; color: #047857; font-size: 14px;">After verifying your email, you'll be directed to complete payment for your ${planText} subscription.</p>
             </div>
-            `}
+            ` : ''}
             
             <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:</p>
             <p style="word-break: break-all; font-size: 14px; color: #6b7280;">${verificationUrl}</p>

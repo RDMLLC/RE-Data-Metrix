@@ -514,12 +514,7 @@ class AuthService {
         })
         .where(eq(users.id, user.id));
 
-      const [profile] = await db.select({ fullName: userProfiles.fullName }).from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
-      const welcomeFirstName = (profile?.fullName || '').trim().split(/\s+/)[0] || user.username;
-      const emailSent = await emailService.sendWelcomeEmail(user.email, welcomeFirstName);
-      if (!emailSent) {
-        console.error('[AuthService] Failed to send welcome email to:', user.email);
-      }
+      // Welcome email is now handled by Zoho CRM via the email_verified outbound webhook
 
       const hasSubscription = user.subscriptionStatus === 'active' || user.subscriptionStatus === 'comped';
 
