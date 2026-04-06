@@ -136,11 +136,12 @@ interface OutboundWebhook {
 
 const EVENT_TYPES = [
   { value: 'user_signup', label: 'User Signup', description: 'When a new user registers' },
+  { value: 'email_verified', label: 'Email Verified', description: 'When a user verifies their email address' },
   { value: 'lender_signup', label: 'Lender Signup', description: 'When a new lender registers' },
+  { value: 'subscription_completed', label: 'Subscription Completed', description: 'When a subscription is created or upgraded' },
+  { value: 'subscription_cancelled', label: 'Subscription Cancelled', description: 'When a subscription is cancelled' },
   { value: 'payment_success', label: 'Payment Success', description: 'When a subscription payment succeeds' },
   { value: 'payment_failed', label: 'Payment Failed', description: 'When a subscription payment fails' },
-  { value: 'subscription_created', label: 'Subscription Created', description: 'When a new subscription is created' },
-  { value: 'subscription_cancelled', label: 'Subscription Cancelled', description: 'When a subscription is cancelled' },
   { value: 'deal_analysis_created', label: 'Deal Analysis Created', description: 'When a user creates a deal analysis' },
   { value: 'inquiry_submitted', label: 'Inquiry Submitted', description: 'When an investor submits an inquiry' },
 ];
@@ -178,6 +179,8 @@ export default function DeveloperIntegrations() {
     headers: ''
   });
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
+  const [editingOutbound, setEditingOutbound] = useState<OutboundWebhook | null>(null);
+  const [editOutbound, setEditOutbound] = useState({ name: '', targetUrl: '', httpMethod: 'POST', eventTypes: [] as string[], headers: '' });
   const [showApiKey, setShowApiKey] = useState(false);
   const [showClientSecret, setShowClientSecret] = useState(false);
   
@@ -375,6 +378,21 @@ export default function DeveloperIntegrations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/integrations/outbound-webhooks"] });
       toast({ title: "Deleted", description: "Outbound webhook deleted." });
+    }
+  });
+
+  const updateOutboundMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiRequest("PUT", `/api/integrations/outbound-webhooks/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/integrations/outbound-webhooks"] });
+      setEditingOutbound(null);
+      toast({ title: "Webhook Updated", description: "Outbound webhook configuration saved." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update webhook.", variant: "destructive" });
     }
   });
 
@@ -980,16 +998,40 @@ inquiry_submitted,email,Email,none,`;
                             )}
                             Test Webhook
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteOutboundMutation.mutate(webhook.id)}
-                            className="text-destructive"
-                            data-testid={`button-delete-outbound-${webhook.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </Button>
+                          <div className="flex gap-2">
+                            {!isAuditor && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingOutbound(webhook);
+                                  setEditOutbound({
+                                    name: webhook.name,
+                                    targetUrl: webhook.targetUrl,
+                                    httpMethod: webhook.httpMethod,
+                                    eventTypes: webhook.eventTypes ?? [],
+                                    headers: webhook.headers ? JSON.stringify(webhook.headers, null, 2) : ''
+                                  });
+                                }}
+                                data-testid={`button-edit-outbound-${webhook.id}`}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </Button>
+                            )}
+                            {!isAuditor && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteOutboundMutation.mutate(webhook.id)}
+                                className="text-destructive"
+                                data-testid={`button-delete-outbound-${webhook.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -1648,6 +1690,110 @@ payment_success,amount,Payment_Amount,currency_cents,`}
             >
               {createOutboundMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create Webhook
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Outbound Webhook Dialog */}
+      <Dialog open={!!editingOutbound} onOpenChange={(open) => { if (!open) setEditingOutbound(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Outbound Webhook</DialogTitle>
+            <DialogDescription>Update the webhook configuration and trigger events.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Webhook Name</Label>
+              <Input
+                value={editOutbound.name}
+                onChange={(e) => setEditOutbound({ ...editOutbound, name: e.target.value })}
+                data-testid="input-edit-outbound-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Target URL</Label>
+              <Input
+                value={editOutbound.targetUrl}
+                onChange={(e) => setEditOutbound({ ...editOutbound, targetUrl: e.target.value })}
+                data-testid="input-edit-outbound-url"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>HTTP Method</Label>
+              <Select value={editOutbound.httpMethod} onValueChange={(v) => setEditOutbound({ ...editOutbound, httpMethod: v })}>
+                <SelectTrigger data-testid="select-edit-http-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="POST">POST</SelectItem>
+                  <SelectItem value="PUT">PUT</SelectItem>
+                  <SelectItem value="PATCH">PATCH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Trigger Events</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {EVENT_TYPES.map((event) => (
+                  <label key={event.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editOutbound.eventTypes.includes(event.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setEditOutbound({ ...editOutbound, eventTypes: [...editOutbound.eventTypes, event.value] });
+                        } else {
+                          setEditOutbound({ ...editOutbound, eventTypes: editOutbound.eventTypes.filter(t => t !== event.value) });
+                        }
+                      }}
+                      className="rounded"
+                      data-testid={`checkbox-edit-event-${event.value}`}
+                    />
+                    {event.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Custom Headers (JSON, optional)</Label>
+              <Input
+                placeholder='{"Authorization": "Bearer xxx"}'
+                value={editOutbound.headers}
+                onChange={(e) => setEditOutbound({ ...editOutbound, headers: e.target.value })}
+                data-testid="input-edit-outbound-headers"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingOutbound(null)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                let headers = null;
+                if (editOutbound.headers.trim()) {
+                  try {
+                    headers = JSON.parse(editOutbound.headers);
+                  } catch {
+                    toast({ title: "Invalid Headers", description: "Headers must be valid JSON", variant: "destructive" });
+                    return;
+                  }
+                }
+                updateOutboundMutation.mutate({
+                  id: editingOutbound!.id,
+                  data: {
+                    name: editOutbound.name,
+                    targetUrl: editOutbound.targetUrl,
+                    httpMethod: editOutbound.httpMethod,
+                    eventTypes: editOutbound.eventTypes,
+                    headers
+                  }
+                });
+              }}
+              disabled={!editOutbound.name || !editOutbound.targetUrl || updateOutboundMutation.isPending}
+              data-testid="button-save-edit-outbound"
+            >
+              {updateOutboundMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
