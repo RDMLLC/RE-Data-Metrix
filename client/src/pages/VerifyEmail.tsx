@@ -74,12 +74,12 @@ export default function VerifyEmail() {
                   <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 text-sm">
                     <p className="text-foreground font-medium mb-1">Account Ready!</p>
                     <p className="text-muted-foreground">
-                      Your email is verified. Continue to explore your account options.
+                      Your email is verified. Start by analyzing your first deal.
                     </p>
                   </div>
                   <Button asChild data-testid="button-complete-subscription">
-                    <a href="/upgrade">
-                      Continue
+                    <a href="/deal-analysis">
+                      Analyze a Deal
                     </a>
                   </Button>
                 </div>
