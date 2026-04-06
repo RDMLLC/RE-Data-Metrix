@@ -15,7 +15,8 @@ import {
   RefreshCw,
   Mail,
   Database,
-  Home
+  Home,
+  Webhook
 } from "lucide-react";
 
 interface IntegrationStatus {
@@ -345,6 +346,41 @@ export default function AdminIntegrations() {
                 </div>
               </CardContent>
             </Card>
+
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Outbound Webhooks</h2>
+              <Card data-testid="card-outbound-webhooks">
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-violet-500/10 rounded-lg flex items-center justify-center">
+                        <Webhook className="h-6 w-6 text-violet-500" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">Outbound Webhooks</CardTitle>
+                        <CardDescription>
+                          Send event data to external services like Zoho Flow, Zapier, or Make
+                        </CardDescription>
+                      </div>
+                    </div>
+                    {!isAuditor && (
+                      <Button
+                        onClick={() => setLocation("/admin/developer-integrations")}
+                        data-testid="button-manage-webhooks"
+                      >
+                        <Webhook className="h-4 w-4 mr-2" />
+                        Manage Webhooks
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Configure webhook endpoints to receive real-time events — including user signups, email verifications, subscription changes, and more. Each webhook can subscribe to specific event types and post JSON payloads to any URL.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4">Other Integrations</h2>
