@@ -3105,6 +3105,69 @@ END:VCALENDAR`;
       from: await this.getFromForCategory('transactional'),
     });
   }
+
+  async sendFreeAccountCancellationEmail(to: string, firstName: string): Promise<boolean> {
+    const baseUrl = process.env.BASE_URL || 'https://redatametrix.com';
+    const resubscribeUrl = `${baseUrl}/pricing`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your account has been cancelled</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+          .header { background-color: #1E3A8A; padding: 28px 32px; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 600; }
+          .body { padding: 32px; color: #374151; font-size: 15px; line-height: 1.6; }
+          .body p { margin: 0 0 16px; }
+          .body ul { color: #374151; padding-left: 20px; margin: 0 0 16px; }
+          .body ul li { margin-bottom: 6px; }
+          .btn-primary { display: inline-block; background-color: #1E3A8A; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 15px; }
+          .footer { background-color: #f3f4f6; padding: 20px 32px; text-align: center; font-size: 13px; color: #6b7280; }
+          .footer a { color: #1E3A8A; text-decoration: none; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>RE Data Metrix</h1>
+          </div>
+          <div class="body">
+            <p>Hi ${firstName},</p>
+            <p>We're sorry to see you go. Your free account has been cancelled as requested.</p>
+            <p>Here's a quick reminder of what you had access to:</p>
+            <ul>
+              <li>Deal Analysis Tool &mdash; analyze any property investment in seconds</li>
+              <li>Lenders Directory &mdash; connect with private lenders ready to fund your deals</li>
+              <li>Toolbox &mdash; a full suite of real estate investing calculators and resources</li>
+            </ul>
+            <p>If you ever want to come back, we'd love to have you. You can resubscribe anytime:</p>
+            <p style="text-align: center; margin: 28px 0;">
+              <a href="${resubscribeUrl}" class="btn-primary">Resubscribe Here &rarr;</a>
+            </p>
+            <p>If you cancelled by mistake or have any questions, just reply to this email and we'll help you out.</p>
+            <p>&mdash; The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0 0 4px;">RE Data Metrix &mdash; 8735 Dunwoody Pl, Suite R, Atlanta, GA 30350</p>
+            <p style="margin: 0;"><a href="${baseUrl}">redatametrix.com</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to,
+      subject: 'Your RE Data Metrix account has been cancelled',
+      html: htmlContent,
+      from: await this.getFromForCategory('transactional'),
+    });
+  }
 }
 
 export const emailService = new EmailService();

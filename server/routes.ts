@@ -9737,6 +9737,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Free account self-cancellation
+  app.post("/api/user/cancel-free-account", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      if (user.subscriptionStatus !== 'free') {
+        return res.status(400).json({ error: "Only free accounts can use this cancellation route." });
+      }
+
+      const { reason, otherReason } = req.body;
+      const effectiveReason = reason === 'Other' ? (otherReason || 'Other') : (reason || null);
+
+      const [updated] = await db.update(users)
+        .set({ subscriptionStatus: 'archived', archiveReason: effectiveReason })
+        .where(eq(users.id, user.id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: "User not found." });
+      }
+
+      outboundWebhookService.triggerWebhooks('user_archived', {
+        userId: user.id,
+        email: updated.email,
+        username: updated.username,
+        archiveReason: effectiveReason,
+      }).catch(err => console.error('[Webhook] user_archived (free cancel) error:', err));
+
+      const firstName = (updated.fullName || updated.username || '').split(' ')[0] || 'there';
+      emailService.sendFreeAccountCancellationEmail(updated.email, firstName)
+        .catch(err => console.error('[Email] sendFreeAccountCancellationEmail error:', err));
+
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Free account cancellation error:", error);
+      return res.status(500).json({ error: "Failed to cancel account." });
+    }
+  });
+
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/comps/search", ensureAuthenticated, async (req, res) => {
     try {

@@ -107,6 +107,7 @@ const BetaSignup = lazy(() => import("@/pages/BetaSignup"));
 const FeatureFeedback = lazy(() => import("@/pages/FeatureFeedback"));
 const AdminFeatureFeedback = lazy(() => import("@/pages/admin/FeatureFeedback"));
 const MetaOffer = lazy(() => import("@/pages/MetaOffer"));
+const Cancelled = lazy(() => import("@/pages/Cancelled"));
 
 function PageLoader() {
   return (
@@ -245,6 +246,7 @@ function Router() {
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/complete" component={CheckoutComplete} />
         <Route path="/meta-offer" component={MetaOffer} />
+        <Route path="/cancelled" component={Cancelled} />
         <Route path="/beta-signup" component={BetaSignup} />
         <Route path="/feedback" component={FeatureFeedback} />
         <Route path="/privacy" component={Privacy} />

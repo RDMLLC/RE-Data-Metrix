@@ -1,0 +1,71 @@
+Give Replit Agent This Prompt #2 — Free account self-cancellation:
+Make the following changes across multiple files:
+1. Email service — server/services/email.service.ts
+Add a new method sendFreeAccountCancellationEmail with category transactional. It should send from info@redatametrix.com and be addressed to the user. Use this content:
+Subject: Your RE Data Metrix account has been cancelled
+HTML body:
+Hi [First Name],
+
+We're sorry to see you go. Your free account has been cancelled as requested.
+
+Here's a quick reminder of what you had access to:
+- Deal Analysis Tool — analyze any property investment in seconds
+- Lenders Directory — connect with private lenders ready to fund your deals
+- Toolbox — a full suite of real estate investing calculators and resources
+
+If you ever want to come back, we'd love to have you. You can resubscribe anytime:
+
+[Resubscribe Here → https://redatametrix.com/pricing]
+
+If you cancelled by mistake or have any questions, just reply to this email and we'll help you out.
+
+— The RE Data Metrix Team
+2. New route — server/routes.ts
+Add a new route POST /api/user/cancel-free-account guarded by the standard user auth middleware (not admin). It should:
+
+Load the current user from the session
+Verify their subscription status is free — return 400 if not
+Accept { reason, otherReason } from the request body
+Call the existing archive logic: set subscriptionStatus to archived, set archiveReason to the reason string (if reason is "Other" use otherReason, otherwise use reason)
+Fire the user_archived outbound webhook with archiveReason (follow the same pattern as PATCH /api/admin/users/:id/subscription)
+Call emailService.sendFreeAccountCancellationEmail passing the user's email and first name
+Return { success: true }
+
+3. New page — client/src/pages/Cancelled.tsx
+Create a new page at /cancelled. It should:
+
+Display headline: "Sorry to see you go"
+Show a brief paragraph thanking the user and summarising what they had access to: Deal Analysis Tool, Lenders Directory, and Toolbox
+Include a prominent CTA button "Resubscribe Here" linking to /pricing
+Match the existing site styling (use shadcn/ui components and Tailwind as used elsewhere in the project)
+
+4. Register the new route in the frontend router
+Add /cancelled to the Wouter router, pointing to the new Cancelled.tsx page. This route should be publicly accessible (no auth required).
+5. Cancel account UI — client/src/pages/portal/Profile.tsx
+Add a "Cancel Account" section at the bottom of the page, visible only when the user's subscription status is free. It should:
+
+Show a "Cancel Account" button styled as a destructive/danger action
+On click, open a modal with this flow:
+
+Step 1: A "Why are you cancelling?" dropdown with these options:
+
+I no longer need it
+I found a better alternative
+It's missing features I need
+I wasn't using it enough
+Technical issues or bugs
+Other
+
+
+If "Other" is selected, show a free-text input field below the dropdown
+A "Continue" button advances to Step 2
+Step 2: A confirmation message: "Are you sure you want to cancel your account? This action cannot be undone." with a "Confirm Cancellation" button and a "Go Back" button
+On confirm: call POST /api/user/cancel-free-account with { reason, otherReason }
+On success: redirect the user to /cancelled
+On error: show an inline error message inside the modal
+
+
+Clean — no webinar references remain. Three changes made to client/src/pages/Pricing.tsx:
+1. Import — removed Video from the lucide-react import (no longer used)
+2. CTA body copy — replaced the webinar-specific text with a generic "Create your free account today…" message
+3. CTA button — route changed from /webinar → /register, text changed from "Join Next Webinar" → "Get Started Free", Video icon replaced with ArrowRight, data-testid updated to button-cta-register

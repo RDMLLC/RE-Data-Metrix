@@ -23,6 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Profile() {
   const { user, logout, refetchUser, isSubscriber } = useAuth();
@@ -32,6 +40,10 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [cancelStep, setCancelStep] = useState<'closed' | 'choice' | 'confirm-cancel'>('closed');
+  const [cancelFreeStep, setCancelFreeStep] = useState<'closed' | 'reason' | 'confirm'>('closed');
+  const [cancelFreeReason, setCancelFreeReason] = useState('');
+  const [cancelFreeOtherReason, setCancelFreeOtherReason] = useState('');
+  const [cancelFreeError, setCancelFreeError] = useState('');
   const [editForm, setEditForm] = useState({
     username: "",
     fullName: "",
@@ -106,6 +118,20 @@ export default function Profile() {
         description: error.message || "Failed to open billing portal",
         variant: "destructive",
       });
+    },
+  });
+
+  const cancelFreeAccountMutation = useMutation({
+    mutationFn: async ({ reason, otherReason }: { reason: string; otherReason: string }) => {
+      const response = await apiRequest("POST", "/api/user/cancel-free-account", { reason, otherReason });
+      return await response.json();
+    },
+    onSuccess: () => {
+      setCancelFreeStep('closed');
+      setLocation('/cancelled');
+    },
+    onError: (error: Error) => {
+      setCancelFreeError(error.message || "Something went wrong. Please try again.");
     },
   });
 
@@ -984,7 +1010,127 @@ export default function Profile() {
             </Card>
           </div>
         </div>
+
+        {user.subscriptionStatus === 'free' && (
+          <div className="mt-8 border-t pt-8">
+            <div className="max-w-xl">
+              <h3 className="text-sm font-semibold text-foreground mb-1">Cancel Account</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                If you'd like to close your account permanently, you can do so below. This action cannot be undone.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setCancelFreeReason('');
+                  setCancelFreeOtherReason('');
+                  setCancelFreeError('');
+                  setCancelFreeStep('reason');
+                }}
+                data-testid="button-cancel-free-account"
+              >
+                Cancel Account
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Free account cancellation — Step 1: Reason */}
+      <Dialog open={cancelFreeStep === 'reason'} onOpenChange={(open) => { if (!open) setCancelFreeStep('closed'); }}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-cancel-free-reason">
+          <DialogHeader>
+            <DialogTitle>Why are you cancelling?</DialogTitle>
+            <DialogDescription>
+              Help us improve by sharing why you're leaving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <Select value={cancelFreeReason} onValueChange={setCancelFreeReason}>
+              <SelectTrigger data-testid="select-cancel-reason">
+                <SelectValue placeholder="Select a reason..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="I no longer need it">I no longer need it</SelectItem>
+                <SelectItem value="I found a better alternative">I found a better alternative</SelectItem>
+                <SelectItem value="It's missing features I need">It&apos;s missing features I need</SelectItem>
+                <SelectItem value="I wasn't using it enough">I wasn&apos;t using it enough</SelectItem>
+                <SelectItem value="Technical issues or bugs">Technical issues or bugs</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {cancelFreeReason === 'Other' && (
+              <Textarea
+                placeholder="Please tell us more..."
+                value={cancelFreeOtherReason}
+                onChange={(e) => setCancelFreeOtherReason(e.target.value)}
+                className="resize-none"
+                data-testid="input-cancel-other-reason"
+              />
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setCancelFreeStep('closed')}
+              data-testid="button-cancel-free-dismiss"
+            >
+              Dismiss
+            </Button>
+            <Button
+              onClick={() => {
+                setCancelFreeError('');
+                setCancelFreeStep('confirm');
+              }}
+              disabled={!cancelFreeReason || (cancelFreeReason === 'Other' && !cancelFreeOtherReason.trim())}
+              data-testid="button-cancel-free-continue"
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Free account cancellation — Step 2: Confirm */}
+      <Dialog open={cancelFreeStep === 'confirm'} onOpenChange={(open) => { if (!open) setCancelFreeStep('closed'); }}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-cancel-free-confirm">
+          <DialogHeader>
+            <DialogTitle>Confirm Cancellation</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to cancel your account? This action cannot be undone.
+          </p>
+          {cancelFreeError && (
+            <div className="rounded-md bg-destructive/5 border border-destructive/20 p-3">
+              <p className="text-sm text-destructive" data-testid="text-cancel-free-error">{cancelFreeError}</p>
+            </div>
+          )}
+          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setCancelFreeStep('reason')}
+              disabled={cancelFreeAccountMutation.isPending}
+              data-testid="button-cancel-free-back"
+            >
+              Go Back
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => cancelFreeAccountMutation.mutate({ reason: cancelFreeReason, otherReason: cancelFreeOtherReason })}
+              disabled={cancelFreeAccountMutation.isPending}
+              data-testid="button-cancel-free-confirm"
+            >
+              {cancelFreeAccountMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                "Confirm Cancellation"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Step 1: Choice dialog */}
       <Dialog open={cancelStep === 'choice'} onOpenChange={(open) => { if (!open) setCancelStep('closed'); }}>
