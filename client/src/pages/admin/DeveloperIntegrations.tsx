@@ -57,7 +57,9 @@ import {
   Upload,
   Download,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -184,6 +186,7 @@ export default function DeveloperIntegrations() {
     eventTypes: [] as string[],
     headers: ''
   });
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [testingWebhook, setTestingWebhook] = useState<string | null>(null);
   const [editingOutbound, setEditingOutbound] = useState<OutboundWebhook | null>(null);
   const [editOutbound, setEditOutbound] = useState({ name: '', targetUrl: '', httpMethod: 'POST', eventTypes: [] as string[], headers: '' });
@@ -1086,37 +1089,87 @@ inquiry_submitted,email,Email,none,`;
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {syncLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>
-                          {log.status === 'success' ? (
-                            <Badge variant="default" className="gap-1 bg-green-600">
-                              <CheckCircle className="h-3 w-3" />
-                              Success
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive" className="gap-1">
-                              <XCircle className="h-3 w-3" />
-                              Failed
-                            </Badge>
+                    {syncLogs.map((log) => {
+                      const isExpanded = expandedLogId === log.id;
+                      const hasDetail = log.requestData || log.responseData || log.errorMessage;
+                      return (
+                        <>
+                          <TableRow
+                            key={log.id}
+                            className={hasDetail ? "cursor-pointer select-none" : undefined}
+                            onClick={() => hasDetail && setExpandedLogId(isExpanded ? null : log.id)}
+                            data-testid={`row-log-${log.id}`}
+                          >
+                            <TableCell>
+                              {log.status === 'success' ? (
+                                <Badge variant="default" className="gap-1 bg-green-600">
+                                  <CheckCircle className="h-3 w-3" />
+                                  Success
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="gap-1">
+                                  <XCircle className="h-3 w-3" />
+                                  Failed
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {EVENT_TYPES.find(e => e.value === log.eventType)?.label || log.eventType}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{log.direction}</Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDistanceToNow(new Date(log.createdAt))} ago
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-between gap-2">
+                                {log.errorMessage && (
+                                  <span className="text-destructive text-sm truncate max-w-[160px]">{log.errorMessage}</span>
+                                )}
+                                {hasDetail && (
+                                  <span className="text-muted-foreground ml-auto shrink-0">
+                                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && (
+                            <TableRow key={`${log.id}-detail`} className="bg-muted/30 hover:bg-muted/30">
+                              <TableCell colSpan={5} className="py-4 px-6">
+                                <div className="space-y-4 text-sm">
+                                  {log.requestData && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Request Payload</p>
+                                      <pre className="bg-background border rounded-md p-3 overflow-x-auto text-xs leading-relaxed">
+                                        {JSON.stringify(log.requestData, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
+                                  {log.responseData && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Response</p>
+                                      <pre className="bg-background border rounded-md p-3 overflow-x-auto text-xs leading-relaxed">
+                                        {JSON.stringify(log.responseData, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
+                                  {log.errorMessage && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Error</p>
+                                      <pre className="bg-destructive/5 border border-destructive/20 rounded-md p-3 overflow-x-auto text-xs text-destructive leading-relaxed">
+                                        {log.errorMessage}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
                           )}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {EVENT_TYPES.find(e => e.value === log.eventType)?.label || log.eventType}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{log.direction}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(log.createdAt))} ago
-                        </TableCell>
-                        <TableCell>
-                          {log.errorMessage && (
-                            <span className="text-destructive text-sm">{log.errorMessage}</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                        </>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </Card>
