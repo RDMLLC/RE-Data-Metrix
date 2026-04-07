@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Video, Tag, Copy, CheckCheck } from "lucide-react";
+import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Tag, Copy, CheckCheck } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { PricingPageSchema } from "@/components/StructuredData";
 
@@ -450,7 +450,7 @@ export default function Pricing() {
               Ready to Transform Your Deal Analysis?
             </h2>
             <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
-              We're currently in beta testing! Join our next webinar to get 6 months of free access and help shape the future of RE Data Metrix.
+              Create your free account today and start analyzing deals, comparing lenders, and making smarter investment decisions.
             </p>
             {isSubscriber ? (
               <Link href="/portal/dashboard">
@@ -460,10 +460,10 @@ export default function Pricing() {
                 </Button>
               </Link>
             ) : (
-              <Link href="/webinar">
-                <Button size="lg" className="bg-accent text-accent-foreground" data-testid="button-cta-webinar">
-                  <Video className="h-5 w-5 mr-2" />
-                  Join Next Webinar
+              <Link href="/register">
+                <Button size="lg" className="bg-accent text-accent-foreground" data-testid="button-cta-register">
+                  Get Started Free
+                  <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
             )}
