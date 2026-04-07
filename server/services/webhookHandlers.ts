@@ -83,6 +83,7 @@ export class WebhookHandlers {
                     currentPlan: webhookPlan,
                     isNewSignup: true,
                     isUpgrade: false,
+                    isDowngrade: false,
                   };
 
                   if (!result.alreadyProcessed) {
@@ -271,6 +272,14 @@ export class WebhookHandlers {
           // ended and Stripe has confirmed deletion, complete the transition.
           const now = new Date();
           const choice = user.pendingCancellationChoice;
+          const previousPlan = user.subscriptionPlan || 'monthly';
+
+          // Fetch profile for webhook payload
+          const [gracePeriodProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+          const gracePeriodFullName = (gracePeriodProfile?.fullName || '').trim();
+          const gracePeriodNameParts = gracePeriodFullName.split(/\s+/);
+          const gracePeriodFirstName = gracePeriodNameParts[0] || user.username;
+          const gracePeriodLastName = gracePeriodNameParts.length > 1 ? gracePeriodNameParts.slice(1).join(' ') : '';
 
           if (choice === 'downgrade') {
             // Downgrade to free: data preserved indefinitely, no deletion clock.
@@ -283,6 +292,19 @@ export class WebhookHandlers {
               paymentFailedAt: null,
             }).where(eq(users.id, user.id));
             console.log(`[WEBHOOK] User ${user.email} fully downgraded to free (downgrade choice) — data preserved`);
+
+            outboundWebhookService.triggerWebhooks('subscription_cancelled', {
+              userId: user.id,
+              email: user.email,
+              username: user.username,
+              firstName: gracePeriodFirstName,
+              lastName: gracePeriodLastName,
+              previousPlan,
+              cancellationChoice: 'downgrade',
+              workflowTrigger: previousPlan === 'annual' ? 'cancelled_annual_to_free' : 'cancelled_monthly_to_free',
+              isDowngrade: true,
+              cancelledAt: now.toISOString(),
+            }).catch(err => console.error('[Webhook] subscription_cancelled trigger error (downgrade grace-period):', err));
           } else {
             // 'cancel' choice or unknown: set to free and start 30-day deletion clock from now.
             await db.update(users).set({
@@ -294,6 +316,19 @@ export class WebhookHandlers {
               paymentFailedAt: null,
             }).where(eq(users.id, user.id));
             console.log(`[WEBHOOK] User ${user.email} fully cancelled — downgradedAt set to ${now.toISOString()} (30-day deletion clock started)`);
+
+            outboundWebhookService.triggerWebhooks('subscription_cancelled', {
+              userId: user.id,
+              email: user.email,
+              username: user.username,
+              firstName: gracePeriodFirstName,
+              lastName: gracePeriodLastName,
+              previousPlan,
+              cancellationChoice: choice || 'cancel',
+              workflowTrigger: previousPlan === 'annual' ? 'cancelled_annual_account' : 'cancelled_monthly_account',
+              isDowngrade: false,
+              cancelledAt: now.toISOString(),
+            }).catch(err => console.error('[Webhook] subscription_cancelled trigger error (cancel grace-period):', err));
           }
         } else if (user && user.subscriptionStatus === 'free') {
           // Idempotency guard: status is already 'free' (e.g. legacy cancel path or

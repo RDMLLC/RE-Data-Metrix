@@ -1903,6 +1903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discountPartnerName: discountPartnerName,
         isNewSignup: true,
         isUpgrade: false,
+        isDowngrade: false,
       };
 
       outboundWebhookService.triggerWebhooks('user_signup', discountWebhookPayload)
@@ -2045,6 +2046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 emailVerified: true,
                 isNewSignup: true,
                 isUpgrade: false,
+                isDowngrade: false,
               };
 
               outboundWebhookService.triggerWebhooks('user_signup', completedWebhookPayload)
@@ -2347,15 +2349,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const stripe = await getUncachableStripeClient();
-      
-      // Cancel at end of billing period
-      await stripe.subscriptions.update(user.stripeSubscriptionId, {
+
+      // Cancel at end of billing period — capture result for cancelAt timestamp
+      const updatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
         cancel_at_period_end: true,
       });
 
       console.log(`[STRIPE] Subscription ${user.stripeSubscriptionId} set to cancel at period end (choice: ${choice})`);
 
       const now = new Date();
+      const previousPlan = user.subscriptionPlan || 'monthly';
+      const cancelAt = updatedSubscription.cancel_at
+        ? new Date(updatedSubscription.cancel_at * 1000).toISOString()
+        : null;
+
+      // Fetch profile once for both branches
+      const [cancelProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+      const cancelFullName = (cancelProfile?.fullName || '').trim();
+      const cancelNameParts = cancelFullName.split(/\s+/);
+      const cancelFirstName = cancelNameParts[0] || user.username;
+      const cancelLastName = cancelNameParts.length > 1 ? cancelNameParts.slice(1).join(' ') : '';
 
       if (choice === 'downgrade') {
         // Downgrade to free at period end: keep access (status='cancelling') until Stripe
@@ -2368,11 +2381,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`[CANCEL] User ${user.email} set to cancelling (downgrade) — access until period end`);
 
+        outboundWebhookService.triggerWebhooks('subscription_cancelling', {
+          userId: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: cancelFirstName,
+          lastName: cancelLastName,
+          previousPlan,
+          cancellationChoice: 'downgrade',
+          workflowTrigger: previousPlan === 'annual' ? 'cancelling_annual_to_free' : 'cancelling_monthly_to_free',
+          isDowngrade: true,
+          cancelAt,
+        }).catch(err => console.error('[Webhook] subscription_cancelling trigger error (downgrade):', err));
+
         try {
-          const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
-          const fullName = (profile?.fullName || '').trim();
-          const firstName = fullName.split(/\s+/)[0] || user.username;
-          await emailService.sendDowngradeToFreeEmail(user.email, firstName);
+          await emailService.sendDowngradeToFreeEmail(user.email, cancelFirstName);
         } catch (emailErr) {
           console.error('[CANCEL] Failed to send downgrade confirmation email:', emailErr);
         }
@@ -2391,11 +2414,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`[CANCEL] User ${user.email} set to cancelling (full cancel) — access until period end`);
 
+        outboundWebhookService.triggerWebhooks('subscription_cancelling', {
+          userId: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: cancelFirstName,
+          lastName: cancelLastName,
+          previousPlan,
+          cancellationChoice: 'cancel',
+          workflowTrigger: previousPlan === 'annual' ? 'cancelling_annual_to_free' : 'cancelling_monthly_to_free',
+          isDowngrade: false,
+          cancelAt,
+        }).catch(err => console.error('[Webhook] subscription_cancelling trigger error (cancel):', err));
+
         try {
-          const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
-          const fullName = (profile?.fullName || '').trim();
-          const firstName = fullName.split(/\s+/)[0] || user.username;
-          await emailService.sendCancellationConfirmationEmail(user.email, firstName);
+          await emailService.sendCancellationConfirmationEmail(user.email, cancelFirstName);
         } catch (emailErr) {
           console.error('[CANCEL] Failed to send cancellation confirmation email:', emailErr);
         }
@@ -2408,6 +2441,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Subscription cancel error:', error);
       res.status(500).json({ error: "Failed to cancel subscription" });
+    }
+  });
+
+  // Downgrade annual → monthly (immediate plan switch via Stripe proration)
+  app.post("/api/subscription/downgrade-to-monthly", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      if (user.subscriptionStatus !== 'active') {
+        return res.status(400).json({ error: "No active subscription to downgrade." });
+      }
+
+      if (user.subscriptionPlan !== 'annual') {
+        return res.status(400).json({ error: "Only annual subscribers can downgrade to monthly." });
+      }
+
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({ error: "No Stripe subscription found." });
+      }
+
+      const monthlyPriceId = process.env.STRIPE_MONTHLY_PRICE_ID;
+      if (!monthlyPriceId) {
+        return res.status(500).json({ error: "Monthly price not configured." });
+      }
+
+      const stripe = await getUncachableStripeClient();
+
+      // Retrieve current subscription to get the item ID
+      const existingSub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+      const itemId = existingSub.items.data[0]?.id;
+      if (!itemId) {
+        return res.status(500).json({ error: "Could not read subscription items from Stripe." });
+      }
+
+      // Switch the subscription to the monthly price, prorating at period boundary
+      await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        items: [{ id: itemId, price: monthlyPriceId }],
+        proration_behavior: 'always_invoice',
+      });
+
+      // Update the user record
+      await db.update(users).set({ subscriptionPlan: 'monthly' }).where(eq(users.id, user.id));
+
+      console.log(`[DOWNGRADE] User ${user.email} downgraded annual → monthly`);
+
+      // Fire webhook
+      try {
+        const [dlProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, user.id)).limit(1);
+        const dlFullName = (dlProfile?.fullName || user.username || '').trim();
+        const dlNameParts = dlFullName.split(/\s+/);
+        const dlFirstName = dlNameParts[0] || '';
+        const dlLastName = dlNameParts.length > 1 ? dlNameParts.slice(1).join(' ') : '';
+
+        outboundWebhookService.triggerWebhooks('subscription_completed', {
+          userId: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: dlFirstName,
+          lastName: dlLastName,
+          fullName: dlFullName,
+          phone: dlProfile?.phone || '',
+          companyName: dlProfile?.companyName || '',
+          subscriptionType: 'monthly',
+          subscriptionStatus: 'active',
+          stripeCustomerId: user.stripeCustomerId || '',
+          stripeSubscriptionId: user.stripeSubscriptionId,
+          createdAt: new Date().toISOString(),
+          workflowTrigger: 'downgrade_annual_to_monthly',
+          previousPlan: 'annual',
+          currentPlan: 'monthly',
+          contactType: getCrmContactType('monthly'),
+          emailVerified: true,
+          isNewSignup: false,
+          isUpgrade: false,
+          isDowngrade: true,
+        }).catch(err => console.error('[Webhook] subscription_completed trigger error (annual→monthly downgrade):', err));
+      } catch (webhookErr) {
+        console.error('[Webhook] Error preparing annual→monthly downgrade webhook:', webhookErr);
+      }
+
+      res.json({
+        success: true,
+        message: "Your subscription has been downgraded to monthly.",
+        plan: 'monthly',
+      });
+    } catch (error) {
+      console.error('Downgrade to monthly error:', error);
+      res.status(500).json({ error: "Failed to downgrade subscription." });
     }
   });
 
@@ -2584,6 +2705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             emailVerified: true,
             isNewSignup: false,
             isUpgrade: true,
+            isDowngrade: false,
           }).catch(err => console.error('[Webhook] subscription_completed trigger error (upgrade):', err));
         } catch (webhookErr) {
           console.error('[Webhook] Error preparing upgrade webhook:', webhookErr);

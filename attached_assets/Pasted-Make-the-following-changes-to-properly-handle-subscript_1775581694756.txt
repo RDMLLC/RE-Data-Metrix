@@ -1,0 +1,49 @@
+Make the following changes to properly handle subscription cancellation and downgrade webhook events:
+1. Fire subscription_cancelling webhook immediately when user submits cancellation
+In the POST /api/subscription/cancel route, after setting subscriptionStatus = 'cancelling' and before sending the confirmation email, fire a new outbound webhook event subscription_cancelling with this payload:
+{
+  userId,
+  email,
+  username,
+  firstName,
+  lastName,
+  previousPlan,
+  cancellationChoice,
+  workflowTrigger: previousPlan === 'annual' ? 'cancelling_annual_to_free' : 'cancelling_monthly_to_free',
+  isDowngrade: cancellationChoice === 'downgrade',
+  cancelAt
+}
+2. Fire subscription_cancelled webhook for in-app cancellations at period end
+In webhookHandlers.ts, in the standard cancelling grace-period branch of customer.subscription.deleted (the path that currently completes silently), add an outbound webhook call for subscription_cancelled with this payload:
+{
+  userId,
+  email,
+  username,
+  firstName,
+  lastName,
+  previousPlan,
+  cancellationChoice: pendingCancellationChoice,
+  workflowTrigger: pendingCancellationChoice === 'downgrade'
+    ? (previousPlan === 'annual' ? 'cancelled_annual_to_free' : 'cancelled_monthly_to_free')
+    : (previousPlan === 'annual' ? 'cancelled_annual_account' : 'cancelled_monthly_account'),
+  isDowngrade: pendingCancellationChoice === 'downgrade'
+}
+3. Add Annual → Monthly downgrade path
+In the upgrade-confirm route, add proper handling for annual → monthly:
+
+Call Stripe to modify the subscription to the monthly price
+Update subscriptionPlan = 'monthly' in the database
+Fire subscription_completed with:
+
+{
+  workflowTrigger: 'downgrade_annual_to_monthly',
+  isDowngrade: true,
+  isUpgrade: false,
+  previousPlan: 'annual',
+  currentPlan: 'monthly'
+}
+4. Add isDowngrade to all relevant webhook payloads
+Anywhere isUpgrade is currently included in a subscription_completed payload, also include isDowngrade as the logical opposite — if isUpgrade is true then isDowngrade is false, and vice versa.
+5. Add new event types to the outbound webhook event type list
+Add subscription_cancelling and ensure subscription_cancelled is already present in the recognized event types list. Add both to the Signup webhook's trigger events in the database.
+Do not change any email sending logic, Stripe subscription handling beyond what's described above, or any other functionality.
