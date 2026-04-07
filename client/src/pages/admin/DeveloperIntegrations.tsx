@@ -145,6 +145,11 @@ const EVENT_TYPES = [
   { value: 'payment_failed', label: 'Payment Failed', description: 'When a subscription payment fails' },
   { value: 'deal_analysis_created', label: 'Deal Analysis Created', description: 'When a user creates a deal analysis' },
   { value: 'inquiry_submitted', label: 'Inquiry Submitted', description: 'When an investor submits an inquiry' },
+  { value: 'user_archived', label: 'User Archived' },
+  { value: 'user_suspended', label: 'User Suspended' },
+  { value: 'user_restored', label: 'User Restored' },
+  { value: 'user_deleted', label: 'User Deleted' },
+  { value: 'downgrade_annual_to_monthly', label: 'Downgrade Annual To Monthly' },
 ];
 
 const USER_FIELDS = [
