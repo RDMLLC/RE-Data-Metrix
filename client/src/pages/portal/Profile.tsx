@@ -681,40 +681,42 @@ export default function Profile() {
               </CardContent>
             </Card>
 
-            <Card data-testid="card-referral-code">
-              <CardHeader>
-                <CardTitle>Your Referral Code</CardTitle>
-                <CardDescription>
-                  Share this code to give friends 1 month free trial
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <code 
-                    className="text-xl sm:text-2xl font-bold bg-muted px-4 py-2 rounded-md break-all"
-                    data-testid="text-referral-code"
-                  >
-                    {user.referralCode || "N/A"}
-                  </code>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (user.referralCode) {
-                        navigator.clipboard.writeText(user.referralCode);
-                        toast({
-                          title: "Copied!",
-                          description: "Referral code copied to clipboard",
-                        });
-                      }
-                    }}
-                    data-testid="button-copy-referral"
-                    disabled={!user.referralCode}
-                  >
-                    Copy Code
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {isSubscriber && (
+              <Card data-testid="card-referral-code">
+                <CardHeader>
+                  <CardTitle>Your Referral Code</CardTitle>
+                  <CardDescription>
+                    Share this code to give friends 1 month free trial
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <code 
+                      className="text-xl sm:text-2xl font-bold bg-muted px-4 py-2 rounded-md break-all"
+                      data-testid="text-referral-code"
+                    >
+                      {user.referralCode || "N/A"}
+                    </code>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (user.referralCode) {
+                          navigator.clipboard.writeText(user.referralCode);
+                          toast({
+                            title: "Copied!",
+                            description: "Referral code copied to clipboard",
+                          });
+                        }
+                      }}
+                      data-testid="button-copy-referral"
+                      disabled={!user.referralCode}
+                    >
+                      Copy Code
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card data-testid="card-legal-documents">
               <CardHeader>
@@ -797,7 +799,7 @@ export default function Profile() {
             </Card>
 
             {/* Report Branding Card */}
-            <Card data-testid="card-report-branding">
+            {isSubscriber && <Card data-testid="card-report-branding">
               <CardHeader className="flex flex-row items-start justify-between gap-2">
                 <div>
                   <CardTitle>Report Branding</CardTitle>
@@ -963,7 +965,7 @@ export default function Profile() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+            </Card>}
 
             <Card>
               <CardHeader>
