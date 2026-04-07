@@ -319,6 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName,
           fullName,
           phone,
+          companyName: (req.body.companyName || '').trim(),
           city: (req.body.city || '').trim(),
           state: (req.body.state || '').trim(),
           street: (req.body.street || '').trim(),
@@ -1554,6 +1555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     email: z.string().email(),
     password: z.string().min(8),
     fullName: z.string().min(1),
+    companyName: z.string().optional().nullable(),
     priceId: z.string(),
     selectedPlan: z.enum(['monthly', 'annual']),
     discountCode: z.string().optional(),
@@ -1618,6 +1620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: validatedData.email,
           passwordHash,
           fullName: validatedData.fullName,
+          companyName: validatedData.companyName || null,
           discountCode: validatedData.discountCode || null,
           selectedPlan: validatedData.selectedPlan,
           expiresAt,
@@ -1702,7 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle 100% discount checkout - bypass Stripe entirely
   app.post("/api/subscription/checkout/free-with-discount", async (req, res) => {
     try {
-      const { username, email, password, fullName, discountCode, selectedPlan, codeType, promoCodeId } = req.body;
+      const { username, email, password, fullName, companyName: reqCompanyName, discountCode, selectedPlan, codeType, promoCodeId } = req.body;
 
       if (!username || !email || !password || !fullName || !discountCode || !selectedPlan) {
         return res.status(400).json({ error: "All fields are required" });
@@ -1828,6 +1831,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
 
+      // Create user profile
+      await db.insert(userProfiles).values({
+        userId: newUser.id,
+        fullName: fullName.trim(),
+        companyName: (reqCompanyName || '').trim() || null,
+      });
+
       // Increment redemption count based on code type
       if (isPromoCode) {
         await db
@@ -1873,6 +1883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName: lastNamePart,
         fullName: fullName.trim(),
         phone: '',
+        companyName: (reqCompanyName || '').trim(),
         subscriptionType: selectedPlan,
         subscriptionStatus: 'active',
         stripeCustomerId: '',
@@ -2020,6 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 lastName: completedLastName,
                 fullName: completedFullName,
                 phone: completedProfile?.phone || '',
+                companyName: completedProfile?.companyName || '',
                 subscriptionType: completedPlan,
                 subscriptionStatus: completedUser.subscriptionStatus || 'active',
                 stripeCustomerId: completedUser.stripeCustomerId || '',
@@ -2559,6 +2571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastName: upgradeLastName,
             fullName: upgradeName,
             phone: profile?.phone || '',
+            companyName: profile?.companyName || '',
             subscriptionType: subscriptionPlan,
             subscriptionStatus: 'active',
             stripeCustomerId: user.stripeCustomerId || '',

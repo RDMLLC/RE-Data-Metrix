@@ -36,6 +36,7 @@ const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
+    companyName: z.string().optional(),
     phone: z.string().min(7, "Phone number is required"),
     street: z.string().optional(),
     city: z.string().min(1, "City is required"),
@@ -141,6 +142,7 @@ export default function Register() {
       password: "",
       confirmPassword: "",
       fullName: "",
+      companyName: "",
       phone: "",
       street: "",
       city: "",
@@ -280,6 +282,24 @@ export default function Register() {
                                 placeholder="John Doe"
                                 autoComplete="name"
                                 data-testid="input-fullname"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Company Name <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Company Name (optional)"
+                                autoComplete="organization"
+                                data-testid="input-company-name"
                               />
                             </FormControl>
                             <FormMessage />

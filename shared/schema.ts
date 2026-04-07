@@ -100,6 +100,7 @@ export const pendingRegistrations = pgTable("pending_registrations", {
   email: text("email").notNull(),
   passwordHash: text("password_hash").notNull(),
   fullName: text("full_name").notNull(),
+  companyName: text("company_name"),
   discountCode: text("discount_code"),
   selectedPlan: text("selected_plan").notNull(), // 'monthly' or 'annual'
   stripeSessionId: text("stripe_session_id"),
@@ -126,6 +127,7 @@ export const userProfiles = pgTable("user_profiles", {
   state: text("state"),
   zipCode: text("zip_code"),
   phone: text("phone"),
+  companyName: text("company_name"),
   creditScoreRange: text("credit_score_range"),
   autoPopulateDefaults: boolean("auto_populate_defaults").default(false),
   // Investor information fields for deal analysis auto-fill

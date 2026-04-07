@@ -52,6 +52,7 @@ const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
+    companyName: z.string().optional(),
     termsAccepted: z.literal(true, {
       errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
     }),
@@ -354,6 +355,7 @@ export default function Checkout() {
       password: "",
       confirmPassword: "",
       fullName: "",
+      companyName: "",
       termsAccepted: false as unknown as true,
     },
   });
@@ -525,6 +527,7 @@ export default function Checkout() {
             email: data.email,
             password: data.password,
             fullName: data.fullName,
+            companyName: data.companyName || undefined,
             compCode: compCode.trim() || undefined,
             metaEventId: freeMetaEventId,
           }),
@@ -583,6 +586,7 @@ export default function Checkout() {
             email: data.email,
             password: data.password,
             fullName: data.fullName,
+            companyName: data.companyName || undefined,
             discountCode: appliedDiscount.code,
             selectedPlan,
             codeType: appliedDiscount.codeType,
@@ -643,6 +647,7 @@ export default function Checkout() {
           email: data.email,
           password: data.password,
           fullName: data.fullName,
+          companyName: data.companyName || undefined,
           priceId,
           selectedPlan,
           discountCode: appliedDiscount?.code,
@@ -771,6 +776,24 @@ export default function Checkout() {
                                   placeholder="John Doe"
                                   autoComplete="name"
                                   data-testid="input-checkout-fullname"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="companyName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Company Name <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="Company Name (optional)"
+                                  autoComplete="organization"
+                                  data-testid="input-checkout-company-name"
                                 />
                               </FormControl>
                               <FormMessage />

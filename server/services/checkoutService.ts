@@ -217,6 +217,7 @@ export async function completeCheckoutSession(sessionId: string, options?: { all
   let email: string;
   let passwordHash: string;
   let fullName: string;
+  let companyName: string | null = null;
   let needsPasswordReset = false;
 
   if (pending) {
@@ -224,6 +225,7 @@ export async function completeCheckoutSession(sessionId: string, options?: { all
     email = pending.email;
     passwordHash = pending.passwordHash;
     fullName = pending.fullName || customerName || '';
+    companyName = pending.companyName || null;
   } else {
     if (options?.allowFallback === false) {
       console.log(`[CHECKOUT] No pending registration found for session ${sessionId} — skipping fallback (webhook path). Browser redirect will handle account creation.`);
@@ -281,6 +283,7 @@ export async function completeCheckoutSession(sessionId: string, options?: { all
   await db.insert(userProfiles).values({
     userId: newUser.id,
     fullName,
+    companyName,
   });
 
   if (pending) {

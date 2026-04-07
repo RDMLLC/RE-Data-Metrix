@@ -12,6 +12,7 @@ export const registrationSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(1, "Full name is required"),
+  companyName: z.string().optional().nullable(),
   phone: z.string().min(7, "Phone number is required"),
   street: z.string().optional(),
   city: z.string().min(1, "City is required"),
@@ -263,6 +264,7 @@ class AuthService {
       await db.insert(userProfiles).values({
         userId: newUser.id,
         fullName: validatedData.fullName,
+        companyName: validatedData.companyName || null,
         phone: validatedData.phone || null,
         street: validatedData.street || null,
         city: validatedData.city || null,
