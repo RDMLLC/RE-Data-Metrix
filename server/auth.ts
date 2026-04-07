@@ -64,6 +64,17 @@ passport.use('user-local',
           return done(null, false, { message: 'Invalid credentials' });
         }
 
+        if (user.subscriptionStatus === 'suspended') {
+          return done(null, false, { message: 'This account has been suspended. Please contact support.' });
+        }
+
+        if (user.subscriptionStatus === 'archived') {
+          if ((user as any).archiveReason === 'fraud') {
+            return done(null, false, { message: 'Invalid credentials' });
+          }
+          return done(null, false, { message: 'This account has been closed. Questions? Contact support at info@redatametrix.com' });
+        }
+
         return done(null, { ...user, userType: 'user' });
       } catch (error) {
         return done(error);
@@ -211,6 +222,18 @@ export function ensureAuthenticated(
   next: NextFunction
 ) {
   if (req.isAuthenticated()) {
+    const user = req.user as any;
+    if (user && user.userType === 'user') {
+      if (user.subscriptionStatus === 'suspended') {
+        return res.status(403).json({ error: 'This account has been suspended. Please contact support.' });
+      }
+      if (user.subscriptionStatus === 'archived') {
+        if (user.archiveReason === 'fraud') {
+          return res.status(403).json({ error: 'Invalid email or password.' });
+        }
+        return res.status(403).json({ error: 'This account has been closed. Questions? Contact support at info@redatametrix.com' });
+      }
+    }
     return next();
   }
   res.status(401).json({ error: 'Authentication required' });

@@ -1,0 +1,38 @@
+We need to build a proper account status enforcement system. Please make the following changes:
+1. Add archiveReason field to the database
+In shared/schema.ts, add a nullable text column to the users table:
+archiveReason: text("archive_reason")
+Valid values: cancelled, fraud, erasure, test, other
+2. Add suspended as a valid subscriptionStatus value
+Add suspended to the list of recognized subscription status values everywhere it appears: schema validation, admin UI dropdown, and any status checks in routes.
+3. Fix ensureAuthenticated in server/auth.ts
+After the req.isAuthenticated() check, add a subscriptionStatus check that returns appropriate error messages:
+
+suspended → 403 with message: "This account has been suspended. Please contact support."
+archived where archiveReason is fraud → 403 with message: "Invalid email or password." (generic, same as wrong password)
+archived where archiveReason is anything else → 403 with message: "This account has been closed. Questions? Contact support at info@redatametrix.com"
+
+4. Fix the Passport login strategy
+Apply the same status checks during login so archived/suspended users cannot authenticate in the first place. Return the same messages as above.
+5. Add suspended and archiveReason to the admin panel user management UI
+
+Add suspended to the per-user inline status dropdown
+Add an archiveReason dropdown that appears when status is set to archived or suspended, with options: Cancelled, Fraud, Erasure, Test, Other
+The archiveReason should be saved when the status is changed
+
+6. Add outbound webhook events
+In the admin panel user status change handler, fire outbound webhook events:
+
+When status changes to archived → fire user_archived event with payload: { userId, email, username, archiveReason }
+When status changes to suspended → fire user_suspended event with payload: { userId, email, username }
+When status is restored from archived or suspended → fire user_restored event with payload: { userId, email, username, newStatus }
+
+7. Fix the admin hard delete flow
+Update the delete route to:
+
+Check if user has an active Stripe subscription (subscriptionStatus is active or cancelling) — if yes, block deletion with error: "Cannot delete a user with an active Stripe subscription. Cancel their subscription in Stripe first."
+For all other users, proceed with hard delete as currently implemented
+Fire a user_deleted outbound webhook event before deleting: { userId, email, username, archiveReason }
+Clean up pending_registrations for this email address as part of the delete cascade
+
+Do not change any Stripe webhook handlers, email services, or any other functionality not listed above.

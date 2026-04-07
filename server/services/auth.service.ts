@@ -35,7 +35,7 @@ export const passwordResetSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-export type SubscriptionStatus = 'free' | 'active' | 'comped' | 'referral_trial' | 'canceled';
+export type SubscriptionStatus = 'free' | 'active' | 'comped' | 'referral_trial' | 'canceled' | 'suspended' | 'archived';
 
 export interface RegistrationResult {
   success: boolean;

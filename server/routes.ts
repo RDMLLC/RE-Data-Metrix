@@ -4036,6 +4036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       termsAcceptedAt: user.termsAcceptedAt,
       termsVersion: user.termsVersion,
       privacyVersion: user.privacyVersion,
+      archiveReason: (user as any).archiveReason ?? null,
     };
   }
 
@@ -4312,17 +4313,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/users/:id/subscription", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { subscriptionStatus, subscriptionPlan } = req.body;
+      const { subscriptionStatus, subscriptionPlan, archiveReason } = req.body;
       
-      if (!['active', 'cancelling', 'free', 'comped', 'referral_trial', 'archived'].includes(subscriptionStatus)) {
+      if (!['active', 'cancelling', 'free', 'comped', 'referral_trial', 'archived', 'suspended'].includes(subscriptionStatus)) {
         return res.status(400).json({ error: "Invalid subscription status" });
       }
+
+      const [existingUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      if (!existingUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const previousStatus = existingUser.subscriptionStatus;
       
       const updateFields: Record<string, any> = { subscriptionStatus };
       if (subscriptionStatus === 'active' && subscriptionPlan) {
         updateFields.subscriptionPlan = subscriptionPlan;
       } else if (subscriptionStatus !== 'active') {
         updateFields.subscriptionPlan = null;
+      }
+
+      if (subscriptionStatus === 'archived' || subscriptionStatus === 'suspended') {
+        updateFields.archiveReason = archiveReason || null;
+      } else {
+        updateFields.archiveReason = null;
       }
       
       const [updated] = await db.update(users)
@@ -4332,6 +4345,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updated) {
         return res.status(404).json({ error: "User not found" });
+      }
+
+      const wasLocked = previousStatus === 'archived' || previousStatus === 'suspended';
+      const isNowLocked = subscriptionStatus === 'archived' || subscriptionStatus === 'suspended';
+
+      if (subscriptionStatus === 'archived') {
+        outboundWebhookService.triggerWebhooks('user_archived', {
+          userId: id,
+          email: updated.email,
+          username: updated.username,
+          archiveReason: archiveReason || null,
+        }).catch(err => console.error('[Webhook] user_archived error:', err));
+      } else if (subscriptionStatus === 'suspended') {
+        outboundWebhookService.triggerWebhooks('user_suspended', {
+          userId: id,
+          email: updated.email,
+          username: updated.username,
+        }).catch(err => console.error('[Webhook] user_suspended error:', err));
+      } else if (wasLocked && !isNowLocked) {
+        outboundWebhookService.triggerWebhooks('user_restored', {
+          userId: id,
+          email: updated.email,
+          username: updated.username,
+          newStatus: subscriptionStatus,
+        }).catch(err => console.error('[Webhook] user_restored error:', err));
       }
       
       // Return sanitized user data (no sensitive fields)
@@ -4582,6 +4620,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.role === 'admin') {
         return res.status(400).json({ error: "Cannot delete admin users" });
       }
+
+      // Block deletion if user has an active Stripe subscription
+      if (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'cancelling') {
+        return res.status(400).json({
+          error: "Cannot delete a user with an active Stripe subscription. Cancel their subscription in Stripe first.",
+        });
+      }
+
+      // Fire user_deleted webhook before deleting
+      await outboundWebhookService.triggerWebhooks('user_deleted', {
+        userId: id,
+        email: user.email,
+        username: user.username,
+        archiveReason: (user as any).archiveReason || null,
+      }).catch(err => console.error('[Webhook] user_deleted error:', err));
       
       // Delete related records first (cascade)
       await db.delete(userProfiles).where(eq(userProfiles.userId, id));
@@ -4614,6 +4667,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clear auditor invite references
       await db.update(auditorInvites).set({ invitedBy: null }).where(eq(auditorInvites.invitedBy, id));
       await db.update(auditorInvites).set({ acceptedBy: null }).where(eq(auditorInvites.acceptedBy, id));
+      // Clean up pending registrations for this email
+      await db.delete(pendingRegistrations).where(sql`LOWER(${pendingRegistrations.email}) = LOWER(${user.email})`);
       
       // Delete the user
       await db.delete(users).where(eq(users.id, id));

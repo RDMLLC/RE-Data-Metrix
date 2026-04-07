@@ -81,6 +81,7 @@ interface UserWithStats {
   role: string;
   subscriptionStatus: string;
   subscriptionPlan: string | null;
+  archiveReason: string | null;
   createdAt: string | null;
   isEmailVerified: boolean;
   dealsAnalyzed: number;
@@ -126,7 +127,7 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState<string>("all");
   const [verificationFilter, setVerificationFilter] = useState<string>("all");
-  const [userToUpdate, setUserToUpdate] = useState<{user: UserWithStats, status: string, plan?: string | null} | null>(null);
+  const [userToUpdate, setUserToUpdate] = useState<{user: UserWithStats, status: string, plan?: string | null, archiveReason?: string} | null>(null);
   const [userToResendVerification, setUserToResendVerification] = useState<UserWithStats | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserWithStats | null>(null);
   const [showCreateDeveloper, setShowCreateDeveloper] = useState(false);
@@ -173,8 +174,8 @@ export default function UserManagement() {
   });
 
   const updateSubscriptionMutation = useMutation({
-    mutationFn: async ({ userId, subscriptionStatus, subscriptionPlan }: { userId: string; subscriptionStatus: string; subscriptionPlan?: string | null }) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/subscription`, { subscriptionStatus, subscriptionPlan });
+    mutationFn: async ({ userId, subscriptionStatus, subscriptionPlan, archiveReason }: { userId: string; subscriptionStatus: string; subscriptionPlan?: string | null; archiveReason?: string }) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/subscription`, { subscriptionStatus, subscriptionPlan, archiveReason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -367,7 +368,7 @@ export default function UserManagement() {
     if (status === 'active') return plan === 'annual' ? 'Annual' : 'Monthly';
     if (status === 'cancelling') return plan === 'annual' ? 'Annual (Cancelling)' : 'Monthly (Cancelling)';
     const labels: Record<string, string> = {
-      free: 'Free', comped: 'Comped', referral_trial: 'Referral Trial', archived: 'Archived',
+      free: 'Free', comped: 'Comped', referral_trial: 'Referral Trial', archived: 'Archived', suspended: 'Suspended',
     };
     return labels[status] || status;
   };
@@ -392,6 +393,8 @@ export default function UserManagement() {
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">Referral Trial</Badge>;
       case 'archived':
         return <Badge className="bg-gray-500/10 text-gray-600 border-gray-500/20">Archived</Badge>;
+      case 'suspended':
+        return <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20">Suspended</Badge>;
       case 'free':
       default:
         return <Badge variant="secondary">Free</Badge>;
@@ -587,6 +590,7 @@ export default function UserManagement() {
                         <SelectItem value="free">Free</SelectItem>
                         <SelectItem value="comped">Comped</SelectItem>
                         <SelectItem value="referral_trial">Referral Trial</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
                         <SelectItem value="archived">Archived</SelectItem>
                       </SelectContent>
                     </Select>
@@ -654,6 +658,7 @@ export default function UserManagement() {
                                       <SelectItem value="free">Free</SelectItem>
                                       <SelectItem value="comped">Comped</SelectItem>
                                       <SelectItem value="referral_trial">Referral Trial</SelectItem>
+                                      <SelectItem value="suspended">Suspended</SelectItem>
                                       <SelectItem value="archived">Archived</SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -1081,6 +1086,26 @@ export default function UserManagement() {
               Are you sure you want to change {userToUpdate?.user.email}'s subscription to "{userToUpdate ? getDisplayLabel(userToUpdate.status, userToUpdate.plan) : ''}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {(userToUpdate?.status === 'archived' || userToUpdate?.status === 'suspended') && (
+            <div className="px-1 pb-2 space-y-1">
+              <Label>Reason</Label>
+              <Select
+                value={userToUpdate.archiveReason || ''}
+                onValueChange={(v) => setUserToUpdate(prev => prev ? { ...prev, archiveReason: v } : null)}
+              >
+                <SelectTrigger data-testid="select-archive-reason">
+                  <SelectValue placeholder="Select reason (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="fraud">Fraud</SelectItem>
+                  <SelectItem value="erasure">Erasure</SelectItem>
+                  <SelectItem value="test">Test</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -1090,6 +1115,7 @@ export default function UserManagement() {
                     userId: userToUpdate.user.id,
                     subscriptionStatus: userToUpdate.status,
                     subscriptionPlan: userToUpdate.plan,
+                    archiveReason: userToUpdate.archiveReason,
                   });
                 }
               }}
