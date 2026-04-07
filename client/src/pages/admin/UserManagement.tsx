@@ -754,7 +754,7 @@ export default function UserManagement() {
                                         <TooltipContent>Resend verification email</TooltipContent>
                                       </Tooltip>
                                     )}
-                                    {user.referralCount === 0 && user.role !== 'admin' && (
+                                    {user.role !== 'admin' && (!user.isEmailVerified || user.referralCount === 0) && (
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <Button
