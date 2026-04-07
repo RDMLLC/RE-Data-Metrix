@@ -123,6 +123,12 @@ class SignupFollowupService {
   }
 
   async checkAndSendDay7Emails() {
+    // DISABLED: This email is now handled by Zoho CRM automated workflow
+    // "2 of 5 First Deal Check-in" fires at 7 days after signup.
+    // To re-enable, remove the early return below.
+    return;
+
+    /* Original implementation preserved for reference:
     try {
       console.log('[SIGNUP FOLLOWUP] Checking for Day 7 followup emails...');
 
@@ -179,9 +185,16 @@ class SignupFollowupService {
     } catch (error) {
       console.error('[SIGNUP FOLLOWUP] Error sending Day 7 emails:', error);
     }
+    */
   }
 
   async checkAndSendFollowups() {
+    // DISABLED: This email is now handled by Zoho CRM automated workflow
+    // "3 of 5 Value Check-in and Save Deals" fires at 2 weeks after signup.
+    // To re-enable, remove the early return below.
+    return;
+
+    /* Original implementation preserved for reference:
     try {
       console.log('[SIGNUP FOLLOWUP] Checking for two-week followup emails...');
 
@@ -234,6 +247,7 @@ class SignupFollowupService {
     } catch (error) {
       console.error('[SIGNUP FOLLOWUP] Error checking followups:', error);
     }
+    */
   }
 
   async checkAndSendFirstDealNudge() {
