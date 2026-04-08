@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { WizardFormData } from "./DealAnalysisWizard";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,13 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, HelpCircle } from "lucide-react";
+import { Home, HelpCircle, Search, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ArvHelper from "./ArvHelper";
 
 interface Step2PropertyDetailsProps {
   form: UseFormReturn<WizardFormData>;
@@ -54,6 +55,7 @@ export default function Step2PropertyDetails({
 
   const addingSquareFootage = form.watch("addingSquareFootage");
   const dataSource = form.watch("propertyDataSource") || "unknown";
+  const [showArvHelper, setShowArvHelper] = useState(false);
   
   const estimateLabel = "Estimated Market Value (Not ARV)";
 
@@ -63,15 +65,33 @@ export default function Step2PropertyDetails({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
-          <Home className="h-6 w-6 text-primary" />
-          Property Details
-        </h2>
-        <p className="text-muted-foreground mt-1">
-          Review and update the property information below
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <Home className="h-6 w-6 text-primary" />
+            Property Details
+          </h2>
+          <p className="text-muted-foreground mt-1">
+            Review and update the property information below
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setShowArvHelper(!showArvHelper)}
+          data-testid="button-help-with-arv"
+        >
+          <Search className="h-4 w-4" />
+          Help with ARV
+          {showArvHelper ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </Button>
       </div>
+
+      {showArvHelper && (
+        <ArvHelper form={form} onClose={() => setShowArvHelper(false)} />
+      )}
 
       <Form {...form}>
         <form onSubmit={handleSubmit} className="space-y-6">
