@@ -926,23 +926,37 @@ export class HasDataAPIService implements IPropertyAPIService {
           });
         }
 
-        // Sort by highest price (for ARV, we want top sales)
-        comps.sort((a, b) => b.salePrice - a.salePrice);
+        // Apply date cutoff — drop comps sold before the user-selected time window
+        const dateCutoff = new Date();
+        dateCutoff.setDate(dateCutoff.getDate() - config.daysBack);
+        const beforeDateFilter = comps.length;
+        const dateFilteredComps = comps.filter(c => {
+          if (!c.saleDate) return true; // keep if date unknown
+          const sold = new Date(c.saleDate);
+          return !isNaN(sold.getTime()) && sold >= dateCutoff;
+        });
+        if (dateFilteredComps.length < beforeDateFilter) {
+          console.log(`[Comps Search] Date filter (${config.daysBack}d): removed ${beforeDateFilter - dateFilteredComps.length} old comps, ${dateFilteredComps.length} remaining`);
+        }
+        const filteredComps = dateFilteredComps;
 
-        console.log(`[Comps Search] Filtered to ${comps.length} comps after criteria`);
+        // Sort by highest price (for ARV, we want top sales)
+        filteredComps.sort((a, b) => b.salePrice - a.salePrice);
+
+        console.log(`[Comps Search] Filtered to ${filteredComps.length} comps after criteria`);
 
         // Track the best results found so far (keep whichever config found more comps)
-        if (comps.length > bestCompsFound.length) {
-          bestCompsFound = comps.slice(0, maxResults);
+        if (filteredComps.length > bestCompsFound.length) {
+          bestCompsFound = filteredComps.slice(0, maxResults);
         }
 
         // If we have enough results, return them immediately
-        if (comps.length >= minResults) {
-          return comps.slice(0, maxResults);
+        if (filteredComps.length >= minResults) {
+          return filteredComps.slice(0, maxResults);
         }
 
         // Otherwise continue to next search config (if any)
-        console.log(`[Comps Search] Only ${comps.length} comps, need ${minResults}, expanding search...`);
+        console.log(`[Comps Search] Only ${filteredComps.length} comps, need ${minResults}, expanding search...`);
 
       } catch (error) {
         console.error(`[Comps Search] Error with config:`, config, error);
