@@ -216,11 +216,7 @@ passport.deserializeUser(async (sessionData: any, done) => {
   }
 });
 
-export function ensureAuthenticated(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) {
     const user = req.user as any;
     if (user && user.userType === 'user') {
@@ -236,6 +232,10 @@ export function ensureAuthenticated(
     }
     return next();
   }
+  // User is not authenticated — destroy stale session and clear cookie
+  req.logout(() => {});
+  req.session.destroy(() => {});
+  res.clearCookie('connect.sid');
   res.status(401).json({ error: 'Authentication required' });
 }
 
