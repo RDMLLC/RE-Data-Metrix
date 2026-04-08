@@ -1556,26 +1556,17 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 View in Dashboard
               </Link>
             </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleMarkAsFinal}
-              disabled={markFinalMutation.isPending}
-              className="border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
-              data-testid="button-save-as-final"
-            >
-              {markFinalMutation.isPending ? (
-                <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Save as Final
-                </>
-              )}
-            </Button>
+            <Link href="/portal/deals">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-400"
+                data-testid="button-view-saved-deals"
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                View Saved Deals
+              </Button>
+            </Link>
           </AlertDescription>
         </Alert>
       )}

@@ -124,7 +124,7 @@ export type WizardFormData = z.infer<typeof wizardSchema>;
 
 export default function DealAnalysisWizard() {
   const { wizardData, updatePropertyData, updateInvestorData, clearWizardData, setCurrentStep: setContextStep } = useWizardData();
-  const [currentStep, setCurrentStep] = useState(() => wizardData.currentStep || 1);
+  const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
   
