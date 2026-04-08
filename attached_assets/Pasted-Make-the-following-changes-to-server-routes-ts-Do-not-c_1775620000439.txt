@@ -1,0 +1,25 @@
+Make the following changes to server/routes.ts. Do not change anything else.
+1. Loan analysis route — replace hard lender column block for non-subscribers
+Find the block around line 9103 that currently returns lenderColumns: [] unconditionally for non-subscribers:
+if (!isSubscriber) {
+  res.json({
+    cashSaleColumn,
+    userLoanColumn,
+    lenderColumns: [],
+    criteriaUsed: criteriaSelection,
+    numberOfDraws,
+    allRankedProducts: 0,
+  });
+  return;
+}
+Replace it with a counter check using storage.incrementUserLoanAnalysis(userId). If canAnalyze is true, allow the full response (fall through to the existing subscriber response below). If canAnalyze is false, return the same shape but with lenderColumns: [] and add code: 'LOAN_ANALYSIS_QUOTA_EXCEEDED' to the response.
+2. POST /api/member/deals — replace hard 403 with counter check
+Find the block around line 10327 that returns a hard 403 for free users. Replace it with a call to storage.incrementUserSavedDeal(userId). If canSave is false, return 403 with code: 'SAVED_DEAL_QUOTA_EXCEEDED'. If canSave is true, allow the save to proceed.
+3. GET /api/member/deals and GET /api/member/deals/:dealId — remove free user 403
+Find the blocks around lines 10401–10403 and 10461–10463 that return hard 403 for subscriptionStatus === 'free'. Remove these blocks entirely so free users can read their own saved deals.
+4. GET /api/member/saved-lenders and GET /api/member/saved-lenders/:lenderId/status — remove free user 403
+Find the blocks around lines 10702–10704 and 10811–10813 that return hard 403 for free users on saved lender reads. Remove these blocks entirely.
+5. POST /api/member/saved-lenders/:lenderId — add counter check
+Find this route around line 10726. Add a call to storage.incrementUserSavedLender(userId) before the insert. If canSave is false, return 403 with code: 'SAVED_LENDER_QUOTA_EXCEEDED'. If canSave is true, proceed with the save.
+6. GET /api/user/usage — extend response
+Find this route around line 9611. Extend the response to also include loanAnalysisCount, remainingLoanAnalyses, savedDealCount, remainingSavedDeals, savedLenderCount, and remainingSavedLenders from getUserUsageCounter.

@@ -9100,17 +9100,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
 
-      // For non-subscribers, return only cash and user loan columns (no lender data)
+      // For non-subscribers, check monthly loan analysis quota (2/month for free users)
       if (!isSubscriber) {
-        res.json({
-          cashSaleColumn,
-          userLoanColumn,
-          lenderColumns: [],
-          criteriaUsed: criteriaSelection,
-          numberOfDraws,
-          allRankedProducts: 0,
-        });
-        return;
+        if (isAuthenticated && user) {
+          const usageResult = await storage.incrementUserLoanAnalysis(user.id);
+          if (!usageResult.canAnalyze) {
+            res.json({
+              cashSaleColumn,
+              userLoanColumn,
+              lenderColumns: [],
+              criteriaUsed: criteriaSelection,
+              numberOfDraws,
+              allRankedProducts: 0,
+              code: 'LOAN_ANALYSIS_QUOTA_EXCEEDED',
+            });
+            return;
+          }
+          // canAnalyze is true — fall through to full lender response below
+        } else {
+          // Unauthenticated visitor — no lender columns
+          res.json({
+            cashSaleColumn,
+            userLoanColumn,
+            lenderColumns: [],
+            criteriaUsed: criteriaSelection,
+            numberOfDraws,
+            allRankedProducts: 0,
+          });
+          return;
+        }
       }
 
       // Get active loan products and filter (only for subscribers)
@@ -9629,6 +9647,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           remainingPdfDownloads: -1, // -1 means unlimited
           arvHelperCount: 0,
           remainingArvHelpers: -1, // -1 means unlimited
+          loanAnalysisCount: 0,
+          remainingLoanAnalyses: -1, // -1 means unlimited
+          savedDealCount: 0,
+          remainingSavedDeals: -1, // -1 means unlimited
+          savedLenderCount: 0,
+          remainingSavedLenders: -1, // -1 means unlimited
           periodEnd: null
         });
       }
@@ -9650,6 +9674,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingPdfDownloads: Math.max(0, FREE_PDF_LIMIT - pdfCount),
         arvHelperCount: arvCount,
         remainingArvHelpers: Math.max(0, FREE_ARV_LIMIT - arvCount),
+        loanAnalysisCount: usage?.loanAnalysisCount || 0,
+        remainingLoanAnalyses: usage?.remainingLoanAnalyses ?? 2,
+        savedDealCount: usage?.savedDealCount || 0,
+        remainingSavedDeals: usage?.remainingSavedDeals ?? 2,
+        savedLenderCount: usage?.savedLenderCount || 0,
+        remainingSavedLenders: usage?.remainingSavedLenders ?? 2,
         periodEnd: usage?.periodEnd || null
       });
     } catch (error) {
@@ -10323,11 +10353,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as User).id;
       const user = req.user as User;
       
-      // Only paid subscribers can save deals
+      // Paid subscribers can save unlimited deals; free users get up to 2/month
       const isSubscriber = ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus) || 
                            user.role === 'admin' || user.role === 'developer' || user.role === 'auditor';
       if (!isSubscriber) {
-        return res.status(403).json({ error: "Active subscription required to save deals" });
+        const usageResult = await storage.incrementUserSavedDeal(userId);
+        if (!usageResult.canSave) {
+          return res.status(403).json({ error: "You've reached your free limit of 2 saved deals this month", code: 'SAVED_DEAL_QUOTA_EXCEEDED' });
+        }
       }
       
       const { dealSnapshot, resultsSnapshot, propertyAddress, arv, roi, profit, dscr, status = 'draft', notes, lendersPresented } = req.body;
@@ -10398,10 +10431,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as User;
       const userId = user.id;
 
-      if (user.subscriptionStatus === 'free') {
-        return res.status(403).json({ error: "Upgrade to access your saved deals", upgradeRequired: true });
-      }
-
       const statusFilter = req.query.status as string | undefined;
       const includeHidden = req.query.includeHidden === "true";
       
@@ -10457,10 +10486,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as User;
       const userId = user.id;
       const { dealId } = req.params;
-
-      if (user.subscriptionStatus === 'free') {
-        return res.status(403).json({ error: "Upgrade to access your saved deals", upgradeRequired: true });
-      }
       
       const [deal] = await db
         .select()
@@ -10699,10 +10724,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as User;
       const userId = user.id;
 
-      if (user.subscriptionStatus === 'free') {
-        return res.status(403).json({ error: "Upgrade to access your saved lenders", upgradeRequired: true });
-      }
-      
       const saved = await db
         .select({
           id: savedLenders.id,
@@ -10737,6 +10758,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (existing) {
         return res.json({ message: "Lender already saved", id: existing.id });
+      }
+
+      // Check saved lender quota for free users (paid subscribers have unlimited saves)
+      const isPaidSubscriber = user.role === 'admin' || user.role === 'auditor' || user.role === 'developer' ||
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+      if (!isPaidSubscriber) {
+        const usageResult = await storage.incrementUserSavedLender(userId);
+        if (!usageResult.canSave) {
+          return res.status(403).json({ error: "You've reached your free limit of 2 saved lenders this month", code: 'SAVED_LENDER_QUOTA_EXCEEDED' });
+        }
       }
       
       const [saved] = await db
@@ -10807,10 +10838,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as User;
       const userId = user.id;
       const { lenderId } = req.params;
-
-      if (user.subscriptionStatus === 'free') {
-        return res.status(403).json({ error: "Upgrade to access your saved lenders", upgradeRequired: true });
-      }
       
       const [existing] = await db
         .select()
