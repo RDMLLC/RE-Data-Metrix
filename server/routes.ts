@@ -9830,8 +9830,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       // For free users, check ARV helper usage
-      const propertyKey = address && city && state
-        ? `${address.trim().toLowerCase()}|${city.trim().toLowerCase()}|${state.trim().toUpperCase()}`
+      const normalizedAddress = (address || '').trim().toLowerCase();
+      const normalizedCity = (city || '').trim().toLowerCase();
+      const normalizedState = (state || '').trim().toUpperCase();
+      const normalizedZip = (zipCode || '').trim();
+
+      const propertyKey = normalizedCity && normalizedState
+        ? `${normalizedAddress}|${normalizedCity}|${normalizedState}|${normalizedZip}`
         : null;
 
       let usageResult = null;
