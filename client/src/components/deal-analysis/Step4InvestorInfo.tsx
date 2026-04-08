@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, User, Save, Check } from "lucide-react";
+import { Link } from "wouter";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -241,21 +242,31 @@ export default function Step4InvestorInfo({ form, onNext, onBack }: Step4Investo
                 </div>
               )}
 
-              {/* Save to Profile option for subscribers */}
-              {isSubscriber && (
-                <div className="flex items-center space-x-2 pt-2 border-t">
-                  <Checkbox
-                    id="save-to-profile"
-                    checked={saveToProfile}
-                    onCheckedChange={(checked) => setSaveToProfile(checked === true)}
-                    data-testid="checkbox-save-to-profile"
-                  />
-                  <label
-                    htmlFor="save-to-profile"
-                    className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Save to my profile for future deals
-                  </label>
+              {/* Save to Profile option */}
+              {!!user && (
+                <div className="pt-2 border-t space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="save-to-profile"
+                      checked={saveToProfile}
+                      onCheckedChange={(checked) => setSaveToProfile(checked === true)}
+                      data-testid="checkbox-save-to-profile"
+                    />
+                    <label
+                      htmlFor="save-to-profile"
+                      className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Save to my profile for future deals
+                    </label>
+                  </div>
+                  {!isSubscriber && (
+                    <p className="text-sm text-muted-foreground">
+                      Upgrade your account to save to your profile.{" "}
+                      <Link href="/pricing" className="text-primary font-medium hover:underline" data-testid="link-upgrade-investor-profile">
+                        Upgrade Now
+                      </Link>
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

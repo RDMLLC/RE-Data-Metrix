@@ -223,6 +223,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // Analysis mode toggle state
   const [analysisMode, setAnalysisMode] = useState<'fix-and-flip' | 'rental-dscr'>('fix-and-flip');
   const [monthlyRent, setMonthlyRent] = useState<number>(wizardData.property?.estimatedRent || 0);
+
+  // DSCR quota gate for free users
+  const [dscrQuotaExceeded, setDscrQuotaExceeded] = useState(false);
+  const [dscrQuotaChecked, setDscrQuotaChecked] = useState(false);
   
   // Editable fields for on-the-fly scenario changes
   const [editBuyPrice, setEditBuyPrice] = useState<number>(0);
@@ -1326,6 +1330,27 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         interestRate: 7.5,
       })
     : null;
+
+  // DSCR quota check for free authenticated users
+  useEffect(() => {
+    if (monthlyRent > 0 && isAuthenticated && !isSubscriber && !dscrQuotaChecked) {
+      setDscrQuotaChecked(true);
+      const formValues = form.getValues();
+      apiRequest("POST", "/api/user/dscr-calc", {
+        address: formValues.address || '',
+        city: formValues.city || '',
+        state: formValues.state || '',
+        zip: formValues.zipCode || '',
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.canUse) {
+            setDscrQuotaExceeded(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [monthlyRent, isAuthenticated, isSubscriber, dscrQuotaChecked]);
 
   // Fetch DSCR lenders when in rental-dscr mode
   const dscrCreditScore = form.watch('creditScore');
@@ -3108,6 +3133,23 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <p className="text-muted-foreground mb-4">
                     Enter your expected monthly rent above to calculate the Debt Service Coverage Ratio and see qualifying lenders.
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : dscrQuotaExceeded ? (
+            <Card>
+              <CardContent className="py-8">
+                <div className="text-center space-y-4">
+                  <Building2 className="h-12 w-12 mx-auto text-muted-foreground" />
+                  <div>
+                    <h3 className="text-lg font-medium mb-1">DSCR Calculation Limit Reached</h3>
+                    <p className="text-muted-foreground text-sm">
+                      You've used your 2 free DSCR calculations this month. Upgrade for unlimited access.
+                    </p>
+                  </div>
+                  <Link href="/pricing">
+                    <Button variant="default" data-testid="button-upgrade-dscr">Upgrade Now</Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

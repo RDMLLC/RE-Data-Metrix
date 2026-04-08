@@ -185,7 +185,12 @@ export default function WholesaleCalculator() {
   // Quota consumption mutation for free users
   const wholesaleCalcMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/user/wholesale-calc");
+      const response = await apiRequest("POST", "/api/user/wholesale-calc", {
+        address: wizardData.property?.address || '',
+        city: wizardData.property?.city || '',
+        state: wizardData.property?.state || '',
+        zip: wizardData.property?.zip || '',
+      });
       return await response.json();
     },
     onSuccess: (data) => {

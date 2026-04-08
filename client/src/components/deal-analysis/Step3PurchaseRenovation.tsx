@@ -28,9 +28,12 @@ import {
 } from "@/components/ui/tooltip";
 import { DollarSign, TrendingUp, HelpCircle, Calculator, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { useLocation, Link } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWizardData } from "@/contexts/WizardDataContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const closingTimelineOptions = [
@@ -55,6 +58,7 @@ export default function Step3PurchaseRenovation({
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { updatePropertyData, updateInvestorData, setCurrentStep, wizardData } = useWizardData();
+  const { isAuthenticated, isSubscriber } = useAuth();
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
   const arv = form.watch("arv") || 0;
@@ -68,6 +72,26 @@ export default function Step3PurchaseRenovation({
   const [maxArvPercent, setMaxArvPercent] = useState(70);
   const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
+  const [maxOfferQuotaExceeded, setMaxOfferQuotaExceeded] = useState(false);
+  const [maxOfferQuotaChecked, setMaxOfferQuotaChecked] = useState(false);
+
+  const maxOfferQuotaMutation = useMutation({
+    mutationFn: async () => {
+      const formValues = form.getValues();
+      const response = await apiRequest("POST", "/api/user/max-offer-calc", {
+        address: formValues.address || '',
+        city: formValues.city || '',
+        state: formValues.state || '',
+        zip: formValues.zipCode || '',
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      if (!data.canUse) {
+        setMaxOfferQuotaExceeded(true);
+      }
+    },
+  });
 
   // Max Offer Calculator calculations
   const maxProjectCost = calcArv * (maxArvPercent / 100);
@@ -211,6 +235,10 @@ export default function Step3PurchaseRenovation({
                     if (open) {
                       setCalcArv(arv || 0);
                       setCalcRehabBudget(rehabBudget || 0);
+                      if (isAuthenticated && !isSubscriber && !maxOfferQuotaChecked) {
+                        setMaxOfferQuotaChecked(true);
+                        maxOfferQuotaMutation.mutate();
+                      }
                     }
                     setShowMaxOfferCalc(open);
                   }}>
@@ -279,75 +307,100 @@ export default function Step3PurchaseRenovation({
                         </div>
                       </div>
 
-                      <div className="border-t pt-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-medium">Max Project Cost:</span>
-                          <span className="text-sm font-semibold text-primary" data-testid="text-max-project-cost">
-                            {formatCurrency(maxProjectCost)}
-                          </span>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <Label htmlFor="calcRehabBudget" className="text-xs font-medium">Rehab Budget</Label>
-                            <Input
-                              id="calcRehabBudget"
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={calcRehabBudget || ""}
-                              onChange={(e) => setCalcRehabBudget(parseFloat(e.target.value) || 0)}
-                              placeholder="Enter rehab budget"
-                              className="mt-1"
-                              data-testid="input-calc-rehab-budget"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs font-medium">Max Offer/Purchase Price</Label>
-                            <div 
-                              className="mt-1 p-2 bg-primary/10 border-2 border-primary rounded-md text-base font-bold text-primary"
-                              data-testid="text-max-offer-price"
+                      {maxOfferQuotaExceeded ? (
+                        <div className="border-t pt-3 space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            You've used your 2 free Max Offer calculations this month. Upgrade for unlimited access.
+                          </p>
+                          <div className="flex gap-2">
+                            <Link href="/pricing">
+                              <Button type="button" variant="default" size="sm" data-testid="button-upgrade-max-offer">
+                                Upgrade Now
+                              </Button>
+                            </Link>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowMaxOfferCalc(false)}
                             >
-                              {formatCurrency(maxOfferPrice)}
+                              Close
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="border-t pt-3">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs font-medium">Max Project Cost:</span>
+                              <span className="text-sm font-semibold text-primary" data-testid="text-max-project-cost">
+                                {formatCurrency(maxProjectCost)}
+                              </span>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="calcRehabBudget" className="text-xs font-medium">Rehab Budget</Label>
+                                <Input
+                                  id="calcRehabBudget"
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={calcRehabBudget || ""}
+                                  onChange={(e) => setCalcRehabBudget(parseFloat(e.target.value) || 0)}
+                                  placeholder="Enter rehab budget"
+                                  className="mt-1"
+                                  data-testid="input-calc-rehab-budget"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-medium">Max Offer/Purchase Price</Label>
+                                <div 
+                                  className="mt-1 p-2 bg-primary/10 border-2 border-primary rounded-md text-base font-bold text-primary"
+                                  data-testid="text-max-offer-price"
+                                >
+                                  {formatCurrency(maxOfferPrice)}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
 
-                      <div className="flex gap-2 pt-1">
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={() => {
-                            form.setValue("purchasePrice", maxOfferPrice);
-                            if (calcArv > 0) {
-                              form.setValue("arv", calcArv);
-                            }
-                            if (calcRehabBudget > 0) {
-                              form.setValue("rehabBudget", calcRehabBudget);
-                            }
-                            toast({
-                              title: "Values Applied",
-                              description: `ARV: ${formatCurrency(calcArv)}, Rehab: ${formatCurrency(calcRehabBudget)}, Purchase: ${formatCurrency(maxOfferPrice)}`,
-                            });
-                            setShowMaxOfferCalc(false);
-                          }}
-                          disabled={maxOfferPrice <= 0}
-                          data-testid="button-use-max-offer"
-                        >
-                          Use This Offer Price
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowMaxOfferCalc(false)}
-                          data-testid="button-close-calc"
-                        >
-                          Close
-                        </Button>
-                      </div>
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              onClick={() => {
+                                form.setValue("purchasePrice", maxOfferPrice);
+                                if (calcArv > 0) {
+                                  form.setValue("arv", calcArv);
+                                }
+                                if (calcRehabBudget > 0) {
+                                  form.setValue("rehabBudget", calcRehabBudget);
+                                }
+                                toast({
+                                  title: "Values Applied",
+                                  description: `ARV: ${formatCurrency(calcArv)}, Rehab: ${formatCurrency(calcRehabBudget)}, Purchase: ${formatCurrency(maxOfferPrice)}`,
+                                });
+                                setShowMaxOfferCalc(false);
+                              }}
+                              disabled={maxOfferPrice <= 0}
+                              data-testid="button-use-max-offer"
+                            >
+                              Use This Offer Price
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowMaxOfferCalc(false)}
+                              data-testid="button-close-calc"
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>

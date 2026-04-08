@@ -1,0 +1,16 @@
+Make the following changes to the frontend. Do not change anything else.
+1. DSCR Calculator — client/src/pages/DealAnalysis/Step6Results.tsx
+Find where calculateDSCR is called from the Rental / DSCR tab. Before running the calculation for a free authenticated user, add a call to POST /api/user/dscr-calc with a propertyKey built from the form values using the same normalization pattern as ARV:
+const propertyKey = normalizedAddress && normalizedCity && normalizedState
+  ? `${normalizedAddress}|${normalizedCity}|${normalizedState}|${normalizedZip}`
+  : null;
+If the response returns DSCR_CALC_LIMIT_REACHED, block the calculation and show an upgrade prompt matching the existing quota-exceeded banner style with the message: "You've used your 2 free DSCR calculations this month. Upgrade for unlimited access." and an "Upgrade Now" button linking to /pricing.
+Paid subscribers and unauthenticated users skip the quota check entirely.
+2. Max Offer Calculator — client/src/pages/DealAnalysis/Step3PurchaseRenovation.tsx
+Find the Max Offer Calculator popover. Before displaying results for a free authenticated user, add a call to POST /api/user/max-offer-calc with a propertyKey built from the form address values using the same normalization pattern.
+If the response returns MAX_OFFER_CALC_LIMIT_REACHED, block the calculation display and show an inline upgrade message: "You've used your 2 free Max Offer calculations this month. Upgrade for unlimited access." with an "Upgrade Now" link to /pricing.
+Paid subscribers and unauthenticated users skip the quota check entirely.
+3. Wholesale Max Offer — client/src/pages/DealAnalysis/WholesaleCalculator.tsx or wherever POST /api/user/wholesale-calc is called
+Update the existing call to POST /api/user/wholesale-calc to also send { address, city, state, zipCode } in the request body so the backend can build the property key for de-duplication. These values should come from the wizard form if available, or from component props.
+4. Investor Information — client/src/pages/DealAnalysis/Step4InvestorInfo.tsx
+Find the "Save to profile" checkbox. When a free user checks this box, show an inline message directly below the checkbox: "Upgrade your account to save to your profile." with an "Upgrade Now" link to /pricing. The checkbox should remain visible but the save should continue to be silently skipped for free users as it is today — just add the visible message so they understand why it won't save.
