@@ -1,0 +1,28 @@
+Make the following changes. Do not change anything else.
+1. client/src/pages/DealAnalysis/Step6Results.tsx — DSCR debug
+Add a console.log immediately before the if (dscrTabActivated && ...) condition inside the useEffect that logs the current values of dscrTabActivated, isAuthenticated, isSubscriber, dscrQuotaChecked, and dscrQuotaExceeded. This will help us see exactly what state values are present when the DSCR tab is clicked.
+Also add a console.log in the .then(data => ...) handler that logs the full API response from POST /api/user/dscr-calc.
+2. client/src/pages/DealAnalysis/WholesaleCalculator.tsx — persist unlock state across navigation
+Add a calculationUnlockedForSession flag to the WizardDataContext (or use a useRef at the wizard level) so that once a free user has unlocked the Wholesale Calculator within an analysis session, returning to it does not trigger another API call. Specifically:
+
+On successful canCalculate: true response, store the unlock in wizard context alongside the property key that was used
+On component mount, check if the wizard context already has a wholesale unlock for the current property — if so, set calculationUnlocked = true immediately without calling the API
+Clear this flag when clearWizardData() is called (Start New Analysis)
+
+3. client/src/pages/DealAnalysis/WholesaleCalculator.tsx — remove quota block, show inline counter
+Currently when the quota is exceeded the calculator shows a modal block. Change this behavior:
+
+Remove the quota-exceeded modal entirely for the Wholesale Calculator
+Instead, always show the calculator in full
+Display a small inline counter below the "Run Calculation" button showing X of 2 wholesale calculations used this month for free authenticated users
+When the quota is exceeded, disable the "Run Calculation" button and show the counter in a warning style with an "Upgrade for unlimited access" link to /pricing
+The calculator inputs and any previously computed results remain visible and interactive
+
+4. QuotaExhaustedModal.tsx — update messaging and button
+
+Change the title from "Free Lookups Used" to "Automated Analysis Limit Reached"
+Change the body text to "You've used your automated deal analysis entries for this period."
+Change the "Continue with Manual Entry" button to "Switch to Manual Entry" and ensure it takes the user directly to Step 2 data entry fields (skipping the intermediate screen), following the same handleGoToManualEntry pattern already implemented
+
+5. client/src/pages/DeveloperIntegrations or wherever "Reset to Recommendation" appears — rename button
+Search the codebase for "Reset to Recommendation" and rename it to "Change to Recommended Price" everywhere it appears.

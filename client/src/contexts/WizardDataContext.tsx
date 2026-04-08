@@ -32,6 +32,7 @@ export interface WizardPropertyData {
   wholesaleTransactionType?: "assignment" | "double-close";
   wholesaleFee?: number;
   resalePrice?: number;
+  wholesaleUnlocked?: boolean;
 }
 
 export interface WizardInvestorData {

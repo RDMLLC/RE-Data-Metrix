@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
-import WholesaleQuotaModal from "@/components/deal-analysis/WholesaleQuotaModal";
 import {
   calculateAssignmentMaxOffer,
   calculateDoubleCloseMaxOffer,
@@ -102,8 +101,9 @@ export default function WholesaleCalculator() {
 
   const [transactionType, setTransactionType] = useState<"assignment" | "double-close">("assignment");
   const [fundingSource, setFundingSource] = useState<"transactional" | "own-cash">("transactional");
-  const [showQuotaModal, setShowQuotaModal] = useState(false);
-  const [calculationUnlocked, setCalculationUnlocked] = useState(false);
+  const [calculationUnlocked, setCalculationUnlocked] = useState(
+    () => wizardData.property?.wholesaleUnlocked === true
+  );
   
   const [arv, setArv] = useState<string>("");
   const [rehabBudget, setRehabBudget] = useState<string>("");
@@ -196,19 +196,15 @@ export default function WholesaleCalculator() {
     onSuccess: (data) => {
       if (data.canCalculate) {
         setCalculationUnlocked(true);
+        updatePropertyData({ wholesaleUnlocked: true });
         queryClient.invalidateQueries({ queryKey: ["/api/user/usage"] });
-      } else {
-        setShowQuotaModal(true);
       }
     },
-    onError: () => {
-      setShowQuotaModal(true);
-    }
+    onError: () => {}
   });
 
-  // Subscribers and non-authenticated users have immediate access to results
-  // (non-authenticated see results to encourage signup)
-  const hasResultsAccess = isSubscriber || !isAuthenticated || calculationUnlocked;
+  // Results are always visible; quota controls the Run Calculation button for free users
+  const hasResultsAccess = true;
   
   // Check if free user has remaining quota
   const hasRemainingQuota = !usageData || (usageData.remainingWholesaleCalcs ?? 2) > 0;
@@ -228,9 +224,6 @@ export default function WholesaleCalculator() {
     wholesaleCalcMutation.mutate();
   };
 
-  const handleGoBackFromModal = () => {
-    setLocation("/deal-analysis?returnToStep=3");
-  };
 
   // Track if we've already initialized from wizard data
   const [initialized, setInitialized] = useState(false);
@@ -934,123 +927,106 @@ export default function WholesaleCalculator() {
             </Card>
           )}
 
-          {!hasResultsAccess ? (
-            <Card className="bg-muted/30 border-dashed">
-              <CardContent className="py-8">
-                <div className="text-center space-y-4">
-                  <Calculator className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Ready to Calculate?</h3>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      {hasRemainingQuota 
-                        ? `You have ${usageData?.remainingWholesaleCalcs ?? 2} free calculations remaining this month.`
-                        : "You've used all your free calculations this month."}
-                    </p>
-                  </div>
-                  {hasRemainingQuota ? (
-                    <Button 
-                      size="lg" 
-                      onClick={handleRunCalculation}
-                      disabled={wholesaleCalcMutation.isPending}
-                      data-testid="button-run-calculation"
-                    >
-                      {wholesaleCalcMutation.isPending ? "Processing..." : "Run Calculation"}
-                    </Button>
-                  ) : (
-                    <Button 
-                      size="lg" 
-                      onClick={() => setShowQuotaModal(true)}
-                      data-testid="button-upgrade-for-calculations"
-                    >
-                      Upgrade for Unlimited
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-primary/5 border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-xl">Calculation Results</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3">
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-muted-foreground">Buyer's Max Price (ARV × {buyersMaxArvPercent}%)</span>
-                    <span className="font-semibold" data-testid="text-buyers-max-price">
-                      {formatCurrency(result.buyersMaxPrice)}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-muted-foreground">Less: Rehab Budget</span>
-                    <span className="font-semibold text-red-600" data-testid="text-less-rehab">
-                      - {formatCurrency(wholesaleInputs.rehabBudget)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-muted-foreground">Less: Your Wholesale Fee</span>
-                    <span className="font-semibold text-red-600" data-testid="text-less-wholesale-fee">
-                      - {formatCurrency(wholesaleInputs.wholesaleFee)}
-                    </span>
-                  </div>
-
-                  {transactionType === "double-close" && (
-                    <>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-muted-foreground">Less: Closing Costs</span>
-                        <span className="font-semibold text-red-600" data-testid="text-less-closing-costs">
-                          - {formatCurrency(doubleCloseResult.totalClosingCosts)}
-                        </span>
-                      </div>
-                      {fundingSource === "transactional" && (
-                        <div className="flex justify-between items-center py-2">
-                          <span className="text-muted-foreground">Less: Lender Fee (1.25%)</span>
-                          <span className="font-semibold text-red-600" data-testid="text-less-lender-fee">
-                            - {formatCurrency(doubleCloseResult.lenderFee)}
-                          </span>
-                        </div>
-                      )}
-                      {fundingSource === "own-cash" && (
-                        <div className="flex justify-between items-center py-2">
-                          <span className="text-muted-foreground">Lender Fee</span>
-                          <span className="font-semibold text-green-600" data-testid="text-no-lender-fee">
-                            $0 (Using Own Cash)
-                          </span>
-                        </div>
-                      )}
-                      <div className="py-1">
-                        <Button
-                          type="button"
-                          variant={fundingSource === "own-cash" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFundingSource(fundingSource === "own-cash" ? "transactional" : "own-cash")}
-                          className="text-xs"
-                          data-testid="button-toggle-funding-source"
-                        >
-                          {fundingSource === "own-cash" 
-                            ? "Using transactional funding" 
-                            : "I'm using my cash, or passthrough funding"}
-                        </Button>
-                      </div>
-                    </>
-                  )}
-
-                  <Separator />
-
-                  <div className="flex justify-between items-center py-3">
-                    <span className="text-lg font-semibold">Max Offer Price</span>
-                    <span className="text-2xl font-bold text-primary" data-testid="text-max-offer-price">
-                      {formatCurrency(result.maxOfferPrice)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {isAuthenticated && !isSubscriber && (
+            <div className="flex flex-col items-center gap-2 py-2" data-testid="section-wholesale-quota">
+              <Button
+                size="lg"
+                onClick={handleRunCalculation}
+                disabled={!hasRemainingQuota || wholesaleCalcMutation.isPending}
+                data-testid="button-run-calculation"
+              >
+                {wholesaleCalcMutation.isPending ? "Processing..." : "Run Calculation"}
+              </Button>
+              <p className={`text-sm text-center ${!hasRemainingQuota ? 'text-destructive font-medium' : 'text-muted-foreground'}`} data-testid="text-wholesale-quota-counter">
+                {2 - (usageData?.remainingWholesaleCalcs ?? 2)} of 2 wholesale calculations used this month
+                {!hasRemainingQuota && (
+                  <>{" "}<Link href="/pricing" className="underline">Upgrade for unlimited access</Link></>
+                )}
+              </p>
+            </div>
           )}
 
-          {hasResultsAccess && profitabilityComparison && (
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-xl">Calculation Results</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-muted-foreground">Buyer's Max Price (ARV × {buyersMaxArvPercent}%)</span>
+                  <span className="font-semibold" data-testid="text-buyers-max-price">
+                    {formatCurrency(result.buyersMaxPrice)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-muted-foreground">Less: Rehab Budget</span>
+                  <span className="font-semibold text-red-600" data-testid="text-less-rehab">
+                    - {formatCurrency(wholesaleInputs.rehabBudget)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-muted-foreground">Less: Your Wholesale Fee</span>
+                  <span className="font-semibold text-red-600" data-testid="text-less-wholesale-fee">
+                    - {formatCurrency(wholesaleInputs.wholesaleFee)}
+                  </span>
+                </div>
+
+                {transactionType === "double-close" && (
+                  <>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-muted-foreground">Less: Closing Costs</span>
+                      <span className="font-semibold text-red-600" data-testid="text-less-closing-costs">
+                        - {formatCurrency(doubleCloseResult.totalClosingCosts)}
+                      </span>
+                    </div>
+                    {fundingSource === "transactional" && (
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground">Less: Lender Fee (1.25%)</span>
+                        <span className="font-semibold text-red-600" data-testid="text-less-lender-fee">
+                          - {formatCurrency(doubleCloseResult.lenderFee)}
+                        </span>
+                      </div>
+                    )}
+                    {fundingSource === "own-cash" && (
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-muted-foreground">Lender Fee</span>
+                        <span className="font-semibold text-green-600" data-testid="text-no-lender-fee">
+                          $0 (Using Own Cash)
+                        </span>
+                      </div>
+                    )}
+                    <div className="py-1">
+                      <Button
+                        type="button"
+                        variant={fundingSource === "own-cash" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFundingSource(fundingSource === "own-cash" ? "transactional" : "own-cash")}
+                        className="text-xs"
+                        data-testid="button-toggle-funding-source"
+                      >
+                        {fundingSource === "own-cash" 
+                          ? "Using transactional funding" 
+                          : "I'm using my cash, or passthrough funding"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-lg font-semibold">Max Offer Price</span>
+                  <span className="text-2xl font-bold text-primary" data-testid="text-max-offer-price">
+                    {formatCurrency(result.maxOfferPrice)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {profitabilityComparison && (
             <Card className="border-2 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1070,7 +1046,7 @@ export default function WholesaleCalculator() {
                     data-testid="button-reset-buy-price"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
-                    Reset to Recommended
+                    Change to Recommended Price
                   </Button>
                 </div>
               </CardHeader>
@@ -1378,11 +1354,6 @@ export default function WholesaleCalculator() {
         </div>
       </div>
 
-      <WholesaleQuotaModal
-        open={showQuotaModal}
-        onOpenChange={setShowQuotaModal}
-        onGoBack={handleGoBackFromModal}
-      />
     </div>
   );
 }

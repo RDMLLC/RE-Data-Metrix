@@ -1335,6 +1335,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // DSCR quota check for free authenticated users — only fires after user actively
   // clicks the Rental/DSCR tab or types a rent value (dscrTabActivated = true)
   useEffect(() => {
+    console.log('[DSCR quota check] state snapshot:', { dscrTabActivated, isAuthenticated, isSubscriber, dscrQuotaChecked, dscrQuotaExceeded });
     if (dscrTabActivated && isAuthenticated && !isSubscriber && !dscrQuotaChecked) {
       setDscrQuotaChecked(true);
       const formValues = form.getValues();
@@ -1346,6 +1347,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       })
         .then(r => r.json())
         .then(data => {
+          console.log('[DSCR calc API response]', data);
           if (!data.canUse) {
             setDscrQuotaExceeded(true);
           }
