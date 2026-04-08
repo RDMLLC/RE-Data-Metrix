@@ -1,0 +1,37 @@
+Make the following changes. Do not change anything else.
+1. shared/schema.ts
+In the userUsageCounters table definition, add 5 new columns after lastArvAddress:
+dscrCount: integer("dscr_count").notNull().default(0),
+lastDscrAddress: varchar("last_dscr_address", { length: 500 }),
+maxOfferCount: integer("max_offer_count").notNull().default(0),
+lastMaxOfferAddress: varchar("last_max_offer_address", { length: 500 }),
+lastWholesaleAddress: varchar("last_wholesale_address", { length: 500 }),
+2. server/storage.ts
+Add 2 new constants alongside the existing ones:
+private readonly FREE_DSCR_CALCS_PER_MONTH = 2;
+private readonly FREE_MAX_OFFER_CALCS_PER_MONTH = 2;
+Add 2 new methods following the exact same four-step pattern as incrementUserArvHelper, including same-property de-duplication via propertyKey:
+
+incrementUserDscrCalc(userId: string, propertyKey?: string): Promise<{ dscrCount, remainingDscrCalcs, canUse }>
+incrementUserMaxOfferCalc(userId: string, propertyKey?: string): Promise<{ maxOfferCount, remainingMaxOfferCalcs, canUse }>
+
+Update incrementUserWholesaleCalc to accept a second parameter propertyKey?: string and add the same de-duplication check used in incrementUserArvHelper — if propertyKey matches counter.lastWholesaleAddress, skip incrementing and return canUse: true. On any successful increment, write lastWholesaleAddress: propertyKey.
+Update resetUserUsageIfExpired to also zero dscrCount and maxOfferCount and clear lastDscrAddress, lastMaxOfferAddress, and lastWholesaleAddress to null.
+Update getUserUsageCounter return type to include dscrCount, remainingDscrCalcs, maxOfferCount, remainingMaxOfferCalcs.
+3. server/routes.ts
+Add two new quota gate routes following the exact same pattern as POST /api/user/wholesale-calc:
+POST /api/user/dscr-calc
+POST /api/user/max-offer-calc
+Each route should:
+
+Require ensureAuthenticated
+Skip the counter for paid subscribers (return { canCalculate: true } immediately)
+Accept { propertyKey } from the request body
+Call the respective incrementUser* method with userId and propertyKey
+Return { canCalculate, remaining, count }
+Return 403 with appropriate code (DSCR_QUOTA_EXCEEDED, MAX_OFFER_QUOTA_EXCEEDED) when limit is hit
+
+Update POST /api/user/wholesale-calc to also accept { propertyKey } from the request body and pass it to incrementUserWholesaleCalc.
+Update GET /api/user/usage to include dscrCount, remainingDscrCalcs, maxOfferCount, remainingMaxOfferCalcs in the response.
+4. Database migration
+Run the Drizzle migration to add all 5 new columns to the user_usage_counters table.

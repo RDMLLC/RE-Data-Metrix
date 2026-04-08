@@ -609,14 +609,16 @@ export interface IStorage {
   deleteExpiredPropertyCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
-  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; lastArvAddress: string | null; periodEnd: Date } | null>;
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; lastArvAddress: string | null; dscrCount: number; remainingDscrCalcs: number; maxOfferCount: number; remainingMaxOfferCalcs: number; periodEnd: Date } | null>;
   incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
-  incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
+  incrementUserWholesaleCalc(userId: string, propertyKey?: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
   incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }>;
   incrementUserArvHelper(userId: string, propertyKey?: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }>;
   incrementUserLoanAnalysis(userId: string): Promise<{ loanAnalysisCount: number; remainingLoanAnalyses: number; canAnalyze: boolean }>;
   incrementUserSavedDeal(userId: string): Promise<{ savedDealCount: number; remainingSavedDeals: number; canSave: boolean }>;
   incrementUserSavedLender(userId: string): Promise<{ savedLenderCount: number; remainingSavedLenders: number; canSave: boolean }>;
+  incrementUserDscrCalc(userId: string, propertyKey?: string): Promise<{ dscrCount: number; remainingDscrCalcs: number; canUse: boolean }>;
+  incrementUserMaxOfferCalc(userId: string, propertyKey?: string): Promise<{ maxOfferCount: number; remainingMaxOfferCalcs: number; canUse: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
   
   // Marketing Pixels
@@ -1388,12 +1390,14 @@ export class MemStorage implements IStorage {
   async deleteExpiredPropertyCache(): Promise<number> { throw new Error("Not implemented in MemStorage"); }
   async getUserUsageCounter(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserPropertyLookup(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
-  async incrementUserWholesaleCalc(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserWholesaleCalc(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserPdfDownload(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserArvHelper(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserLoanAnalysis(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserSavedDeal(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserSavedLender(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserDscrCalc(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserMaxOfferCalc(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async resetUserUsageIfExpired(userId: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
 }
 
@@ -3627,6 +3631,8 @@ export class DatabaseStorage implements IStorage {
   private readonly FREE_LOAN_ANALYSES_PER_MONTH = 2;
   private readonly FREE_SAVED_DEALS_PER_MONTH = 2;
   private readonly FREE_SAVED_LENDERS_PER_MONTH = 2;
+  private readonly FREE_DSCR_CALCS_PER_MONTH = 2;
+  private readonly FREE_MAX_OFFER_CALCS_PER_MONTH = 2;
 
   async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; periodEnd: Date } | null> {
     const [counter] = await db.select()
@@ -3658,6 +3664,10 @@ export class DatabaseStorage implements IStorage {
         savedLenderCount: 0,
         remainingSavedLenders: this.FREE_SAVED_LENDERS_PER_MONTH,
         lastArvAddress: null,
+        dscrCount: 0,
+        remainingDscrCalcs: this.FREE_DSCR_CALCS_PER_MONTH,
+        maxOfferCount: 0,
+        remainingMaxOfferCalcs: this.FREE_MAX_OFFER_CALCS_PER_MONTH,
         periodEnd: this.getNextMonthEnd()
       };
     }
@@ -3678,6 +3688,10 @@ export class DatabaseStorage implements IStorage {
       savedLenderCount: counter.savedLenderCount,
       remainingSavedLenders: Math.max(0, this.FREE_SAVED_LENDERS_PER_MONTH - counter.savedLenderCount),
       lastArvAddress: counter.lastArvAddress ?? null,
+      dscrCount: counter.dscrCount,
+      remainingDscrCalcs: Math.max(0, this.FREE_DSCR_CALCS_PER_MONTH - counter.dscrCount),
+      maxOfferCount: counter.maxOfferCount,
+      remainingMaxOfferCalcs: Math.max(0, this.FREE_MAX_OFFER_CALCS_PER_MONTH - counter.maxOfferCount),
       periodEnd: counter.periodEnd
     };
   }
@@ -3759,7 +3773,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }> {
+  async incrementUserWholesaleCalc(userId: string, propertyKey?: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }> {
     const now = new Date();
     const periodEnd = this.getNextMonthEnd();
     
@@ -3777,6 +3791,7 @@ export class DatabaseStorage implements IStorage {
           userId,
           propertyLookupCount: 0,
           wholesaleCalcCount: 1,
+          lastWholesaleAddress: propertyKey || null,
           periodStart,
           periodEnd,
         })
@@ -3796,6 +3811,7 @@ export class DatabaseStorage implements IStorage {
         .set({
           propertyLookupCount: 0,
           wholesaleCalcCount: 1,
+          lastWholesaleAddress: propertyKey || null,
           periodStart,
           periodEnd,
           updatedAt: now,
@@ -3806,6 +3822,15 @@ export class DatabaseStorage implements IStorage {
       return {
         wholesaleCalcCount: 1,
         remainingWholesaleCalcs: this.FREE_WHOLESALE_CALCS_PER_MONTH - 1,
+        canCalculate: true
+      };
+    }
+
+    // Same-property de-duplication
+    if (propertyKey && counter.lastWholesaleAddress === propertyKey) {
+      return {
+        wholesaleCalcCount: counter.wholesaleCalcCount,
+        remainingWholesaleCalcs: Math.max(0, this.FREE_WHOLESALE_CALCS_PER_MONTH - counter.wholesaleCalcCount),
         canCalculate: true
       };
     }
@@ -3824,6 +3849,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(userUsageCountersTable)
       .set({
         wholesaleCalcCount: newCount,
+        lastWholesaleAddress: propertyKey || null,
         updatedAt: now,
       })
       .where(eq(userUsageCountersTable.userId, userId));
@@ -4227,6 +4253,174 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async incrementUserDscrCalc(userId: string, propertyKey?: string): Promise<{ dscrCount: number; remainingDscrCalcs: number; canUse: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          dscrCount: 1,
+          lastDscrAddress: propertyKey || null,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      return {
+        dscrCount: 1,
+        remainingDscrCalcs: this.FREE_DSCR_CALCS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          dscrCount: 1,
+          lastDscrAddress: propertyKey || null,
+          maxOfferCount: 0,
+          lastMaxOfferAddress: null,
+          lastWholesaleAddress: null,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId));
+      return {
+        dscrCount: 1,
+        remainingDscrCalcs: this.FREE_DSCR_CALCS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+
+    if (propertyKey && counter.lastDscrAddress === propertyKey) {
+      return {
+        dscrCount: counter.dscrCount,
+        remainingDscrCalcs: Math.max(0, this.FREE_DSCR_CALCS_PER_MONTH - counter.dscrCount),
+        canUse: true
+      };
+    }
+
+    if (counter.dscrCount >= this.FREE_DSCR_CALCS_PER_MONTH) {
+      return {
+        dscrCount: counter.dscrCount,
+        remainingDscrCalcs: 0,
+        canUse: false
+      };
+    }
+
+    const newCount = counter.dscrCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        dscrCount: newCount,
+        lastDscrAddress: propertyKey || null,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+
+    return {
+      dscrCount: newCount,
+      remainingDscrCalcs: Math.max(0, this.FREE_DSCR_CALCS_PER_MONTH - newCount),
+      canUse: true
+    };
+  }
+
+  async incrementUserMaxOfferCalc(userId: string, propertyKey?: string): Promise<{ maxOfferCount: number; remainingMaxOfferCalcs: number; canUse: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          maxOfferCount: 1,
+          lastMaxOfferAddress: propertyKey || null,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      return {
+        maxOfferCount: 1,
+        remainingMaxOfferCalcs: this.FREE_MAX_OFFER_CALCS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          maxOfferCount: 1,
+          lastMaxOfferAddress: propertyKey || null,
+          dscrCount: 0,
+          lastDscrAddress: null,
+          lastWholesaleAddress: null,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId));
+      return {
+        maxOfferCount: 1,
+        remainingMaxOfferCalcs: this.FREE_MAX_OFFER_CALCS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+
+    if (propertyKey && counter.lastMaxOfferAddress === propertyKey) {
+      return {
+        maxOfferCount: counter.maxOfferCount,
+        remainingMaxOfferCalcs: Math.max(0, this.FREE_MAX_OFFER_CALCS_PER_MONTH - counter.maxOfferCount),
+        canUse: true
+      };
+    }
+
+    if (counter.maxOfferCount >= this.FREE_MAX_OFFER_CALCS_PER_MONTH) {
+      return {
+        maxOfferCount: counter.maxOfferCount,
+        remainingMaxOfferCalcs: 0,
+        canUse: false
+      };
+    }
+
+    const newCount = counter.maxOfferCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        maxOfferCount: newCount,
+        lastMaxOfferAddress: propertyKey || null,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+
+    return {
+      maxOfferCount: newCount,
+      remainingMaxOfferCalcs: Math.max(0, this.FREE_MAX_OFFER_CALCS_PER_MONTH - newCount),
+      canUse: true
+    };
+  }
+
   async resetUserUsageIfExpired(userId: string): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -4242,6 +4436,11 @@ export class DatabaseStorage implements IStorage {
         savedDealCount: 0,
         savedLenderCount: 0,
         lastArvAddress: null,
+        dscrCount: 0,
+        lastDscrAddress: null,
+        maxOfferCount: 0,
+        lastMaxOfferAddress: null,
+        lastWholesaleAddress: null,
         periodStart,
         periodEnd,
         updatedAt: now,

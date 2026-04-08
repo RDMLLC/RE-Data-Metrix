@@ -9640,19 +9640,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isSubscriber: true,
           isPaidSubscriber: true,
           propertyLookupCount: 0,
-          remainingLookups: -1, // -1 means unlimited
+          remainingLookups: -1,
           wholesaleCalcCount: 0,
-          remainingWholesaleCalcs: -1, // -1 means unlimited
+          remainingWholesaleCalcs: -1,
           pdfDownloadCount: 0,
-          remainingPdfDownloads: -1, // -1 means unlimited
+          remainingPdfDownloads: -1,
           arvHelperCount: 0,
-          remainingArvHelpers: -1, // -1 means unlimited
+          remainingArvHelpers: -1,
           loanAnalysisCount: 0,
-          remainingLoanAnalyses: -1, // -1 means unlimited
+          remainingLoanAnalyses: -1,
           savedDealCount: 0,
-          remainingSavedDeals: -1, // -1 means unlimited
+          remainingSavedDeals: -1,
           savedLenderCount: 0,
-          remainingSavedLenders: -1, // -1 means unlimited
+          remainingSavedLenders: -1,
+          dscrCount: 0,
+          remainingDscrCalcs: -1,
+          maxOfferCount: 0,
+          remainingMaxOfferCalcs: -1,
           periodEnd: null
         });
       }
@@ -9680,6 +9684,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingSavedDeals: usage?.remainingSavedDeals ?? 2,
         savedLenderCount: usage?.savedLenderCount || 0,
         remainingSavedLenders: usage?.remainingSavedLenders ?? 2,
+        dscrCount: usage?.dscrCount || 0,
+        remainingDscrCalcs: usage?.remainingDscrCalcs ?? 2,
+        maxOfferCount: usage?.maxOfferCount || 0,
+        remainingMaxOfferCalcs: usage?.remainingMaxOfferCalcs ?? 2,
         periodEnd: usage?.periodEnd || null
       });
     } catch (error) {
@@ -9705,8 +9713,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Build property key for de-duplication
+      const { address, city, state, zip } = req.body || {};
+      let propertyKey: string | undefined;
+      if (address || city || state || zip) {
+        const normAddr = (address || '').trim().toLowerCase();
+        const normCity = (city || '').trim().toLowerCase();
+        const normState = (state || '').trim().toLowerCase();
+        const normZip = (zip || '').trim().toLowerCase();
+        if (normCity || normState) {
+          propertyKey = `${normAddr}|${normCity}|${normState}|${normZip}`;
+        }
+      }
+
       // Check and increment usage for free users
-      const usageResult = await storage.incrementUserWholesaleCalc(user.id);
+      const usageResult = await storage.incrementUserWholesaleCalc(user.id, propertyKey);
       
       if (!usageResult.canCalculate) {
         return res.status(403).json({ 
@@ -9723,6 +9744,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Wholesale calc usage error:", error);
+      res.status(500).json({ error: "Failed to track usage" });
+    }
+  });
+
+  // DSCR Calculator Usage - increment counter for free users
+  app.post("/api/user/dscr-calc", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      const isSubscriber = user.role === 'admin' || user.role === 'auditor' ||
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+
+      if (isSubscriber) {
+        return res.json({
+          canUse: true,
+          dscrCount: 0,
+          remainingDscrCalcs: -1
+        });
+      }
+
+      const { address, city, state, zip } = req.body || {};
+      let propertyKey: string | undefined;
+      if (address || city || state || zip) {
+        const normAddr = (address || '').trim().toLowerCase();
+        const normCity = (city || '').trim().toLowerCase();
+        const normState = (state || '').trim().toLowerCase();
+        const normZip = (zip || '').trim().toLowerCase();
+        if (normCity || normState) {
+          propertyKey = `${normAddr}|${normCity}|${normState}|${normZip}`;
+        }
+      }
+
+      const usageResult = await storage.incrementUserDscrCalc(user.id, propertyKey);
+
+      if (!usageResult.canUse) {
+        return res.status(403).json({
+          error: "You've reached your free monthly limit of 2 DSCR calculations. Upgrade to continue.",
+          code: "DSCR_CALC_LIMIT_REACHED",
+          remainingDscrCalcs: 0
+        });
+      }
+
+      res.json({
+        canUse: true,
+        dscrCount: usageResult.dscrCount,
+        remainingDscrCalcs: usageResult.remainingDscrCalcs
+      });
+    } catch (error) {
+      console.error("DSCR calc usage error:", error);
+      res.status(500).json({ error: "Failed to track usage" });
+    }
+  });
+
+  // Max Offer Calculator Usage - increment counter for free users
+  app.post("/api/user/max-offer-calc", ensureAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as User;
+
+      const isSubscriber = user.role === 'admin' || user.role === 'auditor' ||
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
+
+      if (isSubscriber) {
+        return res.json({
+          canUse: true,
+          maxOfferCount: 0,
+          remainingMaxOfferCalcs: -1
+        });
+      }
+
+      const { address, city, state, zip } = req.body || {};
+      let propertyKey: string | undefined;
+      if (address || city || state || zip) {
+        const normAddr = (address || '').trim().toLowerCase();
+        const normCity = (city || '').trim().toLowerCase();
+        const normState = (state || '').trim().toLowerCase();
+        const normZip = (zip || '').trim().toLowerCase();
+        if (normCity || normState) {
+          propertyKey = `${normAddr}|${normCity}|${normState}|${normZip}`;
+        }
+      }
+
+      const usageResult = await storage.incrementUserMaxOfferCalc(user.id, propertyKey);
+
+      if (!usageResult.canUse) {
+        return res.status(403).json({
+          error: "You've reached your free monthly limit of 2 Max Offer calculations. Upgrade to continue.",
+          code: "MAX_OFFER_CALC_LIMIT_REACHED",
+          remainingMaxOfferCalcs: 0
+        });
+      }
+
+      res.json({
+        canUse: true,
+        maxOfferCount: usageResult.maxOfferCount,
+        remainingMaxOfferCalcs: usageResult.remainingMaxOfferCalcs
+      });
+    } catch (error) {
+      console.error("Max offer calc usage error:", error);
       res.status(500).json({ error: "Failed to track usage" });
     }
   });
