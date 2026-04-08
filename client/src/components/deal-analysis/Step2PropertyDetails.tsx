@@ -57,7 +57,7 @@ export default function Step2PropertyDetails({
   const dataSource = form.watch("propertyDataSource") || "unknown";
   const [showArvHelper, setShowArvHelper] = useState(false);
   
-  const estimateLabel = "Estimated Market Value (Enter ARV Here)";
+  const estimateLabel = "Estimated Market Value";
 
   const handleSubmit = form.handleSubmit(() => {
     onNext();
@@ -399,16 +399,19 @@ export default function Step2PropertyDetails({
                   name="estimatedValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        {estimateLabel}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
-                          </TooltipContent>
-                        </Tooltip>
+                      <FormLabel className="flex flex-col items-start gap-0">
+                        <span>{estimateLabel}</span>
+                        <span className="flex items-center gap-1">
+                          (Enter ARV Here)
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </span>
                       </FormLabel>
                       <FormControl>
                         <Input
