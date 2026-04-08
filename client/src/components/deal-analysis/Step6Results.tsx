@@ -3149,9 +3149,15 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       You've used your 2 free DSCR calculations this month. Upgrade for unlimited access.
                     </p>
                   </div>
-                  <Link href="/pricing">
-                    <Button variant="default" data-testid="button-upgrade-dscr">Upgrade Now</Button>
-                  </Link>
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    <Link href="/pricing">
+                      <Button variant="default" data-testid="button-upgrade-dscr">Upgrade Now</Button>
+                    </Link>
+                    <Button variant="outline" onClick={onBack} data-testid="button-go-back-dscr">
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Go Back
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -3526,6 +3532,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       <PdfQuotaExhaustedModal
         open={showPdfQuotaModal}
         onOpenChange={setShowPdfQuotaModal}
+        isAuthenticated={isAuthenticated}
       />
 
       {/* Hidden single-column PDF capture target */}

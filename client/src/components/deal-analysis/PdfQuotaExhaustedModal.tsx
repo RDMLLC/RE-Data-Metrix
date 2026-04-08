@@ -7,16 +7,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CreditCard, ArrowRight, FileText } from "lucide-react";
+import { CreditCard, ArrowRight, FileText, ArrowLeft } from "lucide-react";
 
 interface PdfQuotaExhaustedModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isAuthenticated?: boolean;
 }
 
 export default function PdfQuotaExhaustedModal({
   open,
   onOpenChange,
+  isAuthenticated = false,
 }: PdfQuotaExhaustedModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,15 +49,32 @@ export default function PdfQuotaExhaustedModal({
             </Button>
           </Link>
 
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-close-pdf-modal"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Close
-          </Button>
+          {isAuthenticated ? (
+            <Button 
+              variant="outline" 
+              className="w-full h-auto py-4"
+              onClick={() => { onOpenChange(false); window.history.back(); }}
+              data-testid="button-go-back-pdf"
+            >
+              <div className="flex items-center gap-3">
+                <ArrowLeft className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold">Go Back</div>
+                  <div className="text-xs text-muted-foreground">Return to previous step</div>
+                </div>
+              </div>
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => onOpenChange(false)}
+              data-testid="button-close-pdf-modal"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Close
+            </Button>
+          )}
         </div>
 
         <p className="text-xs text-center text-muted-foreground mt-4">

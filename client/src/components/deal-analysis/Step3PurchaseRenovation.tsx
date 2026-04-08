@@ -320,11 +320,12 @@ export default function Step3PurchaseRenovation({
                             </Link>
                             <Button
                               type="button"
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              onClick={() => setShowMaxOfferCalc(false)}
+                              onClick={onBack}
+                              data-testid="button-go-back-max-offer"
                             >
-                              Close
+                              Go Back
                             </Button>
                           </div>
                         </div>

@@ -5,7 +5,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Info } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Info, ChevronDown, PlayCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -35,6 +36,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
   const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
   const [missingAutoFillFields, setMissingAutoFillFields] = useState<string[]>([]);
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const { data: usageData, isLoading: usageLoading, isError: usageError } = useQuery<{
     isSubscriber: boolean;
@@ -307,25 +309,6 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
   return (
     <div className="space-y-6">
-      {!isSubscriber && (
-        <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
-          <h3 className="font-semibold text-lg mb-2">See What This Tool Can Do</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Watch a quick demo to see how the Deal Analysis tool helps you compare loan options, calculate profits, and find the best financing for your deals.
-          </p>
-          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-white/20">
-            <iframe
-              className="absolute inset-0 w-full h-full"
-              src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
-              title="RE Data Metrix Demo Video"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              data-testid="video-demo"
-            />
-          </div>
-        </div>
-      )}
 
       {!manualEntryPreference && (
         <>
@@ -389,6 +372,33 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 <p className="text-muted-foreground">
                   Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
                 </p>
+
+                <Collapsible open={videoOpen} onOpenChange={setVideoOpen} className="mt-3">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="button-toggle-training-video"
+                    >
+                      <PlayCircle className="h-4 w-4 flex-shrink-0" />
+                      Need instructions? Click here for a training video.
+                      <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${videoOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="relative aspect-video bg-black rounded-md overflow-hidden border border-border">
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1`}
+                        title="RE Data Metrix Training Video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        data-testid="video-demo"
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {!isSubscriber && (
                   <div className="mt-3 flex items-center gap-2 text-sm" data-testid="text-remaining-lookups">
@@ -572,6 +582,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         open={quotaExhaustedModalOpen} 
         onOpenChange={setQuotaExhaustedModalOpen}
         onContinueManual={handleGoToManualEntry}
+        isAuthenticated={isAuthenticated}
       />
 
       {manualEntryPreference && (

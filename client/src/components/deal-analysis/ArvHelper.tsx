@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 import CompReportPdf from "./CompReportPdf";
 
@@ -85,6 +86,7 @@ interface ArvHelperProps {
 
 export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const city = form.watch("city") || "";
   const state = form.watch("state") || "";
@@ -1157,7 +1159,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         </DialogContent>
       </Dialog>
 
-      <ArvQuotaExhaustedModal open={showArvQuotaModal} onOpenChange={setShowArvQuotaModal} />
+      <ArvQuotaExhaustedModal open={showArvQuotaModal} onOpenChange={setShowArvQuotaModal} isAuthenticated={isAuthenticated} />
     </>
   );
 }

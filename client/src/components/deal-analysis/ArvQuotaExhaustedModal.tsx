@@ -7,16 +7,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CreditCard, ArrowRight, Search } from "lucide-react";
+import { CreditCard, ArrowRight, Search, ArrowLeft } from "lucide-react";
 
 interface ArvQuotaExhaustedModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isAuthenticated?: boolean;
 }
 
 export default function ArvQuotaExhaustedModal({
   open,
   onOpenChange,
+  isAuthenticated = false,
 }: ArvQuotaExhaustedModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,20 +49,37 @@ export default function ArvQuotaExhaustedModal({
             </Button>
           </Link>
 
-          <Button 
-            variant="outline" 
-            className="w-full h-auto py-4"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-close-arv-modal"
-          >
-            <div className="flex items-center gap-3">
-              <Search className="h-5 w-5 flex-shrink-0" />
-              <div className="text-left">
-                <div className="font-semibold">Enter ARV Manually</div>
-                <div className="text-xs text-muted-foreground">Enter your own estimate</div>
+          {isAuthenticated ? (
+            <Button 
+              variant="outline" 
+              className="w-full h-auto py-4"
+              onClick={() => { onOpenChange(false); window.history.back(); }}
+              data-testid="button-go-back-arv"
+            >
+              <div className="flex items-center gap-3">
+                <ArrowLeft className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold">Go Back</div>
+                  <div className="text-xs text-muted-foreground">Return to previous step</div>
+                </div>
               </div>
-            </div>
-          </Button>
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              className="w-full h-auto py-4"
+              onClick={() => onOpenChange(false)}
+              data-testid="button-close-arv-modal"
+            >
+              <div className="flex items-center gap-3">
+                <Search className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold">Enter ARV Manually</div>
+                  <div className="text-xs text-muted-foreground">Enter your own estimate</div>
+                </div>
+              </div>
+            </Button>
+          )}
         </div>
 
         <p className="text-xs text-center text-muted-foreground mt-4">

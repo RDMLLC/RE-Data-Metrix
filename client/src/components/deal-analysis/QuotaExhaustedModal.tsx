@@ -7,18 +7,20 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CreditCard, PenLine, ArrowRight } from "lucide-react";
+import { CreditCard, PenLine, ArrowRight, ArrowLeft } from "lucide-react";
 
 interface QuotaExhaustedModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onContinueManual: () => void;
+  isAuthenticated?: boolean;
 }
 
 export default function QuotaExhaustedModal({
   open,
   onOpenChange,
   onContinueManual,
+  isAuthenticated = false,
 }: QuotaExhaustedModalProps) {
   const handleContinueManual = () => {
     onContinueManual();
@@ -54,20 +56,37 @@ export default function QuotaExhaustedModal({
             </Button>
           </Link>
 
-          <Button 
-            variant="outline" 
-            className="w-full h-auto py-4"
-            onClick={handleContinueManual}
-            data-testid="button-continue-manual"
-          >
-            <div className="flex items-center gap-3">
-              <PenLine className="h-5 w-5 flex-shrink-0" />
-              <div className="text-left">
-                <div className="font-semibold">Continue with Manual Entry</div>
-                <div className="text-xs text-muted-foreground">Enter property details yourself</div>
+          {isAuthenticated ? (
+            <Button 
+              variant="outline" 
+              className="w-full h-auto py-4"
+              onClick={() => { onOpenChange(false); window.history.back(); }}
+              data-testid="button-go-back"
+            >
+              <div className="flex items-center gap-3">
+                <ArrowLeft className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold">Go Back</div>
+                  <div className="text-xs text-muted-foreground">Return to previous page</div>
+                </div>
               </div>
-            </div>
-          </Button>
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              className="w-full h-auto py-4"
+              onClick={handleContinueManual}
+              data-testid="button-continue-manual"
+            >
+              <div className="flex items-center gap-3">
+                <PenLine className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-semibold">Continue with Manual Entry</div>
+                  <div className="text-xs text-muted-foreground">Enter property details yourself</div>
+                </div>
+              </div>
+            </Button>
+          )}
         </div>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
