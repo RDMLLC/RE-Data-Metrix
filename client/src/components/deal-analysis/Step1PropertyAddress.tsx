@@ -285,6 +285,26 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     onNext();
   };
 
+  // Handles both quota-redirect and direct "switch to manual" — clears stale data
+  // and skips directly to Step 2 without the intermediate manual-entry screen.
+  const handleGoToManualEntry = () => {
+    form.setValue("purchasePrice", undefined);
+    form.setValue("rehabBudget", undefined);
+    form.setValue("arv", undefined);
+    form.setValue("projectLength", undefined);
+    form.setValue("sellPrice", undefined);
+    form.setValue("closingTimeline", "22-30-days");
+    form.setValue("isDoubleClose", undefined);
+    form.setValue("payingForBothSides", undefined);
+    form.setValue("propertyDataSource", "manual");
+    form.setValue("address", "");
+    form.setValue("city", "");
+    form.setValue("state", "");
+    form.setValue("zipCode", "");
+    updatePropertyData({ estimatedRent: undefined, estimatedRentSource: undefined });
+    onNext();
+  };
+
   return (
     <div className="space-y-6">
       {!isSubscriber && (
@@ -525,7 +545,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setManualEntryPreference(true)}
+                    onClick={handleGoToManualEntry}
                     data-testid="button-switch-manual-entry-subscriber"
                   >
                     Switch to Manual Entry
@@ -551,7 +571,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       <QuotaExhaustedModal 
         open={quotaExhaustedModalOpen} 
         onOpenChange={setQuotaExhaustedModalOpen}
-        onContinueManual={() => setManualEntryPreference(true)}
+        onContinueManual={handleGoToManualEntry}
       />
 
       {manualEntryPreference && (
@@ -590,6 +610,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 form.setValue("city", "");
                 form.setValue("state", "");
                 form.setValue("zipCode", "");
+                updatePropertyData({ estimatedRent: undefined, estimatedRentSource: undefined });
                 onNext();
               }}
               data-testid="button-manual-next"

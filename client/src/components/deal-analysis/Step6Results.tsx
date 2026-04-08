@@ -227,6 +227,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // DSCR quota gate for free users
   const [dscrQuotaExceeded, setDscrQuotaExceeded] = useState(false);
   const [dscrQuotaChecked, setDscrQuotaChecked] = useState(false);
+  const [dscrTabActivated, setDscrTabActivated] = useState(false);
   
   // Editable fields for on-the-fly scenario changes
   const [editBuyPrice, setEditBuyPrice] = useState<number>(0);
@@ -1331,9 +1332,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       })
     : null;
 
-  // DSCR quota check for free authenticated users
+  // DSCR quota check for free authenticated users — only fires after user actively
+  // clicks the Rental/DSCR tab or types a rent value (dscrTabActivated = true)
   useEffect(() => {
-    if (monthlyRent > 0 && isAuthenticated && !isSubscriber && !dscrQuotaChecked) {
+    if (dscrTabActivated && isAuthenticated && !isSubscriber && !dscrQuotaChecked) {
       setDscrQuotaChecked(true);
       const formValues = form.getValues();
       apiRequest("POST", "/api/user/dscr-calc", {
@@ -1350,7 +1352,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         })
         .catch(() => {});
     }
-  }, [monthlyRent, isAuthenticated, isSubscriber, dscrQuotaChecked]);
+  }, [dscrTabActivated, isAuthenticated, isSubscriber, dscrQuotaChecked]);
 
   // Fetch DSCR lenders when in rental-dscr mode
   const dscrCreditScore = form.watch('creditScore');
@@ -1619,7 +1621,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       )}
 
       {/* Analysis Type Toggle */}
-      <Tabs value={analysisMode} onValueChange={(value) => setAnalysisMode(value as 'fix-and-flip' | 'rental-dscr')} className="w-full">
+      <Tabs value={analysisMode} onValueChange={(value) => { setAnalysisMode(value as 'fix-and-flip' | 'rental-dscr'); if (value === 'rental-dscr') setDscrTabActivated(true); }} className="w-full">
         <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
           <TabsTrigger value="fix-and-flip" className="flex items-center gap-2" data-testid="tab-fix-and-flip">
             <Home className="h-4 w-4" />
@@ -3113,7 +3115,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <Input
                     type="number"
                     value={monthlyRent || ""}
-                    onChange={(e) => setMonthlyRent(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => { setMonthlyRent(parseFloat(e.target.value) || 0); setDscrTabActivated(true); }}
                     className="pl-6"
                     placeholder="2500"
                     data-testid="input-monthly-rent"

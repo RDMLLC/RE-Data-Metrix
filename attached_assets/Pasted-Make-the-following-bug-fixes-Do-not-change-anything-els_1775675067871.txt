@@ -1,0 +1,23 @@
+Make the following bug fixes. Do not change anything else.
+1. client/src/pages/DealAnalysis/Step6Results.tsx — DSCR quota check
+The DSCR quota check currently fires on component mount whenever monthlyRent > 0, which can trigger prematurely from stale wizardData.property.estimatedRent carried over from a previous analysis.
+Change the trigger so the DSCR quota check only fires when the user actively interacts with the DSCR tab or manually enters a rent value — not on mount. Specifically:
+
+Remove monthlyRent from the useEffect dependency array
+Add a new boolean state dscrTabActivated initialized to false
+Set dscrTabActivated = true only when the user clicks the Rental/DSCR tab or types in the monthly rent input
+Change the useEffect condition from monthlyRent > 0 to dscrTabActivated
+
+2. server/routes.ts — reject blank property keys
+In POST /api/user/dscr-calc, POST /api/user/max-offer-calc, and POST /api/user/wholesale-calc, after building the propertyKey, add a guard that treats keys consisting only of pipes and empty segments (e.g. "|||", "|", "||") as null. Specifically:
+javascriptconst isBlankKey = !propertyKey || propertyKey.replace(/\|/g, '').trim() === '';
+const effectiveKey = isBlankKey ? null : propertyKey;
+Pass effectiveKey instead of propertyKey to the storage method.
+3. Wizard context — clear estimatedRent on manual entry
+In Step1PropertyAddress.tsx, find the "Next" handler for the manual entry path that currently clears address fields. Add the following to also clear estimatedRent from the wizard context:
+javascriptupdateWizardData({ property: { ...wizardData.property, estimatedRent: undefined } });
+Also add the same clear in clearWizardData() in the WizardDataContext to ensure it's always reset on a full wizard reset.
+4. client/src/pages/DealAnalysis/Step1PropertyAddress.tsx — skip video/intro page on manual entry
+When a user selects manual entry (either from the quota-exceeded modal or by clicking manual entry directly), skip the intermediate video/intro page and navigate directly to Step 2 (property details data entry). The video/intro page should only show when a user starts a fresh analysis from the beginning without having been redirected from a quota block.
+5. Start New Analysis button — clear all form data
+Find the "Start New Analysis" button (likely in Step6Results.tsx or the wizard header). Ensure that clicking it calls clearWizardData() and form.reset() with all fields returning to their default empty values before navigating back to Step 1. This is the only trigger that should fully clear the form.

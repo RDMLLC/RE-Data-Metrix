@@ -9726,8 +9726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const isBlankWholesaleKey = !propertyKey || propertyKey.replace(/\|/g, '').trim() === '';
+      const effectiveWholesaleKey = isBlankWholesaleKey ? undefined : propertyKey;
+
       // Check and increment usage for free users
-      const usageResult = await storage.incrementUserWholesaleCalc(user.id, propertyKey);
+      const usageResult = await storage.incrementUserWholesaleCalc(user.id, effectiveWholesaleKey);
       
       if (!usageResult.canCalculate) {
         return res.status(403).json({ 
@@ -9776,7 +9779,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const usageResult = await storage.incrementUserDscrCalc(user.id, propertyKey);
+      const isBlankDscrKey = !propertyKey || propertyKey.replace(/\|/g, '').trim() === '';
+      const effectiveDscrKey = isBlankDscrKey ? undefined : propertyKey;
+
+      const usageResult = await storage.incrementUserDscrCalc(user.id, effectiveDscrKey);
 
       if (!usageResult.canUse) {
         return res.status(403).json({
@@ -9825,7 +9831,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const usageResult = await storage.incrementUserMaxOfferCalc(user.id, propertyKey);
+      const isBlankMaxOfferKey = !propertyKey || propertyKey.replace(/\|/g, '').trim() === '';
+      const effectiveMaxOfferKey = isBlankMaxOfferKey ? undefined : propertyKey;
+
+      const usageResult = await storage.incrementUserMaxOfferCalc(user.id, effectiveMaxOfferKey);
 
       if (!usageResult.canUse) {
         return res.status(403).json({
