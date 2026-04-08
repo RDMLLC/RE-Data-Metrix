@@ -1047,6 +1047,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   onClick={() => {
                     if (selectedArvData.arv) {
                       form.setValue("arv", selectedArvData.arv);
+                      form.setValue("estimatedValue", selectedArvData.arv);
                       toast({
                         title: "ARV Applied",
                         description: `Est. Market Value set to ${formatCurrency(selectedArvData.arv)}`,

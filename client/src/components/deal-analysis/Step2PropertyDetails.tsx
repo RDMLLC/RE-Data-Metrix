@@ -57,7 +57,7 @@ export default function Step2PropertyDetails({
   const dataSource = form.watch("propertyDataSource") || "unknown";
   const [showArvHelper, setShowArvHelper] = useState(false);
   
-  const estimateLabel = "Estimated Market Value (Not ARV)";
+  const estimateLabel = "Estimated Market Value (Enter ARV Here)";
 
   const handleSubmit = form.handleSubmit(() => {
     onNext();
