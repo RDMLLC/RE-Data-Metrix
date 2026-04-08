@@ -228,13 +228,25 @@ export default function Lenders() {
       });
       removePendingLender(lenderId);
     },
-    onError: (_, lenderId) => {
-      toast({
-        title: "Error",
-        description: "Failed to save lender. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error: any, lenderId) => {
       removePendingLender(lenderId);
+      const msg = error?.message || '';
+      if (msg.includes('SAVED_LENDER_QUOTA_EXCEEDED')) {
+        toast({
+          title: "Monthly Limit Reached",
+          description: "You've reached your 2 saved lenders for the month. Upgrade for unlimited lender saving.",
+          variant: "destructive",
+          action: (
+            <a href="/pricing" className="underline font-medium whitespace-nowrap">Upgrade Now</a>
+          ) as any,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save lender. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,15 @@ export default function ViewDeals() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isSubscriber } = useAuth();
+
+  const isFreeUser = !isSubscriber && user?.subscriptionStatus === 'free';
+
+  const { data: usageData } = useQuery<{ savedDealCount: number; remainingSavedDeals: number }>({
+    queryKey: ["/api/user/usage"],
+    enabled: isFreeUser,
+  });
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedProperties, setExpandedProperties] = useState<Set<string>>(new Set());
   
@@ -940,6 +950,30 @@ export default function ViewDeals() {
               </Button>
             </div>
           </div>
+
+          {isFreeUser && usageData && (
+            <div className="mb-6">
+              {(usageData.remainingSavedDeals ?? 2) === 0 ? (
+                <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+                  <CardContent className="py-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-foreground">You've reached your 2 saved deals for the month.</p>
+                        <p className="text-sm text-muted-foreground">Upgrade for unlimited deal saving.</p>
+                      </div>
+                      <Link href="/pricing">
+                        <Button data-testid="button-upgrade-deals-quota">Upgrade Now</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <p className="text-sm text-muted-foreground" data-testid="text-deal-usage-counter">
+                  {usageData.savedDealCount ?? 0} of 2 deals saved this month
+                </p>
+              )}
+            </div>
+          )}
 
           {isLoading ? (
             <div className="flex justify-center py-12">

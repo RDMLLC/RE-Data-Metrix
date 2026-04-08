@@ -690,15 +690,10 @@ export default function Profile() {
                       </ul>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3">
-                      <Link href="/checkout" className="flex-1">
-                        <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" data-testid="button-upgrade-now">
+                      <Link href="/pricing" className="flex-1">
+                        <Button className="w-full bg-accent text-accent-foreground" data-testid="button-upgrade-now">
                           <Crown className="h-4 w-4 mr-2" />
-                          Upgrade Now - $25/month
-                        </Button>
-                      </Link>
-                      <Link href="/pricing">
-                        <Button variant="outline" data-testid="button-view-pricing">
-                          View Plans
+                          Upgrade
                         </Button>
                       </Link>
                     </div>

@@ -154,6 +154,7 @@ interface ResultsResponse {
   };
   numberOfDraws: number;
   allRankedProducts: number;
+  code?: string;
 }
 
 interface DSCRLender {
@@ -316,13 +317,19 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // Demo token users get full subscriber access (with anonymized lenders)
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
 
-  // Three-scenario gating for Step 6 results:
-  //   Scenario 1 — Free user, automated lookup (quota consumed): showFullResults = true → full lender table shown
-  //   Scenario 2 — Free user, quota exhausted: blocked at /api/user/usage 403 before Step 6, never reaches here
-  //   Scenario 3 — Free user, manual entry: showFullResults = false → deal metrics shown, lender table locked
-  //   Paid user: effectiveIsSubscriber = true → showFullResults = true regardless of entry method
+  // Fetch usage data for free authenticated users (loan analysis quota counter)
+  const { data: usageData } = useQuery<{ loanAnalysisCount: number; remainingLoanAnalyses: number; isSubscriber: boolean }>({
+    queryKey: ['/api/user/usage'],
+    enabled: isAuthenticated && !effectiveIsSubscriber,
+  });
+
+  // showFullResults controls whether lender columns and full analysis is visible:
+  //   - Paid subscribers always see full results
+  //   - Automated property lookups always show full results
+  //   - Free users within quota: backend returns lenderColumns, so show them
+  //   - Free users quota-exceeded: backend returns lenderColumns: [], falls through to upgrade banner
   const propertyDataSource = form.watch('propertyDataSource');
-  const showFullResults = effectiveIsSubscriber || propertyDataSource === 'automated';
+  const showFullResults = effectiveIsSubscriber || propertyDataSource === 'automated' || (results?.lenderColumns?.length ?? 0) > 0;
 
   // Function to anonymize lender columns when demo mode is active
   const getDisplayLenders = (lenderColumns: LoanComparisonColumn[]): LoanComparisonColumn[] => {
@@ -549,8 +556,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
   // Auto-save effect - triggers once when results are first loaded for subscribers only
   useEffect(() => {
-    // Skip if already saved or save already attempted - only save for paid subscribers
-    if (!results || !isAuthenticated || !effectiveIsSubscriber || dealSaved || saveAttemptedRef.current) return;
+    // Skip if already saved or save already attempted
+    if (!results || !isAuthenticated || dealSaved || saveAttemptedRef.current) return;
     
     // Mark as attempted immediately to prevent duplicate saves
     saveAttemptedRef.current = true;
@@ -1953,7 +1960,14 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </Card>
           )}
 
-          {/* Upgrade CTA — only for manual-entry free users */}
+          {/* Usage counter for free authenticated users — shows near lender results */}
+          {isAuthenticated && !effectiveIsSubscriber && results && !isGeneratingPdf && (
+            <p className="text-sm text-muted-foreground text-right" data-testid="text-loan-analysis-counter">
+              {usageData?.loanAnalysisCount ?? (results.code === 'LOAN_ANALYSIS_QUOTA_EXCEEDED' ? 2 : 0)} of 2 analyses used this month
+            </p>
+          )}
+
+          {/* Upgrade CTA — for non-subscribers without lender columns */}
           {!showFullResults && !isGeneratingPdf && (
             <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
               <CardContent className="py-6">
@@ -1963,13 +1977,24 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       <Sparkles className="h-8 w-8 text-amber-500" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">Upgrade for Loan Referrals</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Compare multiple lender options and get connected with lenders who can fund your deals.
-                      </p>
+                      {isAuthenticated && !effectiveIsSubscriber ? (
+                        <>
+                          <h3 className="font-semibold text-lg">You've used your 2 analyses for the month.</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Upgrade for unlimited loan comparisons and lender referrals.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="font-semibold text-lg">Upgrade for Loan Referrals</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Compare multiple lender options and get connected with lenders who can fund your deals.
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <Link href="/upgrade">
+                  <Link href="/pricing">
                     <Button data-testid="button-upgrade-loan-referrals">
                       Upgrade Now
                     </Button>

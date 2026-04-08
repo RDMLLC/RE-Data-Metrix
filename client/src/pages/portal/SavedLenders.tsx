@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowLeft, 
   Heart,
@@ -29,6 +30,14 @@ export default function SavedLenders() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isSubscriber } = useAuth();
+
+  const isFreeUser = !isSubscriber && user?.subscriptionStatus === 'free';
+
+  const { data: usageData } = useQuery<{ savedLenderCount: number; remainingSavedLenders: number }>({
+    queryKey: ["/api/user/usage"],
+    enabled: isFreeUser,
+  });
 
   const { data: savedLenders, isLoading } = useQuery<SavedLenderWithDetails[]>({
     queryKey: ["/api/member/saved-lenders"],
@@ -82,6 +91,30 @@ export default function SavedLenders() {
               </p>
             </div>
           </div>
+
+          {isFreeUser && usageData && (
+            <div className="mb-6">
+              {(usageData.remainingSavedLenders ?? 2) === 0 ? (
+                <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+                  <CardContent className="py-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-foreground">You've reached your 2 saved lenders for the month.</p>
+                        <p className="text-sm text-muted-foreground">Upgrade for unlimited lender saving.</p>
+                      </div>
+                      <Link href="/pricing">
+                        <Button data-testid="button-upgrade-lenders-quota">Upgrade Now</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <p className="text-sm text-muted-foreground" data-testid="text-lender-usage-counter">
+                  {usageData.savedLenderCount ?? 0} of 2 lenders saved this month
+                </p>
+              )}
+            </div>
+          )}
 
           {isLoading ? (
             <div className="flex justify-center py-12">

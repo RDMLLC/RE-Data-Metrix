@@ -1,0 +1,11 @@
+Make the following changes across the frontend. Do not change anything else.
+1. client/src/pages/portal/Profile.tsx — Manage Subscription section
+Find the "Manage Subscription" button or link. Change it to an "Upgrade" link pointing to /pricing when user.subscriptionStatus === 'free'. For paid users the existing behavior remains unchanged.
+2. client/src/pages/DealAnalysis/Step6Results.tsx — auto-save for free users
+Find the auto-save useEffect that currently has !effectiveIsSubscriber as a guard preventing free users from saving. Remove that guard so free users within their save quota also trigger the auto-save. The backend counter check will enforce the limit.
+3. Usage counter display — deal analysis
+In Step6Results.tsx, fetch GET /api/user/usage and display a counter near the lender comparison results showing X of 2 analyses used this month for free users. When remainingLoanAnalyses === 0, replace the lender columns area with an upgrade prompt matching the existing "Upgrade for Loan Referrals" banner style, with the message: "You've used your 2 analyses for the month. Upgrade for unlimited loan comparisons and lender referrals." and an "Upgrade Now" button linking to /pricing.
+4. Usage counter display — saved deals
+In the saved deals portal page (likely client/src/pages/portal/SavedDeals.tsx or similar), fetch GET /api/user/usage and display a counter for free users showing X of 2 deals saved this month. When a save attempt returns code: 'SAVED_DEAL_QUOTA_EXCEEDED', show an upgrade prompt: "You've reached your 2 saved deals for the month. Upgrade for unlimited deal saving." with an "Upgrade Now" button linking to /pricing.
+5. Usage counter display — saved lenders
+In the saved lenders page or component, fetch GET /api/user/usage and display a counter for free users showing X of 2 lenders saved this month. When a save attempt returns code: 'SAVED_LENDER_QUOTA_EXCEEDED', show an upgrade prompt: "You've reached your 2 saved lenders for the month. Upgrade for unlimited lender saving." with an "Upgrade Now" button linking to /pricing.
