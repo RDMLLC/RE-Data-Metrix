@@ -1551,10 +1551,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-green-700 dark:text-green-400">
-              Analysis saved automatically as draft.{" "}
-              <Link href="/portal/dashboard" className="underline font-medium" data-testid="link-view-dashboard">
-                View in Dashboard
-              </Link>
+              Analysis Automatically Saved
             </span>
             <Link href="/portal/deals">
               <Button
