@@ -609,11 +609,14 @@ export interface IStorage {
   deleteExpiredPropertyCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
-  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; periodEnd: Date } | null>;
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; periodEnd: Date } | null>;
   incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
   incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
   incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }>;
   incrementUserArvHelper(userId: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }>;
+  incrementUserLoanAnalysis(userId: string): Promise<{ loanAnalysisCount: number; remainingLoanAnalyses: number; canAnalyze: boolean }>;
+  incrementUserSavedDeal(userId: string): Promise<{ savedDealCount: number; remainingSavedDeals: number; canSave: boolean }>;
+  incrementUserSavedLender(userId: string): Promise<{ savedLenderCount: number; remainingSavedLenders: number; canSave: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
   
   // Marketing Pixels
@@ -1388,6 +1391,9 @@ export class MemStorage implements IStorage {
   async incrementUserWholesaleCalc(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserPdfDownload(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserArvHelper(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserLoanAnalysis(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserSavedDeal(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserSavedLender(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async resetUserUsageIfExpired(userId: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
 }
 
@@ -3618,8 +3624,11 @@ export class DatabaseStorage implements IStorage {
   private readonly FREE_WHOLESALE_CALCS_PER_MONTH = 2;
   private readonly FREE_PDF_DOWNLOADS_PER_MONTH = 2;
   private readonly FREE_ARV_HELPERS_PER_MONTH = 2;
+  private readonly FREE_LOAN_ANALYSES_PER_MONTH = 2;
+  private readonly FREE_SAVED_DEALS_PER_MONTH = 2;
+  private readonly FREE_SAVED_LENDERS_PER_MONTH = 2;
 
-  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; periodEnd: Date } | null> {
+  async getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; periodEnd: Date } | null> {
     const [counter] = await db.select()
       .from(userUsageCountersTable)
       .where(eq(userUsageCountersTable.userId, userId))
@@ -3642,6 +3651,12 @@ export class DatabaseStorage implements IStorage {
         remainingPdfDownloads: this.FREE_PDF_DOWNLOADS_PER_MONTH,
         arvHelperCount: 0,
         remainingArvHelpers: this.FREE_ARV_HELPERS_PER_MONTH,
+        loanAnalysisCount: 0,
+        remainingLoanAnalyses: this.FREE_LOAN_ANALYSES_PER_MONTH,
+        savedDealCount: 0,
+        remainingSavedDeals: this.FREE_SAVED_DEALS_PER_MONTH,
+        savedLenderCount: 0,
+        remainingSavedLenders: this.FREE_SAVED_LENDERS_PER_MONTH,
         periodEnd: this.getNextMonthEnd()
       };
     }
@@ -3655,6 +3670,12 @@ export class DatabaseStorage implements IStorage {
       remainingPdfDownloads: Math.max(0, this.FREE_PDF_DOWNLOADS_PER_MONTH - counter.pdfDownloadCount),
       arvHelperCount: counter.arvHelperCount,
       remainingArvHelpers: Math.max(0, this.FREE_ARV_HELPERS_PER_MONTH - counter.arvHelperCount),
+      loanAnalysisCount: counter.loanAnalysisCount,
+      remainingLoanAnalyses: Math.max(0, this.FREE_LOAN_ANALYSES_PER_MONTH - counter.loanAnalysisCount),
+      savedDealCount: counter.savedDealCount,
+      remainingSavedDeals: Math.max(0, this.FREE_SAVED_DEALS_PER_MONTH - counter.savedDealCount),
+      savedLenderCount: counter.savedLenderCount,
+      remainingSavedLenders: Math.max(0, this.FREE_SAVED_LENDERS_PER_MONTH - counter.savedLenderCount),
       periodEnd: counter.periodEnd
     };
   }
@@ -3967,6 +3988,231 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async incrementUserLoanAnalysis(userId: string): Promise<{ loanAnalysisCount: number; remainingLoanAnalyses: number; canAnalyze: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          loanAnalysisCount: 1,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      
+      return {
+        loanAnalysisCount: 1,
+        remainingLoanAnalyses: this.FREE_LOAN_ANALYSES_PER_MONTH - 1,
+        canAnalyze: true
+      };
+    }
+    
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          pdfDownloadCount: 0,
+          arvHelperCount: 0,
+          loanAnalysisCount: 1,
+          savedDealCount: 0,
+          savedLenderCount: 0,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        loanAnalysisCount: 1,
+        remainingLoanAnalyses: this.FREE_LOAN_ANALYSES_PER_MONTH - 1,
+        canAnalyze: true
+      };
+    }
+    
+    if (counter.loanAnalysisCount >= this.FREE_LOAN_ANALYSES_PER_MONTH) {
+      return {
+        loanAnalysisCount: counter.loanAnalysisCount,
+        remainingLoanAnalyses: 0,
+        canAnalyze: false
+      };
+    }
+    
+    const newCount = counter.loanAnalysisCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        loanAnalysisCount: newCount,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      loanAnalysisCount: newCount,
+      remainingLoanAnalyses: Math.max(0, this.FREE_LOAN_ANALYSES_PER_MONTH - newCount),
+      canAnalyze: true
+    };
+  }
+
+  async incrementUserSavedDeal(userId: string): Promise<{ savedDealCount: number; remainingSavedDeals: number; canSave: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          savedDealCount: 1,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      
+      return {
+        savedDealCount: 1,
+        remainingSavedDeals: this.FREE_SAVED_DEALS_PER_MONTH - 1,
+        canSave: true
+      };
+    }
+    
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          pdfDownloadCount: 0,
+          arvHelperCount: 0,
+          loanAnalysisCount: 0,
+          savedDealCount: 1,
+          savedLenderCount: 0,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        savedDealCount: 1,
+        remainingSavedDeals: this.FREE_SAVED_DEALS_PER_MONTH - 1,
+        canSave: true
+      };
+    }
+    
+    if (counter.savedDealCount >= this.FREE_SAVED_DEALS_PER_MONTH) {
+      return {
+        savedDealCount: counter.savedDealCount,
+        remainingSavedDeals: 0,
+        canSave: false
+      };
+    }
+    
+    const newCount = counter.savedDealCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        savedDealCount: newCount,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      savedDealCount: newCount,
+      remainingSavedDeals: Math.max(0, this.FREE_SAVED_DEALS_PER_MONTH - newCount),
+      canSave: true
+    };
+  }
+
+  async incrementUserSavedLender(userId: string): Promise<{ savedLenderCount: number; remainingSavedLenders: number; canSave: boolean }> {
+    const now = new Date();
+    const periodEnd = this.getNextMonthEnd();
+    
+    let [counter] = await db.select()
+      .from(userUsageCountersTable)
+      .where(eq(userUsageCountersTable.userId, userId))
+      .limit(1);
+    
+    if (!counter) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.insert(userUsageCountersTable)
+        .values({
+          userId,
+          savedLenderCount: 1,
+          periodStart,
+          periodEnd,
+        })
+        .returning();
+      
+      return {
+        savedLenderCount: 1,
+        remainingSavedLenders: this.FREE_SAVED_LENDERS_PER_MONTH - 1,
+        canSave: true
+      };
+    }
+    
+    if (counter.periodEnd < now) {
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      [counter] = await db.update(userUsageCountersTable)
+        .set({
+          propertyLookupCount: 0,
+          wholesaleCalcCount: 0,
+          pdfDownloadCount: 0,
+          arvHelperCount: 0,
+          loanAnalysisCount: 0,
+          savedDealCount: 0,
+          savedLenderCount: 1,
+          periodStart,
+          periodEnd,
+          updatedAt: now,
+        })
+        .where(eq(userUsageCountersTable.userId, userId))
+        .returning();
+      
+      return {
+        savedLenderCount: 1,
+        remainingSavedLenders: this.FREE_SAVED_LENDERS_PER_MONTH - 1,
+        canSave: true
+      };
+    }
+    
+    if (counter.savedLenderCount >= this.FREE_SAVED_LENDERS_PER_MONTH) {
+      return {
+        savedLenderCount: counter.savedLenderCount,
+        remainingSavedLenders: 0,
+        canSave: false
+      };
+    }
+    
+    const newCount = counter.savedLenderCount + 1;
+    await db.update(userUsageCountersTable)
+      .set({
+        savedLenderCount: newCount,
+        updatedAt: now,
+      })
+      .where(eq(userUsageCountersTable.userId, userId));
+    
+    return {
+      savedLenderCount: newCount,
+      remainingSavedLenders: Math.max(0, this.FREE_SAVED_LENDERS_PER_MONTH - newCount),
+      canSave: true
+    };
+  }
+
   async resetUserUsageIfExpired(userId: string): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -3978,6 +4224,9 @@ export class DatabaseStorage implements IStorage {
         wholesaleCalcCount: 0,
         pdfDownloadCount: 0,
         arvHelperCount: 0,
+        loanAnalysisCount: 0,
+        savedDealCount: 0,
+        savedLenderCount: 0,
         periodStart,
         periodEnd,
         updatedAt: now,
