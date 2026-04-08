@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import MembershipPaywall from "@/components/MembershipPaywall";
 
 export default function RentalAnalysis() {
-  const { isSubscriber, isLoading: authLoading } = useAuth();
+  const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
 
   if (authLoading) {
     return (
@@ -20,7 +20,7 @@ export default function RentalAnalysis() {
     );
   }
 
-  if (!isSubscriber) {
+  if (!isAuthenticated) {
     return (
       <Layout>
         <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">

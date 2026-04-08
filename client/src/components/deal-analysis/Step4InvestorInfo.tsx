@@ -250,6 +250,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack }: Step4Investo
                       id="save-to-profile"
                       checked={saveToProfile}
                       onCheckedChange={(checked) => setSaveToProfile(checked === true)}
+                      disabled={!isSubscriber}
                       data-testid="checkbox-save-to-profile"
                     />
                     <label

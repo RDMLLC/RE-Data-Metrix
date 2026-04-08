@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { CreditCard, ArrowRight, Search, ArrowLeft } from "lucide-react";
 
 interface ArvQuotaExhaustedModalProps {
@@ -20,6 +20,8 @@ export default function ArvQuotaExhaustedModal({
   onOpenChange,
   isAuthenticated = false,
 }: ArvQuotaExhaustedModalProps) {
+  const [, navigate] = useLocation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" data-testid="modal-arv-quota-exhausted">
@@ -53,7 +55,7 @@ export default function ArvQuotaExhaustedModal({
             <Button 
               variant="outline" 
               className="w-full h-auto py-4"
-              onClick={() => { onOpenChange(false); window.history.back(); }}
+              onClick={() => { onOpenChange(false); navigate('/deal-analysis'); }}
               data-testid="button-go-back-arv"
             >
               <div className="flex items-center gap-3">

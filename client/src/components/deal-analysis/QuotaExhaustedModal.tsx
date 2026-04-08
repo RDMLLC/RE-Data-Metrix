@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { CreditCard, PenLine, ArrowRight, ArrowLeft } from "lucide-react";
 
 interface QuotaExhaustedModalProps {
@@ -22,6 +22,8 @@ export default function QuotaExhaustedModal({
   onContinueManual,
   isAuthenticated = false,
 }: QuotaExhaustedModalProps) {
+  const [, navigate] = useLocation();
+
   const handleContinueManual = () => {
     onContinueManual();
     onOpenChange(false);
@@ -60,7 +62,7 @@ export default function QuotaExhaustedModal({
             <Button 
               variant="outline" 
               className="w-full h-auto py-4"
-              onClick={() => { onOpenChange(false); window.history.back(); }}
+              onClick={() => { onOpenChange(false); navigate('/deal-analysis'); }}
               data-testid="button-go-back"
             >
               <div className="flex items-center gap-3">
