@@ -134,6 +134,9 @@ export default function DealAnalysisWizard() {
 
   // Track if we've already handled the initial navigation
   const hasHandledInitialNav = useRef(false);
+  // Set to true by handleBack() when going from Step 2 → 1 so the mount
+  // rehydration effect knows not to clear data in that case.
+  const isReturningToStep1 = useRef(false);
   
   // Fetch saved deal data when viewing a deal
   const { data: savedDeal, isLoading: isDealLoading, error: dealError } = useQuery<SavedDeal>({
@@ -207,42 +210,64 @@ export default function DealAnalysisWizard() {
     },
   });
 
-  // Restore saved wizard data from session storage on mount
+  // Restore saved wizard data from session storage on mount.
+  // wizardData.currentStep is the persisted step from sessionStorage — it tells us
+  // where the user actually was. If they were past Step 1, or if the Back button
+  // from Step 2 was used (isReturningToStep1), rehydrate the form. Otherwise this
+  // is a fresh navigation to Step 1, so clear everything instead.
   useEffect(() => {
-    if (wizardData.property) {
-      const property = wizardData.property;
+    const persistedStep = wizardData.currentStep ?? 1;
+    if (persistedStep > 1 || isReturningToStep1.current) {
+      // Mid-wizard return or deliberate Back to Step 1: restore saved data
+      if (wizardData.property) {
+        const property = wizardData.property;
+        form.reset({
+          ...form.getValues(),
+          address: property.address || "",
+          city: property.city || "",
+          state: property.state || "",
+          zipCode: property.zip || "",
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          sqft: property.squareFootage,
+          purchasePrice: property.purchasePrice,
+          arv: property.arv,
+          rehabBudget: property.rehabBudget,
+          taxAssessedValue: property.taxAssessedValue,
+          annualInsurance: property.annualInsurance,
+          monthlyUtilities: property.monthlyUtilities,
+          hoaFees: property.hoaFees,
+          hoaTransferFee: property.hoaTransferFee,
+          projectLength: property.projectLength,
+          sellPrice: property.sellPrice,
+          closingCostsSellPercent: property.closingCostsSellPercent,
+          realEstateCommissionPercent: property.realEstateCommissionPercent,
+          attorneyFees: property.attorneyFees,
+          docPrepFees: property.docPrepFees,
+          titleExam: property.titleExam,
+          titleInsurance: property.titleInsurance,
+        });
+      }
+      if (wizardData.investor) {
+        const investor = wizardData.investor;
+        form.setValue("creditScore", investor.creditScore);
+        form.setValue("isNewInvestor", investor.experienceLevel === "new");
+      }
+    } else {
+      // Fresh navigation to Step 1: clear session data and reset to empty defaults
+      clearWizardData();
       form.reset({
-        ...form.getValues(),
-        address: property.address || "",
-        city: property.city || "",
-        state: property.state || "",
-        zipCode: property.zip || "",
-        bedrooms: property.bedrooms,
-        bathrooms: property.bathrooms,
-        sqft: property.squareFootage,
-        purchasePrice: property.purchasePrice,
-        arv: property.arv,
-        rehabBudget: property.rehabBudget,
-        taxAssessedValue: property.taxAssessedValue,
-        annualInsurance: property.annualInsurance,
-        monthlyUtilities: property.monthlyUtilities,
-        hoaFees: property.hoaFees,
-        hoaTransferFee: property.hoaTransferFee,
-        projectLength: property.projectLength,
-        sellPrice: property.sellPrice,
-        closingCostsSellPercent: property.closingCostsSellPercent,
-        realEstateCommissionPercent: property.realEstateCommissionPercent,
-        attorneyFees: property.attorneyFees,
-        docPrepFees: property.docPrepFees,
-        titleExam: property.titleExam,
-        titleInsurance: property.titleInsurance,
+        address: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        addingSquareFootage: false,
+        closingTimeline: "22-30-days",
+        loanPreference: "one-of-each",
+        hasExistingLoan: false,
       });
     }
-    if (wizardData.investor) {
-      const investor = wizardData.investor;
-      form.setValue("creditScore", investor.creditScore);
-      form.setValue("isNewInvestor", investor.experienceLevel === "new");
-    }
+    isReturningToStep1.current = false;
   }, []);
   
   // Load saved deal data into form when viewing a saved deal
@@ -380,6 +405,11 @@ export default function DealAnalysisWizard() {
 
   const handleBack = () => {
     if (currentStep > 1) {
+      if (currentStep === 2) {
+        // Flag that we're intentionally returning to Step 1 via Back so the
+        // rehydration logic doesn't treat it as a fresh navigation and clear data.
+        isReturningToStep1.current = true;
+      }
       updateStep(currentStep - 1);
     }
   };

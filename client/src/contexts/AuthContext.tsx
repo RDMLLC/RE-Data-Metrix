@@ -158,6 +158,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.setQueryData(["/api/auth/me"], null);
       queryClient.setQueryData(["/api/lenders/me"], null);
       queryClient.clear();
+      // AuthProvider is a parent of WizardDataProvider in the tree, so useWizardData()
+      // cannot be called here. Remove the wizard sessionStorage entry directly instead —
+      // this is equivalent to calling clearWizardData().
+      try { sessionStorage.removeItem('redatametrix_wizard_data'); } catch (_) {}
     },
   });
 
