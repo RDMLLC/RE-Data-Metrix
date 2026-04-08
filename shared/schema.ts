@@ -160,6 +160,7 @@ export const userUsageCounters = pgTable("user_usage_counters", {
   loanAnalysisCount: integer("loan_analysis_count").notNull().default(0),
   savedDealCount: integer("saved_deal_count").notNull().default(0),
   savedLenderCount: integer("saved_lender_count").notNull().default(0),
+  lastArvAddress: varchar("last_arv_address", { length: 500 }),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
   lastLookupAt: timestamp("last_lookup_at"),

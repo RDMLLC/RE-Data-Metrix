@@ -9830,9 +9830,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
       
       // For free users, check ARV helper usage
+      const propertyKey = address && city && state
+        ? `${address.trim().toLowerCase()}|${city.trim().toLowerCase()}|${state.trim().toUpperCase()}`
+        : null;
+
       let usageResult = null;
       if (!isPaidSubscriber) {
-        usageResult = await storage.incrementUserArvHelper(user.id);
+        usageResult = await storage.incrementUserArvHelper(user.id, propertyKey ?? undefined);
         if (!usageResult.canUse) {
           return res.status(403).json({ 
             error: "You've used your 2 free ARV searches this month. Upgrade to get unlimited access.",

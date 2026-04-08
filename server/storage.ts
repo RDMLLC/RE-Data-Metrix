@@ -609,11 +609,11 @@ export interface IStorage {
   deleteExpiredPropertyCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
-  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; periodEnd: Date } | null>;
+  getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; lastArvAddress: string | null; periodEnd: Date } | null>;
   incrementUserPropertyLookup(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; canLookup: boolean }>;
   incrementUserWholesaleCalc(userId: string): Promise<{ wholesaleCalcCount: number; remainingWholesaleCalcs: number; canCalculate: boolean }>;
   incrementUserPdfDownload(userId: string): Promise<{ pdfDownloadCount: number; remainingPdfDownloads: number; canDownload: boolean }>;
-  incrementUserArvHelper(userId: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }>;
+  incrementUserArvHelper(userId: string, propertyKey?: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }>;
   incrementUserLoanAnalysis(userId: string): Promise<{ loanAnalysisCount: number; remainingLoanAnalyses: number; canAnalyze: boolean }>;
   incrementUserSavedDeal(userId: string): Promise<{ savedDealCount: number; remainingSavedDeals: number; canSave: boolean }>;
   incrementUserSavedLender(userId: string): Promise<{ savedLenderCount: number; remainingSavedLenders: number; canSave: boolean }>;
@@ -1390,7 +1390,7 @@ export class MemStorage implements IStorage {
   async incrementUserPropertyLookup(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserWholesaleCalc(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserPdfDownload(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
-  async incrementUserArvHelper(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
+  async incrementUserArvHelper(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserLoanAnalysis(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserSavedDeal(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserSavedLender(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
@@ -3657,6 +3657,7 @@ export class DatabaseStorage implements IStorage {
         remainingSavedDeals: this.FREE_SAVED_DEALS_PER_MONTH,
         savedLenderCount: 0,
         remainingSavedLenders: this.FREE_SAVED_LENDERS_PER_MONTH,
+        lastArvAddress: null,
         periodEnd: this.getNextMonthEnd()
       };
     }
@@ -3676,6 +3677,7 @@ export class DatabaseStorage implements IStorage {
       remainingSavedDeals: Math.max(0, this.FREE_SAVED_DEALS_PER_MONTH - counter.savedDealCount),
       savedLenderCount: counter.savedLenderCount,
       remainingSavedLenders: Math.max(0, this.FREE_SAVED_LENDERS_PER_MONTH - counter.savedLenderCount),
+      lastArvAddress: counter.lastArvAddress ?? null,
       periodEnd: counter.periodEnd
     };
   }
@@ -3911,7 +3913,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async incrementUserArvHelper(userId: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }> {
+  async incrementUserArvHelper(userId: string, propertyKey?: string): Promise<{ arvHelperCount: number; remainingArvHelpers: number; canUse: boolean }> {
     const now = new Date();
     const periodEnd = this.getNextMonthEnd();
     
@@ -3928,6 +3930,7 @@ export class DatabaseStorage implements IStorage {
         .values({
           userId,
           arvHelperCount: 1,
+          lastArvAddress: propertyKey || null,
           periodStart,
           periodEnd,
         })
@@ -3949,6 +3952,7 @@ export class DatabaseStorage implements IStorage {
           wholesaleCalcCount: 0,
           pdfDownloadCount: 0,
           arvHelperCount: 1,
+          lastArvAddress: propertyKey || null,
           periodStart,
           periodEnd,
           updatedAt: now,
@@ -3959,6 +3963,15 @@ export class DatabaseStorage implements IStorage {
       return {
         arvHelperCount: 1,
         remainingArvHelpers: this.FREE_ARV_HELPERS_PER_MONTH - 1,
+        canUse: true
+      };
+    }
+    
+    // Same-property de-duplication: if the incoming key matches the last search, skip incrementing
+    if (propertyKey && counter.lastArvAddress === propertyKey) {
+      return {
+        arvHelperCount: counter.arvHelperCount,
+        remainingArvHelpers: Math.max(0, this.FREE_ARV_HELPERS_PER_MONTH - counter.arvHelperCount),
         canUse: true
       };
     }
@@ -3977,6 +3990,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(userUsageCountersTable)
       .set({
         arvHelperCount: newCount,
+        lastArvAddress: propertyKey || null,
         updatedAt: now,
       })
       .where(eq(userUsageCountersTable.userId, userId));
@@ -4227,6 +4241,7 @@ export class DatabaseStorage implements IStorage {
         loanAnalysisCount: 0,
         savedDealCount: 0,
         savedLenderCount: 0,
+        lastArvAddress: null,
         periodStart,
         periodEnd,
         updatedAt: now,
