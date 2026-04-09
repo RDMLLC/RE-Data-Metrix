@@ -6,6 +6,7 @@ export interface TaxBracket {
 export interface TieredTransferTax {
   state: string;
   city?: string;
+  cityAliases?: string[];
   county?: string;
   displayName: string;
   brackets: TaxBracket[];
@@ -110,6 +111,7 @@ export const tieredTransferTaxes: TieredTransferTax[] = [
   // New York City, NY
   {
     state: 'NY', city: 'New York City',
+    cityAliases: ['manhattan', 'brooklyn', 'bronx', 'queens', 'staten island'],
     displayName: 'New York City, NY',
     notes: 'NYC + NYS combined rate. Tiered by sale price. $1M+ adds NYS mansion tax (buyer).',
     brackets: [
@@ -185,7 +187,10 @@ export function getTieredRate(stateCode: string, city: string, purchasePrice: nu
   const match = tieredTransferTaxes.find(t => {
     const stateMatch = t.state.toUpperCase() === normalizedState;
     if (!stateMatch) return false;
-    if (t.city) return t.city.toLowerCase() === normalizedCity;
+    if (t.city) {
+      return t.city.toLowerCase() === normalizedCity ||
+             (t.cityAliases?.includes(normalizedCity) ?? false);
+    }
     return !normalizedCity; // state-level tiered entry matches when no city
   });
 

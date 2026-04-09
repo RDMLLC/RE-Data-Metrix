@@ -1,6 +1,7 @@
 export interface TransferTaxRate {
   state: string;
   city?: string;
+  cityAliases?: string[];
   county?: string;
   stateName: string;
   ratePercent: number;
@@ -100,7 +101,12 @@ export const transferTaxRates: TransferTaxRate[] = [
   { state: 'CA', city: 'Emeryville', stateName: 'California', ratePercent: 1.31, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
 
   // City-level overrides — New York
-  { state: 'NY', city: 'New York City', stateName: 'New York', ratePercent: 1.40, notes: 'Tiered NYC + NYS combined. $1M+ adds mansion tax.', paidBy: 'seller', complex: true },
+  {
+    state: 'NY', city: 'New York City',
+    cityAliases: ['manhattan', 'brooklyn', 'bronx', 'queens', 'staten island'],
+    stateName: 'New York', ratePercent: 1.40,
+    notes: 'Tiered NYC + NYS combined. $1M+ adds mansion tax.', paidBy: 'seller', complex: true,
+  },
 
   // County-level overrides — Maryland
   { state: 'MD', county: 'Baltimore City', stateName: 'Maryland', ratePercent: 2.00, notes: 'State 0.5% + Baltimore City 1.5%', paidBy: 'split' },
@@ -118,11 +124,12 @@ export function getTransferTaxRate(stateCode: string, city?: string, county?: st
   const normCity = city?.trim().toLowerCase();
   const normCounty = county?.trim().toLowerCase();
 
-  // 1. Try city match first
+  // 1. Try city match first (including aliases)
   if (normCity) {
     const cityMatch = transferTaxRates.find(r =>
       r.state.toUpperCase() === normState &&
-      r.city?.toLowerCase() === normCity
+      (r.city?.toLowerCase() === normCity ||
+       r.cityAliases?.includes(normCity))
     );
     if (cityMatch) return cityMatch;
   }
