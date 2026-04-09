@@ -1561,18 +1561,25 @@ export default function Step4HoldingPeriodExit({
                 const calculatedAmount = bracket
                   ? Math.round(purchasePrice * (bracket.ratePercent / 100))
                   : 0;
+                const alreadyApplied = form.getValues("transferFee") === calculatedAmount;
                 return (
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex items-center justify-end gap-2">
+                    {alreadyApplied ? (
+                      <span className="text-sm text-muted-foreground">
+                        ✓ This amount is already applied
+                      </span>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          form.setValue("transferFee", calculatedAmount);
+                          setShowTieredModal(false);
+                        }}
+                      >
+                        Apply {formatCurrency(calculatedAmount)}
+                      </Button>
+                    )}
                     <Button variant="outline" onClick={() => setShowTieredModal(false)}>
                       Close
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        form.setValue("transferFee", calculatedAmount);
-                        setShowTieredModal(false);
-                      }}
-                    >
-                      Apply {formatCurrency(calculatedAmount)}
                     </Button>
                   </div>
                 );
