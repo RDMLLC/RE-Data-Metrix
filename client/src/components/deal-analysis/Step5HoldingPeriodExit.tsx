@@ -18,16 +18,24 @@ import {
   CollapsibleContent, 
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
-import { TrendingUp, ChevronDown, HelpCircle } from "lucide-react";
+import { TrendingUp, ChevronDown, HelpCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useState, useEffect, useRef } from "react";
 import { getUtilityCostPerSqFt } from "@shared/data/utility-costs";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
-import { calculateTransferTax, getTransferTaxRate } from "@shared/data/transferTaxRates";
+import { getTransferTaxRate } from "@shared/data/transferTaxRates";
+import { getTieredRate, TieredTransferTax } from "@shared/data/transferTaxTiers";
 
 interface Step4HoldingPeriodExitProps {
   form: UseFormReturn<WizardFormData>;
@@ -49,7 +57,12 @@ export default function Step4HoldingPeriodExit({
   const arv = form.watch("arv") || 0;
   const projectLength = form.watch("projectLength") || 0;
   const state = form.watch("state") || "";
+  const city = form.watch("city") || "";
   const sqft = form.watch("sqft") || 0;
+
+  const [transferTaxComplex, setTransferTaxComplex] = useState(false);
+  const [transferTaxTiered, setTransferTaxTiered] = useState<TieredTransferTax | null>(null);
+  const [showTieredModal, setShowTieredModal] = useState(false);
   
   // Double close fields
   const isDoubleClose = form.watch("isDoubleClose");
@@ -98,10 +111,24 @@ export default function Step4HoldingPeriodExit({
       form.setValue("titleInsurance", Math.round(purchasePrice * 0.012));
     }
     
-    // Auto-calculate transfer fee based on state and purchase price
+    // Transfer fee auto-calculation with tiered support
     if (!form.getValues("transferFee") && state && purchasePrice) {
-      const calculatedTransferFee = calculateTransferTax(state, purchasePrice);
-      form.setValue("transferFee", calculatedTransferFee);
+      // Check tiered jurisdictions first
+      const tieredResult = getTieredRate(state, city || '', purchasePrice);
+      if (tieredResult) {
+        const amount = Math.round(purchasePrice * (tieredResult.ratePercent / 100));
+        form.setValue("transferFee", amount);
+        setTransferTaxComplex(true);
+        setTransferTaxTiered(tieredResult.tiered);
+      } else {
+        // Fall back to flat rate lookup
+        const flatRate = getTransferTaxRate(state, city, undefined);
+        if (flatRate) {
+          const amount = Math.round(purchasePrice * (flatRate.ratePercent / 100));
+          form.setValue("transferFee", amount);
+          setTransferTaxComplex(flatRate.complex === true);
+        }
+      }
     }
     
     // Set default values for Buy2 closing costs (same as Buy1)
@@ -139,7 +166,7 @@ export default function Step4HoldingPeriodExit({
     
     // Mark as initialized after first render
     isInitializedRef.current = true;
-  }, [form, state, sqft]);
+  }, [form, state, city, sqft]);
 
   // Recalculate Title Insurance when Purchase Price changes
   useEffect(() => {
@@ -351,7 +378,7 @@ export default function Step4HoldingPeriodExit({
                       control={form.control}
                       name="transferFee"
                       render={({ field }) => {
-                        const taxRate = getTransferTaxRate(state);
+                        const taxRate = getTransferTaxRate(state, city);
                         return (
                           <FormItem>
                             <FormLabel className="flex items-center gap-1">
@@ -363,7 +390,7 @@ export default function Step4HoldingPeriodExit({
                                 <TooltipContent className="max-w-xs">
                                   <p>
                                     {taxRate 
-                                      ? `${taxRate.stateName}: ${taxRate.ratePercent}% - ${taxRate.notes}.`
+                                      ? `${taxRate.stateName}${taxRate.city ? ` / ${taxRate.city}` : ''}: ${taxRate.ratePercent}% - ${taxRate.notes}`
                                       : 'Transfer tax varies by state. Some states have no transfer tax.'}
                                   </p>
                                 </TooltipContent>
@@ -385,9 +412,22 @@ export default function Step4HoldingPeriodExit({
                             </FormControl>
                             <FormDescription>
                               {taxRate && taxRate.ratePercent > 0 
-                                ? `Auto-calculated at ${taxRate.ratePercent}% for ${taxRate.stateName}`
+                                ? `Auto-calculated at ${taxRate.ratePercent}% for ${taxRate.city ? taxRate.city + ', ' : ''}${taxRate.stateName}`
                                 : state ? `No state transfer tax in ${state}` : 'Based on state rates'}
                             </FormDescription>
+                            {transferTaxComplex && (
+                              <div className="flex items-start gap-2 mt-1 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-xs text-amber-800 dark:text-amber-300">
+                                <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                                <span>This area may have tiered or additional local transfer taxes.</span>
+                                <button
+                                  type="button"
+                                  className="underline font-medium whitespace-nowrap ml-auto"
+                                  onClick={() => setShowTieredModal(true)}
+                                >
+                                  Calculate accurately
+                                </button>
+                              </div>
+                            )}
                             <FormMessage />
                           </FormItem>
                         );
@@ -1423,6 +1463,90 @@ export default function Step4HoldingPeriodExit({
           </div>
         </form>
       </Form>
+
+      <Dialog open={showTieredModal} onOpenChange={setShowTieredModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Transfer Tax Details</DialogTitle>
+            <DialogDescription>
+              {transferTaxTiered
+                ? `${transferTaxTiered.displayName} — ${transferTaxTiered.notes}`
+                : 'This jurisdiction has complex or tiered transfer tax rates. Verify the exact amount with a title company or attorney.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {transferTaxTiered ? (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Purchase price: <span className="font-medium">{formatCurrency(purchasePrice)}</span>
+              </div>
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-2 font-medium">Sale Price Range</th>
+                      <th className="text-right p-2 font-medium">Rate</th>
+                      <th className="text-right p-2 font-medium">Est. Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transferTaxTiered.brackets.map((bracket, index) => {
+                      const prevBracket = transferTaxTiered.brackets[index - 1];
+                      const from = prevBracket?.upTo != null ? prevBracket.upTo + 1 : 0;
+                      const isActive =
+                        bracket.upTo === null
+                          ? purchasePrice > (prevBracket?.upTo ?? 0)
+                          : purchasePrice <= bracket.upTo && purchasePrice >= from;
+                      return (
+                        <tr key={index} className={isActive ? 'bg-accent/20 font-medium' : ''}>
+                          <td className="p-2">
+                            {bracket.upTo === null
+                              ? `Over ${formatCurrency(prevBracket?.upTo ?? 0)}`
+                              : `Up to ${formatCurrency(bracket.upTo)}`}
+                          </td>
+                          <td className="text-right p-2">{bracket.ratePercent}%</td>
+                          <td className="text-right p-2">
+                            {isActive
+                              ? formatCurrency(Math.round(purchasePrice * (bracket.ratePercent / 100)))
+                              : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {(() => {
+                const bracket = transferTaxTiered.brackets.find(
+                  b => b.upTo === null || purchasePrice <= b.upTo
+                );
+                const calculatedAmount = bracket
+                  ? Math.round(purchasePrice * (bracket.ratePercent / 100))
+                  : 0;
+                return (
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowTieredModal(false)}>
+                      Close
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        form.setValue("transferFee", calculatedAmount);
+                        setShowTieredModal(false);
+                      }}
+                    >
+                      Apply {formatCurrency(calculatedAmount)}
+                    </Button>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setShowTieredModal(false)}>Close</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

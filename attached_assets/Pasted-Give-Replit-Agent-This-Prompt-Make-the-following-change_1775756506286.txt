@@ -1,0 +1,440 @@
+Give Replit Agent This Prompt:
+
+Make the following changes. This is a multi-file implementation — complete all parts before considering the task done.
+
+1. Create shared/data/transferTaxTiers.ts
+
+Create a new file with this exact content:
+
+typescript
+export interface TaxBracket {
+  upTo: number | null; // null = no upper limit
+  ratePercent: number;
+}
+
+export interface TieredTransferTax {
+  state: string;
+  city?: string;
+  county?: string;
+  displayName: string;
+  brackets: TaxBracket[];
+  notes: string;
+}
+
+export const tieredTransferTaxes: TieredTransferTax[] = [
+  // San Francisco, CA
+  {
+    state: 'CA', city: 'San Francisco',
+    displayName: 'San Francisco, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 250000, ratePercent: 0.50 },
+      { upTo: 999999, ratePercent: 0.68 },
+      { upTo: 4999999, ratePercent: 0.75 },
+      { upTo: 9999999, ratePercent: 2.25 },
+      { upTo: 24999999, ratePercent: 5.50 },
+      { upTo: null, ratePercent: 6.00 },
+    ],
+  },
+  // Oakland, CA
+  {
+    state: 'CA', city: 'Oakland',
+    displayName: 'Oakland, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 299999, ratePercent: 1.10 },
+      { upTo: 1999999, ratePercent: 1.61 },
+      { upTo: 4999999, ratePercent: 1.86 },
+      { upTo: null, ratePercent: 2.61 },
+    ],
+  },
+  // Los Angeles, CA
+  {
+    state: 'CA', city: 'Los Angeles',
+    displayName: 'Los Angeles, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 5299999, ratePercent: 0.56 },
+      { upTo: 10599999, ratePercent: 4.56 },
+      { upTo: null, ratePercent: 6.06 },
+    ],
+  },
+  // Berkeley, CA
+  {
+    state: 'CA', city: 'Berkeley',
+    displayName: 'Berkeley, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 1599999, ratePercent: 1.61 },
+      { upTo: null, ratePercent: 2.61 },
+    ],
+  },
+  // Culver City, CA
+  {
+    state: 'CA', city: 'Culver City',
+    displayName: 'Culver City, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 1499999, ratePercent: 0.56 },
+      { upTo: 2999999, ratePercent: 1.21 },
+      { upTo: 9999999, ratePercent: 3.11 },
+      { upTo: null, ratePercent: 4.11 },
+    ],
+  },
+  // Santa Monica, CA
+  {
+    state: 'CA', city: 'Santa Monica',
+    displayName: 'Santa Monica, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 4999999, ratePercent: 0.41 },
+      { upTo: 7999999, ratePercent: 0.71 },
+      { upTo: null, ratePercent: 5.71 },
+    ],
+  },
+  // Richmond, CA
+  {
+    state: 'CA', city: 'Richmond',
+    displayName: 'Richmond, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 999999, ratePercent: 0.81 },
+      { upTo: 2999999, ratePercent: 1.46 },
+      { upTo: 9999999, ratePercent: 2.61 },
+      { upTo: null, ratePercent: 3.11 },
+    ],
+  },
+  // Emeryville, CA
+  {
+    state: 'CA', city: 'Emeryville',
+    displayName: 'Emeryville, CA',
+    notes: 'City + County combined rate. Tiered by sale price.',
+    brackets: [
+      { upTo: 999999, ratePercent: 1.31 },
+      { upTo: 1499999, ratePercent: 1.61 },
+      { upTo: 1999999, ratePercent: 1.61 },
+      { upTo: null, ratePercent: 2.61 },
+    ],
+  },
+  // New York City, NY
+  {
+    state: 'NY', city: 'New York City',
+    displayName: 'New York City, NY',
+    notes: 'NYC + NYS combined rate. Tiered by sale price. $1M+ adds NYS mansion tax (buyer).',
+    brackets: [
+      { upTo: 499999, ratePercent: 1.40 },
+      { upTo: 999999, ratePercent: 1.825 },
+      { upTo: null, ratePercent: 2.825 },
+    ],
+  },
+  // Washington State
+  {
+    state: 'WA',
+    displayName: 'Washington State',
+    notes: 'State excise tax. Tiered by sale price.',
+    brackets: [
+      { upTo: 525000, ratePercent: 1.10 },
+      { upTo: 1525000, ratePercent: 1.28 },
+      { upTo: 3025000, ratePercent: 2.75 },
+      { upTo: null, ratePercent: 3.00 },
+    ],
+  },
+  // New Jersey
+  {
+    state: 'NJ',
+    displayName: 'New Jersey',
+    notes: 'State transfer tax. Tiered by sale price. $1M+ adds 1% mansion tax.',
+    brackets: [
+      { upTo: 350000, ratePercent: 1.00 },
+      { upTo: 999999, ratePercent: 1.25 },
+      { upTo: null, ratePercent: 2.50 },
+    ],
+  },
+  // Connecticut
+  {
+    state: 'CT',
+    displayName: 'Connecticut',
+    notes: 'State transfer tax. Tiered by sale price.',
+    brackets: [
+      { upTo: 800000, ratePercent: 0.75 },
+      { upTo: null, ratePercent: 1.25 },
+    ],
+  },
+  // Hawaii
+  {
+    state: 'HI',
+    displayName: 'Hawaii',
+    notes: 'State conveyance tax. Tiered by sale price.',
+    brackets: [
+      { upTo: 600000, ratePercent: 0.10 },
+      { upTo: 1000000, ratePercent: 0.20 },
+      { upTo: 2000000, ratePercent: 0.30 },
+      { upTo: 4000000, ratePercent: 0.50 },
+      { upTo: 6000000, ratePercent: 0.70 },
+      { upTo: 10000000, ratePercent: 0.90 },
+      { upTo: null, ratePercent: 1.00 },
+    ],
+  },
+  // Washington DC
+  {
+    state: 'DC',
+    displayName: 'Washington, DC',
+    notes: 'Combined recordation + transfer tax. Tiered by sale price.',
+    brackets: [
+      { upTo: 400000, ratePercent: 1.10 },
+      { upTo: null, ratePercent: 1.45 },
+    ],
+  },
+];
+
+export function getTieredRate(stateCode: string, city: string, purchasePrice: number): { ratePercent: number; tiered: TieredTransferTax } | null {
+  const normalizedCity = city.trim().toLowerCase();
+  const normalizedState = stateCode.trim().toUpperCase();
+
+  const match = tieredTransferTaxes.find(t => {
+    const stateMatch = t.state.toUpperCase() === normalizedState;
+    if (!stateMatch) return false;
+    if (t.city) return t.city.toLowerCase() === normalizedCity;
+    return !normalizedCity; // state-level tiered entry matches when no city
+  });
+
+  if (!match) {
+    // For state-level tiered entries (WA, NJ, CT, HI, DC), match by state alone
+    const stateMatch = tieredTransferTaxes.find(t =>
+      t.state.toUpperCase() === normalizedState && !t.city
+    );
+    if (!stateMatch) return null;
+    const bracket = stateMatch.brackets.find(b => b.upTo === null || purchasePrice <= b.upTo);
+    return bracket ? { ratePercent: bracket.ratePercent, tiered: stateMatch } : null;
+  }
+
+  const bracket = match.brackets.find(b => b.upTo === null || purchasePrice <= b.upTo);
+  return bracket ? { ratePercent: bracket.ratePercent, tiered: match } : null;
+}
+2. Update shared/data/transferTaxRates.ts
+
+Replace the entire file contents with the following expanded data. Keep the existing TransferTaxRate interface and getTransferTaxRate / calculateTransferTax functions, but replace the transferTaxRates array with this complete dataset:
+
+typescript
+export interface TransferTaxRate {
+  state: string;
+  city?: string;
+  county?: string;
+  stateName: string;
+  ratePercent: number;
+  notes: string;
+  paidBy: 'buyer' | 'seller' | 'split' | 'varies';
+  complex?: boolean;
+}
+
+export const transferTaxRates: TransferTaxRate[] = [
+  // States with no transfer tax
+  { state: 'AK', stateName: 'Alaska', ratePercent: 0, notes: 'No state transfer tax', paidBy: 'buyer' },
+  { state: 'AZ', stateName: 'Arizona', ratePercent: 0, notes: '$2 flat fee only', paidBy: 'buyer' },
+  { state: 'ID', stateName: 'Idaho', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'IN', stateName: 'Indiana', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'KS', stateName: 'Kansas', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'LA', stateName: 'Louisiana', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'MS', stateName: 'Mississippi', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'MO', stateName: 'Missouri', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'MT', stateName: 'Montana', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'NM', stateName: 'New Mexico', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'ND', stateName: 'North Dakota', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'TX', stateName: 'Texas', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'UT', stateName: 'Utah', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+  { state: 'WY', stateName: 'Wyoming', ratePercent: 0, notes: 'No transfer tax', paidBy: 'buyer' },
+
+  // States with flat rates
+  { state: 'AL', stateName: 'Alabama', ratePercent: 0.10, notes: '$0.50 per $500', paidBy: 'seller' },
+  { state: 'AR', stateName: 'Arkansas', ratePercent: 0.33, notes: '$3.30 per $1,000', paidBy: 'buyer' },
+  { state: 'CA', stateName: 'California', ratePercent: 0.11, notes: '$1.10 per $1,000 county base. Many cities add local transfer taxes.', paidBy: 'seller', complex: true },
+  { state: 'CO', stateName: 'Colorado', ratePercent: 0.01, notes: '$0.01 per $100', paidBy: 'seller' },
+  { state: 'DE', stateName: 'Delaware', ratePercent: 4.00, notes: 'Combined state + local 4%. Typically split buyer/seller.', paidBy: 'split' },
+  { state: 'FL', stateName: 'Florida', ratePercent: 0.70, notes: '$0.70 per $100', paidBy: 'seller' },
+  { state: 'GA', stateName: 'Georgia', ratePercent: 0.10, notes: '$1 per $1,000', paidBy: 'buyer' },
+  { state: 'IL', stateName: 'Illinois', ratePercent: 0.10, notes: 'State only. Counties add 0.05%. Chicago adds 0.75% buyer + 0.30% seller.', paidBy: 'seller', complex: true },
+  { state: 'IA', stateName: 'Iowa', ratePercent: 0.16, notes: '$1.60 per $1,000', paidBy: 'seller' },
+  { state: 'KY', stateName: 'Kentucky', ratePercent: 0.10, notes: '$1 per $1,000', paidBy: 'buyer' },
+  { state: 'ME', stateName: 'Maine', ratePercent: 0.44, notes: '$2.20 per $500. Split buyer/seller.', paidBy: 'split' },
+  { state: 'MD', stateName: 'Maryland', ratePercent: 0.50, notes: 'State only. Counties add 0-1.5%. See county rates.', paidBy: 'split', complex: true },
+  { state: 'MA', stateName: 'Massachusetts', ratePercent: 0.456, notes: '$4.56 per $1,000', paidBy: 'seller' },
+  { state: 'MI', stateName: 'Michigan', ratePercent: 0.86, notes: 'State 0.75% + county 0.11%', paidBy: 'seller' },
+  { state: 'MN', stateName: 'Minnesota', ratePercent: 0.33, notes: '$3.30 per $1,000', paidBy: 'seller' },
+  { state: 'NE', stateName: 'Nebraska', ratePercent: 0.225, notes: '$2.25 per $1,000', paidBy: 'seller' },
+  { state: 'NV', stateName: 'Nevada', ratePercent: 0.26, notes: '$2.55 per $500', paidBy: 'seller' },
+  { state: 'NH', stateName: 'New Hampshire', ratePercent: 1.50, notes: '$15 per $1,000. Split buyer/seller.', paidBy: 'split' },
+  { state: 'NY', stateName: 'New York', ratePercent: 0.40, notes: 'State only. NYC adds significant city tax.', paidBy: 'seller', complex: true },
+  { state: 'NC', stateName: 'North Carolina', ratePercent: 0.20, notes: '$2 per $1,000', paidBy: 'buyer' },
+  { state: 'OH', stateName: 'Ohio', ratePercent: 0.10, notes: 'State only. Counties add up to 0.30%.', paidBy: 'seller', complex: true },
+  { state: 'OK', stateName: 'Oklahoma', ratePercent: 0.075, notes: '$0.75 per $1,000', paidBy: 'seller' },
+  { state: 'OR', stateName: 'Oregon', ratePercent: 0.10, notes: 'Some counties only. Verify locally.', paidBy: 'seller' },
+  { state: 'PA', stateName: 'Pennsylvania', ratePercent: 2.00, notes: 'State 1% + local 1% typical. Philadelphia and Pittsburgh significantly higher.', paidBy: 'split', complex: true },
+  { state: 'RI', stateName: 'Rhode Island', ratePercent: 0.92, notes: '$4.60 per $500', paidBy: 'seller' },
+  { state: 'SC', stateName: 'South Carolina', ratePercent: 0.37, notes: '$3.70 per $1,000', paidBy: 'seller' },
+  { state: 'SD', stateName: 'South Dakota', ratePercent: 0.10, notes: '$1 per $1,000', paidBy: 'seller' },
+  { state: 'TN', stateName: 'Tennessee', ratePercent: 0.37, notes: '$3.70 per $1,000', paidBy: 'buyer' },
+  { state: 'VA', stateName: 'Virginia', ratePercent: 0.25, notes: 'State only. Cities/counties add more. Verify locally.', paidBy: 'buyer', complex: true },
+  { state: 'WV', stateName: 'West Virginia', ratePercent: 0.22, notes: '$2.20 per $500', paidBy: 'split' },
+  { state: 'WI', stateName: 'Wisconsin', ratePercent: 0.30, notes: '$3 per $1,000', paidBy: 'seller' },
+
+  // Tiered states — ratePercent here is the lowest bracket, actual rate calculated from tiers
+  { state: 'CT', stateName: 'Connecticut', ratePercent: 0.75, notes: 'Tiered: 0.75% up to $800K, 1.25% above.', paidBy: 'seller', complex: true },
+  { state: 'DC', stateName: 'District of Columbia', ratePercent: 1.10, notes: 'Tiered: 1.10% up to $400K, 1.45% above.', paidBy: 'split', complex: true },
+  { state: 'HI', stateName: 'Hawaii', ratePercent: 0.10, notes: 'Tiered conveyance tax by sale price.', paidBy: 'seller', complex: true },
+  { state: 'NJ', stateName: 'New Jersey', ratePercent: 1.00, notes: 'Tiered: 1.00% up to $350K, 1.25% to $1M, 2.50% above. $1M+ adds mansion tax.', paidBy: 'buyer', complex: true },
+  { state: 'WA', stateName: 'Washington', ratePercent: 1.10, notes: 'Tiered excise tax: 1.10% up to $525K, up to 3.00% above $3M.', paidBy: 'seller', complex: true },
+
+  // City-level overrides — Pennsylvania
+  { state: 'PA', city: 'Philadelphia', stateName: 'Pennsylvania', ratePercent: 4.278, notes: 'State 1% + Philadelphia 3.278%', paidBy: 'split' },
+  { state: 'PA', city: 'Pittsburgh', stateName: 'Pennsylvania', ratePercent: 5.00, notes: 'State 1% + City 4%', paidBy: 'split' },
+  { state: 'PA', city: 'Reading', stateName: 'Pennsylvania', ratePercent: 5.00, notes: 'State 1% + City 4%', paidBy: 'split' },
+  { state: 'PA', city: 'Scranton', stateName: 'Pennsylvania', ratePercent: 3.00, notes: 'State 1% + City 2%', paidBy: 'split' },
+  { state: 'PA', city: 'Allentown', stateName: 'Pennsylvania', ratePercent: 3.00, notes: 'State 1% + City 2%', paidBy: 'split' },
+  { state: 'PA', city: 'Bethlehem', stateName: 'Pennsylvania', ratePercent: 3.00, notes: 'State 1% + City 2%', paidBy: 'split' },
+  { state: 'PA', city: 'Erie', stateName: 'Pennsylvania', ratePercent: 3.00, notes: 'State 1% + City 2%', paidBy: 'split' },
+
+  // City-level overrides — Illinois
+  { state: 'IL', city: 'Chicago', stateName: 'Illinois', ratePercent: 0.75, notes: 'Buyer pays $3.75 per $500 (0.75%). Seller pays additional 0.30%. State/county paid by seller.', paidBy: 'split' },
+  { state: 'IL', city: 'Evanston', stateName: 'Illinois', ratePercent: 0.60, notes: 'Tiered: $2.50-$4.50 per $500 depending on value. Plus state/county.', paidBy: 'split', complex: true },
+
+  // City-level overrides — California (flat)
+  { state: 'CA', city: 'Alameda', stateName: 'California', ratePercent: 1.31, notes: 'City $12/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'Albany', stateName: 'California', ratePercent: 1.61, notes: 'City $15/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'Hayward', stateName: 'California', ratePercent: 0.96, notes: 'City $8.50/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'Piedmont', stateName: 'California', ratePercent: 1.41, notes: 'City $13/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'San Leandro', stateName: 'California', ratePercent: 1.21, notes: 'City $11/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'El Cerrito', stateName: 'California', ratePercent: 1.31, notes: 'City $12/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'Pomona', stateName: 'California', ratePercent: 0.33, notes: 'City $2.20/$1K + County $1.10/$1K', paidBy: 'seller' },
+  { state: 'CA', city: 'Redondo Beach', stateName: 'California', ratePercent: 0.33, notes: 'City $2.20/$1K + County $1.10/$1K', paidBy: 'seller' },
+
+  // City-level overrides — California (tiered — ratePercent is lowest bracket)
+  { state: 'CA', city: 'San Francisco', stateName: 'California', ratePercent: 0.50, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Oakland', stateName: 'California', ratePercent: 1.10, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Los Angeles', stateName: 'California', ratePercent: 0.56, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Berkeley', stateName: 'California', ratePercent: 1.61, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Culver City', stateName: 'California', ratePercent: 0.56, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Santa Monica', stateName: 'California', ratePercent: 0.41, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Richmond', stateName: 'California', ratePercent: 0.81, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+  { state: 'CA', city: 'Emeryville', stateName: 'California', ratePercent: 1.31, notes: 'Tiered city + county rate. Calculated from sale price brackets.', paidBy: 'seller', complex: true },
+
+  // City-level overrides — New York
+  { state: 'NY', city: 'New York City', stateName: 'New York', ratePercent: 1.40, notes: 'Tiered NYC + NYS combined. $1M+ adds mansion tax.', paidBy: 'seller', complex: true },
+
+  // County-level overrides — Maryland
+  { state: 'MD', county: 'Baltimore City', stateName: 'Maryland', ratePercent: 2.00, notes: 'State 0.5% + Baltimore City 1.5%', paidBy: 'split' },
+  { state: 'MD', county: 'Baltimore County', stateName: 'Maryland', ratePercent: 2.00, notes: 'State 0.5% + County 1.5%', paidBy: 'split' },
+  { state: 'MD', county: 'Montgomery County', stateName: 'Maryland', ratePercent: 1.50, notes: 'State 0.5% + County 1.0%', paidBy: 'split' },
+  { state: 'MD', county: 'Prince Georges County', stateName: 'Maryland', ratePercent: 1.70, notes: 'State 0.5% + County 1.2%', paidBy: 'split' },
+  { state: 'MD', county: "Howard County", stateName: 'Maryland', ratePercent: 1.50, notes: 'State 0.5% + County 1.0%', paidBy: 'split' },
+  { state: 'MD', county: 'Anne Arundel County', stateName: 'Maryland', ratePercent: 1.50, notes: 'State 0.5% + County 1.0%', paidBy: 'split' },
+  { state: 'MD', county: 'Frederick County', stateName: 'Maryland', ratePercent: 1.00, notes: 'State 0.5% + County 0.5%', paidBy: 'split' },
+  { state: 'MD', county: 'Carroll County', stateName: 'Maryland', ratePercent: 1.00, notes: 'State 0.5% + County 0.5%', paidBy: 'split' },
+];
+
+export function getTransferTaxRate(stateCode: string, city?: string, county?: string): TransferTaxRate | undefined {
+  const normState = stateCode.trim().toUpperCase();
+  const normCity = city?.trim().toLowerCase();
+  const normCounty = county?.trim().toLowerCase();
+
+  // 1. Try city match first
+  if (normCity) {
+    const cityMatch = transferTaxRates.find(r =>
+      r.state.toUpperCase() === normState &&
+      r.city?.toLowerCase() === normCity
+    );
+    if (cityMatch) return cityMatch;
+  }
+
+  // 2. Try county match
+  if (normCounty) {
+    const countyMatch = transferTaxRates.find(r =>
+      r.state.toUpperCase() === normState &&
+      r.county?.toLowerCase() === normCounty
+    );
+    if (countyMatch) return countyMatch;
+  }
+
+  // 3. Fall back to state-level entry (no city or county)
+  return transferTaxRates.find(r =>
+    r.state.toUpperCase() === normState && !r.city && !r.county
+  );
+}
+
+export function calculateTransferTax(stateCode: string, purchasePrice: number, city?: string, county?: string): number {
+  const rate = getTransferTaxRate(stateCode, city, county);
+  if (!rate || rate.ratePercent === 0) return 0;
+  return Math.round(purchasePrice * (rate.ratePercent / 100));
+}
+3. Update client/src/pages/DealAnalysis/Step5HoldingPeriodExit.tsx
+
+Find the useEffect that auto-fills the transferFee field (around line 90). Replace the entire transfer fee calculation block with the following logic:
+
+typescript
+// Transfer fee auto-calculation with tiered support
+if (!form.getValues("transferFee") && state && purchasePrice) {
+  // Check tiered jurisdictions first
+  const tieredResult = getTieredRate(state, city || '', purchasePrice);
+  if (tieredResult) {
+    const amount = Math.round(purchasePrice * (tieredResult.ratePercent / 100));
+    form.setValue("transferFee", amount);
+    setTransferTaxComplex(true);
+    setTransferTaxTiered(tieredResult.tiered);
+  } else {
+    // Fall back to flat rate lookup
+    const flatRate = getTransferTaxRate(state, city, undefined);
+    if (flatRate) {
+      const amount = Math.round(purchasePrice * (flatRate.ratePercent / 100));
+      form.setValue("transferFee", amount);
+      setTransferTaxComplex(flatRate.complex === true);
+    }
+  }
+}
+Add these two new state variables at the top of the component:
+
+typescript
+const [transferTaxComplex, setTransferTaxComplex] = useState(false);
+const [transferTaxTiered, setTransferTaxTiered] = useState<TieredTransferTax | null>(null);
+const [showTieredModal, setShowTieredModal] = useState(false);
+Add the necessary imports at the top of the file:
+
+typescript
+import { getTieredRate, TieredTransferTax } from '@shared/data/transferTaxTiers';
+import { getTransferTaxRate } from '@shared/data/transferTaxRates';
+Make sure city is also watched from the form alongside state and purchasePrice:
+
+typescript
+const city = form.watch('city');
+4. Add complexity warning and modal to Step 5
+
+In the Transfer Tax/Fee field section in Step 5, add the following immediately below the existing field description text:
+
+tsx
+{transferTaxComplex && (
+  <div className="flex items-start gap-2 mt-1 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+    <span>⚠️ This area may have tiered or additional local transfer taxes.</span>
+    <button
+      type="button"
+      className="underline font-medium whitespace-nowrap ml-auto"
+      onClick={() => setShowTieredModal(true)}
+    >
+      Calculate accurately
+    </button>
+  </div>
+)}
+Add a modal component inline in the same file (or as a separate component if preferred) that:
+
+Opens when showTieredModal is true
+Shows the jurisdiction name and a table of brackets from transferTaxTiered (if available) or a generic message for flat complex jurisdictions
+Pre-fills the purchase price from the form
+Calculates the correct amount based on the bracket
+Has an "Apply This Amount" button that calls form.setValue("transferFee", calculatedAmount) and closes the modal
+Has a "Close" button that dismisses without applying
+Uses existing shadcn/ui Dialog component
+5. No database migration needed — both new files are static client-side TypeScript data files.
+
+
+
+
+
+
+Claude is AI and can make
