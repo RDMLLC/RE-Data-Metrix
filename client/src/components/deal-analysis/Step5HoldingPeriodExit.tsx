@@ -440,7 +440,7 @@ export default function Step4HoldingPeriodExit({
                                   className="underline font-medium whitespace-nowrap ml-auto"
                                   onClick={() => setShowTieredModal(true)}
                                 >
-                                  Calculate accurately
+                                  Show Details
                                 </button>
                               </div>
                             )}
