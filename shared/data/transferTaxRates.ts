@@ -127,6 +127,16 @@ export function getTransferTaxRate(stateCode: string, city?: string, county?: st
     if (cityMatch) return cityMatch;
   }
 
+  // 1b. Try matching city value against county field (e.g. "Baltimore" → "Baltimore City")
+  if (normCity) {
+    const strippedCity = normCity.replace(' county', '').replace(' city', '').trim();
+    const cityAsCounty = transferTaxRates.find(r =>
+      r.state.toUpperCase() === normState &&
+      r.county?.toLowerCase().replace(' county', '').replace(' city', '').trim() === strippedCity
+    );
+    if (cityAsCounty) return cityAsCounty;
+  }
+
   // 2. Try county match
   if (normCounty) {
     const countyMatch = transferTaxRates.find(r =>

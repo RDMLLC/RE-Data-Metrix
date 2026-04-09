@@ -1507,13 +1507,13 @@ export default function Step4HoldingPeriodExit({
           <DialogHeader>
             <DialogTitle>Transfer Tax Details</DialogTitle>
             <DialogDescription>
-              {transferTaxTiered
+              {transferTaxTiered !== null
                 ? `${transferTaxTiered.displayName} — ${transferTaxTiered.notes}`
-                : 'This jurisdiction has complex or tiered transfer tax rates. Verify the exact amount with a title company or attorney.'}
+                : 'Flat rate estimate — local additions may apply'}
             </DialogDescription>
           </DialogHeader>
 
-          {transferTaxTiered ? (
+          {transferTaxTiered !== null ? (
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
                 Purchase price: <span className="font-medium">{formatCurrency(purchasePrice)}</span>
@@ -1578,11 +1578,38 @@ export default function Step4HoldingPeriodExit({
                 );
               })()}
             </div>
-          ) : (
-            <div className="flex gap-2 justify-end">
-              <Button onClick={() => setShowTieredModal(false)}>Close</Button>
-            </div>
-          )}
+          ) : (() => {
+              const flatRate = getTransferTaxRate(state, city);
+              const jurisdiction = flatRate
+                ? `${flatRate.city ? flatRate.city + ', ' : ''}${flatRate.stateName}`
+                : state;
+              return (
+                <div className="space-y-4">
+                  {flatRate && flatRate.ratePercent > 0 && (
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Base rate</span>
+                        <span className="font-medium">{flatRate.ratePercent}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Calculated amount</span>
+                        <span className="font-medium">{formatCurrency(transferTaxFullAmount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Paid by</span>
+                        <span className="font-medium capitalize">{flatRate.paidBy}</span>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Auto-calculated at {flatRate?.ratePercent ?? 0}% for {jurisdiction}. This area may have additional local transfer taxes not captured here. Verify the exact amount with your title company or closing attorney.
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <Button onClick={() => setShowTieredModal(false)}>Close</Button>
+                  </div>
+                </div>
+              );
+            })()}
         </DialogContent>
       </Dialog>
     </div>
