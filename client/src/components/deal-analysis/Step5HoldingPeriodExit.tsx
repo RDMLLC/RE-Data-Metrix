@@ -63,6 +63,9 @@ export default function Step4HoldingPeriodExit({
   const [transferTaxComplex, setTransferTaxComplex] = useState(false);
   const [transferTaxTiered, setTransferTaxTiered] = useState<TieredTransferTax | null>(null);
   const [showTieredModal, setShowTieredModal] = useState(false);
+  const [transferTaxSplit, setTransferTaxSplit] = useState(false);
+  const [transferTaxFullAmount, setTransferTaxFullAmount] = useState<number>(0);
+  const [isSplitJurisdiction, setIsSplitJurisdiction] = useState(false);
   
   // Double close fields
   const isDoubleClose = form.watch("isDoubleClose");
@@ -112,21 +115,29 @@ export default function Step4HoldingPeriodExit({
     }
     
     // Transfer fee auto-calculation with tiered support
-    if (!form.getValues("transferFee") && state && purchasePrice) {
-      // Check tiered jurisdictions first
+    if (state && purchasePrice) {
       const tieredResult = getTieredRate(state, city || '', purchasePrice);
       if (tieredResult) {
-        const amount = Math.round(purchasePrice * (tieredResult.ratePercent / 100));
-        form.setValue("transferFee", amount);
         setTransferTaxComplex(true);
         setTransferTaxTiered(tieredResult.tiered);
+        const fullAmount = Math.round(purchasePrice * (tieredResult.ratePercent / 100));
+        setTransferTaxFullAmount(fullAmount);
+        const flatRate = getTransferTaxRate(state, city, undefined);
+        setIsSplitJurisdiction(flatRate?.paidBy === 'split');
+        if (!form.getValues("transferFee")) {
+          form.setValue("transferFee", fullAmount);
+        }
       } else {
-        // Fall back to flat rate lookup
         const flatRate = getTransferTaxRate(state, city, undefined);
         if (flatRate) {
-          const amount = Math.round(purchasePrice * (flatRate.ratePercent / 100));
-          form.setValue("transferFee", amount);
           setTransferTaxComplex(flatRate.complex === true);
+          setTransferTaxTiered(null);
+          setIsSplitJurisdiction(flatRate.paidBy === 'split');
+          const fullAmount = Math.round(purchasePrice * (flatRate.ratePercent / 100));
+          setTransferTaxFullAmount(fullAmount);
+          if (!form.getValues("transferFee")) {
+            form.setValue("transferFee", fullAmount);
+          }
         }
       }
     }
@@ -166,7 +177,7 @@ export default function Step4HoldingPeriodExit({
     
     // Mark as initialized after first render
     isInitializedRef.current = true;
-  }, [form, state, city, sqft]);
+  }, [form, state, city, sqft, purchasePrice]);
 
   // Recalculate Title Insurance when Purchase Price changes
   useEffect(() => {
@@ -379,6 +390,11 @@ export default function Step4HoldingPeriodExit({
                       name="transferFee"
                       render={({ field }) => {
                         const taxRate = getTransferTaxRate(state, city);
+                        // Use actual applied bracket rate for tiered jurisdictions,
+                        // rather than the lowest-bracket placeholder stored in transferTaxRates
+                        const appliedRatePercent = transferTaxTiered && purchasePrice > 0
+                          ? Math.round(transferTaxFullAmount / purchasePrice * 100000) / 1000
+                          : taxRate?.ratePercent ?? 0;
                         return (
                           <FormItem>
                             <FormLabel className="flex items-center gap-1">
@@ -390,7 +406,7 @@ export default function Step4HoldingPeriodExit({
                                 <TooltipContent className="max-w-xs">
                                   <p>
                                     {taxRate 
-                                      ? `${taxRate.stateName}${taxRate.city ? ` / ${taxRate.city}` : ''}: ${taxRate.ratePercent}% - ${taxRate.notes}`
+                                      ? `${taxRate.stateName}${taxRate.city ? ` / ${taxRate.city}` : ''}: ${appliedRatePercent}% - ${taxRate.notes}`
                                       : 'Transfer tax varies by state. Some states have no transfer tax.'}
                                   </p>
                                 </TooltipContent>
@@ -411,8 +427,8 @@ export default function Step4HoldingPeriodExit({
                               />
                             </FormControl>
                             <FormDescription>
-                              {taxRate && taxRate.ratePercent > 0 
-                                ? `Auto-calculated at ${taxRate.ratePercent}% for ${taxRate.city ? taxRate.city + ', ' : ''}${taxRate.stateName}`
+                              {taxRate && appliedRatePercent > 0
+                                ? `Auto-calculated at ${appliedRatePercent}% for ${taxRate.city ? taxRate.city + ', ' : ''}${taxRate.stateName}`
                                 : state ? `No state transfer tax in ${state}` : 'Based on state rates'}
                             </FormDescription>
                             {transferTaxComplex && (
@@ -426,6 +442,28 @@ export default function Step4HoldingPeriodExit({
                                 >
                                   Calculate accurately
                                 </button>
+                              </div>
+                            )}
+                            {isSplitJurisdiction && transferTaxFullAmount > 0 && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <button
+                                  type="button"
+                                  className="text-xs px-3 py-1 border border-border rounded-md hover:bg-muted transition-colors"
+                                  onClick={() => {
+                                    if (transferTaxSplit) {
+                                      form.setValue("transferFee", transferTaxFullAmount);
+                                      setTransferTaxSplit(false);
+                                    } else {
+                                      form.setValue("transferFee", Math.round(transferTaxFullAmount / 2));
+                                      setTransferTaxSplit(true);
+                                    }
+                                  }}
+                                >
+                                  {transferTaxSplit ? "Remove 50/50 Split" : "Apply 50/50 Buyer/Seller Split"}
+                                </button>
+                                {transferTaxSplit && (
+                                  <span className="text-xs text-muted-foreground">Split applied</span>
+                                )}
                               </div>
                             )}
                             <FormMessage />

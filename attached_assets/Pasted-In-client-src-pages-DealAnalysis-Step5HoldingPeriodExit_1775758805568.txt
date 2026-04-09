@@ -1,0 +1,66 @@
+In client/src/pages/DealAnalysis/Step5HoldingPeriodExit.tsx, make the following changes. Do not change anything else.
+1. Add split state variable
+Add a new state variable at the top of the component alongside the other transfer tax state:
+typescriptconst [transferTaxSplit, setTransferTaxSplit] = useState(false);
+const [transferTaxFullAmount, setTransferTaxFullAmount] = useState<number>(0);
+const [isSplitJurisdiction, setIsSplitJurisdiction] = useState(false);
+2. Update the transfer fee calculation block
+In the transfer fee useEffect block, after calculating the dollar amount, also set isSplitJurisdiction and store the full amount:
+typescriptif (state && purchasePrice) {
+  const tieredResult = getTieredRate(state, city || '', purchasePrice);
+  if (tieredResult) {
+    setTransferTaxComplex(true);
+    setTransferTaxTiered(tieredResult.tiered);
+    const fullAmount = Math.round(purchasePrice * (tieredResult.ratePercent / 100));
+    setTransferTaxFullAmount(fullAmount);
+    // Check if split jurisdiction via flat rate lookup
+    const flatRate = getTransferTaxRate(state, city, undefined);
+    setIsSplitJurisdiction(flatRate?.paidBy === 'split');
+    if (!form.getValues("transferFee")) {
+      form.setValue("transferFee", fullAmount);
+    }
+  } else {
+    const flatRate = getTransferTaxRate(state, city, undefined);
+    if (flatRate) {
+      setTransferTaxComplex(flatRate.complex === true);
+      setTransferTaxTiered(null);
+      setIsSplitJurisdiction(flatRate.paidBy === 'split');
+      const fullAmount = Math.round(purchasePrice * (flatRate.ratePercent / 100));
+      setTransferTaxFullAmount(fullAmount);
+      if (!form.getValues("transferFee")) {
+        form.setValue("transferFee", fullAmount);
+      }
+    }
+  }
+}
+3. Add the split button UI
+In the Transfer Tax/Fee field section, immediately below the field description text and above or below the complexity warning, add:
+tsx{isSplitJurisdiction && transferTaxFullAmount > 0 && (
+  <div className="flex items-center gap-2 mt-1">
+    <button
+      type="button"
+      className="text-xs px-3 py-1 border border-border rounded hover:bg-muted transition-colors"
+      onClick={() => {
+        if (transferTaxSplit) {
+          // Remove split — restore full amount
+          form.setValue("transferFee", transferTaxFullAmount);
+          setTransferTaxSplit(false);
+        } else {
+          // Apply split — halve the amount
+          form.setValue("transferFee", Math.round(transferTaxFullAmount / 2));
+          setTransferTaxSplit(true);
+        }
+      }}
+    >
+      {transferTaxSplit ? "Remove 50/50 Split" : "Apply 50/50 Buyer/Seller Split"}
+    </button>
+    {transferTaxSplit && (
+      <span className="text-xs text-muted-foreground">Split applied</span>
+    )}
+  </div>
+)}
+4. Also apply the three fixes from the previous prompt that were not yet applied:
+
+Complexity state always evaluated regardless of guard (restructure as specified previously)
+Add purchasePrice to the effect dependencies
+Fix field description to show actual applied tiered rate rather than lowest bracket rate
