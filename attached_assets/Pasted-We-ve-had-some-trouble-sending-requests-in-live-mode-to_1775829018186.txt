@@ -1,0 +1,69 @@
+We’ve had some trouble sending requests in live mode to a webhook endpoint associated with your RE Data Metrix, LLC account. Stripe sends webhook events to your server to notify you of activity in your Stripe account, such as a completed payout or a newly created invoice.	
+ 
+ 
+ 
+ 
+The URL of the failing webhook endpoint is: https://1d801616-7034-4708-9f65-7558977ccb15-00-1n9cmrcfn5bch-blwbgsm5.worf.replit.dev/api/stripe/webhook/26f8afcd-3f78-40b3-8db1-92eb2f172430	
+ 
+ 
+ 
+ 
+You (or someone on your team) configured your Stripe account to send events to that URL. You can change your account’s webhook endpoints from the Dashboard.	
+ 
+ 
+ 
+ 
+In most cases, a failing webhook does not impact your payments or payouts. However:	
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+If you use subscriptions, we rely on your webhook endpoint to notify you of new invoices. These invoices may be delayed for up to three days if your endpoint is unable to successfully receive them.
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+If you use Checkout and rely on the checkout.session.completed event as part of your purchase fulfillment process, you should review your completed payments to ensure you have fulfilled all recent purchases.
+
+ 
+ 
+ 
+ 
+ 
+We’ve attempted to send event notifications to this endpoint 58 times since the first failure on April 7, 2026 at 1:32:38 AM UTC. If this endpoint is important to your application, please try and fix the issue. If you do not need this webhook endpoint, you can remove it from your Stripe webhook settings. We will stop sending event notifications to this webhook endpoint by April 16, 2026 at 1:32:38 AM UTC.	
+ 
+ 
+ 
+ 
+Here is the summary of errors we received while attempting to send webhook events:	
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+58 requests returned HTTP 404, indicating the URL doesn’t exist. You should verify the endpoint URL is correct in your Stripe webhook settings.	
+ 
+ 
+ 
+ 
+ 
+You need to return any status code between HTTP 200 to 299 for Stripe to consider the webhook event successfully delivered.	
+ 
+ 
