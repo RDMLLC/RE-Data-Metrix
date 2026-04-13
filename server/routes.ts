@@ -10286,8 +10286,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const propertyData = await propertyAPIService.getPropertyByUrl(url, forceRefresh === true);
-      
+      let propertyData = null;
+      try {
+        propertyData = await propertyAPIService.getPropertyByUrl(url, forceRefresh === true);
+      } catch (primaryError: any) {
+        console.log(`[Property Lookup] Primary lookup (HasData) failed: ${primaryError.message}. Trying RentCast fallback...`);
+        try {
+          const rentCastFallback = PropertyAPIFactory.getService("rentcast");
+          propertyData = await rentCastFallback.getPropertyByUrl(url);
+          if (propertyData) {
+            console.log(`[Property Lookup] RentCast fallback succeeded for URL: ${url}`);
+          }
+        } catch (fallbackError: any) {
+          console.error(`[Property Lookup] RentCast fallback also failed: ${fallbackError.message}`);
+          throw primaryError;
+        }
+        if (!propertyData) {
+          throw primaryError;
+        }
+      }
+
       if (!propertyData) {
         return res.status(404).json({ 
           error: "Property not found. Please check the URL and try again." 

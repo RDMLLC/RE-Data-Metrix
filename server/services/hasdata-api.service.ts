@@ -187,6 +187,7 @@ export class HasDataAPIService implements IPropertyAPIService {
         
         // Return user-friendly error message
         if (response.status === 400) {
+          console.error(`[HasData] 400 response body: ${errorText.substring(0, 500)}`);
           throw new Error("Unable to find property. Please check the URL and try again, or use manual entry.");
         } else if (response.status === 401 || response.status === 403) {
           throw new Error("Property lookup service is temporarily unavailable. Please use manual entry.");
