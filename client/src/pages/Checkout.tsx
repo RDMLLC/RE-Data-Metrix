@@ -9,7 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, FileText, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { Check, CreditCard, Shield, Lock, ArrowLeft, Loader2, AlertCircle, Tag, Star, FileText, CheckCircle, Eye, EyeOff, Phone } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -45,6 +52,26 @@ const planFeatures = [
   "Priority email support",
 ];
 
+const US_STATES = [
+  { abbr: "AL", name: "Alabama" }, { abbr: "AK", name: "Alaska" }, { abbr: "AZ", name: "Arizona" },
+  { abbr: "AR", name: "Arkansas" }, { abbr: "CA", name: "California" }, { abbr: "CO", name: "Colorado" },
+  { abbr: "CT", name: "Connecticut" }, { abbr: "DE", name: "Delaware" }, { abbr: "DC", name: "District of Columbia" },
+  { abbr: "FL", name: "Florida" }, { abbr: "GA", name: "Georgia" }, { abbr: "HI", name: "Hawaii" },
+  { abbr: "ID", name: "Idaho" }, { abbr: "IL", name: "Illinois" }, { abbr: "IN", name: "Indiana" },
+  { abbr: "IA", name: "Iowa" }, { abbr: "KS", name: "Kansas" }, { abbr: "KY", name: "Kentucky" },
+  { abbr: "LA", name: "Louisiana" }, { abbr: "ME", name: "Maine" }, { abbr: "MD", name: "Maryland" },
+  { abbr: "MA", name: "Massachusetts" }, { abbr: "MI", name: "Michigan" }, { abbr: "MN", name: "Minnesota" },
+  { abbr: "MS", name: "Mississippi" }, { abbr: "MO", name: "Missouri" }, { abbr: "MT", name: "Montana" },
+  { abbr: "NE", name: "Nebraska" }, { abbr: "NV", name: "Nevada" }, { abbr: "NH", name: "New Hampshire" },
+  { abbr: "NJ", name: "New Jersey" }, { abbr: "NM", name: "New Mexico" }, { abbr: "NY", name: "New York" },
+  { abbr: "NC", name: "North Carolina" }, { abbr: "ND", name: "North Dakota" }, { abbr: "OH", name: "Ohio" },
+  { abbr: "OK", name: "Oklahoma" }, { abbr: "OR", name: "Oregon" }, { abbr: "PA", name: "Pennsylvania" },
+  { abbr: "RI", name: "Rhode Island" }, { abbr: "SC", name: "South Carolina" }, { abbr: "SD", name: "South Dakota" },
+  { abbr: "TN", name: "Tennessee" }, { abbr: "TX", name: "Texas" }, { abbr: "UT", name: "Utah" },
+  { abbr: "VT", name: "Vermont" }, { abbr: "VA", name: "Virginia" }, { abbr: "WA", name: "Washington" },
+  { abbr: "WV", name: "West Virginia" }, { abbr: "WI", name: "Wisconsin" }, { abbr: "WY", name: "Wyoming" },
+];
+
 const registerSchema = z
   .object({
     username: z.string().min(3, "Username must be at least 3 characters"),
@@ -53,6 +80,11 @@ const registerSchema = z
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
     companyName: z.string().optional(),
+    phone: z.string().min(7, "Phone number is required"),
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zipCode: z.string().optional(),
     termsAccepted: z.literal(true, {
       errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
     }),
@@ -356,6 +388,11 @@ export default function Checkout() {
       confirmPassword: "",
       fullName: "",
       companyName: "",
+      phone: "",
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
       termsAccepted: false as unknown as true,
     },
   });
@@ -528,6 +565,11 @@ export default function Checkout() {
             password: data.password,
             fullName: data.fullName,
             companyName: data.companyName || undefined,
+            phone: data.phone,
+            street: data.street || undefined,
+            city: data.city || undefined,
+            state: data.state || undefined,
+            zipCode: data.zipCode || undefined,
             compCode: compCode.trim() || undefined,
             metaEventId: freeMetaEventId,
           }),
@@ -587,6 +629,11 @@ export default function Checkout() {
             password: data.password,
             fullName: data.fullName,
             companyName: data.companyName || undefined,
+            phone: data.phone,
+            street: data.street || undefined,
+            city: data.city || undefined,
+            state: data.state || undefined,
+            zipCode: data.zipCode || undefined,
             discountCode: appliedDiscount.code,
             selectedPlan,
             codeType: appliedDiscount.codeType,
@@ -648,6 +695,7 @@ export default function Checkout() {
           password: data.password,
           fullName: data.fullName,
           companyName: data.companyName || undefined,
+          phone: data.phone,
           priceId,
           selectedPlan,
           discountCode: appliedDiscount?.code,
@@ -794,6 +842,105 @@ export default function Checkout() {
                                   placeholder="Company Name (optional)"
                                   autoComplete="organization"
                                   data-testid="input-checkout-company-name"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Phone Number</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="tel"
+                                  placeholder="(555) 555-5555"
+                                  autoComplete="tel"
+                                  data-testid="input-checkout-phone"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="street"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Street Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="123 Main St"
+                                  autoComplete="street-address"
+                                  data-testid="input-checkout-street"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    placeholder="Atlanta"
+                                    autoComplete="address-level2"
+                                    data-testid="input-checkout-city"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="state"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-checkout-state" autoComplete="address-level1">
+                                      <SelectValue placeholder="Select State" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {US_STATES.map((s) => (
+                                      <SelectItem key={s.abbr} value={s.abbr}>
+                                        {s.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="zipCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Zip Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="30301"
+                                  autoComplete="postal-code"
+                                  data-testid="input-checkout-zipcode"
                                 />
                               </FormControl>
                               <FormMessage />

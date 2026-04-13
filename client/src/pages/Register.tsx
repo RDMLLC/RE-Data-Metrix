@@ -100,8 +100,8 @@ const registerSchema = z
     companyName: z.string().optional(),
     phone: z.string().min(7, "Phone number is required"),
     street: z.string().optional(),
-    city: z.string().min(1, "City is required"),
-    state: z.string().min(1, "State is required"),
+    city: z.string().optional(),
+    state: z.string().optional(),
     zipCode: z.string().optional(),
     termsAccepted: z.literal(true, {
       errorMap: () => ({ message: "You must agree to the User Agreement and Privacy Policy" }),
@@ -410,7 +410,7 @@ export default function Register() {
                           name="city"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>City</FormLabel>
+                              <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
@@ -428,7 +428,7 @@ export default function Register() {
                           name="state"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>State</FormLabel>
+                              <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                               <Select
                                 onValueChange={field.onChange}
                                 value={field.value}

@@ -59,6 +59,8 @@ export class StripeService {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
+      phone_number_collection: { enabled: true },
+      billing_address_collection: 'required',
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: !promotionCode, // Allow manual entry if no code provided

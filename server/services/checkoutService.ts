@@ -284,6 +284,11 @@ export async function completeCheckoutSession(sessionId: string, options?: { all
     userId: newUser.id,
     fullName,
     companyName,
+    phone: session.customer_details?.phone || null,
+    street: session.customer_details?.address?.line1 || null,
+    city: session.customer_details?.address?.city || null,
+    state: session.customer_details?.address?.state || null,
+    zipCode: session.customer_details?.address?.postal_code || null,
   });
 
   if (pending) {

@@ -1645,6 +1645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customer: customer.id,
         line_items: [{ price: validatedData.priceId, quantity: 1 }],
         mode: 'subscription',
+        phone_number_collection: { enabled: true },
+        billing_address_collection: 'required',
         success_url: `${baseUrl}/checkout/complete?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/checkout?canceled=true`,
         metadata: {
@@ -1705,7 +1707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle 100% discount checkout - bypass Stripe entirely
   app.post("/api/subscription/checkout/free-with-discount", async (req, res) => {
     try {
-      const { username, email, password, fullName, companyName: reqCompanyName, discountCode, selectedPlan, codeType, promoCodeId } = req.body;
+      const { username, email, password, fullName, companyName: reqCompanyName, discountCode, selectedPlan, codeType, promoCodeId, phone: reqPhone, street: reqStreet, city: reqCity, state: reqState, zipCode: reqZipCode } = req.body;
 
       if (!username || !email || !password || !fullName || !discountCode || !selectedPlan) {
         return res.status(400).json({ error: "All fields are required" });
@@ -1836,6 +1838,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: newUser.id,
         fullName: fullName.trim(),
         companyName: (reqCompanyName || '').trim() || null,
+        phone: (reqPhone || '').trim() || null,
+        street: (reqStreet || '').trim() || null,
+        city: (reqCity || '').trim() || null,
+        state: (reqState || '').trim() || null,
+        zipCode: (reqZipCode || '').trim() || null,
       });
 
       // Increment redemption count based on code type
@@ -1882,7 +1889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: firstNamePart,
         lastName: lastNamePart,
         fullName: fullName.trim(),
-        phone: '',
+        phone: (reqPhone || '').trim(),
         companyName: (reqCompanyName || '').trim(),
         subscriptionType: selectedPlan,
         subscriptionStatus: 'active',
@@ -2135,6 +2142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customer: customerId,
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
+        phone_number_collection: { enabled: true },
+        billing_address_collection: 'required',
         success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/checkout?canceled=true`,
         metadata: {

@@ -117,14 +117,9 @@ export default function CheckoutComplete() {
                       We've sent you a verification link. Please verify your email to activate your account.
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <Button asChild className="w-full" data-testid="button-go-to-login">
-                      <Link href="/login">Go to Login</Link>
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      After verifying your email, you can sign in to access your dashboard.
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    After verifying your email, you can sign in to access your dashboard.
+                  </p>
                 </div>
               )}
 
