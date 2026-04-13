@@ -80,7 +80,7 @@ const registerSchema = z
     confirmPassword: z.string(),
     fullName: z.string().min(1, "Full name is required"),
     companyName: z.string().optional(),
-    phone: z.string().min(7, "Phone number is required"),
+    phone: z.string().optional(),
     street: z.string().optional(),
     city: z.string().optional(),
     state: z.string().optional(),
@@ -379,6 +379,10 @@ export default function Checkout() {
   const finalPrice = Math.round(Math.max(0, basePrice - discountAmount) * 100) / 100;
   const interval = selectedPlan === "monthly" ? "month" : "year";
 
+  // Contact fields are only collected in-form for non-Stripe paths.
+  // For paid Stripe checkout, Stripe collects phone + billing address during payment.
+  const isNonStripeFlow = selectedPlan === "free" || compCode.trim().length > 0 || (finalPrice === 0 && appliedDiscount !== null);
+
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -551,6 +555,13 @@ export default function Checkout() {
   const onRegisterSubmit = async (data: RegisterFormData) => {
     setIsRegistering(true);
     try {
+      // For non-Stripe paths phone is required (collected in-form rather than via Stripe)
+      if (isNonStripeFlow && !data.phone?.trim()) {
+        form.setError("phone", { message: "Phone number is required" });
+        setIsRegistering(false);
+        return;
+      }
+
       // For free plan OR if a comp code is provided, register without Stripe
       // Comp codes give premium access, so no payment is needed
       if (selectedPlan === "free" || compCode.trim()) {
@@ -848,105 +859,109 @@ export default function Checkout() {
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Phone Number</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  type="tel"
-                                  placeholder="(555) 555-5555"
-                                  autoComplete="tel"
-                                  data-testid="input-checkout-phone"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="street"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Street Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="123 Main St"
-                                  autoComplete="street-address"
-                                  data-testid="input-checkout-street"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="city"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                                <FormControl>
-                                  <Input
-                                    {...field}
-                                    placeholder="Atlanta"
-                                    autoComplete="address-level2"
-                                    data-testid="input-checkout-city"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="state"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                        {isNonStripeFlow && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name="phone"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Phone Number</FormLabel>
                                   <FormControl>
-                                    <SelectTrigger data-testid="select-checkout-state" autoComplete="address-level1">
-                                      <SelectValue placeholder="Select State" />
-                                    </SelectTrigger>
+                                    <Input
+                                      {...field}
+                                      type="tel"
+                                      placeholder="(555) 555-5555"
+                                      autoComplete="tel"
+                                      data-testid="input-checkout-phone"
+                                    />
                                   </FormControl>
-                                  <SelectContent>
-                                    {US_STATES.map((s) => (
-                                      <SelectItem key={s.abbr} value={s.abbr}>
-                                        {s.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <FormField
-                          control={form.control}
-                          name="zipCode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Zip Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="30301"
-                                  autoComplete="postal-code"
-                                  data-testid="input-checkout-zipcode"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="street"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Street Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      placeholder="123 Main St"
+                                      autoComplete="street-address"
+                                      data-testid="input-checkout-street"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={form.control}
+                                name="city"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        {...field}
+                                        placeholder="Atlanta"
+                                        autoComplete="address-level2"
+                                        data-testid="input-checkout-city"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="state"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger data-testid="select-checkout-state" autoComplete="address-level1">
+                                          <SelectValue placeholder="Select State" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {US_STATES.map((s) => (
+                                          <SelectItem key={s.abbr} value={s.abbr}>
+                                            {s.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <FormField
+                              control={form.control}
+                              name="zipCode"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Zip Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      placeholder="30301"
+                                      autoComplete="postal-code"
+                                      data-testid="input-checkout-zipcode"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
                         <FormField
                           control={form.control}
                           name="username"
