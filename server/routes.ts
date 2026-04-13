@@ -1713,6 +1713,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "All fields are required" });
       }
 
+      if (!reqPhone || String(reqPhone).trim().length < 7) {
+        return res.status(400).json({ error: "A valid phone number is required" });
+      }
+
       const normalizedCode = discountCode.toUpperCase();
       let subscriptionEndDate = new Date();
       let codeId: string;
@@ -2675,6 +2679,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .where(eq(users.id, user.id));
 
         console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id} (plan: ${subscriptionPlan})`);
+
+        // Sync Stripe-collected phone + billing address into user_profiles for upgrade flow
+        const stripePhone = session.customer_details?.phone || null;
+        const stripeAddr = session.customer_details?.address || null;
+        if (stripePhone || stripeAddr) {
+          const profileUpdates: Record<string, string | null> = {};
+          if (stripePhone) profileUpdates.phone = stripePhone;
+          if (stripeAddr?.line1) profileUpdates.street = stripeAddr.line1;
+          if (stripeAddr?.city) profileUpdates.city = stripeAddr.city;
+          if (stripeAddr?.state) profileUpdates.state = stripeAddr.state;
+          if (stripeAddr?.postal_code) profileUpdates.zipCode = stripeAddr.postal_code;
+          if (Object.keys(profileUpdates).length > 0) {
+            await db
+              .update(userProfiles)
+              .set(profileUpdates)
+              .where(eq(userProfiles.userId, user.id));
+          }
+        }
 
         // Trigger subscription_completed webhook for upgrade flow
         const upgradeWorkflowTrigger =
