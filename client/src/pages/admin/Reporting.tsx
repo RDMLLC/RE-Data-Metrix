@@ -663,13 +663,13 @@ export default function Reporting() {
                 <Field label="signup_free_initiated" id="signupFreeInitiated" value={form.signupFreeInitiated} onChange={set("signupFreeInitiated")}
                   help="GA4 → Reports → Events → Event count for signup_free_initiated." />
                 <Field label="signup_free_confirmed" id="signupFreeConfirmed" value={form.signupFreeConfirmed} onChange={set("signupFreeConfirmed")}
-                  help="GA4 → Events → Event count for signup_free_confirmed (email verified)." />
+                  help="GA4 → Events → Event count for signup_free_confirmed. Fires on /verify-email/[token] (no ?plan= in URL)." />
                 <Field label="signup_paid_initiated" id="signupPaidInitiated" value={form.signupPaidInitiated} onChange={set("signupPaidInitiated")}
-                  help="GA4 → Events → Event count for signup_paid_initiated (clicked a paid plan)." />
+                  help="GA4 → Events → Event count for signup_paid_initiated. Fires on visits to /checkout?plan=monthly or /checkout?plan=annual." />
                 <Field label="signup_paid_complete" id="signupPaidComplete" value={form.signupPaidComplete} onChange={set("signupPaidComplete")}
                   help="GA4 → Events → Event count for signup_paid_complete (reached /checkout/success)." />
                 <Field label="signup_paid_confirmed" id="signupPaidConfirmed" value={form.signupPaidConfirmed} onChange={set("signupPaidConfirmed")}
-                  help="GA4 → Events → Event count for signup_paid_confirmed (email verified after paying)." />
+                  help="GA4 → Events → Event count for signup_paid_confirmed. Fires on /verify-email/[token]?plan=monthly or ?plan=annual." />
                 <Field label="login_success" id="loginSuccess" value={form.loginSuccess} onChange={set("loginSuccess")}
                   help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
               </FormSection>

@@ -93,8 +93,10 @@ class EmailService {
   }
 
   async sendVerificationEmail(to: string, username: string, token: string, pendingPlan?: string): Promise<boolean> {
-    const verificationUrl = `${this.getBaseUrl()}/verify-email/${token}`;
     const baseUrl = this.getBaseUrl();
+    const verificationUrl = pendingPlan
+      ? `${baseUrl}/verify-email/${token}?plan=${encodeURIComponent(pendingPlan)}`
+      : `${baseUrl}/verify-email/${token}`;
     
     const isPremiumSignup = !!pendingPlan;
     const planText = pendingPlan === 'annual' ? 'Annual Plan' : 'Monthly Plan';
