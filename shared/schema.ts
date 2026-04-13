@@ -1461,6 +1461,7 @@ export const reportingSnapshots = pgTable("reporting_snapshots", {
   totalVisitors: integer("total_visitors").default(0),
   directVisitors: integer("direct_visitors").default(0),
   paidVisitors: integer("paid_visitors").default(0),
+  paidSocialVisitors: integer("paid_social_visitors").default(0),
   organicVisitors: integer("organic_visitors").default(0),
   socialVisitors: integer("social_visitors").default(0),
   referralVisitors: integer("referral_visitors").default(0),

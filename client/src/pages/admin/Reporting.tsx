@@ -28,6 +28,7 @@ interface Snapshot {
   totalVisitors: number;
   directVisitors: number;
   paidVisitors: number;
+  paidSocialVisitors: number;
   organicVisitors: number;
   socialVisitors: number;
   referralVisitors: number;
@@ -56,7 +57,7 @@ interface Snapshot {
 
 const EMPTY_FORM: Omit<Snapshot, "id"> = {
   weekStart: "",
-  totalVisitors: 0, directVisitors: 0, paidVisitors: 0,
+  totalVisitors: 0, directVisitors: 0, paidVisitors: 0, paidSocialVisitors: 0,
   organicVisitors: 0, socialVisitors: 0, referralVisitors: 0,
   signupFreeInitiated: 0, signupFreeConfirmed: 0,
   signupPaidInitiated: 0, signupPaidComplete: 0, signupPaidConfirmed: 0,
@@ -646,6 +647,8 @@ export default function Reporting() {
                   help="GA4 → Reports → Generate leads → User acquisition → Total row. Set date range to Mon–Sun." />
                 <Field label="Paid Search" id="paidVisitors" value={form.paidVisitors} onChange={set("paidVisitors")}
                   help="GA4 → User acquisition → Paid Search + Paid Other rows combined." />
+                <Field label="Paid Social" id="paidSocialVisitors" value={form.paidSocialVisitors} onChange={set("paidSocialVisitors")}
+                  help="GA4 → User acquisition → Paid Social row." />
                 <Field label="Direct" id="directVisitors" value={form.directVisitors} onChange={set("directVisitors")}
                   help="GA4 → User acquisition → Direct row." />
                 <Field label="Organic Search" id="organicVisitors" value={form.organicVisitors} onChange={set("organicVisitors")}
