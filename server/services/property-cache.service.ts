@@ -78,6 +78,29 @@ export class CachedPropertyAPIService implements IPropertyAPIService {
     return result;
   }
 
+  // Proxy supplemental data methods to the wrapped service if it supports them
+  async fetchSupplementalDataFromUrl(url: string): Promise<{
+    imageUrl?: string;
+    rentZestimate?: number;
+    zestimate?: number;
+    monthlyHoaFee?: number;
+    annualTax?: number;
+  }> {
+    const inner = this.wrappedService as any;
+    if (typeof inner.fetchSupplementalDataFromUrl === 'function') {
+      return inner.fetchSupplementalDataFromUrl(url);
+    }
+    return {};
+  }
+
+  async fetchPropertyImageFromUrl(url: string): Promise<string | undefined> {
+    const inner = this.wrappedService as any;
+    if (typeof inner.fetchPropertyImageFromUrl === 'function') {
+      return inner.fetchPropertyImageFromUrl(url);
+    }
+    return undefined;
+  }
+
   private async cacheResult(
     normalizedAddress: string, 
     data: PropertyData,

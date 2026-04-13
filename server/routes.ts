@@ -10287,13 +10287,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let propertyData = null;
+      let rentCastFallbackService: ReturnType<typeof PropertyAPIFactory.getService> | null = null;
       try {
         propertyData = await propertyAPIService.getPropertyByUrl(url, forceRefresh === true);
       } catch (primaryError: any) {
         console.log(`[Property Lookup] Primary lookup (HasData) failed: ${primaryError.message}. Trying RentCast fallback...`);
         try {
-          const rentCastFallback = PropertyAPIFactory.getService("rentcast");
-          propertyData = await rentCastFallback.getPropertyByUrl(url);
+          rentCastFallbackService = PropertyAPIFactory.getService("rentcast");
+          propertyData = await rentCastFallbackService.getPropertyByUrl(url);
           if (propertyData) {
             console.log(`[Property Lookup] RentCast fallback succeeded for URL: ${url}`);
           }
@@ -10376,6 +10377,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // FALLBACK: If RentCast was used as the primary data source and we have no image,
+      // attempt to retrieve it via the RentCast service's supplemental (HasData) image fetch
+      if (rentCastFallbackService && !propertyData.imageUrl) {
+        try {
+          console.log(`[Property Lookup] RentCast fallback path — attempting supplemental image fetch...`);
+          const imgUrl = await (rentCastFallbackService as any).fetchPropertyImageFromUrl(url);
+          if (imgUrl && imgUrl !== '/images/property-placeholder.svg') {
+            console.log(`[Property Lookup] Supplemental image retrieved via RentCast fallback path`);
+            propertyData.imageUrl = imgUrl;
+          }
+        } catch (imgErr: any) {
+          console.log(`[Property Lookup] Supplemental image fetch on RentCast fallback path failed: ${imgErr.message}`);
+        }
+      }
+
       // FALLBACK: If we still don't have tax data, fetch from RentCast using address
       if (!propertyData.annualTax && propertyData.address && propertyData.city && propertyData.state && propertyData.zipCode) {
         try {
