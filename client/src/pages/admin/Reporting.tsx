@@ -204,18 +204,23 @@ function Field({ label, id, value, onChange, type = "number", help }: {
   );
 }
 
-function FormSection({ title, children, defaultOpen = true }: {
-  title: string; children: React.ReactNode; defaultOpen?: boolean;
+function FormSection({ title, source, children, defaultOpen = true }: {
+  title: string; source?: string; children: React.ReactNode; defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 text-sm font-medium hover:bg-muted/60 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors"
       >
-        {title}
-        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <span className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium flex-shrink-0">{title}</span>
+          {source && (
+            <span className="text-xs text-muted-foreground truncate">{source}</span>
+          )}
+        </span>
+        {open ? <ChevronUp className="w-4 h-4 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 flex-shrink-0" />}
       </button>
       {open && (
         <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -289,89 +294,64 @@ const GUIDE_STEPS = [
   {
     title: "Step 1 — Meta Ads Manager",
     short: "Amount spent, link clicks, impressions",
-    detail: `1. Open Meta Ads Manager → Campaigns tab
-2. Set date range to Monday–Sunday of the week you are reporting
-3. Check that these columns are visible: Amount Spent, Link Clicks, Impressions
-   → If missing: click "Columns: Performance" → Customize columns → add them
-4. Enter Amount Spent in dollars and cents (e.g. 164.94)
-5. Enter Link Clicks (not "Clicks all" — specifically Link Clicks)
-6. Enter Impressions
-7. Note: Conversions shown in Meta may differ from GA4 — use GA4 as your source of truth for signups`,
+    detail: `Go to business.facebook.com → Ads Manager → Campaigns tab
+Set date range to Monday–Sunday of the week you are reporting
+Make sure these columns are visible: Amount Spent, Link Clicks, Impressions. If missing click "Columns: Performance" → Customize columns → add them
+Enter Amount Spent in dollars and cents (e.g. 164.94)
+Enter Link Clicks (not "Clicks all" — specifically Link Clicks)
+Enter Impressions
+Note: Conversions shown in Meta may differ from GA4 — use GA4 as your source of truth for signups`,
   },
   {
     title: "Step 2 — Google Ads",
     short: "Cost, clicks, impressions",
-    detail: `1. Open Google Ads → Campaigns tab
-2. Set date range to Monday–Sunday of the week you are reporting
-3. Columns needed: Cost, Clicks, Impressions
-4. Enter Cost in dollars and cents (e.g. 89.50)
-5. If Google Ads is not yet active, leave all fields at 0`,
+    detail: `Go to ads.google.com → Campaigns tab
+Set date range to Monday–Sunday of the week you are reporting
+Enter Cost, Clicks, and Impressions for the week`,
   },
   {
     title: "Step 3 — GA4 Traffic Sources",
-    short: "Total users by channel",
-    detail: `1. Open Google Analytics → Reports → Generate leads → User acquisition
-2. Set date range to Monday–Sunday
-3. Use the "Total users" column — not Sessions
-4. Map channels as follows:
-   • Total users row = Total Visitors
-   • Direct = Direct
-   • Paid Social + Paid Other = Paid Search (add them together)
-   • Organic Search = Organic Search
-   • Organic Social = Social
-   • Referral = Referral
-5. Organic Shopping and Unassigned are minor — exclude them`,
+    short: "Total visitors by channel",
+    detail: `Go to analytics.google.com
+In the left sidebar click Reports → expand Generate leads → click User acquisition
+In the top right set date range to Custom → Monday–Sunday of the week you are reporting
+Read the Total row for Total Visitors
+Enter each channel row individually: Paid Search + Paid Other combined = Paid Search field; Paid Social = Paid Social field; Direct = Direct field; Organic Search = Organic Search field; Organic Social = Social field; Referral = Referral field
+Exclude: Unassigned, Cross-network`,
   },
   {
     title: "Step 4 — GA4 Conversion Funnel",
-    short: "Key events: signups, logins",
-    detail: `1. Open Google Analytics → use the search bar at the top, type "events", and select the Events report from the results
-2. Set date range to Monday–Sunday
-3. Find and record each of these events in this order:
-   • login_success — reached /portal/dashboard
-   • signup_free_initiated — visited /register (no plan selected)
-   • signup_free_confirmed — verified email (free users)
-   • signup_paid_initiated — visited /register?plan=monthly or annual
-   • signup_paid_complete — reached /checkout/success
-   • signup_paid_confirmed — verified email (paid users)
-4. Note: These events were set up April 2, 2026. Earlier weeks will show 0.`,
+    short: "Key event counts",
+    detail: `Stay in analytics.google.com
+In the left sidebar click Reports → expand Understand web and/or app t... → expand View user engagement & retention → click Events
+Confirm date range is still set to Monday–Sunday of the week you are reporting
+In the bottom right change Rows per page to 25 to show all events
+Find each event by name and enter its Event count value
+If an event does not appear in the list enter 0`,
   },
   {
     title: "Step 5 — GA4 Engagement",
-    short: "Key events: tool usage, page visits",
-    detail: `1. Still in GA4 → same Events report from search bar
-2. Find and record:
-   • deal_analysis_visited — reached /deal-analysis
-   • deal_analysis_submitted — clicked analyze/next button in tool
-     (also check PageSense → Goals → deal_analysis_submitted for this one)
-   • lenders_visited — reached /lenders
-   • toolbox_visited — reached /toolbox
-   • pricing_cta_clicked — clicked a pricing CTA button
-     (also check PageSense → Goals → pricing_cta_clicked)`,
+    short: "Feature usage events",
+    detail: `Stay on the same GA4 Events screen from Step 4
+Find each engagement event by name and enter its Event count value
+If an event does not appear in the list enter 0`,
   },
   {
     title: "Step 6 — Google Search Console",
-    short: "Impressions, clicks, average position",
-    detail: `1. Open Google Search Console → Performance
-2. Click "Custom" date range → set Monday–Sunday
-3. The four boxes at the top show the numbers you need:
-   • Total impressions → enter in Organic Impressions
-   • Total clicks → enter in Organic Clicks
-   • Average position → multiply by 10 before entering (e.g. position 3.7 → enter 37)
-4. Average CTR is calculated automatically — you do not need to enter it`,
+    short: "Impressions, clicks, avg position",
+    detail: `Go to search.google.com/search-console
+In the left sidebar click Performance
+In the top left set date range to Custom → Monday–Sunday of the week you are reporting
+Make sure Total clicks and Total impressions are checked (highlighted in color) at the top
+Also check Average position to confirm the value
+Enter Organic Impressions, Organic Clicks, and Avg Position from the metric cards at the top`,
   },
   {
     title: "Step 7 — Save and review",
     short: "Notes, save, check insights",
-    detail: `1. Add a note describing anything notable this week:
-   • New campaigns launched or paused
-   • Budget changes
-   • Site updates or new pages
-   • Unusual traffic events
-2. Click Save Snapshot
-3. Review the dashboard — check the Funnel tab for drop-off
-4. Check the Ads tab for CPA trend
-5. Compare this week to last week in the Weekly History table`,
+    detail: `Add any notes about the week (new campaigns launched, site changes, anomalies)
+Click Save Snapshot
+Review dashboard for any unexpected changes week over week`,
   },
 ];
 
@@ -646,50 +626,7 @@ export default function Reporting() {
                 />
               </div>
 
-              <FormSection title="Traffic Sources">
-                <Field label="Total Visitors" id="totalVisitors" value={form.totalVisitors} onChange={set("totalVisitors")}
-                  help="GA4 → Reports → Acquisition → Traffic acquisition → Total users. Set date range to Mon–Sun." />
-                <Field label="Direct" id="directVisitors" value={form.directVisitors} onChange={set("directVisitors")}
-                  help="GA4 → Traffic acquisition → Filter by 'Direct' channel group." />
-                <Field label="Paid Search" id="paidVisitors" value={form.paidVisitors} onChange={set("paidVisitors")}
-                  help="GA4 → Traffic acquisition → Filter by 'Paid Search' channel group. Includes Google Ads + Meta." />
-                <Field label="Organic Search" id="organicVisitors" value={form.organicVisitors} onChange={set("organicVisitors")}
-                  help="GA4 → Traffic acquisition → Filter by 'Organic Search' channel group." />
-                <Field label="Social" id="socialVisitors" value={form.socialVisitors} onChange={set("socialVisitors")}
-                  help="GA4 → Traffic acquisition → Filter by 'Organic Social' channel group." />
-                <Field label="Referral" id="referralVisitors" value={form.referralVisitors} onChange={set("referralVisitors")}
-                  help="GA4 → Traffic acquisition → Filter by 'Referral' channel group." />
-              </FormSection>
-
-              <FormSection title="Conversion Funnel">
-                <Field label="Free Signup Initiated" id="signupFreeInitiated" value={form.signupFreeInitiated} onChange={set("signupFreeInitiated")}
-                  help="GA4 → Reports → Events → Key events → signup_free_initiated." />
-                <Field label="Free Signup Confirmed" id="signupFreeConfirmed" value={form.signupFreeConfirmed} onChange={set("signupFreeConfirmed")}
-                  help="GA4 → Key events → signup_free_confirmed (email verified)." />
-                <Field label="Paid Signup Initiated" id="signupPaidInitiated" value={form.signupPaidInitiated} onChange={set("signupPaidInitiated")}
-                  help="GA4 → Key events → signup_paid_initiated (clicked a paid plan)." />
-                <Field label="Paid Signup Complete" id="signupPaidComplete" value={form.signupPaidComplete} onChange={set("signupPaidComplete")}
-                  help="GA4 → Key events → signup_paid_complete (reached /checkout/success)." />
-                <Field label="Paid Signup Confirmed" id="signupPaidConfirmed" value={form.signupPaidConfirmed} onChange={set("signupPaidConfirmed")}
-                  help="GA4 → Key events → signup_paid_confirmed (email verified after paying)." />
-                <Field label="Login Success" id="loginSuccess" value={form.loginSuccess} onChange={set("loginSuccess")}
-                  help="GA4 → Key events → login_success (reached /portal/dashboard)." />
-              </FormSection>
-
-              <FormSection title="Engagement">
-                <Field label="Deal Analysis Visited" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
-                  help="GA4 → Key events → deal_analysis_visited." />
-                <Field label="Deal Analysis Submitted" id="dealAnalysisSubmitted" value={form.dealAnalysisSubmitted} onChange={set("dealAnalysisSubmitted")}
-                  help="PageSense → Goals → deal_analysis_submitted → Conversions." />
-                <Field label="Lenders Visited" id="lendersVisited" value={form.lendersVisited} onChange={set("lendersVisited")}
-                  help="GA4 → Key events → lenders_visited." />
-                <Field label="Toolbox Visited" id="toolboxVisited" value={form.toolboxVisited} onChange={set("toolboxVisited")}
-                  help="GA4 → Key events → toolbox_visited." />
-                <Field label="Pricing CTA Clicked" id="pricingCtaClicked" value={form.pricingCtaClicked} onChange={set("pricingCtaClicked")}
-                  help="PageSense → Goals → pricing_cta_clicked → Conversions." />
-              </FormSection>
-
-              <FormSection title="Ad Spend" defaultOpen={false}>
+              <FormSection title="Ad Spend (Meta + Google)" source="Meta Ads Manager / Google Ads" defaultOpen={false}>
                 <Field label="Meta Spend ($)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
                   help="Meta Ads Manager → Campaigns → Amount spent. Enter as dollars: $150.00 → type 150." />
                 <Field label="Meta Clicks" id="metaClicks" value={form.metaClicks} onChange={set("metaClicks")}
@@ -704,7 +641,50 @@ export default function Reporting() {
                   help="Google Ads → Campaigns → Impressions." />
               </FormSection>
 
-              <FormSection title="SEO — Google Search Console" defaultOpen={false}>
+              <FormSection title="Traffic Sources" source="Google Analytics 4 — User Acquisition">
+                <Field label="Total Visitors" id="totalVisitors" value={form.totalVisitors} onChange={set("totalVisitors")}
+                  help="GA4 → Reports → Generate leads → User acquisition → Total row. Set date range to Mon–Sun." />
+                <Field label="Paid Search" id="paidVisitors" value={form.paidVisitors} onChange={set("paidVisitors")}
+                  help="GA4 → User acquisition → Paid Search + Paid Other rows combined." />
+                <Field label="Direct" id="directVisitors" value={form.directVisitors} onChange={set("directVisitors")}
+                  help="GA4 → User acquisition → Direct row." />
+                <Field label="Organic Search" id="organicVisitors" value={form.organicVisitors} onChange={set("organicVisitors")}
+                  help="GA4 → User acquisition → Organic Search row." />
+                <Field label="Social" id="socialVisitors" value={form.socialVisitors} onChange={set("socialVisitors")}
+                  help="GA4 → User acquisition → Organic Social row." />
+                <Field label="Referral" id="referralVisitors" value={form.referralVisitors} onChange={set("referralVisitors")}
+                  help="GA4 → User acquisition → Referral row." />
+              </FormSection>
+
+              <FormSection title="Conversion Funnel" source="Google Analytics 4 — Events">
+                <Field label="signup_free_initiated" id="signupFreeInitiated" value={form.signupFreeInitiated} onChange={set("signupFreeInitiated")}
+                  help="GA4 → Reports → Events → Event count for signup_free_initiated." />
+                <Field label="signup_free_confirmed" id="signupFreeConfirmed" value={form.signupFreeConfirmed} onChange={set("signupFreeConfirmed")}
+                  help="GA4 → Events → Event count for signup_free_confirmed (email verified)." />
+                <Field label="signup_paid_initiated" id="signupPaidInitiated" value={form.signupPaidInitiated} onChange={set("signupPaidInitiated")}
+                  help="GA4 → Events → Event count for signup_paid_initiated (clicked a paid plan)." />
+                <Field label="signup_paid_complete" id="signupPaidComplete" value={form.signupPaidComplete} onChange={set("signupPaidComplete")}
+                  help="GA4 → Events → Event count for signup_paid_complete (reached /checkout/success)." />
+                <Field label="signup_paid_confirmed" id="signupPaidConfirmed" value={form.signupPaidConfirmed} onChange={set("signupPaidConfirmed")}
+                  help="GA4 → Events → Event count for signup_paid_confirmed (email verified after paying)." />
+                <Field label="login_success" id="loginSuccess" value={form.loginSuccess} onChange={set("loginSuccess")}
+                  help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
+              </FormSection>
+
+              <FormSection title="Engagement" source="Google Analytics 4 — Events">
+                <Field label="deal_analysis_visited" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
+                  help="GA4 → Events → Event count for deal_analysis_visited." />
+                <Field label="deal_analysis_submitted" id="dealAnalysisSubmitted" value={form.dealAnalysisSubmitted} onChange={set("dealAnalysisSubmitted")}
+                  help="GA4 → Events → Event count for deal_analysis_submitted." />
+                <Field label="lenders_visited" id="lendersVisited" value={form.lendersVisited} onChange={set("lendersVisited")}
+                  help="GA4 → Events → Event count for lenders_visited." />
+                <Field label="toolbox_visited" id="toolboxVisited" value={form.toolboxVisited} onChange={set("toolboxVisited")}
+                  help="GA4 → Events → Event count for toolbox_visited." />
+                <Field label="pricing_cta_clicked" id="pricingCtaClicked" value={form.pricingCtaClicked} onChange={set("pricingCtaClicked")}
+                  help="GA4 → Events → Event count for pricing_cta_clicked." />
+              </FormSection>
+
+              <FormSection title="SEO — Google Search Console" source="Google Search Console — Performance" defaultOpen={false}>
                 <Field label="Organic Impressions" id="organicImpressions" value={form.organicImpressions} onChange={set("organicImpressions")}
                   help="Search Console → Performance → Total impressions. Set date range Mon–Sun." />
                 <Field label="Organic Clicks" id="organicClicks" value={form.organicClicks} onChange={set("organicClicks")}

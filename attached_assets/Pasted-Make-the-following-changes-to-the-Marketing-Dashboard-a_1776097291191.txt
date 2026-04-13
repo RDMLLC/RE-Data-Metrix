@@ -1,0 +1,87 @@
+Make the following changes to the Marketing Dashboard (/admin/reporting). Do not change any functionality — these are UI/layout/label changes only.
+
+Change 1 — Reorder the data entry form sections to match the step-by-step guide order:
+
+Ad Spend (Meta + Google)
+Traffic Sources
+Conversion Funnel
+Engagement
+SEO — Google Search Console
+Notes
+
+
+Change 2 — Add source labels to the right of each section title in the data entry form:
+SectionSource labelAd SpendMeta Ads Manager / Google AdsTraffic SourcesGoogle Analytics 4 — User AcquisitionConversion FunnelGoogle Analytics 4 — EventsEngagementGoogle Analytics 4 — EventsSEO — Google Search ConsoleGoogle Search Console — Performance
+
+Change 3 — Reorder Traffic Sources fields to match GA4 User Acquisition display order:
+
+Total Visitors
+Paid Search
+Paid Social
+Direct
+Organic Search
+Social
+Referral
+
+
+Change 4 — Rename all Conversion Funnel and Engagement field labels to match exact GA4 event names:
+Current labelNew labelFree Signup Initiatedsignup_free_initiatedFree Signup Confirmedsignup_free_confirmedPaid Signup Initiatedsignup_paid_initiatedPaid Signup Completesignup_paid_completePaid Signup Confirmedsignup_paid_confirmedLogin Successlogin_successDeal Analysis Visiteddeal_analysis_visitedDeal Analysis Submitteddeal_analysis_submittedLenders Visitedlenders_visitedToolbox Visitedtoolbox_visitedPricing CTA Clickedpricing_cta_clicked
+
+Change 5 — Update the weekly accordion guide with exact navigation instructions for each step. Replace the current step descriptions with the following:
+Step 1 — Meta Ads Manager (Amount spent, link clicks, impressions)
+
+Go to business.facebook.com → Ads Manager → Campaigns tab
+Set date range to Monday–Sunday of the week you are reporting
+Make sure these columns are visible: Amount Spent, Link Clicks, Impressions. If missing click "Columns: Performance" → Customize columns → add them
+Enter Amount Spent in dollars and cents (e.g. 164.94)
+Enter Link Clicks (not "Clicks all" — specifically Link Clicks)
+Enter Impressions
+Note: Conversions shown in Meta may differ from GA4 — use GA4 as your source of truth for signups
+
+Step 2 — Google Ads (Cost, clicks, impressions)
+
+Go to ads.google.com → Campaigns tab
+Set date range to Monday–Sunday of the week you are reporting
+Enter Cost, Clicks, and Impressions for the week
+
+Step 3 — GA4 Traffic Sources (Total visitors by channel)
+
+Go to analytics.google.com
+In the left sidebar click Reports → expand Generate leads → click User acquisition
+In the top right set date range to Custom → Monday–Sunday of the week you are reporting
+Read the Total row for Total Visitors
+Enter each channel row individually: Paid Search + Paid Other combined = Paid Search field; Paid Social = Paid Social field; Direct = Direct field; Organic Search = Organic Search field; Organic Social = Social field; Referral = Referral field
+Exclude: Unassigned, Cross-network
+
+Step 4 — GA4 Conversion Funnel (Key event counts)
+
+Stay in analytics.google.com
+In the left sidebar click Reports → expand Understand web and/or app t... → expand View user engagement & retention → click Events
+Confirm date range is still set to Monday–Sunday of the week you are reporting
+In the bottom right change Rows per page to 25 to show all events
+Find each event by name and enter its Event count value
+If an event does not appear in the list enter 0
+
+Step 5 — GA4 Engagement (Feature usage events)
+
+Stay on the same GA4 Events screen from Step 4
+Find each engagement event by name and enter its Event count value
+If an event does not appear in the list enter 0
+
+Step 6 — Google Search Console (Impressions, clicks, avg position)
+
+Go to search.google.com/search-console
+In the left sidebar click Performance
+In the top left set date range to Custom → Monday–Sunday of the week you are reporting
+Make sure Total clicks and Total impressions are checked (highlighted in color) at the top
+Also check Average position to confirm the value
+Enter Organic Impressions, Organic Clicks, and Avg Position from the metric cards at the top
+
+Step 7 — Save and review
+
+Add any notes about the week (new campaigns launched, site changes, anomalies)
+Click Save Snapshot
+Review dashboard for any unexpected changes week over week
+
+
+These are UI and copy changes only. Do not modify any database schema, API routes, or data storage logic.
