@@ -138,6 +138,42 @@ export class HasDataAPIService implements IPropertyAPIService {
     throw new Error("Address-based lookup not supported. Use getPropertyByUrl instead.");
   }
 
+  // Extract the Zillow ZPID from a URL and return the short-form URL.
+  // e.g. .../718-Hairston.../14525753_zpid/ → https://www.zillow.com/homedetails/14525753_zpid/
+  private extractZpidShortUrl(url: string): string | null {
+    const match = url.match(/\/(\d+)_zpid/);
+    if (!match) return null;
+    return `https://www.zillow.com/homedetails/${match[1]}_zpid/`;
+  }
+
+  // Low-level fetch against HasData with a given URL and endpoint.
+  // Returns raw parsed JSON or null/throws on error.
+  private async fetchHasDataZillow(targetUrl: string): Promise<any> {
+    const endpoint = `${this.baseUrl}/scrape/zillow/property`;
+    const params = new URLSearchParams({ url: targetUrl });
+    console.log(`[HasData] Fetching from ${endpoint} with URL: ${targetUrl}`);
+    const response = await fetch(`${endpoint}?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        "x-api-key": this.apiKey,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.error(`[HasData] ${response.status} for ${targetUrl}: ${errorText.substring(0, 300)}`);
+      return null; // signal caller to try next option
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const text = await response.text();
+      try { return JSON.parse(text); } catch { return null; }
+    }
+    return response.json();
+  }
+
   async getPropertyByUrl(url: string): Promise<PropertyData | null> {
     try {
       // Check if API key is configured
@@ -152,12 +188,29 @@ export class HasDataAPIService implements IPropertyAPIService {
         throw new Error("Please provide a valid Redfin or Zillow property URL");
       }
 
-      const endpoint = isRedfin 
-        ? `${this.baseUrl}/scrape/redfin/property`
-        : `${this.baseUrl}/scrape/zillow/property`;
+      // --- Zillow path: try full URL first, then short ZPID URL as fallback ---
+      if (isZillow) {
+        let data = await this.fetchHasDataZillow(url);
 
+        if (!data) {
+          const shortUrl = this.extractZpidShortUrl(url);
+          if (shortUrl && shortUrl !== url) {
+            console.log(`[HasData] Full URL failed — retrying with short ZPID URL: ${shortUrl}`);
+            data = await this.fetchHasDataZillow(shortUrl);
+          }
+        }
+
+        if (!data) {
+          throw new Error("Unable to find property. Please check the URL and try again, or use manual entry.");
+        }
+
+        console.log("HasData API raw response:", JSON.stringify(data, null, 2));
+        return await this.transformZillowResponse(data);
+      }
+
+      // --- Redfin path (unchanged) ---
+      const endpoint = `${this.baseUrl}/scrape/redfin/property`;
       const params = new URLSearchParams({ url });
-
       console.log(`Fetching property data from HasData API: ${endpoint}`);
 
       const response = await fetch(`${endpoint}?${params.toString()}`, {
@@ -185,7 +238,6 @@ export class HasDataAPIService implements IPropertyAPIService {
           throw new Error("Property lookup service is temporarily unavailable. Please use manual entry.");
         }
         
-        // Return user-friendly error message
         if (response.status === 400) {
           console.error(`[HasData] 400 response body: ${errorText.substring(0, 500)}`);
           throw new Error("Unable to find property. Please check the URL and try again, or use manual entry.");

@@ -616,27 +616,39 @@ export class RentCastAPIService implements IPropertyAPIService {
         return { imageUrl: PLACEHOLDER_IMAGE_URL };
       }
 
-      // Try the original source first, then fallback to the other
-      const sources: Array<'redfin' | 'zillow'> = originalSource === 'zillow' 
-        ? ['zillow', 'redfin'] 
-        : ['redfin', 'zillow'];
-      
-      console.log(`[HasData] Original URL source: ${originalSource}, trying ${sources[0]} first, then ${sources[1]}`);
-      
-      for (const source of sources) {
-        console.log(`[HasData] Trying ${source} endpoint...`);
-        const supplementalData = await this.fetchDataWithRetry(source, cleanUrl);
-        
-        if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate)) {
-          console.log(`[HasData] SUCCESS: Data retrieved from ${source}:`, {
-            imageUrl: supplementalData.imageUrl ? 'present' : 'missing',
-            rentZestimate: supplementalData.rentZestimate,
-            monthlyHoaFee: supplementalData.monthlyHoaFee
-          });
-          return supplementalData;
+      // Build list of URLs to try: full URL first, then short ZPID URL for Zillow
+      const urlsToTry: string[] = [cleanUrl];
+      if (originalSource === 'zillow') {
+        const zpidMatch = cleanUrl.match(/\/(\d+)_zpid/);
+        if (zpidMatch) {
+          const shortUrl = `https://www.zillow.com/homedetails/${zpidMatch[1]}_zpid/`;
+          if (shortUrl !== cleanUrl) urlsToTry.push(shortUrl);
         }
-        
-        console.log(`[HasData] ${source} endpoint failed or no useful data`);
+      }
+
+      for (const tryUrl of urlsToTry) {
+        // Try the original source first, then fallback to the other source
+        const sources: Array<'redfin' | 'zillow'> = originalSource === 'zillow'
+          ? ['zillow', 'redfin']
+          : ['redfin', 'zillow'];
+
+        console.log(`[HasData] Trying supplemental fetch for URL: ${tryUrl}`);
+
+        for (const source of sources) {
+          console.log(`[HasData] Trying ${source} endpoint...`);
+          const supplementalData = await this.fetchDataWithRetry(source, tryUrl);
+
+          if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate)) {
+            console.log(`[HasData] SUCCESS: Data retrieved from ${source} (${tryUrl}):`, {
+              imageUrl: supplementalData.imageUrl ? 'present' : 'missing',
+              rentZestimate: supplementalData.rentZestimate,
+              monthlyHoaFee: supplementalData.monthlyHoaFee
+            });
+            return supplementalData;
+          }
+
+          console.log(`[HasData] ${source} endpoint failed or no useful data`);
+        }
       }
 
       console.log(`[HasData] All sources exhausted, returning placeholder`);
