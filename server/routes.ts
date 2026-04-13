@@ -10378,18 +10378,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // FALLBACK: If RentCast was used as the primary data source and we have no image,
-      // attempt to retrieve it via the RentCast service's supplemental (HasData) image fetch
+      // skip the HasData supplemental image fetch — HasData already failed on the primary
+      // lookup so retrying it for the image would add 90+ seconds of timeouts for no gain.
+      // The placeholder image is used immediately instead.
       if (rentCastFallbackService && !propertyData.imageUrl) {
-        try {
-          console.log(`[Property Lookup] RentCast fallback path — attempting supplemental image fetch...`);
-          const imgUrl = await (rentCastFallbackService as any).fetchPropertyImageFromUrl(url);
-          if (imgUrl && imgUrl !== '/images/property-placeholder.svg') {
-            console.log(`[Property Lookup] Supplemental image retrieved via RentCast fallback path`);
-            propertyData.imageUrl = imgUrl;
-          }
-        } catch (imgErr: any) {
-          console.log(`[Property Lookup] Supplemental image fetch on RentCast fallback path failed: ${imgErr.message}`);
-        }
+        console.log(`[Property Lookup] HasData already failed — skipping supplemental image fetch, using placeholder`);
       }
 
       // FALLBACK: If we still don't have tax data, fetch from RentCast using address
