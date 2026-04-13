@@ -267,6 +267,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       return;
     }
 
+    window.gtag?.('event', 'deal_analysis_submitted', {
+      event_category: 'engagement',
+      event_label: 'deal_analysis',
+    });
     propertyLookupMutation.mutate(propertyUrl);
   };
 
@@ -284,6 +288,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       return;
     }
 
+    window.gtag?.('event', 'deal_analysis_submitted', {
+      event_category: 'engagement',
+      event_label: 'deal_analysis',
+    });
     onNext();
   };
 
@@ -622,6 +630,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 form.setValue("state", "");
                 form.setValue("zipCode", "");
                 updatePropertyData({ estimatedRent: undefined, estimatedRentSource: undefined });
+                window.gtag?.('event', 'deal_analysis_submitted', {
+                  event_category: 'engagement',
+                  event_label: 'deal_analysis',
+                });
                 onNext();
               }}
               data-testid="button-manual-next"
