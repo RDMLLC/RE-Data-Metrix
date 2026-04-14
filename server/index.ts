@@ -3,7 +3,6 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import compression from "compression";
 import path from "path";
-import fs from "fs";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runPrerender, registerPrerenderRoutes } from "./prerender";
@@ -22,7 +21,12 @@ import { subscriptionRetentionService } from './services/subscriptionRetention.s
 
 const app = express();
 
-app.use(compression());
+app.use(compression({
+  filter: (req, res) => {
+    if (req.path.endsWith('.mp4')) return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Serve static assets (videos, images) from attached_assets folder
 app.use('/static-assets', express.static(path.resolve(process.cwd(), 'attached_assets')));
@@ -427,9 +431,6 @@ app.use((req, res, next) => {
     // so Express sets the correct headers and supports range requests for MP4 playback.
     app.get("/assets/*.mp4", (req: Request, res: Response) => {
       const filePath = path.join(process.cwd(), "dist/public", req.path);
-      console.log('[video] req.path:', req.path);
-      console.log('[video] resolved filePath:', filePath);
-      console.log('[video] file exists:', fs.existsSync(filePath));
       res.sendFile(filePath, {
         headers: {
           "Content-Type": "video/mp4",
