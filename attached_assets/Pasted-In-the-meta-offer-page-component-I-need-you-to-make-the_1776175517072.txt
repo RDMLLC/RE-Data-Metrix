@@ -1,0 +1,56 @@
+In the /meta-offer page component, I need you to make the following changes. Do not change anything else — copy, layout, colors, or structure.
+
+---
+
+## 1. FIX THE VIDEO — Remove the click overlay, enable true autoplay
+
+The transparent overlay div sitting on top of the video element must be completely removed. It is intercepting all taps and navigating users to /register instead of letting the video play.
+
+The video element itself should have these attributes:
+- autoPlay
+- muted
+- loop
+- playsInline
+- preload="auto"
+
+Remove any onClick handler from the video element itself. The video should play on its own — no click needed.
+
+---
+
+## 2. ADD a CTA button directly below the video
+
+Since the overlay is being removed, add a clearly visible CTA button immediately below the video player. This button should:
+- Use the same style as the existing CTA buttons already on the page
+- Text: "Start Analyzing Deals — It's Free"
+- Route to /register with UTM params preserved (same logic as the existing CTA buttons)
+- Have a small line of text beneath it: "No credit card required."
+
+---
+
+## 3. ADD a sticky mobile CTA bar
+
+Add a sticky bar fixed to the bottom of the screen on mobile only (hidden on md and above). It should:
+- Have a solid background using the same dark blue used elsewhere on the page
+- Contain a single full-width button: "Start for Free — No Credit Card"
+- Route to /register with UTM params preserved
+- Have a subtle top border or shadow to separate it from page content
+- Add enough bottom padding to the page on mobile so the sticky bar doesn't cover the footer
+
+---
+
+## 4. ADD social proof numbers near the top CTA
+
+In the hero section, directly below the existing subheadline and above the first CTA button, add this line:
+
+"Join hundreds of real estate investors already using RE Data Metrix."
+
+Style it as small, muted text (similar to how "No credit card required." is styled elsewhere on the page).
+
+---
+
+## 5. ADD a video fallback
+
+On the video element, add a poster attribute pointing to a static fallback image. Use this URL as the poster:
+/assets/deal-analysis-preview.png
+
+If that file does not ex

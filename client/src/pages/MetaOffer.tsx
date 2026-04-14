@@ -62,7 +62,7 @@ export default function MetaOffer() {
   };
 
   return (
-    <div className="min-h-screen bg-background" data-testid="page-meta-offer">
+    <div className="min-h-screen bg-background pb-20 md:pb-0" data-testid="page-meta-offer">
       <SEO
         title="Analyze Deals & Find the Right Lender"
         description="Stop guessing on real estate deals. Analyze profitability, compare lenders, and close with confidence — free to start, no credit card required."
@@ -91,6 +91,9 @@ export default function MetaOffer() {
           <p className="text-lg text-white/85" data-testid="text-subheadline">
             Turn guesswork into data-driven decisions — know your profit, compare lenders, and move fast.
           </p>
+          <p className="text-sm text-white/60 mt-3" data-testid="text-social-proof-hero">
+            Join hundreds of real estate investors already using RE Data Metrix.
+          </p>
         </div>
       </section>
 
@@ -101,33 +104,28 @@ export default function MetaOffer() {
             <video
               ref={videoRef}
               className="absolute inset-0 w-full h-full object-cover"
-              controls
+              autoPlay
+              muted
+              loop
               playsInline
-              preload="none"
+              preload="auto"
+              poster="/assets/deal-analysis-preview.png"
               data-testid="video-main"
             >
               <source src={heroVideo} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
-            {/* Transparent overlay — clicking anywhere on the video goes to register */}
-            <div
-              className="absolute inset-0 cursor-pointer z-10"
-              onClick={handleCta}
-              data-testid="overlay-video-cta"
-              aria-label="Start analyzing deals for free"
-              role="link"
-            />
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <Button
               size="lg"
               className="bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
               onClick={handleCta}
-              data-testid="button-cta-hero"
+              data-testid="button-cta-video"
             >
-              Start analyzing deals for free
+              Start Analyzing Deals — It's Free
             </Button>
-            <p className="text-sm text-white/70" data-testid="text-no-card">
+            <p className="text-sm text-white/70" data-testid="text-no-card-video">
               No credit card required.
             </p>
           </div>
@@ -175,6 +173,21 @@ export default function MetaOffer() {
           </div>
         </div>
       </section>
+
+      {/* 5. Sticky mobile CTA bar */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary border-t border-white/20 shadow-lg px-4 py-3"
+        data-testid="sticky-mobile-cta"
+      >
+        <Button
+          size="lg"
+          className="bg-accent text-accent-foreground border-accent-border w-full"
+          onClick={handleCta}
+          data-testid="button-cta-sticky"
+        >
+          Start for Free — No Credit Card
+        </Button>
+      </div>
     </div>
   );
 }
