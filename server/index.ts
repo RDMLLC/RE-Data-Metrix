@@ -421,6 +421,25 @@ app.use((req, res, next) => {
       console.error('[prerender] Non-fatal error during prerender:', err);
     });
     registerPrerenderRoutes(app);
+
+    // Explicit streaming route for large video assets — must come before serveStatic
+    // so Express sets the correct headers and supports range requests for MP4 playback.
+    app.get("/assets/*.mp4", (req: Request, res: Response) => {
+      const filePath = path.join(process.cwd(), "dist/public", req.path);
+      res.sendFile(filePath, {
+        headers: {
+          "Content-Type": "video/mp4",
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "public, max-age=31536000",
+        },
+      }, (err) => {
+        if (err) {
+          console.error(`[static] Failed to serve video ${req.path}:`, err);
+          if (!res.headersSent) res.status(404).end();
+        }
+      });
+    });
+
     serveStatic(app);
   }
 
