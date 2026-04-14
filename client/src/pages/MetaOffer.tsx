@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
@@ -44,6 +44,12 @@ export default function MetaOffer() {
   const [, setLocation] = useLocation();
   const { trackLead, pixelsLoaded } = useMarketingEvents();
   const hasFiredRef = useRef(false);
+  const [showUnmuteHint, setShowUnmuteHint] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowUnmuteHint(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (pixelsLoaded && !hasFiredRef.current) {
@@ -104,6 +110,12 @@ export default function MetaOffer() {
               style={{ border: 0 }}
               data-testid="video-main"
             />
+            <div
+              className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full pointer-events-none transition-opacity duration-700"
+              style={{ opacity: showUnmuteHint ? 1 : 0 }}
+            >
+              🔊 Tap to unmute
+            </div>
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <Button
