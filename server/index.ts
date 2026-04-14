@@ -3,6 +3,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import compression from "compression";
 import path from "path";
+import fs from "fs";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runPrerender, registerPrerenderRoutes } from "./prerender";
@@ -426,6 +427,9 @@ app.use((req, res, next) => {
     // so Express sets the correct headers and supports range requests for MP4 playback.
     app.get("/assets/*.mp4", (req: Request, res: Response) => {
       const filePath = path.join(process.cwd(), "dist/public", req.path);
+      console.log('[video] req.path:', req.path);
+      console.log('[video] resolved filePath:', filePath);
+      console.log('[video] file exists:', fs.existsSync(filePath));
       res.sendFile(filePath, {
         headers: {
           "Content-Type": "video/mp4",
