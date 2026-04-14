@@ -7,7 +7,7 @@ import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
 
 const YOUTUBE_VIDEO_ID = "WkuAgslCrrM";
-const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=0&modestbranding=1&rel=0&playsinline=1`;
+const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=1&modestbranding=1&rel=0&playsinline=1`;
 
 const benefits = [
   {
