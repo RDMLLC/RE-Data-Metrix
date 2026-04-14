@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
-import heroVideo from "@assets/0319_1774030912917.mp4";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
+
+const YOUTUBE_VIDEO_ID = "WkuAgslCrrM";
+const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=0&modestbranding=1&rel=0&playsinline=1`;
 
 const benefits = [
   {
@@ -42,7 +44,6 @@ export default function MetaOffer() {
   const [, setLocation] = useLocation();
   const { trackLead, pixelsLoaded } = useMarketingEvents();
   const hasFiredRef = useRef(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (pixelsLoaded && !hasFiredRef.current) {
@@ -50,12 +51,6 @@ export default function MetaOffer() {
       hasFiredRef.current = true;
     }
   }, [pixelsLoaded, trackLead]);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 1.1;
-    }
-  }, []);
 
   const handleCta = () => {
     setLocation(getRegisterUrl());
@@ -97,24 +92,18 @@ export default function MetaOffer() {
         </div>
       </section>
 
-      {/* 2. Video — immediately below headline, above the fold */}
+      {/* 2. Video — YouTube embed */}
       <section className="bg-gradient-to-br from-primary/90 to-primary/80 pb-10">
         <div className="max-w-3xl mx-auto px-6">
           <div className="relative aspect-video bg-black rounded-md overflow-hidden shadow-xl border border-white/20">
-            <video
-              ref={videoRef}
-              className="absolute inset-0 w-full h-full object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              onCanPlay={() => { videoRef.current?.play(); }}
+            <iframe
+              src={YOUTUBE_EMBED_URL}
+              className="absolute inset-0 w-full h-full"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              style={{ border: 0 }}
               data-testid="video-main"
-            >
-              <source src={heroVideo} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            />
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <Button
