@@ -109,7 +109,7 @@ export default function MetaOffer() {
               loop
               playsInline
               preload="auto"
-              poster="/assets/deal-analysis-preview.png"
+              onCanPlay={() => { videoRef.current?.play(); }}
               data-testid="video-main"
             >
               <source src={heroVideo} type="video/mp4" />
