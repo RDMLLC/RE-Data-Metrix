@@ -366,6 +366,26 @@ export class RentCastAPIService implements IPropertyAPIService {
     return data;
   }
 
+  async getValueEstimateByAddress(address: string): Promise<number | null> {
+    try {
+      const result = await this.fetchValueEstimate(address);
+      return result?.price ?? null;
+    } catch (err: any) {
+      console.log("[RentCast] getValueEstimateByAddress failed:", err.message);
+      return null;
+    }
+  }
+
+  async getRentEstimateByAddress(address: string): Promise<number | null> {
+    try {
+      const result = await this.fetchRentEstimate(address);
+      return result?.rent ?? null;
+    } catch (err: any) {
+      console.log("[RentCast] getRentEstimateByAddress failed:", err.message);
+      return null;
+    }
+  }
+
   private async fetchValueEstimate(address: string): Promise<RentCastAVMResponse | null> {
     const params = new URLSearchParams({ 
       address,

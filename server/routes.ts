@@ -10249,6 +10249,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Street View proxy — keeps the API key server-side
+  app.get("/api/property/street-view", ensureAuthenticated, async (req, res) => {
+    const address = req.query.address as string | undefined;
+    if (!address) {
+      return res.status(400).json({ error: "address query parameter is required" });
+    }
+
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!googleMapsApiKey) {
+      return res.status(503).json({ error: "Street View not configured" });
+    }
+
+    try {
+      const params = new URLSearchParams({
+        location: address,
+        size: "640x480",
+        key: googleMapsApiKey,
+      });
+      const googleUrl = `https://maps.googleapis.com/maps/api/streetview?${params.toString()}`;
+      const googleRes = await fetch(googleUrl);
+      if (!googleRes.ok) {
+        return res.status(googleRes.status).json({ error: "Street View fetch failed" });
+      }
+      const contentType = googleRes.headers.get("content-type") || "image/jpeg";
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      const buffer = await googleRes.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch (svError: any) {
+      console.error("[Street View Proxy] Error:", svError.message);
+      res.status(500).json({ error: "Failed to fetch Street View image" });
+    }
+  });
+
   // Property Lookup Route
   app.post("/api/property/lookup", ensureAuthenticated, async (req, res) => {
     try {
@@ -10407,6 +10441,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (rentCastError) {
           console.log("[Property Lookup] Could not fetch tax data from RentCast:", rentCastError);
+        }
+      }
+
+      // FALLBACK: If we still don't have an estimated value, fetch from RentCast AVM
+      if (!propertyData.estimatedValue && propertyData.address && propertyData.city && propertyData.state && propertyData.zipCode) {
+        try {
+          console.log(`[Property Lookup] Estimated value missing, fetching from RentCast AVM...`);
+          const rcAVMService = PropertyAPIFactory.getService("rentcast");
+          if (rcAVMService.getValueEstimateByAddress) {
+            const fullAddress = `${propertyData.address}, ${propertyData.city}, ${propertyData.state} ${propertyData.zipCode}`;
+            const avmValue = await rcAVMService.getValueEstimateByAddress(fullAddress);
+            if (avmValue) {
+              console.log(`[Property Lookup] Got estimated value from RentCast AVM: $${avmValue}`);
+              propertyData.estimatedValue = avmValue;
+            }
+          }
+        } catch (avmValueError) {
+          console.log("[Property Lookup] Could not fetch AVM value from RentCast:", avmValueError);
+        }
+      }
+
+      // FALLBACK: If we still don't have an estimated rent, fetch from RentCast long-term rent AVM
+      if (!propertyData.estimatedRent && propertyData.address && propertyData.city && propertyData.state && propertyData.zipCode) {
+        try {
+          console.log(`[Property Lookup] Estimated rent missing, fetching from RentCast long-term rent AVM...`);
+          const rcRentService = PropertyAPIFactory.getService("rentcast");
+          if (rcRentService.getRentEstimateByAddress) {
+            const fullAddress = `${propertyData.address}, ${propertyData.city}, ${propertyData.state} ${propertyData.zipCode}`;
+            const avmRent = await rcRentService.getRentEstimateByAddress(fullAddress);
+            if (avmRent) {
+              console.log(`[Property Lookup] Got estimated rent from RentCast AVM: $${avmRent}/mo`);
+              propertyData.estimatedRent = avmRent;
+              propertyData.estimatedRentSource = "RentCast";
+            }
+          }
+        } catch (avmRentError) {
+          console.log("[Property Lookup] Could not fetch AVM rent from RentCast:", avmRentError);
+        }
+      }
+
+      // FALLBACK: If we still have no property image, use Google Street View (server-proxied)
+      // The key is kept server-side; clients receive an internal proxy URL.
+      if (!propertyData.imageUrl && propertyData.address && propertyData.city && propertyData.state) {
+        if (process.env.GOOGLE_MAPS_API_KEY) {
+          const streetAddress = [
+            propertyData.address,
+            propertyData.city,
+            propertyData.state,
+            propertyData.zipCode
+          ].filter(Boolean).join(', ');
+          propertyData.imageUrl = `/api/property/street-view?address=${encodeURIComponent(streetAddress)}`;
+          console.log(`[Property Lookup] Using Google Street View proxy image for: ${streetAddress}`);
+        } else {
+          console.log(`[Property Lookup] GOOGLE_MAPS_API_KEY not set — skipping Street View fallback`);
         }
       }
 

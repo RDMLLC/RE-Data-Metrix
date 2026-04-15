@@ -34,4 +34,10 @@ export interface IPropertyAPIService {
   ): Promise<PropertyData | null>;
   
   getPropertyByUrl(url: string, forceRefresh?: boolean): Promise<PropertyData | null>;
+
+  /** Optional: fetch AVM estimated value for a full formatted address */
+  getValueEstimateByAddress?(fullAddress: string): Promise<number | null>;
+
+  /** Optional: fetch AVM long-term rent estimate for a full formatted address */
+  getRentEstimateByAddress?(fullAddress: string): Promise<number | null>;
 }

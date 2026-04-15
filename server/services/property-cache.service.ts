@@ -101,6 +101,20 @@ export class CachedPropertyAPIService implements IPropertyAPIService {
     return undefined;
   }
 
+  async getValueEstimateByAddress(fullAddress: string): Promise<number | null> {
+    if (this.wrappedService.getValueEstimateByAddress) {
+      return this.wrappedService.getValueEstimateByAddress(fullAddress);
+    }
+    return null;
+  }
+
+  async getRentEstimateByAddress(fullAddress: string): Promise<number | null> {
+    if (this.wrappedService.getRentEstimateByAddress) {
+      return this.wrappedService.getRentEstimateByAddress(fullAddress);
+    }
+    return null;
+  }
+
   private async cacheResult(
     normalizedAddress: string, 
     data: PropertyData,
