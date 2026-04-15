@@ -658,7 +658,7 @@ export class RentCastAPIService implements IPropertyAPIService {
           console.log(`[HasData] Trying ${source} endpoint...`);
           const supplementalData = await this.fetchDataWithRetry(source, tryUrl);
 
-          if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate)) {
+          if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate || supplementalData.monthlyHoaFee || supplementalData.annualTax)) {
             console.log(`[HasData] SUCCESS: Data retrieved from ${source} (${tryUrl}):`, {
               imageUrl: supplementalData.imageUrl ? 'present' : 'missing',
               rentZestimate: supplementalData.rentZestimate,
