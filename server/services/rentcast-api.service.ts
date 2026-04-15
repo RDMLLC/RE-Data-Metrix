@@ -812,7 +812,20 @@ export class RentCastAPIService implements IPropertyAPIService {
     // Zillow-specific fields
     const rentZestimate = parseNumber(property.rentZestimate);
     const zestimate = parseNumber(property.zestimate);
-    const monthlyHoaFee = parseNumber(property.monthlyHoaFee);
+    // Check all known HOA field variations — matches the comprehensive lookup in hasdata-api.service.ts
+    const monthlyHoaFee = parseNumber(
+      property.hoaFee ||
+      property.monthlyHoaFee ||
+      property.associationFee ||
+      property.hoaDues ||
+      property.hoa?.fee ||
+      property.hoa?.monthlyFee ||
+      property.resoFacts?.hoaFee ||
+      property.resoFacts?.associationFee ||
+      property.resoFacts?.associationFee2 ||
+      property.homeValues?.hoaFee ||
+      property.attributionInfo?.hoaFee
+    );
     
     // Extract annual tax from various possible field names
     let annualTax: number | undefined = undefined;

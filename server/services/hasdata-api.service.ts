@@ -531,9 +531,25 @@ export class HasDataAPIService implements IPropertyAPIService {
                        (property.propertyTaxes && property.propertyTaxes > 0) || 
                        (property.taxAnnualAmount && property.taxAnnualAmount > 0) || 
                        (property.resoFacts?.taxAnnualAmount && property.resoFacts.taxAnnualAmount > 0);
+
+    // Preliminary HOA check — check the same fields that the full extraction below uses.
+    // If HOA is absent from the initial response we also need the extended JSON (resoFacts).
+    const hasHoaData = !!(
+      property.hoaFee ||
+      property.monthlyHoaFee ||
+      property.associationFee ||
+      property.hoaDues ||
+      property.hoa?.fee ||
+      property.hoa?.monthlyFee ||
+      property.resoFacts?.hoaFee ||
+      property.resoFacts?.associationFee ||
+      property.resoFacts?.associationFee2 ||
+      property.homeValues?.hoaFee ||
+      property.attributionInfo?.hoaFee
+    );
     
-    if (!hasTaxData && requestMetadata?.json) {
-      console.log("Tax data missing from initial response, fetching extended data...");
+    if ((!hasTaxData || !hasHoaData) && requestMetadata?.json) {
+      console.log(`Extended data needed — hasTaxData: ${hasTaxData}, hasHoaData: ${hasHoaData}. Fetching extended JSON...`);
       const extendedData = await this.fetchExtendedData(requestMetadata.json);
       if (extendedData) {
         // Merge extended data with property data
