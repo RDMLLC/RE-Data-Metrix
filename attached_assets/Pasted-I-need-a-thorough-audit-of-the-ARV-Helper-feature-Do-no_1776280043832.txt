@@ -1,0 +1,49 @@
+I need a thorough audit of the ARV Helper feature. Do not make any changes. Read the code and report back only. I want to understand exactly what is happening today so I can make informed decisions about improvements.
+1. Distance Field
+
+When RentCast returns comp properties, does the response include a distance field?
+Is that field being passed through the backend response to the frontend?
+Is the frontend receiving it, and is it being rendered in the UI?
+If distance is not showing, at what exact point in the chain is it being dropped or ignored?
+
+2. Comp Volume
+
+What filters are currently being applied when querying RentCast for comps? (radius, date range, bed/bath match, property type, square footage tolerance, etc.)
+Are any filters potentially too narrow and cutting out valid comps?
+What is the maximum number of comps RentCast is configured to return?
+Is there any deduplication happening? If so, how?
+Are comps from HasData/Zillow being merged with RentCast comps, or are they separate sources?
+
+3. Data Freshness
+
+What date range filter is being applied when pulling comps? (e.g. last 6 months, last 12 months)
+Is the date range hardcoded or configurable?
+Are comps being sorted by sale date? If so, ascending or descending?
+Is there any caching layer on comp results? If so, what is the TTL?
+
+4. HasData / Zillow Scraping
+
+What role does HasData/Zillow play specifically in the ARV Helper flow? (property details, sold history, comps, or all of the above?)
+How fragile is this integration? What happens if Zillow changes their response structure?
+Is there any error handling or fallback if the HasData call fails?
+
+5. ARV Calculation
+
+Once comps are retrieved, walk me through exactly how ARV is calculated
+What formula is used? (price per sqft × subject sqft, median sale price, or something else?)
+Are any comps excluded from the calculation? If so, what criteria?
+Is the calculation happening on the frontend or backend?
+
+6. Error Handling & Edge Cases
+
+What does the user see if RentCast returns zero comps?
+What does the user see if the API call fails entirely?
+Are there any known markets or property types where this consistently fails or returns poor results?
+
+7. Full File Inventory
+
+List every file involved in the ARV Helper — frontend components, backend routes, services, and any shared types or interfaces
+For each file, describe its specific role in the ARV flow
+Flag any files that look overly complex, brittle, or like they have accumulated patch-on-patch fixes over time
+
+Again — do not change anything. Audit and report only. I want the full picture before deciding on next steps.
