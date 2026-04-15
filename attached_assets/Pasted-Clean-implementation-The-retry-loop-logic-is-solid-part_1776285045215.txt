@@ -1,0 +1,68 @@
+Clean implementation. The retry loop logic is solid — particularly the handling of radii outside the expansion sequence (like 5 miles) where it correctly just tries that radius once without attempting expansion. The bestResult fallback for the exhausted-max-radius case is the right approach. And the message rendering is exactly what we asked for — subtle, no chrome, auto-disappears on new search.
+
+The data-testid="text-radius-expanded" attribute is a nice touch — consistent with your existing testid pattern and useful if you ever want to add a PageSense goal around it.
+
+That's Prompt 2 complete. Now Prompt 3 — the shared property cache.
+
+Give Replit Agent This Prompt:
+
+I need to implement a shared property cache across all users. This is a significant feature so read all instructions carefully before making any changes. Confirm your understanding and the files you plan to touch before writing a single line of code.
+
+The goal When any user looks up a property or runs a comp search, the results should be cached and shared across all users. If User A searches for 123 Main St at 8am, and User B searches the same property at 9am, User B gets the cached result instantly at zero API cost. This is especially valuable when the same wholesale property is being circulated to many investors simultaneously.
+
+What gets cached and what stays user-specific
+
+Shared cache — stored by normalized address, visible to all users:
+
+Property details (beds, baths, sqft, year built, property type, image URL)
+AVM estimated value
+Estimated rent
+Street view image URL
+Comp results — cached separately by normalized address + radius + date range
+User-specific — never shared, never cached this way:
+
+Deal analysis inputs (purchase price, rehab budget, financing)
+Saved deals
+ARV comp selections
+Usage quota tracking
+The cache key problem — fix this first The existing property_cache table currently uses raw Zillow URLs as the cache key via the normalized_address column. This means two different URLs for the same property create two separate cache entries. This must be fixed.
+
+The new cache key for property details must be a normalized address string derived from the actual address components — not the URL. Normalization rules:
+
+Extract street number, street name, city, state, zip from whatever source provided them
+Lowercase everything
+Expand common abbreviations: St→street, Ave→avenue, Blvd→boulevard, Dr→drive, Rd→road, Ln→lane, Ct→court, Pl→place, N→north, S→south, E→east, W→west, NW→northwest, NE→northeast, SW→southwest, SE→southeast
+Strip punctuation and extra whitespace
+Include unit/apt number if present, standardized
+For comp results the cache key must be: normalized address + radius in miles + date range in days — for example 123 north main street atlanta ga 30314|1.0|180
+
+The Zillow property ID (zpid) should also be stored in the cache when available, as a secondary lookup key — two URLs with the same zpid are unambiguously the same property.
+
+TTL values by data type
+
+Property details — 7 days
+AVM value and rent estimate — 3 days
+Street view image URL — 30 days
+Comp results — 24 hours
+Schema changes needed The existing property_cache table needs to be extended or a new comp_cache table needs to be added. Assess the current property_cache structure and recommend the cleanest approach — either extend the existing table or add a new one — before making any schema changes. I want to see your recommendation and reasoning first.
+
+Cleanup job Add a cleanup function that deletes all cache rows where expires_at is older than the current timestamp. This function should run automatically on a schedule — once per day is sufficient. It should run server-side, not require any external cron service, and should log how many rows it deleted each time it runs.
+
+Address normalization utility Create a shared utility function normalizeAddress(input: string | AddressComponents): string that can accept either a raw address string or structured address components and returns the normalized cache key string. This function should live in a shared location accessible to both the server services and any future use. Place it in server/utils/normalize-address.ts.
+
+Migration approach We use Drizzle ORM with drizzle-kit push for schema changes. Be aware that there is a known issue where drizzle-kit push gets stuck on the affiliates_slug_unique constraint. If push fails for that reason, use direct SQL to apply the schema change instead. Do not modify the affiliates table or its constraints.
+
+Before making any changes:
+
+Review the current property_cache table structure in shared/schema.ts and server/storage.ts
+Review how property_cache is currently read and written in server/services/rentcast-api.service.ts and server/services/hasdata-api.service.ts
+Review the current property lookup flow in server/routes.ts to understand where caching hooks in today
+Propose your schema recommendation — extend existing table or add new comp_cache table
+List every file you plan to touch
+Wait for my approval before writing any code
+
+
+
+
+
+Claude is AI and 
