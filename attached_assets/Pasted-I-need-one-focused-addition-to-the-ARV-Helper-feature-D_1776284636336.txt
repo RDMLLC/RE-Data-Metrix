@@ -1,0 +1,33 @@
+I need one focused addition to the ARV Helper feature. Do not change anything outside of what is described below.
+Automatic radius expansion when insufficient comps are returned
+Currently if a comp search returns fewer than 3 results, the user sees a "no comps" or "insufficient comps" message and has to manually change the radius themselves. I want the system to handle this automatically.
+The behavior I want:
+When a comp search returns fewer than 3 comps, the system should automatically retry the search with a larger radius. It should expand in steps — for example if the user searched 0.5 miles, retry at 1 mile, then 2 miles, then 3 miles — stopping as soon as 3 or more comps are found or the maximum radius is reached.
+The expansion steps should follow this sequence regardless of what radius the user originally selected:
+
+If current radius is 0.5 miles → expand to 1 mile
+If current radius is 1 mile → expand to 2 miles
+If current radius is 2 miles → expand to 3 miles
+If current radius is 3 miles or more → stop, no further expansion
+
+Important behavior rules:
+
+The user's originally selected radius setting in the UI should not change — the expansion happens silently in the background
+When expanded results are returned, display a non-intrusive message above the comp table that says exactly: "Radius expanded to find more comps" followed by the radius that was actually used in parentheses — for example "Radius expanded to find more comps (1 mile)"
+If expansion reaches the maximum radius and still returns fewer than 3 comps, show the existing insufficient comps warning as normal — do not show the expansion message in this case
+The expansion should happen server-side, not client-side — the frontend makes one request and gets back either the original results or the expanded results, along with a flag indicating whether expansion occurred and what the final radius was
+Do not add any loading state changes or additional spinners — the existing loading behavior is sufficient
+
+What to add to the API response:
+Add two fields to the comp search response:
+
+radiusExpanded: boolean — true if the search was automatically expanded
+actualRadiusMiles: number — the radius that was actually used to find the results
+
+Frontend changes:
+
+Read radiusExpanded and actualRadiusMiles from the response
+If radiusExpanded is true, display the message "Radius expanded to find more comps (X miles)" in a subtle, non-intrusive style above the comp table — not an error, not a warning, just an informational note
+This message should disappear when the user runs a new search
+
+Before making any changes, show me where in the backend the comp search is orchestrated and where on the frontend the results are rendered, so I can confirm you have the right files before you proceed.
