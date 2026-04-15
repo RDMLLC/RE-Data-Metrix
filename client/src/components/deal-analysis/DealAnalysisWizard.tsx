@@ -12,7 +12,7 @@ import Step2PropertyDetails from "./Step2PropertyDetails";
 import Step3PurchaseRenovation from "./Step3PurchaseRenovation";
 import Step4InvestorInfo from "./Step4InvestorInfo";
 import Step5HoldingPeriodExit from "./Step5HoldingPeriodExit";
-import Step6Results from "./Step6Results";
+import Step6Results, { ResultsResponse } from "./Step6Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
 import type { SavedDeal } from "@shared/schema";
 
@@ -137,6 +137,10 @@ export default function DealAnalysisWizard() {
   // Set to true by handleBack() when going from Step 2 → 1 so the mount
   // rehydration effect knows not to clear data in that case.
   const isReturningToStep1 = useRef(false);
+  // Set to true when a saved deal is first loaded so Step6Results skips
+  // auto-save on that initial mount. Cleared when the user navigates back
+  // from Step 6, so re-runs of changed inputs are still auto-saved.
+  const suppressStep6AutoSave = useRef(false);
   
   // Fetch saved deal data when viewing a deal
   const { data: savedDeal, isLoading: isDealLoading, error: dealError } = useQuery<SavedDeal>({
@@ -337,6 +341,44 @@ export default function DealAnalysisWizard() {
         loanPreference: snapshot.loanPreference || "one-of-each",
       });
       
+      // Seed the WizardDataContext so back-navigation through steps 5→4→3→2→1 shows pre-filled data
+      updatePropertyData({
+        address: snapshot.address || "",
+        city: snapshot.city || "",
+        state: snapshot.state || "",
+        zip: snapshot.zipCode || snapshot.zip || "",
+        bedrooms: snapshot.bedrooms,
+        bathrooms: snapshot.bathrooms,
+        squareFootage: snapshot.sqft || snapshot.squareFootage,
+        purchasePrice: snapshot.purchasePrice,
+        arv: snapshot.arv,
+        rehabBudget: snapshot.rehabBudget,
+        taxAssessedValue: snapshot.taxAssessedValue,
+        annualInsurance: snapshot.annualInsurance,
+        monthlyUtilities: snapshot.monthlyUtilities,
+        hoaFees: snapshot.hoaFees,
+        hoaTransferFee: snapshot.hoaTransferFee,
+        projectLength: snapshot.projectLength,
+        sellPrice: snapshot.sellPrice,
+        closingCostsSellPercent: snapshot.closingCostsSellPercent,
+        realEstateCommissionPercent: snapshot.realEstateCommissionPercent,
+        attorneyFees: snapshot.attorneyFees,
+        docPrepFees: snapshot.docPrepFees,
+        titleExam: snapshot.titleExam,
+        titleInsurance: snapshot.titleInsurance,
+      });
+
+      if (snapshot.creditScore) {
+        updateInvestorData({
+          creditScore: snapshot.creditScore,
+          experienceLevel: snapshot.isNewInvestor ? "new" : "experienced",
+        });
+      }
+
+      // Suppress auto-save on this initial Step 6 mount so no duplicate
+      // deal entry is created when opening a saved deal without changes.
+      suppressStep6AutoSave.current = true;
+
       // Jump directly to Step 6 (Results)
       setCurrentStep(6);
       setContextStep(6);
@@ -409,6 +451,11 @@ export default function DealAnalysisWizard() {
         // Flag that we're intentionally returning to Step 1 via Back so the
         // rehydration logic doesn't treat it as a fresh navigation and clear data.
         isReturningToStep1.current = true;
+      }
+      if (currentStep === 6) {
+        // User navigated back from Step 6 — allow auto-save on next Step 6 visit
+        // so re-runs with changed inputs create a new saved entry.
+        suppressStep6AutoSave.current = false;
       }
       updateStep(currentStep - 1);
     }
@@ -539,6 +586,8 @@ export default function DealAnalysisWizard() {
             isSubscriber={isSubscriber}
             viewingDealId={viewingDealId || undefined}
             onEditDeal={viewingDealId ? handleEditDeal : undefined}
+            suppressAutoSave={suppressStep6AutoSave.current}
+            originalResultsSnapshot={savedDeal?.resultsSnapshot as ResultsResponse | null | undefined}
           />
         );
       default:

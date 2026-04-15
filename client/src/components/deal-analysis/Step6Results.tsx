@@ -86,6 +86,8 @@ interface Step5ResultsProps {
   isSubscriber?: boolean;
   viewingDealId?: string;
   onEditDeal?: () => void;
+  suppressAutoSave?: boolean;
+  originalResultsSnapshot?: ResultsResponse | null;
 }
 
 interface OutOfPocketBreakdown {
@@ -143,7 +145,7 @@ interface LoanComparisonColumn {
   isPreferred?: boolean;
 }
 
-interface ResultsResponse {
+export interface ResultsResponse {
   cashSaleColumn: LoanComparisonColumn;
   userLoanColumn: LoanComparisonColumn | null;
   lenderColumns: LoanComparisonColumn[];
@@ -204,7 +206,7 @@ interface DSCRProductWithCalculation {
   };
 }
 
-export default function Step5Results({ form, onBack, isSubscriber = false, viewingDealId, onEditDeal }: Step5ResultsProps) {
+export default function Step5Results({ form, onBack, isSubscriber = false, viewingDealId, onEditDeal, suppressAutoSave = false, originalResultsSnapshot }: Step5ResultsProps) {
   const { toast } = useToast();
   const isViewingDeal = !!viewingDealId;
   const [, setLocation] = useLocation();
@@ -215,10 +217,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const [visibleLenderCount, setVisibleLenderCount] = useState(2);
   const [results, setResults] = useState<ResultsResponse | null>(null);
   
-  // Auto-save state
-  const [dealSaved, setDealSaved] = useState(false);
-  const [savedDealId, setSavedDealId] = useState<string | null>(null);
-  const saveAttemptedRef = useRef(false); // Prevent duplicate saves
+  // Auto-save state — suppressed on the initial mount of a saved deal view so no
+  // duplicate entry is created. Cleared by the wizard when the user navigates back,
+  // enabling auto-save on subsequent re-runs with changed inputs.
+  const [dealSaved, setDealSaved] = useState(() => suppressAutoSave);
+  const [savedDealId, setSavedDealId] = useState<string | null>(() => suppressAutoSave ? (viewingDealId ?? null) : null);
+  const saveAttemptedRef = useRef(suppressAutoSave); // Prevent duplicate saves
   
   // Analysis mode toggle state
   const [analysisMode, setAnalysisMode] = useState<'fix-and-flip' | 'rental-dscr'>('fix-and-flip');
@@ -563,7 +567,23 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   useEffect(() => {
     // Skip if already saved or save already attempted
     if (!results || !isAuthenticated || dealSaved || saveAttemptedRef.current) return;
-    
+
+    // When re-running from a saved deal (viewingDealId set but suppressAutoSave already cleared),
+    // compare computed results against the original snapshot. Skip saving if the profit/OOP are
+    // essentially the same so we don't create a duplicate for unchanged re-runs.
+    if (viewingDealId && originalResultsSnapshot) {
+      const bestCurrent = results.userLoanColumn || results.cashSaleColumn;
+      const bestOriginal = originalResultsSnapshot.userLoanColumn || originalResultsSnapshot.cashSaleColumn;
+      const profitDiff = Math.abs((bestCurrent?.profit ?? 0) - (bestOriginal?.profit ?? 0));
+      const oopDiff = Math.abs((bestCurrent?.outOfPocketCost ?? 0) - (bestOriginal?.outOfPocketCost ?? 0));
+      if (profitDiff < 1 && oopDiff < 1) {
+        // Results are essentially unchanged — skip to avoid duplicate entry
+        saveAttemptedRef.current = true;
+        setDealSaved(true);
+        return;
+      }
+    }
+
     // Mark as attempted immediately to prevent duplicate saves
     saveAttemptedRef.current = true;
     
@@ -1102,7 +1122,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     }
     
     setIsGeneratingPdf(true);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 350)));
     await toPDF();
     setIsGeneratingPdf(false);
     setSelectedPdfColumnIds([]);
@@ -1487,16 +1507,15 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         <div className="flex gap-2">
           {isViewingDeal ? (
             <>
-              <Link href="/portal/dashboard">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  data-testid="button-back-to-deals"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Deals
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onBack}
+                data-testid="button-back-to-deals"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
               {onEditDeal && (
                 <Button
                   type="button"
