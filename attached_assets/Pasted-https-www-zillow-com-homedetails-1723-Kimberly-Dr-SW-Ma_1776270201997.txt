@@ -1,0 +1,24 @@
+https://www.zillow.com/homedetails/1723-Kimberly-Dr-SW-Marietta-GA-30008/14337531_zpid/
+
+No Zestimate
+No picture
+Remove "Show More Loans" from the PDF
+Saved Deals > Step 6
+Automatically saved it as another analysis (Nothing changed, there is no reason to do this)
+Back button > Home page 
+(should be able to do a new analysis with a saved deal)
+(Back button should take the user to screen 5, filled out with previously entered information)
+
+Got it. Before I write the fix prompt, I need to ask a few clarifying questions to make sure I understand the exact expected behavior.
+On the Back button / Saved Deal flow, let me confirm:
+
+When a user is viewing a Saved Deal and hits Back from Step 6, they should land on Step 5 with all their previously entered data still filled in — correct?
+From Step 5 (with saved deal data loaded), they should be able to modify and re-run the analysis as a new analysis, rather than auto-saving over the existing one — is that right?
+The auto-save triggering on Step 6 with no changes — is this happening every time you open a saved deal and reach Step 6, even without touching anything?
+
+And on the Zillow URL / no Zestimate + no picture — is this happening only on certain listings, or on most/all Zillow URLs you're testing? The Marietta GA link you shared — is that a specific repro case, or just one example of a broader issue?
+Also, when you say remove "Show More Loans" from the PDF — is that a button/toggle that's appearing in the generated PDF output, or a UI element on screen that shouldn't be in the PDF export?Correct, back to step 5. It should be filled in with the data from the previous analysis. This continues with the back button in every step. This allows the user to only change the fields they need to change versus entering everything new. 
+Yes, it auto-saves as a new analysis (of the same property, that part is correct)
+It should only save when a new analysis is completed, I.E., arrive at step 6 with information that is different from the original analysis. 
+We worked on the pictures yesterday. I think there were some issues with the API.Show less12:22 PM3 / 3
+
