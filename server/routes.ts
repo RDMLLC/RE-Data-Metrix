@@ -10058,6 +10058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.comps.length > 0) {
         return res.json({
           comps: result.comps,
+          radiusExpanded: result.radiusExpanded,
+          actualRadiusMiles: result.actualRadiusMiles,
           searchCriteria: {
             city,
             state,
@@ -10072,6 +10074,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return res.json({
         comps: [],
+        radiusExpanded: result.radiusExpanded,
+        actualRadiusMiles: result.actualRadiusMiles,
         message: "No comparable sales found in this area. Try expanding your search manually.",
         searchStats: result.searchStats,
       });

@@ -77,6 +77,8 @@ interface CompsSearchResponse {
   suggestedArv: number | null;
   weightedAvgPricePerSqft?: number;
   message?: string;
+  radiusExpanded?: boolean;
+  actualRadiusMiles?: number;
 }
 
 interface ArvHelperProps {
@@ -740,6 +742,13 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         {/* Error message */}
         {compsError && (
           <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">{compsError}</div>
+        )}
+
+        {/* Radius expansion notice */}
+        {compsData?.radiusExpanded && (
+          <p className="text-xs text-muted-foreground" data-testid="text-radius-expanded">
+            Radius expanded to find more comps ({compsData.actualRadiusMiles === 1 ? "1 mile" : `${compsData.actualRadiusMiles} miles`})
+          </p>
         )}
 
         {/* Comps Results */}

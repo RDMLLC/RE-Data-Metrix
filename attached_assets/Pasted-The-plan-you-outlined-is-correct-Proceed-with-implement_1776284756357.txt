@@ -1,0 +1,32 @@
+The plan you outlined is correct. Proceed with implementing the automatic radius expansion exactly as described. Here are the specific requirements to follow as you build:
+In hybrid-comps.service.ts:
+
+Add radiusExpanded: boolean and actualRadiusMiles: number to the HybridCompSearchResult interface at lines 42–51
+Wrap the parallel API calls in searchComps() in a retry loop following this exact expansion sequence: 0.5 → 1 → 2 → 3 miles
+The loop should stop and return results as soon as 3 or more comps are found, or when the maximum radius of 3 miles is reached
+If the original search already returns 3 or more comps, radiusExpanded must be false and actualRadiusMiles must equal the original requested radius — no expansion occurs
+If expansion was needed, radiusExpanded must be true and actualRadiusMiles must equal the radius that finally returned sufficient results
+If maximum radius is reached and still fewer than 3 comps are found, return whatever results exist with radiusExpanded: true and actualRadiusMiles: 3 — the frontend will handle the insufficient comps warning as it does today
+
+In server/routes.ts:
+
+Add radiusExpanded and actualRadiusMiles to both JSON response paths in the /api/comps/search handler — the success path and the empty-comps path
+
+In client/src/components/deal-analysis/ArvHelper.tsx:
+
+Add radiusExpanded?: boolean and actualRadiusMiles?: number to the CompsSearchResponse interface at lines 75–80
+Insert the informational message between the error div and the results div, at approximately line 746
+The message must display exactly this text: "Radius expanded to find more comps" followed by the actual radius in parentheses — for example "Radius expanded to find more comps (1 mile)" — use "mile" for 1 and "miles" for all others
+Style it as a subtle informational note — not an error color, not a warning color. A small neutral or soft blue inline note is appropriate. Do not use a full alert component or anything visually heavy
+The message only appears when compsData.radiusExpanded === true
+The message disappears automatically when compsData is reset at the start of a new search — no additional state management needed beyond what already exists
+Do not touch the insufficient comps warning at lines 991–1009
+Do not change searchRadius UI state under any circumstances
+
+After completing all changes:
+
+Show me the final implementation of the retry loop in hybrid-comps.service.ts so I can review the logic
+Show me the exact message rendering code added to ArvHelper.tsx
+Confirm both JSON response paths in routes.ts include the two new fields
+
+Make the changes one file at a time and confirm each before moving to the next.

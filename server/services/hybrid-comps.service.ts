@@ -41,6 +41,8 @@ export interface HybridCompSearchParams {
 
 export interface HybridCompSearchResult {
   comps: HybridCompResult[];
+  radiusExpanded: boolean;
+  actualRadiusMiles: number;
   searchStats: {
     rentCastCount: number;
     hasDataCount: number;
@@ -49,6 +51,11 @@ export interface HybridCompSearchResult {
     finalCount: number;
   };
 }
+
+// Ordered sequence of radii used for automatic expansion.
+// Expansion stops at 3 miles per product spec.
+const EXPANSION_SEQUENCE = [0.5, 1, 2, 3] as const;
+const MIN_COMPS_THRESHOLD = 3;
 
 export class HybridCompsService {
   private rentCastService: RentCastAPIService;
@@ -77,6 +84,90 @@ export class HybridCompsService {
     } = params;
 
     console.log(`[Hybrid Comps] Starting dual-API search for ${address}, ${city}, ${state}`);
+
+    // Build the list of radii to attempt.
+    // If the user's radius exists in the expansion sequence, start there and walk forward.
+    // If it's outside the sequence (e.g. 5 miles), only try that single radius — no expansion.
+    const startIdx = EXPANSION_SEQUENCE.indexOf(radiusMiles as typeof EXPANSION_SEQUENCE[number]);
+    const radiiToTry: number[] = startIdx >= 0
+      ? Array.from(EXPANSION_SEQUENCE).slice(startIdx)
+      : [radiusMiles];
+
+    let bestResult: { comps: HybridCompResult[]; stats: HybridCompSearchResult['searchStats'] } | null = null;
+    let actualRadiusMiles = radiusMiles;
+    let radiusExpanded = false;
+
+    for (const currentRadius of radiiToTry) {
+      console.log(`[Hybrid Comps] Attempting search at radius=${currentRadius}mi`);
+
+      const attempt = await this.runSingleSearch({
+        address,
+        city,
+        state,
+        zipCode,
+        bedrooms,
+        bathrooms,
+        sqft,
+        propertyType,
+        subjectLat,
+        subjectLng,
+        radiusMiles: currentRadius,
+        saleDateRangeDays,
+        maxResults,
+      });
+
+      actualRadiusMiles = currentRadius;
+      if (currentRadius !== radiusMiles) {
+        radiusExpanded = true;
+      }
+
+      if (attempt.comps.length >= MIN_COMPS_THRESHOLD) {
+        console.log(`[Hybrid Comps] Found ${attempt.comps.length} comps at radius=${currentRadius}mi — stopping expansion`);
+        bestResult = attempt;
+        break;
+      }
+
+      // Keep the best result so far in case we exhaust all radii
+      if (bestResult === null || attempt.comps.length > bestResult.comps.length) {
+        bestResult = attempt;
+      }
+
+      console.log(`[Hybrid Comps] Only ${attempt.comps.length} comps at radius=${currentRadius}mi — ${currentRadius === radiiToTry[radiiToTry.length - 1] ? 'max radius reached' : 'expanding'}`);
+    }
+
+    const finalResult = bestResult ?? { comps: [], stats: { rentCastCount: 0, hasDataCount: 0, mergedCount: 0, totalBeforeDedupe: 0, finalCount: 0 } };
+
+    console.log(`[Hybrid Comps] Final results: ${finalResult.comps.length} comps at ${actualRadiusMiles}mi (expanded=${radiusExpanded})`);
+
+    return {
+      comps: finalResult.comps,
+      radiusExpanded,
+      actualRadiusMiles,
+      searchStats: finalResult.stats,
+    };
+  }
+
+  private async runSingleSearch(params: {
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    bedrooms: number;
+    bathrooms: number;
+    sqft: number;
+    propertyType?: string;
+    subjectLat?: number;
+    subjectLng?: number;
+    radiusMiles: number;
+    saleDateRangeDays: number;
+    maxResults: number;
+  }): Promise<{ comps: HybridCompResult[]; stats: HybridCompSearchResult['searchStats'] }> {
+    const {
+      address, city, state, zipCode,
+      bedrooms, bathrooms, sqft, propertyType,
+      subjectLat, subjectLng,
+      radiusMiles, saleDateRangeDays, maxResults,
+    } = params;
 
     const rentCastComps: HybridCompResult[] = [];
     const hasDataComps: HybridCompResult[] = [];
@@ -118,10 +209,7 @@ export class HybridCompsService {
 
       if (rentCastResult.status === 'fulfilled' && rentCastResult.value?.comps) {
         for (const comp of rentCastResult.value.comps) {
-          rentCastComps.push({
-            ...comp,
-            dataSource: 'rentcast',
-          });
+          rentCastComps.push({ ...comp, dataSource: 'rentcast' });
         }
         console.log(`[Hybrid Comps] RentCast returned ${rentCastComps.length} comps`);
       } else if (rentCastResult.status === 'rejected') {
@@ -130,10 +218,7 @@ export class HybridCompsService {
 
       if (hasDataResult.status === 'fulfilled' && Array.isArray(hasDataResult.value)) {
         for (const comp of hasDataResult.value) {
-          hasDataComps.push({
-            ...comp,
-            dataSource: 'hasdata',
-          });
+          hasDataComps.push({ ...comp, dataSource: 'hasdata' });
         }
         console.log(`[Hybrid Comps] HasData returned ${hasDataComps.length} comps`);
       } else if (hasDataResult.status === 'rejected') {
@@ -163,12 +248,7 @@ export class HybridCompsService {
       finalCount: sortedComps.length,
     };
 
-    console.log(`[Hybrid Comps] Final results: ${stats.finalCount} comps (RentCast: ${stats.rentCastCount}, HasData: ${stats.hasDataCount}, Merged: ${stats.mergedCount})`);
-
-    return {
-      comps: sortedComps,
-      searchStats: stats,
-    };
+    return { comps: sortedComps, stats };
   }
 
   private mergeAndDeduplicate(
