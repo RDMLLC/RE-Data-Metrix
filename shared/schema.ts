@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, integer, decimal, timestamp, jsonb, serial, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, boolean, integer, decimal, numeric, timestamp, jsonb, serial, date, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1036,21 +1036,25 @@ export const insertIntegrationSyncLogSchema = createInsertSchema(integrationSync
 export type InsertIntegrationSyncLog = z.infer<typeof insertIntegrationSyncLogSchema>;
 export type IntegrationSyncLog = typeof integrationSyncLogs.$inferSelect;
 
-// Property Cache - caches Zillow/HasData API responses to reduce API calls
+// Property Cache - caches Zillow/HasData API responses to reduce API calls and share results across users
+// Unique key: (normalized_address, cache_type) — one row per address per data type
 export const propertyCache = pgTable("property_cache", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  normalizedAddress: text("normalized_address").notNull().unique(), // lowercase, trimmed address for matching
+  normalizedAddress: text("normalized_address").notNull(), // canonical lowercase key
+  cacheType: text("cache_type").notNull(), // 'property_details' | 'street_view'
+  zpid: text("zpid"), // Zillow property ID — secondary lookup key, nullable
   street: text("street"),
   city: text("city"),
   state: text("state"),
   postalCode: text("postal_code"),
-  provider: text("provider").notNull().default('hasdata'), // 'hasdata', 'rentcast', etc.
   payload: jsonb("payload").notNull(), // full API response data
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at").notNull(), // cache TTL
   hitCount: integer("hit_count").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  normalizedAddressCacheTypeUnique: uniqueIndex("property_cache_addr_type_unique").on(table.normalizedAddress, table.cacheType),
+}));
 
 export const insertPropertyCacheSchema = createInsertSchema(propertyCache).omit({
   id: true,
@@ -1060,6 +1064,31 @@ export const insertPropertyCacheSchema = createInsertSchema(propertyCache).omit(
 
 export type InsertPropertyCache = z.infer<typeof insertPropertyCacheSchema>;
 export type PropertyCache = typeof propertyCache.$inferSelect;
+
+// Comp Cache - caches comp search results by address + radius + date range (24h TTL)
+export const compCache = pgTable("comp_cache", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cacheKey: text("cache_key").notNull().unique(), // "normalized_address|radiusMiles|dateRangeDays"
+  normalizedAddress: text("normalized_address").notNull(),
+  radiusMiles: numeric("radius_miles").notNull(),
+  dateRangeDays: integer("date_range_days").notNull(),
+  comps: jsonb("comps").notNull(), // array of HybridCompResult
+  radiusExpanded: boolean("radius_expanded").notNull().default(false),
+  actualRadiusMiles: numeric("actual_radius_miles").notNull(),
+  fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  hitCount: integer("hit_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCompCacheSchema = createInsertSchema(compCache).omit({
+  id: true,
+  createdAt: true,
+  hitCount: true,
+});
+
+export type InsertCompCache = z.infer<typeof insertCompCacheSchema>;
+export type CompCache = typeof compCache.$inferSelect;
 
 // Service Regions - geographic areas for contractor coverage
 export const serviceRegions = pgTable("service_regions", {

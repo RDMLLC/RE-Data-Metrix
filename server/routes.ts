@@ -17,6 +17,7 @@ import { parse } from "csv-parse/sync";
 import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts, seedTrainingVideos } from "./seed-data";
 import { outboundWebhookService } from "./services/outbound-webhook.service";
 import { sendMetaCapiEvent } from "./services/metaCapi";
+import { normalizePropertyAddress, extractZpidFromUrl, buildCompCacheKey } from "./utils/normalize-address";
 // @ts-ignore
 import signature from "cookie-signature";
 import { getUncachableStripeClient } from "./services/stripeClient";
@@ -10039,6 +10040,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // ── Comp cache check (before external API calls) ──
+      const compNormalizedAddr = normalizePropertyAddress({
+        street: address || '',
+        city: city || '',
+        state: state || '',
+        zip: zipCode || '',
+      });
+      const requestedRadius = radiusMiles || 3;
+      const requestedDateRange = saleDateRangeDays || 180;
+      const compCacheKey = buildCompCacheKey(compNormalizedAddr, requestedRadius, requestedDateRange);
+
+      const compCached = await storage.getCompCache(compCacheKey);
+      if (compCached) {
+        console.log(`[Comp Cache] HIT key=${compCacheKey} hits=${compCached.hitCount}`);
+        await storage.incrementCompCacheHit(compCacheKey);
+        return res.json({
+          comps: compCached.comps,
+          radiusExpanded: compCached.radiusExpanded,
+          actualRadiusMiles: Number(compCached.actualRadiusMiles),
+          searchCriteria: { city, state, zipCode, bedrooms, bathrooms, sqft },
+          searchStats: { rentCastCount: 0, hasDataCount: 0, mergedCount: 0, totalBeforeDedupe: 0, finalCount: (compCached.comps as any[]).length },
+          _fromCache: true,
+        });
+      }
+
       const result = await hybridService.searchComps({
         address: address || '',
         city,
@@ -10054,6 +10080,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         saleDateRangeDays: saleDateRangeDays || undefined,
         maxResults: 20,
       });
+
+      // ── Write comp result to cache (24h TTL, keyed by actual radius post-expansion) ──
+      try {
+        if (compNormalizedAddr) {
+          const actualCacheKey = buildCompCacheKey(compNormalizedAddr, result.actualRadiusMiles, requestedDateRange);
+          const twentyFourHoursOut = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          await storage.setCompCache({
+            cacheKey: actualCacheKey,
+            normalizedAddress: compNormalizedAddr,
+            radiusMiles: String(requestedRadius),
+            dateRangeDays: requestedDateRange,
+            comps: result.comps as any,
+            radiusExpanded: result.radiusExpanded,
+            actualRadiusMiles: String(result.actualRadiusMiles),
+            fetchedAt: new Date(),
+            expiresAt: twentyFourHoursOut,
+          });
+          console.log(`[Comp Cache] SET key=${actualCacheKey} comps=${result.comps.length} ttl=24h`);
+        }
+      } catch (compCacheWriteErr: any) {
+        console.warn(`[Comp Cache] Write failed (non-fatal): ${compCacheWriteErr.message}`);
+      }
 
       if (result.comps.length > 0) {
         return res.json({
@@ -10299,7 +10347,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Check free user lookup limits
+      // ── Property cache check (before quota to avoid burning free-user slots on cached results) ──
+      const zpidFromUrl = extractZpidFromUrl(url);
+      const normalizedAddrFromUrl = normalizePropertyAddress(url);
+
+      if (!forceRefresh) {
+        let cachedEntry = null;
+        // Primary lookup: by zpid (unambiguous, survives URL slug changes)
+        if (zpidFromUrl) {
+          cachedEntry = await storage.getPropertyCacheByZpid(zpidFromUrl, 'property_details');
+          if (cachedEntry) console.log(`[Property Cache] HIT zpid=${zpidFromUrl}`);
+        }
+        // Fallback lookup: by normalized address derived from URL slug
+        if (!cachedEntry && normalizedAddrFromUrl) {
+          cachedEntry = await storage.getPropertyCache(normalizedAddrFromUrl, 'property_details');
+          if (cachedEntry) console.log(`[Property Cache] HIT addr=${normalizedAddrFromUrl}`);
+        }
+        if (cachedEntry) {
+          return res.json({ ...(cachedEntry.payload as object), _fromCache: true });
+        }
+      }
+
+      // Cache miss — now check and gate free-user quota
       const user = req.user as User | undefined;
       let usageResult: { canLookup: boolean; remainingLookups: number } | null = null;
       
@@ -10497,6 +10566,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           console.log(`[Property Lookup] GOOGLE_MAPS_API_KEY not set — skipping Street View fallback`);
         }
+      }
+
+      // ── Write to property cache (7-day TTL) ──
+      try {
+        const cacheAddr = normalizedAddrFromUrl || normalizePropertyAddress({
+          street: propertyData.address || '',
+          city: propertyData.city || '',
+          state: propertyData.state || '',
+          zip: propertyData.zipCode || '',
+        });
+        if (cacheAddr) {
+          const sevenDaysOut = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          await storage.setPropertyCache({
+            normalizedAddress: cacheAddr,
+            cacheType: 'property_details',
+            zpid: zpidFromUrl ?? undefined,
+            street: propertyData.address || undefined,
+            city: propertyData.city || undefined,
+            state: propertyData.state || undefined,
+            postalCode: propertyData.zipCode || undefined,
+            payload: propertyData as any,
+            fetchedAt: new Date(),
+            expiresAt: sevenDaysOut,
+          });
+          console.log(`[Property Cache] SET addr=${cacheAddr} zpid=${zpidFromUrl ?? 'none'} ttl=7d`);
+        }
+      } catch (cacheWriteErr: any) {
+        console.warn(`[Property Cache] Write failed (non-fatal): ${cacheWriteErr.message}`);
       }
 
       // Include remaining lookups info for free users

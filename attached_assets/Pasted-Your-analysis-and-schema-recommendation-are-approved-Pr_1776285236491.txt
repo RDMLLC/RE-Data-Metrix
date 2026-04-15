@@ -1,0 +1,87 @@
+Your analysis and schema recommendation are approved. Proceed with implementation in the following order. Complete and confirm each step before moving to the next. Do not skip ahead.
+Step 1 — normalizePropertyAddress() utility
+Create server/utils/normalize-address.ts with the shared normalization function. It must handle:
+
+Raw address string input and structured component input
+Lowercasing everything
+Expanding abbreviations: St→street, Ave→avenue, Blvd→boulevard, Dr→drive, Rd→road, Ln→lane, Ct→court, Pl→place, N→north, S→south, E→east, W→west, NW→northwest, NE→northeast, SW→southwest, SE→southeast
+Stripping punctuation and extra whitespace
+Preserving unit/apt numbers if present
+Extracting the address slug from a Zillow URL if a URL is passed in
+
+Also export a buildCompCacheKey(normalizedAddress: string, radiusMiles: number, dateRangeDays: number): string function that returns the pipe-delimited comp cache key format.
+Write unit tests inline as commented examples showing at minimum:
+
+Two different Zillow URLs for the same property producing the same key
+A raw address string producing the same key as a structured component input
+The comp cache key format
+
+Step 2 — Schema changes in shared/schema.ts
+Restructure propertyCache:
+
+Add zpid text column (nullable)
+Add cacheType text column with values 'property_details' or 'street_view'
+Change unique constraint from normalizedAddress alone to (normalizedAddress, cacheType)
+Drop the provider column
+
+Add new compCache table with these columns:
+
+id varchar UUID PK
+cacheKey text unique
+normalizedAddress text
+radiusMiles numeric
+dateRangeDays integer
+comps jsonb
+fetchedAt timestamp
+expiresAt timestamp
+hitCount integer default 0
+createdAt timestamp
+
+Apply schema changes using drizzle-kit push. If push fails due to the known affiliates_slug_unique constraint issue, apply via direct SQL instead. Do not touch the affiliates table or its constraints under any circumstances.
+Step 3 — Storage methods in server/storage.ts
+Update the IStorage interface and DbStorage implementation with these methods:
+For property cache:
+
+getPropertyCache(normalizedAddress: string, cacheType: string): Promise<PropertyCacheRow | null> — returns null if not found or expired
+setPropertyCache(data: InsertPropertyCache): Promise<void> — upsert on (normalizedAddress, cacheType)
+getPropertyCacheByZpid(zpid: string, cacheType: string): Promise<PropertyCacheRow | null> — secondary lookup by zpid
+deleteExpiredPropertyCache(): Promise<number> — returns count of deleted rows
+
+For comp cache:
+
+getCompCache(cacheKey: string): Promise<CompCacheRow | null> — returns null if not found or expired
+setCompCache(data: InsertCompCache): Promise<void> — upsert on cacheKey
+deleteExpiredCompCache(): Promise<number> — returns count of deleted rows
+incrementCompCacheHit(cacheKey: string): Promise<void>
+
+Step 4 — Wire cache into routes
+In server/routes.ts:
+For /api/property/lookup:
+
+Before calling any external API, check getPropertyCache(normalizedAddress, 'property_details')
+If hit and not expired, return cached payload immediately — log the cache hit
+If miss, proceed with existing lookup flow, then call setPropertyCache with 7-day TTL for property details and 3-day TTL for AVM/rent values embedded in the payload
+Also check/set getPropertyCacheByZpid when a zpid is available in the response
+For street view specifically, cache with 30-day TTL under cacheType 'street_view'
+
+For /api/comps/search:
+
+Before calling hybridService.searchComps(), build the comp cache key using buildCompCacheKey() and check getCompCache(cacheKey)
+If hit, return cached comps immediately — include radiusExpanded and actualRadiusMiles from the cached result, increment hit count
+If miss, proceed with existing search, then call setCompCache with 24-hour TTL
+The cache key must use the actual radius used (after any expansion) not the originally requested radius — store actualRadiusMiles in the cache row
+
+Step 5 — Daily cleanup job
+In server/routes.ts or a new server/jobs/cache-cleanup.ts file, create a cleanup function that:
+
+Calls deleteExpiredPropertyCache() and deleteExpiredCompCache()
+Logs the result: [cache-cleanup] Deleted X property cache rows, Y comp cache rows
+Runs automatically once every 24 hours using setInterval
+
+Wire the startup call in server/index.ts — run cleanup once at boot then every 24 hours.
+After all steps are complete:
+
+Confirm the comp_cache table exists in the database with the correct columns
+Show me a sample cache read and cache write from the property lookup route so I can verify the integration
+Confirm the cleanup job is running by showing the startup log output
+Confirm no changes were made to any API service files

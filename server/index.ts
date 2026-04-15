@@ -18,6 +18,19 @@ import { webinarReminderService } from './services/webinar-reminder.service';
 import { signupFollowupService } from './services/signupFollowup.service';
 import { verificationReminderService } from './services/verificationReminder.service';
 import { subscriptionRetentionService } from './services/subscriptionRetention.service';
+import { storage } from './storage';
+
+async function runCacheCleanup() {
+  try {
+    const [propDeleted, compDeleted] = await Promise.all([
+      storage.deleteExpiredPropertyCache(),
+      storage.deleteExpiredCompCache(),
+    ]);
+    console.log(`[cache-cleanup] Deleted ${propDeleted} property cache rows, ${compDeleted} comp cache rows`);
+  } catch (err: any) {
+    console.error('[cache-cleanup] Error during cache cleanup (non-fatal):', err.message);
+  }
+}
 
 const app = express();
 
@@ -466,6 +479,10 @@ app.use((req, res, next) => {
     signupFollowupService.start();
     verificationReminderService.start();
     subscriptionRetentionService.start();
+
+    // Cache cleanup — run once at boot then every 24 hours
+    runCacheCleanup();
+    setInterval(runCacheCleanup, 24 * 60 * 60 * 1000);
 
     // Initialize Stripe after server is already listening so health checks pass immediately
     initStripe().catch((err) => {

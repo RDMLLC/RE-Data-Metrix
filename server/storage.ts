@@ -45,6 +45,8 @@ import {
   type InsertIntegrationSyncLog,
   type PropertyCache,
   type InsertPropertyCache,
+  type CompCache,
+  type InsertCompCache,
   type ServiceRegion,
   type InsertServiceRegion,
   type Contractor,
@@ -77,6 +79,7 @@ import {
   outboundWebhooks as outboundWebhooksTable,
   integrationSyncLogs as integrationSyncLogsTable,
   propertyCache as propertyCacheTable,
+  compCache as compCacheTable,
   userUsageCounters as userUsageCountersTable,
   serviceRegions as serviceRegionsTable,
   contractors as contractorsTable,
@@ -602,11 +605,17 @@ export interface IStorage {
   revokeDemoToken(id: string): Promise<DemoToken | undefined>;
   recordDemoTokenUsage(token: string): Promise<DemoToken | undefined>;
   
-  // Property Cache
-  getPropertyCache(normalizedAddress: string, provider?: string): Promise<PropertyCache | undefined>;
-  setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache>;
-  incrementPropertyCacheHit(id: string): Promise<void>;
+  // Property Cache (shared across all users)
+  getPropertyCache(normalizedAddress: string, cacheType: string): Promise<PropertyCache | null>;
+  getPropertyCacheByZpid(zpid: string, cacheType: string): Promise<PropertyCache | null>;
+  setPropertyCache(data: InsertPropertyCache): Promise<void>;
   deleteExpiredPropertyCache(): Promise<number>;
+
+  // Comp Cache (shared across all users, 24h TTL)
+  getCompCache(cacheKey: string): Promise<CompCache | null>;
+  setCompCache(data: InsertCompCache): Promise<void>;
+  incrementCompCacheHit(cacheKey: string): Promise<void>;
+  deleteExpiredCompCache(): Promise<number>;
   
   // User Usage Counters (for freemium limits)
   getUserUsageCounter(userId: string): Promise<{ propertyLookupCount: number; remainingLookups: number; wholesaleCalcCount: number; remainingWholesaleCalcs: number; pdfDownloadCount: number; remainingPdfDownloads: number; arvHelperCount: number; remainingArvHelpers: number; loanAnalysisCount: number; remainingLoanAnalyses: number; savedDealCount: number; remainingSavedDeals: number; savedLenderCount: number; remainingSavedLenders: number; lastArvAddress: string | null; dscrCount: number; remainingDscrCalcs: number; maxOfferCount: number; remainingMaxOfferCalcs: number; periodEnd: Date } | null>;
@@ -1384,10 +1393,14 @@ export class MemStorage implements IStorage {
   async updateDemoToken(id: string, data: any): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
   async revokeDemoToken(id: string): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
   async recordDemoTokenUsage(token: string): Promise<DemoToken | undefined> { throw new Error("Not implemented in MemStorage"); }
-  async getPropertyCache(normalizedAddress: string, provider?: string): Promise<PropertyCache | undefined> { throw new Error("Not implemented in MemStorage"); }
-  async setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache> { throw new Error("Not implemented in MemStorage"); }
-  async incrementPropertyCacheHit(id: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async getPropertyCache(normalizedAddress: string, cacheType: string): Promise<PropertyCache | null> { throw new Error("Not implemented in MemStorage"); }
+  async getPropertyCacheByZpid(zpid: string, cacheType: string): Promise<PropertyCache | null> { throw new Error("Not implemented in MemStorage"); }
+  async setPropertyCache(data: InsertPropertyCache): Promise<void> { throw new Error("Not implemented in MemStorage"); }
   async deleteExpiredPropertyCache(): Promise<number> { throw new Error("Not implemented in MemStorage"); }
+  async getCompCache(cacheKey: string): Promise<CompCache | null> { throw new Error("Not implemented in MemStorage"); }
+  async setCompCache(data: InsertCompCache): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async incrementCompCacheHit(cacheKey: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async deleteExpiredCompCache(): Promise<number> { throw new Error("Not implemented in MemStorage"); }
   async getUserUsageCounter(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserPropertyLookup(userId: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserWholesaleCalc(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
@@ -3572,53 +3585,103 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Property Cache Methods
-  async getPropertyCache(normalizedAddress: string, provider: string = 'hasdata'): Promise<PropertyCache | undefined> {
+  async getPropertyCache(normalizedAddress: string, cacheType: string): Promise<PropertyCache | null> {
     const now = new Date();
     const [cached] = await db.select()
       .from(propertyCacheTable)
       .where(
         and(
           eq(propertyCacheTable.normalizedAddress, normalizedAddress),
-          eq(propertyCacheTable.provider, provider),
+          eq(propertyCacheTable.cacheType, cacheType),
           gt(propertyCacheTable.expiresAt, now)
         )
       )
       .limit(1);
-    return cached;
+    return cached ?? null;
   }
 
-  async setPropertyCache(data: InsertPropertyCache): Promise<PropertyCache> {
-    // Use upsert - update if exists, insert if not
-    const [result] = await db.insert(propertyCacheTable)
+  async getPropertyCacheByZpid(zpid: string, cacheType: string): Promise<PropertyCache | null> {
+    const now = new Date();
+    const [cached] = await db.select()
+      .from(propertyCacheTable)
+      .where(
+        and(
+          eq(propertyCacheTable.zpid, zpid),
+          eq(propertyCacheTable.cacheType, cacheType),
+          gt(propertyCacheTable.expiresAt, now)
+        )
+      )
+      .limit(1);
+    return cached ?? null;
+  }
+
+  async setPropertyCache(data: InsertPropertyCache): Promise<void> {
+    await db.insert(propertyCacheTable)
       .values(data)
       .onConflictDoUpdate({
-        target: propertyCacheTable.normalizedAddress,
+        target: [propertyCacheTable.normalizedAddress, propertyCacheTable.cacheType],
         set: {
+          zpid: data.zpid,
           street: data.street,
           city: data.city,
           state: data.state,
           postalCode: data.postalCode,
-          provider: data.provider,
           payload: data.payload,
           fetchedAt: new Date(),
           expiresAt: data.expiresAt,
-          hitCount: 0,
+          hitCount: sqlCount`${propertyCacheTable.hitCount} + 1`,
         },
-      })
-      .returning();
-    return result;
-  }
-
-  async incrementPropertyCacheHit(id: string): Promise<void> {
-    await db.update(propertyCacheTable)
-      .set({ hitCount: sqlCount`${propertyCacheTable.hitCount} + 1` })
-      .where(eq(propertyCacheTable.id, id));
+      });
   }
 
   async deleteExpiredPropertyCache(): Promise<number> {
     const now = new Date();
     const result = await db.delete(propertyCacheTable)
       .where(sqlCount`${propertyCacheTable.expiresAt} < ${now}`)
+      .returning();
+    return result.length;
+  }
+
+  async getCompCache(cacheKey: string): Promise<CompCache | null> {
+    const now = new Date();
+    const [cached] = await db.select()
+      .from(compCacheTable)
+      .where(
+        and(
+          eq(compCacheTable.cacheKey, cacheKey),
+          gt(compCacheTable.expiresAt, now)
+        )
+      )
+      .limit(1);
+    return cached ?? null;
+  }
+
+  async setCompCache(data: InsertCompCache): Promise<void> {
+    await db.insert(compCacheTable)
+      .values(data)
+      .onConflictDoUpdate({
+        target: compCacheTable.cacheKey,
+        set: {
+          comps: data.comps,
+          radiusExpanded: data.radiusExpanded,
+          actualRadiusMiles: data.actualRadiusMiles,
+          fetchedAt: new Date(),
+          expiresAt: data.expiresAt,
+          hitCount: 0,
+        },
+      });
+  }
+
+  async incrementCompCacheHit(cacheKey: string): Promise<void> {
+    await db.update(compCacheTable)
+      .set({ hitCount: sqlCount`${compCacheTable.hitCount} + 1` })
+      .where(eq(compCacheTable.cacheKey, cacheKey));
+  }
+
+  async deleteExpiredCompCache(): Promise<number> {
+    const now = new Date();
+    const result = await db.delete(compCacheTable)
+      .where(sqlCount`${compCacheTable.expiresAt} < ${now}`)
       .returning();
     return result.length;
   }
