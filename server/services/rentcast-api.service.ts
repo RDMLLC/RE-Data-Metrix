@@ -1022,8 +1022,8 @@ export class RentCastAPIService implements IPropertyAPIService {
     const searchAddress = `${address}, ${city}, ${state} ${zipCode}`;
     const bedsMin = Math.max(1, bedrooms - 1);
     const bedsMax = bedrooms + 1;
-    const sqftMin = Math.floor(sqft * 0.75);
-    const sqftMax = Math.ceil(sqft * 1.25);
+    const sqftMin = Math.floor(sqft * 0.8);
+    const sqftMax = Math.ceil(sqft * 1.2);
 
     // Map property type to RentCast format
     const rentCastPropertyType = this.mapPropertyTypeToRentCast(propertyType);

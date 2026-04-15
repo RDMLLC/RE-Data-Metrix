@@ -10052,14 +10052,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subjectLng: resolvedLng,
         radiusMiles: radiusMiles || undefined,
         saleDateRangeDays: saleDateRangeDays || undefined,
-        maxResults: 10,
+        maxResults: 20,
       });
 
       if (result.comps.length > 0) {
         return res.json({
           comps: result.comps,
-          suggestedArv: result.suggestedArv,
-          weightedAvgPricePerSqft: result.weightedAvgPricePerSqft,
           searchCriteria: {
             city,
             state,
@@ -10074,7 +10072,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       return res.json({
         comps: [],
-        suggestedArv: null,
         message: "No comparable sales found in this area. Try expanding your search manually.",
         searchStats: result.searchStats,
       });

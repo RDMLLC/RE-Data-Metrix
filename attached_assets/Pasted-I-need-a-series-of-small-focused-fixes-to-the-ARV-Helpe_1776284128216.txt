@@ -1,0 +1,14 @@
+I need a series of small, focused fixes to the ARV Helper feature. Make only the changes described below. Do not refactor anything else or add any unrequested features.
+1. Fix sqft tolerance inconsistency
+RentCast currently filters comps at ±25% of subject square footage. HasData currently filters at ±20%. The UI displays ±20%. Standardize both APIs to use ±20% so the behavior matches what the UI shows. Find wherever the RentCast sqft tolerance is defined and change it to match HasData's ±20%.
+2. Raise the comp display cap from 10 to 20
+The system currently fetches up to 25 comps from RentCast and up to 15 from HasData, merges them, then slices the result to 10 before returning to the frontend. Change that final slice from 10 to 20. Do not change the number fetched from either API — only change the final merged result cap.
+3. Fix HasData date filter — pass it to the API instead of filtering post-call
+Currently the date range selected by the user is not sent to HasData's API. Instead, HasData fetches all results and the backend discards anything outside the date range after the fact. This wastes API credits. Find where the HasData comp search request is built and pass the date range as a parameter in the API call itself so only qualifying results are returned.
+4. Tighten the outlier threshold from 5× to 2.5× median $/sqft
+The current outlier detection removes comps where price per square foot exceeds 5× the median. Change this threshold to 2.5×. This will produce cleaner, more representative ARV calculations by filtering out properties that are significantly above market norms.
+5. Remove the duplicate index on sent_signup_followups
+The audit identified two identical indexes enforcing the same (user_id, email_type) uniqueness constraint on this table — idx_signup_followup_user_type and sent_signup_followups_user_email_type_unique. Drop the redundant one, keeping whichever is the formally defined unique constraint in the schema. Confirm which one to drop before executing.
+6. Remove dead backend ARV calculation
+The backend currently calculates a suggestedArv value in hybrid-comps.service.ts and includes it in the API response. The frontend completely ignores this value and recalculates ARV itself from the returned comp list. Remove the backend ARV calculation entirely. Do not change anything about how the frontend calculates or displays ARV — the user experience must remain identical. Only remove the unused backend computation.
+Before making any changes, confirm the exact line numbers and current values for each item above so I can verify you found the right code. Then make the changes one at a time and confirm each one before moving to the next.

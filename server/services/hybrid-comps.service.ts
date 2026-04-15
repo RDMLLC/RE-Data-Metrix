@@ -41,8 +41,6 @@ export interface HybridCompSearchParams {
 
 export interface HybridCompSearchResult {
   comps: HybridCompResult[];
-  suggestedArv: number | null;
-  weightedAvgPricePerSqft: number | null;
   searchStats: {
     rentCastCount: number;
     hasDataCount: number;
@@ -157,16 +155,6 @@ export class HybridCompsService {
       })
       .slice(0, maxResults);
 
-    let suggestedArv: number | null = null;
-    let weightedAvgPricePerSqft: number | null = null;
-
-    if (sortedComps.length > 0) {
-      const totalSalePrice = sortedComps.reduce((sum, c) => sum + c.salePrice, 0);
-      const totalSqft = sortedComps.reduce((sum, c) => sum + c.sqft, 0);
-      weightedAvgPricePerSqft = totalSqft > 0 ? Math.round(totalSalePrice / totalSqft) : null;
-      suggestedArv = weightedAvgPricePerSqft ? Math.round(weightedAvgPricePerSqft * sqft) : null;
-    }
-
     const stats = {
       rentCastCount: rentCastComps.length,
       hasDataCount: hasDataComps.length,
@@ -179,8 +167,6 @@ export class HybridCompsService {
 
     return {
       comps: sortedComps,
-      suggestedArv,
-      weightedAvgPricePerSqft,
       searchStats: stats,
     };
   }

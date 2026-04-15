@@ -834,11 +834,15 @@ export class HasDataAPIService implements IPropertyAPIService {
         console.log(`[Comps Search] Trying radius=${config.radiusMiles}mi, days=${config.daysBack}`);
         
         // Build search parameters with filtering
+        // Map daysBack to Zillow's sold_in_last filter so the API returns only recent sales
+        const soldInLastMonths = Math.ceil(config.daysBack / 30);
+        const soldInLast = soldInLastMonths <= 3 ? "3m" : soldInLastMonths <= 6 ? "6m" : soldInLastMonths <= 12 ? "1y" : "2y";
         const searchParams = new URLSearchParams({
           keyword: location,
           type: "sold",
           beds_min: String(bedsMin),
           beds_max: String(bedsMax),
+          sold_in_last: soldInLast,
         });
 
         // Build the request URL - correct endpoint is /scrape/zillow/listing

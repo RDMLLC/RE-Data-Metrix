@@ -158,7 +158,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       pricesPerSqft.length % 2 === 0
         ? (pricesPerSqft[midIndex - 1] + pricesPerSqft[midIndex]) / 2
         : pricesPerSqft[midIndex];
-    const outlierThreshold = medianPricePerSqft * 5;
+    const outlierThreshold = medianPricePerSqft * 2.5;
     const outlierIndices = new Set<number>();
     const excludedComps: { comp: SoldPropertyComp; originalIndex: number; reason: string }[] = [];
     compsData.comps.forEach((comp, index) => {
