@@ -770,7 +770,7 @@ export class HasDataAPIService implements IPropertyAPIService {
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
       annualTax: roundedAnnualTax,
-      estimatedValue: this.parseNumber(property.zestimate || property.price),
+      estimatedValue: this.parseNumber(property.zestimate) || undefined,
       estimatedRent: this.parseNumber(
         property.rentZestimate ||
         property.resoFacts?.rentZestimate ||

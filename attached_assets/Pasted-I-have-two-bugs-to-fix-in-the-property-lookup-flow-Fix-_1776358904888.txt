@@ -1,0 +1,33 @@
+I have two bugs to fix in the property lookup flow. Fix them in order. Confirm each fix before moving to the next. Do not change anything outside what is described.
+Bug 1 — Zestimate vs listing price fallback
+In server/services/hasdata-api.service.ts in transformZillowResponse, the current logic is:
+estimatedValue: this.parseNumber(property.zestimate || property.price)
+This means when property.zestimate is null or absent, the listing price silently becomes the estimated value. For a deal analysis tool this is wrong — a listing price is what the seller wants, not an independent valuation.
+Make these changes:
+
+In transformZillowResponse, separate zestimate and price into two distinct fields in the returned object — for example estimatedValue (from zestimate only, null if absent) and listPrice (from price, always preserved separately). Do not collapse them together with ||.
+In server/routes.ts, update the fallback chain for estimatedValue to follow this priority order:
+
+First: HasData zestimate (if non-null and greater than zero)
+Second: RentCast AVM — call it if zestimate is absent, regardless of whether listPrice exists
+Third: listPrice as last resort only — if both zestimate and RentCast AVM return nothing
+
+
+When listPrice is used as the fallback, set a flag in the response — estimatedValueSource: 'list_price' — so the frontend can display a note to the user. Do not change the frontend yet — just add the flag to the response for now.
+When RentCast AVM is used, set estimatedValueSource: 'rentcast_avm'. When Zestimate is used, set estimatedValueSource: 'zestimate'.
+
+Bug 2 — Retire CachedPropertyAPIService
+The CachedPropertyAPIService wrapper around HasDataAPIService is broken following the schema migration. Its cache reads look for cache_type = 'hasdata' which no longer exists, and its cache writes pass a provider field that was removed from the schema. Both operations silently fail. Every property lookup is going live to HasData with no caching benefit from this layer.
+The route-level 7-day cache implemented in the recent session now handles property caching correctly. The CachedPropertyAPIService layer is redundant and broken.
+Do the following:
+
+In server/routes.ts, replace any usage of CachedPropertyAPIService with direct HasDataAPIService — the route-level cache handles caching before the service is ever called anyway
+Do not delete property-cache.service.ts yet — just stop using it. Comment out or bypass the wrapping so HasDataAPIService is called directly
+Confirm that the route-level cache check still runs before any call to HasDataAPIService — the caching behavior must be preserved, just moved fully to the route layer where it was already working
+
+After both fixes:
+
+Show me the updated fallback chain in routes.ts with line numbers
+Show me the estimatedValueSource values being set for each path
+Confirm the route-level cache check still precedes the HasData call
+Do a test lookup of https://www.zillow.com/homedetails/4083-Country-Ln-Gainesville-GA-30507/ and tell me what value comes back for estimatedValue and what estimatedValueSource is set to

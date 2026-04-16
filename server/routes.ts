@@ -10390,10 +10390,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Bug 2 fix: bypass CachedPropertyAPIService (broken after schema migration) —
+      // use HasDataAPIService directly. Route-level 7-day cache (above) handles caching.
+      const hasDataDirectService = new HasDataAPIService();
       let propertyData = null;
       let rentCastFallbackService: ReturnType<typeof PropertyAPIFactory.getService> | null = null;
       try {
-        propertyData = await propertyAPIService.getPropertyByUrl(url, forceRefresh === true);
+        propertyData = await hasDataDirectService.getPropertyByUrl(url);
       } catch (primaryError: any) {
         console.log(`[Property Lookup] Primary lookup (HasData) failed: ${primaryError.message}. Trying RentCast fallback...`);
         try {
@@ -10418,9 +10421,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fetch supplemental data from HasData/Zillow (image, rent Zestimate, HOA)
-      if ('fetchSupplementalDataFromUrl' in propertyAPIService) {
+      // HasDataAPIService does not implement fetchSupplementalDataFromUrl — this block
+      // is preserved in case a future service adds it, but currently evaluates to false.
+      if ('fetchSupplementalDataFromUrl' in hasDataDirectService) {
         try {
-          const supplementalData = await (propertyAPIService as any).fetchSupplementalDataFromUrl(url);
+          const supplementalData = await (hasDataDirectService as any).fetchSupplementalDataFromUrl(url);
           
           // Merge in image if not already present
           if (!propertyData.imageUrl && supplementalData?.imageUrl) {
@@ -10469,10 +10474,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (supplementalError) {
           console.log("Could not fetch supplemental property data:", supplementalError);
         }
-      } else if ('fetchPropertyImageFromUrl' in propertyAPIService) {
+      } else if ('fetchPropertyImageFromUrl' in hasDataDirectService) {
         // Fallback to just image fetch if supplemental not available
         try {
-          const imageUrl = await (propertyAPIService as any).fetchPropertyImageFromUrl(url);
+          const imageUrl = await (hasDataDirectService as any).fetchPropertyImageFromUrl(url);
           if (imageUrl) {
             propertyData.imageUrl = imageUrl;
           }
@@ -10514,21 +10519,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // FALLBACK: If we still don't have an estimated value, fetch from RentCast AVM
-      if (!propertyData.estimatedValue && propertyData.address && propertyData.city && propertyData.state && propertyData.zipCode) {
-        try {
-          console.log(`[Property Lookup] Estimated value missing, fetching from RentCast AVM...`);
-          const rcAVMService = PropertyAPIFactory.getService("rentcast");
-          if (rcAVMService.getValueEstimateByAddress) {
-            const fullAddress = `${propertyData.address}, ${propertyData.city}, ${propertyData.state} ${propertyData.zipCode}`;
-            const avmValue = await rcAVMService.getValueEstimateByAddress(fullAddress);
-            if (avmValue) {
-              console.log(`[Property Lookup] Got estimated value from RentCast AVM: $${avmValue}`);
-              propertyData.estimatedValue = avmValue;
+      // ── estimatedValue priority chain ──
+      // Step 1: Zestimate (from HasData — already in estimatedValue if non-null)
+      if (propertyData.estimatedValue && propertyData.estimatedValue > 0) {
+        propertyData.estimatedValueSource = 'zestimate';
+        console.log(`[Property Lookup] estimatedValue source=zestimate value=$${propertyData.estimatedValue}`);
+      } else {
+        // Step 2: RentCast AVM — called whenever Zestimate is absent, regardless of listPrice
+        let avmSucceeded = false;
+        if (propertyData.address && propertyData.city && propertyData.state && propertyData.zipCode) {
+          try {
+            console.log(`[Property Lookup] Zestimate absent — fetching from RentCast AVM...`);
+            const rcAVMService = PropertyAPIFactory.getService("rentcast");
+            if (rcAVMService.getValueEstimateByAddress) {
+              const fullAddress = `${propertyData.address}, ${propertyData.city}, ${propertyData.state} ${propertyData.zipCode}`;
+              const avmValue = await rcAVMService.getValueEstimateByAddress(fullAddress);
+              if (avmValue) {
+                console.log(`[Property Lookup] estimatedValue source=rentcast_avm value=$${avmValue}`);
+                propertyData.estimatedValue = avmValue;
+                propertyData.estimatedValueSource = 'rentcast_avm';
+                avmSucceeded = true;
+              }
             }
+          } catch (avmValueError) {
+            console.log("[Property Lookup] Could not fetch AVM value from RentCast:", avmValueError);
           }
-        } catch (avmValueError) {
-          console.log("[Property Lookup] Could not fetch AVM value from RentCast:", avmValueError);
+        }
+        // Step 3: Last resort — list price (seller's ask, not an independent valuation)
+        if (!avmSucceeded && propertyData.listPrice && propertyData.listPrice > 0) {
+          console.log(`[Property Lookup] estimatedValue source=list_price value=$${propertyData.listPrice} (Zestimate absent, RentCast AVM unavailable)`);
+          propertyData.estimatedValue = propertyData.listPrice;
+          propertyData.estimatedValueSource = 'list_price';
         }
       }
 

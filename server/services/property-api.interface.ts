@@ -12,6 +12,7 @@ export interface PropertyData {
   taxAssessedValue?: number;
   annualTax?: number;
   estimatedValue?: number;
+  estimatedValueSource?: 'zestimate' | 'rentcast_avm' | 'list_price';
   estimatedRent?: number;
   estimatedRentSource?: "RentCast" | "Zillow";
   rentCastEstimate?: number | null;
