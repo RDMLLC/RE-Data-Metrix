@@ -10574,7 +10574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // FALLBACK: If we still have no property image, use Google Street View (server-proxied)
       // The key is kept server-side; clients receive an internal proxy URL.
-      if (!propertyData.imageUrl && propertyData.address && propertyData.city && propertyData.state) {
+      if (!propertyData.imageUrl && (propertyData.address?.trim()?.length ?? 0) > 0 && (propertyData.city?.trim()?.length ?? 0) > 0 && (propertyData.state?.trim()?.length ?? 0) > 0) {
         if (process.env.GOOGLE_MAPS_API_KEY) {
           const streetAddress = [
             propertyData.address,

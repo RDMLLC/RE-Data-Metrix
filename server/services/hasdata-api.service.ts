@@ -552,30 +552,50 @@ export class HasDataAPIService implements IPropertyAPIService {
       console.log(`Extended data needed — hasTaxData: ${hasTaxData}, hasHoaData: ${hasHoaData}. Fetching extended JSON...`);
       const extendedData = await this.fetchExtendedData(requestMetadata.json);
       if (extendedData) {
-        // Merge extended data with property data
-        // Extended data might have different structure - check common patterns
         const extendedProperty = extendedData.property || extendedData;
-        
-        // Log extended data tax-related keys
-        const extendedTaxKeys = Object.keys(extendedProperty).filter(k => 
+
+        // Log extended data tax/HOA keys for debugging
+        const extendedTaxKeys = Object.keys(extendedProperty).filter(k =>
           k.toLowerCase().includes('tax') || k.toLowerCase().includes('assess')
         );
         console.log("Extended data tax-related keys:", extendedTaxKeys);
         extendedTaxKeys.forEach(key => {
           console.log(`  ${key}:`, JSON.stringify(extendedProperty[key]).substring(0, 200));
         });
-        
-        // Check for resoFacts in extended data
         if (extendedProperty.resoFacts) {
-          console.log("Extended resoFacts found, tax keys:", 
-            Object.keys(extendedProperty.resoFacts).filter(k => 
+          console.log("Extended resoFacts found, tax keys:",
+            Object.keys(extendedProperty.resoFacts).filter(k =>
               k.toLowerCase().includes('tax') || k.toLowerCase().includes('assess')
             )
           );
         }
-        
-        // Merge extended property data, preferring extended data for missing fields
-        property = { ...property, ...extendedProperty };
+
+        // ── Targeted merge: HOA and tax fields ONLY ──
+        // The extended JSON uses a different schema from HasData's normalized response.
+        // A full spread would overwrite image, address, homeType, beds, baths, area,
+        // zestimate, price, listPrice, etc. with null/undefined values.
+        // Instead, only pull the specific fields the extended fetch was designed to provide.
+        property = {
+          ...property,
+          // HOA fields — always prefer extended data as the authoritative source
+          hoaFee:          extendedProperty.hoaFee          ?? property.hoaFee,
+          monthlyHoaFee:   extendedProperty.monthlyHoaFee   ?? property.monthlyHoaFee,
+          associationFee:  extendedProperty.associationFee  ?? property.associationFee,
+          hoaDues:         extendedProperty.hoaDues         ?? property.hoaDues,
+          hoa:             extendedProperty.hoa             ?? property.hoa,
+          // resoFacts: merge both objects — extended data may add HOA sub-fields
+          resoFacts: extendedProperty.resoFacts
+            ? { ...(property.resoFacts || {}), ...extendedProperty.resoFacts }
+            : property.resoFacts,
+          // Tax fields — fill gaps only, never overwrite existing non-null data
+          taxAssessedValue: property.taxAssessedValue || extendedProperty.taxAssessedValue,
+          taxHistory: (Array.isArray(property.taxHistory) && property.taxHistory.length > 0)
+            ? property.taxHistory
+            : extendedProperty.taxHistory,
+          propertyTaxes:   property.propertyTaxes   || extendedProperty.propertyTaxes,
+          taxAnnualAmount: property.taxAnnualAmount  || extendedProperty.taxAnnualAmount,
+          annualTax:       property.annualTax        || extendedProperty.annualTax,
+        };
       }
     }
     
@@ -770,9 +790,20 @@ export class HasDataAPIService implements IPropertyAPIService {
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
       annualTax: roundedAnnualTax,
-      estimatedValue: this.parseNumber(property.zestimate) || undefined,
+      estimatedValue: (() => {
+        // property.zestimate may be a nested object { zestimate: 169700, rentZestimate: 1310 }
+        // or a plain number depending on the HasData/Zillow response version
+        const zestimateValue = typeof property.zestimate === 'object' && property.zestimate !== null
+          ? property.zestimate?.zestimate
+          : property.zestimate;
+        return this.parseNumber(zestimateValue) || undefined;
+      })(),
       estimatedRent: this.parseNumber(
         property.rentZestimate ||
+        // rentZestimate may be nested inside the zestimate object
+        (typeof property.zestimate === 'object' && property.zestimate !== null
+          ? property.zestimate?.rentZestimate
+          : undefined) ||
         property.resoFacts?.rentZestimate ||
         property.hdpData?.homeInfo?.rentZestimate ||
         property.rentalValue ||

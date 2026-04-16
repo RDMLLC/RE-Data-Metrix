@@ -1,0 +1,37 @@
+I have three bugs to fix in the property lookup flow based on a diagnostic report. Fix them in order. Confirm each fix before moving to the next. Do not change anything outside what is described.
+Bug 1 — Extended JSON merge destroys existing property data
+In server/services/hasdata-api.service.ts, in transformZillowResponse, the extended JSON fetch merges raw Zillow JSON on top of the normalized HasData response using:
+javascriptproperty = { ...property, ...extendedProperty };
+This overwrites correctly populated fields — image, address, homeType, beds, baths, zestimate, price — with null or undefined values from the raw Zillow JSON which uses a completely different field structure. This is the root cause of intermittent image loss, address corruption, and missing property data.
+Fix this by changing the merge strategy:
+
+Instead of blindly spreading extendedProperty over property, only extract the specific fields the extended JSON fetch was designed to retrieve — HOA data fields
+Preserve all existing non-null values from the original property object
+The merge should be additive for HOA fields only, never destructive to existing data
+Specifically: image, address, homeType, beds, baths, area, zestimate, price, listPrice must never be overwritten by the extended JSON merge if they already have non-null values
+
+Show me the before and after of the merge logic.
+Bug 2 — Zestimate is a nested object, not a number
+In transformZillowResponse, the current code is:
+javascriptestimatedValue: this.parseNumber(property.zestimate)
+The raw HasData/Zillow response returns property.zestimate as a nested object:
+javascript{ zestimate: 169700, rentZestimate: 1310, zestimateLowPercent: 7 }
+parseNumber() receives an object and returns undefined, so the Zestimate is never extracted.
+Fix this by extracting the nested value correctly:
+javascriptconst zestimateValue = typeof property.zestimate === 'object' 
+  ? property.zestimate?.zestimate 
+  : property.zestimate;
+estimatedValue: this.parseNumber(zestimateValue)
+Also check whether rentZestimate from this nested object is being used anywhere for the estimated rent value, and if so apply the same fix.
+Bug 3 — Street View fallback has two blockers
+In server/routes.ts, the Street View fallback is blocked by two conditions:
+Block 1: propertyData.address is an empty string when the extended JSON merge corrupts it. An empty string is falsy so the entire fallback condition short-circuits. Once Bug 1 is fixed this should largely resolve itself — but add an explicit trim and length check to be safe:
+javascriptif (!propertyData.imageUrl && propertyData.address?.trim().length > 0 && ...)
+Block 2: GOOGLE_MAPS_API_KEY is not set in the environment. Add it now. Check if the key exists anywhere in the project — it may have been set previously and dropped from the environment variables. If it exists, re-add it to the Replit environment secrets. If it does not exist, tell me so I can provide it.
+After all three fixes:
+
+Run a fresh lookup of https://www.zillow.com/homedetails/2445-Ellison-Ave-Omaha-NE-68111/75871941_zpid/ in development
+Report what imageUrl contains after the HasData response and after the extended JSON merge
+Report what estimatedValue and estimatedValueSource are set to
+Report whether the Street View fallback fires or is still blocked
+Confirm the Gainesville GA property https://www.zillow.com/homedetails/4083-Country-Ln-Gainesville-GA-30507/ also returns correctly with address and image populated
