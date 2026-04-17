@@ -1,0 +1,98 @@
+I need significant improvements to the ARV Helper comp selection logic. This is a multi-part change touching both backend and frontend. Read all instructions carefully. Confirm your understanding and every file you plan to touch before writing any code.
+Context
+Currently all comps are auto-selected by default and outliers are silently hidden from the table. This produces poor default ARV calculations and gives investors no visibility into excluded comps. The goal is smart auto-selection that mirrors professional comp selection methodology — closest, most recent, most representative comps selected by default, with problem comps flagged but still visible.
+Part 1 — Backend changes in hybrid-comps.service.ts
+Add three new fields to HybridCompResult interface:
+typescriptsimilarityScore?: number;      // 0-100, higher = better comp
+distressedFlag?: boolean;      // true when $/sqft < median / threshold
+outlierFlag?: boolean;         // true when $/sqft > median * threshold
+Similarity scoring formula:
+Calculate similarityScore for each comp using these weighted components — total must add to 100:
+Distance score (40 points maximum):
+
+Under 0.25 miles: 40 points
+0.25 to 0.5 miles: 32 points
+0.5 to 0.75 miles: 20 points
+0.75 to 1.0 miles: 10 points
+Over 1.0 miles: 4 points
+
+Recency score (35 points maximum):
+
+Sold within 2 months: 35 points
+Sold within 3 months: 28 points
+Sold within 4 months: 21 points
+Sold within 5 months: 14 points
+Sold within 6 months: 7 points
+Older than 6 months: 0 points
+
+$/sqft proximity to median score (25 points maximum):
+
+Within 10% of median: 25 points
+Within 20% of median: 18 points
+Within 30% of median: 10 points
+Within 40% of median: 5 points
+More than 40% from median: 0 points
+
+Outlier and distressed flag thresholds — dynamic based on comp count:
+When 5 or more comps are returned after deduplication:
+
+outlierFlag = true when $/sqft > median × 1.5
+distressedFlag = true when $/sqft < median / 1.5
+
+When fewer than 5 comps are returned:
+
+outlierFlag = true when $/sqft > median × 2.0
+distressedFlag = true when $/sqft < median / 2.0
+
+Important: Flagged comps still appear in the response. Do not remove them. The frontend decides whether to show or hide them.
+Compute the median $/sqft across all returned comps before applying any flags. Apply scores and flags after deduplication, before returning the response.
+Part 2 — Frontend changes in ArvHelper.tsx
+Change 1 — Smart initial selection
+Replace the current blanket select-all logic at lines 314 and 341:
+typescript// CURRENT — selects everything
+setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
+With smart selection based on similarityScore, outlierFlag, and distressedFlag:
+
+Auto-select comps where similarityScore >= 40 AND outlierFlag !== true AND distressedFlag !== true
+Cap auto-selection at 6 comps maximum — if more than 6 qualify, select the top 6 by similarityScore
+Minimum floor: if fewer than 3 comps qualify for auto-selection, include the next highest scoring comps until 3 are selected regardless of flags — but still show their flags
+Apply this same logic in both the line 314 and line 341 paths
+
+Change 2 — Show ALL comps in the table, never hide them
+Currently outliers are filtered out of sortedCompsWithIndices at lines 185-187 and silently disappear. Remove this filter. All comps must appear in the table regardless of flag status.
+Flagged comps should be visually distinguished:
+
+distressedFlag: amber warning icon in the row, tooltip: "Possible distressed or investor sale — excluded from ARV by default. Review before including."
+outlierFlag: amber warning icon in the row, tooltip: "Price per sqft is significantly above nearby comps — may indicate incorrect data. Review before including."
+Flagged comps appear at the bottom of the sorted list, after all non-flagged comps
+Flagged comps are unchecked by default (handled by Change 1 above)
+User can still manually check any flagged comp
+
+Change 3 — Wide range warning
+After comps are loaded and selection is applied, calculate the $/sqft range across currently selected comps. If the spread between the highest and lowest selected $/sqft exceeds 60% of the lowest value, show an amber warning above the comp table:
+"Wide price range detected among selected comps ($X to $Y per sqft). One or more comps may not be representative — review before using this ARV."
+This warning should update dynamically as the user checks and unchecks comps.
+Change 4 — Update the ARV calculation
+The current ARV calculation at lines 242-243 cross-references visibleOriginalIndices to exclude hidden outliers. Since outliers are no longer hidden, remove the visibleOriginalIndices filter. The ARV calculation should only use selectedCompIndices — whatever the user has checked.
+typescript// CURRENT
+const visibleOriginalIndices = new Set(sortedCompsWithIndices.map((item) => item.originalIndex));
+const selectedComps = compsData.comps.filter(
+  (_, index) => selectedCompIndices.has(index) && visibleOriginalIndices.has(index)
+);
+
+// NEW
+const selectedComps = compsData.comps.filter(
+  (_, index) => selectedCompIndices.has(index)
+);
+Part 3 — Update SoldPropertyComp interface in ArvHelper.tsx
+Add the three new fields to the frontend interface to match the backend:
+typescriptsimilarityScore?: number;
+distressedFlag?: boolean;
+outlierFlag?: boolean;
+Before making any changes:
+
+List every file you plan to touch
+Confirm the median $/sqft calculation approach — will it use all comps or only non-flagged comps for the median? (Answer: use ALL comps including flagged ones for the median calculation — this ensures the thresholds are always relative to the full dataset)
+Confirm how the minimum floor of 3 auto-selected comps will work when all available comps are flagged
+Confirm the wide range warning will update in real time as the user changes selections
+Wait for my approval before writing any code
