@@ -138,42 +138,6 @@ export class HasDataAPIService implements IPropertyAPIService {
     throw new Error("Address-based lookup not supported. Use getPropertyByUrl instead.");
   }
 
-  // Extract the Zillow ZPID from a URL and return the short-form URL.
-  // e.g. .../718-Hairston.../14525753_zpid/ → https://www.zillow.com/homedetails/14525753_zpid/
-  private extractZpidShortUrl(url: string): string | null {
-    const match = url.match(/\/(\d+)_zpid/);
-    if (!match) return null;
-    return `https://www.zillow.com/homedetails/${match[1]}_zpid/`;
-  }
-
-  // Low-level fetch against HasData with a given URL and endpoint.
-  // Returns raw parsed JSON or null/throws on error.
-  private async fetchHasDataZillow(targetUrl: string): Promise<any> {
-    const endpoint = `${this.baseUrl}/scrape/zillow/property`;
-    const params = new URLSearchParams({ url: targetUrl });
-    console.log(`[HasData] Fetching from ${endpoint} with URL: ${targetUrl}`);
-    const response = await fetch(`${endpoint}?${params.toString()}`, {
-      method: "GET",
-      headers: {
-        "x-api-key": this.apiKey,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      console.error(`[HasData] ${response.status} for ${targetUrl}: ${errorText.substring(0, 300)}`);
-      return null; // signal caller to try next option
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      const text = await response.text();
-      try { return JSON.parse(text); } catch { return null; }
-    }
-    return response.json();
-  }
-
   async getPropertyByUrl(url: string): Promise<PropertyData | null> {
     try {
       // Check if API key is configured
@@ -188,29 +152,12 @@ export class HasDataAPIService implements IPropertyAPIService {
         throw new Error("Please provide a valid Redfin or Zillow property URL");
       }
 
-      // --- Zillow path: try full URL first, then short ZPID URL as fallback ---
-      if (isZillow) {
-        let data = await this.fetchHasDataZillow(url);
+      const endpoint = isRedfin 
+        ? `${this.baseUrl}/scrape/redfin/property`
+        : `${this.baseUrl}/scrape/zillow/property`;
 
-        if (!data) {
-          const shortUrl = this.extractZpidShortUrl(url);
-          if (shortUrl && shortUrl !== url) {
-            console.log(`[HasData] Full URL failed — retrying with short ZPID URL: ${shortUrl}`);
-            data = await this.fetchHasDataZillow(shortUrl);
-          }
-        }
-
-        if (!data) {
-          throw new Error("Unable to find property. Please check the URL and try again, or use manual entry.");
-        }
-
-        console.log("HasData API raw response:", JSON.stringify(data, null, 2));
-        return await this.transformZillowResponse(data);
-      }
-
-      // --- Redfin path (unchanged) ---
-      const endpoint = `${this.baseUrl}/scrape/redfin/property`;
       const params = new URLSearchParams({ url });
+
       console.log(`Fetching property data from HasData API: ${endpoint}`);
 
       const response = await fetch(`${endpoint}?${params.toString()}`, {
@@ -238,8 +185,8 @@ export class HasDataAPIService implements IPropertyAPIService {
           throw new Error("Property lookup service is temporarily unavailable. Please use manual entry.");
         }
         
+        // Return user-friendly error message
         if (response.status === 400) {
-          console.error(`[HasData] 400 response body: ${errorText.substring(0, 500)}`);
           throw new Error("Unable to find property. Please check the URL and try again, or use manual entry.");
         } else if (response.status === 401 || response.status === 403) {
           throw new Error("Property lookup service is temporarily unavailable. Please use manual entry.");
@@ -341,23 +288,19 @@ export class HasDataAPIService implements IPropertyAPIService {
   private normalizePropertyType(rawType: string | undefined): string | undefined {
     if (!rawType) return undefined;
     
-    const normalized = rawType.toLowerCase().trim().replace(/[_\s-]+/g, '');
+    const normalized = rawType.toLowerCase().trim();
     
-    // Check attached/townhouse FIRST (before "house" check) since "townhouse" contains "house"
-    if (normalized.includes('townhouse') || normalized.includes('townhome') || normalized.includes('townhm')) {
+    // Map common API values to human-readable display values
+    if (normalized.includes('townhouse') || normalized.includes('town house') || normalized.includes('townhome')) {
       return 'Townhouse';
     }
-    if (normalized.includes('condo') || normalized.includes('condominium') || normalized.includes('coop') || normalized.includes('co-op')) {
-      return 'Condo';
-    }
-    // Single family — catches "single_family", "singlefamily", "SingleFamilyResidence", "Houses", "house"
-    if ((normalized.includes('single') && normalized.includes('family')) || normalized === 'houses' || normalized === 'house' || normalized.includes('singlefamily') || normalized.includes('detached')) {
+    if (normalized.includes('single') && normalized.includes('family')) {
       return 'Single Family';
     }
-    if (normalized.includes('multi') && normalized.includes('family')) {
-      return 'Multi-Family';
+    if (normalized.includes('condo') || normalized.includes('co-op') || normalized.includes('coop')) {
+      return 'Condo';
     }
-    if (normalized.includes('duplex') || normalized.includes('triplex') || normalized.includes('fourplex') || normalized.includes('quadplex')) {
+    if (normalized.includes('multi') && normalized.includes('family')) {
       return 'Multi-Family';
     }
     if (normalized.includes('apartment')) {
@@ -468,16 +411,6 @@ export class HasDataAPIService implements IPropertyAPIService {
       extractedAnnualTax: annualTax
     });
     
-    // Handle area as object or number (Redfin path)
-    const redfinAreaObj = typeof property.area === 'object' && property.area !== null ? property.area : null;
-    const redfinAreaNum = typeof property.area === 'number' ? property.area : null;
-    const redfinSqft = this.parseNumber(
-      redfinAreaObj?.livingArea || redfinAreaNum || property.sqFt || property.squareFeet
-    );
-    const redfinLotSize = this.parseNumber(
-      redfinAreaObj?.lotSize || property.lotSize || property.lotAreaValue
-    );
-
     return {
       address: property.address?.street || '',
       city: property.address?.city || '',
@@ -486,11 +419,11 @@ export class HasDataAPIService implements IPropertyAPIService {
       propertyType: this.normalizePropertyType(propertyType),
       bedrooms: this.parseNumber(property.beds || property.bedrooms),
       bathrooms: this.parseNumber(property.baths || property.bathrooms),
-      sqft: redfinSqft,
-      lotSize: redfinLotSize,
+      sqft: this.parseNumber(property.area || property.sqFt || property.squareFeet),
+      lotSize: this.parseNumber(property.lotSize),
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
-      annualTax: annualTax !== undefined ? Math.round(annualTax) : undefined,
+      annualTax,
       estimatedValue: this.parseNumber(property.price || property.listPrice),
       lastSalePrice: this.parseNumber(property.lastSoldPrice),
       lastSaleDate: property.lastSoldDate,
@@ -531,71 +464,35 @@ export class HasDataAPIService implements IPropertyAPIService {
                        (property.propertyTaxes && property.propertyTaxes > 0) || 
                        (property.taxAnnualAmount && property.taxAnnualAmount > 0) || 
                        (property.resoFacts?.taxAnnualAmount && property.resoFacts.taxAnnualAmount > 0);
-
-    // Preliminary HOA check — check the same fields that the full extraction below uses.
-    // If HOA is absent from the initial response we also need the extended JSON (resoFacts).
-    const hasHoaData = !!(
-      property.hoaFee ||
-      property.monthlyHoaFee ||
-      property.associationFee ||
-      property.hoaDues ||
-      property.hoa?.fee ||
-      property.hoa?.monthlyFee ||
-      property.resoFacts?.hoaFee ||
-      property.resoFacts?.associationFee ||
-      property.resoFacts?.associationFee2 ||
-      property.homeValues?.hoaFee ||
-      property.attributionInfo?.hoaFee
-    );
     
-    if ((!hasTaxData || !hasHoaData) && requestMetadata?.json) {
-      console.log(`Extended data needed — hasTaxData: ${hasTaxData}, hasHoaData: ${hasHoaData}. Fetching extended JSON...`);
+    if (!hasTaxData && requestMetadata?.json) {
+      console.log("Tax data missing from initial response, fetching extended data...");
       const extendedData = await this.fetchExtendedData(requestMetadata.json);
       if (extendedData) {
+        // Merge extended data with property data
+        // Extended data might have different structure - check common patterns
         const extendedProperty = extendedData.property || extendedData;
-
-        // Log extended data tax/HOA keys for debugging
-        const extendedTaxKeys = Object.keys(extendedProperty).filter(k =>
+        
+        // Log extended data tax-related keys
+        const extendedTaxKeys = Object.keys(extendedProperty).filter(k => 
           k.toLowerCase().includes('tax') || k.toLowerCase().includes('assess')
         );
         console.log("Extended data tax-related keys:", extendedTaxKeys);
         extendedTaxKeys.forEach(key => {
           console.log(`  ${key}:`, JSON.stringify(extendedProperty[key]).substring(0, 200));
         });
+        
+        // Check for resoFacts in extended data
         if (extendedProperty.resoFacts) {
-          console.log("Extended resoFacts found, tax keys:",
-            Object.keys(extendedProperty.resoFacts).filter(k =>
+          console.log("Extended resoFacts found, tax keys:", 
+            Object.keys(extendedProperty.resoFacts).filter(k => 
               k.toLowerCase().includes('tax') || k.toLowerCase().includes('assess')
             )
           );
         }
-
-        // ── Targeted merge: HOA and tax fields ONLY ──
-        // The extended JSON uses a different schema from HasData's normalized response.
-        // A full spread would overwrite image, address, homeType, beds, baths, area,
-        // zestimate, price, listPrice, etc. with null/undefined values.
-        // Instead, only pull the specific fields the extended fetch was designed to provide.
-        property = {
-          ...property,
-          // HOA fields — always prefer extended data as the authoritative source
-          hoaFee:          extendedProperty.hoaFee          ?? property.hoaFee,
-          monthlyHoaFee:   extendedProperty.monthlyHoaFee   ?? property.monthlyHoaFee,
-          associationFee:  extendedProperty.associationFee  ?? property.associationFee,
-          hoaDues:         extendedProperty.hoaDues         ?? property.hoaDues,
-          hoa:             extendedProperty.hoa             ?? property.hoa,
-          // resoFacts: merge both objects — extended data may add HOA sub-fields
-          resoFacts: extendedProperty.resoFacts
-            ? { ...(property.resoFacts || {}), ...extendedProperty.resoFacts }
-            : property.resoFacts,
-          // Tax fields — fill gaps only, never overwrite existing non-null data
-          taxAssessedValue: property.taxAssessedValue || extendedProperty.taxAssessedValue,
-          taxHistory: (Array.isArray(property.taxHistory) && property.taxHistory.length > 0)
-            ? property.taxHistory
-            : extendedProperty.taxHistory,
-          propertyTaxes:   property.propertyTaxes   || extendedProperty.propertyTaxes,
-          taxAnnualAmount: property.taxAnnualAmount  || extendedProperty.taxAnnualAmount,
-          annualTax:       property.annualTax        || extendedProperty.annualTax,
-        };
+        
+        // Merge extended property data, preferring extended data for missing fields
+        property = { ...property, ...extendedProperty };
       }
     }
     
@@ -718,99 +615,24 @@ export class HasDataAPIService implements IPropertyAPIService {
       zestimate: property.zestimate,
       price: property.price,
       listPrice: property.listPrice,
-      rentZestimate: property.rentZestimate,
-      resoFactsRentZestimate: property.resoFacts?.rentZestimate,
-      hdpRentZestimate: property.hdpData?.homeInfo?.rentZestimate,
-      rentalValue: property.rentalValue,
-      rentalPrice: property.rentalPrice,
-      monthlyRent: property.monthlyRent,
-      rentValue: property.rentValue,
+      rentZestimate: property.rentZestimate
     });
     
-    // Extract property type with multiple fallbacks (Zillow uses several field names)
-    const zillowPropertyType = 
-      property.homeType ||
-      property.propertyTypeDimension ||
-      property.resoFacts?.propertyType ||
-      property.type;
-
-    // Zillow's `area` field changed from a number to a nested object: { livingArea: 1879, lotSize: 22215, ... }
-    // Handle both old (number) and new (object) formats
-    const areaObj = typeof property.area === 'object' && property.area !== null ? property.area : null;
-    const areaNum = typeof property.area === 'number' ? property.area : null;
-
-    const zillowSqft = this.parseNumber(
-      areaObj?.livingArea ||
-      areaNum ||
-      property.livingArea ||
-      property.resoFacts?.livingArea ||
-      property.sqFt ||
-      property.squareFeet ||
-      property.resoFacts?.aboveGradeFinishedArea ||
-      property.resoFacts?.finishedSqFt
-    );
-
-    const zillowLotSize = this.parseNumber(
-      areaObj?.lotSize ||
-      property.lotSize ||
-      property.lotAreaValue ||
-      areaObj?.lotAreaValue
-    );
-
-    // Round annual tax to nearest dollar — taxHistory returns floats like 4795.74
-    const roundedAnnualTax = annualTax !== undefined ? Math.round(annualTax) : undefined;
-
-    console.log("Zillow property type fields:", {
-      homeType: property.homeType,
-      propertyTypeDimension: property.propertyTypeDimension,
-      resoFactsPropertyType: property.resoFacts?.propertyType,
-      type: property.type,
-      resolved: zillowPropertyType
-    });
-
-    console.log("Zillow sqft fields:", {
-      area: property.area,
-      livingArea: property.livingArea,
-      resoFactsLivingArea: property.resoFacts?.livingArea,
-      sqFt: property.sqFt,
-      squareFeet: property.squareFeet,
-      resolved: zillowSqft
-    });
-
     return {
       address: property.address?.street || property.addressRaw || '',
       city: property.address?.city || '',
       state: property.address?.state || '',
       zipCode: property.address?.zipcode || '',
-      propertyType: this.normalizePropertyType(zillowPropertyType),
+      propertyType: this.normalizePropertyType(property.homeType),
       bedrooms: this.parseNumber(property.beds),
       bathrooms: this.parseNumber(property.baths),
-      sqft: zillowSqft,
-      lotSize: zillowLotSize,
+      sqft: this.parseNumber(property.area),
+      lotSize: this.parseNumber(property.lotSize || property.lotAreaValue),
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
-      annualTax: roundedAnnualTax,
-      estimatedValue: (() => {
-        // property.zestimate may be a nested object { zestimate: 169700, rentZestimate: 1310 }
-        // or a plain number depending on the HasData/Zillow response version
-        const zestimateValue = typeof property.zestimate === 'object' && property.zestimate !== null
-          ? property.zestimate?.zestimate
-          : property.zestimate;
-        return this.parseNumber(zestimateValue) || undefined;
-      })(),
-      estimatedRent: this.parseNumber(
-        property.rentZestimate ||
-        // rentZestimate may be nested inside the zestimate object
-        (typeof property.zestimate === 'object' && property.zestimate !== null
-          ? property.zestimate?.rentZestimate
-          : undefined) ||
-        property.resoFacts?.rentZestimate ||
-        property.hdpData?.homeInfo?.rentZestimate ||
-        property.rentalValue ||
-        property.rentalPrice ||
-        property.rentValue ||
-        property.monthlyRent
-      ),
+      annualTax,
+      estimatedValue: this.parseNumber(property.zestimate || property.price),
+      estimatedRent: this.parseNumber(property.rentZestimate),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
       listPrice: this.parseNumber(property.price || property.listPrice), // Current listing price for active/pending
@@ -857,24 +679,24 @@ export class HasDataAPIService implements IPropertyAPIService {
     const location = `${params.city}, ${params.state} ${params.zipCode}`;
     const sqftMin = Math.round(params.sqft * 0.8);
     const sqftMax = Math.round(params.sqft * 1.2);
-    const bedsMin = Math.max(1, params.bedrooms - 1);
-    const bedsMax = params.bedrooms + 1;
+    // Skip bedroom filter when caller passes bedrooms <= 0 (soft scoring path)
+    const bedroomFilterEnabled = params.bedrooms > 0;
+    const bedsMin = bedroomFilterEnabled ? Math.max(1, params.bedrooms - 1) : 0;
+    const bedsMax = bedroomFilterEnabled ? params.bedrooms + 1 : 0;
 
     for (const config of searchConfigs) {
       try {
         console.log(`[Comps Search] Trying radius=${config.radiusMiles}mi, days=${config.daysBack}`);
         
         // Build search parameters with filtering
-        // Map daysBack to Zillow's sold_in_last filter so the API returns only recent sales
-        const soldInLastMonths = Math.ceil(config.daysBack / 30);
-        const soldInLast = soldInLastMonths <= 3 ? "3m" : soldInLastMonths <= 6 ? "6m" : soldInLastMonths <= 12 ? "1y" : "2y";
         const searchParams = new URLSearchParams({
           keyword: location,
           type: "sold",
-          beds_min: String(bedsMin),
-          beds_max: String(bedsMax),
-          sold_in_last: soldInLast,
         });
+        if (bedroomFilterEnabled) {
+          searchParams.append('beds_min', String(bedsMin));
+          searchParams.append('beds_max', String(bedsMax));
+        }
 
         // Build the request URL - correct endpoint is /scrape/zillow/listing
         const endpoint = `${this.baseUrl}/scrape/zillow/listing`;
@@ -923,8 +745,8 @@ export class HasDataAPIService implements IPropertyAPIService {
           if (sqft < sqftMin || sqft > sqftMax) {
             continue;
           }
-          // Apply bedroom filter
-          if (beds && (beds < bedsMin || beds > bedsMax)) {
+          // Apply bedroom filter (only when filter is enabled)
+          if (bedroomFilterEnabled && beds && (beds < bedsMin || beds > bedsMax)) {
             continue;
           }
           
@@ -1030,37 +852,23 @@ export class HasDataAPIService implements IPropertyAPIService {
           });
         }
 
-        // Apply date cutoff — drop comps sold before the user-selected time window
-        const dateCutoff = new Date();
-        dateCutoff.setDate(dateCutoff.getDate() - config.daysBack);
-        const beforeDateFilter = comps.length;
-        const dateFilteredComps = comps.filter(c => {
-          if (!c.saleDate) return true; // keep if date unknown
-          const sold = new Date(c.saleDate);
-          return !isNaN(sold.getTime()) && sold >= dateCutoff;
-        });
-        if (dateFilteredComps.length < beforeDateFilter) {
-          console.log(`[Comps Search] Date filter (${config.daysBack}d): removed ${beforeDateFilter - dateFilteredComps.length} old comps, ${dateFilteredComps.length} remaining`);
-        }
-        const filteredComps = dateFilteredComps;
-
         // Sort by highest price (for ARV, we want top sales)
-        filteredComps.sort((a, b) => b.salePrice - a.salePrice);
+        comps.sort((a, b) => b.salePrice - a.salePrice);
 
-        console.log(`[Comps Search] Filtered to ${filteredComps.length} comps after criteria`);
+        console.log(`[Comps Search] Filtered to ${comps.length} comps after criteria`);
 
         // Track the best results found so far (keep whichever config found more comps)
-        if (filteredComps.length > bestCompsFound.length) {
-          bestCompsFound = filteredComps.slice(0, maxResults);
+        if (comps.length > bestCompsFound.length) {
+          bestCompsFound = comps.slice(0, maxResults);
         }
 
         // If we have enough results, return them immediately
-        if (filteredComps.length >= minResults) {
-          return filteredComps.slice(0, maxResults);
+        if (comps.length >= minResults) {
+          return comps.slice(0, maxResults);
         }
 
         // Otherwise continue to next search config (if any)
-        console.log(`[Comps Search] Only ${filteredComps.length} comps, need ${minResults}, expanding search...`);
+        console.log(`[Comps Search] Only ${comps.length} comps, need ${minResults}, expanding search...`);
 
       } catch (error) {
         console.error(`[Comps Search] Error with config:`, config, error);

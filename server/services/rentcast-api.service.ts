@@ -366,26 +366,6 @@ export class RentCastAPIService implements IPropertyAPIService {
     return data;
   }
 
-  async getValueEstimateByAddress(address: string): Promise<number | null> {
-    try {
-      const result = await this.fetchValueEstimate(address);
-      return result?.price ?? null;
-    } catch (err: any) {
-      console.log("[RentCast] getValueEstimateByAddress failed:", err.message);
-      return null;
-    }
-  }
-
-  async getRentEstimateByAddress(address: string): Promise<number | null> {
-    try {
-      const result = await this.fetchRentEstimate(address);
-      return result?.rent ?? null;
-    } catch (err: any) {
-      console.log("[RentCast] getRentEstimateByAddress failed:", err.message);
-      return null;
-    }
-  }
-
   private async fetchValueEstimate(address: string): Promise<RentCastAVMResponse | null> {
     const params = new URLSearchParams({ 
       address,
@@ -603,8 +583,6 @@ export class RentCastAPIService implements IPropertyAPIService {
       lastSaleDate: property.lastSaleDate,
       imageUrl: undefined,
       hoaFees,
-      latitude: property.latitude,
-      longitude: property.longitude,
     };
   }
 
@@ -636,39 +614,27 @@ export class RentCastAPIService implements IPropertyAPIService {
         return { imageUrl: PLACEHOLDER_IMAGE_URL };
       }
 
-      // Build list of URLs to try: full URL first, then short ZPID URL for Zillow
-      const urlsToTry: string[] = [cleanUrl];
-      if (originalSource === 'zillow') {
-        const zpidMatch = cleanUrl.match(/\/(\d+)_zpid/);
-        if (zpidMatch) {
-          const shortUrl = `https://www.zillow.com/homedetails/${zpidMatch[1]}_zpid/`;
-          if (shortUrl !== cleanUrl) urlsToTry.push(shortUrl);
+      // Try the original source first, then fallback to the other
+      const sources: Array<'redfin' | 'zillow'> = originalSource === 'zillow' 
+        ? ['zillow', 'redfin'] 
+        : ['redfin', 'zillow'];
+      
+      console.log(`[HasData] Original URL source: ${originalSource}, trying ${sources[0]} first, then ${sources[1]}`);
+      
+      for (const source of sources) {
+        console.log(`[HasData] Trying ${source} endpoint...`);
+        const supplementalData = await this.fetchDataWithRetry(source, cleanUrl);
+        
+        if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate)) {
+          console.log(`[HasData] SUCCESS: Data retrieved from ${source}:`, {
+            imageUrl: supplementalData.imageUrl ? 'present' : 'missing',
+            rentZestimate: supplementalData.rentZestimate,
+            monthlyHoaFee: supplementalData.monthlyHoaFee
+          });
+          return supplementalData;
         }
-      }
-
-      for (const tryUrl of urlsToTry) {
-        // Try the original source first, then fallback to the other source
-        const sources: Array<'redfin' | 'zillow'> = originalSource === 'zillow'
-          ? ['zillow', 'redfin']
-          : ['redfin', 'zillow'];
-
-        console.log(`[HasData] Trying supplemental fetch for URL: ${tryUrl}`);
-
-        for (const source of sources) {
-          console.log(`[HasData] Trying ${source} endpoint...`);
-          const supplementalData = await this.fetchDataWithRetry(source, tryUrl);
-
-          if (supplementalData && (supplementalData.imageUrl || supplementalData.rentZestimate || supplementalData.monthlyHoaFee || supplementalData.annualTax)) {
-            console.log(`[HasData] SUCCESS: Data retrieved from ${source} (${tryUrl}):`, {
-              imageUrl: supplementalData.imageUrl ? 'present' : 'missing',
-              rentZestimate: supplementalData.rentZestimate,
-              monthlyHoaFee: supplementalData.monthlyHoaFee
-            });
-            return supplementalData;
-          }
-
-          console.log(`[HasData] ${source} endpoint failed or no useful data`);
-        }
+        
+        console.log(`[HasData] ${source} endpoint failed or no useful data`);
       }
 
       console.log(`[HasData] All sources exhausted, returning placeholder`);
@@ -812,20 +778,7 @@ export class RentCastAPIService implements IPropertyAPIService {
     // Zillow-specific fields
     const rentZestimate = parseNumber(property.rentZestimate);
     const zestimate = parseNumber(property.zestimate);
-    // Check all known HOA field variations — matches the comprehensive lookup in hasdata-api.service.ts
-    const monthlyHoaFee = parseNumber(
-      property.hoaFee ||
-      property.monthlyHoaFee ||
-      property.associationFee ||
-      property.hoaDues ||
-      property.hoa?.fee ||
-      property.hoa?.monthlyFee ||
-      property.resoFacts?.hoaFee ||
-      property.resoFacts?.associationFee ||
-      property.resoFacts?.associationFee2 ||
-      property.homeValues?.hoaFee ||
-      property.attributionInfo?.hoaFee
-    );
+    const monthlyHoaFee = parseNumber(property.monthlyHoaFee);
     
     // Extract annual tax from various possible field names
     let annualTax: number | undefined = undefined;
@@ -1022,8 +975,8 @@ export class RentCastAPIService implements IPropertyAPIService {
     const searchAddress = `${address}, ${city}, ${state} ${zipCode}`;
     const bedsMin = Math.max(1, bedrooms - 1);
     const bedsMax = bedrooms + 1;
-    const sqftMin = Math.floor(sqft * 0.8);
-    const sqftMax = Math.ceil(sqft * 1.2);
+    const sqftMin = Math.floor(sqft * 0.75);
+    const sqftMax = Math.ceil(sqft * 1.25);
 
     // Map property type to RentCast format
     const rentCastPropertyType = this.mapPropertyTypeToRentCast(propertyType);
@@ -1040,8 +993,10 @@ export class RentCastAPIService implements IPropertyAPIService {
       queryParams.append('propertyType', rentCastPropertyType);
     }
 
-    // Add bedroom range
-    queryParams.append('bedrooms', `${bedsMin}:${bedsMax}`);
+    // Add bedroom range (skipped when bedrooms <= 0, e.g. when caller wants soft scoring instead of hard filter)
+    if (bedrooms > 0) {
+      queryParams.append('bedrooms', `${bedsMin}:${bedsMax}`);
+    }
 
     console.log(`[RentCast Comps] Searching: ${this.baseUrl}/properties?${queryParams.toString()}`);
     const startTime = Date.now();

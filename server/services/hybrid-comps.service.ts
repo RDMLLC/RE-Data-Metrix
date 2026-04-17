@@ -24,6 +24,7 @@ export interface HybridCompResult {
   similarityScore?: number;
   distressedFlag?: boolean;
   outlierFlag?: boolean;
+  borderlineFlag?: boolean;
 }
 
 export interface HybridCompSearchParams {
@@ -44,21 +45,21 @@ export interface HybridCompSearchParams {
 
 export interface HybridCompSearchResult {
   comps: HybridCompResult[];
-  radiusExpanded: boolean;
-  actualRadiusMiles: number;
+  suggestedArv: number | null;
+  weightedAvgPricePerSqft: number | null;
   searchStats: {
     rentCastCount: number;
     hasDataCount: number;
     mergedCount: number;
     totalBeforeDedupe: number;
     finalCount: number;
+    suitableCount: number;
+    medianPricePerSqft: number | null;
+    expansionAttempts: number;
   };
 }
 
-// Ordered sequence of radii used for automatic expansion.
-// Expansion stops at 3 miles per product spec.
-const EXPANSION_SEQUENCE = [0.5, 1, 2, 3] as const;
-const MIN_SUITABLE_THRESHOLD = 3;
+const SUITABLE_TARGET = 3;
 
 export class HybridCompsService {
   private rentCastService: RentCastAPIService;
@@ -76,7 +77,6 @@ export class HybridCompsService {
       state,
       zipCode,
       bedrooms,
-      bathrooms,
       sqft,
       propertyType,
       subjectLat,
@@ -88,78 +88,87 @@ export class HybridCompsService {
 
     console.log(`[Hybrid Comps] Starting dual-API search for ${address}, ${city}, ${state}`);
 
-    // Build the list of radii to attempt.
-    // If the user's radius exists in the expansion sequence, start there and walk forward.
-    // If it's outside the sequence (e.g. 5 miles), only try that single radius — no expansion.
-    const startIdx = EXPANSION_SEQUENCE.indexOf(radiusMiles as typeof EXPANSION_SEQUENCE[number]);
-    const radiiToTry: number[] = startIdx >= 0
-      ? Array.from(EXPANSION_SEQUENCE).slice(startIdx)
-      : [radiusMiles];
+    // Progressive expansion attempts: original → +50% radius → +100% radius / wider date range.
+    // We stop when we have >= SUITABLE_TARGET suitable comps after flagging.
+    const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> = [
+      { radiusMiles, saleDateRangeDays },
+      { radiusMiles: radiusMiles * 1.5, saleDateRangeDays: Math.min(saleDateRangeDays + 90, 365) },
+      { radiusMiles: radiusMiles * 2, saleDateRangeDays: Math.min(saleDateRangeDays + 180, 365) },
+    ];
 
-    let bestResult: { comps: HybridCompResult[]; stats: HybridCompSearchResult['searchStats'] } | null = null;
-    let actualRadiusMiles = radiusMiles;
-    let radiusExpanded = false;
+    let bestResult: {
+      sortedComps: HybridCompResult[];
+      stats: HybridCompSearchResult['searchStats'];
+      suggestedArv: number | null;
+      weightedAvgPricePerSqft: number | null;
+      suitableCount: number;
+    } | null = null;
 
-    for (const currentRadius of radiiToTry) {
-      console.log(`[Hybrid Comps] Attempting search at radius=${currentRadius}mi`);
+    let expansionAttempts = 0;
 
-      const attempt = await this.runSingleSearch({
+    for (const config of expansionConfigs) {
+      expansionAttempts += 1;
+      const passResult = await this.runSinglePass({
         address,
         city,
         state,
         zipCode,
         bedrooms,
-        bathrooms,
         sqft,
         propertyType,
         subjectLat,
         subjectLng,
-        radiusMiles: currentRadius,
-        saleDateRangeDays,
+        radiusMiles: config.radiusMiles,
+        saleDateRangeDays: config.saleDateRangeDays,
         maxResults,
       });
 
-      actualRadiusMiles = currentRadius;
-      if (currentRadius !== radiusMiles) {
-        radiusExpanded = true;
+      passResult.stats.expansionAttempts = expansionAttempts;
+
+      if (!bestResult || passResult.suitableCount > bestResult.suitableCount) {
+        bestResult = passResult;
       }
 
-      // Expansion stops when we have enough *suitable* comps (not flagged as outlier or distressed)
-      const suitableCount = attempt.comps.filter(c => !c.outlierFlag && !c.distressedFlag).length;
-
-      if (suitableCount >= MIN_SUITABLE_THRESHOLD) {
-        console.log(`[Hybrid Comps] Found ${suitableCount} suitable comps (${attempt.comps.length} total) at radius=${currentRadius}mi — stopping expansion`);
-        bestResult = attempt;
+      if (passResult.suitableCount >= SUITABLE_TARGET) {
+        console.log(`[Hybrid Comps] Found ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}`);
         break;
       }
 
-      // Keep the best result so far in case we exhaust all radii
-      if (bestResult === null || attempt.comps.length > bestResult.comps.length) {
-        bestResult = attempt;
-      }
-
-      console.log(`[Hybrid Comps] Only ${suitableCount} suitable comps at radius=${currentRadius}mi — ${currentRadius === radiiToTry[radiiToTry.length - 1] ? 'max radius reached' : 'expanding'}`);
+      console.log(`[Hybrid Comps] Only ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}, expanding...`);
     }
 
-    const finalResult = bestResult ?? { comps: [], stats: { rentCastCount: 0, hasDataCount: 0, mergedCount: 0, totalBeforeDedupe: 0, finalCount: 0 } };
-
-    console.log(`[Hybrid Comps] Final results: ${finalResult.comps.length} comps at ${actualRadiusMiles}mi (expanded=${radiusExpanded})`);
+    if (!bestResult) {
+      return {
+        comps: [],
+        suggestedArv: null,
+        weightedAvgPricePerSqft: null,
+        searchStats: {
+          rentCastCount: 0,
+          hasDataCount: 0,
+          mergedCount: 0,
+          totalBeforeDedupe: 0,
+          finalCount: 0,
+          suitableCount: 0,
+          medianPricePerSqft: null,
+          expansionAttempts,
+        },
+      };
+    }
 
     return {
-      comps: finalResult.comps,
-      radiusExpanded,
-      actualRadiusMiles,
-      searchStats: finalResult.stats,
+      comps: bestResult.sortedComps,
+      suggestedArv: bestResult.suggestedArv,
+      weightedAvgPricePerSqft: bestResult.weightedAvgPricePerSqft,
+      searchStats: bestResult.stats,
     };
   }
 
-  private async runSingleSearch(params: {
+  private async runSinglePass(params: {
     address: string;
     city: string;
     state: string;
     zipCode: string;
     bedrooms: number;
-    bathrooms: number;
     sqft: number;
     propertyType?: string;
     subjectLat?: number;
@@ -167,12 +176,16 @@ export class HybridCompsService {
     radiusMiles: number;
     saleDateRangeDays: number;
     maxResults: number;
-  }): Promise<{ comps: HybridCompResult[]; stats: HybridCompSearchResult['searchStats'] }> {
+  }): Promise<{
+    sortedComps: HybridCompResult[];
+    stats: HybridCompSearchResult['searchStats'];
+    suggestedArv: number | null;
+    weightedAvgPricePerSqft: number | null;
+    suitableCount: number;
+  }> {
     const {
-      address, city, state, zipCode,
-      bedrooms, bathrooms, sqft, propertyType,
-      subjectLat, subjectLng,
-      radiusMiles, saleDateRangeDays, maxResults,
+      address, city, state, zipCode, bedrooms, sqft, propertyType,
+      subjectLat, subjectLng, radiusMiles, saleDateRangeDays, maxResults,
     } = params;
 
     const rentCastComps: HybridCompResult[] = [];
@@ -185,8 +198,8 @@ export class HybridCompsService {
           city,
           state,
           zipCode,
-          bedrooms,
-          bathrooms,
+          bedrooms: 0, // Skip hard bedroom filter — scored as soft preference instead
+          bathrooms: 0, // Bathrooms are display-only, never filtered
           sqft,
           propertyType,
           radiusMiles,
@@ -200,16 +213,16 @@ export class HybridCompsService {
           city,
           state,
           zipCode,
-          bedrooms,
-          bathrooms,
+          bedrooms: 0, // Skip hard bedroom filter — scored as soft preference instead
+          bathrooms: 0, // Bathrooms are display-only, never filtered
           sqft,
           propertyType,
           subjectLat,
           subjectLng,
           radiusMiles,
           daysBack: saleDateRangeDays,
-          minResults: 3,
-          maxResults: 15,
+          minResults: SUITABLE_TARGET,
+          maxResults: 25,
         }),
       ]);
 
@@ -236,7 +249,8 @@ export class HybridCompsService {
 
     const mergedComps = this.mergeAndDeduplicate(rentCastComps, hasDataComps, sqft);
 
-    const sortedComps = mergedComps
+    // Pre-sort: distance, then recency. Final ordering happens after flagging/scoring.
+    let sortedComps = mergedComps
       .sort((a, b) => {
         if (a.distanceFromSubject !== undefined && b.distanceFromSubject !== undefined) {
           const distDiff = a.distanceFromSubject - b.distanceFromSubject;
@@ -246,38 +260,67 @@ export class HybridCompsService {
       })
       .slice(0, maxResults);
 
-    // ── Scoring and flagging ──
-    // Compute median pricePerSqft across ALL comps in the deduplicated set.
-    // The median is never recomputed after flagging — it always reflects the full dataset.
-    const allPricesPerSqft = sortedComps.map(c => c.pricePerSqft).filter(p => p > 0);
-    const medianPricePerSqft = this.computeMedian(allPricesPerSqft);
+    // Compute median $/sqft from ALL returned comps (including those that will be flagged)
+    const median = this.computeMedian(sortedComps.map(c => c.pricePerSqft).filter(p => p > 0));
 
-    // Dynamic thresholds: tighter when 5+ comps (more data → more confidence in median)
-    const compCount = sortedComps.length;
-    const flagMultiplier = compCount >= 5 ? 1.5 : 2.0;
+    // Apply flags using dynamic thresholds based on comp count
+    if (median !== null) {
+      this.applyFlags(sortedComps, median);
+    }
 
-    const scoredComps: HybridCompResult[] = sortedComps.map(comp => ({
-      ...comp,
-      outlierFlag: medianPricePerSqft > 0 && comp.pricePerSqft > medianPricePerSqft * flagMultiplier,
-      distressedFlag: medianPricePerSqft > 0 && comp.pricePerSqft < medianPricePerSqft / flagMultiplier,
-      similarityScore: this.computeSimilarityScore(comp, medianPricePerSqft),
-    }));
+    // Compute similarity score for every comp
+    for (const comp of sortedComps) {
+      comp.similarityScore = this.computeSimilarityScore(comp, {
+        subjectLat,
+        subjectLng,
+        subjectBedrooms: bedrooms,
+        median,
+      });
+    }
+
+    // ARV / weighted average computed from suitable (unflagged) comps only.
+    // Falls back to all comps if no suitable comps exist.
+    const suitable = sortedComps.filter(
+      c => !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+    );
+    const arvBasis = suitable.length > 0 ? suitable : sortedComps;
+
+    let suggestedArv: number | null = null;
+    let weightedAvgPricePerSqft: number | null = null;
+    if (arvBasis.length > 0) {
+      const totalSalePrice = arvBasis.reduce((sum, c) => sum + c.salePrice, 0);
+      const totalSqft = arvBasis.reduce((sum, c) => sum + c.sqft, 0);
+      weightedAvgPricePerSqft = totalSqft > 0 ? Math.round(totalSalePrice / totalSqft) : null;
+      suggestedArv = weightedAvgPricePerSqft ? Math.round(weightedAvgPricePerSqft * sqft) : null;
+    }
 
     const stats = {
       rentCastCount: rentCastComps.length,
       hasDataCount: hasDataComps.length,
       mergedCount: mergedComps.filter(c => c.dataSource === 'merged').length,
       totalBeforeDedupe: rentCastComps.length + hasDataComps.length,
-      finalCount: scoredComps.length,
+      finalCount: sortedComps.length,
+      suitableCount: suitable.length,
+      medianPricePerSqft: median,
+      expansionAttempts: 0,
     };
 
-    return { comps: scoredComps, stats };
+    console.log(
+      `[Hybrid Comps] Pass result: ${stats.finalCount} comps, ${stats.suitableCount} suitable, ` +
+      `median $${median}/sqft (RentCast: ${stats.rentCastCount}, HasData: ${stats.hasDataCount}, Merged: ${stats.mergedCount})`
+    );
+
+    return {
+      sortedComps,
+      stats,
+      suggestedArv,
+      weightedAvgPricePerSqft,
+      suitableCount: suitable.length,
+    };
   }
 
-  // ── Scoring helpers ──
-
-  private computeMedian(values: number[]): number {
-    if (values.length === 0) return 0;
+  private computeMedian(values: number[]): number | null {
+    if (values.length === 0) return null;
     const sorted = [...values].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     return sorted.length % 2 === 0
@@ -285,46 +328,94 @@ export class HybridCompsService {
       : sorted[mid];
   }
 
-  private monthsAgo(saleDate: string): number {
-    if (!saleDate || saleDate === 'Pending') return 999;
-    const sale = new Date(saleDate);
-    if (isNaN(sale.getTime())) return 999;
-    const diffMs = Date.now() - sale.getTime();
-    return diffMs / (1000 * 60 * 60 * 24 * 30.44);
+  /**
+   * Apply distressed / outlier / borderline flags to comps based on dynamic thresholds.
+   * - 5+ comps: distressed = ppsf < median/1.5; outlier = ppsf > median*1.5
+   * - <5 comps: distressed = ppsf < median/2.0; outlier = ppsf > median*2.0
+   * - Borderline: within 15% above the distressed threshold OR within 15% below the
+   *   outlier threshold, and not already flagged distressed/outlier.
+   */
+  private applyFlags(comps: HybridCompResult[], median: number): void {
+    const wide = comps.length < 5;
+    const factor = wide ? 2.0 : 1.5;
+    const distressedThreshold = median / factor;
+    const outlierThreshold = median * factor;
+    const borderlineLowerMax = distressedThreshold * 1.15;
+    const borderlineUpperMin = outlierThreshold / 1.15;
+
+    for (const comp of comps) {
+      const ppsf = comp.pricePerSqft;
+      if (!ppsf || ppsf <= 0) continue;
+
+      if (ppsf > outlierThreshold) {
+        comp.outlierFlag = true;
+      } else if (ppsf < distressedThreshold) {
+        comp.distressedFlag = true;
+      } else if (
+        (ppsf >= distressedThreshold && ppsf <= borderlineLowerMax) ||
+        (ppsf >= borderlineUpperMin && ppsf <= outlierThreshold)
+      ) {
+        comp.borderlineFlag = true;
+      }
+    }
   }
 
-  private computeSimilarityScore(comp: HybridCompResult, medianPricePerSqft: number): number {
-    // Distance score (40 pts max)
-    const dist = comp.distanceFromSubject ?? 999;
-    let distanceScore: number;
-    if (dist < 0.25)       distanceScore = 40;
-    else if (dist < 0.5)   distanceScore = 32;
-    else if (dist < 0.75)  distanceScore = 20;
-    else if (dist < 1.0)   distanceScore = 10;
-    else                   distanceScore = 4;
-
-    // Recency score (35 pts max)
-    const months = this.monthsAgo(comp.saleDate);
-    let recencyScore: number;
-    if (months <= 2)       recencyScore = 35;
-    else if (months <= 3)  recencyScore = 28;
-    else if (months <= 4)  recencyScore = 21;
-    else if (months <= 5)  recencyScore = 14;
-    else if (months <= 6)  recencyScore = 7;
-    else                   recencyScore = 0;
-
-    // $/sqft proximity to median score (25 pts max)
-    let priceProximityScore = 0;
-    if (medianPricePerSqft > 0 && comp.pricePerSqft > 0) {
-      const deviation = Math.abs(comp.pricePerSqft - medianPricePerSqft) / medianPricePerSqft;
-      if (deviation <= 0.10)       priceProximityScore = 25;
-      else if (deviation <= 0.20)  priceProximityScore = 18;
-      else if (deviation <= 0.30)  priceProximityScore = 10;
-      else if (deviation <= 0.40)  priceProximityScore = 5;
-      else                         priceProximityScore = 0;
+  /**
+   * 100-point similarity score:
+   *   Distance: 40, Recency: 30, $/sqft proximity to median: 20, Bedroom match: 10
+   */
+  private computeSimilarityScore(
+    comp: HybridCompResult,
+    ctx: {
+      subjectLat?: number;
+      subjectLng?: number;
+      subjectBedrooms: number;
+      median: number | null;
+    }
+  ): number {
+    // Distance (40)
+    let distScore = 4;
+    const dist = comp.distanceFromSubject;
+    if (dist !== undefined) {
+      if (dist < 0.25) distScore = 40;
+      else if (dist < 0.5) distScore = 32;
+      else if (dist < 0.75) distScore = 20;
+      else if (dist < 1.0) distScore = 10;
+      else distScore = 4;
     }
 
-    return distanceScore + recencyScore + priceProximityScore;
+    // Recency (30)
+    let recencyScore = 0;
+    const sale = new Date(comp.saleDate);
+    if (!isNaN(sale.getTime())) {
+      const monthsAgo = (Date.now() - sale.getTime()) / (1000 * 60 * 60 * 24 * 30);
+      if (monthsAgo <= 2) recencyScore = 30;
+      else if (monthsAgo <= 3) recencyScore = 24;
+      else if (monthsAgo <= 4) recencyScore = 18;
+      else if (monthsAgo <= 5) recencyScore = 12;
+      else if (monthsAgo <= 6) recencyScore = 6;
+      else recencyScore = 0;
+    }
+
+    // $/sqft proximity to median (20)
+    let ppsfScore = 0;
+    if (ctx.median !== null && ctx.median > 0 && comp.pricePerSqft > 0) {
+      const pct = Math.abs(comp.pricePerSqft - ctx.median) / ctx.median;
+      if (pct <= 0.10) ppsfScore = 20;
+      else if (pct <= 0.20) ppsfScore = 14;
+      else if (pct <= 0.30) ppsfScore = 8;
+      else if (pct <= 0.40) ppsfScore = 4;
+      else ppsfScore = 0;
+    }
+
+    // Bedroom match (10)
+    let bedScore = 0;
+    const bedDiff = Math.abs((comp.bedrooms || 0) - ctx.subjectBedrooms);
+    if (bedDiff === 0) bedScore = 10;
+    else if (bedDiff === 1) bedScore = 5;
+    else bedScore = 0;
+
+    return distScore + recencyScore + ppsfScore + bedScore;
   }
 
   private mergeAndDeduplicate(
@@ -406,7 +497,7 @@ export class HybridCompsService {
     }
 
     const zip = (zipCode || '').replace(/\D/g, '').slice(0, 5);
-    
+
     return `${normalized}|${zip}`;
   }
 
