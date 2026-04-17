@@ -1,0 +1,114 @@
+I need significant improvements to the ARV Helper comp selection logic. This is a multi-part change touching exactly two files. Read all instructions carefully and implement them in order.
+Files to touch:
+
+server/services/hybrid-comps.service.ts
+client/src/components/deal-analysis/ArvHelper.tsx
+
+No other files need to change.
+
+Part 1 — Backend changes in hybrid-comps.service.ts
+1a — Add three new fields to HybridCompResult interface:
+typescriptsimilarityScore?: number;    // 0–100, higher = better comp
+distressedFlag?: boolean;    // true when $/sqft is far below median
+outlierFlag?: boolean;       // true when $/sqft is far above median
+1b — Compute median $/sqft
+After deduplication, compute the median pricePerSqft across ALL returned comps including any that will be flagged. Never recompute the median after flagging — the median must always reflect the full dataset to prevent circular flagging.
+1c — Apply dynamic outlier and distressed thresholds
+Based on total comp count after deduplication:
+When 5 or more comps returned:
+
+outlierFlag = true when pricePerSqft > median × 1.5
+distressedFlag = true when pricePerSqft < median / 1.5
+
+When fewer than 5 comps returned:
+
+outlierFlag = true when pricePerSqft > median × 2.0
+distressedFlag = true when pricePerSqft < median / 2.0
+
+1d — Compute similarity score for each comp
+Score each comp 0–100 using these weighted components:
+Distance score (40 points maximum):
+
+Under 0.25 miles: 40 points
+0.25 to 0.5 miles: 32 points
+0.5 to 0.75 miles: 20 points
+0.75 to 1.0 miles: 10 points
+Over 1.0 miles: 4 points
+
+Recency score (35 points maximum):
+
+Sold within 2 months: 35 points
+Sold within 3 months: 28 points
+Sold within 4 months: 21 points
+Sold within 5 months: 14 points
+Sold within 6 months: 7 points
+Older than 6 months: 0 points
+
+$/sqft proximity to median score (25 points maximum):
+
+Within 10% of median: 25 points
+Within 20% of median: 18 points
+Within 30% of median: 10 points
+Within 40% of median: 5 points
+More than 40% from median: 0 points
+
+1e — Update the auto-expansion trigger
+The existing auto-expansion logic fires when fewer than 3 comps are returned. Change this trigger to fire when fewer than 3 suitable comps are found — where suitable means outlierFlag !== true AND distressedFlag !== true.
+If after full radius expansion (up to 3 miles) fewer than 3 suitable comps exist, return whatever was found. Do not force flagged comps into the selection. The frontend will handle the messaging.
+1f — Return all comps including flagged ones
+Never remove flagged comps from the response. Return everything found. The frontend decides what to display and what to auto-select.
+
+Part 2 — Frontend changes in ArvHelper.tsx
+2a — Update SoldPropertyComp interface
+Add the three new fields:
+typescriptsimilarityScore?: number;
+distressedFlag?: boolean;
+outlierFlag?: boolean;
+2b — Replace blanket select-all with smart initial selection
+Replace the current logic at lines 314 and 341:
+typescriptsetSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
+With:
+typescriptconst suitableIndices = data.comps
+  .map((comp: SoldPropertyComp, i: number) => ({ comp, i }))
+  .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && (comp.similarityScore ?? 0) >= 40)
+  .sort((a, b) => (b.comp.similarityScore ?? 0) - (a.comp.similarityScore ?? 0))
+  .slice(0, 6)
+  .map(({ i }) => i);
+setSelectedCompIndices(new Set(suitableIndices));
+Apply this same logic in both the line 314 and line 341 paths.
+No minimum floor. If only 1 or 2 suitable comps exist, auto-select only those. Never force-select flagged comps to reach an arbitrary minimum. Quality over quantity.
+2c — Show ALL comps in the table — never hide any
+Remove the filter at lines 185–187 that currently hides outlier comps from sortedCompsWithIndices. Every comp returned by the API must appear in the table.
+2d — Visual treatment of flagged comps
+Flagged comps appear at the bottom of the sorted list, after all non-flagged comps. Within each group the active sort column applies normally.
+For each flagged comp show an amber warning icon in the row with a tooltip:
+
+distressedFlag: "Possible distressed or investor sale — excluded from ARV by default. Review before including."
+outlierFlag: "Price per sqft is significantly above nearby comps — may indicate incorrect source data. Review before including."
+
+Flagged comps are unchecked by default. The user can manually check them at any time.
+2e — Insufficient comps warning
+After initial selection is applied, if the number of auto-selected comps is fewer than 3, show an amber warning above the comp table:
+"Only X suitable comp(s) found in this area. This ARV may not be reliable — consider expanding your search radius or date range, or supplement with your own comp research."
+Where X is the actual count of auto-selected comps. This warning should disappear if the user manually checks additional comps to bring the total to 3 or more.
+2f — Wide range warning
+After comps are loaded and selection is applied, calculate the $/sqft spread across currently selected comps. If the difference between the highest and lowest selected $/sqft exceeds 60% of the lowest value, show an amber warning above the comp table:
+"Wide price range detected among selected comps ($X to $Y per sqft). One or more comps may not be representative — review before using this ARV."
+This warning must update in real time as the user checks and unchecks comps. Implement as a useMemo dependent on selectedCompIndices and compsData.
+2g — Update the ARV calculation
+Remove the visibleOriginalIndices cross-reference. The ARV calculation must use only selectedCompIndices:
+typescript// REMOVE THIS
+const visibleOriginalIndices = new Set(sortedCompsWithIndices.map((item) => item.originalIndex));
+const selectedComps = compsData.comps.filter(
+  (_, index) => selectedCompIndices.has(index) && visibleOriginalIndices.has(index)
+);
+
+// REPLACE WITH THIS
+const selectedComps = compsData.comps.filter(
+  (_, index) => selectedCompIndices.has(index)
+);
+2h — Remove the existing frontend outlierDetection useMemo
+The existing outlierDetection useMemo at lines 150–177 currently computes median × 2.5 high-side flagging and drives the hidden-filter being removed. Delete this useMemo entirely. The backend now owns all flagging logic. Remove any references to outlierDetection, outlierIndices, and excludedComps that were powered by this useMemo.
+
+Implementation order
+Do Part 1 completely first and confirm before starting Part 2. Show me the updated HybridCompResult interface and the scoring/flagging logic before proceeding to the frontend.
