@@ -7,6 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -43,6 +48,7 @@ import {
   Clock,
   Pencil,
   DollarSign,
+  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -70,6 +76,9 @@ interface SoldPropertyComp {
   listingUrl?: string;
   isManuallyAdded?: boolean;
   isPending?: boolean;
+  similarityScore?: number;
+  distressedFlag?: boolean;
+  outlierFlag?: boolean;
 }
 
 interface CompsSearchResponse {
@@ -84,6 +93,18 @@ interface CompsSearchResponse {
 interface ArvHelperProps {
   form: UseFormReturn<WizardFormData>;
   onClose: () => void;
+}
+
+// Smart initial selection: take comps scoring >= 40 with no flags, top 6 by score.
+// No minimum floor — quality over quantity.
+function computeSmartSelection(comps: SoldPropertyComp[]): Set<number> {
+  const suitableIndices = comps
+    .map((comp, i) => ({ comp, i }))
+    .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && (comp.similarityScore ?? 0) >= 40)
+    .sort((a, b) => (b.comp.similarityScore ?? 0) - (a.comp.similarityScore ?? 0))
+    .slice(0, 6)
+    .map(({ i }) => i);
+  return new Set(suitableIndices);
 }
 
 export default function ArvHelper({ form, onClose }: ArvHelperProps) {
@@ -147,44 +168,14 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     return date.getTime();
   }, [compsDateFilter]);
 
-  const outlierDetection = useMemo(() => {
-    if (!compsData || compsData.comps.length < 2) {
-      return {
-        outlierIndices: new Set<number>(),
-        excludedComps: [] as { comp: SoldPropertyComp; originalIndex: number; reason: string }[],
-      };
-    }
-    const pricesPerSqft = compsData.comps.map((c) => c.pricePerSqft).sort((a, b) => a - b);
-    const midIndex = Math.floor(pricesPerSqft.length / 2);
-    const medianPricePerSqft =
-      pricesPerSqft.length % 2 === 0
-        ? (pricesPerSqft[midIndex - 1] + pricesPerSqft[midIndex]) / 2
-        : pricesPerSqft[midIndex];
-    const outlierThreshold = medianPricePerSqft * 2.5;
-    const outlierIndices = new Set<number>();
-    const excludedComps: { comp: SoldPropertyComp; originalIndex: number; reason: string }[] = [];
-    compsData.comps.forEach((comp, index) => {
-      if (comp.pricePerSqft > outlierThreshold) {
-        outlierIndices.add(index);
-        excludedComps.push({
-          comp,
-          originalIndex: index,
-          reason: `$${comp.pricePerSqft.toLocaleString()}/sqft exceeds normal range (median: $${Math.round(medianPricePerSqft).toLocaleString()}/sqft)`,
-        });
-      }
-    });
-    return { outlierIndices, excludedComps, medianPricePerSqft };
-  }, [compsData]);
-
+  // All comps shown — no hidden outliers. Flagged comps always sort to the bottom of each
+  // group regardless of the active sort column, then within each group apply normal sort.
   const sortedCompsWithIndices = useMemo(() => {
     if (!compsData || !compsData.comps.length) return [];
     let compsWithIndices = compsData.comps.map((comp, originalIndex) => ({
       comp,
       originalIndex,
     }));
-    compsWithIndices = compsWithIndices.filter(
-      ({ originalIndex }) => !outlierDetection.outlierIndices.has(originalIndex)
-    );
     if (compsDateFilter !== "all") {
       compsWithIndices = compsWithIndices.filter(({ comp }) => {
         const saleDate = new Date(comp.saleDate).getTime();
@@ -192,6 +183,12 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       });
     }
     return compsWithIndices.sort((a, b) => {
+      // Flagged comps always sink to the bottom, unflagged rise to the top
+      const aFlagged = !!(a.comp.outlierFlag || a.comp.distressedFlag);
+      const bFlagged = !!(b.comp.outlierFlag || b.comp.distressedFlag);
+      if (aFlagged !== bFlagged) return aFlagged ? 1 : -1;
+
+      // Within the same group, apply the active sort column
       let aVal: number, bVal: number;
       switch (compsSortField) {
         case "salePrice":
@@ -224,7 +221,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       }
       return compsSortDirection === "asc" ? diff : -diff;
     });
-  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate, outlierDetection]);
+  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate]);
 
   const toggleSort = (field: SortField) => {
     if (compsSortField === field) {
@@ -235,12 +232,12 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     }
   };
 
+  // ARV uses only selectedCompIndices — no hidden-set cross-reference
   const calculateSelectedArv = () => {
     if (!compsData || compsData.comps.length === 0)
       return { arv: null, avgPricePerSqft: null, count: 0 };
-    const visibleOriginalIndices = new Set(sortedCompsWithIndices.map((item) => item.originalIndex));
     const selectedComps = compsData.comps.filter(
-      (_, index) => selectedCompIndices.has(index) && visibleOriginalIndices.has(index)
+      (_, index) => selectedCompIndices.has(index)
     );
     if (selectedComps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0 };
     const totalSalePrice = selectedComps.reduce((sum, comp) => sum + comp.salePrice, 0);
@@ -251,6 +248,22 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   };
 
   const selectedArvData = calculateSelectedArv();
+
+  // Wide range warning — recomputes whenever selection or data changes
+  const wideRangeWarning = useMemo(() => {
+    if (!compsData || selectedCompIndices.size < 2) return null;
+    const selectedComps = compsData.comps.filter((_, i) => selectedCompIndices.has(i));
+    const prices = selectedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+    if (prices.length < 2) return null;
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    if (minPrice <= 0) return null;
+    const spread = (maxPrice - minPrice) / minPrice;
+    if (spread > 0.6) {
+      return `Wide price range detected among selected comps ($${minPrice.toLocaleString()} to $${maxPrice.toLocaleString()} per sqft). One or more comps may not be representative — review before using this ARV.`;
+    }
+    return null;
+  }, [selectedCompIndices, compsData]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", {
@@ -311,7 +324,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       const data = await response.json();
       setCompsData(data);
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
+        setSelectedCompIndices(computeSmartSelection(data.comps));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -338,7 +351,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       const data = await response.json();
       setCompsData(data);
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(new Set(data.comps.map((_: SoldPropertyComp, i: number) => i)));
+        setSelectedCompIndices(computeSmartSelection(data.comps));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -755,22 +768,34 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         {compsData && compsData.comps.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-end gap-2 flex-wrap">
-              <div className="flex flex-col items-end gap-1">
-                <span className="text-sm text-muted-foreground">
-                  Showing {sortedCompsWithIndices.length} of {compsData.comps.length} comps
-                  {outlierDetection.excludedComps.length > 0 && (
-                    <span className="text-amber-600"> ({outlierDetection.excludedComps.length} excluded)</span>
-                  )}
-                </span>
-                {outlierDetection.excludedComps.length > 0 && (
-                  <span className="text-xs text-amber-600" data-testid="text-outliers-excluded">
-                    Data anomaly: {outlierDetection.excludedComps[0].comp.address.split(",")[0]}
-                    {outlierDetection.excludedComps.length > 1 &&
-                      ` +${outlierDetection.excludedComps.length - 1} more`}
-                  </span>
-                )}
-              </div>
+              <span className="text-sm text-muted-foreground">
+                {compsData.comps.length} comp{compsData.comps.length !== 1 ? "s" : ""} found
+              </span>
             </div>
+
+            {/* Insufficient selected comps warning */}
+            {selectedCompIndices.size < 3 && (
+              <div
+                className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+                data-testid="text-insufficient-comps-warning"
+              >
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Only {selectedCompIndices.size} suitable comp{selectedCompIndices.size !== 1 ? "s" : ""} found in this area. This ARV may not be reliable — consider expanding your search radius or date range, or supplement with your own comp research.
+                </p>
+              </div>
+            )}
+
+            {/* Wide range warning */}
+            {wideRangeWarning && (
+              <div
+                className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+                data-testid="text-wide-range-warning"
+              >
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">{wideRangeWarning}</p>
+              </div>
+            )}
 
             <Table>
               <TableHeader>
@@ -852,171 +877,178 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedCompsWithIndices.map(({ comp, originalIndex }) => (
-                  <>
-                    <TableRow
-                      key={originalIndex}
-                      className="cursor-pointer hover-elevate"
-                      onClick={() =>
-                        setExpandedCompIndex(expandedCompIndex === originalIndex ? null : originalIndex)
-                      }
-                      data-testid={`row-comp-${originalIndex}`}
-                    >
-                      <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedCompIndices.has(originalIndex)}
-                          onCheckedChange={() => {
-                            setSelectedCompIndices((prev) => {
-                              const newSet = new Set(prev);
-                              if (newSet.has(originalIndex)) newSet.delete(originalIndex);
-                              else newSet.add(originalIndex);
-                              return newSet;
-                            });
-                          }}
-                          data-testid={`checkbox-comp-${originalIndex}`}
-                        />
-                      </TableCell>
-                      <TableCell className="w-8">
-                        {expandedCompIndex === originalIndex ? (
-                          <ArrowUp className="h-4 w-4" />
-                        ) : (
-                          <ArrowDown className="h-4 w-4" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium text-sm">
-                        <div>{comp.address}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {comp.city}, {comp.state}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-primary">
-                        {formatCurrency(comp.salePrice)}
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {(comp as any).isPending ? (
-                          <Badge
-                            variant="outline"
-                            className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700"
-                          >
-                            <Clock className="h-3 w-3 mr-1" />
-                            Pending
-                          </Badge>
-                        ) : (
-                          formatDate(comp.saleDate)
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {comp.bedrooms}/{comp.bathrooms}
-                      </TableCell>
-                      <TableCell className="text-right text-sm">{comp.sqft.toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-sm">${comp.pricePerSqft}</TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {comp.distanceFromSubject !== undefined
-                          ? `${comp.distanceFromSubject.toFixed(1)} mi`
-                          : "—"}
-                      </TableCell>
-                    </TableRow>
-                    {expandedCompIndex === originalIndex && (
-                      <TableRow key={`${originalIndex}-details`}>
-                        <TableCell colSpan={9} className="bg-muted/50 p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">
-                                  {(comp as any).isPending ? "Status:" : "Sale Date:"}
-                                </span>
-                                <div className="font-medium">
-                                  {(comp as any).isPending ? (
-                                    <Badge
-                                      variant="outline"
-                                      className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700"
-                                    >
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      Pending (List Price)
-                                    </Badge>
-                                  ) : (
-                                    formatDate(comp.saleDate)
-                                  )}
-                                </div>
+                {sortedCompsWithIndices.map(({ comp, originalIndex }) => {
+                  const isFlagged = !!(comp.outlierFlag || comp.distressedFlag);
+                  return (
+                    <>
+                      <TableRow
+                        key={originalIndex}
+                        className={`cursor-pointer hover-elevate${isFlagged ? " opacity-75" : ""}`}
+                        onClick={() =>
+                          setExpandedCompIndex(expandedCompIndex === originalIndex ? null : originalIndex)
+                        }
+                        data-testid={`row-comp-${originalIndex}`}
+                      >
+                        <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedCompIndices.has(originalIndex)}
+                            onCheckedChange={() => {
+                              setSelectedCompIndices((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(originalIndex)) newSet.delete(originalIndex);
+                                else newSet.add(originalIndex);
+                                return newSet;
+                              });
+                            }}
+                            data-testid={`checkbox-comp-${originalIndex}`}
+                          />
+                        </TableCell>
+                        <TableCell className="w-8">
+                          {expandedCompIndex === originalIndex ? (
+                            <ArrowUp className="h-4 w-4" />
+                          ) : (
+                            <ArrowDown className="h-4 w-4" />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-sm">
+                          <div className="flex items-center gap-1.5">
+                            {isFlagged && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertTriangle
+                                    className="h-3.5 w-3.5 text-amber-500 flex-shrink-0"
+                                    data-testid={`icon-flag-${originalIndex}`}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs text-xs">
+                                  {comp.distressedFlag
+                                    ? "Possible distressed or investor sale — excluded from ARV by default. Review before including."
+                                    : "Price per sqft is significantly above nearby comps — may indicate incorrect source data. Review before including."}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <div>
+                              <div>{comp.address}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {comp.city}, {comp.state}
                               </div>
-                              {comp.yearBuilt && (
-                                <div>
-                                  <span className="text-muted-foreground">Year Built:</span>
-                                  <div className="font-medium">{comp.yearBuilt}</div>
-                                </div>
-                              )}
-                              {comp.lotSize && (
-                                <div>
-                                  <span className="text-muted-foreground">Lot Size:</span>
-                                  <div className="font-medium">{comp.lotSize.toLocaleString()} sqft</div>
-                                </div>
-                              )}
-                              {comp.propertyType && (
-                                <div>
-                                  <span className="text-muted-foreground">Type:</span>
-                                  <div className="font-medium">{comp.propertyType}</div>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <div className="text-sm">
-                                <span className="text-muted-foreground">View on Zillow:</span>
-                                <div className="font-medium">
-                                  <a
-                                    href={`https://www.zillow.com/homes/${encodeURIComponent(`${comp.address} ${comp.city} ${comp.state}`.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9-]/g, ""))}_rb/`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline inline-flex items-center gap-1"
-                                    data-testid={`link-comp-zillow-${originalIndex}`}
-                                  >
-                                    View Property
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditDialog(originalIndex);
-                                }}
-                                data-testid={`button-edit-comp-${originalIndex}`}
-                              >
-                                <Pencil className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
                             </div>
                           </div>
                         </TableCell>
+                        <TableCell className="text-right font-semibold text-primary">
+                          {formatCurrency(comp.salePrice)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {(comp as any).isPending ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700"
+                            >
+                              <Clock className="h-3 w-3 mr-1" />
+                              Pending
+                            </Badge>
+                          ) : (
+                            formatDate(comp.saleDate)
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {comp.bedrooms}/{comp.bathrooms}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">{comp.sqft.toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-sm">${comp.pricePerSqft}</TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {comp.distanceFromSubject !== undefined
+                            ? `${comp.distanceFromSubject.toFixed(1)} mi`
+                            : "—"}
+                        </TableCell>
                       </TableRow>
-                    )}
-                  </>
-                ))}
+                      {expandedCompIndex === originalIndex && (
+                        <TableRow key={`${originalIndex}-details`}>
+                          <TableCell colSpan={9} className="bg-muted/50 p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">
+                                    {(comp as any).isPending ? "Status:" : "Sale Date:"}
+                                  </span>
+                                  <div className="font-medium">
+                                    {(comp as any).isPending ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700"
+                                      >
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        Pending (List Price)
+                                      </Badge>
+                                    ) : (
+                                      formatDate(comp.saleDate)
+                                    )}
+                                  </div>
+                                </div>
+                                {comp.yearBuilt && (
+                                  <div>
+                                    <span className="text-muted-foreground">Year Built:</span>
+                                    <div className="font-medium">{comp.yearBuilt}</div>
+                                  </div>
+                                )}
+                                {comp.lotSize && (
+                                  <div>
+                                    <span className="text-muted-foreground">Lot Size:</span>
+                                    <div className="font-medium">{comp.lotSize.toLocaleString()} sqft</div>
+                                  </div>
+                                )}
+                                {comp.propertyType && (
+                                  <div>
+                                    <span className="text-muted-foreground">Type:</span>
+                                    <div className="font-medium">{comp.propertyType}</div>
+                                  </div>
+                                )}
+                                {comp.similarityScore !== undefined && (
+                                  <div>
+                                    <span className="text-muted-foreground">Match Score:</span>
+                                    <div className="font-medium">{comp.similarityScore}/100</div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 flex-shrink-0">
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">View on Zillow:</span>
+                                  <div className="font-medium">
+                                    <a
+                                      href={`https://www.zillow.com/homes/${encodeURIComponent(`${comp.address} ${comp.city} ${comp.state}`.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9-]/g, ""))}_rb/`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline inline-flex items-center gap-1"
+                                      data-testid={`link-comp-zillow-${originalIndex}`}
+                                    >
+                                      View Property
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditDialog(originalIndex);
+                                  }}
+                                  data-testid={`button-edit-comp-${originalIndex}`}
+                                >
+                                  <Pencil className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  );
+                })}
               </TableBody>
             </Table>
-
-            {/* Insufficient comps warning */}
-            {compsData.comps.length > 0 && compsData.comps.length < 3 && (
-              <div
-                className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mt-3"
-                data-testid="text-insufficient-comps-warning"
-              >
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Insufficient comps found. Try expanding your criteria or consider subscribing to Propstream.{" "}
-                  <a
-                    href="https://trial.propstreampro.com/redatametrix/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline font-medium"
-                    data-testid="link-propstream-trial-insufficient"
-                  >
-                    Use this link to get a 7-day free trial.
-                  </a>
-                </p>
-              </div>
-            )}
 
             {/* Suggested ARV */}
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
