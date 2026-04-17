@@ -385,11 +385,11 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      className="flex items-center gap-1.5 text-sm text-foreground bg-muted/60 border border-border px-3 py-1.5 rounded-md hover:bg-muted transition-colors"
                       data-testid="button-toggle-training-video"
                     >
-                      <PlayCircle className="h-4 w-4 flex-shrink-0" />
-                      Need instructions? Click here for a training video.
+                      <PlayCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+                      Watch a quick demo
                       <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${videoOpen ? 'rotate-180' : ''}`} />
                     </button>
                   </CollapsibleTrigger>
@@ -408,27 +408,6 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   </CollapsibleContent>
                 </Collapsible>
 
-                {!isSubscriber && (
-                  <div className="mt-3 flex items-center gap-2 text-sm" data-testid="text-remaining-lookups">
-                    <Info className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    {usageLoading ? (
-                      <span className="text-muted-foreground">Checking available lookups...</span>
-                    ) : usageError ? (
-                      <span className="text-muted-foreground">
-                        Unable to check lookup availability. Try refreshing the page or use manual entry below.
-                      </span>
-                    ) : lookupQuotaExhausted ? (
-                      <span className="text-muted-foreground">
-                        You've used your 2 free lookups this month. <Link href="/pricing" className="text-primary underline underline-offset-4">Upgrade for unlimited</Link> or use manual entry below.
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">
-                        You have <span className="font-semibold text-foreground">{remainingLookups}</span> free automated {remainingLookups === 1 ? 'lookup' : 'lookups'} remaining this month.{" "}
-                        <Link href="/pricing" className="text-primary underline underline-offset-4">Upgrade for unlimited</Link>
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 <Alert className="mt-4">
                   <ExternalLink className="h-4 w-4" />
