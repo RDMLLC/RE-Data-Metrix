@@ -1505,10 +1505,15 @@ export const reportingSnapshots = pgTable("reporting_snapshots", {
 
   // Engagement
   dealAnalysisVisited: integer("deal_analysis_visited").default(0),
+  dealAnalysisVisitedUsers: integer("deal_analysis_visited_users").default(0),
   dealAnalysisSubmitted: integer("deal_analysis_submitted").default(0),
+  dealAnalysisSubmittedUsers: integer("deal_analysis_submitted_users").default(0),
   lendersVisited: integer("lenders_visited").default(0),
+  lendersVisitedUsers: integer("lenders_visited_users").default(0),
   toolboxVisited: integer("toolbox_visited").default(0),
+  toolboxVisitedUsers: integer("toolbox_visited_users").default(0),
   pricingCtaClicked: integer("pricing_cta_clicked").default(0),
+  pricingCtaClickedUsers: integer("pricing_cta_clicked_users").default(0),
 
   // Ad Spend
   metaSpend: integer("meta_spend").default(0),

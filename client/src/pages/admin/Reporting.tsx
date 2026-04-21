@@ -39,10 +39,15 @@ interface Snapshot {
   signupPaidConfirmed: number;
   loginSuccess: number;
   dealAnalysisVisited: number;
+  dealAnalysisVisitedUsers: number;
   dealAnalysisSubmitted: number;
+  dealAnalysisSubmittedUsers: number;
   lendersVisited: number;
+  lendersVisitedUsers: number;
   toolboxVisited: number;
+  toolboxVisitedUsers: number;
   pricingCtaClicked: number;
+  pricingCtaClickedUsers: number;
   metaSpend: number;
   googleSpend: number;
   metaClicks: number;
@@ -62,8 +67,11 @@ const EMPTY_FORM: Omit<Snapshot, "id"> = {
   signupFreeInitiated: 0, signupFreeConfirmed: 0,
   signupPaidInitiated: 0, signupPaidComplete: 0, signupPaidConfirmed: 0,
   loginSuccess: 0,
-  dealAnalysisVisited: 0, dealAnalysisSubmitted: 0,
-  lendersVisited: 0, toolboxVisited: 0, pricingCtaClicked: 0,
+  dealAnalysisVisited: 0, dealAnalysisVisitedUsers: 0,
+  dealAnalysisSubmitted: 0, dealAnalysisSubmittedUsers: 0,
+  lendersVisited: 0, lendersVisitedUsers: 0,
+  toolboxVisited: 0, toolboxVisitedUsers: 0,
+  pricingCtaClicked: 0, pricingCtaClickedUsers: 0,
   metaSpend: 0, googleSpend: 0,
   metaClicks: 0, googleClicks: 0,
   metaImpressions: 0, googleImpressions: 0,
@@ -676,17 +684,27 @@ export default function Reporting() {
                   help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
               </FormSection>
 
-              <FormSection title="Engagement" source="Google Analytics 4 — Events" defaultOpen={false}>
-                <Field label="deal_analysis_visited" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
+              <FormSection title="Engagement" source="Google Analytics 4 — Events" defaultOpen={false} className="grid-cols-2">
+                <Field label="deal_analysis_visited (Events)" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
                   help="GA4 → Events → Event count for deal_analysis_visited." />
-                <Field label="deal_analysis_submitted" id="dealAnalysisSubmitted" value={form.dealAnalysisSubmitted} onChange={set("dealAnalysisSubmitted")}
+                <Field label="deal_analysis_visited (Users)" id="dealAnalysisVisitedUsers" value={form.dealAnalysisVisitedUsers} onChange={set("dealAnalysisVisitedUsers")}
+                  help="GA4 → Events → Total users for deal_analysis_visited." />
+                <Field label="deal_analysis_submitted (Events)" id="dealAnalysisSubmitted" value={form.dealAnalysisSubmitted} onChange={set("dealAnalysisSubmitted")}
                   help="GA4 → Events → Event count for deal_analysis_submitted." />
-                <Field label="lenders_visited" id="lendersVisited" value={form.lendersVisited} onChange={set("lendersVisited")}
+                <Field label="deal_analysis_submitted (Users)" id="dealAnalysisSubmittedUsers" value={form.dealAnalysisSubmittedUsers} onChange={set("dealAnalysisSubmittedUsers")}
+                  help="GA4 → Events → Total users for deal_analysis_submitted." />
+                <Field label="lenders_visited (Events)" id="lendersVisited" value={form.lendersVisited} onChange={set("lendersVisited")}
                   help="GA4 → Events → Event count for lenders_visited." />
-                <Field label="toolbox_visited" id="toolboxVisited" value={form.toolboxVisited} onChange={set("toolboxVisited")}
+                <Field label="lenders_visited (Users)" id="lendersVisitedUsers" value={form.lendersVisitedUsers} onChange={set("lendersVisitedUsers")}
+                  help="GA4 → Events → Total users for lenders_visited." />
+                <Field label="toolbox_visited (Events)" id="toolboxVisited" value={form.toolboxVisited} onChange={set("toolboxVisited")}
                   help="GA4 → Events → Event count for toolbox_visited." />
-                <Field label="pricing_cta_clicked" id="pricingCtaClicked" value={form.pricingCtaClicked} onChange={set("pricingCtaClicked")}
+                <Field label="toolbox_visited (Users)" id="toolboxVisitedUsers" value={form.toolboxVisitedUsers} onChange={set("toolboxVisitedUsers")}
+                  help="GA4 → Events → Total users for toolbox_visited." />
+                <Field label="pricing_cta_clicked (Events)" id="pricingCtaClicked" value={form.pricingCtaClicked} onChange={set("pricingCtaClicked")}
                   help="GA4 → Events → Event count for pricing_cta_clicked." />
+                <Field label="pricing_cta_clicked (Users)" id="pricingCtaClickedUsers" value={form.pricingCtaClickedUsers} onChange={set("pricingCtaClickedUsers")}
+                  help="GA4 → Events → Total users for pricing_cta_clicked." />
               </FormSection>
 
               <FormSection title="SEO — Google Search Console" source="Google Search Console — Performance" defaultOpen={false}>

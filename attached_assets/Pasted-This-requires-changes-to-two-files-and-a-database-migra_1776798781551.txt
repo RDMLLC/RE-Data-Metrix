@@ -1,0 +1,40 @@
+This requires changes to two files and a database migration. Make all changes exactly as specified and do not proceed to the next step until each one is complete.
+Step 1 — Schema (shared/schema.ts)
+In the reportingSnapshots table definition, add five new integer columns for "Total Users" tracking on engagement events. Add each new column immediately after its corresponding event count column:
+
+After dealAnalysisVisited: add dealAnalysisVisitedUsers: integer("deal_analysis_visited_users").default(0)
+After dealAnalysisSubmitted: add dealAnalysisSubmittedUsers: integer("deal_analysis_submitted_users").default(0)
+After lendersVisited: add lendersVisitedUsers: integer("lenders_visited_users").default(0)
+After toolboxVisited: add toolboxVisitedUsers: integer("toolbox_visited_users").default(0)
+After pricingCtaClicked: add pricingCtaClickedUsers: integer("pricing_cta_clicked_users").default(0)
+
+After making this change, read back the entire Engagement section of the reportingSnapshots table verbatim from disk before proceeding to Step 2.
+Step 2 — Frontend (client/src/pages/admin/Reporting.tsx)
+
+Add the five new fields to the Snapshot interface with type number
+Add the five new fields to EMPTY_FORM with default value 0
+In the Engagement FormSection, replace each single Field with a pair — Event Count on the left, Total Users on the right. Use this exact pattern for each:
+
+<Field label="deal_analysis_visited (Events)" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
+  help="GA4 → Events → Event count for deal_analysis_visited." />
+<Field label="deal_analysis_visited (Users)" id="dealAnalysisVisitedUsers" value={form.dealAnalysisVisitedUsers} onChange={set("dealAnalysisVisitedUsers")}
+  help="GA4 → Events → Total users for deal_analysis_visited." />
+Repeat this pattern for all five engagement events: deal_analysis_visited, deal_analysis_submitted, lenders_visited, toolbox_visited, pricing_cta_clicked.
+
+Change the Engagement FormSection grid to grid-cols-2 by adding a className="grid-cols-2" prop to that FormSection — so each event pair sits on its own row.
+
+After making these changes read back verbatim from disk:
+
+The full Snapshot interface
+The full EMPTY_FORM object
+The full Engagement FormSection
+
+Do not proceed to Step 3 until I confirm Steps 1 and 2.
+Step 3 — Database migration (only after I confirm Steps 1 and 2)
+Run these SQL statements directly against the development database:
+sqlALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS deal_analysis_visited_users integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS deal_analysis_submitted_users integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS lenders_visited_users integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS toolbox_visited_users integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS pricing_cta_clicked_users integer DEFAULT 0;
+After running, confirm each statement executed without error and that the five new columns exist in the reporting_snapshots table.
