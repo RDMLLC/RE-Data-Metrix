@@ -38,6 +38,7 @@ interface Snapshot {
   signupPaidComplete: number;
   signupPaidConfirmed: number;
   loginSuccess: number;
+  loginSuccessUsers: number;
   dealAnalysisVisited: number;
   dealAnalysisVisitedUsers: number;
   dealAnalysisSubmitted: number;
@@ -67,6 +68,7 @@ const EMPTY_FORM: Omit<Snapshot, "id"> = {
   signupFreeInitiated: 0, signupFreeConfirmed: 0,
   signupPaidInitiated: 0, signupPaidComplete: 0, signupPaidConfirmed: 0,
   loginSuccess: 0,
+  loginSuccessUsers: 0,
   dealAnalysisVisited: 0, dealAnalysisVisitedUsers: 0,
   dealAnalysisSubmitted: 0, dealAnalysisSubmittedUsers: 0,
   lendersVisited: 0, lendersVisitedUsers: 0,
@@ -680,11 +682,13 @@ export default function Reporting() {
                   help="GA4 → Events → Event count for signup_paid_complete (reached /checkout/success)." />
                 <Field label="signup_paid_confirmed" id="signupPaidConfirmed" value={form.signupPaidConfirmed} onChange={set("signupPaidConfirmed")}
                   help="GA4 → Events → Event count for signup_paid_confirmed. Fires on /verify-email/[token]?plan=monthly or ?plan=annual." />
-                <Field label="login_success" id="loginSuccess" value={form.loginSuccess} onChange={set("loginSuccess")}
-                  help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
               </FormSection>
 
               <FormSection title="Engagement" source="Google Analytics 4 — Events" defaultOpen={false} cols={2}>
+                <Field label="login_success (Events)" id="loginSuccess" value={form.loginSuccess} onChange={set("loginSuccess")}
+                  help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
+                <Field label="login_success (Users)" id="loginSuccessUsers" value={form.loginSuccessUsers} onChange={set("loginSuccessUsers")}
+                  help="GA4 → Events → Total users for login_success." />
                 <Field label="deal_analysis_visited (Events)" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
                   help="GA4 → Events → Event count for deal_analysis_visited." />
                 <Field label="deal_analysis_visited (Users)" id="dealAnalysisVisitedUsers" value={form.dealAnalysisVisitedUsers} onChange={set("dealAnalysisVisitedUsers")}

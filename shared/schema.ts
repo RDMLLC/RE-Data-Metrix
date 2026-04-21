@@ -1502,6 +1502,7 @@ export const reportingSnapshots = pgTable("reporting_snapshots", {
   signupPaidComplete: integer("signup_paid_complete").default(0),
   signupPaidConfirmed: integer("signup_paid_confirmed").default(0),
   loginSuccess: integer("login_success").default(0),
+  loginSuccessUsers: integer("login_success_users").default(0),
 
   // Engagement
   dealAnalysisVisited: integer("deal_analysis_visited").default(0),
