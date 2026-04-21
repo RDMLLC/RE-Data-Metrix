@@ -213,8 +213,8 @@ function Field({ label, id, value, onChange, type = "number", help }: {
   );
 }
 
-function FormSection({ title, source, children, defaultOpen = true }: {
-  title: string; source?: string; children: React.ReactNode; defaultOpen?: boolean;
+function FormSection({ title, source, children, defaultOpen = true, cols = 3 }: {
+  title: string; source?: string; children: React.ReactNode; defaultOpen?: boolean; cols?: 2 | 3;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -232,7 +232,7 @@ function FormSection({ title, source, children, defaultOpen = true }: {
         {open ? <ChevronUp className="w-4 h-4 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 flex-shrink-0" />}
       </button>
       {open && (
-        <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className={`p-4 grid gap-3 ${cols === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
           {children}
         </div>
       )}
@@ -684,7 +684,7 @@ export default function Reporting() {
                   help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
               </FormSection>
 
-              <FormSection title="Engagement" source="Google Analytics 4 — Events" defaultOpen={false} className="grid-cols-2">
+              <FormSection title="Engagement" source="Google Analytics 4 — Events" defaultOpen={false} cols={2}>
                 <Field label="deal_analysis_visited (Events)" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
                   help="GA4 → Events → Event count for deal_analysis_visited." />
                 <Field label="deal_analysis_visited (Users)" id="dealAnalysisVisitedUsers" value={form.dealAnalysisVisitedUsers} onChange={set("dealAnalysisVisitedUsers")}
