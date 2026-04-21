@@ -485,6 +485,7 @@ export default function Reporting() {
       ...rest,
       metaSpend: (rest.metaSpend || 0) / 100,
       googleSpend: (rest.googleSpend || 0) / 100,
+      avgPosition: Math.round((rest.avgPosition || 0) / 10 * 10) / 10,
     });
     setEditingId(id);
     setShowForm(true);
@@ -511,6 +512,7 @@ export default function Reporting() {
           ...form,
           metaSpend: Math.round((form.metaSpend || 0) * 100),
           googleSpend: Math.round((form.googleSpend || 0) * 100),
+          avgPosition: Math.round((form.avgPosition || 0) * 10),
         }),
       });
       if (!r.ok) {
