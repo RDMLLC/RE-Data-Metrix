@@ -644,7 +644,7 @@ export default function Reporting() {
                   help="Google Ads → Campaigns → Impressions." />
               </FormSection>
 
-              <FormSection title="Traffic Sources" source="Google Analytics 4 — User Acquisition">
+              <FormSection title="Traffic Sources" source="Google Analytics 4 — User Acquisition" defaultOpen={false}>
                 <Field label="Total Visitors" id="totalVisitors" value={form.totalVisitors} onChange={set("totalVisitors")}
                   help="GA4 → Reports → Generate leads → User acquisition → Total row. Set date range to Mon–Sun." />
                 <Field label="Paid Search" id="paidVisitors" value={form.paidVisitors} onChange={set("paidVisitors")}
@@ -661,7 +661,7 @@ export default function Reporting() {
                   help="GA4 → User acquisition → Referral row." />
               </FormSection>
 
-              <FormSection title="Conversion Funnel" source="Google Analytics 4 — Events">
+              <FormSection title="Conversion Funnel" source="Google Analytics 4 — Events" defaultOpen={false}>
                 <Field label="signup_free_initiated" id="signupFreeInitiated" value={form.signupFreeInitiated} onChange={set("signupFreeInitiated")}
                   help="GA4 → Reports → Events → Event count for signup_free_initiated." />
                 <Field label="signup_free_confirmed" id="signupFreeConfirmed" value={form.signupFreeConfirmed} onChange={set("signupFreeConfirmed")}
@@ -676,7 +676,7 @@ export default function Reporting() {
                   help="GA4 → Events → Event count for login_success (reached /portal/dashboard)." />
               </FormSection>
 
-              <FormSection title="Engagement" source="Google Analytics 4 — Events">
+              <FormSection title="Engagement" source="Google Analytics 4 — Events" defaultOpen={false}>
                 <Field label="deal_analysis_visited" id="dealAnalysisVisited" value={form.dealAnalysisVisited} onChange={set("dealAnalysisVisited")}
                   help="GA4 → Events → Event count for deal_analysis_visited." />
                 <Field label="deal_analysis_submitted" id="dealAnalysisSubmitted" value={form.dealAnalysisSubmitted} onChange={set("dealAnalysisSubmitted")}
