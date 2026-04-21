@@ -1,0 +1,57 @@
+CREATE TABLE IF NOT EXISTS comp_cache (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  cache_key varchar UNIQUE NOT NULL,
+  normalized_address varchar,
+  radius_miles numeric,
+  date_range_days integer,
+  comps jsonb,
+  radius_expanded boolean,
+  actual_radius_miles numeric,
+  fetched_at timestamp,
+  expires_at timestamp,
+  hit_count integer DEFAULT 0,
+  created_at timestamp DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS reporting_snapshots (
+  id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+  week_start date NOT NULL,
+  total_visitors integer DEFAULT 0,
+  direct_visitors integer DEFAULT 0,
+  paid_visitors integer DEFAULT 0,
+  paid_social_visitors integer DEFAULT 0,
+  organic_visitors integer DEFAULT 0,
+  social_visitors integer DEFAULT 0,
+  referral_visitors integer DEFAULT 0,
+  signup_free_initiated integer DEFAULT 0,
+  signup_free_confirmed integer DEFAULT 0,
+  signup_paid_initiated integer DEFAULT 0,
+  signup_paid_complete integer DEFAULT 0,
+  signup_paid_confirmed integer DEFAULT 0,
+  login_success integer DEFAULT 0,
+  deal_analysis_visited integer DEFAULT 0,
+  deal_analysis_submitted integer DEFAULT 0,
+  lenders_visited integer DEFAULT 0,
+  toolbox_visited integer DEFAULT 0,
+  pricing_cta_clicked integer DEFAULT 0,
+  meta_spend integer DEFAULT 0,
+  google_spend integer DEFAULT 0,
+  meta_clicks integer DEFAULT 0,
+  google_clicks integer DEFAULT 0,
+  meta_impressions integer DEFAULT 0,
+  google_impressions integer DEFAULT 0,
+  organic_impressions integer DEFAULT 0,
+  organic_clicks integer DEFAULT 0,
+  avg_position integer DEFAULT 0,
+  notes text,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
+);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS downgraded_at timestamp;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_failed_at timestamp;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS report_logo_url text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS report_company_name text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS archive_reason text;
+
+ALTER TABLE marketing_pixels ADD COLUMN IF NOT EXISTS capi_access_token text;
