@@ -590,9 +590,6 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
               {!isLookupComplete && !isSampleLoading && !isSampleReady && (
                 <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-                  <p style={{ fontSize: "13px", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>
-                    Don't have a property URL?
-                  </p>
                   <button
                     type="button"
                     onClick={handleTrySampleDeal}
@@ -608,7 +605,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       fontFamily: "inherit",
                     }}
                   >
-                    Try a sample deal →
+                    See how it works — Try a sample deal →
                   </button>
                 </div>
               )}
