@@ -15,7 +15,6 @@ import Step5HoldingPeriodExit from "./Step5HoldingPeriodExit";
 import Step6Results, { ResultsResponse } from "./Step6Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
 import type { SavedDeal } from "@shared/schema";
-import { SAMPLE_WIZARD_PREFILL } from "@/data/sampleDeal";
 
 const wizardSchema = z.object({
   address: z.string(),
@@ -128,7 +127,6 @@ export default function DealAnalysisWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const [step1ResetKey, setStep1ResetKey] = useState(0);
-  const [isSampleDeal, setIsSampleDeal] = useState(false);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
   
   // State for viewing saved deals
@@ -464,17 +462,7 @@ export default function DealAnalysisWizard() {
     }
   };
 
-  const handleTrySampleDeal = () => {
-    setIsSampleDeal(true);
-    setStep1ResetKey(prev => prev + 1);
-    clearWizardData();
-    setPropertySnapshot(null);
-    form.reset(SAMPLE_WIZARD_PREFILL);
-    updateStep(2);
-  };
-
   const handleStartNew = () => {
-    setIsSampleDeal(false);
     clearWizardData();
     setPropertySnapshot(null);
     // Reset ALL form fields to ensure no sticky data
@@ -549,8 +537,6 @@ export default function DealAnalysisWizard() {
             onPropertyDataLoaded={handlePropertyDataLoaded}
             isSubscriber={isSubscriber}
             isAuthenticated={isAuthenticated}
-            isSampleDeal={isSampleDeal}
-            onTrySampleDeal={handleTrySampleDeal}
           />
         );
       case 2:
@@ -567,7 +553,6 @@ export default function DealAnalysisWizard() {
             form={form}
             onNext={handleNext}
             onBack={handleBack}
-            isSampleDeal={isSampleDeal}
           />
         );
       case 4:
@@ -604,7 +589,7 @@ export default function DealAnalysisWizard() {
             isSubscriber={isSubscriber}
             viewingDealId={viewingDealId || undefined}
             onEditDeal={viewingDealId ? handleEditDeal : undefined}
-            suppressAutoSave={isSampleDeal || suppressStep6AutoSave.current}
+            suppressAutoSave={suppressStep6AutoSave.current}
             originalResultsSnapshot={savedDeal?.resultsSnapshot as ResultsResponse | null | undefined}
           />
         );
@@ -635,7 +620,6 @@ export default function DealAnalysisWizard() {
       canGoBack={currentStep > 1}
       propertyAddress={propertyAddress}
       propertyDetails={propertyDetails}
-      isSampleDeal={isSampleDeal}
     >
       {renderStep()}
     </WizardLayout>

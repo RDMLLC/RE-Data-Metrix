@@ -10,7 +10,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useWizardData } from "@/contexts/WizardDataContext";
-import { SAMPLE_PROPERTY } from "@/data/sampleDeal";
 import GroundUpModal from "./GroundUpModal";
 import QuotaExhaustedModal from "./QuotaExhaustedModal";
 import { normalizePropertyTypeToEnum } from "./propertyTypeUtils";
@@ -24,11 +23,9 @@ interface Step1Props {
   onPropertyDataLoaded: (data: any) => void;
   isSubscriber?: boolean;
   isAuthenticated?: boolean;
-  isSampleDeal?: boolean;
-  onTrySampleDeal?: () => void;
 }
 
-export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false, isSampleDeal = false, onTrySampleDeal }: Step1Props) {
+export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false }: Step1Props) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { updatePropertyData, clearWizardData } = useWizardData();
@@ -40,17 +37,6 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
   const [missingAutoFillFields, setMissingAutoFillFields] = useState<string[]>([]);
   const [videoOpen, setVideoOpen] = useState(false);
-  const [isSampleLoading, setIsSampleLoading] = useState(false);
-  const [isSampleReady, setIsSampleReady] = useState(false);
-
-  const handleTrySampleDeal = () => {
-    setPropertyUrl("https://www.zillow.com/homedetails/1247-Maple-St-SW-Atlanta-GA-30310/12345678_zpid/");
-    setIsSampleLoading(true);
-    setTimeout(() => {
-      setIsSampleLoading(false);
-      setIsSampleReady(true);
-    }, 1800);
-  };
 
   const { data: usageData, isLoading: usageLoading, isError: usageError } = useQuery<{
     isSubscriber: boolean;
@@ -472,10 +458,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                     <Button
                       type="button"
                       onClick={handleLookup}
-                      disabled={propertyLookupMutation.isPending || isSampleLoading || lookupQuotaExhausted || (!isSubscriber && !usageReady)}
+                      disabled={propertyLookupMutation.isPending || lookupQuotaExhausted || (!isSubscriber && !usageReady)}
                       data-testid="button-lookup-property"
                     >
-                      {propertyLookupMutation.isPending || isSampleLoading ? (
+                      {propertyLookupMutation.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
                         </>
@@ -486,50 +472,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       )}
                     </Button>
                   </div>
-                  {isSampleLoading ? (
-                    <p className="text-xs text-muted-foreground" data-testid="text-sample-fetching">
-                      Fetching property details...
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
+                  </p>
                 </div>
-
-                {isSampleReady && !isLookupComplete && (
-                  <div className="pt-4 border-t space-y-4" data-testid="card-sample-property-found">
-                    <div className="rounded-lg bg-muted p-4">
-                      <h3 className="font-semibold mb-2">Property Found</h3>
-                      <div className="mb-3 rounded-md overflow-hidden bg-muted">
-                        <img
-                          src={SAMPLE_PROPERTY.imageUrl || "/images/property-placeholder.svg"}
-                          alt="Sample Property"
-                          className="w-full max-h-64 md:max-h-80 object-contain"
-                          data-testid="img-sample-property"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/images/property-placeholder.svg";
-                          }}
-                        />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {SAMPLE_PROPERTY.address}, {SAMPLE_PROPERTY.city}, {SAMPLE_PROPERTY.state} {SAMPLE_PROPERTY.zipCode}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3 flex-wrap">
-                      <Button
-                        type="button"
-                        onClick={() => onTrySampleDeal?.()}
-                        className="flex-1 md:flex-initial"
-                        data-testid="button-sample-continue"
-                      >
-                        Continue to Property Details
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
                 {isLookupComplete && (
                   <div className="pt-4 border-t space-y-4">
@@ -587,28 +533,6 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   </div>
                 )}
               </div>
-
-              {!isLookupComplete && !isSampleLoading && !isSampleReady && (
-                <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-                  <button
-                    type="button"
-                    onClick={handleTrySampleDeal}
-                    data-testid="button-try-sample-deal"
-                    style={{
-                      fontSize: "13px",
-                      padding: "8px 18px",
-                      borderRadius: "6px",
-                      border: "1px solid #1d408b",
-                      color: "#1d408b",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    See how it works — Try a sample deal →
-                  </button>
-                </div>
-              )}
 
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">

@@ -57,10 +57,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 import CompReportPdf from "./CompReportPdf";
-import { SAMPLE_COMPS } from "@/data/sampleDeal";
 
 // Interface for comparable property
-export interface SoldPropertyComp {
+interface SoldPropertyComp {
   address: string;
   city: string;
   state: string;
@@ -106,14 +105,12 @@ interface Step3PurchaseRenovationProps {
   form: UseFormReturn<WizardFormData>;
   onNext: () => void;
   onBack: () => void;
-  isSampleDeal?: boolean;
 }
 
 export default function Step3PurchaseRenovation({
   form,
   onNext,
   onBack,
-  isSampleDeal = false,
 }: Step3PurchaseRenovationProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -344,16 +341,6 @@ export default function Step3PurchaseRenovation({
 
   // Search for comparable sales
   const searchComps = async () => {
-    if (isSampleDeal) {
-      setCompsData({
-        comps: SAMPLE_COMPS,
-        suggestedArv: 295000,
-        weightedAvgPricePerSqft: 199,
-      });
-      setSelectedCompIndices(new Set(SAMPLE_COMPS.slice(0, 6).map((_, i) => i)));
-      return;
-    }
-
     if (!city || !state) {
       toast({
         title: "Missing Location",
@@ -420,16 +407,6 @@ export default function Step3PurchaseRenovation({
 
   // Search comps with specific radius and/or date range (for auto-search when options change)
   const searchCompsWithOptions = async (radius: RadiusOption, dateRange: DateRangeOption) => {
-    if (isSampleDeal) {
-      setCompsData({
-        comps: SAMPLE_COMPS,
-        suggestedArv: 295000,
-        weightedAvgPricePerSqft: 199,
-      });
-      setSelectedCompIndices(new Set(SAMPLE_COMPS.slice(0, 6).map((_, i) => i)));
-      return;
-    }
-
     if (!city || !state) {
       return;
     }
@@ -488,7 +465,6 @@ export default function Step3PurchaseRenovation({
 
   // Search for pending properties
   const searchPendingProperties = async () => {
-    if (isSampleDeal) return;
     if (!city || !state) {
       return;
     }
