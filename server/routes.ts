@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, insertReportingSnapshotSchema, sentSignupFollowups, userUsageCounters, promoWaitlist, apiUsageLogs, demoTokens, integrationConfigs, outboundWebhooks, propertyCache as propertyCacheTable, type User } from "@shared/schema";
+import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, insertReportingSnapshotSchema, sentSignupFollowups, userUsageCounters, promoWaitlist, apiUsageLogs, demoTokens, integrationConfigs, outboundWebhooks, type User } from "@shared/schema";
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
@@ -948,17 +948,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Stripe key error:', error);
       res.status(500).json({ error: "Failed to get Stripe key" });
-    }
-  });
-
-  // TEMPORARY — remove after production cache is cleared
-  app.delete("/api/admin/property-cache/clear-all", ensureAdmin, async (req, res) => {
-    try {
-      const result = await db.delete(propertyCacheTable);
-      console.log("[Admin] Production property cache cleared");
-      res.json({ success: true, message: "Property cache cleared" });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
     }
   });
 
