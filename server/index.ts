@@ -71,6 +71,8 @@ async function initStripe() {
     const domain = process.env.REPLIT_DOMAINS?.split(',')[0];
     if (!domain) {
       console.warn('REPLIT_DOMAINS not set - skipping webhook setup');
+    } else if (domain !== 'redatametrix.com') {
+      console.log(`Skipping webhook registration for non-production domain: ${domain}`);
     } else {
       const webhookBaseUrl = `https://${domain}`;
       const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
