@@ -621,7 +621,9 @@ export class HasDataAPIService implements IPropertyAPIService {
       zestimate: property.zestimate,
       price: property.price,
       listPrice: property.listPrice,
-      rentZestimate: property.rentZestimate
+      rentZestimate: property.rentZestimate,
+      latitude: property.latitude,
+      longitude: property.longitude,
     });
     
     return {
