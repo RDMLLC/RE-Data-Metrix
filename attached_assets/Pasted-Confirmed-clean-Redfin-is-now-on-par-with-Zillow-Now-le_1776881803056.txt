@@ -1,0 +1,80 @@
+Confirmed clean. Redfin is now on par with Zillow.
+Now let's write the full revised sample deal prompt with:
+
+Fake URL animation on Step 1
+Street View image
+Skip Step 2 (jump straight to Step 3)
+Option B guidance hints per step
+Redfin mention removed from sample deal flow
+
+Give Replit Agent This Prompt:
+
+Update the existing sample deal implementation. Do not change anything outside what is described.
+Change 1 — Update sampleDeal.ts
+Change imageUrl in SAMPLE_PROPERTY from null to:
+typescriptimageUrl: "/api/property/street-view?address=1247%20Maple%20St%20SW%2C%20Atlanta%2C%20GA%2030310",
+Add step guidance hints:
+typescriptexport const SAMPLE_STEP_HINTS: Record<number, string> = {
+  2: "Review the property details — these were pulled automatically from the listing.",
+  3: "These are recent comparable sales in the area. The suggested ARV is calculated from their sale prices. You can modify the selected comps or add your own.",
+  4: "Enter your investor profile to get matched with the right lenders.",
+  5: "Set your holding period and exit strategy to calculate your projected profit.",
+  6: "Your full deal analysis — review your max offer, projected returns, and matched lenders.",
+};
+Change 2 — Fake URL animation in Step1PropertyAddress.tsx
+When onTrySampleDeal is called, instead of immediately invoking it, first:
+
+Populate the URL input with https://www.zillow.com/homedetails/1247-Maple-St-SW-Atlanta-GA-30310/12345678_zpid/
+Set a local isSampleLoading state to true — show a loading spinner where the search button is, and display "Fetching property details..." below the input
+After 1800ms, set isSampleLoading to false and call onTrySampleDeal()
+
+The button click handler becomes:
+typescriptconst handleTrySampleDeal = () => {
+  setPropertyUrl("https://www.zillow.com/homedetails/1247-Maple-St-SW-Atlanta-GA-30310/12345678_zpid/");
+  setIsSampleLoading(true);
+  setTimeout(() => {
+    setIsSampleLoading(false);
+    onTrySampleDeal?.();
+  }, 1800);
+};
+After the timeout fires, show the "Property Found" card with:
+
+The Street View image URL from SAMPLE_PROPERTY.imageUrl
+Address: "1247 Maple St SW, Atlanta, GA 30310"
+A "Continue to Property Details" button that calls onNext()
+
+Change 3 — Skip Step 2, jump to Step 3
+In DealAnalysisWizard.tsx, in handleTrySampleDeal, change updateStep(2) to updateStep(3).
+Change 4 — Add guidance hints to demo banner
+In WizardLayout.tsx (or wherever the demo banner renders), import SAMPLE_STEP_HINTS from @/data/sampleDeal. Below the existing banner text, add the step hint:
+tsx{isSampleDeal && (
+  <div style={{
+    background: "#faeeda",
+    color: "#854f0b",
+    fontSize: "13px",
+    padding: "8px 16px",
+    borderBottom: "1px solid #e0b32e",
+  }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <span>You're viewing a sample deal</span>
+      <button onClick={onStartNew} style={{ background: "none", border: "none", color: "#854f0b", textDecoration: "underline", cursor: "pointer", fontFamily: "inherit", fontSize: "13px" }}>
+        Start your own analysis →
+      </button>
+    </div>
+    {SAMPLE_STEP_HINTS[currentStep] && (
+      <div style={{ marginTop: "4px", fontSize: "12px", opacity: 0.85 }}>
+        {SAMPLE_STEP_HINTS[currentStep]}
+      </div>
+    )}
+  </div>
+)}
+Pass currentStep to WizardLayout so the hint can update per step.
+Change 5 — "Property Found" card in sample mode
+In Step1PropertyAddress.tsx, after isSampleLoading resolves and before onTrySampleDeal is called, show a "Property Found" card using the same component/markup used for real lookups, pre-populated with SAMPLE_PROPERTY data. The "Continue to Property Details" button should call onTrySampleDeal?.() directly (the timeout has already fired at this point — use a separate isSampleReady state flag set to true after the timeout).
+After all changes, show me:
+
+The updated sampleDeal.ts verbatim
+The handleTrySampleDeal function in Step1PropertyAddress.tsx verbatim
+The demo banner block in WizardLayout.tsx verbatim
+Confirm updateStep(3) in DealAnalysisWizard.tsx
+

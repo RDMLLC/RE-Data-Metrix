@@ -16,7 +16,7 @@ export const SAMPLE_PROPERTY = {
   annualTax: 3100,
   hoaFees: 0,
   estimatedRent: 1850,
-  imageUrl: null,
+  imageUrl: "/api/property/street-view?address=1247%20Maple%20St%20SW%2C%20Atlanta%2C%20GA%2030310",
   latitude: 33.7318,
   longitude: -84.4197,
   dataSource: "manual",
@@ -102,4 +102,12 @@ export const SAMPLE_WIZARD_PREFILL = {
   propertyDataSource: "manual",
   propertyLatitude: 33.7318,
   propertyLongitude: -84.4197,
+};
+
+export const SAMPLE_STEP_HINTS: Record<number, string> = {
+  2: "Review the property details — these were pulled automatically from the listing.",
+  3: "These are recent comparable sales in the area. The suggested ARV is calculated from their sale prices. You can modify the selected comps or add your own.",
+  4: "Enter your investor profile to get matched with the right lenders.",
+  5: "Set your holding period and exit strategy to calculate your projected profit.",
+  6: "Your full deal analysis — review your max offer, projected returns, and matched lenders.",
 };

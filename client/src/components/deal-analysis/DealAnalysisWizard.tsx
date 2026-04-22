@@ -470,7 +470,7 @@ export default function DealAnalysisWizard() {
     clearWizardData();
     setPropertySnapshot(null);
     form.reset(SAMPLE_WIZARD_PREFILL);
-    updateStep(2);
+    updateStep(3);
   };
 
   const handleStartNew = () => {

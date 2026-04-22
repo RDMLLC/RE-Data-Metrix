@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, RotateCcw, MapPin, Bed, Bath, Ruler, Calendar, LandPlot } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { SAMPLE_STEP_HINTS } from "@/data/sampleDeal";
 
 interface PropertyDetails {
   bedrooms?: number;
@@ -54,28 +55,37 @@ export default function WizardLayout({
             color: "#854f0b",
             fontSize: "13px",
             padding: "8px 16px",
-            textAlign: "center",
             borderBottom: "1px solid #e0b32e",
             marginBottom: "1rem",
           }}
         >
-          You're viewing a sample deal —{" "}
-          <button
-            type="button"
-            onClick={onStartNew}
-            data-testid="button-banner-start-new"
-            style={{
-              background: "none",
-              border: "none",
-              color: "#854f0b",
-              textDecoration: "underline",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: "13px",
-            }}
-          >
-            Start your own analysis →
-          </button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>You're viewing a sample deal</span>
+            <button
+              type="button"
+              onClick={onStartNew}
+              data-testid="button-banner-start-new"
+              style={{
+                background: "none",
+                border: "none",
+                color: "#854f0b",
+                textDecoration: "underline",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: "13px",
+              }}
+            >
+              Start your own analysis →
+            </button>
+          </div>
+          {SAMPLE_STEP_HINTS[currentStep] && (
+            <div
+              data-testid="text-sample-step-hint"
+              style={{ marginTop: "4px", fontSize: "12px", opacity: 0.85 }}
+            >
+              {SAMPLE_STEP_HINTS[currentStep]}
+            </div>
+          )}
         </div>
       )}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
