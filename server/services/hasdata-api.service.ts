@@ -625,6 +625,15 @@ export class HasDataAPIService implements IPropertyAPIService {
       latitude: property.latitude,
       longitude: property.longitude,
     });
+    console.log("Zillow location fields:", {
+      latitude: property.latitude,
+      longitude: property.longitude,
+      address: property.address,
+      location: property.location,
+      geo: property.geo,
+      coordinates: property.coordinates,
+      latLong: property.latLong,
+    });
     
     return {
       address: property.address?.street || property.addressRaw || '',
