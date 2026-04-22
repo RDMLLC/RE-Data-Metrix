@@ -350,27 +350,6 @@ export class HasDataAPIService implements IPropertyAPIService {
       property.hoa?.fee
     );
     
-    // Log property type and HOA fields for debugging
-    console.log("Redfin property fields:", {
-      propertyType: property.propertyType,
-      homeType: property.homeType,
-      propertyTypeName: property.propertyTypeName,
-      homeTypeLabel: property.homeTypeLabel,
-      type: property.type,
-      extractedPropertyType: propertyType
-    });
-    
-    console.log("Redfin HOA fields:", {
-      hoaDues: property.hoaDues,
-      hoaFee: property.hoaFee,
-      hoaFees: property.hoaFees,
-      monthlyHoaFee: property.monthlyHoaFee,
-      associationDues: property.associationDues,
-      associationFee: property.associationFee,
-      hoa: property.hoa,
-      extractedHoaFees: hoaFees
-    });
-    
     // Extract tax from taxHistory array (most recent entry) if available
     let taxHistoryAmount: number | undefined;
     let taxHistoryAssessedValue: number | undefined;
@@ -399,18 +378,6 @@ export class HasDataAPIService implements IPropertyAPIService {
       property.taxAnnualAmount
     ) || taxHistoryAmount;
     
-    console.log("Redfin tax fields:", {
-      taxAssessedValue: property.taxAssessedValue,
-      taxValue: property.taxValue,
-      tax: property.tax,
-      taxInfo: property.taxInfo,
-      taxHistory: property.taxHistory ? `Array with ${property.taxHistory.length} entries` : undefined,
-      propertyTaxes: property.propertyTaxes,
-      annualTax: property.annualTax,
-      extractedTaxAssessedValue: taxAssessedValue,
-      extractedAnnualTax: annualTax
-    });
-    
     return {
       address: property.address?.street || '',
       city: property.address?.city || '',
@@ -429,8 +396,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       lastSaleDate: property.lastSoldDate,
       imageUrl,
       hoaFees,
-      latitude: this.parseNumber(property.latitude),
-      longitude: this.parseNumber(property.longitude),
+      latitude: this.parseNumber(property.latitude ?? property.geo?.latitude),
+      longitude: this.parseNumber(property.longitude ?? property.geo?.longitude),
     };
   }
 
