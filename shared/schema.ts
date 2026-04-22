@@ -1516,13 +1516,19 @@ export const reportingSnapshots = pgTable("reporting_snapshots", {
   pricingCtaClicked: integer("pricing_cta_clicked").default(0),
   pricingCtaClickedUsers: integer("pricing_cta_clicked_users").default(0),
 
-  // Ad Spend
+  // Ad Spend — Meta
   metaSpend: integer("meta_spend").default(0),
-  googleSpend: integer("google_spend").default(0),
   metaClicks: integer("meta_clicks").default(0),
-  googleClicks: integer("google_clicks").default(0),
   metaImpressions: integer("meta_impressions").default(0),
+  metaConversions: integer("meta_conversions").default(0),
+  // Ad Spend — Google
+  googleSpend: integer("google_spend").default(0),
+  googleClicks: integer("google_clicks").default(0),
   googleImpressions: integer("google_impressions").default(0),
+  googleConversions: integer("google_conversions").default(0),
+  googleAvgCpc: integer("google_avg_cpc").default(0),
+  googleCtr: integer("google_ctr").default(0),
+  googleCostPerConv: integer("google_cost_per_conv").default(0),
 
   // SEO
   organicImpressions: integer("organic_impressions").default(0),

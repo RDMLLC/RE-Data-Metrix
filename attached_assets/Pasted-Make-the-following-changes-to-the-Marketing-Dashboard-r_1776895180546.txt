@@ -1,0 +1,130 @@
+Make the following changes to the Marketing Dashboard reporting feature. This requires changes to 3 files: shared/schema.ts, client/src/pages/admin/Reporting.tsx, and a database migration via SQL.
+
+PART 1 — shared/schema.ts
+In the reportingSnapshots pgTable definition, replace the // Ad Spend comment block (the 6 lines from metaSpend through googleImpressions) with this expanded version:
+  // Ad Spend — Meta
+  metaSpend: integer("meta_spend").default(0),
+  metaClicks: integer("meta_clicks").default(0),
+  metaImpressions: integer("meta_impressions").default(0),
+  metaConversions: integer("meta_conversions").default(0),
+  // Ad Spend — Google
+  googleSpend: integer("google_spend").default(0),
+  googleClicks: integer("google_clicks").default(0),
+  googleImpressions: integer("google_impressions").default(0),
+  googleConversions: integer("google_conversions").default(0),
+  googleAvgCpc: integer("google_avg_cpc").default(0),
+  googleCtr: integer("google_ctr").default(0),
+  googleCostPerConv: integer("google_cost_per_conv").default(0),
+Storage notes for the agent's reference:
+
+googleAvgCpc — stored as cents (e.g. $1.23 = 123)
+googleCtr — stored as integer ×10000 (e.g. 2.45% = 245)
+googleCostPerConv — stored as cents (e.g. $101.67 = 10167)
+metaConversions — stored as integer count
+
+
+PART 2 — Database migration
+Run this SQL directly against the production database to add the new columns:
+sqlALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS meta_conversions integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS google_conversions integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS google_avg_cpc integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS google_ctr integer DEFAULT 0;
+ALTER TABLE reporting_snapshots ADD COLUMN IF NOT EXISTS google_cost_per_conv integer DEFAULT 0;
+
+PART 3 — client/src/pages/admin/Reporting.tsx
+3a. Add new fields to the Snapshot interface — after googleImpressions: number add:
+typescript  googleConversions: number;
+  googleAvgCpc: number;
+  googleCtr: number;
+  googleCostPerConv: number;
+  metaConversions: number;
+3b. Add new fields to EMPTY_FORM — after googleImpressions: 0 add:
+typescript  googleConversions: 0,
+  googleAvgCpc: 0,
+  googleCtr: 0,
+  googleCostPerConv: 0,
+  metaConversions: 0,
+3c. Update openEdit — in the setForm call, after the existing spend conversions, add:
+typescript  googleAvgCpc: (rest.googleAvgCpc || 0) / 100,
+  googleCtr: (rest.googleCtr || 0) / 100,
+  googleCostPerConv: (rest.googleCostPerConv || 0) / 100,
+3d. Update saveSnapshot — in the body: JSON.stringify(...) call, after the existing spend conversions, add:
+typescript  googleAvgCpc: Math.round((form.googleAvgCpc || 0) * 100),
+  googleCtr: Math.round((form.googleCtr || 0) * 100),
+  googleCostPerConv: Math.round((form.googleCostPerConv || 0) * 100),
+3e. Replace the combined "Ad Spend (Meta + Google)" FormSection with two separate collapsible sections:
+tsx<FormSection title="Meta Ads" source="Meta Ads Manager" defaultOpen={false}>
+  <Field label="Clicks" id="metaClicks" value={form.metaClicks} onChange={set("metaClicks")}
+    help="Meta Ads Manager → Campaigns → Link clicks." />
+  <Field label="Impressions" id="metaImpressions" value={form.metaImpressions} onChange={set("metaImpressions")}
+    help="Meta Ads Manager → Campaigns → Impressions." />
+  <Field label="Conversions" id="metaConversions" value={form.metaConversions} onChange={set("metaConversions")}
+    help="Meta Ads Manager → Campaigns → Results (conversions). Note: may differ from GA4 — use GA4 as source of truth for signups." />
+  <Field label="Spend ($)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
+    help="Meta Ads Manager → Campaigns → Amount spent. Enter as dollars: $150.00 → type 150." />
+</FormSection>
+
+<FormSection title="Google Ads" source="Google Ads — Campaigns" defaultOpen={false}>
+  <Field label="Clicks" id="googleClicks" value={form.googleClicks} onChange={set("googleClicks")}
+    help="Google Ads → Campaigns → Clicks." />
+  <Field label="Impressions" id="googleImpressions" value={form.googleImpressions} onChange={set("googleImpressions")}
+    help="Google Ads → Campaigns → Impressions." />
+  <Field label="Conversions" id="googleConversions" value={form.googleConversions} onChange={set("googleConversions")}
+    help="Google Ads → Campaigns → Conversions (total, all actions combined)." />
+  <Field label="Cost ($)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
+    help="Google Ads → Campaigns → Cost. Enter as dollars: $89.50 → type 89.50." />
+  <Field label="Avg. CPC ($)" id="googleAvgCpc" value={form.googleAvgCpc} onChange={set("googleAvgCpc")}
+    help="Google Ads → Campaigns → Avg. CPC. Enter as dollars: $1.23 → type 1.23." />
+  <Field label="CTR (%)" id="googleCtr" value={form.googleCtr} onChange={set("googleCtr")}
+    help="Google Ads → Campaigns → CTR. Enter as percentage: 2.45% → type 2.45." />
+  <Field label="Cost / Conv. ($)" id="googleCostPerConv" value={form.googleCostPerConv} onChange={set("googleCostPerConv")}
+    help="Google Ads → Campaigns → Cost / conv. Enter as dollars: $101.67 → type 101.67." />
+</FormSection>
+3f. Update the Weekly Guide Step 2 detail string — replace the existing Step 2 detail with:
+Go to ads.google.com → Campaigns tab
+Set date range to Monday–Sunday of the week you are reporting
+Make sure these columns are visible: Clicks, Impressions, Conversions, Cost, Avg. CPC, CTR, Cost / conv.
+Enter each value — Cost, Avg. CPC, and Cost / conv. as dollars (e.g. 610.00, 2.38, 101.67)
+Enter CTR as a percentage number (e.g. 12.62% → type 12.62)
+3g. Update the Ads tab platform breakdown table — replace the existing <thead> row with:
+tsx<tr className="border-b text-xs text-muted-foreground">
+  <th className="text-left py-2">Platform</th>
+  <th className="text-right py-2">Spend</th>
+  <th className="text-right py-2">Clicks</th>
+  <th className="text-right py-2">Impressions</th>
+  <th className="text-right py-2">Conversions</th>
+  <th className="text-right py-2">CPC</th>
+  <th className="text-right py-2">CTR</th>
+  <th className="text-right py-2">Cost/Conv.</th>
+</tr>
+And replace the tbody map with:
+tsx{[
+  { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaClicks, impressions: latest.metaImpressions, conversions: latest.metaConversions, avgCpc: null, ctr: null, costPerConv: null },
+  { name: "Google Ads", spend: latest.googleSpend, clicks: latest.googleClicks, impressions: latest.googleImpressions, conversions: latest.googleConversions, avgCpc: latest.googleAvgCpc, ctr: latest.googleCtr, costPerConv: latest.googleCostPerConv },
+].map(row => (
+  <tr key={row.name} className="border-b last:border-0">
+    <td className="py-2 font-medium">{row.name}</td>
+    <td className="text-right">{dollars(row.spend)}</td>
+    <td className="text-right">{fmt(row.clicks)}</td>
+    <td className="text-right">{fmt(row.impressions)}</td>
+    <td className="text-right">{fmt(row.conversions)}</td>
+    <td className="text-right">
+      {row.avgCpc !== null
+        ? row.avgCpc > 0 ? `$${(row.avgCpc / 100).toFixed(2)}` : "—"
+        : row.clicks > 0 ? `$${(row.spend / 100 / row.clicks).toFixed(2)}` : "—"}
+    </td>
+    <td className="text-right">
+      {row.ctr !== null
+        ? row.ctr > 0 ? `${(row.ctr / 100).toFixed(2)}%` : "—"
+        : pct(row.clicks, row.impressions)}
+    </td>
+    <td className="text-right">
+      {row.costPerConv !== null
+        ? row.costPerConv > 0 ? `$${(row.costPerConv / 100).toFixed(2)}` : "—"
+        : "—"}
+    </td>
+  </tr>
+))}
+3h. Update the Google Ads tile in the TOOLS array — change the note field from "Add Customer ID when available" to "Customer ID: 645-790-4617".
+
+After all changes are made, run npm run build to confirm no TypeScript errors. Do not redeploy yet — just confirm the build passes and show me the modified sections of each file.

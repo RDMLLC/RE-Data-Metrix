@@ -55,6 +55,11 @@ interface Snapshot {
   googleClicks: number;
   metaImpressions: number;
   googleImpressions: number;
+  googleConversions: number;
+  googleAvgCpc: number;
+  googleCtr: number;
+  googleCostPerConv: number;
+  metaConversions: number;
   organicImpressions: number;
   organicClicks: number;
   avgPosition: number;
@@ -77,6 +82,11 @@ const EMPTY_FORM: Omit<Snapshot, "id"> = {
   metaSpend: 0, googleSpend: 0,
   metaClicks: 0, googleClicks: 0,
   metaImpressions: 0, googleImpressions: 0,
+  googleConversions: 0,
+  googleAvgCpc: 0,
+  googleCtr: 0,
+  googleCostPerConv: 0,
+  metaConversions: 0,
   organicImpressions: 0, organicClicks: 0, avgPosition: 0,
   notes: "",
 };
@@ -103,7 +113,7 @@ const TOOLS = [
     email: "admin@redatametrix.com",
     color: "text-blue-500",
     icon: "GAds",
-    note: "Add Customer ID when available",
+    note: "Customer ID: 645-790-4617",
   },
   {
     name: "Meta Ads Manager",
@@ -318,7 +328,9 @@ Note: Conversions shown in Meta may differ from GA4 — use GA4 as your source o
     short: "Cost, clicks, impressions",
     detail: `Go to ads.google.com → Campaigns tab
 Set date range to Monday–Sunday of the week you are reporting
-Enter Cost, Clicks, and Impressions for the week`,
+Make sure these columns are visible: Clicks, Impressions, Conversions, Cost, Avg. CPC, CTR, Cost / conv.
+Enter each value — Cost, Avg. CPC, and Cost / conv. as dollars (e.g. 610.00, 2.38, 101.67)
+Enter CTR as a percentage number (e.g. 12.62% → type 12.62)`,
   },
   {
     title: "Step 3 — GA4 Traffic Sources",
@@ -495,6 +507,9 @@ export default function Reporting() {
       ...rest,
       metaSpend: (rest.metaSpend || 0) / 100,
       googleSpend: (rest.googleSpend || 0) / 100,
+      googleAvgCpc: (rest.googleAvgCpc || 0) / 100,
+      googleCtr: (rest.googleCtr || 0) / 100,
+      googleCostPerConv: (rest.googleCostPerConv || 0) / 100,
       avgPosition: Math.round((rest.avgPosition || 0) / 10 * 10) / 10,
     });
     setEditingId(id);
@@ -522,6 +537,9 @@ export default function Reporting() {
           ...form,
           metaSpend: Math.round((form.metaSpend || 0) * 100),
           googleSpend: Math.round((form.googleSpend || 0) * 100),
+          googleAvgCpc: Math.round((form.googleAvgCpc || 0) * 100),
+          googleCtr: Math.round((form.googleCtr || 0) * 100),
+          googleCostPerConv: Math.round((form.googleCostPerConv || 0) * 100),
           avgPosition: Math.round((form.avgPosition || 0) * 10),
         }),
       });
@@ -639,19 +657,32 @@ export default function Reporting() {
                 />
               </div>
 
-              <FormSection title="Ad Spend (Meta + Google)" source="Meta Ads Manager / Google Ads" defaultOpen={false}>
-                <Field label="Meta Spend ($)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
-                  help="Meta Ads Manager → Campaigns → Amount spent. Enter as dollars: $150.00 → type 150." />
-                <Field label="Meta Clicks" id="metaClicks" value={form.metaClicks} onChange={set("metaClicks")}
+              <FormSection title="Meta Ads" source="Meta Ads Manager" defaultOpen={false}>
+                <Field label="Clicks" id="metaClicks" value={form.metaClicks} onChange={set("metaClicks")}
                   help="Meta Ads Manager → Campaigns → Link clicks." />
-                <Field label="Meta Impressions" id="metaImpressions" value={form.metaImpressions} onChange={set("metaImpressions")}
+                <Field label="Impressions" id="metaImpressions" value={form.metaImpressions} onChange={set("metaImpressions")}
                   help="Meta Ads Manager → Campaigns → Impressions." />
-                <Field label="Google Spend ($)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
-                  help="Google Ads → Campaigns → Cost. Enter as dollars: $89.50 → type 89.50." />
-                <Field label="Google Clicks" id="googleClicks" value={form.googleClicks} onChange={set("googleClicks")}
+                <Field label="Conversions" id="metaConversions" value={form.metaConversions} onChange={set("metaConversions")}
+                  help="Meta Ads Manager → Campaigns → Results (conversions). Note: may differ from GA4 — use GA4 as source of truth for signups." />
+                <Field label="Spend ($)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
+                  help="Meta Ads Manager → Campaigns → Amount spent. Enter as dollars: $150.00 → type 150." />
+              </FormSection>
+
+              <FormSection title="Google Ads" source="Google Ads — Campaigns" defaultOpen={false}>
+                <Field label="Clicks" id="googleClicks" value={form.googleClicks} onChange={set("googleClicks")}
                   help="Google Ads → Campaigns → Clicks." />
-                <Field label="Google Impressions" id="googleImpressions" value={form.googleImpressions} onChange={set("googleImpressions")}
+                <Field label="Impressions" id="googleImpressions" value={form.googleImpressions} onChange={set("googleImpressions")}
                   help="Google Ads → Campaigns → Impressions." />
+                <Field label="Conversions" id="googleConversions" value={form.googleConversions} onChange={set("googleConversions")}
+                  help="Google Ads → Campaigns → Conversions (total, all actions combined)." />
+                <Field label="Cost ($)" id="googleSpend" value={form.googleSpend} onChange={set("googleSpend")}
+                  help="Google Ads → Campaigns → Cost. Enter as dollars: $89.50 → type 89.50." />
+                <Field label="Avg. CPC ($)" id="googleAvgCpc" value={form.googleAvgCpc} onChange={set("googleAvgCpc")}
+                  help="Google Ads → Campaigns → Avg. CPC. Enter as dollars: $1.23 → type 1.23." />
+                <Field label="CTR (%)" id="googleCtr" value={form.googleCtr} onChange={set("googleCtr")}
+                  help="Google Ads → Campaigns → CTR. Enter as percentage: 2.45% → type 2.45." />
+                <Field label="Cost / Conv. ($)" id="googleCostPerConv" value={form.googleCostPerConv} onChange={set("googleCostPerConv")}
+                  help="Google Ads → Campaigns → Cost / conv. Enter as dollars: $101.67 → type 101.67." />
               </FormSection>
 
               <FormSection title="Traffic Sources" source="Google Analytics 4 — User Acquisition" defaultOpen={false}>
@@ -1032,24 +1063,38 @@ export default function Reporting() {
                             <th className="text-right py-2">Spend</th>
                             <th className="text-right py-2">Clicks</th>
                             <th className="text-right py-2">Impressions</th>
+                            <th className="text-right py-2">Conversions</th>
                             <th className="text-right py-2">CPC</th>
                             <th className="text-right py-2">CTR</th>
+                            <th className="text-right py-2">Cost/Conv.</th>
                           </tr>
                         </thead>
                         <tbody>
                           {[
-                            { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaClicks, impressions: latest.metaImpressions },
-                            { name: "Google Ads", spend: latest.googleSpend, clicks: latest.googleClicks, impressions: latest.googleImpressions },
+                            { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaClicks, impressions: latest.metaImpressions, conversions: latest.metaConversions, avgCpc: null, ctr: null, costPerConv: null },
+                            { name: "Google Ads", spend: latest.googleSpend, clicks: latest.googleClicks, impressions: latest.googleImpressions, conversions: latest.googleConversions, avgCpc: latest.googleAvgCpc, ctr: latest.googleCtr, costPerConv: latest.googleCostPerConv },
                           ].map(row => (
                             <tr key={row.name} className="border-b last:border-0">
                               <td className="py-2 font-medium">{row.name}</td>
                               <td className="text-right">{dollars(row.spend)}</td>
                               <td className="text-right">{fmt(row.clicks)}</td>
                               <td className="text-right">{fmt(row.impressions)}</td>
+                              <td className="text-right">{fmt(row.conversions)}</td>
                               <td className="text-right">
-                                {row.clicks > 0 ? `$${(row.spend / 100 / row.clicks).toFixed(2)}` : "—"}
+                                {row.avgCpc !== null
+                                  ? row.avgCpc > 0 ? `$${(row.avgCpc / 100).toFixed(2)}` : "—"
+                                  : row.clicks > 0 ? `$${(row.spend / 100 / row.clicks).toFixed(2)}` : "—"}
                               </td>
-                              <td className="text-right">{pct(row.clicks, row.impressions)}</td>
+                              <td className="text-right">
+                                {row.ctr !== null
+                                  ? row.ctr > 0 ? `${(row.ctr / 100).toFixed(2)}%` : "—"
+                                  : pct(row.clicks, row.impressions)}
+                              </td>
+                              <td className="text-right">
+                                {row.costPerConv !== null
+                                  ? row.costPerConv > 0 ? `$${(row.costPerConv / 100).toFixed(2)}` : "—"
+                                  : "—"}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
