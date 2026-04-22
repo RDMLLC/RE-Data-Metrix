@@ -126,6 +126,7 @@ export default function DealAnalysisWizard() {
   const { wizardData, updatePropertyData, updateInvestorData, clearWizardData, setCurrentStep: setContextStep } = useWizardData();
   const [currentStep, setCurrentStep] = useState(1);
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
+  const [step1ResetKey, setStep1ResetKey] = useState(0);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
   
   // State for viewing saved deals
@@ -462,11 +463,8 @@ export default function DealAnalysisWizard() {
   };
 
   const handleStartNew = () => {
-    console.log('[StartNew] called');
     clearWizardData();
-    console.log('[StartNew] clearWizardData done');
     setPropertySnapshot(null);
-    console.log('[StartNew] setPropertySnapshot done');
     // Reset ALL form fields to ensure no sticky data
     form.reset({
       address: "",
@@ -520,9 +518,8 @@ export default function DealAnalysisWizard() {
       propertyType: undefined,
       propertyDataSource: undefined,
     });
-    console.log('[StartNew] form.reset done');
     updateStep(1);
-    console.log('[StartNew] updateStep(1) done');
+    setStep1ResetKey(prev => prev + 1);
   };
 
   const handlePropertyDataLoaded = (propertyData: any) => {
@@ -534,6 +531,7 @@ export default function DealAnalysisWizard() {
       case 1:
         return (
           <Step1PropertyAddress
+            key={step1ResetKey}
             form={form}
             onNext={handleNext}
             onPropertyDataLoaded={handlePropertyDataLoaded}
