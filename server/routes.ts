@@ -10299,7 +10299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Street View proxy — keeps the API key server-side
-  app.get("/api/property/street-view", ensureAuthenticated, async (req, res) => {
+  app.get("/api/property/street-view", async (req, res) => {
     const address = req.query.address as string | undefined;
     if (!address) {
       return res.status(400).json({ error: "address query parameter is required" });
