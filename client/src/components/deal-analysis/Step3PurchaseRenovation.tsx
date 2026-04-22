@@ -488,6 +488,7 @@ export default function Step3PurchaseRenovation({
 
   // Search for pending properties
   const searchPendingProperties = async () => {
+    if (isSampleDeal) return;
     if (!city || !state) {
       return;
     }
