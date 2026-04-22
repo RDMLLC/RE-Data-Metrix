@@ -462,8 +462,11 @@ export default function DealAnalysisWizard() {
   };
 
   const handleStartNew = () => {
+    console.log('[StartNew] called');
     clearWizardData();
+    console.log('[StartNew] clearWizardData done');
     setPropertySnapshot(null);
+    console.log('[StartNew] setPropertySnapshot done');
     // Reset ALL form fields to ensure no sticky data
     form.reset({
       address: "",
@@ -517,7 +520,9 @@ export default function DealAnalysisWizard() {
       propertyType: undefined,
       propertyDataSource: undefined,
     });
+    console.log('[StartNew] form.reset done');
     updateStep(1);
+    console.log('[StartNew] updateStep(1) done');
   };
 
   const handlePropertyDataLoaded = (propertyData: any) => {
