@@ -23,9 +23,11 @@ interface Step1Props {
   onPropertyDataLoaded: (data: any) => void;
   isSubscriber?: boolean;
   isAuthenticated?: boolean;
+  isSampleDeal?: boolean;
+  onTrySampleDeal?: () => void;
 }
 
-export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false }: Step1Props) {
+export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false, isSampleDeal = false, onTrySampleDeal }: Step1Props) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { updatePropertyData, clearWizardData } = useWizardData();
@@ -533,6 +535,31 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   </div>
                 )}
               </div>
+
+              {!isLookupComplete && (
+                <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+                  <p style={{ fontSize: "13px", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>
+                    Don't have a property URL?
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onTrySampleDeal}
+                    data-testid="button-try-sample-deal"
+                    style={{
+                      fontSize: "13px",
+                      padding: "8px 18px",
+                      borderRadius: "6px",
+                      border: "1px solid #1d408b",
+                      color: "#1d408b",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Try a sample deal →
+                  </button>
+                </div>
+              )}
 
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">

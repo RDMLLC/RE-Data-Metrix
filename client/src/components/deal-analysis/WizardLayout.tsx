@@ -20,6 +20,7 @@ interface WizardLayoutProps {
   children: React.ReactNode;
   propertyAddress?: string;
   propertyDetails?: PropertyDetails;
+  isSampleDeal?: boolean;
 }
 
 export default function WizardLayout({
@@ -31,6 +32,7 @@ export default function WizardLayout({
   children,
   propertyAddress,
   propertyDetails,
+  isSampleDeal = false,
 }: WizardLayoutProps) {
   const { isSubscriber } = useAuth();
   const stepTitles = [
@@ -44,6 +46,38 @@ export default function WizardLayout({
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-background py-8">
+      {isSampleDeal && (
+        <div
+          data-testid="banner-sample-deal"
+          style={{
+            background: "#faeeda",
+            color: "#854f0b",
+            fontSize: "13px",
+            padding: "8px 16px",
+            textAlign: "center",
+            borderBottom: "1px solid #e0b32e",
+            marginBottom: "1rem",
+          }}
+        >
+          You're viewing a sample deal —{" "}
+          <button
+            type="button"
+            onClick={onStartNew}
+            data-testid="button-banner-start-new"
+            style={{
+              background: "none",
+              border: "none",
+              color: "#854f0b",
+              textDecoration: "underline",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: "13px",
+            }}
+          >
+            Start your own analysis →
+          </button>
+        </div>
+      )}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {canGoBack && (
           <Button

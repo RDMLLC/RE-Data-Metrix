@@ -1,0 +1,229 @@
+Now I have everything needed to write a precise prompt. Here's the full build:
+Give Replit Agent This Prompt:
+
+Build the "Try a sample deal" feature for the Deal Analysis wizard. This allows users to experience the full wizard with pre-loaded Atlanta property data and static comps, without making any API calls or consuming their quota.
+
+Step 1 — Add sample deal constants file
+Create client/src/data/sampleDeal.ts with this exact content:
+typescriptimport type { SoldPropertyComp } from "../components/deal-analysis/Step3PurchaseRenovation";
+
+export const SAMPLE_PROPERTY = {
+  address: "1247 Maple St SW",
+  city: "Atlanta",
+  state: "GA",
+  zipCode: "30310",
+  propertyType: "Single Family",
+  bedrooms: 3,
+  bathrooms: 2,
+  sqft: 1480,
+  lotSize: 6200,
+  yearBuilt: 1955,
+  estimatedValue: 295000,
+  taxAssessedValue: 248000,
+  annualTax: 3100,
+  hoaFees: 0,
+  estimatedRent: 1850,
+  imageUrl: null,
+  latitude: 33.7318,
+  longitude: -84.4197,
+  dataSource: "manual",
+};
+
+export const SAMPLE_COMPS: SoldPropertyComp[] = [
+  {
+    address: "1183 Avon Ave SW",
+    city: "Atlanta", state: "GA", zipCode: "30310",
+    salePrice: 285000, saleDate: "2026-02-15",
+    bedrooms: 3, bathrooms: 2, sqft: 1420,
+    pricePerSqft: 201, distanceFromSubject: 0.3,
+    yearBuilt: 1952, propertyType: "Single Family",
+    similarityScore: 88, distressedFlag: false, outlierFlag: false, borderlineFlag: false,
+  },
+  {
+    address: "1354 Lucile Ave SW",
+    city: "Atlanta", state: "GA", zipCode: "30310",
+    salePrice: 301000, saleDate: "2026-01-28",
+    bedrooms: 3, bathrooms: 2, sqft: 1510,
+    pricePerSqft: 199, distanceFromSubject: 0.5,
+    yearBuilt: 1958, propertyType: "Single Family",
+    similarityScore: 84, distressedFlag: false, outlierFlag: false, borderlineFlag: false,
+  },
+  {
+    address: "892 Westwood Ave SW",
+    city: "Atlanta", state: "GA", zipCode: "30310",
+    salePrice: 278000, saleDate: "2026-01-10",
+    bedrooms: 3, bathrooms: 1, sqft: 1390,
+    pricePerSqft: 200, distanceFromSubject: 0.7,
+    yearBuilt: 1950, propertyType: "Single Family",
+    similarityScore: 79, distressedFlag: false, outlierFlag: false, borderlineFlag: false,
+  },
+  {
+    address: "1521 Donnelly Ave SW",
+    city: "Atlanta", state: "GA", zipCode: "30310",
+    salePrice: 312000, saleDate: "2025-12-20",
+    bedrooms: 4, bathrooms: 2, sqft: 1620,
+    pricePerSqft: 193, distanceFromSubject: 0.9,
+    yearBuilt: 1961, propertyType: "Single Family",
+    similarityScore: 74, distressedFlag: false, outlierFlag: false, borderlineFlag: false,
+  },
+  {
+    address: "1098 Cascade Ave SW",
+    city: "Atlanta", state: "GA", zipCode: "30310",
+    salePrice: 268000, saleDate: "2025-12-05",
+    bedrooms: 3, bathrooms: 2, sqft: 1350,
+    pricePerSqft: 198, distanceFromSubject: 1.1,
+    yearBuilt: 1948, propertyType: "Single Family",
+    similarityScore: 71, distressedFlag: false, outlierFlag: false, borderlineFlag: false,
+  },
+  {
+    address: "743 Holderness St SW",
+    city: "Atlanta", state: "GA", zipCode: "30310",
+    salePrice: 295000, saleDate: "2025-11-18",
+    bedrooms: 3, bathrooms: 2, sqft: 1460,
+    pricePerSqft: 202, distanceFromSubject: 1.3,
+    yearBuilt: 1954, propertyType: "Single Family",
+    similarityScore: 68, distressedFlag: false, outlierFlag: false, borderlineFlag: false,
+  },
+];
+
+export const SAMPLE_WIZARD_PREFILL = {
+  address: SAMPLE_PROPERTY.address,
+  city: SAMPLE_PROPERTY.city,
+  state: SAMPLE_PROPERTY.state,
+  zipCode: SAMPLE_PROPERTY.zipCode,
+  propertyType: "Single Family",
+  bedrooms: 3,
+  bathrooms: 2,
+  sqft: 1480,
+  lotSize: 6200,
+  yearBuilt: 1955,
+  estimatedValue: 295000,
+  taxAssessedValue: 248000,
+  annualTax: 3100,
+  hoaFees: 0,
+  purchasePrice: 155000,
+  rehabBudget: 48000,
+  arv: 295000,
+  projectLength: 6,
+  hasExistingLoan: false,
+  propertyDataSource: "manual",
+  propertyLatitude: 33.7318,
+  propertyLongitude: -84.4197,
+};
+Note: SoldPropertyComp is a local interface in Step3PurchaseRenovation.tsx — it is not exported yet. Add export to its interface declaration in Step3PurchaseRenovation.tsx so it can be imported here.
+
+Step 2 — Add isSampleDeal state to DealAnalysisWizard.tsx
+Add a new state variable near the top of the component (near step1ResetKey):
+typescriptconst [isSampleDeal, setIsSampleDeal] = useState(false);
+Add a handleTrySampleDeal function:
+typescriptconst handleTrySampleDeal = () => {
+  setIsSampleDeal(true);
+  setStep1ResetKey(prev => prev + 1);
+  clearWizardData();
+  setPropertySnapshot(null);
+  form.reset(SAMPLE_WIZARD_PREFILL);
+  updateStep(2);
+};
+Import SAMPLE_WIZARD_PREFILL from ../data/sampleDeal.
+In handleStartNew, add setIsSampleDeal(false) so demo mode clears when user starts a real analysis.
+Pass isSampleDeal and handleTrySampleDeal as props to Step1PropertyAddress:
+typescript<Step1PropertyAddress
+  key={step1ResetKey}
+  form={form}
+  onNext={handleNext}
+  onPropertyDataLoaded={handlePropertyDataLoaded}
+  isSubscriber={isSubscriber}
+  isAuthenticated={isAuthenticated}
+  isSampleDeal={isSampleDeal}
+  onTrySampleDeal={handleTrySampleDeal}
+/>
+Also pass isSampleDeal to Step3PurchaseRenovation:
+typescript<Step3PurchaseRenovation
+  ...existing props...
+  isSampleDeal={isSampleDeal}
+/>
+
+Step 3 — Add "Try a sample deal" button to Step1PropertyAddress.tsx
+Add isSampleDeal and onTrySampleDeal to the props interface:
+typescriptinterface Step1Props {
+  form: UseFormReturn<WizardFormData>;
+  onNext: () => void;
+  onPropertyDataLoaded: (data: any) => void;
+  isSubscriber?: boolean;
+  isAuthenticated?: boolean;
+  isSampleDeal?: boolean;
+  onTrySampleDeal?: () => void;
+}
+Add the button below the URL input field and above the "Switch to Manual Entry" link:
+tsx{!isLookupComplete && (
+  <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+    <p style={{ fontSize: "13px", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>
+      Don't have a property URL?
+    </p>
+    <button
+      type="button"
+      onClick={onTrySampleDeal}
+      style={{
+        fontSize: "13px",
+        padding: "8px 18px",
+        borderRadius: "6px",
+        border: "1px solid #1d408b",
+        color: "#1d408b",
+        background: "transparent",
+        cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      Try a sample deal →
+    </button>
+  </div>
+)}
+
+Step 4 — Wire static comps in Step3PurchaseRenovation.tsx
+Add isSampleDeal to the Step3 props interface.
+Import SAMPLE_COMPS from ../../data/sampleDeal.
+Find where the comp search API call is made and add a guard at the top of the search function:
+typescriptif (isSampleDeal) {
+  setComps(SAMPLE_COMPS);
+  setSelectedComps(SAMPLE_COMPS.slice(0, 6).map((_, i) => i));
+  setSuggestedArv(295000);
+  setWeightedAvgPricePerSqft(199);
+  return;
+}
+Also add the same guard to the auto-search useEffect so it doesn't fire API calls when isSampleDeal is true:
+typescriptuseEffect(() => {
+  if (isSampleDeal) return;
+  // ... existing auto-search logic
+}, [...existingDeps, isSampleDeal]);
+
+Step 5 — Suppress save/quota in demo mode
+In DealAnalysisWizard.tsx, find where suppressAutoSave and quota checks run. Add isSampleDeal guards so:
+
+Auto-save does not run when isSampleDeal is true
+Quota is not consumed when isSampleDeal is true
+
+
+Step 6 — Add demo banner and CTA
+In WizardLayout.tsx or wherever the wizard header/layout renders, add a visible demo banner when isSampleDeal is true:
+tsx{isSampleDeal && (
+  <div style={{
+    background: "#faeeda",
+    color: "#854f0b",
+    fontSize: "13px",
+    padding: "8px 16px",
+    textAlign: "center",
+    borderBottom: "1px solid #e0b32e",
+  }}>
+    📋 You're viewing a sample deal — <button onClick={onStartNew} style={{ background: "none", border: "none", color: "#854f0b", textDecoration: "underline", cursor: "pointer", fontFamily: "inherit", fontSize: "13px" }}>Start your own analysis →</button>
+  </div>
+)}
+Pass isSampleDeal and onStartNew={handleStartNew} to WizardLayout.
+
+After all changes are applied, show me:
+
+The new sampleDeal.ts file verbatim
+The handleTrySampleDeal function in DealAnalysisWizard.tsx verbatim
+The "Try a sample deal" button block in Step1PropertyAddress.tsx verbatim
+The isSampleDeal guard in Step3PurchaseRenovation.tsx verbatim
+
+Do not make any other changes.
