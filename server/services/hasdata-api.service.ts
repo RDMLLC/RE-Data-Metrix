@@ -492,7 +492,13 @@ export class HasDataAPIService implements IPropertyAPIService {
         }
         
         // Merge extended property data, preferring extended data for missing fields
-        property = { ...property, ...extendedProperty };
+        const PROTECTED_FIELDS = ['image', 'address', 'homeType', 'beds', 'baths', 'area', 'zestimate', 'price', 'listPrice'];
+        const safeExtended = Object.fromEntries(
+          Object.entries(extendedProperty).filter(([key, val]) =>
+            !PROTECTED_FIELDS.includes(key) || property[key] == null
+          )
+        );
+        property = { ...property, ...safeExtended };
       }
     }
     
@@ -631,8 +637,16 @@ export class HasDataAPIService implements IPropertyAPIService {
       yearBuilt: this.parseNumber(property.yearBuilt),
       taxAssessedValue,
       annualTax,
-      estimatedValue: this.parseNumber(property.zestimate || property.price),
-      estimatedRent: this.parseNumber(property.rentZestimate),
+      estimatedValue: this.parseNumber(
+        typeof property.zestimate === 'object'
+          ? property.zestimate?.zestimate
+          : property.zestimate
+      ) || this.parseNumber(property.price),
+      estimatedRent: this.parseNumber(
+        typeof property.zestimate === 'object'
+          ? property.zestimate?.rentZestimate
+          : property.rentZestimate
+      ),
       lastSalePrice: this.parseNumber(lastSale?.price),
       lastSaleDate: lastSale?.date,
       listPrice: this.parseNumber(property.price || property.listPrice), // Current listing price for active/pending
