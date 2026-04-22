@@ -617,23 +617,6 @@ export class HasDataAPIService implements IPropertyAPIService {
     // Log price/Zestimate fields for debugging
     // Zestimate is the estimated market value, price is the listing price
     // For deal analysis, we want Zestimate (estimated value) not list price
-    console.log("Zillow value fields:", {
-      zestimate: property.zestimate,
-      price: property.price,
-      listPrice: property.listPrice,
-      rentZestimate: property.rentZestimate,
-      latitude: property.latitude,
-      longitude: property.longitude,
-    });
-    console.log("Zillow location fields:", {
-      latitude: property.latitude,
-      longitude: property.longitude,
-      address: property.address,
-      location: property.location,
-      geo: property.geo,
-      coordinates: property.coordinates,
-      latLong: property.latLong,
-    });
     
     return {
       address: property.address?.street || property.addressRaw || '',
@@ -663,8 +646,8 @@ export class HasDataAPIService implements IPropertyAPIService {
       listPrice: this.parseNumber(property.price || property.listPrice), // Current listing price for active/pending
       imageUrl,
       hoaFees,
-      latitude: this.parseNumber(property.latitude),
-      longitude: this.parseNumber(property.longitude),
+      latitude: this.parseNumber(property.latitude ?? property.geo?.latitude),
+      longitude: this.parseNumber(property.longitude ?? property.geo?.longitude),
     };
   }
 
