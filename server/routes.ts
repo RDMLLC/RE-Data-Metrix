@@ -4193,6 +4193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       termsVersion: user.termsVersion,
       privacyVersion: user.privacyVersion,
       archiveReason: (user as any).archiveReason ?? null,
+      signupSource: (user as any).signupSource ?? null,
+      signupRef: (user as any).signupRef ?? null,
     };
   }
 
