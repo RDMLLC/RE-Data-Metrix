@@ -47,6 +47,8 @@ export interface HybridCompSearchResult {
   comps: HybridCompResult[];
   suggestedArv: number | null;
   weightedAvgPricePerSqft: number | null;
+  radiusExpanded: boolean;
+  actualRadiusMiles: number;
   searchStats: {
     rentCastCount: number;
     hasDataCount: number;
@@ -142,6 +144,8 @@ export class HybridCompsService {
         comps: [],
         suggestedArv: null,
         weightedAvgPricePerSqft: null,
+        radiusExpanded: false,
+        actualRadiusMiles: radiusMiles,
         searchStats: {
           rentCastCount: 0,
           hasDataCount: 0,
@@ -155,10 +159,15 @@ export class HybridCompsService {
       };
     }
 
+    const radiusExpanded = bestResult.stats.expansionAttempts > 1;
+    const actualRadiusMiles = expansionConfigs[bestResult.stats.expansionAttempts - 1].radiusMiles;
+
     return {
       comps: bestResult.sortedComps,
       suggestedArv: bestResult.suggestedArv,
       weightedAvgPricePerSqft: bestResult.weightedAvgPricePerSqft,
+      radiusExpanded,
+      actualRadiusMiles,
       searchStats: bestResult.stats,
     };
   }

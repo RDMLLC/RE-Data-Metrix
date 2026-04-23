@@ -10064,7 +10064,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           radiusExpanded: compCached.radiusExpanded,
           actualRadiusMiles: Number(compCached.actualRadiusMiles),
           searchCriteria: { city, state, zipCode, bedrooms, bathrooms, sqft },
-          searchStats: { rentCastCount: 0, hasDataCount: 0, mergedCount: 0, totalBeforeDedupe: 0, finalCount: (compCached.comps as any[]).length },
+          searchStats: {
+            rentCastCount: 0,
+            hasDataCount: 0,
+            mergedCount: 0,
+            totalBeforeDedupe: 0,
+            finalCount: (compCached.comps as any[]).length,
+            suitableCount: (compCached.comps as any[]).filter((c: any) =>
+              !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+            ).length,
+          },
           _fromCache: true,
         });
       }

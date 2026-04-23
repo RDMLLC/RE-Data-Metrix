@@ -1,0 +1,92 @@
+Give Replit Agent This Prompt:
+We are on the arv-helper-fixes branch. Fix all known ARV Helper bugs. Do not modify any other features. Changes are required in 3 files: server/services/hybrid-comps.service.ts, server/routes.ts, and client/src/components/deal-analysis/Step3PurchaseRenovation.tsx.
+
+PART 1 — server/services/hybrid-comps.service.ts
+1a. Add radiusExpanded and actualRadiusMiles to the HybridCompSearchResult interface:
+typescriptradiusExpanded: boolean;
+actualRadiusMiles: number;
+1b. In the searchComps method, track whether expansion occurred and what the actual radius was. After the expansion loop completes, before the final return statement, add:
+typescriptconst radiusExpanded = bestResult.stats.expansionAttempts > 1;
+const actualRadiusMiles = expansionConfigs[bestResult.stats.expansionAttempts - 1].radiusMiles;
+1c. Add both fields to the final return object:
+typescriptradiusExpanded,
+actualRadiusMiles,
+1d. Also add both fields to the empty result return (when !bestResult):
+typescriptradiusExpanded: false,
+actualRadiusMiles: radiusMiles,
+
+PART 2 — server/routes.ts
+No changes needed — the route already reads and returns result.radiusExpanded and result.actualRadiusMiles. Once Part 1 is fixed, these will have real values instead of undefined.
+However, fix the cache hit response — it currently returns searchStats without suitableCount. Update the cache hit searchStats object to include:
+typescriptsuitableCount: (compCached.comps as any[]).filter((c: any) => 
+  !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+).length,
+
+PART 3 — client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+3a. Update the CompsSearchResponse interface to add the missing fields:
+typescriptinterface CompsSearchResponse {
+  comps: SoldPropertyComp[];
+  suggestedArv: number | null;
+  weightedAvgPricePerSqft?: number;
+  message?: string;
+  radiusExpanded?: boolean;
+  actualRadiusMiles?: number;
+  searchStats?: {
+    suitableCount: number;
+    finalCount: number;
+    expansionAttempts: number;
+    medianPricePerSqft: number | null;
+  };
+}
+3b. Add two new state variables after the existing compsData state:
+typescriptconst [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
+const [actualRadiusUsed, setActualRadiusUsed] = useState<number | null>(null);
+3c. In both searchComps and searchCompsWithOptions, after setCompsData(data), add:
+typescriptsetRadiusWasExpanded(data.radiusExpanded ?? false);
+setActualRadiusUsed(data.actualRadiusMiles ?? null);
+Also reset both when a new search starts (where setCompsData(null) is called):
+typescriptsetRadiusWasExpanded(false);
+setActualRadiusUsed(null);
+3d. Fix computeSmartSelection — the current implementation only filters by flags but does not penalize bed/bath mismatches beyond the similarity score. The real issue is that flagging logic (applyFlags) doesn't account for bed/bath — a 3/2 comp can pass all flag checks and get auto-selected for a 3/3 subject property.
+Replace the current computeSmartSelection function with this improved version that matches the logic in ArvHelper.tsx and adds a bed/bath preference filter:
+typescriptconst computeSmartSelection = (comps: SoldPropertyComp[]): Set<number> => {
+  if (!comps || comps.length === 0) return new Set();
+  const indexed = comps.map((comp, originalIndex) => ({ comp, originalIndex }));
+  const scoreOf = (c: SoldPropertyComp) => c.similarityScore ?? 0;
+  
+  // Clean comps: no flags set
+  const clean = indexed
+    .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && !comp.borderlineFlag)
+    .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
+  
+  // Prefer bed/bath matches among clean comps
+  const cleanMatching = clean.filter(({ comp }) => 
+    (comp.bedrooms ?? 0) === (bedrooms ?? 0)
+  );
+  const cleanNonMatching = clean.filter(({ comp }) => 
+    (comp.bedrooms ?? 0) !== (bedrooms ?? 0)
+  );
+  
+  // Build ordered list: matching bed/bath first, then non-matching
+  const orderedClean = [...cleanMatching, ...cleanNonMatching];
+  
+  // Borderline comps as fallback
+  const borderline = indexed
+    .filter(({ comp }) => comp.borderlineFlag && !comp.outlierFlag && !comp.distressedFlag)
+    .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
+  
+  const picks = orderedClean.slice(0, 6);
+  if (picks.length < 3) {
+    const need = 3 - picks.length;
+    picks.push(...borderline.slice(0, need));
+  }
+  return new Set(picks.map(p => p.originalIndex));
+};
+3e. Add the radius expansion UI message. Find the section in the JSX where the "Only X suitable comps" warning amber banner is displayed. Directly above it, add a new info banner that shows when the radius was expanded:
+tsx{radiusWasExpanded && actualRadiusUsed !== null && actualRadiusUsed > searchRadius && (
+  <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+    <span>Radius automatically expanded to {actualRadiusUsed} {actualRadiusUsed === 1 ? "mile" : "miles"} to find more comparable sales.</span>
+  </div>
+)}
+
+After all changes, run npm run build to confirm no TypeScript errors. Do not merge to main. Do not redeploy. Confirm we are still on the arv-helper-fixes branch and show the key modified sections of each file.

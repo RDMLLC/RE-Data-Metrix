@@ -91,6 +91,14 @@ interface CompsSearchResponse {
   suggestedArv: number | null;
   weightedAvgPricePerSqft?: number;
   message?: string;
+  radiusExpanded?: boolean;
+  actualRadiusMiles?: number;
+  searchStats?: {
+    suitableCount: number;
+    finalCount: number;
+    expansionAttempts: number;
+    medianPricePerSqft: number | null;
+  };
 }
 
 const closingTimelineOptions = [
@@ -151,6 +159,8 @@ export default function Step3PurchaseRenovation({
   const [showArvHelper, setShowArvHelper] = useState(false);
   const [isSearchingComps, setIsSearchingComps] = useState(false);
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
+  const [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
+  const [actualRadiusUsed, setActualRadiusUsed] = useState<number | null>(null);
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
   type RadiusOption = 0.5 | 1 | 2 | 3 | 5;
@@ -210,15 +220,28 @@ export default function Step3PurchaseRenovation({
     const indexed = comps.map((comp, originalIndex) => ({ comp, originalIndex }));
     const scoreOf = (c: SoldPropertyComp) => c.similarityScore ?? 0;
 
+    // Clean comps: no flags set
     const clean = indexed
       .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && !comp.borderlineFlag)
       .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
 
+    // Prefer bed/bath matches among clean comps
+    const cleanMatching = clean.filter(({ comp }) =>
+      (comp.bedrooms ?? 0) === (bedrooms ?? 0)
+    );
+    const cleanNonMatching = clean.filter(({ comp }) =>
+      (comp.bedrooms ?? 0) !== (bedrooms ?? 0)
+    );
+
+    // Build ordered list: matching bed/bath first, then non-matching
+    const orderedClean = [...cleanMatching, ...cleanNonMatching];
+
+    // Borderline comps as fallback
     const borderline = indexed
       .filter(({ comp }) => comp.borderlineFlag && !comp.outlierFlag && !comp.distressedFlag)
       .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
 
-    const picks = clean.slice(0, 6);
+    const picks = orderedClean.slice(0, 6);
     if (picks.length < 3) {
       const need = 3 - picks.length;
       picks.push(...borderline.slice(0, need));
@@ -353,6 +376,8 @@ export default function Step3PurchaseRenovation({
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
+    setRadiusWasExpanded(false);
+    setActualRadiusUsed(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
         address,
@@ -372,6 +397,8 @@ export default function Step3PurchaseRenovation({
       const data = await response.json();
       
       setCompsData(data);
+      setRadiusWasExpanded(data.radiusExpanded ?? false);
+      setActualRadiusUsed(data.actualRadiusMiles ?? null);
       // Smart auto-select: top 6 clean (unflagged) comps by similarity score,
       // supplemented with borderline comps if fewer than 3 clean exist.
       if (data.comps && data.comps.length > 0) {
@@ -414,6 +441,8 @@ export default function Step3PurchaseRenovation({
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
+    setRadiusWasExpanded(false);
+    setActualRadiusUsed(null);
 
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
@@ -434,6 +463,8 @@ export default function Step3PurchaseRenovation({
       const data = await response.json();
       
       setCompsData(data);
+      setRadiusWasExpanded(data.radiusExpanded ?? false);
+      setActualRadiusUsed(data.actualRadiusMiles ?? null);
       // Smart auto-select: top 6 clean (unflagged) comps by similarity score,
       // supplemented with borderline comps if fewer than 3 clean exist.
       if (data.comps && data.comps.length > 0) {
@@ -1611,6 +1642,13 @@ export default function Step3PurchaseRenovation({
                           ))}
                         </TableBody>
                       </Table>
+
+                      {/* Radius expansion notice - shown when backend auto-expanded the search radius */}
+                      {radiusWasExpanded && actualRadiusUsed !== null && actualRadiusUsed > searchRadius && (
+                        <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200 mt-3" data-testid="text-radius-expanded-notice">
+                          <span>Radius automatically expanded to {actualRadiusUsed} {actualRadiusUsed === 1 ? "mile" : "miles"} to find more comparable sales.</span>
+                        </div>
+                      )}
 
                       {/* Insufficient comps warning - shown when fewer than 3 comps are SELECTED */}
                       {compsData && compsData.comps.length > 0 && selectedCompIndices.size < 3 && (
