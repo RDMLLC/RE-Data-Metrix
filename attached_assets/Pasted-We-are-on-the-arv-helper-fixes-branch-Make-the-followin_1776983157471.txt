@@ -1,0 +1,157 @@
+We are on the arv-helper-fixes branch. Make the following changes to server/services/hybrid-comps.service.ts only. Do not touch any other files.
+
+PART 1 — Add anchorMedian parameter to runSinglePass
+Find the runSinglePass private method signature. Add an optional anchorMedian parameter:
+typescriptprivate async runSinglePass(params: {
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  bedrooms: number;
+  bathrooms?: number;
+  sqft: number;
+  propertyType?: string;
+  subjectLat?: number;
+  subjectLng?: number;
+  radiusMiles: number;
+  saleDateRangeDays: number;
+  maxResults: number;
+  anchorMedian?: number | null;
+})
+
+PART 2 — Use anchorMedian in runSinglePass when provided
+Find the two-pass cleaned median block (rawPpsf/rawMedian/cleanedPpsf/median). Replace with:
+typescriptconst rawPpsf = sortedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+const rawMedian = this.computeMedian(rawPpsf);
+
+let median: number | null;
+if (params.anchorMedian != null) {
+  median = params.anchorMedian;
+} else {
+  const cleanedPpsf = rawMedian !== null
+    ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
+    : rawPpsf;
+  median = this.computeMedian(cleanedPpsf);
+}
+
+PART 3 — Return anchorMedian from runSinglePass
+Add anchorMedian to the return value and the inline return type:
+typescriptreturn {
+  sortedComps,
+  stats,
+  suggestedArv,
+  weightedAvgPricePerSqft,
+  suitableCount: suitable.length,
+  anchorMedian: median,
+};
+
+PART 4 — Pass anchor median through expansion loop in searchComps
+Replace the expansion loop with:
+typescriptlet anchorMedian: number | null = null;
+let expansionAttempts = 0;
+
+for (const config of expansionConfigs) {
+  expansionAttempts += 1;
+  const passResult = await this.runSinglePass({
+    address,
+    city,
+    state,
+    zipCode,
+    bedrooms,
+    bathrooms,
+    sqft,
+    propertyType,
+    subjectLat,
+    subjectLng,
+    radiusMiles: config.radiusMiles,
+    saleDateRangeDays: config.saleDateRangeDays,
+    maxResults,
+    anchorMedian: expansionAttempts === 1 ? null : anchorMedian,
+  });
+
+  if (expansionAttempts === 1) {
+    anchorMedian = passResult.anchorMedian;
+  }
+
+  passResult.stats.expansionAttempts = expansionAttempts;
+  if (!bestResult || passResult.suitableCount > bestResult.suitableCount) {
+    bestResult = passResult;
+  }
+  if (passResult.suitableCount >= SUITABLE_TARGET) {
+    console.log(`[Hybrid Comps] Found ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}`);
+    break;
+  }
+  console.log(`[Hybrid Comps] Only ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}, expanding...`);
+}
+
+PART 5 — Update computeSimilarityScore weighting
+Find the computeSimilarityScore private method. Update the scoring as follows:
+Distance (keep at 40 points — no change)
+Recency — change from 30 to 25 points:
+typescript// Recency (25)
+let recencyScore = 0;
+const sale = new Date(comp.saleDate);
+if (!isNaN(sale.getTime())) {
+  const monthsAgo = (Date.now() - sale.getTime()) / (1000 * 60 * 60 * 24 * 30);
+  if (monthsAgo <= 2) recencyScore = 25;
+  else if (monthsAgo <= 3) recencyScore = 20;
+  else if (monthsAgo <= 4) recencyScore = 15;
+  else if (monthsAgo <= 5) recencyScore = 10;
+  else if (monthsAgo <= 6) recencyScore = 5;
+  else recencyScore = 0;
+}
+$/sqft proximity — change from 20 to 15 points:
+typescript// $/sqft proximity to median (15)
+let ppsfScore = 0;
+if (ctx.median !== null && ctx.median > 0 && comp.pricePerSqft > 0) {
+  const pct = Math.abs(comp.pricePerSqft - ctx.median) / ctx.median;
+  if (pct <= 0.10) ppsfScore = 15;
+  else if (pct <= 0.20) ppsfScore = 10;
+  else if (pct <= 0.30) ppsfScore = 6;
+  else if (pct <= 0.40) ppsfScore = 3;
+  else ppsfScore = 0;
+}
+Bedroom + bathroom match — replace the bedroom section with a combined 20-point bed/bath score:
+typescript// Bedroom + bathroom match (20)
+// Bedroom mismatch is penalized more heavily than bathroom mismatch
+// because adding a bedroom is a major structural project vs a bath addition
+let bedBathScore = 0;
+
+// Bedroom component (15 points)
+const bedDiff = Math.abs((comp.bedrooms || 0) - ctx.subjectBedrooms);
+let bedComponent = 0;
+if (bedDiff === 0) bedComponent = 15;
+else if (bedDiff === 1) bedComponent = 7;
+else bedComponent = 0;
+
+// Bathroom component (5 points)
+const bathDiff = Math.abs((comp.bathrooms || 0) - (ctx.subjectBathrooms || 0));
+let bathComponent = 0;
+if (bathDiff === 0) bathComponent = 5;
+else if (bathDiff <= 0.5) bathComponent = 4;
+else if (bathDiff <= 1) bathComponent = 2;
+else bathComponent = 0;
+
+bedBathScore = bedComponent + bathComponent;
+Update the return statement to use bedBathScore instead of bedScore:
+typescriptreturn distScore + recencyScore + ppsfScore + bedBathScore;
+Also update the ctx parameter type to include subjectBathrooms:
+typescriptctx: {
+  subjectLat?: number;
+  subjectLng?: number;
+  subjectBedrooms: number;
+  subjectBathrooms?: number;
+  median: number | null;
+}
+And update the call to computeSimilarityScore in runSinglePass to pass bathrooms:
+typescriptcomp.similarityScore = this.computeSimilarityScore(comp, {
+  subjectLat,
+  subjectLng,
+  subjectBedrooms: bedrooms,
+  subjectBathrooms: bathrooms,
+  median,
+});
+
+After all changes run npm run build. Then run:
+sqlDELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+against the dev database. Confirm branch is arv-helper-fixes. Show key modified sections.

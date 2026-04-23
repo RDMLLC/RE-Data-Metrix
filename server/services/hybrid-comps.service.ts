@@ -105,8 +105,10 @@ export class HybridCompsService {
       suggestedArv: number | null;
       weightedAvgPricePerSqft: number | null;
       suitableCount: number;
+      anchorMedian: number | null;
     } | null = null;
 
+    let anchorMedian: number | null = null;
     let expansionAttempts = 0;
 
     for (const config of expansionConfigs) {
@@ -117,6 +119,7 @@ export class HybridCompsService {
         state,
         zipCode,
         bedrooms,
+        bathrooms,
         sqft,
         propertyType,
         subjectLat,
@@ -124,7 +127,12 @@ export class HybridCompsService {
         radiusMiles: config.radiusMiles,
         saleDateRangeDays: config.saleDateRangeDays,
         maxResults,
+        anchorMedian: expansionAttempts === 1 ? null : anchorMedian,
       });
+
+      if (expansionAttempts === 1) {
+        anchorMedian = passResult.anchorMedian;
+      }
 
       passResult.stats.expansionAttempts = expansionAttempts;
 
@@ -179,6 +187,7 @@ export class HybridCompsService {
     state: string;
     zipCode: string;
     bedrooms: number;
+    bathrooms?: number;
     sqft: number;
     propertyType?: string;
     subjectLat?: number;
@@ -186,15 +195,17 @@ export class HybridCompsService {
     radiusMiles: number;
     saleDateRangeDays: number;
     maxResults: number;
+    anchorMedian?: number | null;
   }): Promise<{
     sortedComps: HybridCompResult[];
     stats: HybridCompSearchResult['searchStats'];
     suggestedArv: number | null;
     weightedAvgPricePerSqft: number | null;
     suitableCount: number;
+    anchorMedian: number | null;
   }> {
     const {
-      address, city, state, zipCode, bedrooms, sqft, propertyType,
+      address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
       subjectLat, subjectLng, radiusMiles, saleDateRangeDays, maxResults,
     } = params;
 
@@ -270,16 +281,18 @@ export class HybridCompsService {
       })
       .slice(0, maxResults);
 
-    // Pass 1: compute raw median from all comps
     const rawPpsf = sortedComps.map(c => c.pricePerSqft).filter(p => p > 0);
     const rawMedian = this.computeMedian(rawPpsf);
 
-    // Pass 2: exclude comps where $/sqft is below 50% or above 200% of raw median
-    // This prevents distressed/outlier comps from skewing the flagging thresholds
-    const cleanedPpsf = rawMedian !== null
-      ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
-      : rawPpsf;
-    const median = this.computeMedian(cleanedPpsf);
+    let median: number | null;
+    if (params.anchorMedian != null) {
+      median = params.anchorMedian;
+    } else {
+      const cleanedPpsf = rawMedian !== null
+        ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
+        : rawPpsf;
+      median = this.computeMedian(cleanedPpsf);
+    }
 
     // Apply flags using dynamic thresholds based on comp count
     if (median !== null) {
@@ -292,6 +305,7 @@ export class HybridCompsService {
         subjectLat,
         subjectLng,
         subjectBedrooms: bedrooms,
+        subjectBathrooms: bathrooms,
         median,
       });
     }
@@ -344,6 +358,7 @@ export class HybridCompsService {
       suggestedArv,
       weightedAvgPricePerSqft,
       suitableCount: suitable.length,
+      anchorMedian: median,
     };
   }
 
@@ -398,6 +413,7 @@ export class HybridCompsService {
       subjectLat?: number;
       subjectLng?: number;
       subjectBedrooms: number;
+      subjectBathrooms?: number;
       median: number | null;
     }
   ): number {
@@ -412,38 +428,53 @@ export class HybridCompsService {
       else distScore = 4;
     }
 
-    // Recency (30)
+    // Recency (25)
     let recencyScore = 0;
     const sale = new Date(comp.saleDate);
     if (!isNaN(sale.getTime())) {
       const monthsAgo = (Date.now() - sale.getTime()) / (1000 * 60 * 60 * 24 * 30);
-      if (monthsAgo <= 2) recencyScore = 30;
-      else if (monthsAgo <= 3) recencyScore = 24;
-      else if (monthsAgo <= 4) recencyScore = 18;
-      else if (monthsAgo <= 5) recencyScore = 12;
-      else if (monthsAgo <= 6) recencyScore = 6;
+      if (monthsAgo <= 2) recencyScore = 25;
+      else if (monthsAgo <= 3) recencyScore = 20;
+      else if (monthsAgo <= 4) recencyScore = 15;
+      else if (monthsAgo <= 5) recencyScore = 10;
+      else if (monthsAgo <= 6) recencyScore = 5;
       else recencyScore = 0;
     }
 
-    // $/sqft proximity to median (20)
+    // $/sqft proximity to median (15)
     let ppsfScore = 0;
     if (ctx.median !== null && ctx.median > 0 && comp.pricePerSqft > 0) {
       const pct = Math.abs(comp.pricePerSqft - ctx.median) / ctx.median;
-      if (pct <= 0.10) ppsfScore = 20;
-      else if (pct <= 0.20) ppsfScore = 14;
-      else if (pct <= 0.30) ppsfScore = 8;
-      else if (pct <= 0.40) ppsfScore = 4;
+      if (pct <= 0.10) ppsfScore = 15;
+      else if (pct <= 0.20) ppsfScore = 10;
+      else if (pct <= 0.30) ppsfScore = 6;
+      else if (pct <= 0.40) ppsfScore = 3;
       else ppsfScore = 0;
     }
 
-    // Bedroom match (10)
-    let bedScore = 0;
-    const bedDiff = Math.abs((comp.bedrooms || 0) - ctx.subjectBedrooms);
-    if (bedDiff === 0) bedScore = 10;
-    else if (bedDiff === 1) bedScore = 5;
-    else bedScore = 0;
+    // Bedroom + bathroom match (20)
+    // Bedroom mismatch is penalized more heavily than bathroom mismatch
+    // because adding a bedroom is a major structural project vs a bath addition
+    let bedBathScore = 0;
 
-    return distScore + recencyScore + ppsfScore + bedScore;
+    // Bedroom component (15 points)
+    const bedDiff = Math.abs((comp.bedrooms || 0) - ctx.subjectBedrooms);
+    let bedComponent = 0;
+    if (bedDiff === 0) bedComponent = 15;
+    else if (bedDiff === 1) bedComponent = 7;
+    else bedComponent = 0;
+
+    // Bathroom component (5 points)
+    const bathDiff = Math.abs((comp.bathrooms || 0) - (ctx.subjectBathrooms || 0));
+    let bathComponent = 0;
+    if (bathDiff === 0) bathComponent = 5;
+    else if (bathDiff <= 0.5) bathComponent = 4;
+    else if (bathDiff <= 1) bathComponent = 2;
+    else bathComponent = 0;
+
+    bedBathScore = bedComponent + bathComponent;
+
+    return distScore + recencyScore + ppsfScore + bedBathScore;
   }
 
   private mergeAndDeduplicate(
