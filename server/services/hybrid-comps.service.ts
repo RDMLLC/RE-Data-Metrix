@@ -80,6 +80,7 @@ export class HybridCompsService {
       state,
       zipCode,
       bedrooms,
+      bathrooms,
       sqft,
       propertyType,
       subjectLat,
