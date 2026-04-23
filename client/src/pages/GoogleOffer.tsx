@@ -36,13 +36,13 @@ function getRegisterUrl() {
       utm.set(key, value);
     }
   }
-  if (!utm.has("ref")) utm.set("ref", "meta");
-  if (!utm.has("utm_source")) utm.set("utm_source", "meta");
+  if (!utm.has("ref")) utm.set("ref", "google");
+  if (!utm.has("utm_source")) utm.set("utm_source", "google");
   const qs = utm.toString();
   return qs ? `/register?${qs}` : "/register";
 }
 
-export default function MetaOffer() {
+export default function GoogleOffer() {
   const [, setLocation] = useLocation();
   const { trackLead, pixelsLoaded } = useMarketingEvents();
   const hasFiredRef = useRef(false);
@@ -55,7 +55,7 @@ export default function MetaOffer() {
 
   useEffect(() => {
     if (pixelsLoaded && !hasFiredRef.current) {
-      trackLead({ content_name: "meta-offer" });
+      trackLead({ content_name: "google-offer" });
       hasFiredRef.current = true;
     }
   }, [pixelsLoaded, trackLead]);
@@ -65,14 +65,14 @@ export default function MetaOffer() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0" data-testid="page-meta-offer">
+    <div className="min-h-screen bg-background pb-20 md:pb-0" data-testid="page-google-offer">
       <SEO
         title="Analyze Deals & Find the Right Lender"
         description="Stop guessing on real estate deals. Analyze profitability, compare lenders, and close with confidence — free to start, no credit card required."
-        canonicalUrl="https://redatametrix.com/meta-offer"
+        canonicalUrl="https://redatametrix.com/google-offer"
       />
 
-      <header className="py-4 px-6" data-testid="header-meta-offer">
+      <header className="py-4 px-6" data-testid="header-google-offer">
         <img
           src={logoImg}
           alt="RE Data Metrix"

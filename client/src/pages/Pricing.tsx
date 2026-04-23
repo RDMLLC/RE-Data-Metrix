@@ -26,6 +26,19 @@ const featureComparison = [
   { feature: "Email Support", free: "Standard", paid: "Priority" },
 ];
 
+function getRegisterUrl() {
+  if (typeof window === "undefined") return "/register";
+  const params = new URLSearchParams(window.location.search);
+  const utm = new URLSearchParams();
+  for (const [key, value] of params.entries()) {
+    if (key.startsWith("utm_") || key === "ref" || key === "code") {
+      utm.set(key, value);
+    }
+  }
+  const qs = utm.toString();
+  return qs ? `/register?${qs}` : "/register";
+}
+
 export default function Pricing() {
   const { isAuthenticated, isSubscriber, user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
@@ -193,7 +206,7 @@ export default function Pricing() {
                     </Button>
                   </Link>
                 ) : (
-                  <Link href="/register" className="w-full">
+                  <Link href={getRegisterUrl()} className="w-full">
                     <Button className="w-full" variant="outline" data-testid="button-signup-free">
                       Get Started
                     </Button>
@@ -460,7 +473,7 @@ export default function Pricing() {
                 </Button>
               </Link>
             ) : (
-              <Link href="/register">
+              <Link href={getRegisterUrl()}>
                 <Button size="lg" className="bg-accent text-accent-foreground" data-testid="button-cta-register">
                   Get Started Free
                   <ArrowRight className="h-5 w-5 ml-2" />
