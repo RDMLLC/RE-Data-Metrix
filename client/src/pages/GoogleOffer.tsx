@@ -28,7 +28,7 @@ const benefits = [
   },
 ];
 
-function getRegisterUrl() {
+function getPricingUrl() {
   const params = new URLSearchParams(window.location.search);
   const utm = new URLSearchParams();
   for (const [key, value] of params.entries()) {
@@ -39,7 +39,7 @@ function getRegisterUrl() {
   if (!utm.has("ref")) utm.set("ref", "google");
   if (!utm.has("utm_source")) utm.set("utm_source", "google");
   const qs = utm.toString();
-  return qs ? `/register?${qs}` : "/register";
+  return qs ? `/pricing?${qs}` : "/pricing";
 }
 
 export default function GoogleOffer() {
@@ -61,7 +61,7 @@ export default function GoogleOffer() {
   }, [pixelsLoaded, trackLead]);
 
   const handleCta = () => {
-    setLocation(getRegisterUrl());
+    setLocation(getPricingUrl());
   };
 
   return (
@@ -126,7 +126,7 @@ export default function GoogleOffer() {
               onClick={handleCta}
               data-testid="button-cta-video"
             >
-              Start Analyzing Deals — It's Free
+              See Plans & Pricing
             </Button>
           </div>
         </div>
@@ -165,7 +165,7 @@ export default function GoogleOffer() {
               onClick={handleCta}
               data-testid="button-cta-bottom"
             >
-              Start analyzing deals for free
+              See Plans & Pricing
             </Button>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function GoogleOffer() {
           onClick={handleCta}
           data-testid="button-cta-sticky"
         >
-          Start for Free — No Credit Card
+          See Plans & Pricing
         </Button>
       </div>
     </div>

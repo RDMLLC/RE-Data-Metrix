@@ -26,7 +26,7 @@ const benefits = [
   },
 ];
 
-function getRegisterUrl() {
+function getPricingUrl() {
   const params = new URLSearchParams(window.location.search);
   const utm = new URLSearchParams();
   for (const [key, value] of params.entries()) {
@@ -35,7 +35,7 @@ function getRegisterUrl() {
     }
   }
   const qs = utm.toString();
-  return qs ? `/register?${qs}` : "/register";
+  return qs ? `/pricing?${qs}` : "/pricing";
 }
 
 export default function MobileMetaOffer() {
@@ -51,7 +51,7 @@ export default function MobileMetaOffer() {
   }, [pixelsLoaded, trackLead]);
 
   const handleCta = () => {
-    setLocation(getRegisterUrl());
+    setLocation(getPricingUrl());
   };
 
   return (
@@ -91,7 +91,7 @@ export default function MobileMetaOffer() {
               onClick={handleCta}
               data-testid="button-cta-hero"
             >
-              Start Analyzing Free
+              See Plans & Pricing
             </Button>
             <p className="text-xs text-white/70" data-testid="text-no-card">
               No credit card required.
@@ -128,7 +128,7 @@ export default function MobileMetaOffer() {
             onClick={handleCta}
             data-testid="button-cta-bottom"
           >
-            Start Analyzing Free
+            See Plans & Pricing
           </Button>
           <p className="text-xs text-muted-foreground" data-testid="text-no-card-bottom">
             No credit card required.
