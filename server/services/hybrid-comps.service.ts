@@ -25,6 +25,7 @@ export interface HybridCompResult {
   distressedFlag?: boolean;
   outlierFlag?: boolean;
   borderlineFlag?: boolean;
+  cityMismatch?: boolean;
 }
 
 export interface HybridCompSearchParams {
@@ -269,8 +270,16 @@ export class HybridCompsService {
       })
       .slice(0, maxResults);
 
-    // Compute median $/sqft from ALL returned comps (including those that will be flagged)
-    const median = this.computeMedian(sortedComps.map(c => c.pricePerSqft).filter(p => p > 0));
+    // Pass 1: compute raw median from all comps
+    const rawPpsf = sortedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+    const rawMedian = this.computeMedian(rawPpsf);
+
+    // Pass 2: exclude comps where $/sqft is below 50% or above 200% of raw median
+    // This prevents distressed/outlier comps from skewing the flagging thresholds
+    const cleanedPpsf = rawMedian !== null
+      ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
+      : rawPpsf;
+    const median = this.computeMedian(cleanedPpsf);
 
     // Apply flags using dynamic thresholds based on comp count
     if (median !== null) {
@@ -285,6 +294,16 @@ export class HybridCompsService {
         subjectBedrooms: bedrooms,
         median,
       });
+    }
+
+    // Flag comps from a different city than the subject property
+    if (city) {
+      const normalizeCity = (c: string) => c.toLowerCase().trim();
+      for (const comp of sortedComps) {
+        if (comp.city && normalizeCity(comp.city) !== normalizeCity(city)) {
+          comp.cityMismatch = true;
+        }
+      }
     }
 
     // ARV / weighted average computed from suitable (unflagged) comps only.

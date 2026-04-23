@@ -84,6 +84,7 @@ interface SoldPropertyComp {
   distressedFlag?: boolean;
   outlierFlag?: boolean;
   borderlineFlag?: boolean;
+  cityMismatch?: boolean;
 }
 
 interface CompsSearchResponse {
@@ -219,33 +220,35 @@ export default function Step3PurchaseRenovation({
     if (!comps || comps.length === 0) return new Set();
     const indexed = comps.map((comp, originalIndex) => ({ comp, originalIndex }));
     const scoreOf = (c: SoldPropertyComp) => c.similarityScore ?? 0;
+    const isDistressed = (c: SoldPropertyComp) => !!(c.distressedFlag || c.outlierFlag);
+    const isBorderline = (c: SoldPropertyComp) => !!c.borderlineFlag && !c.distressedFlag && !c.outlierFlag;
+    const isClean = (c: SoldPropertyComp) => !c.distressedFlag && !c.outlierFlag && !c.borderlineFlag;
+    const isSameCity = (c: SoldPropertyComp) => !(c as any).cityMismatch;
 
-    // Clean comps: no flags set
-    const clean = indexed
-      .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && !comp.borderlineFlag)
+    // Tier 1: same city, clean, sorted by similarity score
+    const tier1 = indexed
+      .filter(({ comp }) => isSameCity(comp) && isClean(comp))
       .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
 
-    // Prefer bed/bath matches among clean comps
-    const cleanMatching = clean.filter(({ comp }) =>
-      (comp.bedrooms ?? 0) === (bedrooms ?? 0)
-    );
-    const cleanNonMatching = clean.filter(({ comp }) =>
-      (comp.bedrooms ?? 0) !== (bedrooms ?? 0)
-    );
-
-    // Build ordered list: matching bed/bath first, then non-matching
-    const orderedClean = [...cleanMatching, ...cleanNonMatching];
-
-    // Borderline comps as fallback
-    const borderline = indexed
-      .filter(({ comp }) => comp.borderlineFlag && !comp.outlierFlag && !comp.distressedFlag)
+    // Tier 2: same city, borderline
+    const tier2 = indexed
+      .filter(({ comp }) => isSameCity(comp) && isBorderline(comp))
       .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
 
-    const picks = orderedClean.slice(0, 6);
+    // Tier 3: different city, clean (last resort)
+    const tier3 = indexed
+      .filter(({ comp }) => !isSameCity(comp) && isClean(comp))
+      .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
+
+    // Build selection: fill up to 6 from tier1, supplement with tier2, then tier3
+    const picks = tier1.slice(0, 6);
     if (picks.length < 3) {
-      const need = 3 - picks.length;
-      picks.push(...borderline.slice(0, need));
+      picks.push(...tier2.slice(0, 3 - picks.length));
     }
+    if (picks.length < 3) {
+      picks.push(...tier3.slice(0, 3 - picks.length));
+    }
+
     return new Set(picks.map(p => p.originalIndex));
   };
 
@@ -1647,6 +1650,14 @@ export default function Step3PurchaseRenovation({
                       {radiusWasExpanded && actualRadiusUsed !== null && actualRadiusUsed > searchRadius && (
                         <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200 mt-3" data-testid="text-radius-expanded-notice">
                           <span>Radius automatically expanded to {actualRadiusUsed} {actualRadiusUsed === 1 ? "mile" : "miles"} to find more comparable sales.</span>
+                        </div>
+                      )}
+
+                      {/* City mismatch warning - shown when any selected comp is from a different city */}
+                      {compsData && compsData.comps && selectedCompIndices.size > 0 &&
+                        Array.from(selectedCompIndices).some(i => (compsData.comps[i] as any)?.cityMismatch) && (
+                        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 mt-3" data-testid="text-city-mismatch-warning">
+                          <span>⚠ One or more selected comps are outside {city || "your city"} — verify these are appropriate for your market.</span>
                         </div>
                       )}
 

@@ -1,0 +1,88 @@
+We are on the arv-helper-fixes branch. Make the following changes to server/services/hybrid-comps.service.ts only. Do not touch any other files.
+
+PART 1 — Fix the median calculation in runSinglePass
+Currently computeMedian is called on all comps including distressed ones, which drags the median down and causes the flagging thresholds to fail.
+Replace the current median calculation line:
+typescriptconst median = this.computeMedian(sortedComps.map(c => c.pricePerSqft).filter(p => p > 0));
+With a two-pass cleaned median calculation:
+typescript// Pass 1: compute raw median from all comps
+const rawPpsf = sortedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+const rawMedian = this.computeMedian(rawPpsf);
+
+// Pass 2: exclude comps where $/sqft is below 50% or above 200% of raw median
+// This prevents distressed/outlier comps from skewing the flagging thresholds
+const cleanedPpsf = rawMedian !== null
+  ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
+  : rawPpsf;
+const median = this.computeMedian(cleanedPpsf);
+
+PART 2 — Add city mismatch flag to HybridCompResult
+In the HybridCompResult interface (top of file), add:
+typescriptcityMismatch?: boolean;
+
+PART 3 — Apply city mismatch flag in runSinglePass
+After the existing applyFlags and computeSimilarityScore calls, add a new pass that flags comps from a different city than the subject:
+typescript// Flag comps from a different city than the subject property
+if (city) {
+  const normalizeCity = (c: string) => c.toLowerCase().trim();
+  for (const comp of sortedComps) {
+    if (comp.city && normalizeCity(comp.city) !== normalizeCity(city)) {
+      comp.cityMismatch = true;
+    }
+  }
+}
+
+PART 4 — Fix computeSmartSelection in client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+Replace the current computeSmartSelection function with this version that implements the correct priority order: same-city unflagged comps by similarity score first, then same-city borderline, then different-city unflagged only if needed, never distressed or outlier:
+typescriptconst computeSmartSelection = (comps: SoldPropertyComp[]): Set<number> => {
+  if (!comps || comps.length === 0) return new Set();
+  const indexed = comps.map((comp, originalIndex) => ({ comp, originalIndex }));
+  const scoreOf = (c: SoldPropertyComp) => c.similarityScore ?? 0;
+  const isDistressed = (c: SoldPropertyComp) => !!(c.distressedFlag || c.outlierFlag);
+  const isBorderline = (c: SoldPropertyComp) => !!c.borderlineFlag && !c.distressedFlag && !c.outlierFlag;
+  const isClean = (c: SoldPropertyComp) => !c.distressedFlag && !c.outlierFlag && !c.borderlineFlag;
+  const isSameCity = (c: SoldPropertyComp) => !(c as any).cityMismatch;
+
+  // Tier 1: same city, clean, sorted by similarity score
+  const tier1 = indexed
+    .filter(({ comp }) => isSameCity(comp) && isClean(comp))
+    .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
+
+  // Tier 2: same city, borderline
+  const tier2 = indexed
+    .filter(({ comp }) => isSameCity(comp) && isBorderline(comp))
+    .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
+
+  // Tier 3: different city, clean (last resort)
+  const tier3 = indexed
+    .filter(({ comp }) => !isSameCity(comp) && isClean(comp))
+    .sort((a, b) => scoreOf(b.comp) - scoreOf(a.comp));
+
+  // Build selection: fill up to 6 from tier1, supplement with tier2, then tier3
+  const picks = tier1.slice(0, 6);
+  if (picks.length < 3) {
+    picks.push(...tier2.slice(0, 3 - picks.length));
+  }
+  if (picks.length < 3) {
+    picks.push(...tier3.slice(0, 3 - picks.length));
+  }
+
+  return new Set(picks.map(p => p.originalIndex));
+};
+
+PART 5 — Add city mismatch warning in client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+In the JSX, directly below the radius expansion banner added in the previous session, add a new amber warning that shows when any selected comp is from a different city:
+tsx{compsData && compsData.comps && selectedCompIndices.size > 0 &&
+  Array.from(selectedCompIndices).some(i => (compsData.comps[i] as any)?.cityMismatch) && (
+  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 mt-3">
+    <span>⚠ One or more selected comps are outside {city || "your city"} — verify these are appropriate for your market.</span>
+  </div>
+)}
+
+PART 6 — Update SoldPropertyComp type
+Find the SoldPropertyComp interface in Step3PurchaseRenovation.tsx and add:
+typescriptcityMismatch?: boolean;
+
+After all changes, run npm run build to confirm no TypeScript errors. Do not merge to main. Do not redeploy. Clear the comp cache for the test property by running:
+DELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+against the dev database. Confirm branch is still arv-helper-fixes and show key modified sections.Sonnet 4.6Claude is AI and can m
