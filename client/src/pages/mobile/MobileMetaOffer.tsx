@@ -34,6 +34,8 @@ function getPricingUrl() {
       utm.set(key, value);
     }
   }
+  if (!utm.has("ref")) utm.set("ref", "meta");
+  if (!utm.has("utm_source")) utm.set("utm_source", "meta");
   const qs = utm.toString();
   return qs ? `/pricing?${qs}` : "/pricing";
 }
@@ -93,9 +95,6 @@ export default function MobileMetaOffer() {
             >
               See Plans & Pricing
             </Button>
-            <p className="text-xs text-white/70" data-testid="text-no-card">
-              No credit card required.
-            </p>
           </div>
         </div>
       </section>
@@ -130,9 +129,6 @@ export default function MobileMetaOffer() {
           >
             See Plans & Pricing
           </Button>
-          <p className="text-xs text-muted-foreground" data-testid="text-no-card-bottom">
-            No credit card required.
-          </p>
         </div>
 
         <div className="relative aspect-video bg-black rounded-md overflow-hidden shadow-lg border border-border">
