@@ -336,6 +336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailVerified: false,
           isNewSignup: true,
           isUpgrade: false,
+          signupSource: req.body.signupSource || null,
+          signupRef: req.body.signupRef || null,
         }).catch(err => console.error('[Webhook] user_signup trigger error:', err));
       }
 

@@ -1,0 +1,80 @@
+I have everything I need. The signupSource field doesn't exist anywhere — not in the schema, not in the auth service, not in the registration flow. We're building it from scratch.
+Here's the complete Replit prompt:
+
+Give Replit Agent This Prompt:
+Add signup source tracking to capture where each user registered from (Meta, Google, organic, etc.). This requires changes to 4 files plus a database migration.
+
+PART 1 — Database migration
+Run this SQL in the Shell using psql $DATABASE_URL:
+sqlALTER TABLE users ADD COLUMN IF NOT EXISTS signup_source varchar(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_ref varchar(100);
+
+PART 2 — shared/schema.ts
+In the users pgTable definition, add these two columns after the referralCode line:
+typescriptsignupSource: varchar("signup_source", { length: 50 }),
+signupRef: varchar("signup_ref", { length: 100 }),
+
+PART 3 — server/services/auth.service.ts
+3a. Add signupSource and signupRef to the registrationSchema zod object:
+typescriptsignupSource: z.string().optional().nullable(),
+signupRef: z.string().optional().nullable(),
+3b. Find the registerUser function where it inserts the new user into the database. Add signupSource and signupRef to the insert values, reading them from the validated input data.
+
+PART 4 — server/routes.ts
+In the app.post("/api/auth/register" handler, add signupSource and signupRef to the outbound webhook payload that fires on user signup, so downstream systems can see the source:
+typescriptsignupSource: req.body.signupSource || null,
+signupRef: req.body.signupRef || null,
+
+PART 5 — client/src/pages/Register.tsx
+5a. At the top of the Register component, add logic to read UTM and ref params from the URL on mount and derive a signupSource value:
+typescriptconst [signupSource, setSignupSource] = useState<string | null>(null);
+const [signupRef, setSignupRef] = useState<string | null>(null);
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const utmSource = params.get("utm_source");
+  const utmMedium = params.get("utm_medium");
+  const ref = params.get("ref");
+  
+  // Derive a clean source label
+  let source: string | null = null;
+  if (ref === "meta" || utmSource === "meta" || utmMedium === "paid_social") {
+    source = "meta";
+  } else if (ref === "google" || utmSource === "google" || utmMedium === "cpc" || utmMedium === "paid_search") {
+    source = "google";
+  } else if (utmSource) {
+    source = utmSource;
+  } else if (ref) {
+    source = ref;
+  }
+  
+  setSignupSource(source);
+  setSignupRef(ref || utmSource || null);
+}, []);
+5b. In the registration form submit handler where it builds the POST body to /api/auth/register, add:
+typescriptsignupSource: signupSource,
+signupRef: signupRef,
+
+PART 6 — client/src/pages/admin/UserManagement.tsx
+Add a "Source" column to the user directory table:
+6a. In the table header row, add after the "Joined" <th>:
+tsx<th className="text-left py-2 px-2">Source</th>
+6b. In the table body row for each user, add a corresponding <td> that displays the source as a small colored pill:
+
+meta → blue pill "Meta"
+google → green pill "Google"
+anything else with a value → gray pill showing the value
+null/empty → gray dash "—"
+
+Place it after the Joined column and before the Actions column.
+
+PART 7 — client/src/pages/admin/Reporting.tsx
+Add a "Signups by Source" breakdown card to the Overview tab. After the existing "Signups Over Time" bar chart card, add a new card that shows a simple breakdown table for the latest week displaying:
+
+A row for each source (Meta, Google, Organic/Direct, Unknown)
+Columns: Source | Free Signups | Paid Signups
+
+Note: This data isn't yet broken down by source in the snapshot — for now, display a static informational note: "Per-source signup breakdown available from [date new tracking begins]. View User Management for individual signup sources."
+
+After all changes, run npm run build to confirm no TypeScript errors. Do not redeploy. Show me the key modified sections of each file, and confirm the SQL ran successfully.
+Also confirm: what branch are we currently on?

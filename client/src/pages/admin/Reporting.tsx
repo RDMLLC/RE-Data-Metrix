@@ -914,6 +914,34 @@ export default function Reporting() {
                 </Card>
 
                 <Card>
+                  <CardHeader><CardTitle className="text-sm font-medium">Signups by Source</CardTitle></CardHeader>
+                  <CardContent>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-xs text-muted-foreground">
+                          <th className="text-left py-2">Source</th>
+                          <th className="text-right py-2">Free Signups</th>
+                          <th className="text-right py-2">Paid Signups</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {["Meta", "Google", "Organic / Direct", "Unknown"].map(name => (
+                          <tr key={name} className="border-b last:border-0">
+                            <td className="py-2 font-medium">{name}</td>
+                            <td className="text-right text-muted-foreground">—</td>
+                            <td className="text-right text-muted-foreground">—</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                      Per-source signup breakdown will populate once new signup tracking accumulates a full week of data.
+                      View User Management for individual signup sources today.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
                   <CardHeader><CardTitle className="text-sm font-medium">Deal Analysis Usage</CardTitle></CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={220}>

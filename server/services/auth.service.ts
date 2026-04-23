@@ -21,6 +21,8 @@ export const registrationSchema = z.object({
   referralCode: z.string().optional(),
   compCode: z.string().optional(),
   auditorCode: z.string().optional(),
+  signupSource: z.string().optional().nullable(),
+  signupRef: z.string().optional().nullable(),
   termsAccepted: z.literal(true, { errorMap: () => ({ message: "You must accept the terms and conditions to register" }) }),
   pendingPlan: z.enum(["monthly", "annual"]).optional(),
 });
@@ -258,6 +260,8 @@ class AuthService {
           termsVersion: validatedData.termsAccepted ? "1.0" : null,
           privacyVersion: validatedData.termsAccepted ? "1.0" : null,
           pendingPlan: validatedData.pendingPlan || null,
+          signupSource: validatedData.signupSource || null,
+          signupRef: validatedData.signupRef || null,
         })
         .returning();
 

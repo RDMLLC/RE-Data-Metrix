@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   subscriptionStatus: text("subscription_status").notNull().default('free'),
   referredBy: varchar("referred_by"),
   referralCode: varchar("referral_code").unique(),
+  signupSource: varchar("signup_source", { length: 50 }),
+  signupRef: varchar("signup_ref", { length: 100 }),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   emailVerifiedAt: timestamp("email_verified_at"),
   verificationToken: varchar("verification_token").unique(),

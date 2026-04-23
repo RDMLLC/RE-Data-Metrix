@@ -139,7 +139,9 @@ export default function Register() {
   // Check for comp code, returnTo, and plan in URL params
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  
+  const [signupSource, setSignupSource] = useState<string | null>(null);
+  const [signupRef, setSignupRef] = useState<string | null>(null);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const comp = params.get("comp");
@@ -148,7 +150,7 @@ export default function Register() {
     const planParam = params.get("plan");
     const refType = params.get("ref");
     const refCode = params.get("code");
-    
+
     if (auditor) {
       validateAuditorCode(auditor.toUpperCase());
     } else if (comp) {
@@ -163,6 +165,25 @@ export default function Register() {
     if (planParam && (planParam === "monthly" || planParam === "annual")) {
       setSelectedPlan(planParam);
     }
+
+    // Derive a clean signup source label from UTM / ref params
+    const utmSource = params.get("utm_source");
+    const utmMedium = params.get("utm_medium");
+    const ref = params.get("ref");
+
+    let source: string | null = null;
+    if (ref === "meta" || utmSource === "meta" || utmMedium === "paid_social") {
+      source = "meta";
+    } else if (ref === "google" || utmSource === "google" || utmMedium === "cpc" || utmMedium === "paid_search") {
+      source = "google";
+    } else if (utmSource) {
+      source = utmSource;
+    } else if (ref) {
+      source = ref;
+    }
+
+    setSignupSource(source);
+    setSignupRef(ref || utmSource || null);
   }, []);
 
   const validateCompCode = async (code: string) => {
@@ -233,6 +254,8 @@ export default function Register() {
         auditorCode: auditorCode || undefined,
         referralCode: contractorRefCode || undefined,
         pendingPlan: selectedPlan || undefined,
+        signupSource: signupSource,
+        signupRef: signupRef,
       };
       const result = await register(finalData);
       

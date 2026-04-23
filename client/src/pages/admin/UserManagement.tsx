@@ -94,6 +94,8 @@ interface UserWithStats {
   termsAcceptedAt: string | null;
   termsVersion: string | null;
   privacyVersion: string | null;
+  signupSource: string | null;
+  signupRef: string | null;
 }
 
 interface UserStats {
@@ -622,6 +624,7 @@ export default function UserManagement() {
                             <TableHead>Lenders</TableHead>
                             <TableHead>Referrals</TableHead>
                             <TableHead>Joined</TableHead>
+                            <TableHead>Source</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -722,6 +725,17 @@ export default function UserManagement() {
                               <TableCell>{user.referralCount}</TableCell>
                               <TableCell>
                                 {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}
+                              </TableCell>
+                              <TableCell data-testid={`text-source-${user.id}`}>
+                                {user.signupSource === 'meta' ? (
+                                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-transparent">Meta</Badge>
+                                ) : user.signupSource === 'google' ? (
+                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-transparent">Google</Badge>
+                                ) : user.signupSource ? (
+                                  <Badge variant="secondary">{user.signupSource}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {!isAuditor && (
