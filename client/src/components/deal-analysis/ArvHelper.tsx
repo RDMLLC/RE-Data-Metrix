@@ -1279,8 +1279,15 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 </div>
               )}
 
-            {/* Insufficient selected comps warning */}
-            {selectedCompIndices.size < 3 && (
+            {/* Insufficient selected comps warning — gated to be mutually
+                 exclusive with Message A (length < 3) and Message B
+                 (selected === 0). Only fires when the search returned
+                 enough comps, the user has begun selecting (1 or 2 picked),
+                 and the system itself flagged fewer than 3 as suitable. */}
+            {compsData.comps.length >= 3 &&
+              selectedCompIndices.size > 0 &&
+              selectedCompIndices.size < 3 &&
+              (compsData.searchStats?.suitableCount ?? 0) < 3 && (
               <div
                 className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
                 data-testid="text-insufficient-comps-warning"
