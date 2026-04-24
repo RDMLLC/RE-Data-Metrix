@@ -183,6 +183,23 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const [isAddingCustomComp, setIsAddingCustomComp] = useState(false);
   const [customCompError, setCustomCompError] = useState<string | null>(null);
 
+  // Manual comp entry — bypasses the Zillow URL fetch entirely so users can
+  // type in a comp from any source (MLS sheet, Propstream export, neighbor
+  // gossip, etc.). On submit, the comp is prepended to compsData.comps and
+  // auto-selected, exactly like a Zillow URL add.
+  const [manualComp, setManualComp] = useState({
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    bedrooms: "",
+    bathrooms: "",
+    sqft: "",
+    salePrice: "",
+    saleDate: "",
+  });
+  const [manualCompError, setManualCompError] = useState<string | null>(null);
+
   const [pendingProperties, setPendingProperties] = useState<SoldPropertyComp[]>([]);
   const [isSearchingPending, setIsSearchingPending] = useState(false);
   const [showPendingProperties, setShowPendingProperties] = useState(false);
@@ -597,6 +614,93 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     }
   };
 
+  // Manual comp entry handler. Mirrors addCustomComp's prepend + duplicate
+  // detection + index-shift logic so the resulting state is identical to a
+  // successful Zillow URL add.
+  const addManualComp = () => {
+    setManualCompError(null);
+    const trimmed = {
+      address: manualComp.address.trim(),
+      city: manualComp.city.trim(),
+      state: manualComp.state.trim().toUpperCase(),
+      zipCode: manualComp.zipCode.trim(),
+      bedrooms: manualComp.bedrooms.trim(),
+      bathrooms: manualComp.bathrooms.trim(),
+      sqft: manualComp.sqft.replace(/[^0-9]/g, ""),
+      salePrice: manualComp.salePrice.replace(/[^0-9.]/g, ""),
+      saleDate: manualComp.saleDate.trim(),
+    };
+    if (
+      !trimmed.address || !trimmed.city || !trimmed.state || !trimmed.zipCode ||
+      !trimmed.bedrooms || !trimmed.bathrooms || !trimmed.sqft ||
+      !trimmed.salePrice || !trimmed.saleDate
+    ) {
+      setManualCompError("Please fill in all fields.");
+      return;
+    }
+    const sqft = parseInt(trimmed.sqft, 10);
+    const salePrice = parseFloat(trimmed.salePrice);
+    const bedrooms = parseFloat(trimmed.bedrooms);
+    const bathrooms = parseFloat(trimmed.bathrooms);
+    if (!Number.isFinite(sqft) || sqft <= 0) {
+      setManualCompError("Sqft must be a positive number.");
+      return;
+    }
+    if (!Number.isFinite(salePrice) || salePrice <= 0) {
+      setManualCompError("Sale price must be a positive number.");
+      return;
+    }
+    if (!Number.isFinite(bedrooms) || !Number.isFinite(bathrooms)) {
+      setManualCompError("Beds and baths must be numbers.");
+      return;
+    }
+    const newComp: SoldPropertyComp = {
+      address: trimmed.address,
+      city: trimmed.city,
+      state: trimmed.state,
+      zipCode: trimmed.zipCode,
+      salePrice,
+      saleDate: trimmed.saleDate,
+      bedrooms,
+      bathrooms,
+      sqft,
+      pricePerSqft: Math.round(salePrice / sqft),
+      isManuallyAdded: true,
+    };
+    const newCompAddress = newComp.address.toLowerCase().trim();
+    const existingComps = compsData?.comps || [];
+    const duplicateIndices: number[] = [];
+    existingComps.forEach((comp, index) => {
+      if (comp.address.toLowerCase().trim() === newCompAddress) duplicateIndices.push(index);
+    });
+    setCompsData((prev) => {
+      if (!prev) return { comps: [newComp], suggestedArv: null };
+      return { ...prev, comps: [newComp, ...prev.comps] };
+    });
+    setSelectedCompIndices((prev) => {
+      const newSet = new Set<number>();
+      newSet.add(0);
+      prev.forEach((oldIndex) => {
+        const shiftedIndex = oldIndex + 1;
+        if (!duplicateIndices.includes(oldIndex)) newSet.add(shiftedIndex);
+      });
+      return newSet;
+    });
+    setManualComp({
+      address: "", city: "", state: "", zipCode: "",
+      bedrooms: "", bathrooms: "", sqft: "",
+      salePrice: "", saleDate: "",
+    });
+    setShowAddCompForm(false);
+    toast({
+      title: "Comp Added",
+      description:
+        duplicateIndices.length > 0
+          ? `${newComp.address} added. Older sale${duplicateIndices.length > 1 ? "s" : ""} for this address deselected.`
+          : `${newComp.address} has been added to your comps list.`,
+    });
+  };
+
   const openEditDialog = (index: number) => {
     if (!compsData) return;
     const comp = compsData.comps[index];
@@ -790,12 +894,12 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
 
         {/* Add Custom Comp Form */}
         {showAddCompForm && (
-          <div className="p-3 bg-muted/50 rounded-md border border-border space-y-3">
+          <div className="p-3 bg-muted/50 rounded-md border border-border space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-medium">Add Comp from Zillow</h4>
+                <h4 className="text-sm font-medium">Add Comp</h4>
                 <p className="text-xs text-muted-foreground">
-                  Paste a Zillow property URL to add it as a comparable
+                  Paste a Zillow URL or enter the comp details manually
                 </p>
               </div>
               <Button
@@ -806,38 +910,181 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   setShowAddCompForm(false);
                   setCustomCompUrl("");
                   setCustomCompError(null);
+                  setManualCompError(null);
                 }}
                 data-testid="button-close-add-comp-form"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex gap-2">
-              <Input
-                type="url"
-                placeholder="https://www.zillow.com/homedetails/..."
-                value={customCompUrl}
-                onChange={(e) => setCustomCompUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (customCompUrl.trim() && !isAddingCustomComp) addCustomComp();
-                  }
-                }}
-                className="flex-1"
-                data-testid="input-custom-comp-url"
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={addCustomComp}
-                disabled={isAddingCustomComp || !customCompUrl.trim()}
-                data-testid="button-add-comp-submit"
-              >
-                {isAddingCustomComp ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
-              </Button>
+
+            {/* Zillow URL section */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Add from Zillow URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://www.zillow.com/homedetails/..."
+                  value={customCompUrl}
+                  onChange={(e) => setCustomCompUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (customCompUrl.trim() && !isAddingCustomComp) addCustomComp();
+                    }
+                  }}
+                  className="flex-1"
+                  data-testid="input-custom-comp-url"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={addCustomComp}
+                  disabled={isAddingCustomComp || !customCompUrl.trim()}
+                  data-testid="button-add-comp-submit"
+                >
+                  {isAddingCustomComp ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                </Button>
+              </div>
+              {customCompError && <p className="text-xs text-destructive">{customCompError}</p>}
             </div>
-            {customCompError && <p className="text-xs text-destructive">{customCompError}</p>}
+
+            {/* Manual entry divider */}
+            <div className="flex items-center gap-2">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">Or enter manually</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            {/* Manual entry section */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1 sm:col-span-2 md:col-span-2">
+                  <Label htmlFor="manual-comp-address" className="text-xs">Street Address</Label>
+                  <Input
+                    id="manual-comp-address"
+                    placeholder="123 Main St"
+                    value={manualComp.address}
+                    onChange={(e) => setManualComp({ ...manualComp, address: e.target.value })}
+                    data-testid="input-manual-comp-address"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="manual-comp-city" className="text-xs">City</Label>
+                  <Input
+                    id="manual-comp-city"
+                    placeholder="City"
+                    value={manualComp.city}
+                    onChange={(e) => setManualComp({ ...manualComp, city: e.target.value })}
+                    data-testid="input-manual-comp-city"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="manual-comp-state" className="text-xs">State</Label>
+                    <Input
+                      id="manual-comp-state"
+                      placeholder="ST"
+                      maxLength={2}
+                      value={manualComp.state}
+                      onChange={(e) => setManualComp({ ...manualComp, state: e.target.value.toUpperCase() })}
+                      data-testid="input-manual-comp-state"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="manual-comp-zip" className="text-xs">Zip</Label>
+                    <Input
+                      id="manual-comp-zip"
+                      placeholder="00000"
+                      value={manualComp.zipCode}
+                      onChange={(e) => setManualComp({ ...manualComp, zipCode: e.target.value })}
+                      data-testid="input-manual-comp-zip"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="manual-comp-beds" className="text-xs">Beds</Label>
+                  <Input
+                    id="manual-comp-beds"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="3"
+                    value={manualComp.bedrooms}
+                    onChange={(e) => setManualComp({ ...manualComp, bedrooms: e.target.value })}
+                    data-testid="input-manual-comp-beds"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="manual-comp-baths" className="text-xs">Baths</Label>
+                  <Input
+                    id="manual-comp-baths"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="2"
+                    value={manualComp.bathrooms}
+                    onChange={(e) => setManualComp({ ...manualComp, bathrooms: e.target.value })}
+                    data-testid="input-manual-comp-baths"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="manual-comp-sqft" className="text-xs">Sqft</Label>
+                  <Input
+                    id="manual-comp-sqft"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="1500"
+                    value={manualComp.sqft}
+                    onChange={(e) => setManualComp({ ...manualComp, sqft: e.target.value })}
+                    data-testid="input-manual-comp-sqft"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="manual-comp-price" className="text-xs">Sale Price</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      id="manual-comp-price"
+                      type="text"
+                      placeholder="250000"
+                      value={manualComp.salePrice}
+                      onChange={(e) => setManualComp({ ...manualComp, salePrice: e.target.value.replace(/[^0-9.]/g, "") })}
+                      className="pl-7"
+                      data-testid="input-manual-comp-price"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="manual-comp-date" className="text-xs">Sale Date</Label>
+                  <Input
+                    id="manual-comp-date"
+                    type="date"
+                    value={manualComp.saleDate}
+                    onChange={(e) => setManualComp({ ...manualComp, saleDate: e.target.value })}
+                    data-testid="input-manual-comp-date"
+                  />
+                </div>
+              </div>
+
+              {manualCompError && <p className="text-xs text-destructive">{manualCompError}</p>}
+
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={addManualComp}
+                  data-testid="button-add-manual-comp-submit"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Manual Comp
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 

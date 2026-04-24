@@ -208,9 +208,24 @@ export default function CompReportPdf({
     return aDist - bDist;
   });
 
+  // Dynamic map height so the entire report fits on a single page no matter
+  // how many comps are selected. Smaller comp tables can afford a taller map;
+  // larger comp tables shrink the map proportionally.
+  //   1-3 comps -> 380px
+  //   4 comps   -> 320px
+  //   5 comps   -> 260px
+  //   6+ comps  -> 200px
+  const compCount = sortedComps.length;
+  const mapHeightPx =
+    compCount <= 3 ? 380 :
+    compCount === 4 ? 320 :
+    compCount === 5 ? 260 : 200;
+
   // Build the URL for the Google Static Maps proxy. Returns null if there
   // isn't enough location data to bother showing a map. The proxy lives at
   // /api/property/comp-map and holds the GOOGLE_MAPS_API_KEY server-side.
+  // The compCount param tells the server which size to request from Google
+  // so the returned PNG matches the displayed height exactly (no upscaling).
   const compMapUrl: string | null = (() => {
     const compsForMap = sortedComps
       .filter(c => c.latitude != null && c.longitude != null)
@@ -232,6 +247,7 @@ export default function CompReportPdf({
       params.set('subjectAddress', fullAddr);
     }
     params.set('comps', JSON.stringify(compsForMap));
+    params.set('compCount', String(compCount));
     return `/api/property/comp-map?${params.toString()}`;
   })();
 
@@ -427,7 +443,7 @@ export default function CompReportPdf({
               <img
                 src={compMapUrl}
                 alt="Subject and comparable properties map"
-                style={{ display: 'block', margin: '0 auto', width: '600px', maxWidth: '100%', height: '300px', border: '1px solid #e5e7eb' }}
+                style={{ display: 'block', margin: '0 auto', width: '100%', maxWidth: '100%', height: `${mapHeightPx}px`, border: '1px solid #e5e7eb' }}
                 onError={() => setMapImageFailed(true)}
               />
             </div>

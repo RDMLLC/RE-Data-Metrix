@@ -10453,8 +10453,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
+    // Dynamic map size based on the number of comps the client is rendering,
+    // so the comp report PDF stays one page regardless of how many rows the
+    // table consumes above the map. Client passes ?compCount=<n>.
+    //   1-3 comps -> 800x380
+    //   4 comps   -> 800x320
+    //   5 comps   -> 800x260
+    //   6+ comps  -> 800x200 (default)
+    const compCountRaw = req.query.compCount as string | undefined;
+    const compCount = compCountRaw != null ? parseInt(compCountRaw, 10) : NaN;
+    let mapSize = "800x200";
+    if (Number.isInteger(compCount) && compCount > 0) {
+      if (compCount <= 3) mapSize = "800x380";
+      else if (compCount === 4) mapSize = "800x320";
+      else if (compCount === 5) mapSize = "800x260";
+    }
     const params = new URLSearchParams();
-    params.set("size", "600x300");
+    params.set("size", mapSize);
 
     // Subject pin (red, label "S"). Prefer lat/lng; fall back to a free-
     // form address that Google can geocode server-side.
