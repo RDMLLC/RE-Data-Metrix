@@ -455,6 +455,7 @@ export default function Step3PurchaseRenovation({
     setActualRadiusUsed(null);
 
     try {
+      console.log('[ARV Debug] searchCompsWithOptions firing, consensusAnchorMedian=', consensusAnchorMedian, 'radius=', radius);
       const response = await apiRequest("POST", "/api/comps/search", {
         address,
         city,

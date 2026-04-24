@@ -1,0 +1,56 @@
+You're right, and I apologize. We keep diagnosing the same problem without fixing it.
+Let me stop diagnosing and just directly verify and fix both issues in one prompt.
+Give Replit Agent This Prompt:
+We are on the arv-helper-fixes branch. Two files need changes: server/services/hybrid-comps.service.ts and client/src/components/deal-analysis/Step3PurchaseRenovation.tsx.
+
+PROBLEM 1 — Frontend anchor not reaching the server
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, add a console.log immediately before the API call in searchCompsWithOptions to confirm what value consensusAnchorMedian has:
+typescriptconsole.log('[ARV Debug] searchCompsWithOptions firing, consensusAnchorMedian=', consensusAnchorMedian, 'radius=', radius);
+
+PROBLEM 2 — Consensus anchor must reject distressed pairs
+In server/services/hybrid-comps.service.ts, in the computeConsensusAnchor method, add a minimum quality check — reject any consensus pair where the average $/sqft is less than 50% of the highest $/sqft comp in the group:
+typescriptprivate computeConsensusAnchor(comps: HybridCompResult[]): number | null {
+  if (!comps || comps.length < 2) return null;
+
+  const byDistance = [...comps]
+    .filter(c => c.pricePerSqft > 0)
+    .sort((a, b) => (a.distanceFromSubject ?? 99) - (b.distanceFromSubject ?? 99));
+
+  // Find the highest $/sqft among all comps as a quality ceiling reference
+  const maxPpsf = Math.max(...byDistance.map(c => c.pricePerSqft));
+
+  for (const groupSize of [3, 5, 7]) {
+    const group = byDistance.slice(0, groupSize);
+    if (group.length < 2) continue;
+
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i].pricePerSqft;
+        const b = group[j].pricePerSqft;
+        const avg = (a + b) / 2;
+        const diff = Math.abs(a - b) / avg;
+
+        // Reject pairs where both values are distressed relative to the market
+        // (i.e. the consensus average is less than 50% of the highest comp)
+        if (avg < maxPpsf * 0.5) {
+          console.log(`[Hybrid Comps] Rejecting low-value consensus pair: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) avg=$${Math.round(avg)} < 50% of max $${maxPpsf}`);
+          continue;
+        }
+
+        if (diff <= 0.20) {
+          console.log(`[Hybrid Comps] Consensus anchor: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) → anchor $${Math.round(avg)}/sqft`);
+          return Math.round(avg);
+        }
+      }
+    }
+  }
+
+  console.log(`[Hybrid Comps] No consensus anchor found, falling back to cleaned median`);
+  return null;
+}
+
+After changes run npm run build. Clear cache:
+sqlDELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+Restart server with logging:
+bashpkill -f "tsx server" 2>/dev/null; sleep 2 && npm run dev > /tmp/server.log 2>&1 &
+Confirm branch is arv-helper-fixes. Do not merge, do not redeploy.Sonnet 4.6

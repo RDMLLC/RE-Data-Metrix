@@ -432,6 +432,9 @@ export class HybridCompsService {
       .filter(c => c.pricePerSqft > 0)
       .sort((a, b) => (a.distanceFromSubject ?? 99) - (b.distanceFromSubject ?? 99));
 
+    // Find the highest $/sqft among all comps as a quality ceiling reference
+    const maxPpsf = Math.max(...byDistance.map(c => c.pricePerSqft));
+
     // Try expanding groups: top 3, top 5, top 7
     for (const groupSize of [3, 5, 7]) {
       const group = byDistance.slice(0, groupSize);
@@ -444,6 +447,14 @@ export class HybridCompsService {
           const b = group[j].pricePerSqft;
           const avg = (a + b) / 2;
           const diff = Math.abs(a - b) / avg;
+
+          // Reject pairs where both values are distressed relative to the market
+          // (i.e. the consensus average is less than 50% of the highest comp)
+          if (avg < maxPpsf * 0.5) {
+            console.log(`[Hybrid Comps] Rejecting low-value consensus pair: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) avg=$${Math.round(avg)} < 50% of max $${maxPpsf}`);
+            continue;
+          }
+
           if (diff <= 0.20) {
             // Found consensus pair — return their average as anchor
             console.log(`[Hybrid Comps] Consensus anchor: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) → anchor $${Math.round(avg)}/sqft`);
