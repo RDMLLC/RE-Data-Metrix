@@ -479,31 +479,24 @@ export default function Step3PurchaseRenovation({
 
       const data = await response.json();
 
-      // Capture the addresses currently selected BEFORE we replace compsData,
+      // Build a stable identity key for a comp: house-number + ZIP. This is
+      // resilient to street-suffix and abbreviation variations (Trl vs Trail,
+      // Dr vs Drive, etc.) that occur when the same property is fetched from
+      // different sources or at different radii.
+      const compKey = (c: { address?: string; zipCode?: string }) => {
+        const addr = (c.address || '').trim();
+        const houseNumber = addr.split(/\s+/)[0]?.toLowerCase() || '';
+        const zip = (c.zipCode || '').replace(/\D/g, '').slice(0, 5);
+        return `${houseNumber}|${zip}`;
+      };
+
+      // Capture the keys of comps currently selected BEFORE we replace compsData,
       // because selectedCompIndices are indices into the OLD comps array.
-      const previouslySelectedAddresses = new Set(
+      const previouslySelectedKeys = new Set(
         (compsData?.comps || [])
           .filter((_, i) => selectedCompIndices.has(i))
-          .map((c) => c.address.toLowerCase().trim())
+          .map(compKey)
       );
-
-      // ---- TEMP DEBUG: selection lock ----
-      console.log('[ARV Debug] === Selection lock check (radius=', radius, ') ===');
-      console.log('[ARV Debug] previouslySelectedAddresses:', Array.from(previouslySelectedAddresses));
-      console.log('[ARV Debug] new data.comps addresses:', (data.comps || []).map((c: any) => c.address));
-      const matched: string[] = [];
-      const unmatched: string[] = [];
-      (data.comps || []).forEach((c: any) => {
-        const norm = c.address?.toLowerCase().trim();
-        if (previouslySelectedAddresses.has(norm)) matched.push(c.address);
-      });
-      Array.from(previouslySelectedAddresses).forEach((prev) => {
-        const found = (data.comps || []).some((c: any) => c.address?.toLowerCase().trim() === prev);
-        if (!found) unmatched.push(prev);
-      });
-      console.log('[ARV Debug] matched (preserved):', matched);
-      console.log('[ARV Debug] unmatched (dropped from prev selection):', unmatched);
-      // ---- END TEMP DEBUG ----
 
       setCompsData(data);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
@@ -512,14 +505,14 @@ export default function Step3PurchaseRenovation({
       if (data.searchStats?.medianPricePerSqft) {
         setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
       }
-      // Selection lock: track previously selected comps by address (stable across
-      // radius changes), then map them to new indices in the new comps array.
-      // Only re-run auto-selection if fewer than 3 of the preserved selections
-      // remain suitable (non-flagged) in the new dataset.
+      // Selection lock: track previously selected comps by stable identity
+      // (house number + ZIP) and remap them to new indices in the new comps
+      // array. Only re-run auto-selection if fewer than 3 of the preserved
+      // selections remain suitable (non-flagged) in the new dataset.
       if (data.comps && data.comps.length > 0) {
         const preservedIndices = new Set<number>();
         (data.comps as SoldPropertyComp[]).forEach((c, i) => {
-          if (previouslySelectedAddresses.has(c.address.toLowerCase().trim())) {
+          if (previouslySelectedKeys.has(compKey(c))) {
             preservedIndices.add(i);
           }
         });
