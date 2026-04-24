@@ -258,7 +258,7 @@ export default function CompReportPdf({
         size="sm"
         variant="outline"
         onClick={handleDownload}
-        disabled={isGenerating || selectedComps.length === 0}
+        disabled={isGenerating || selectedComps.length < 2}
         data-testid="button-download-comp-report"
       >
         {isGenerating ? (

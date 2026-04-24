@@ -326,14 +326,20 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     }
   };
 
-  // ARV uses only selectedCompIndices — no hidden-set cross-reference
+  // ARV uses only selectedCompIndices — no hidden-set cross-reference.
+  // Requires at least 2 selected comps; below that, arv/avgPricePerSqft
+  // are returned as null (rendered as "N/A") and the action buttons are
+  // disabled. A 2-comp ARV is calculated but accompanied by a warning
+  // recommending 3+ for a reliable estimate.
   const calculateSelectedArv = () => {
     if (!compsData || compsData.comps.length === 0)
       return { arv: null, avgPricePerSqft: null, count: 0 };
     const selectedComps = compsData.comps.filter(
       (_, index) => selectedCompIndices.has(index)
     );
-    if (selectedComps.length === 0) return { arv: null, avgPricePerSqft: null, count: 0 };
+    if (selectedComps.length < 2) {
+      return { arv: null, avgPricePerSqft: null, count: selectedComps.length };
+    }
     const totalSalePrice = selectedComps.reduce((sum, comp) => sum + comp.salePrice, 0);
     const totalSqft = selectedComps.reduce((sum, comp) => sum + comp.sqft, 0);
     const avgPricePerSqft = Math.round(totalSalePrice / totalSqft);
@@ -1623,6 +1629,31 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
 
             {/* Suggested ARV */}
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+              {/* Selection-count warnings:
+                   - <2 selected: ARV cannot be calculated, action buttons disabled
+                   - exactly 2 selected: ARV shown, but reliability warning */}
+              {selectedCompIndices.size < 2 && (
+                <div
+                  className="mb-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+                  data-testid="text-min-comps-warning"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    Select at least 2 comps to calculate an ARV.
+                  </p>
+                </div>
+              )}
+              {selectedCompIndices.size === 2 && (
+                <div
+                  className="mb-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+                  data-testid="text-two-comps-warning"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    Only 2 comps selected. For a reliable ARV, select or add at least 3 comps.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="text-sm text-muted-foreground">
