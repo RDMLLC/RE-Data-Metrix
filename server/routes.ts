@@ -10395,7 +10395,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //   comps                    JSON array of { lat, lng, address }
   //
   // Returns the Google PNG inline (image/*) or a JSON error.
-  app.get("/api/property/comp-map", ensureAuthenticated, async (req, res) => {
+  //
+  // NOTE: This route deliberately does its own auth check instead of using
+  // the shared `ensureAuthenticated` middleware. That middleware calls
+  // `req.logout()` + `req.session.destroy()` on miss, which crashes the
+  // process when the request arrives with no session at all (passport's
+  // async sessionmanager hits `req.session.regenerate` on a destroyed
+  // session). Browsers can legitimately fire this URL via an <img> tag
+  // without a session cookie (e.g., iframed dev preview with SameSite=Lax
+  // cookies), so we need a session-safe rejection path.
+  app.get("/api/property/comp-map", async (req, res) => {
+    if (typeof req.isAuthenticated !== "function" || !req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!googleMapsApiKey) {
       return res.status(503).json({ error: "Static map not configured" });
