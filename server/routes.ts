@@ -10085,6 +10085,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // expand, but from the current caller's perspective no expansion occurred.
         const cachedActualRadius = Number(compCached.actualRadiusMiles);
         const effectiveRadius = isNaN(cachedActualRadius) ? requestedRadius : cachedActualRadius;
+        const cachedActualDateRangeDays =
+          (compCached as any).actualDateRangeDays ?? requestedDateRange;
+        const effectiveDateRangeDays =
+          typeof cachedActualDateRangeDays === "number" && !isNaN(cachedActualDateRangeDays)
+            ? cachedActualDateRangeDays
+            : requestedDateRange;
         const cacheSuitableCount = (compCached.comps as any[]).filter((c: any) =>
           !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
         ).length;
@@ -10092,11 +10098,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           comps: compCached.comps,
           radiusExpanded: effectiveRadius > requestedRadius,
           actualRadiusMiles: effectiveRadius,
-          // Cache schema does not store actualDateRangeDays; safe default:
-          // the cache key was built from requestedDateRange so the cached
-          // row reflects a search at that date range.
-          dateRangeExpanded: false,
-          actualDateRangeDays: requestedDateRange,
+          dateRangeExpanded: effectiveDateRangeDays > requestedDateRange,
+          actualDateRangeDays: effectiveDateRangeDays,
           searchCriteria: { city, state, zipCode, bedrooms, bathrooms, sqft },
           searchStats: {
             rentCastCount: 0,
@@ -10146,6 +10149,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             comps: result.comps as any,
             radiusExpanded: result.radiusExpanded,
             actualRadiusMiles: String(result.actualRadiusMiles),
+            dateRangeExpanded: result.dateRangeExpanded,
+            actualDateRangeDays: result.actualDateRangeDays,
             fetchedAt: new Date(),
             expiresAt: twentyFourHoursOut,
           });

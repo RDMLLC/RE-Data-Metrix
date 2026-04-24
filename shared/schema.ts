@@ -1077,6 +1077,8 @@ export const compCache = pgTable("comp_cache", {
   comps: jsonb("comps").notNull(), // array of HybridCompResult
   radiusExpanded: boolean("radius_expanded").notNull().default(false),
   actualRadiusMiles: numeric("actual_radius_miles").notNull(),
+  dateRangeExpanded: boolean("date_range_expanded").notNull().default(false),
+  actualDateRangeDays: integer("actual_date_range_days"),
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
   expiresAt: timestamp("expires_at").notNull(),
   hitCount: integer("hit_count").notNull().default(0),
