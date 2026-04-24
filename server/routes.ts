@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { appendFileSync } from "fs";
 import { storage } from "./storage";
 import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropertySchema, insertAffiliateSchema, insertAffiliateCategorySchema, insertServiceRegionSchema, insertContractorSchema, insertMarketingPixelSchema, users, userProfiles, investmentPreferences, userInvestmentPreferences, savedDeals, savedLenders, lenders, loanProducts, lenderReferrals, affiliateClicks, dealAnalyses, lenderInquiries, applyClicks, pendingRegistrations, discountCodeUses, discountCodes, compInvites, auditorInvites, affiliates, affiliateCategories, trainingVideos, marketingPixels, promoCodes, promoRedemptions, contractors, contractorDocuments, contractorServiceRegions, featureFeedback, emailSenderAliases, emailCategorySettings, insertEmailSenderAliasSchema, userSubmissions, insertUserSubmissionSchema, insertReportingSnapshotSchema, sentSignupFollowups, userUsageCounters, promoWaitlist, apiUsageLogs, demoTokens, integrationConfigs, outboundWebhooks, type User } from "@shared/schema";
 import { z } from "zod";
@@ -10017,7 +10018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/debug/lock-test", (req, res) => {
-    console.log('[LOCK TEST]', JSON.stringify(req.body));
+    appendFileSync('/tmp/lock-test.log', JSON.stringify(req.body) + '\n');
     res.json({ ok: true });
   });
 
