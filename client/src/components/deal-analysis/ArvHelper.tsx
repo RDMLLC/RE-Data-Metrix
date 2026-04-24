@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { WizardFormData } from "./DealAnalysisWizard";
 import { Button } from "@/components/ui/button";
@@ -155,14 +155,11 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const [searchDateRange, setSearchDateRange] = useState<DateRangeOption>(180);
 
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
-  // Mirror selectedCompIndices into a ref so async handlers (e.g.
-  // searchCompsWithOptions) can read the current value without being trapped
-  // by a stale closure. Mirrors the consensusAnchorMedianRef pattern in
-  // Step3PurchaseRenovation.tsx.
-  const selectedCompIndicesRef = useRef<Set<number>>(new Set());
-  useEffect(() => {
-    selectedCompIndicesRef.current = selectedCompIndices;
-  }, [selectedCompIndices]);
+  // Locked selection captured SYNCHRONOUSLY at the moment a manual radius
+  // button is clicked. searchCompsWithOptions reads this ref to decide
+  // whether to preserve the user's selection across the refetch — bypassing
+  // any closure / re-render timing issues. Cleared after each use.
+  const lockedSelectionRef = useRef<Set<number> | null>(null);
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
 
   const [showAddCompForm, setShowAddCompForm] = useState(false);
@@ -420,19 +417,17 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         setSearchDateRange(data.actualDateRangeDays);
       }
       if (data.comps && data.comps.length > 0) {
-        // Manual radius/date-range change: if the user already has 3+ comps
-        // selected, leave their selection exactly as-is. Only auto-pick when
-        // fewer than 3 are currently selected. Read from the ref to avoid
-        // a stale closure on selectedCompIndices.
-        console.error(
-          "[ARV LOCK CHECK] selectedCompIndicesRef.current.size =",
-          selectedCompIndicesRef.current.size,
-          "indices =",
-          Array.from(selectedCompIndicesRef.current),
-        );
-        if (selectedCompIndicesRef.current.size < 3) {
+        // If a manual radius click captured a locked selection (≥3) before
+        // this refetch started, preserve it — don't touch selectedCompIndices.
+        // Otherwise fall back to a fresh computeSmartSelection.
+        if (lockedSelectionRef.current !== null && lockedSelectionRef.current.size >= 3) {
+          // Keep locked selection — don't call setSelectedCompIndices at all.
+        } else {
           setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
         }
+        // Always clear the lock after using it so the next call (e.g. an
+        // initial Search Comps press) doesn't accidentally inherit it.
+        lockedSelectionRef.current = null;
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -635,6 +630,13 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     variant={effectiveRadius === radius ? "default" : "outline"}
                     onClick={() => {
                       if (radius !== searchRadius) {
+                        // Capture the user's selection SYNCHRONOUSLY before any
+                        // async work or state changes. searchCompsWithOptions
+                        // will read this ref to decide whether to preserve it.
+                        lockedSelectionRef.current =
+                          selectedCompIndices.size >= 3
+                            ? new Set(selectedCompIndices)
+                            : null;
                         setSearchRadius(radius);
                         if (compsData) setTimeout(() => searchCompsWithOptions(radius, searchDateRange), 0);
                       }
