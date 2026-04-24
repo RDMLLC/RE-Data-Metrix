@@ -92,13 +92,18 @@ export class HybridCompsService {
 
     console.log(`[Hybrid Comps] Starting dual-API search for ${address}, ${city}, ${state}`);
 
-    // Progressive expansion attempts: original → +50% radius → +100% radius / wider date range.
-    // We stop when we have >= SUITABLE_TARGET suitable comps after flagging.
-    const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> = [
-      { radiusMiles, saleDateRangeDays },
-      { radiusMiles: radiusMiles * 1.5, saleDateRangeDays: Math.min(saleDateRangeDays + 90, 365) },
-      { radiusMiles: radiusMiles * 2, saleDateRangeDays: Math.min(saleDateRangeDays + 180, 365) },
-    ];
+    // Auto-expansion steps match the manual radius buttons exactly: 0.5 → 1 → 2 → 3 → 5
+    const RADIUS_STEPS = [0.5, 1, 2, 3, 5];
+    const startIndex = RADIUS_STEPS.indexOf(radiusMiles) !== -1
+      ? RADIUS_STEPS.indexOf(radiusMiles)
+      : RADIUS_STEPS.findIndex(r => r >= radiusMiles);
+    const effectiveStartIndex = startIndex === -1 ? 0 : startIndex;
+
+    const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> =
+      RADIUS_STEPS.slice(effectiveStartIndex, effectiveStartIndex + 3).map((r, i) => ({
+        radiusMiles: r,
+        saleDateRangeDays: Math.min(saleDateRangeDays + (i * 90), 365),
+      }));
 
     let bestResult: {
       sortedComps: HybridCompResult[];
@@ -287,12 +292,20 @@ export class HybridCompsService {
 
     let median: number | null;
     if (params.anchorMedian != null) {
+      // Use the anchor median passed from the first expansion pass
       median = params.anchorMedian;
     } else {
-      const cleanedPpsf = rawMedian !== null
-        ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
-        : rawPpsf;
-      median = this.computeMedian(cleanedPpsf);
+      // First pass: try to find a consensus anchor from the closest agreeing comps
+      const consensusAnchor = this.computeConsensusAnchor(sortedComps);
+      if (consensusAnchor !== null) {
+        median = consensusAnchor;
+      } else {
+        // Fall back to cleaned median (exclude values below 50% or above 200% of raw median)
+        const cleanedPpsf = rawMedian !== null
+          ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
+          : rawPpsf;
+        median = this.computeMedian(cleanedPpsf);
+      }
     }
 
     // Apply flags using dynamic thresholds based on comp count
@@ -361,6 +374,46 @@ export class HybridCompsService {
       suitableCount: suitable.length,
       anchorMedian: median,
     };
+  }
+
+  /**
+   * Find a consensus anchor median from the closest comps.
+   * Takes the closest N comps by distance, checks if any 2 agree within ±20% $/sqft.
+   * If consensus found, returns their average as the anchor.
+   * Expands from top 3 → top 5 → top 7 if needed.
+   * Returns null if no consensus found (caller falls back to cleaned median).
+   */
+  private computeConsensusAnchor(comps: HybridCompResult[]): number | null {
+    if (!comps || comps.length < 2) return null;
+
+    // Sort by distance, take closest comps
+    const byDistance = [...comps]
+      .filter(c => c.pricePerSqft > 0)
+      .sort((a, b) => (a.distanceFromSubject ?? 99) - (b.distanceFromSubject ?? 99));
+
+    // Try expanding groups: top 3, top 5, top 7
+    for (const groupSize of [3, 5, 7]) {
+      const group = byDistance.slice(0, groupSize);
+      if (group.length < 2) continue;
+
+      // Find any pair within ±20% of each other
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const a = group[i].pricePerSqft;
+          const b = group[j].pricePerSqft;
+          const avg = (a + b) / 2;
+          const diff = Math.abs(a - b) / avg;
+          if (diff <= 0.20) {
+            // Found consensus pair — return their average as anchor
+            console.log(`[Hybrid Comps] Consensus anchor: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) → anchor $${Math.round(avg)}/sqft`);
+            return Math.round(avg);
+          }
+        }
+      }
+    }
+
+    console.log(`[Hybrid Comps] No consensus anchor found, falling back to cleaned median`);
+    return null;
   }
 
   private computeMedian(values: number[]): number | null {

@@ -1,0 +1,86 @@
+We are on the arv-helper-fixes branch. Make the following changes to server/services/hybrid-comps.service.ts only. Do not touch any other files.
+
+PART 1 — Fix auto-expansion steps to match manual radius buttons
+Find the expansionConfigs array in searchComps. Replace it with a lookup that steps through the same values as the manual radius buttons [0.5, 1, 2, 3, 5]:
+typescript// Auto-expansion steps match the manual radius buttons exactly: 0.5 → 1 → 2 → 3 → 5
+const RADIUS_STEPS = [0.5, 1, 2, 3, 5];
+const startIndex = RADIUS_STEPS.indexOf(radiusMiles) !== -1
+  ? RADIUS_STEPS.indexOf(radiusMiles)
+  : RADIUS_STEPS.findIndex(r => r >= radiusMiles);
+const effectiveStartIndex = startIndex === -1 ? 0 : startIndex;
+
+const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> = 
+  RADIUS_STEPS.slice(effectiveStartIndex, effectiveStartIndex + 3).map((r, i) => ({
+    radiusMiles: r,
+    saleDateRangeDays: Math.min(saleDateRangeDays + (i * 90), 365),
+  }));
+Also update line 173 where actualRadiusMiles is calculated — it currently indexes into expansionConfigs which is fine, no change needed there.
+
+PART 2 — Add consensus anchor median method
+Add a new private method computeConsensusAnchor to the class, placed just before computeMedian:
+typescript/**
+ * Find a consensus anchor median from the closest comps.
+ * Takes the closest N comps by distance, checks if any 2 agree within ±20% $/sqft.
+ * If consensus found, returns their average as the anchor.
+ * Expands from top 3 → top 5 → top 7 if needed.
+ * Returns null if no consensus found (caller falls back to cleaned median).
+ */
+private computeConsensusAnchor(comps: HybridCompResult[]): number | null {
+  if (!comps || comps.length < 2) return null;
+
+  // Sort by distance, take closest comps
+  const byDistance = [...comps]
+    .filter(c => c.pricePerSqft > 0)
+    .sort((a, b) => (a.distanceFromSubject ?? 99) - (b.distanceFromSubject ?? 99));
+
+  // Try expanding groups: top 3, top 5, top 7
+  for (const groupSize of [3, 5, 7]) {
+    const group = byDistance.slice(0, groupSize);
+    if (group.length < 2) continue;
+
+    // Find any pair within ±20% of each other
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i].pricePerSqft;
+        const b = group[j].pricePerSqft;
+        const avg = (a + b) / 2;
+        const diff = Math.abs(a - b) / avg;
+        if (diff <= 0.20) {
+          // Found consensus pair — return their average as anchor
+          console.log(`[Hybrid Comps] Consensus anchor: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) → anchor $${Math.round(avg)}/sqft`);
+          return Math.round(avg);
+        }
+      }
+    }
+  }
+
+  console.log(`[Hybrid Comps] No consensus anchor found, falling back to cleaned median`);
+  return null;
+}
+
+PART 3 — Use consensus anchor in runSinglePass
+In runSinglePass, find the median calculation block (the rawPpsf/rawMedian/cleanedPpsf/median block). Replace it entirely with:
+typescriptconst rawPpsf = sortedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+const rawMedian = this.computeMedian(rawPpsf);
+
+let median: number | null;
+if (params.anchorMedian != null) {
+  // Use the anchor median passed from the first expansion pass
+  median = params.anchorMedian;
+} else {
+  // First pass: try to find a consensus anchor from the closest agreeing comps
+  const consensusAnchor = this.computeConsensusAnchor(sortedComps);
+  if (consensusAnchor !== null) {
+    median = consensusAnchor;
+  } else {
+    // Fall back to cleaned median (exclude values below 50% or above 200% of raw median)
+    const cleanedPpsf = rawMedian !== null
+      ? rawPpsf.filter(p => p >= rawMedian * 0.5 && p <= rawMedian * 2.0)
+      : rawPpsf;
+    median = this.computeMedian(cleanedPpsf);
+  }
+}
+
+After all changes run npm run build. Then run:
+sqlDELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+against the dev database. Confirm branch is arv-helper-fixes. Show key modified sections.
