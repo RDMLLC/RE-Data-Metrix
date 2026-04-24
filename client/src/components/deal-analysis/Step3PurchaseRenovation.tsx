@@ -524,14 +524,22 @@ export default function Step3PurchaseRenovation({
       const carriedOver: SoldPropertyComp[] = [];
       if (previousSuitableSelected.length >= 3) {
         for (const prev of previousSuitableSelected) {
-          if (!newKeys.has(compKey(prev))) {
-            carriedOver.push({
-              ...prev,
-              isCarriedOver: true,
-              carriedOverFromRadius:
-                prev.carriedOverFromRadius ?? actualRadiusUsed ?? searchRadius,
-            });
-          }
+          if (newKeys.has(compKey(prev))) continue;
+          // When contracting to a smaller radius, drop carried-over comps that
+          // fall outside the new radius. A comp originally found at 3 mi
+          // should not be carried into a 1 mi search if its distance > 1 mi.
+          // Also enforce: never carry a comp into a radius smaller than the
+          // one it was originally found at.
+          const compDistance = prev.distanceFromSubject;
+          if (compDistance !== undefined && compDistance > radius) continue;
+          const originalRadius =
+            prev.carriedOverFromRadius ?? actualRadiusUsed ?? searchRadius;
+          if (originalRadius > radius) continue;
+          carriedOver.push({
+            ...prev,
+            isCarriedOver: true,
+            carriedOverFromRadius: originalRadius,
+          });
         }
       }
       const mergedComps: SoldPropertyComp[] = carriedOver.length > 0
