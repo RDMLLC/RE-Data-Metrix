@@ -162,6 +162,11 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   // keys back to numeric indices against the new data.comps. Cleared after
   // each use.
   const lockedSelectionRef = useRef<Set<string> | null>(null);
+  // Snapshot of compsData captured synchronously at the top of
+  // searchCompsWithOptions, before setCompsData(null) clears state. Used to
+  // re-introduce locked comps that didn't survive the new search so the
+  // user's selection can be preserved across radius changes.
+  const previousCompsDataRef = useRef<typeof compsData>(null);
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
 
   const [showAddCompForm, setShowAddCompForm] = useState(false);
@@ -392,6 +397,11 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const searchCompsWithOptions = async (radius: RadiusOption, dateRange: DateRangeOption) => {
     if (!city || !state) return;
 
+    // Capture current comps SYNCHRONOUSLY before any state mutation clears
+    // them, so the selection-merge fallback can re-introduce locked comps
+    // that didn't survive the new search.
+    previousCompsDataRef.current = compsData;
+
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
@@ -433,7 +443,31 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
           if (newIndices.size >= 3) {
             setSelectedCompIndices(newIndices);
           } else {
-            setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+            // Fewer than 3 locked addresses survived the new search. Try
+            // appending the missing locked comps from the previous search so
+            // the user's selection is preserved across the radius change.
+            const lockedKeys = lockedSelectionRef.current!;
+            const missingComps = (previousCompsDataRef.current?.comps ?? [])
+              .filter(
+                (c) =>
+                  lockedKeys.has(compKey(c)) &&
+                  !data.comps.some(
+                    (nc: SoldPropertyComp) => compKey(nc) === compKey(c),
+                  ),
+              );
+            const mergedComps = [...data.comps, ...missingComps];
+            const mergedIndices = new Set<number>();
+            mergedComps.forEach((c, i) => {
+              if (lockedKeys.has(compKey(c as SoldPropertyComp))) {
+                mergedIndices.add(i);
+              }
+            });
+            if (mergedIndices.size >= 3) {
+              setCompsData({ ...data, comps: mergedComps });
+              setSelectedCompIndices(mergedIndices);
+            } else {
+              setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+            }
           }
         } else {
           setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
