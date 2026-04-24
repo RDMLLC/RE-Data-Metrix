@@ -9970,6 +9970,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEMPORARY DEBUG: raw hybrid-comps response for a hardcoded test property.
+  // Bypasses cache and auth so we can confirm exactly what the live server returns.
+  app.get("/api/debug/comps-test", async (_req, res) => {
+    try {
+      const { HybridCompsService } = await import("./services/hybrid-comps.service");
+      const hybridService = new HybridCompsService();
+      const result = await hybridService.searchComps({
+        address: "3127 Snapfinger Ct",
+        city: "Decatur",
+        state: "GA",
+        zipCode: "30034",
+        bedrooms: 3,
+        bathrooms: 3,
+        sqft: 2186,
+        propertyType: "Single Family",
+        subjectLat: 33.6886,
+        subjectLng: -84.2169,
+        radiusMiles: 0.5,
+        saleDateRangeDays: 180,
+        maxResults: 20,
+      });
+      const compsSummary = (result.comps || []).map((c: any) => ({
+        address: c.address,
+        pricePerSqft: c.pricePerSqft,
+        distressedFlag: c.distressedFlag === true,
+        outlierFlag: c.outlierFlag === true,
+        borderlineFlag: c.borderlineFlag === true,
+        similarityScore: c.similarityScore ?? null,
+      }));
+      return res.json({
+        radiusExpanded: result.radiusExpanded,
+        actualRadiusMiles: result.actualRadiusMiles,
+        dateRangeExpanded: result.dateRangeExpanded,
+        actualDateRangeDays: result.actualDateRangeDays,
+        suitableCount: result.searchStats?.suitableCount ?? null,
+        finalCount: result.searchStats?.finalCount ?? null,
+        medianPricePerSqft: result.searchStats?.medianPricePerSqft ?? null,
+        comps: compsSummary,
+      });
+    } catch (error: any) {
+      console.error("[debug/comps-test] error:", error);
+      return res.status(500).json({ error: error?.message || "debug comps-test failed" });
+    }
+  });
+
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/comps/search", ensureAuthenticated, async (req, res) => {
     try {
