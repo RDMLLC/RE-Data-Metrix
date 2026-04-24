@@ -458,11 +458,16 @@ export class HasDataAPIService implements IPropertyAPIService {
           );
         }
         
-        // Merge extended property data, preferring extended data for missing fields
-        const PROTECTED_FIELDS = ['image', 'address', 'homeType', 'beds', 'baths', 'area', 'zestimate', 'price', 'listPrice'];
+        // Merge extended property data — ADDITIVE ONLY.
+        // Only write a field if (a) the incoming value is non-null, non-undefined,
+        // and non-empty-string AND (b) the existing field is empty/missing.
+        // Never overwrite a populated field with stale or null extended data.
+        const isMeaningful = (v: any) =>
+          v !== null && v !== undefined && !(typeof v === 'string' && v.trim() === '');
+
         const safeExtended = Object.fromEntries(
           Object.entries(extendedProperty).filter(([key, val]) =>
-            !PROTECTED_FIELDS.includes(key) || property[key] == null
+            isMeaningful(val) && !isMeaningful(property[key])
           )
         );
         property = { ...property, ...safeExtended };
