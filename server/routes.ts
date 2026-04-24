@@ -10396,17 +10396,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //
   // Returns the Google PNG inline (image/*) or a JSON error.
   //
-  // NOTE: This route deliberately does its own auth check instead of using
-  // the shared `ensureAuthenticated` middleware. That middleware calls
-  // `req.logout()` + `req.session.destroy()` on miss, which crashes the
-  // process when the request arrives with no session at all (passport's
-  // async sessionmanager hits `req.session.regenerate` on a destroyed
-  // session). Browsers can legitimately fire this URL via an <img> tag
-  // without a session cookie (e.g., iframed dev preview with SameSite=Lax
-  // cookies), so we need a session-safe rejection path.
+  // NOTE: This route is intentionally PUBLIC (no auth check). Browsers can
+  // legitimately fire this URL via an <img> tag without a session cookie
+  // (e.g., iframed dev preview with SameSite=Lax cookies), and routing it
+  // through `ensureAuthenticated` crashes the process on miss. To protect
+  // the Google Maps quota we apply a simple in-memory IP rate limit:
+  // 100 requests per hour per IP. The limiter state is kept local to this
+  // route's closure (no shared rate-limit library exists in the codebase).
+  const COMP_MAP_LIMIT = 100;
+  const COMP_MAP_WINDOW_MS = 60 * 60 * 1000;
+  const compMapRateLimit = new Map<string, { count: number; resetAt: number }>();
+  // Returns true when the request is allowed; false when over the limit.
+  // Opportunistically prunes expired entries when the map grows large so
+  // it can't accumulate forever.
+  const checkCompMapRateLimit = (ip: string): boolean => {
+    const now = Date.now();
+    if (compMapRateLimit.size > 10000) {
+      for (const [key, entry] of compMapRateLimit) {
+        if (now >= entry.resetAt) compMapRateLimit.delete(key);
+      }
+    }
+    const entry = compMapRateLimit.get(ip);
+    if (!entry || now >= entry.resetAt) {
+      compMapRateLimit.set(ip, { count: 1, resetAt: now + COMP_MAP_WINDOW_MS });
+      return true;
+    }
+    if (entry.count >= COMP_MAP_LIMIT) return false;
+    entry.count += 1;
+    return true;
+  };
+
   app.get("/api/property/comp-map", async (req, res) => {
-    if (typeof req.isAuthenticated !== "function" || !req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+    if (!checkCompMapRateLimit(clientIp)) {
+      return res.status(429).json({ error: "Too many requests" });
     }
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!googleMapsApiKey) {
