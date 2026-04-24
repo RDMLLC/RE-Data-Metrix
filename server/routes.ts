@@ -10490,8 +10490,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const googleUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+      // TEMP DEBUG LOG — remove once map issue is diagnosed
+      const keyTail = googleMapsApiKey.slice(-4);
+      const redactedUrl = googleUrl.replace(googleMapsApiKey, `***${keyTail}`);
+      console.log(`[comp-map] GET -> ${redactedUrl}`);
       const googleRes = await fetch(googleUrl);
+      console.log(`[comp-map] Google responded ${googleRes.status} ${googleRes.statusText} content-type=${googleRes.headers.get("content-type")}`);
       if (!googleRes.ok) {
+        const errBody = await googleRes.text();
+        console.log(`[comp-map] Google error body: ${errBody.slice(0, 500)}`);
         return res.status(googleRes.status).json({ error: "Static map fetch failed" });
       }
       const contentType = googleRes.headers.get("content-type") || "image/png";
