@@ -96,22 +96,6 @@ function formatShortDate(dateString: string): string {
   return dateString;
 }
 
-function calculateMonthsSinceSale(dateString: string): number {
-  if (!dateString) return 0;
-  
-  let saleDate: Date;
-  const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (usMatch) {
-    saleDate = new Date(parseInt(usMatch[3]), parseInt(usMatch[1]) - 1, parseInt(usMatch[2]));
-  } else {
-    saleDate = new Date(dateString);
-  }
-  
-  const now = new Date();
-  const months = (now.getFullYear() - saleDate.getFullYear()) * 12 + (now.getMonth() - saleDate.getMonth());
-  return Math.max(0, months);
-}
-
 export default function CompReportPdf({
   subjectAddress,
   subjectCity,
@@ -183,35 +167,19 @@ export default function CompReportPdf({
     }
   };
 
-  // Calculate stats
+  // Sort comps by distance ascending (closest first); comps without a
+  // distance are placed at the end. Used for both the top "Comps" table and
+  // the "Individual Comparable Properties" table below.
+  const sortedComps = [...selectedComps].sort((a, b) => {
+    const aDist = a.distanceFromSubject ?? Infinity;
+    const bDist = b.distanceFromSubject ?? Infinity;
+    return aDist - bDist;
+  });
+
+  // Avg square feet — used in the top summary metrics row.
   const avgSqft = selectedComps.length > 0 
     ? Math.round(selectedComps.reduce((sum, c) => sum + (c.sqft || 0), 0) / selectedComps.length)
     : 0;
-  
-  const avgBeds = selectedComps.length > 0
-    ? (selectedComps.reduce((sum, c) => sum + (c.bedrooms || 0), 0) / selectedComps.length).toFixed(1)
-    : '0';
-  
-  const avgBaths = selectedComps.length > 0
-    ? (selectedComps.reduce((sum, c) => sum + (c.bathrooms || 0), 0) / selectedComps.length).toFixed(1)
-    : '0';
-  
-  const avgYearBuilt = selectedComps.length > 0
-    ? Math.round(selectedComps.filter(c => c.yearBuilt).reduce((sum, c) => sum + (c.yearBuilt || 0), 0) / selectedComps.filter(c => c.yearBuilt).length) || 0
-    : 0;
-  
-  const compsWithDistance = selectedComps.filter(c => c.distanceFromSubject !== undefined && c.distanceFromSubject !== null);
-  const avgDistance = compsWithDistance.length > 0
-    ? (compsWithDistance.reduce((sum, c) => sum + (c.distanceFromSubject || 0), 0) / compsWithDistance.length).toFixed(1)
-    : null;
-  
-  const avgMonthsSinceSale = selectedComps.length > 0
-    ? Math.round(selectedComps.reduce((sum, c) => sum + calculateMonthsSinceSale(c.saleDate), 0) / selectedComps.length)
-    : 0;
-
-  const avgLotSize = selectedComps.length > 0 && selectedComps.some(c => c.lotSize)
-    ? (selectedComps.filter(c => c.lotSize).reduce((sum, c) => sum + (c.lotSize || 0), 0) / selectedComps.filter(c => c.lotSize).length / 43560).toFixed(2)
-    : null;
 
   // Calculate ARV range (±5% of suggested ARV)
   const arvLow = suggestedArv ? Math.round(suggestedArv * 0.95) : null;
@@ -367,7 +335,7 @@ export default function CompReportPdf({
                 </tr>
               </thead>
               <tbody>
-                {selectedComps.map((comp, index) => (
+                {sortedComps.map((comp, index) => (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
                     <td style={{ padding: '8px 6px', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.address}
@@ -396,23 +364,6 @@ export default function CompReportPdf({
             </table>
           </div>
 
-          {/* Stats Section */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
-              Stats
-            </div>
-            <div style={{ display: 'flex', gap: '40px' }}>
-              <div style={{ fontSize: '12px', color: '#374151' }}>
-                <div style={{ marginBottom: '4px' }}>Avg Beds: {avgBeds}</div>
-                <div style={{ marginBottom: '4px' }}>Avg Bathrooms: {avgBaths}</div>
-                {avgLotSize && <div style={{ marginBottom: '4px' }}>Avg Lot Size: {avgLotSize} acres</div>}
-                {avgYearBuilt > 0 && <div style={{ marginBottom: '4px' }}>Avg Year Built: {avgYearBuilt}</div>}
-                {avgDistance !== null && <div style={{ marginBottom: '4px' }}>Avg Distance: {avgDistance} miles</div>}
-                <div>Average Months Since Sale: {avgMonthsSinceSale}</div>
-              </div>
-            </div>
-          </div>
-
           {/* Individual Comparable Properties Table */}
           <div style={{ marginBottom: '20px' }}>
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
@@ -435,7 +386,7 @@ export default function CompReportPdf({
                 </tr>
               </thead>
               <tbody>
-                {selectedComps.map((comp, index) => (
+                {sortedComps.map((comp, index) => (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
                     <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>
                       <div>{comp.address.length > 22 ? comp.address.substring(0, 22) + '...' : comp.address}</div>
