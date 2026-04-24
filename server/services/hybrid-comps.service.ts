@@ -291,12 +291,13 @@ export class HybridCompsService {
     const rawMedian = this.computeMedian(rawPpsf);
 
     let median: number | null;
+    let consensusAnchor: number | null = null;
     if (params.anchorMedian != null) {
       // Use the anchor median passed from the first expansion pass
       median = params.anchorMedian;
     } else {
       // First pass: try to find a consensus anchor from the closest agreeing comps
-      const consensusAnchor = this.computeConsensusAnchor(sortedComps);
+      consensusAnchor = this.computeConsensusAnchor(sortedComps);
       if (consensusAnchor !== null) {
         median = consensusAnchor;
       } else {
@@ -307,6 +308,7 @@ export class HybridCompsService {
         median = this.computeMedian(cleanedPpsf);
       }
     }
+    console.log(`[Hybrid Comps] Median determination: anchorParam=${params.anchorMedian ?? 'none'}, consensusAnchor=${consensusAnchor ?? 'none'}, finalMedian=${median}`);
 
     // Apply flags using dynamic thresholds based on comp count
     if (median !== null) {
@@ -384,6 +386,7 @@ export class HybridCompsService {
    * Returns null if no consensus found (caller falls back to cleaned median).
    */
   private computeConsensusAnchor(comps: HybridCompResult[]): number | null {
+    console.log(`[Hybrid Comps] computeConsensusAnchor called with ${comps.length} comps`);
     if (!comps || comps.length < 2) return null;
 
     // Sort by distance, take closest comps
@@ -437,6 +440,7 @@ export class HybridCompsService {
     const factor = wide ? 2.0 : 1.5;
     const distressedThreshold = median / factor;
     const outlierThreshold = median * factor;
+    console.log(`[Hybrid Comps] applyFlags: median=$${median} factor=${wide ? 2.0 : 1.5} distressedThreshold=$${Math.round(median/factor)} outlierThreshold=$${Math.round(median*factor)}`);
     const borderlineLowerMax = distressedThreshold * 1.15;
     const borderlineUpperMin = outlierThreshold / 1.15;
 
