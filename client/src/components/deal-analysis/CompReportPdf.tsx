@@ -427,7 +427,7 @@ export default function CompReportPdf({
               <img
                 src={compMapUrl}
                 alt="Subject and comparable properties map"
-                style={{ width: '600px', maxWidth: '100%', height: 'auto', border: '1px solid #e5e7eb' }}
+                style={{ display: 'block', margin: '0 auto', width: '600px', maxWidth: '100%', height: 'auto', border: '1px solid #e5e7eb' }}
                 onError={() => setMapImageFailed(true)}
               />
             </div>
@@ -439,8 +439,8 @@ export default function CompReportPdf({
               <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
                 This comparable sales report was generated using RE Data Metrix™
               </div>
-              <div style={{ fontSize: '12px', color: '#1f2937', fontWeight: '500' }}>
-                Get your free account at redatametrix.com
+              <div style={{ fontSize: '12px', color: '#1f2937', fontWeight: 'bold' }}>
+                Start your free 7-day trial at redatametrix.com
               </div>
             </div>
             <div style={{ fontSize: '8px', color: '#9ca3af', textAlign: 'center' }}>
