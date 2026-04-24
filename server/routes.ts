@@ -10059,6 +10059,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (compCached) {
         console.log(`[Comp Cache] HIT key=${compCacheKey} hits=${compCached.hitCount}`);
         await storage.incrementCompCacheHit(compCacheKey);
+
+        // Compute median $/sqft from clean (non-flagged) cached comps so the
+        // frontend can carry a consensus anchor across radius changes.
+        const cleanComps = (compCached.comps as any[]).filter((c: any) =>
+          !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag && c.pricePerSqft > 0
+        );
+        const sortedPpsf = cleanComps
+          .map((c: any) => c.pricePerSqft)
+          .sort((a: number, b: number) => a - b);
+        const mid = Math.floor(sortedPpsf.length / 2);
+        const medianFromCache = sortedPpsf.length > 0
+          ? (sortedPpsf.length % 2 !== 0
+              ? sortedPpsf[mid]
+              : (sortedPpsf[mid - 1] + sortedPpsf[mid]) / 2)
+          : null;
+
         return res.json({
           comps: compCached.comps,
           radiusExpanded: compCached.radiusExpanded,
@@ -10073,6 +10089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             suitableCount: (compCached.comps as any[]).filter((c: any) =>
               !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
             ).length,
+            medianPricePerSqft: medianFromCache,
           },
           _fromCache: true,
         });

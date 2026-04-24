@@ -1,0 +1,34 @@
+Found it — the cache hit response doesn't include medianPricePerSqft in searchStats. So when the ½ mile result is served from cache, data.searchStats.medianPricePerSqft is undefined and setConsensusAnchorMedian never gets called.
+Simple fix:
+Give Replit Agent This Prompt:
+We are on the arv-helper-fixes branch. One fix in server/routes.ts only.
+Find the cache hit response (around line 10067) that returns searchStats without medianPricePerSqft. Add it to the searchStats object:
+typescriptsearchStats: {
+  rentCastCount: 0,
+  hasDataCount: 0,
+  mergedCount: 0,
+  totalBeforeDedupe: 0,
+  finalCount: (compCached.comps as any[]).length,
+  suitableCount: (compCached.comps as any[]).filter((c: any) =>
+    !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+  ).length,
+  medianPricePerSqft: (compCached as any).medianPricePerSqft ?? null,
+},
+Also find where the cache is written (the storage.setCompCache call) and add medianPricePerSqft to the cached data:
+First check if medianPricePerSqft exists in the comp cache schema:
+bashecho "SELECT column_name FROM information_schema.columns WHERE table_name = 'comp_cache';" | psql $DATABASE_URL
+If median_price_per_sqft column exists, add it to the cache write:
+typescriptmedianPricePerSqft: result.searchStats.medianPricePerSqft,
+If the column doesn't exist, instead store the median in a different way — add it to the cache response by computing it from the cached comps on read, using the same consensus anchor logic. Specifically, compute the median from only the non-distressed, non-outlier comps:
+typescriptconst cleanComps = (compCached.comps as any[]).filter((c: any) => 
+  !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag && c.pricePerSqft > 0
+);
+const sortedPpsf = cleanComps.map((c: any) => c.pricePerSqft).sort((a: number, b: number) => a - b);
+const mid = Math.floor(sortedPpsf.length / 2);
+const medianFromCache = sortedPpsf.length > 0 
+  ? (sortedPpsf.length % 2 !== 0 ? sortedPpsf[mid] : (sortedPpsf[mid - 1] + sortedPpsf[mid]) / 2)
+  : null;
+Then use medianFromCache as medianPricePerSqft in the cache hit response.
+After changes run npm run build and clear cache:
+sqlDELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+Confirm branch is arv-helper-fixes.
