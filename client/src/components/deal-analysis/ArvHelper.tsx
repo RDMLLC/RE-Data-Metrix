@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { WizardFormData } from "./DealAnalysisWizard";
 import { Button } from "@/components/ui/button";
@@ -155,6 +155,14 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const [searchDateRange, setSearchDateRange] = useState<DateRangeOption>(180);
 
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
+  // Mirror selectedCompIndices into a ref so async handlers (e.g.
+  // searchCompsWithOptions) can read the current value without being trapped
+  // by a stale closure. Mirrors the consensusAnchorMedianRef pattern in
+  // Step3PurchaseRenovation.tsx.
+  const selectedCompIndicesRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    selectedCompIndicesRef.current = selectedCompIndices;
+  }, [selectedCompIndices]);
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
 
   const [showAddCompForm, setShowAddCompForm] = useState(false);
@@ -414,8 +422,9 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       if (data.comps && data.comps.length > 0) {
         // Manual radius/date-range change: if the user already has 3+ comps
         // selected, leave their selection exactly as-is. Only auto-pick when
-        // fewer than 3 are currently selected.
-        if (selectedCompIndices.size < 3) {
+        // fewer than 3 are currently selected. Read from the ref to avoid
+        // a stale closure on selectedCompIndices.
+        if (selectedCompIndicesRef.current.size < 3) {
           setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
         }
       }
