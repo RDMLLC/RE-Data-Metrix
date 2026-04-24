@@ -10454,7 +10454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const params = new URLSearchParams();
-    params.set("size", "600x200");
+    params.set("size", "600x300");
 
     // Subject pin (red, label "S"). Prefer lat/lng; fall back to a free-
     // form address that Google can geocode server-side.
