@@ -637,6 +637,16 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                           selectedCompIndices.size >= 3
                             ? new Set(selectedCompIndices)
                             : null;
+                        // TEMP DIAGNOSTIC: send click-time state to server log.
+                        fetch('/api/debug/lock-test', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            selectedSize: selectedCompIndices.size,
+                            lockedSize: lockedSelectionRef.current?.size ?? -1,
+                            radius,
+                          }),
+                        });
                         setSearchRadius(radius);
                         if (compsData) setTimeout(() => searchCompsWithOptions(radius, searchDateRange), 0);
                       }

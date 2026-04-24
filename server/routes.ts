@@ -10016,7 +10016,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comparable Sales Search Route (for ARV help)
+  app.post("/api/debug/lock-test", (req, res) => {
+    console.log('[LOCK TEST]', JSON.stringify(req.body));
+    res.json({ ok: true });
+  });
+
   app.post("/api/comps/search", ensureAuthenticated, async (req, res) => {
+    console.log('[COMPS REQUEST] radiusMiles:', req.body?.radiusMiles, 'timestamp:', Date.now());
     try {
       console.log('[COMPS DEBUG] Request:', JSON.stringify(req.body, null, 2));
       const { address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng, radiusMiles, saleDateRangeDays, anchorMedian } = req.body;
