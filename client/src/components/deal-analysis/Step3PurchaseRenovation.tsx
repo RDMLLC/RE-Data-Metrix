@@ -49,7 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -163,6 +163,11 @@ export default function Step3PurchaseRenovation({
   const [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
   const [actualRadiusUsed, setActualRadiusUsed] = useState<number | null>(null);
   const [consensusAnchorMedian, setConsensusAnchorMedian] = useState<number | null>(null);
+  // Mirror of consensusAnchorMedian to guarantee callbacks always read the latest value
+  const consensusAnchorMedianRef = useRef<number | null>(null);
+  useEffect(() => {
+    consensusAnchorMedianRef.current = consensusAnchorMedian;
+  }, [consensusAnchorMedian]);
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
   type RadiusOption = 0.5 | 1 | 2 | 3 | 5;
@@ -397,7 +402,7 @@ export default function Step3PurchaseRenovation({
         subjectLng: propertyLongitude,
         radiusMiles: searchRadius,
         saleDateRangeDays: searchDateRange,
-        anchorMedian: consensusAnchorMedian,
+        anchorMedian: consensusAnchorMedianRef.current,
       });
 
       const data = await response.json();
@@ -455,7 +460,7 @@ export default function Step3PurchaseRenovation({
     setActualRadiusUsed(null);
 
     try {
-      console.log('[ARV Debug] searchCompsWithOptions firing, consensusAnchorMedian=', consensusAnchorMedian, 'radius=', radius);
+      console.log('[ARV Debug] searchCompsWithOptions firing, consensusAnchorMedian=', consensusAnchorMedianRef.current, 'radius=', radius);
       const response = await apiRequest("POST", "/api/comps/search", {
         address,
         city,
@@ -469,11 +474,19 @@ export default function Step3PurchaseRenovation({
         subjectLng: propertyLongitude,
         radiusMiles: radius,
         saleDateRangeDays: dateRange,
-        anchorMedian: consensusAnchorMedian,
+        anchorMedian: consensusAnchorMedianRef.current,
       });
 
       const data = await response.json();
-      
+
+      // Capture the addresses currently selected BEFORE we replace compsData,
+      // because selectedCompIndices are indices into the OLD comps array.
+      const previouslySelectedAddresses = new Set(
+        (compsData?.comps || [])
+          .filter((_, i) => selectedCompIndices.has(i))
+          .map((c) => c.address.toLowerCase().trim())
+      );
+
       setCompsData(data);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
@@ -481,18 +494,30 @@ export default function Step3PurchaseRenovation({
       if (data.searchStats?.medianPricePerSqft) {
         setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
       }
-      // If we already have 3+ suitable comps selected, preserve the current selection
-      // and only add new comps to the visible list — don't re-run auto-selection.
+      // Selection lock: track previously selected comps by address (stable across
+      // radius changes), then map them to new indices in the new comps array.
+      // Only re-run auto-selection if fewer than 3 of the preserved selections
+      // remain suitable (non-flagged) in the new dataset.
       if (data.comps && data.comps.length > 0) {
-        const currentSuitableSelected = Array.from(selectedCompIndices).filter((i) => {
-          const comp = data.comps[i] as SoldPropertyComp | undefined;
-          return comp && !comp.distressedFlag && !comp.outlierFlag;
+        const preservedIndices = new Set<number>();
+        (data.comps as SoldPropertyComp[]).forEach((c, i) => {
+          if (previouslySelectedAddresses.has(c.address.toLowerCase().trim())) {
+            preservedIndices.add(i);
+          }
         });
 
-        if (currentSuitableSelected.length >= 3) {
-          // Keep existing selection — user is just browsing a wider radius
+        const preservedSuitableCount = Array.from(preservedIndices).filter((i) => {
+          const comp = data.comps[i] as SoldPropertyComp;
+          return comp && !comp.distressedFlag && !comp.outlierFlag;
+        }).length;
+
+        if (preservedSuitableCount >= 3) {
+          // Lock holds — preserve the user's existing selection by remapping
+          // their addresses to new indices. New comps are added to the visible
+          // list but not auto-selected.
+          setSelectedCompIndices(preservedIndices);
         } else {
-          // Fewer than 3 suitable — run fresh auto-selection
+          // Fewer than 3 suitable preserved — run fresh auto-selection
           setSelectedCompIndices(computeSmartSelection(data.comps as SoldPropertyComp[]));
         }
       }

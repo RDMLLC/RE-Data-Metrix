@@ -1,0 +1,20 @@
+Give Replit Agent This Prompt:
+
+We are on the arv-helper-fixes branch. Before making any fixes, please answer these diagnostic questions by reading the actual code:
+
+Diagnostic Questions:
+
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, when the user clicks a radius button (½ mi → 1 mi → 2 mi), what value is being sent to the server for consensusAnchorMedian? Is it read from React state at the moment of the API call, or is it captured in a closure/callback that may have stale state?
+Is there a useCallback or useEffect dependency array anywhere in the radius change handler that might be missing consensusAnchorMedian as a dependency — causing it to close over an old (undefined or null) value?
+When the server receives the 2-mile request, if consensusAnchorMedian is null/undefined, what does the backend do — does it fall back to a fresh median calculation, effectively ignoring the anchor?
+What is the selection lock logic? When ≥3 suitable comps are already selected, does the frontend actually prevent the auto-selection from running on a new radius response, or does it always re-run auto-selection on every new API response?
+The bug: At ½ mile and 1 mile, the correct 3 comps are auto-selected and preserved (Riders Trl, Steeple Way, Pleasant Ridge). When the user clicks 2 miles, the selection lock breaks — the 3 locked comps are abandoned and a fresh auto-selection runs across all ~17 returned comps, including outliers like Luxembourg Dr ($80/sqft). This should not happen. Once ≥3 suitable comps are selected, expanding the radius should only ADD new comps to the list for optional manual selection — it must never replace or recalculate the existing selection.
+
+The fix (after answering diagnostics):
+
+Fix the stale closure on consensusAnchorMedian — ensure the radius change handler reads the current React state value at call time, not a captured closure value. Use a useRef mirror of the state value if needed to guarantee the current value is always accessible inside callbacks.
+Fix the selection lock — after a new radius response comes back, if the previously selected comps (by address or ID) are present in the new results, preserve those selections exactly. Only run auto-selection if the current selected count is fewer than 3. Do not re-run auto-selection just because the radius changed.
+Verify the backend anchor filter — confirm that when consensusAnchorMedian is correctly passed, the backend excludes outliers like Luxembourg Dr ($80/sqft) from auto-selection at 2 miles, the same way it does at ½ and 1 mile.
+Do not change any other comp scoring logic, UI layout, or unrelated behavior. Read the actual code before making changes and confirm your understanding of the stale closure and selection lock issues matches what you find.
+
+
