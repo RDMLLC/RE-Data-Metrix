@@ -106,37 +106,71 @@ interface ArvHelperProps {
   onClose: () => void;
 }
 
-// Smart initial selection: closest 3 clean comps win.
-// Strict priority order:
-//   1. Exclude distressedFlag
-//   2. Exclude outlierFlag
-//   3. Exclude cityMismatch
-//   4. Exclude bedroom delta > 1 from subject
-//   5. Sort remaining by distanceFromSubject ascending
-//   6. Take top 3 only — never more
-function computeSmartSelection(comps: SoldPropertyComp[], subjectBedrooms: number): Set<number> {
-  const suitableIndices = comps
+// Smart initial selection: two-tier strategy that picks up to 3 clean comps,
+// preferring same-city matches but falling back to nearest out-of-city comps
+// rather than excluding them.
+//
+// "Clean" filter (applied before tiering):
+//   - Exclude distressedFlag
+//   - Exclude outlierFlag
+//   - Exclude bedroom counts outside 0-10 (data-scraping errors)
+//   - Exclude bedroom delta > 1 from subject
+//
+// Tier 1: from clean comps with cityMismatch falsy (same city as subject),
+//         sorted by distance ascending — take up to 3.
+// Tier 2: if Tier 1 yielded fewer than 3, fill remaining slots from the
+//         nearest clean comps regardless of city, skipping any already
+//         chosen in Tier 1.
+//
+// The cityMismatch flag itself is preserved on each comp and continues to
+// drive the amber visual indicator in the row UI — it just no longer
+// hard-excludes the comp from auto-selection.
+//
+// Optional `preserveIndices`: indices that must stay selected (e.g. user
+// survivors from a prior radius). They are kept first; tiering only fills
+// the remaining slots up to a total of 3.
+function computeSmartSelection(
+  comps: SoldPropertyComp[],
+  subjectBedrooms: number,
+  preserveIndices: Set<number> = new Set(),
+): Set<number> {
+  const selected = new Set<number>(preserveIndices);
+  if (selected.size >= 3) return selected;
+
+  const cleanSorted = comps
     .map((comp, i) => ({ comp, i }))
-    .filter(({ comp }) => {
-      // Sanity check: bedroom counts outside the realistic 0-10 range are
-      // data scraping errors (e.g. a 70-bed listing) and must never be
-      // auto-selected or counted as suitable. Treat missing as "ok" so the
-      // ?? subjectBedrooms fallback below still works for unflagged comps.
+    .filter(({ comp, i }) => {
+      if (selected.has(i)) return false;
       const beds = comp.bedrooms;
       if (typeof beds === "number" && (beds > 10 || beds < 0)) return false;
       return (
         !comp.distressedFlag &&
         !comp.outlierFlag &&
-        !(comp as any).cityMismatch &&
         Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1
       );
     })
-    .sort((a, b) =>
-      (a.comp.distanceFromSubject ?? Infinity) - (b.comp.distanceFromSubject ?? Infinity)
-    )
-    .slice(0, 3)
-    .map(({ i }) => i);
-  return new Set(suitableIndices);
+    .sort(
+      (a, b) =>
+        (a.comp.distanceFromSubject ?? Infinity) -
+        (b.comp.distanceFromSubject ?? Infinity),
+    );
+
+  // Tier 1: same-city (cityMismatch falsy) clean comps, nearest first.
+  for (const { comp, i } of cleanSorted) {
+    if (selected.size >= 3) break;
+    if (!(comp as any).cityMismatch) selected.add(i);
+  }
+
+  // Tier 2: fill any remaining slots from nearest clean comps regardless
+  // of city, skipping anything already chosen above.
+  if (selected.size < 3) {
+    for (const { i } of cleanSorted) {
+      if (selected.size >= 3) break;
+      selected.add(i);
+    }
+  }
+
+  return selected;
 }
 
 export default function ArvHelper({ form, onClose }: ArvHelperProps) {
@@ -523,6 +557,15 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
             if (mergedIndices.size >= 3) {
               setCompsData({ ...data, comps: mergedComps });
               setSelectedCompIndices(mergedIndices);
+            } else if (mergedIndices.size > 0) {
+              // Some survivors exist but fewer than 3 total. Preserve those
+              // survivors and fill remaining slots from the new search using
+              // the two-tier strategy (same-city fillers first, then any-
+              // city) baked into computeSmartSelection.
+              setCompsData({ ...data, comps: mergedComps });
+              setSelectedCompIndices(
+                computeSmartSelection(mergedComps, bedrooms, mergedIndices),
+              );
             } else {
               setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
             }
@@ -1264,7 +1307,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 {compsData.comps.length > 0 && (
                   <>
                     {" "}However, {compsData.comps.length}{" "}
-                    {compsData.comps.length === 1 ? "property was" : "properties were"} returned above — you may be able to manually select suitable comps from the list.
+                    {compsData.comps.length === 1 ? "property was" : "properties were"} returned below — you may be able to manually select suitable comps from the list below.
                   </>
                 )}
               </p>
@@ -1639,7 +1682,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 >
                   <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    Select at least 2 comps to calculate an ARV.
+                    Select at least 2 comps to calculate an ARV estimate.
                   </p>
                 </div>
               )}
@@ -1650,7 +1693,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 >
                   <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    Only 2 comps selected. For a reliable ARV, select or add at least 3 comps.
+                    Only 2 comps selected. Select or add 1 more comp for a more reliable ARV estimate.
                   </p>
                 </div>
               )}
