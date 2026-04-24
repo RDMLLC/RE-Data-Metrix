@@ -1,0 +1,77 @@
+We are on the arv-helper-fixes branch. Changes to server/services/hybrid-comps.service.ts only.
+The anchor median is being set from pass 1 even when no consensus was found, which causes pass 2 to use a bad anchor. The fix is to only set the anchor when a true consensus was found, and keep trying until consensus is established.
+
+PART 1 — Return consensusFound from runSinglePass
+Add consensusFound: boolean to the return type of runSinglePass and to its return statement:
+typescriptreturn {
+  sortedComps,
+  stats,
+  suggestedArv,
+  weightedAvgPricePerSqft,
+  suitableCount: suitable.length,
+  anchorMedian: median,
+  consensusFound: consensusAnchor !== null,
+};
+Also add consensusFound: boolean to the inline return type definition of runSinglePass.
+
+PART 2 — Only set anchor when consensus was actually found
+In the expansion loop in searchComps, replace the anchor-setting block:
+typescriptif (expansionAttempts === 1) {
+  anchorMedian = passResult.anchorMedian;
+}
+With this logic that only sets the anchor when consensus was found:
+typescript// Only adopt the anchor if this pass found a true consensus pair.
+// If no consensus yet, keep anchorMedian null so the next pass tries again.
+if (anchorMedian === null && passResult.consensusFound) {
+  anchorMedian = passResult.anchorMedian;
+  console.log(`[Hybrid Comps] Consensus anchor established at $${anchorMedian}/sqft on attempt ${expansionAttempts}`);
+}
+
+PART 3 — When anchor is found on a later pass, re-flag all comps from bestResult
+After the expansion loop completes, if bestResult exists and an anchor was found, re-run applyFlags on the final comp set using the consensus anchor to ensure all comps are correctly flagged. Add this block after the loop, before the final return:
+typescript// If we found a consensus anchor, re-flag the final comp set against it
+// to ensure comps from earlier passes are correctly classified.
+if (anchorMedian !== null && bestResult) {
+  console.log(`[Hybrid Comps] Re-flagging ${bestResult.sortedComps.length} comps against consensus anchor $${anchorMedian}/sqft`);
+  // Reset all flags before re-applying
+  for (const comp of bestResult.sortedComps) {
+    comp.distressedFlag = false;
+    comp.outlierFlag = false;
+    comp.borderlineFlag = false;
+  }
+  this.applyFlags(bestResult.sortedComps, anchorMedian);
+  
+  // Recount suitable comps after re-flagging
+  const resuitable = bestResult.sortedComps.filter(
+    c => !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+  );
+  bestResult.suitableCount = resuitable.length;
+  
+  // Recompute ARV from re-flagged comps
+  const arvBasis = resuitable.length > 0 ? resuitable : bestResult.sortedComps;
+  const totalSalePrice = arvBasis.reduce((sum, c) => sum + c.salePrice, 0);
+  const totalSqft = arvBasis.reduce((sum, c) => sum + c.sqft, 0);
+  bestResult.weightedAvgPricePerSqft = totalSqft > 0 ? Math.round(totalSalePrice / totalSqft) : null;
+  bestResult.suggestedArv = bestResult.weightedAvgPricePerSqft 
+    ? Math.round(bestResult.weightedAvgPricePerSqft * sqft) 
+    : null;
+  bestResult.stats.suitableCount = resuitable.length;
+  bestResult.stats.medianPricePerSqft = anchorMedian;
+
+  console.log(`[Hybrid Comps] After re-flagging: ${resuitable.length} suitable comps`);
+}
+
+PART 4 — Remove the debug console.log statements added in the previous session that are no longer needed now that the logic is correct:
+Remove these three lines:
+
+The console.log in runSinglePass that logs Median determination: anchorParam=...
+The console.log at the top of applyFlags that logs thresholds
+The console.log at the start of computeConsensusAnchor that logs comp count
+
+Keep all other existing [Hybrid Comps] log lines.
+
+After all changes run npm run build. Then:
+sqlDELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+Restart the server with:
+bashpkill -f "tsx server" && sleep 2 && npm run dev > /tmp/server.log 2>&1 &
+Confirm branch is arv-helper-fixes. Show key modified sections.

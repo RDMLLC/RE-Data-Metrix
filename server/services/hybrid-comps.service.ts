@@ -112,6 +112,7 @@ export class HybridCompsService {
       weightedAvgPricePerSqft: number | null;
       suitableCount: number;
       anchorMedian: number | null;
+      consensusFound: boolean;
     } | null = null;
 
     let anchorMedian: number | null = null;
@@ -136,8 +137,11 @@ export class HybridCompsService {
         anchorMedian: expansionAttempts === 1 ? null : anchorMedian,
       });
 
-      if (expansionAttempts === 1) {
+      // Only adopt the anchor if this pass found a true consensus pair.
+      // If no consensus yet, keep anchorMedian null so the next pass tries again.
+      if (anchorMedian === null && passResult.consensusFound) {
         anchorMedian = passResult.anchorMedian;
+        console.log(`[Hybrid Comps] Consensus anchor established at $${anchorMedian}/sqft on attempt ${expansionAttempts}`);
       }
 
       passResult.stats.expansionAttempts = expansionAttempts;
@@ -172,6 +176,38 @@ export class HybridCompsService {
           expansionAttempts,
         },
       };
+    }
+
+    // If we found a consensus anchor, re-flag the final comp set against it
+    // to ensure comps from earlier passes are correctly classified.
+    if (anchorMedian !== null && bestResult) {
+      console.log(`[Hybrid Comps] Re-flagging ${bestResult.sortedComps.length} comps against consensus anchor $${anchorMedian}/sqft`);
+      // Reset all flags before re-applying
+      for (const comp of bestResult.sortedComps) {
+        comp.distressedFlag = false;
+        comp.outlierFlag = false;
+        comp.borderlineFlag = false;
+      }
+      this.applyFlags(bestResult.sortedComps, anchorMedian);
+
+      // Recount suitable comps after re-flagging
+      const resuitable = bestResult.sortedComps.filter(
+        c => !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+      );
+      bestResult.suitableCount = resuitable.length;
+
+      // Recompute ARV from re-flagged comps
+      const arvBasis = resuitable.length > 0 ? resuitable : bestResult.sortedComps;
+      const totalSalePrice = arvBasis.reduce((sum, c) => sum + c.salePrice, 0);
+      const totalSqft = arvBasis.reduce((sum, c) => sum + c.sqft, 0);
+      bestResult.weightedAvgPricePerSqft = totalSqft > 0 ? Math.round(totalSalePrice / totalSqft) : null;
+      bestResult.suggestedArv = bestResult.weightedAvgPricePerSqft
+        ? Math.round(bestResult.weightedAvgPricePerSqft * sqft)
+        : null;
+      bestResult.stats.suitableCount = resuitable.length;
+      bestResult.stats.medianPricePerSqft = anchorMedian;
+
+      console.log(`[Hybrid Comps] After re-flagging: ${resuitable.length} suitable comps`);
     }
 
     const radiusExpanded = bestResult.stats.expansionAttempts > 1;
@@ -209,6 +245,7 @@ export class HybridCompsService {
     weightedAvgPricePerSqft: number | null;
     suitableCount: number;
     anchorMedian: number | null;
+    consensusFound: boolean;
   }> {
     const {
       address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
@@ -308,7 +345,6 @@ export class HybridCompsService {
         median = this.computeMedian(cleanedPpsf);
       }
     }
-    console.log(`[Hybrid Comps] Median determination: anchorParam=${params.anchorMedian ?? 'none'}, consensusAnchor=${consensusAnchor ?? 'none'}, finalMedian=${median}`);
 
     // Apply flags using dynamic thresholds based on comp count
     if (median !== null) {
@@ -375,6 +411,7 @@ export class HybridCompsService {
       weightedAvgPricePerSqft,
       suitableCount: suitable.length,
       anchorMedian: median,
+      consensusFound: consensusAnchor !== null,
     };
   }
 
@@ -386,7 +423,6 @@ export class HybridCompsService {
    * Returns null if no consensus found (caller falls back to cleaned median).
    */
   private computeConsensusAnchor(comps: HybridCompResult[]): number | null {
-    console.log(`[Hybrid Comps] computeConsensusAnchor called with ${comps.length} comps`);
     if (!comps || comps.length < 2) return null;
 
     // Sort by distance, take closest comps
@@ -440,7 +476,6 @@ export class HybridCompsService {
     const factor = wide ? 2.0 : 1.5;
     const distressedThreshold = median / factor;
     const outlierThreshold = median * factor;
-    console.log(`[Hybrid Comps] applyFlags: median=$${median} factor=${wide ? 2.0 : 1.5} distressedThreshold=$${Math.round(median/factor)} outlierThreshold=$${Math.round(median*factor)}`);
     const borderlineLowerMax = distressedThreshold * 1.15;
     const borderlineUpperMin = outlierThreshold / 1.15;
 
