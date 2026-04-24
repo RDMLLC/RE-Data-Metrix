@@ -1,0 +1,85 @@
+We are on the arv-helper-fixes branch. Changes to client/src/components/deal-analysis/Step3PurchaseRenovation.tsx only.
+
+PART 1 — Store the consensus anchor in frontend state
+Add a new state variable after the existing actualRadiusUsed state:
+typescriptconst [consensusAnchorMedian, setConsensusAnchorMedian] = useState<number | null>(null);
+Update CompsSearchResponse interface to include:
+typescriptsearchStats?: {
+  suitableCount: number;
+  finalCount: number;
+  expansionAttempts: number;
+  medianPricePerSqft: number | null;
+};
+After setCompsData(data) in both searchComps and searchCompsWithOptions, add:
+typescript// Store the consensus anchor median for use in subsequent radius searches
+if (data.searchStats?.medianPricePerSqft) {
+  setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
+}
+Also reset it when a new property search starts (where setCompsData(null) is called):
+typescriptsetConsensusAnchorMedian(null);
+
+PART 2 — Pass consensus anchor to API in subsequent searches
+In both searchComps and searchCompsWithOptions, add anchorMedian to the POST body:
+typescriptconst response = await apiRequest("POST", "/api/comps/search", {
+  address,
+  city,
+  state,
+  zipCode,
+  bedrooms,
+  bathrooms,
+  sqft,
+  propertyType,
+  subjectLat: propertyLatitude,
+  subjectLng: propertyLongitude,
+  radiusMiles: searchRadius, // or radius for searchCompsWithOptions
+  saleDateRangeDays: searchDateRange, // or dateRange
+  anchorMedian: consensusAnchorMedian, // pass established anchor
+});
+
+PART 3 — Accept anchorMedian in the API route
+In server/routes.ts, find the /api/comps/search POST handler. Add anchorMedian to the destructured request body and pass it to hybridService.searchComps:
+Find where radiusMiles and saleDateRangeDays are destructured from req.body and add:
+typescriptconst { ..., anchorMedian } = req.body;
+Then pass it to hybridService.searchComps:
+typescriptconst result = await hybridService.searchComps({
+  ...existingParams,
+  anchorMedian: anchorMedian ?? undefined,
+});
+
+PART 4 — Add anchorMedian to HybridCompSearchParams interface
+In server/services/hybrid-comps.service.ts, add to HybridCompSearchParams:
+typescriptanchorMedian?: number | null;
+And in searchComps, destructure it:
+typescriptconst { ..., anchorMedian: externalAnchor = null } = params;
+Then in the expansion loop, use externalAnchor as the starting anchor if provided:
+typescriptlet anchorMedian: number | null = externalAnchor;
+This means if the frontend passes a previously established consensus anchor, it will be used immediately without needing to re-derive it.
+
+PART 5 — Lock selection when ≥3 suitable comps already selected
+In searchCompsWithOptions (the function called when user manually changes radius), after setCompsData(data), change the auto-selection logic:
+Replace:
+typescriptif (data.comps && data.comps.length > 0) {
+  setSelectedCompIndices(computeSmartSelection(data.comps as SoldPropertyComp[]));
+}
+With:
+typescriptif (data.comps && data.comps.length > 0) {
+  // If we already have 3+ suitable comps selected, preserve the current selection
+  // and only add new comps to the visible list — don't re-run auto-selection.
+  const currentSuitableSelected = Array.from(selectedCompIndices).filter(i => {
+    const comp = data.comps[i] as SoldPropertyComp;
+    return comp && !comp.distressedFlag && !comp.outlierFlag;
+  });
+  
+  if (currentSuitableSelected.length >= 3) {
+    // Keep existing selection — user is just browsing a wider radius
+    // Don't call setSelectedCompIndices
+  } else {
+    // Fewer than 3 suitable — run fresh auto-selection
+    setSelectedCompIndices(computeSmartSelection(data.comps as SoldPropertyComp[]));
+  }
+}
+Note: Do NOT apply this lock to the initial searchComps function — only to searchCompsWithOptions which is triggered by manual radius changes.
+
+After all changes run npm run build. Then clear the cache:
+sqlDELETE FROM comp_cache WHERE normalized_address ILIKE '%snapfinger%';
+Confirm branch is arv-helper-fixes. Show key modified sections. Do not merge to main. Do not redeploy.

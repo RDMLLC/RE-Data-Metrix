@@ -162,6 +162,7 @@ export default function Step3PurchaseRenovation({
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
   const [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
   const [actualRadiusUsed, setActualRadiusUsed] = useState<number | null>(null);
+  const [consensusAnchorMedian, setConsensusAnchorMedian] = useState<number | null>(null);
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
   type RadiusOption = 0.5 | 1 | 2 | 3 | 5;
@@ -381,6 +382,7 @@ export default function Step3PurchaseRenovation({
     setCompsData(null);
     setRadiusWasExpanded(false);
     setActualRadiusUsed(null);
+    setConsensusAnchorMedian(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
         address,
@@ -395,6 +397,7 @@ export default function Step3PurchaseRenovation({
         subjectLng: propertyLongitude,
         radiusMiles: searchRadius,
         saleDateRangeDays: searchDateRange,
+        anchorMedian: consensusAnchorMedian,
       });
 
       const data = await response.json();
@@ -402,6 +405,10 @@ export default function Step3PurchaseRenovation({
       setCompsData(data);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
+      // Store the consensus anchor median for use in subsequent radius searches
+      if (data.searchStats?.medianPricePerSqft) {
+        setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
+      }
       // Smart auto-select: top 6 clean (unflagged) comps by similarity score,
       // supplemented with borderline comps if fewer than 3 clean exist.
       if (data.comps && data.comps.length > 0) {
@@ -461,6 +468,7 @@ export default function Step3PurchaseRenovation({
         subjectLng: propertyLongitude,
         radiusMiles: radius,
         saleDateRangeDays: dateRange,
+        anchorMedian: consensusAnchorMedian,
       });
 
       const data = await response.json();
@@ -468,10 +476,24 @@ export default function Step3PurchaseRenovation({
       setCompsData(data);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
-      // Smart auto-select: top 6 clean (unflagged) comps by similarity score,
-      // supplemented with borderline comps if fewer than 3 clean exist.
+      // Store the consensus anchor median for use in subsequent radius searches
+      if (data.searchStats?.medianPricePerSqft) {
+        setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
+      }
+      // If we already have 3+ suitable comps selected, preserve the current selection
+      // and only add new comps to the visible list — don't re-run auto-selection.
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps as SoldPropertyComp[]));
+        const currentSuitableSelected = Array.from(selectedCompIndices).filter((i) => {
+          const comp = data.comps[i] as SoldPropertyComp | undefined;
+          return comp && !comp.distressedFlag && !comp.outlierFlag;
+        });
+
+        if (currentSuitableSelected.length >= 3) {
+          // Keep existing selection — user is just browsing a wider radius
+        } else {
+          // Fewer than 3 suitable — run fresh auto-selection
+          setSelectedCompIndices(computeSmartSelection(data.comps as SoldPropertyComp[]));
+        }
       }
     } catch (error: any) {
       console.error("Comps search error:", error);

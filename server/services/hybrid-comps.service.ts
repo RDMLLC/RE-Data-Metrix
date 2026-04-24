@@ -42,6 +42,7 @@ export interface HybridCompSearchParams {
   radiusMiles?: number;
   saleDateRangeDays?: number;
   maxResults?: number;
+  anchorMedian?: number | null;
 }
 
 export interface HybridCompSearchResult {
@@ -88,6 +89,7 @@ export class HybridCompsService {
       radiusMiles = 3,
       saleDateRangeDays = 180,
       maxResults = 10,
+      anchorMedian: externalAnchor = null,
     } = params;
 
     console.log(`[Hybrid Comps] Starting dual-API search for ${address}, ${city}, ${state}`);
@@ -115,7 +117,7 @@ export class HybridCompsService {
       consensusFound: boolean;
     } | null = null;
 
-    let anchorMedian: number | null = null;
+    let anchorMedian: number | null = externalAnchor;
     let expansionAttempts = 0;
 
     for (const config of expansionConfigs) {
