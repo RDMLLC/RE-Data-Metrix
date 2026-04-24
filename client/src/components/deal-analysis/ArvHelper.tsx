@@ -177,6 +177,17 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const [compsSortField, setCompsSortField] = useState<SortField>("distance");
   const [compsSortDirection, setCompsSortDirection] = useState<SortDirection>("asc");
 
+  // Stable identity key for a comp: house-number + ZIP. Resilient to street-suffix
+  // variations (Trl vs Trail, Dr vs Drive) that can occur when the same property
+  // is fetched from different sources or at different radii. Mirrors the helper
+  // used in Step3PurchaseRenovation.tsx.
+  const compKey = (c: { address?: string; zipCode?: string }): string => {
+    const addr = (c.address || '').trim();
+    const houseNumber = addr.split(/\s+/)[0]?.toLowerCase() || '';
+    const zip = (c.zipCode || '').replace(/\D/g, '').slice(0, 5);
+    return `${houseNumber}|${zip}`;
+  };
+
   type DateFilter = "all" | "6" | "9";
   const [compsDateFilter] = useState<DateFilter>("all");
 
@@ -366,6 +377,13 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
 
   const searchCompsWithOptions = async (radius: RadiusOption, dateRange: DateRangeOption) => {
     if (!city || !state) return;
+
+    // Capture the previously selected comps (full objects) BEFORE we replace
+    // compsData — selectedCompIndices are indices into the OLD comps array.
+    const previouslySelectedComps = (compsData?.comps || [])
+      .filter((_, i) => selectedCompIndices.has(i));
+    const previouslySelectedKeys = new Set(previouslySelectedComps.map(compKey));
+
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
@@ -386,7 +404,27 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
       setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+        // Selection preservation across manual radius/date-range changes:
+        // find which previously selected comps survived in the new response
+        // AND still pass the same filters used by computeSmartSelection.
+        // If 3+ survived, preserve exactly those; otherwise fall back to
+        // computeSmartSelection. Comps not present in the new response are
+        // dropped — no soft-lock carry-over.
+        const survivors: number[] = [];
+        (data.comps as SoldPropertyComp[]).forEach((comp, i) => {
+          if (!previouslySelectedKeys.has(compKey(comp))) return;
+          const passesFilters =
+            !comp.distressedFlag &&
+            !comp.outlierFlag &&
+            !(comp as any).cityMismatch &&
+            Math.abs((comp.bedrooms ?? bedrooms) - bedrooms) <= 1;
+          if (passesFilters) survivors.push(i);
+        });
+        if (survivors.length >= 3) {
+          setSelectedCompIndices(new Set(survivors));
+        } else {
+          setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+        }
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
