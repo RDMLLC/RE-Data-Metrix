@@ -41,8 +41,6 @@ interface CompReportPdfProps {
   subjectLotSize?: number;
   subjectLastSoldPrice?: number;
   subjectLastSoldDate?: string;
-  subjectHasPool?: boolean;
-  subjectHasGarage?: boolean;
   subjectImageUrl?: string;
   subjectLat?: number;
   subjectLng?: number;
@@ -131,8 +129,6 @@ export default function CompReportPdf({
   subjectLotSize,
   subjectLastSoldPrice,
   subjectLastSoldDate,
-  subjectHasPool,
-  subjectHasGarage,
   subjectImageUrl,
   subjectLat,
   subjectLng,
@@ -348,11 +344,8 @@ export default function CompReportPdf({
               <div style={{ fontSize: '11px', color: '#374151', marginBottom: '3px' }}>
                 {subjectSqft?.toLocaleString()} sq ft
               </div>
-              <div style={{ fontSize: '11px', color: '#374151', marginBottom: '3px' }}>
-                {subjectBeds} Bedrooms; {subjectBaths} Bathrooms
-              </div>
               <div style={{ fontSize: '11px', color: '#374151' }}>
-                Garage: {subjectHasGarage === undefined ? 'N/A' : (subjectHasGarage ? 'Yes' : 'No')}; Pool: {subjectHasPool === undefined ? 'N/A' : (subjectHasPool ? 'Yes' : 'No')}
+                {subjectBeds} Bedrooms; {subjectBaths} Bathrooms
               </div>
             </div>
             {subjectImageUrl && !subjectImageFailed && (
