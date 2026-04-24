@@ -237,7 +237,10 @@ export class HybridCompsService {
         comp.outlierFlag = false;
         comp.borderlineFlag = false;
       }
-      this.applyFlags(bestResult.sortedComps, anchorMedian);
+      // Pass the bestResult's pass radius so the bimodal safeguard inside
+      // applyFlags is correctly gated on tight (≤1mi) searches only.
+      const bestRadiusForFlags = expansionConfigs[bestResult.stats.expansionAttempts - 1]?.radiusMiles ?? requestedRadius;
+      this.applyFlags(bestResult.sortedComps, anchorMedian, bestRadiusForFlags);
 
       // Recount suitable comps after re-flagging
       const resuitable = bestResult.sortedComps.filter(
@@ -402,7 +405,7 @@ export class HybridCompsService {
 
     // Apply flags using dynamic thresholds based on comp count
     if (median !== null) {
-      this.applyFlags(sortedComps, median);
+      this.applyFlags(sortedComps, median, radiusMiles);
     }
 
     // Compute similarity score for every comp
@@ -539,7 +542,7 @@ export class HybridCompsService {
    * - Borderline: within 15% above the distressed threshold OR within 15% below the
    *   outlier threshold, and not already flagged distressed/outlier.
    */
-  private applyFlags(comps: HybridCompResult[], median: number): void {
+  private applyFlags(comps: HybridCompResult[], median: number, radiusMiles: number = 1): void {
     const wide = comps.length < 5;
     const factor = wide ? 2.0 : 1.5;
     const distressedThreshold = median / factor;
@@ -572,10 +575,15 @@ export class HybridCompsService {
     // outliers (e.g. Snapfinger: median lands at $75-80 from a cluster of
     // $63/$70/$80 comps, leaving $122 and $150 flagged as outliers and the
     // $63-$80 cluster auto-selected for ARV).
+    //
+    // Only run this safeguard for tight searches (≤1 mile). At 2+ miles the
+    // ppsf spread is naturally wide because the search reaches into different
+    // submarkets / luxury pockets, and the 60%-of-max floor would force-flag
+    // legitimate mid-range comps as distressed.
     const ppsfValues = comps
       .map(c => c.pricePerSqft)
       .filter(p => p > 0);
-    if (ppsfValues.length >= 3) {
+    if (radiusMiles <= 1 && ppsfValues.length >= 3) {
       const maxPpsf = Math.max(...ppsfValues);
       const minPpsf = Math.min(...ppsfValues);
       if (maxPpsf > minPpsf * 1.5) {

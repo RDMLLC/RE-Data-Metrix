@@ -421,23 +421,40 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         // Selection preservation across manual radius/date-range changes:
         // find which previously selected comps survived in the new response
         // AND still pass the same filters used by computeSmartSelection.
-        // If 3+ survived, preserve exactly those; otherwise fall back to
-        // computeSmartSelection. Comps not present in the new response are
-        // dropped — no soft-lock carry-over.
+        // - 0 survivors → fall back to a fresh computeSmartSelection.
+        // - ≥1 survivor → keep all survivors and fill remaining slots up to 3
+        //   total with the closest clean unselected comps from the new
+        //   response (same filters as computeSmartSelection).
+        // Comps not present in the new response are dropped — no soft-lock
+        // carry-over.
+        const passesSelectionFilters = (comp: SoldPropertyComp) =>
+          !comp.distressedFlag &&
+          !comp.outlierFlag &&
+          !(comp as any).cityMismatch &&
+          Math.abs((comp.bedrooms ?? bedrooms) - bedrooms) <= 1;
+
         const survivors: number[] = [];
         (data.comps as SoldPropertyComp[]).forEach((comp, i) => {
           if (!previouslySelectedKeys.has(compKey(comp))) return;
-          const passesFilters =
-            !comp.distressedFlag &&
-            !comp.outlierFlag &&
-            !(comp as any).cityMismatch &&
-            Math.abs((comp.bedrooms ?? bedrooms) - bedrooms) <= 1;
-          if (passesFilters) survivors.push(i);
+          if (passesSelectionFilters(comp)) survivors.push(i);
         });
-        if (survivors.length >= 3) {
-          setSelectedCompIndices(new Set(survivors));
-        } else {
+
+        if (survivors.length === 0) {
           setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+        } else {
+          const survivorSet = new Set(survivors);
+          const remaining = 3 - survivors.length;
+          const fillers: number[] = remaining > 0
+            ? (data.comps as SoldPropertyComp[])
+                .map((comp, i) => ({ comp, i }))
+                .filter(({ comp, i }) => !survivorSet.has(i) && passesSelectionFilters(comp))
+                .sort((a, b) =>
+                  (a.comp.distanceFromSubject ?? Infinity) - (b.comp.distanceFromSubject ?? Infinity)
+                )
+                .slice(0, remaining)
+                .map(({ i }) => i)
+            : [];
+          setSelectedCompIndices(new Set([...survivors, ...fillers]));
         }
       }
     } catch (error: any) {
