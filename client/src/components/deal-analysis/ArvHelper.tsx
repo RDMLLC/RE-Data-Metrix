@@ -199,6 +199,9 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     saleDate: "",
   });
   const [manualCompError, setManualCompError] = useState<string | null>(null);
+  // Toggles whether the manual-entry fields are visible. Hidden by default
+  // so the panel stays compact; user clicks "+ Add Manual Comp" to expand.
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const [pendingProperties, setPendingProperties] = useState<SoldPropertyComp[]>([]);
   const [isSearchingPending, setIsSearchingPending] = useState(false);
@@ -691,6 +694,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       bedrooms: "", bathrooms: "", sqft: "",
       salePrice: "", saleDate: "",
     });
+    setShowManualForm(false);
     setShowAddCompForm(false);
     toast({
       title: "Comp Added",
@@ -911,6 +915,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   setCustomCompUrl("");
                   setCustomCompError(null);
                   setManualCompError(null);
+                  setShowManualForm(false);
                 }}
                 data-testid="button-close-add-comp-form"
               >
@@ -956,7 +961,31 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               <div className="h-px flex-1 bg-border" />
             </div>
 
-            {/* Manual entry section */}
+            {/* Manual entry section — fields are collapsed by default. The
+                 toggle button below expands them and switches to "Cancel". */}
+            <div className="flex justify-start">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowManualForm((v) => !v);
+                  setManualCompError(null);
+                }}
+                data-testid="button-toggle-manual-form"
+              >
+                {showManualForm ? (
+                  "Cancel"
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Manual Comp
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {showManualForm && (
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1 sm:col-span-2 md:col-span-2">
@@ -1085,6 +1114,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 </Button>
               </div>
             </div>
+            )}
           </div>
         )}
 
