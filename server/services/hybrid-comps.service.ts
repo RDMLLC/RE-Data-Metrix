@@ -101,10 +101,14 @@ export class HybridCompsService {
       : RADIUS_STEPS.findIndex(r => r >= radiusMiles);
     const effectiveStartIndex = startIndex === -1 ? 0 : startIndex;
 
+    // Date range is decoupled from radius expansion: every attempt uses the
+    // user-specified saleDateRangeDays so that explicit and auto-expanded
+    // calls at the same radius always query the upstream APIs with identical
+    // parameters and produce overlapping (monotonic) result sets.
     const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> =
-      RADIUS_STEPS.slice(effectiveStartIndex, effectiveStartIndex + 3).map((r, i) => ({
+      RADIUS_STEPS.slice(effectiveStartIndex, effectiveStartIndex + 3).map((r) => ({
         radiusMiles: r,
-        saleDateRangeDays: Math.min(saleDateRangeDays + (i * 90), 365),
+        saleDateRangeDays,
       }));
 
     let bestResult: {
