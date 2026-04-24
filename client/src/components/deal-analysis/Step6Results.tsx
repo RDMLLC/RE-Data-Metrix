@@ -1668,6 +1668,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <Input
                     id="edit-buy-price"
                     type="number"
+                    step="any"
                     value={editBuyPrice || ''}
                     onChange={(e) => {
                       const parsed = parseFloat(e.target.value);
@@ -1682,6 +1683,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <Input
                     id="edit-rehab"
                     type="number"
+                    step="any"
                     value={editRehab || ''}
                     onChange={(e) => {
                       const parsed = parseFloat(e.target.value);
@@ -1696,6 +1698,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <Input
                     id="edit-project-length"
                     type="number"
+                    step="any"
                     value={editProjectLength || ''}
                     onChange={(e) => {
                       const parsed = parseFloat(e.target.value);
@@ -1710,6 +1713,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <Input
                     id="edit-arv"
                     type="number"
+                    step="any"
                     value={editArv || ''}
                     onChange={(e) => {
                       const parsed = parseFloat(e.target.value);
@@ -3135,6 +3139,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                   <Input
                     type="number"
+                    step="any"
                     value={monthlyRent || ""}
                     onChange={(e) => { setMonthlyRent(parseFloat(e.target.value) || 0); setDscrTabActivated(true); }}
                     className="pl-6"

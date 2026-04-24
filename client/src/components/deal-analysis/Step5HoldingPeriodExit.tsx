@@ -316,6 +316,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               {...field}
                               value={field.value ?? ""}
@@ -341,6 +342,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               {...field}
                               value={field.value ?? ""}
@@ -366,6 +368,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               {...field}
                               value={field.value ?? ""}
@@ -415,6 +418,7 @@ export default function Step4HoldingPeriodExit({
                             <FormControl>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -508,6 +512,7 @@ export default function Step4HoldingPeriodExit({
                             <FormControl>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -533,6 +538,7 @@ export default function Step4HoldingPeriodExit({
                             <FormControl>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -558,6 +564,7 @@ export default function Step4HoldingPeriodExit({
                             <FormControl>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -609,6 +616,7 @@ export default function Step4HoldingPeriodExit({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           value="0"
                           disabled
                           className="bg-muted"
@@ -629,6 +637,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               {...field}
                               value={field.value ?? ""}
@@ -657,6 +666,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               {...field}
                               value={field.value ? Math.round(field.value / 12) : ""}
@@ -687,6 +697,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               placeholder="0"
                               {...field}
@@ -723,6 +734,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               placeholder="0"
                               {...field}
@@ -759,6 +771,7 @@ export default function Step4HoldingPeriodExit({
                           <FormControl>
                             <Input
                               type="number"
+                              step="any"
                               min="0"
                               placeholder="0"
                               {...field}
@@ -1352,6 +1365,7 @@ export default function Step4HoldingPeriodExit({
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -1379,6 +1393,7 @@ export default function Step4HoldingPeriodExit({
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -1404,6 +1419,7 @@ export default function Step4HoldingPeriodExit({
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}

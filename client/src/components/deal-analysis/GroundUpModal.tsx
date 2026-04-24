@@ -191,6 +191,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
               <label className="text-sm font-medium">Estimated Loan Amount</label>
               <Input
                 type="number"
+                step="any"
                 placeholder="Enter estimated loan amount"
                 value={estimatedLoanAmount}
                 onChange={(e) => setEstimatedLoanAmount(e.target.value)}
@@ -205,6 +206,7 @@ export default function GroundUpModal({ open, onOpenChange }: GroundUpModalProps
               <label className="text-sm font-medium">Estimated Market Value Upon Completion</label>
               <Input
                 type="number"
+                step="any"
                 placeholder="Enter estimated market value"
                 value={estimatedMarketValue}
                 onChange={(e) => setEstimatedMarketValue(e.target.value)}

@@ -578,6 +578,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -605,6 +606,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}
@@ -630,6 +632,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                               <Input
                                 type="number"
+                                step="any"
                                 min="0"
                                 {...field}
                                 value={field.value ?? ""}

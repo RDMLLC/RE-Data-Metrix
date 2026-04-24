@@ -242,6 +242,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="1800"
                           max={new Date().getFullYear() + 1}
                           {...field}
@@ -268,6 +269,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="0"
                           {...field}
                           value={field.value ?? ""}
@@ -305,6 +307,7 @@ export default function Step2PropertyDetails({
                         <FormControl>
                           <Input
                             type="number"
+                            step="any"
                             min="0"
                             placeholder="0"
                             {...field}
@@ -374,6 +377,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="0"
                           placeholder="Enter new square footage"
                           {...field}
@@ -416,6 +420,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="0"
                           placeholder={`Enter ${estimateLabel.toLowerCase()}`}
                           {...field}
@@ -442,6 +447,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="0"
                           placeholder="0"
                           {...field}
@@ -478,6 +484,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="0"
                           placeholder="0"
                           {...field}
@@ -561,6 +568,7 @@ export default function Step2PropertyDetails({
                       <FormControl>
                         <Input
                           type="number"
+                          step="any"
                           min="0"
                           {...field}
                           value={field.value ?? ""}
