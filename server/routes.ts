@@ -10130,8 +10130,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // ── Write comp result to cache (24h TTL, keyed by actual radius post-expansion) ──
+      // Skip caching empty results: a 0-comp row would short-circuit future
+      // expansion attempts for 24h. If the area genuinely has no comps right
+      // now, we'd rather pay the API cost again next time than freeze a
+      // wrong-looking "no expansion attempted" response.
       try {
-        if (compNormalizedAddr) {
+        if (compNormalizedAddr && result.comps.length > 0) {
           const actualCacheKey = buildCompCacheKey(compNormalizedAddr, result.actualRadiusMiles, requestedDateRange);
           const twentyFourHoursOut = new Date(Date.now() + 24 * 60 * 60 * 1000);
           await storage.setCompCache({
@@ -10146,6 +10150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             expiresAt: twentyFourHoursOut,
           });
           console.log(`[Comp Cache] SET key=${actualCacheKey} comps=${result.comps.length} ttl=24h`);
+        } else if (compNormalizedAddr) {
+          console.log(`[Comp Cache] SKIP (0 comps) addr=${compNormalizedAddr} radius=${result.actualRadiusMiles} days=${requestedDateRange}`);
         }
       } catch (compCacheWriteErr: any) {
         console.warn(`[Comp Cache] Write failed (non-fatal): ${compCacheWriteErr.message}`);

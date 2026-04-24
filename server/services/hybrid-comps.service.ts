@@ -144,6 +144,12 @@ export class HybridCompsService {
 
     let anchorMedian: number | null = externalAnchor;
     let expansionAttempts = 0;
+    // Track the most recent pass so that when every pass returns 0 comps the
+    // outer caller still sees the WIDEST radius/date-range we actually tried,
+    // not the narrowest. Without this, bestResult would stay at pass 1 (the
+    // strict `>` below never fires on ties at 0) and the response would falsely
+    // signal "no expansion attempted".
+    let lastPassResult: typeof bestResult = null;
 
     for (const config of expansionConfigs) {
       expansionAttempts += 1;
@@ -180,6 +186,7 @@ export class HybridCompsService {
       }
 
       passResult.stats.expansionAttempts = expansionAttempts;
+      lastPassResult = passResult;
 
       if (!bestResult || passResult.suitableCount > bestResult.suitableCount) {
         bestResult = passResult;
@@ -203,6 +210,17 @@ export class HybridCompsService {
       }
 
       console.log(`[Hybrid Comps] Pass ${expansionAttempts} returned ${passResult.suitableCount} suitable comps; continuing to next config (or exiting if last).`);
+    }
+
+    // If every pass returned 0 comps, bestResult is still pinned to pass 1
+    // (the first pass beat `null`, but no later pass could beat 0 with a
+    // strict `>`). Promote the LAST pass result instead so actualRadiusMiles,
+    // actualDateRangeDays, and the expansion flags downstream reflect the
+    // widest config we actually attempted. Only kicks in on the multi-config
+    // (≤ 1 mi) path; on the single-config (> 1 mi) path lastPassResult is
+    // identical to bestResult so this is a no-op.
+    if (bestResult && lastPassResult && bestResult.stats.finalCount === 0) {
+      bestResult = lastPassResult;
     }
 
     if (!bestResult) {
