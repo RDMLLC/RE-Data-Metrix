@@ -88,6 +88,8 @@ interface CompsSearchResponse {
   message?: string;
   radiusExpanded?: boolean;
   actualRadiusMiles?: number;
+  dateRangeExpanded?: boolean;
+  actualDateRangeDays?: number;
 }
 
 interface ArvHelperProps {
@@ -126,6 +128,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
 
   const [isSearchingComps, setIsSearchingComps] = useState(false);
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
+  const [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
+  const [actualRadiusUsed, setActualRadiusUsed] = useState<number | null>(null);
+  const [dateRangeWasExpanded, setDateRangeWasExpanded] = useState(false);
+  const [actualDateRangeUsed, setActualDateRangeUsed] = useState<number | null>(null);
   const [expandedCompIndex, setExpandedCompIndex] = useState<number | null>(null);
   const [compsError, setCompsError] = useState<string | null>(null);
 
@@ -315,6 +321,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
+    setRadiusWasExpanded(false);
+    setActualRadiusUsed(null);
+    setDateRangeWasExpanded(false);
+    setActualDateRangeUsed(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
         address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
@@ -323,6 +333,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       });
       const data = await response.json();
       setCompsData(data);
+      setRadiusWasExpanded(data.radiusExpanded ?? false);
+      setActualRadiusUsed(data.actualRadiusMiles ?? null);
+      setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
+      setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       if (data.comps && data.comps.length > 0) {
         setSelectedCompIndices(computeSmartSelection(data.comps));
       }
@@ -342,6 +356,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     setIsSearchingComps(true);
     setCompsError(null);
     setCompsData(null);
+    setRadiusWasExpanded(false);
+    setActualRadiusUsed(null);
+    setDateRangeWasExpanded(false);
+    setActualDateRangeUsed(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
         address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
@@ -350,6 +368,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       });
       const data = await response.json();
       setCompsData(data);
+      setRadiusWasExpanded(data.radiusExpanded ?? false);
+      setActualRadiusUsed(data.actualRadiusMiles ?? null);
+      setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
+      setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       if (data.comps && data.comps.length > 0) {
         setSelectedCompIndices(computeSmartSelection(data.comps));
       }
@@ -536,49 +558,64 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Radius selector */}
+            {/* Radius selector — highlight reflects the actual radius the
+                backend ended up using (after auto-expansion), not just the
+                user's clicked value. */}
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground" data-testid="label-radius">Radius:</span>
-              {([0.5, 1, 2, 3, 5] as RadiusOption[]).map((radius) => (
-                <Button
-                  key={radius}
-                  type="button"
-                  size="sm"
-                  variant={searchRadius === radius ? "default" : "outline"}
-                  onClick={() => {
-                    if (radius !== searchRadius) {
-                      setSearchRadius(radius);
-                      if (compsData) setTimeout(() => searchCompsWithOptions(radius, searchDateRange), 0);
-                    }
-                  }}
-                  disabled={isSearchingComps}
-                  data-testid={`button-radius-${radius}`}
-                >
-                  {radius === 0.5 ? "½" : radius} mi
-                </Button>
-              ))}
+              {(() => {
+                const effectiveRadius =
+                  radiusWasExpanded && actualRadiusUsed !== null
+                    ? actualRadiusUsed
+                    : searchRadius;
+                return ([0.5, 1, 2, 3, 5] as RadiusOption[]).map((radius) => (
+                  <Button
+                    key={radius}
+                    type="button"
+                    size="sm"
+                    variant={effectiveRadius === radius ? "default" : "outline"}
+                    onClick={() => {
+                      if (radius !== searchRadius) {
+                        setSearchRadius(radius);
+                        if (compsData) setTimeout(() => searchCompsWithOptions(radius, searchDateRange), 0);
+                      }
+                    }}
+                    disabled={isSearchingComps}
+                    data-testid={`button-radius-${radius}`}
+                  >
+                    {radius === 0.5 ? "½" : radius} mi
+                  </Button>
+                ));
+              })()}
             </div>
-            {/* Date range selector */}
+            {/* Date range selector — highlight reflects the actual date range
+                the backend ended up using (after auto-expansion). */}
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground" data-testid="label-date-range">Sales:</span>
-              {([180, 270, 365] as DateRangeOption[]).map((days) => (
-                <Button
-                  key={days}
-                  type="button"
-                  size="sm"
-                  variant={searchDateRange === days ? "default" : "outline"}
-                  onClick={() => {
-                    if (days !== searchDateRange) {
-                      setSearchDateRange(days);
-                      if (compsData) setTimeout(() => searchCompsWithOptions(searchRadius, days), 0);
-                    }
-                  }}
-                  disabled={isSearchingComps}
-                  data-testid={`button-date-range-${days}`}
-                >
-                  {days === 180 ? "6" : days === 270 ? "9" : "12"} mo
-                </Button>
-              ))}
+              {(() => {
+                const effectiveDateRange =
+                  dateRangeWasExpanded && actualDateRangeUsed !== null
+                    ? actualDateRangeUsed
+                    : searchDateRange;
+                return ([180, 270, 365] as DateRangeOption[]).map((days) => (
+                  <Button
+                    key={days}
+                    type="button"
+                    size="sm"
+                    variant={effectiveDateRange === days ? "default" : "outline"}
+                    onClick={() => {
+                      if (days !== searchDateRange) {
+                        setSearchDateRange(days);
+                        if (compsData) setTimeout(() => searchCompsWithOptions(searchRadius, days), 0);
+                      }
+                    }}
+                    disabled={isSearchingComps}
+                    data-testid={`button-date-range-${days}`}
+                  >
+                    {days === 180 ? "6" : days === 270 ? "9" : "12"} mo
+                  </Button>
+                ));
+              })()}
             </div>
             <Button
               type="button"
@@ -757,12 +794,27 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
           <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">{compsError}</div>
         )}
 
-        {/* Radius expansion notice */}
-        {compsData?.radiusExpanded && (
-          <p className="text-xs text-muted-foreground" data-testid="text-radius-expanded">
-            Radius expanded to find more comps ({compsData.actualRadiusMiles === 1 ? "1 mile" : `${compsData.actualRadiusMiles} miles`})
-          </p>
-        )}
+        {/* Auto-expansion notice — covers both radius and date-range expansion */}
+        {(radiusWasExpanded || dateRangeWasExpanded) && (() => {
+          const fmtRadius = (r: number) => (r === 1 ? "1 mile" : `${r} miles`);
+          const fmtDate = (d: number) =>
+            d === 365 ? "12 months" : d === 270 ? "9 months" : `${d} days`;
+          const parts: string[] = [];
+          if (radiusWasExpanded && actualRadiusUsed !== null) {
+            parts.push(`radius to ${fmtRadius(actualRadiusUsed)}`);
+          }
+          if (dateRangeWasExpanded && actualDateRangeUsed !== null) {
+            parts.push(`date range to ${fmtDate(actualDateRangeUsed)}`);
+          }
+          if (parts.length === 0) return null;
+          const joined =
+            parts.length === 1 ? parts[0] : `${parts[0]} and ${parts[1]}`;
+          return (
+            <p className="text-xs text-muted-foreground" data-testid="text-auto-expanded">
+              Expanded {joined} to find more comps.
+            </p>
+          );
+        })()}
 
         {/* Comps Results */}
         {compsData && compsData.comps.length > 0 && (

@@ -527,8 +527,12 @@ export default function Step3PurchaseRenovation({
       // suitable comps forward into the new comps list. This guarantees the
       // user's selection survives radius changes even when the upstream APIs
       // change their mind about which comps to return.
+      // Suitability mirrors the backend definition in hybrid-comps.service.ts:
+      // a comp counts as suitable only when distressed, outlier, AND borderline
+      // flags are all false. Carry-overs are eligible only if they were truly
+      // suitable in the prior response.
       const previousSuitableSelected = previouslySelectedComps.filter(
-        (c) => !c.distressedFlag && !c.outlierFlag
+        (c) => !c.distressedFlag && !c.outlierFlag && !c.borderlineFlag
       );
       const newKeys = new Set((data.comps || []).map((c: any) => compKey(c)));
       const carriedOver: SoldPropertyComp[] = [];
@@ -570,26 +574,34 @@ export default function Step3PurchaseRenovation({
       // merged comps array (which now includes any carried-over comps). Only
       // re-run auto-selection if fewer than 3 of the preserved selections
       // remain suitable in the new dataset.
+      //
+      // Importantly: any previously-selected comp that ALSO appears in the
+      // new response with a freshly-set distressedFlag or outlierFlag (e.g.
+      // because the wider radius pulled in luxury comps that triggered the
+      // bimodal-market safeguard against the new anchor median) is DROPPED
+      // from the preserved set — the soft lock must not carry forward
+      // selections that the new anchor now flags as bad.
+      // Carried-over comps (those NOT in the new response) keep their
+      // previously-clean status because by construction we only carry over
+      // comps that were clean in the prior response.
       if (mergedComps.length > 0) {
         const preservedIndices = new Set<number>();
         mergedComps.forEach((c, i) => {
-          if (previouslySelectedKeys.has(compKey(c))) {
-            preservedIndices.add(i);
-          }
+          if (!previouslySelectedKeys.has(compKey(c))) return;
+          // Drop preserved selections that the new response now flags as
+          // distressed, outlier, or borderline (per user-approved soft-lock
+          // policy and matching the backend's suitability definition).
+          if (c.distressedFlag || c.outlierFlag || c.borderlineFlag) return;
+          preservedIndices.add(i);
         });
 
-        const preservedSuitableCount = Array.from(preservedIndices).filter((i) => {
-          const comp = mergedComps[i];
-          return comp && !comp.distressedFlag && !comp.outlierFlag;
-        }).length;
-
-        if (preservedSuitableCount >= 3) {
-          // Lock holds — preserve the user's existing selection by remapping
-          // their keys to new indices. New comps are added to the visible
-          // list but not auto-selected.
+        if (preservedIndices.size >= 3) {
+          // Lock holds — preserve the user's existing (still-clean) selection
+          // by remapping keys to new indices. New comps are added to the
+          // visible list but not auto-selected.
           setSelectedCompIndices(preservedIndices);
         } else {
-          // Fewer than 3 suitable preserved — run fresh auto-selection
+          // Fewer than 3 clean preserved — run fresh auto-selection
           setSelectedCompIndices(computeSmartSelection(mergedComps));
         }
       }

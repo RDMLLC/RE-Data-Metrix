@@ -166,7 +166,15 @@ export class HybridCompsService {
 
       // Only adopt the anchor if this pass found a true consensus pair.
       // If no consensus yet, keep anchorMedian null so the next pass tries again.
-      if (anchorMedian === null && passResult.consensusFound) {
+      //
+      // Path-equivalence rule: for ≤ 1 mi searches we must guarantee that an
+      // explicit 1 mi click and a ½ mi click (which auto-expands through 1 mi
+      // configs) seed downstream passes with the same anchor. To do that we
+      // ONLY allow anchors to be established by passes whose radius is ≥ 1 mi.
+      // Otherwise a 0.5 mi pass could lock in a low-anchor on neighborhood
+      // prices that the explicit-1-mi path would never see. For requestedRadius
+      // > 1 mi there is only one pass anyway, so the rule has no effect there.
+      if (anchorMedian === null && passResult.consensusFound && config.radiusMiles >= 1) {
         anchorMedian = passResult.anchorMedian;
         console.log(`[Hybrid Comps] Consensus anchor established at $${anchorMedian}/sqft on attempt ${expansionAttempts}`);
       }
@@ -177,12 +185,24 @@ export class HybridCompsService {
         bestResult = passResult;
       }
 
-      if (passResult.suitableCount >= SUITABLE_TARGET) {
+      // For requestedRadius > 1 mi (2/3/5) there is only a single config, so
+      // we always exit after the first pass anyway — the early-break is moot.
+      //
+      // For requestedRadius ≤ 1 mi we INTENTIONALLY do NOT early-break when
+      // suitableCount >= SUITABLE_TARGET. We always walk all configs and pick
+      // the bestResult by suitableCount. This guarantees that an explicit
+      // 1 mi click and a ½ mi search that auto-expanded to 1 mi produce the
+      // same final comp set: both walk through [1/180, 1/270, 1/365] and
+      // settle on whichever pass yielded the most suitable comps. Without
+      // this, 1 mi click would break early at 1/180 while the ½ mi sequence
+      // (whose 0.5/180 pass typically returns 0 suitable) would proceed to
+      // 1/270 or 1/365 and end up with a different — usually larger — set.
+      if (requestedRadius > 1 && passResult.suitableCount >= SUITABLE_TARGET) {
         console.log(`[Hybrid Comps] Found ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}`);
         break;
       }
 
-      console.log(`[Hybrid Comps] Only ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}, expanding...`);
+      console.log(`[Hybrid Comps] Pass ${expansionAttempts} returned ${passResult.suitableCount} suitable comps; continuing to next config (or exiting if last).`);
     }
 
     if (!bestResult) {
