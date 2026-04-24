@@ -1518,46 +1518,49 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               </TableBody>
             </Table>
 
-            {/* PropStream fallback callout — shown when, after the full
-                auto-expansion sequence has run, there are still fewer than 3
-                suitable comps in the result set. */}
-            {compsData && (compsData.searchStats?.suitableCount ?? 0) < 3 && (
-              <Card className="mt-3 border-primary/20" data-testid="card-propstream-fallback">
-                <CardContent className="p-4">
-                  <p className="text-sm text-foreground">
-                    Find more comps with PropStream — 160M+ properties nationwide. PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
-                    <a
-                      href="https://trial.propstreampro.com/redatametrix/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline font-medium"
-                      data-testid="link-propstream-fallback"
-                    >
-                      Start your free 7-day trial →
-                    </a>
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* PropStream permanent callout — always visible above the ARV
-                result regardless of comp count. */}
-            <Card className="mt-3 border-primary/20" data-testid="card-propstream-permanent">
-              <CardContent className="p-4">
-                <p className="text-sm text-foreground">
-                  Find more comps with PropStream — 160M+ properties nationwide. PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
-                  <a
-                    href="https://trial.propstreampro.com/redatametrix/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline font-medium"
-                    data-testid="link-propstream-permanent"
-                  >
-                    Start your free 7-day trial →
-                  </a>
-                </p>
-              </CardContent>
-            </Card>
+            {/* PropStream callout — always visible above the ARV result.
+                When a search has completed and fewer than 3 suitable comps
+                were found, the card switches to a prominent amber warning
+                style with a warning icon. Otherwise it uses the subtle
+                default style. */}
+            {(() => {
+              const lowComps =
+                !!compsData && (compsData.searchStats?.suitableCount ?? 0) < 3;
+              return (
+                <Card
+                  className={`mt-3 ${
+                    lowComps
+                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                      : "border-primary/20"
+                  }`}
+                  data-testid="card-propstream-permanent"
+                >
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground flex items-start gap-2">
+                      {lowComps && (
+                        <AlertTriangle
+                          className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                          data-testid="icon-propstream-warning"
+                        />
+                      )}
+                      <span>
+                        Find more comps with PropStream — 160M+ properties nationwide. PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                        <a
+                          href="https://trial.propstreampro.com/redatametrix/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                          style={{ fontWeight: 700 }}
+                          data-testid="link-propstream-permanent"
+                        >
+                          <strong>Start your free 7-day trial →</strong>
+                        </a>
+                      </span>
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Suggested ARV */}
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
