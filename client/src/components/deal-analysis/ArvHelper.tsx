@@ -98,11 +98,18 @@ interface ArvHelperProps {
 }
 
 // Smart initial selection: take comps scoring >= 20 with no flags, top 6 by score.
-// No minimum floor — quality over quantity.
-function computeSmartSelection(comps: SoldPropertyComp[]): Set<number> {
+// Also excludes city mismatches and bedroom counts more than 1 off from the
+// subject — the user can still manually toggle those on if desired.
+function computeSmartSelection(comps: SoldPropertyComp[], subjectBedrooms: number): Set<number> {
   const suitableIndices = comps
     .map((comp, i) => ({ comp, i }))
-    .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && (comp.similarityScore ?? 0) >= 20)
+    .filter(({ comp }) =>
+      !comp.outlierFlag &&
+      !comp.distressedFlag &&
+      (comp.similarityScore ?? 0) >= 20 &&
+      !(comp as any).cityMismatch &&
+      Math.abs((comp.bedrooms ?? subjectBedrooms) - subjectBedrooms) <= 1
+    )
     .sort((a, b) => (b.comp.similarityScore ?? 0) - (a.comp.similarityScore ?? 0))
     .slice(0, 6)
     .map(({ i }) => i);
@@ -338,7 +345,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
       setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps));
+        setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -373,7 +380,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
       setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps));
+        setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
