@@ -117,12 +117,20 @@ interface ArvHelperProps {
 function computeSmartSelection(comps: SoldPropertyComp[], subjectBedrooms: number): Set<number> {
   const suitableIndices = comps
     .map((comp, i) => ({ comp, i }))
-    .filter(({ comp }) =>
-      !comp.distressedFlag &&
-      !comp.outlierFlag &&
-      !(comp as any).cityMismatch &&
-      Math.abs((comp.bedrooms ?? subjectBedrooms) - subjectBedrooms) <= 1
-    )
+    .filter(({ comp }) => {
+      // Sanity check: bedroom counts outside the realistic 0-10 range are
+      // data scraping errors (e.g. a 70-bed listing) and must never be
+      // auto-selected or counted as suitable. Treat missing as "ok" so the
+      // ?? subjectBedrooms fallback below still works for unflagged comps.
+      const beds = comp.bedrooms;
+      if (typeof beds === "number" && (beds > 10 || beds < 0)) return false;
+      return (
+        !comp.distressedFlag &&
+        !comp.outlierFlag &&
+        !(comp as any).cityMismatch &&
+        Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1
+      );
+    })
     .sort((a, b) =>
       (a.comp.distanceFromSubject ?? Infinity) - (b.comp.distanceFromSubject ?? Infinity)
     )
@@ -1294,7 +1302,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               >
                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Only {selectedCompIndices.size} suitable comp{selectedCompIndices.size !== 1 ? "s" : ""} found in this area. This ARV may not be reliable — consider expanding your search radius or date range, or supplement with your own comp research.
+                  Only {selectedCompIndices.size} suitable comp{selectedCompIndices.size !== 1 ? "s" : ""} found in this area. This ARV may not be reliable — consider expanding your search radius or date range, or supplement with your own comp research. Select at least one more comp from the list above, or add your own using + Add Comp, for a more reliable ARV estimate.
                 </p>
               </div>
             )}

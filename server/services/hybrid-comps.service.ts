@@ -551,6 +551,18 @@ export class HybridCompsService {
     const borderlineUpperMin = outlierThreshold / 1.15;
 
     for (const comp of comps) {
+      // Sanity check: bedroom counts outside the realistic 0-10 range are
+      // data scraping errors (e.g. a 70-bed listing). Flag as distressed so
+      // they sort to the bottom and are excluded from auto-selection. This
+      // mirrors the same guard on the frontend computeSmartSelection.
+      const beds = comp.bedrooms;
+      if (typeof beds === "number" && (beds > 10 || beds < 0)) {
+        comp.distressedFlag = true;
+        comp.outlierFlag = false;
+        comp.borderlineFlag = false;
+        continue;
+      }
+
       const ppsf = comp.pricePerSqft;
       if (!ppsf || ppsf <= 0) continue;
 
