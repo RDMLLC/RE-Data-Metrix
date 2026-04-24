@@ -424,6 +424,12 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         // selected, leave their selection exactly as-is. Only auto-pick when
         // fewer than 3 are currently selected. Read from the ref to avoid
         // a stale closure on selectedCompIndices.
+        console.error(
+          "[ARV LOCK CHECK] selectedCompIndicesRef.current.size =",
+          selectedCompIndicesRef.current.size,
+          "indices =",
+          Array.from(selectedCompIndicesRef.current),
+        );
         if (selectedCompIndicesRef.current.size < 3) {
           setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
         }
