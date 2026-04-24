@@ -481,9 +481,12 @@ export class HybridCompsService {
           const diff = Math.abs(a - b) / avg;
 
           // Reject pairs where both values are distressed relative to the market
-          // (i.e. the consensus average is less than 50% of the highest comp)
-          if (avg < maxPpsf * 0.5) {
-            console.log(`[Hybrid Comps] Rejecting low-value consensus pair: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) avg=$${Math.round(avg)} < 50% of max $${maxPpsf}`);
+          // (i.e. the consensus average is less than 60% of the highest comp).
+          // Using 60% (vs 50%) catches bimodal markets like Snapfinger where the
+          // distressed cluster ($63-$80) sits at ~50% of the market-rate cluster
+          // ($122-$150) — that pair should not be promoted to anchor.
+          if (avg < maxPpsf * 0.6) {
+            console.log(`[Hybrid Comps] Rejecting low-value consensus pair: ${group[i].address} ($${a}) + ${group[j].address} ($${b}) avg=$${Math.round(avg)} < 60% of max $${maxPpsf}`);
             continue;
           }
 
@@ -537,6 +540,36 @@ export class HybridCompsService {
         (ppsf >= borderlineUpperMin && ppsf <= outlierThreshold)
       ) {
         comp.borderlineFlag = true;
+      }
+    }
+
+    // Bimodal-market safeguard: in datasets with significant ppsf spread
+    // (max > 1.5x min and ≥3 comps), any comp priced below 60% of the highest
+    // comp ppsf is treated as distressed regardless of the median-based flags.
+    // This catches cases where the median itself is depressed by a cluster of
+    // distressed comps — the median-only logic would otherwise leave the
+    // distressed cluster unflagged and flag the true market-rate comps as
+    // outliers (e.g. Snapfinger: median lands at $75-80 from a cluster of
+    // $63/$70/$80 comps, leaving $122 and $150 flagged as outliers and the
+    // $63-$80 cluster auto-selected for ARV).
+    const ppsfValues = comps
+      .map(c => c.pricePerSqft)
+      .filter(p => p > 0);
+    if (ppsfValues.length >= 3) {
+      const maxPpsf = Math.max(...ppsfValues);
+      const minPpsf = Math.min(...ppsfValues);
+      if (maxPpsf > minPpsf * 1.5) {
+        const distressedFloor = maxPpsf * 0.6;
+        for (const comp of comps) {
+          if (comp.pricePerSqft > 0 && comp.pricePerSqft < distressedFloor) {
+            if (!comp.distressedFlag) {
+              console.log(`[Hybrid Comps] Bimodal safeguard flagging ${comp.address} ($${comp.pricePerSqft}/sqft) as distressed: < 60% of max $${maxPpsf}/sqft`);
+            }
+            comp.distressedFlag = true;
+            comp.outlierFlag = false;
+            comp.borderlineFlag = false;
+          }
+        }
       }
     }
   }

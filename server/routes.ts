@@ -10075,10 +10075,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : (sortedPpsf[mid - 1] + sortedPpsf[mid]) / 2)
           : null;
 
+        // Cache hits are keyed off (normalizedAddr, requestedRadius, requestedDateRange).
+        // Writes use actualRadiusMiles (post-expansion) as the radius portion of the
+        // key, so a HIT here means the cached row's actualRadiusMiles equals the
+        // current requestedRadius. Derive expansion flags from the CURRENT request
+        // rather than echoing the (potentially stale) flags stored on the row —
+        // the row may have been written by a different originating request that did
+        // expand, but from the current caller's perspective no expansion occurred.
+        const cachedActualRadius = Number(compCached.actualRadiusMiles);
+        const effectiveRadius = isNaN(cachedActualRadius) ? requestedRadius : cachedActualRadius;
         return res.json({
           comps: compCached.comps,
-          radiusExpanded: compCached.radiusExpanded,
-          actualRadiusMiles: Number(compCached.actualRadiusMiles),
+          radiusExpanded: effectiveRadius > requestedRadius,
+          actualRadiusMiles: effectiveRadius,
           // Cache schema does not store actualDateRangeDays; safe default:
           // the cache key was built from requestedDateRange so the cached
           // row reflects a search at that date range.
