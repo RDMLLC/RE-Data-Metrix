@@ -10079,6 +10079,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           comps: compCached.comps,
           radiusExpanded: compCached.radiusExpanded,
           actualRadiusMiles: Number(compCached.actualRadiusMiles),
+          // Cache schema does not store actualDateRangeDays; safe default:
+          // the cache key was built from requestedDateRange so the cached
+          // row reflects a search at that date range.
+          dateRangeExpanded: false,
+          actualDateRangeDays: requestedDateRange,
           searchCriteria: { city, state, zipCode, bedrooms, bathrooms, sqft },
           searchStats: {
             rentCastCount: 0,
@@ -10139,6 +10144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           comps: result.comps,
           radiusExpanded: result.radiusExpanded,
           actualRadiusMiles: result.actualRadiusMiles,
+          dateRangeExpanded: result.dateRangeExpanded,
+          actualDateRangeDays: result.actualDateRangeDays,
           searchCriteria: {
             city,
             state,
@@ -10155,6 +10162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comps: [],
         radiusExpanded: result.radiusExpanded,
         actualRadiusMiles: result.actualRadiusMiles,
+        dateRangeExpanded: result.dateRangeExpanded,
+        actualDateRangeDays: result.actualDateRangeDays,
         message: "No comparable sales found in this area. Try expanding your search manually.",
         searchStats: result.searchStats,
       });

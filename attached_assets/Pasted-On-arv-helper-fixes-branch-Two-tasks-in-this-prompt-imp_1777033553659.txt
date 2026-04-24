@@ -1,0 +1,36 @@
+On arv-helper-fixes branch. Two tasks in this prompt — implement them both.
+Task 1 — Auto-expansion sequence
+In server/services/hybrid-comps.service.ts, implement the following expansion sequence when fewer than 3 suitable comps are found. Read the file in full before making changes.
+Expansion order:
+
+Search at ½ mile, user-selected date range (default 180 days / 6 months)
+If fewer than 3 suitable comps → expand radius to 1 mile, keep same date range
+If still fewer than 3 suitable comps → expand date range to 270 days (9 months) at 1 mile
+If still fewer than 3 suitable comps → expand date range to 365 days (12 months) at 1 mile
+Never expand radius beyond 1 mile during auto-expansion. Never exceed 12 months.
+
+The response must include fields indicating what expansion occurred: radiusExpanded: boolean, actualRadiusMiles: number, dateRangeExpanded: boolean, actualDateRangeDays: number.
+Task 2 — Frontend UI updates
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, read the file in full before making changes.
+When auto-expansion occurs, update the UI to reflect the actual parameters used:
+
+If radius expanded to 1 mile, highlight the 1 mi button as selected
+If date range expanded to 9 months, highlight the 9 mo button as selected
+If date range expanded to 12 months, highlight the 12 mo button as selected
+Display a message in black text below the radius/sales filter row describing what expanded, e.g. "Radius expanded to 1 mile to find more comps" or "Date range expanded to 9 months to find more comps"
+
+If after all expansion steps there are still fewer than 3 suitable comps, display this message below the comp list:
+
+Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide. Start your free 7-day trial →
+
+The link must open in a new tab. Style it as a clean callout card — not an error message.
+Also add the PropStream callout as a permanent fixture below the comp list above the ARV result, always visible regardless of comp count, using this exact text and link:
+
+Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide. Start your free 7-day trial →
+
+Hard constraints:
+
+Do not change manual radius or sales filter button behavior — user clicks still work normally
+Do not touch the soft lock, the isMeaningful merge fix, or any other recently changed code
+Do not touch any other files
+After implementing, run npx tsx scripts/test-comps.ts and confirm the expansion sequence fires correctly. Paste the shell output.

@@ -96,6 +96,8 @@ interface CompsSearchResponse {
   message?: string;
   radiusExpanded?: boolean;
   actualRadiusMiles?: number;
+  dateRangeExpanded?: boolean;
+  actualDateRangeDays?: number;
   searchStats?: {
     suitableCount: number;
     finalCount: number;
@@ -164,6 +166,8 @@ export default function Step3PurchaseRenovation({
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
   const [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
   const [actualRadiusUsed, setActualRadiusUsed] = useState<number | null>(null);
+  const [dateRangeWasExpanded, setDateRangeWasExpanded] = useState(false);
+  const [actualDateRangeUsed, setActualDateRangeUsed] = useState<number | null>(null);
   const [consensusAnchorMedian, setConsensusAnchorMedian] = useState<number | null>(null);
   // Mirror of consensusAnchorMedian to guarantee callbacks always read the latest value
   const consensusAnchorMedianRef = useRef<number | null>(null);
@@ -389,6 +393,8 @@ export default function Step3PurchaseRenovation({
     setCompsData(null);
     setRadiusWasExpanded(false);
     setActualRadiusUsed(null);
+    setDateRangeWasExpanded(false);
+    setActualDateRangeUsed(null);
     setConsensusAnchorMedian(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
@@ -412,6 +418,8 @@ export default function Step3PurchaseRenovation({
       setCompsData(data);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
+      setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
+      setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       // Store the consensus anchor median for use in subsequent radius searches
       if (data.searchStats?.medianPricePerSqft) {
         setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
@@ -460,6 +468,8 @@ export default function Step3PurchaseRenovation({
     setCompsData(null);
     setRadiusWasExpanded(false);
     setActualRadiusUsed(null);
+    setDateRangeWasExpanded(false);
+    setActualDateRangeUsed(null);
 
     try {
       console.log('[ARV Debug] searchCompsWithOptions firing, consensusAnchorMedian=', consensusAnchorMedianRef.current, 'radius=', radius);
@@ -550,6 +560,8 @@ export default function Step3PurchaseRenovation({
       setCompsData(mergedData);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
+      setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
+      setActualDateRangeUsed(data.actualDateRangeDays ?? null);
       // Store the consensus anchor median for use in subsequent radius searches
       if (data.searchStats?.medianPricePerSqft) {
         setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
@@ -1242,60 +1254,78 @@ export default function Step3PurchaseRenovation({
                         </div>
                       )}
                     </div>
+                    <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {/* Radius selector */}
+                      {/* Radius selector — when the backend auto-expands the
+                          radius, the actually-used value (actualRadiusUsed) is
+                          highlighted instead of the user-clicked value. */}
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-muted-foreground" data-testid="label-radius">Radius:</span>
-                        {([0.5, 1, 2, 3, 5] as RadiusOption[]).map((radius) => (
-                          <Button
-                            key={radius}
-                            type="button"
-                            size="sm"
-                            variant={searchRadius === radius ? "default" : "outline"}
-                            onClick={() => {
-                              if (radius !== searchRadius) {
-                                setSearchRadius(radius);
-                                // Auto-search with new radius if we already have results
-                                if (compsData) {
-                                  setTimeout(() => {
-                                    searchCompsWithOptions(radius, searchDateRange);
-                                  }, 0);
+                        {([0.5, 1, 2, 3, 5] as RadiusOption[]).map((radius) => {
+                          const effectiveRadius = (radiusWasExpanded && actualRadiusUsed !== null)
+                            ? actualRadiusUsed
+                            : searchRadius;
+                          const isActive = effectiveRadius === radius;
+                          return (
+                            <Button
+                              key={radius}
+                              type="button"
+                              size="sm"
+                              variant={isActive ? "default" : "outline"}
+                              onClick={() => {
+                                if (radius !== searchRadius) {
+                                  setSearchRadius(radius);
+                                  // Auto-search with new radius if we already have results
+                                  if (compsData) {
+                                    setTimeout(() => {
+                                      searchCompsWithOptions(radius, searchDateRange);
+                                    }, 0);
+                                  }
                                 }
-                              }
-                            }}
-                            disabled={isSearchingComps}
-                            data-testid={`button-radius-${radius}`}
-                          >
-                            {radius === 0.5 ? "½" : radius} mi
-                          </Button>
-                        ))}
+                              }}
+                              disabled={isSearchingComps}
+                              data-testid={`button-radius-${radius}`}
+                            >
+                              {radius === 0.5 ? "½" : radius} mi
+                            </Button>
+                          );
+                        })}
                       </div>
-                      {/* Date range selector */}
+                      {/* Date range selector — when the backend auto-expands
+                          the date range, the actually-used value
+                          (actualDateRangeUsed) is highlighted instead of the
+                          user-clicked value. */}
                       <div className="flex items-center gap-1">
                         <span className="text-xs text-muted-foreground" data-testid="label-date-range">Sales:</span>
-                        {([180, 270, 365] as DateRangeOption[]).map((days) => (
-                          <Button
-                            key={days}
-                            type="button"
-                            size="sm"
-                            variant={searchDateRange === days ? "default" : "outline"}
-                            onClick={() => {
-                              if (days !== searchDateRange) {
-                                setSearchDateRange(days);
-                                // Auto-search with new date range if we already have results
-                                if (compsData) {
-                                  setTimeout(() => {
-                                    searchCompsWithOptions(searchRadius, days);
-                                  }, 0);
+                        {([180, 270, 365] as DateRangeOption[]).map((days) => {
+                          const effectiveDateRange = (dateRangeWasExpanded && actualDateRangeUsed !== null)
+                            ? actualDateRangeUsed
+                            : searchDateRange;
+                          const isActive = effectiveDateRange === days;
+                          return (
+                            <Button
+                              key={days}
+                              type="button"
+                              size="sm"
+                              variant={isActive ? "default" : "outline"}
+                              onClick={() => {
+                                if (days !== searchDateRange) {
+                                  setSearchDateRange(days);
+                                  // Auto-search with new date range if we already have results
+                                  if (compsData) {
+                                    setTimeout(() => {
+                                      searchCompsWithOptions(searchRadius, days);
+                                    }, 0);
+                                  }
                                 }
-                              }
-                            }}
-                            disabled={isSearchingComps}
-                            data-testid={`button-date-range-${days}`}
-                          >
-                            {days === 180 ? "6" : days === 270 ? "9" : "12"} mo
-                          </Button>
-                        ))}
+                              }}
+                              disabled={isSearchingComps}
+                              data-testid={`button-date-range-${days}`}
+                            >
+                              {days === 180 ? "6" : days === 270 ? "9" : "12"} mo
+                            </Button>
+                          );
+                        })}
                       </div>
                       <Button
                         type="button"
@@ -1326,6 +1356,24 @@ export default function Step3PurchaseRenovation({
                         <Plus className="h-4 w-4 mr-1" />
                         Add Comp
                       </Button>
+                    </div>
+                    {/* Auto-expansion notice — black text below the
+                        radius/sales filter row, describing what expanded.
+                        Can show one or both messages stacked. */}
+                    {(radiusWasExpanded || dateRangeWasExpanded) && (
+                      <div className="flex flex-col gap-1 text-sm text-foreground" data-testid="text-expansion-notice">
+                        {radiusWasExpanded && actualRadiusUsed !== null && (
+                          <span data-testid="text-radius-expanded-message">
+                            Radius expanded to {actualRadiusUsed === 0.5 ? "½ mile" : `${actualRadiusUsed} ${actualRadiusUsed === 1 ? "mile" : "miles"}`} to find more comps
+                          </span>
+                        )}
+                        {dateRangeWasExpanded && actualDateRangeUsed !== null && (
+                          <span data-testid="text-date-expanded-message">
+                            Date range expanded to {actualDateRangeUsed === 270 ? "9" : actualDateRangeUsed === 365 ? "12" : "6"} months to find more comps
+                          </span>
+                        )}
+                      </div>
+                    )}
                     </div>
                   </div>
 
@@ -1777,13 +1825,6 @@ export default function Step3PurchaseRenovation({
                         </TableBody>
                       </Table>
 
-                      {/* Radius expansion notice - shown when backend auto-expanded the search radius */}
-                      {radiusWasExpanded && actualRadiusUsed !== null && actualRadiusUsed > searchRadius && (
-                        <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200 mt-3" data-testid="text-radius-expanded-notice">
-                          <span>Radius automatically expanded to {actualRadiusUsed} {actualRadiusUsed === 1 ? "mile" : "miles"} to find more comparable sales.</span>
-                        </div>
-                      )}
-
                       {/* City mismatch warning - shown when any selected comp is from a different city */}
                       {compsData && compsData.comps && selectedCompIndices.size > 0 &&
                         Array.from(selectedCompIndices).some(i => (compsData.comps[i] as any)?.cityMismatch) && (
@@ -1819,6 +1860,47 @@ export default function Step3PurchaseRenovation({
                           </p>
                         </div>
                       )}
+
+                      {/* PropStream fallback callout — shown when, after the
+                          full auto-expansion sequence has run, there are still
+                          fewer than 3 suitable comps in the result set. */}
+                      {compsData && (compsData.searchStats?.suitableCount ?? 0) < 3 && (
+                        <Card className="mt-3 border-primary/20" data-testid="card-propstream-fallback">
+                          <CardContent className="p-4">
+                            <p className="text-sm text-foreground">
+                              Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                              <a
+                                href="https://trial.propstreampro.com/redatametrix/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline font-medium"
+                                data-testid="link-propstream-fallback"
+                              >
+                                Start your free 7-day trial →
+                              </a>
+                            </p>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* PropStream permanent callout — always visible above
+                          the ARV result regardless of comp count. */}
+                      <Card className="mt-3 border-primary/20" data-testid="card-propstream-permanent">
+                        <CardContent className="p-4">
+                          <p className="text-sm text-foreground">
+                            Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                            <a
+                              href="https://trial.propstreampro.com/redatametrix/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline font-medium"
+                              data-testid="link-propstream-permanent"
+                            >
+                              Start your free 7-day trial →
+                            </a>
+                          </p>
+                        </CardContent>
+                      </Card>
 
                       {/* Suggested ARV */}
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">

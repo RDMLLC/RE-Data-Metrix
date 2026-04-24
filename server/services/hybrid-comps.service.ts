@@ -51,6 +51,8 @@ export interface HybridCompSearchResult {
   weightedAvgPricePerSqft: number | null;
   radiusExpanded: boolean;
   actualRadiusMiles: number;
+  dateRangeExpanded: boolean;
+  actualDateRangeDays: number;
   searchStats: {
     rentCastCount: number;
     hasDataCount: number;
@@ -94,22 +96,41 @@ export class HybridCompsService {
 
     console.log(`[Hybrid Comps] Starting dual-API search for ${address}, ${city}, ${state}`);
 
-    // Auto-expansion steps match the manual radius buttons exactly: 0.5 → 1 → 2 → 3 → 5
-    const RADIUS_STEPS = [0.5, 1, 2, 3, 5];
-    const startIndex = RADIUS_STEPS.indexOf(radiusMiles) !== -1
-      ? RADIUS_STEPS.indexOf(radiusMiles)
-      : RADIUS_STEPS.findIndex(r => r >= radiusMiles);
-    const effectiveStartIndex = startIndex === -1 ? 0 : startIndex;
+    // Auto-expansion sequence (only fires when fewer than SUITABLE_TARGET
+    // suitable comps are found at the previous step). Sequence is bounded:
+    //   - Radius is never expanded beyond 1 mile
+    //   - Date range is never expanded beyond 365 days
+    //
+    // Starting from a radius ≤ 1 mi:
+    //   1. requested radius @ user date range
+    //   2. 1 mi @ user date range (skipped if requested radius is already 1 mi)
+    //   3. 1 mi @ 270 days (skipped if user date range is already ≥ 270)
+    //   4. 1 mi @ 365 days (skipped if user date range is already ≥ 365)
+    //
+    // Starting from a radius > 1 mi (2/3/5): single attempt at the requested
+    // radius and date range with NO auto-expansion, to honor the rule that
+    // auto-expansion never widens radius beyond 1 mile.
+    const requestedRadius = radiusMiles;
+    const requestedDateRange = saleDateRangeDays;
+    const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> = [];
 
-    // Date range is decoupled from radius expansion: every attempt uses the
-    // user-specified saleDateRangeDays so that explicit and auto-expanded
-    // calls at the same radius always query the upstream APIs with identical
-    // parameters and produce overlapping (monotonic) result sets.
-    const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> =
-      RADIUS_STEPS.slice(effectiveStartIndex, effectiveStartIndex + 3).map((r) => ({
-        radiusMiles: r,
-        saleDateRangeDays,
-      }));
+    if (requestedRadius > 1) {
+      expansionConfigs.push({ radiusMiles: requestedRadius, saleDateRangeDays: requestedDateRange });
+    } else {
+      // First attempt always at the requested radius (≤ 1 mi)
+      expansionConfigs.push({ radiusMiles: requestedRadius, saleDateRangeDays: requestedDateRange });
+      // Step up to 1 mi if we started below
+      if (requestedRadius < 1) {
+        expansionConfigs.push({ radiusMiles: 1, saleDateRangeDays: requestedDateRange });
+      }
+      // Then widen the date range, capped at 365
+      if (requestedDateRange < 270) {
+        expansionConfigs.push({ radiusMiles: 1, saleDateRangeDays: 270 });
+      }
+      if (requestedDateRange < 365) {
+        expansionConfigs.push({ radiusMiles: 1, saleDateRangeDays: 365 });
+      }
+    }
 
     let bestResult: {
       sortedComps: HybridCompResult[];
@@ -171,6 +192,8 @@ export class HybridCompsService {
         weightedAvgPricePerSqft: null,
         radiusExpanded: false,
         actualRadiusMiles: radiusMiles,
+        dateRangeExpanded: false,
+        actualDateRangeDays: requestedDateRange,
         searchStats: {
           rentCastCount: 0,
           hasDataCount: 0,
@@ -216,8 +239,11 @@ export class HybridCompsService {
       console.log(`[Hybrid Comps] After re-flagging: ${resuitable.length} suitable comps`);
     }
 
-    const radiusExpanded = bestResult.stats.expansionAttempts > 1;
-    const actualRadiusMiles = expansionConfigs[bestResult.stats.expansionAttempts - 1].radiusMiles;
+    const winningConfig = expansionConfigs[bestResult.stats.expansionAttempts - 1];
+    const actualRadiusMiles = winningConfig.radiusMiles;
+    const actualDateRangeDays = winningConfig.saleDateRangeDays;
+    const radiusExpanded = actualRadiusMiles > requestedRadius;
+    const dateRangeExpanded = actualDateRangeDays > requestedDateRange;
 
     return {
       comps: bestResult.sortedComps,
@@ -225,6 +251,8 @@ export class HybridCompsService {
       weightedAvgPricePerSqft: bestResult.weightedAvgPricePerSqft,
       radiusExpanded,
       actualRadiusMiles,
+      dateRangeExpanded,
+      actualDateRangeDays,
       searchStats: bestResult.stats,
     };
   }
