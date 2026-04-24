@@ -97,21 +97,27 @@ interface ArvHelperProps {
   onClose: () => void;
 }
 
-// Smart initial selection: take comps scoring >= 20 with no flags, top 6 by score.
-// Also excludes city mismatches and bedroom counts more than 1 off from the
-// subject — the user can still manually toggle those on if desired.
+// Smart initial selection: closest 3 clean comps win.
+// Strict priority order:
+//   1. Exclude distressedFlag
+//   2. Exclude outlierFlag
+//   3. Exclude cityMismatch
+//   4. Exclude bedroom delta > 1 from subject
+//   5. Sort remaining by distanceFromSubject ascending
+//   6. Take top 3 only — never more
 function computeSmartSelection(comps: SoldPropertyComp[], subjectBedrooms: number): Set<number> {
   const suitableIndices = comps
     .map((comp, i) => ({ comp, i }))
     .filter(({ comp }) =>
-      !comp.outlierFlag &&
       !comp.distressedFlag &&
-      (comp.similarityScore ?? 0) >= 20 &&
+      !comp.outlierFlag &&
       !(comp as any).cityMismatch &&
       Math.abs((comp.bedrooms ?? subjectBedrooms) - subjectBedrooms) <= 1
     )
-    .sort((a, b) => (b.comp.similarityScore ?? 0) - (a.comp.similarityScore ?? 0))
-    .slice(0, 6)
+    .sort((a, b) =>
+      (a.comp.distanceFromSubject ?? Infinity) - (b.comp.distanceFromSubject ?? Infinity)
+    )
+    .slice(0, 3)
     .map(({ i }) => i);
   return new Set(suitableIndices);
 }
