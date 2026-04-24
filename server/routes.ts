@@ -10383,6 +10383,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Static Maps proxy — keeps the API key server-side. Used by the
+  // Comp Report PDF to render a small map showing the subject property
+  // (red "S" pin) alongside the selected comps (numbered blue pins). Auto-
+  // fits the viewport to the markers (no explicit zoom/center).
+  //
+  // Query params:
+  //   subjectLat, subjectLng   numeric, preferred
+  //   subjectAddress           free-form, used as fallback for the subject
+  //                            pin if lat/lng are missing
+  //   comps                    JSON array of { lat, lng, address }
+  //
+  // Returns the Google PNG inline (image/*) or a JSON error.
+  app.get("/api/property/comp-map", ensureAuthenticated, async (req, res) => {
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!googleMapsApiKey) {
+      return res.status(503).json({ error: "Static map not configured" });
+    }
+
+    const subjectLatRaw = req.query.subjectLat as string | undefined;
+    const subjectLngRaw = req.query.subjectLng as string | undefined;
+    const subjectAddress = req.query.subjectAddress as string | undefined;
+    const compsRaw = req.query.comps as string | undefined;
+
+    type CompMarker = { lat?: number | string; lng?: number | string; address?: string };
+    let comps: CompMarker[] = [];
+    if (compsRaw) {
+      try {
+        const parsed = JSON.parse(compsRaw);
+        if (Array.isArray(parsed)) comps = parsed;
+      } catch {
+        return res.status(400).json({ error: "comps must be a JSON array" });
+      }
+    }
+
+    const params = new URLSearchParams();
+    params.set("size", "600x300");
+
+    // Subject pin (red, label "S"). Prefer lat/lng; fall back to a free-
+    // form address that Google can geocode server-side.
+    const subjectLat = subjectLatRaw != null ? Number(subjectLatRaw) : NaN;
+    const subjectLng = subjectLngRaw != null ? Number(subjectLngRaw) : NaN;
+    let hasSubjectMarker = false;
+    if (Number.isFinite(subjectLat) && Number.isFinite(subjectLng)) {
+      params.append("markers", `color:red|label:S|${subjectLat},${subjectLng}`);
+      hasSubjectMarker = true;
+    } else if (subjectAddress) {
+      params.append("markers", `color:red|label:S|${subjectAddress}`);
+      hasSubjectMarker = true;
+    }
+
+    // Comp pins (blue). The Static Maps API only allows a single character
+    // (A–Z or 0–9) for marker labels, so comps 1–9 get a numeric label and
+    // any beyond that get an unlabeled blue marker.
+    let compMarkerCount = 0;
+    comps.forEach((comp, idx) => {
+      const lat = typeof comp.lat === "number" ? comp.lat : Number(comp.lat);
+      const lng = typeof comp.lng === "number" ? comp.lng : Number(comp.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const compNum = idx + 1;
+      const label = compNum <= 9 ? `|label:${compNum}` : "";
+      params.append("markers", `color:blue${label}|${lat},${lng}`);
+      compMarkerCount += 1;
+    });
+
+    if (!hasSubjectMarker && compMarkerCount === 0) {
+      return res.status(400).json({ error: "No usable subject or comp coordinates" });
+    }
+
+    params.set("key", googleMapsApiKey);
+
+    try {
+      const googleUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
+      const googleRes = await fetch(googleUrl);
+      if (!googleRes.ok) {
+        return res.status(googleRes.status).json({ error: "Static map fetch failed" });
+      }
+      const contentType = googleRes.headers.get("content-type") || "image/png";
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      const buffer = await googleRes.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch (mapError: any) {
+      console.error("[Comp Map Proxy] Error:", mapError.message);
+      res.status(500).json({ error: "Failed to fetch comp map" });
+    }
+  });
+
   // Property Lookup Route
   app.post("/api/property/lookup", ensureAuthenticated, async (req, res) => {
     try {

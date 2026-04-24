@@ -25,6 +25,8 @@ interface SoldPropertyComp {
   hasPool?: boolean;
   hasGarage?: boolean;
   imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface CompReportPdfProps {
@@ -42,6 +44,8 @@ interface CompReportPdfProps {
   subjectHasPool?: boolean;
   subjectHasGarage?: boolean;
   subjectImageUrl?: string;
+  subjectLat?: number;
+  subjectLng?: number;
   suggestedArv: number | null;
   avgPricePerSqft: number | null;
   selectedComps: SoldPropertyComp[];
@@ -96,6 +100,25 @@ function formatShortDate(dateString: string): string {
   return dateString;
 }
 
+// MM/DD/YY (two-digit year) — used by the merged Comps table's Sale Date
+// column. Kept separate from `formatShortDate` (MM/DD/YYYY) which is still
+// used elsewhere in this report (subject "Last sold on" line).
+function formatMmDdYy(dateString: string): string {
+  if (!dateString) return 'N/A';
+
+  const usMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (usMatch) {
+    return `${usMatch[1].padStart(2, '0')}/${usMatch[2].padStart(2, '0')}/${usMatch[3].slice(-2)}`;
+  }
+
+  const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[2]}/${isoMatch[3]}/${isoMatch[1].slice(-2)}`;
+  }
+
+  return dateString;
+}
+
 export default function CompReportPdf({
   subjectAddress,
   subjectCity,
@@ -111,6 +134,8 @@ export default function CompReportPdf({
   subjectHasPool,
   subjectHasGarage,
   subjectImageUrl,
+  subjectLat,
+  subjectLng,
   suggestedArv,
   avgPricePerSqft,
   selectedComps,
@@ -124,6 +149,11 @@ export default function CompReportPdf({
   // simply not rendered, so PDF generation continues without it.
   const [userLogoFailed, setUserLogoFailed] = useState(false);
   const [subjectImageFailed, setSubjectImageFailed] = useState(false);
+  // Static map below the comp table is loaded from /api/property/comp-map
+  // (which proxies Google Static Maps). If it fails (no API key, geocode
+  // failure, network error) the <img> simply isn't rendered so the rest of
+  // the PDF still generates.
+  const [mapImageFailed, setMapImageFailed] = useState(false);
   const { user } = useAuth();
 
   // Reset the failure flags whenever the underlying image URLs change so a
@@ -136,6 +166,9 @@ export default function CompReportPdf({
   useEffect(() => {
     setSubjectImageFailed(false);
   }, [subjectImageUrl]);
+  useEffect(() => {
+    setMapImageFailed(false);
+  }, [subjectLat, subjectLng, selectedComps]);
 
   const safeAddress = subjectAddress || 'property';
   const { toPDF, targetRef } = usePDF({
@@ -168,18 +201,39 @@ export default function CompReportPdf({
   };
 
   // Sort comps by distance ascending (closest first); comps without a
-  // distance are placed at the end. Used for both the top "Comps" table and
-  // the "Individual Comparable Properties" table below.
+  // distance are placed at the end.
   const sortedComps = [...selectedComps].sort((a, b) => {
     const aDist = a.distanceFromSubject ?? Infinity;
     const bDist = b.distanceFromSubject ?? Infinity;
     return aDist - bDist;
   });
 
-  // Avg square feet — used in the top summary metrics row.
-  const avgSqft = selectedComps.length > 0 
-    ? Math.round(selectedComps.reduce((sum, c) => sum + (c.sqft || 0), 0) / selectedComps.length)
-    : 0;
+  // Build the URL for the Google Static Maps proxy. Returns null if there
+  // isn't enough location data to bother showing a map. The proxy lives at
+  // /api/property/comp-map and holds the GOOGLE_MAPS_API_KEY server-side.
+  const compMapUrl: string | null = (() => {
+    const compsForMap = sortedComps
+      .filter(c => c.latitude != null && c.longitude != null)
+      .map(c => ({ lat: c.latitude, lng: c.longitude, address: c.address }));
+    const hasSubjectLatLng = subjectLat != null && subjectLng != null;
+    const hasSubjectAddress = !!subjectAddress;
+    if (!hasSubjectLatLng && !hasSubjectAddress && compsForMap.length === 0) {
+      return null;
+    }
+    const params = new URLSearchParams();
+    if (hasSubjectLatLng) {
+      params.set('subjectLat', String(subjectLat));
+      params.set('subjectLng', String(subjectLng));
+    }
+    if (hasSubjectAddress) {
+      const fullAddr = [subjectAddress, subjectCity, subjectState, subjectZip]
+        .filter(Boolean)
+        .join(', ');
+      params.set('subjectAddress', fullAddr);
+    }
+    params.set('comps', JSON.stringify(compsForMap));
+    return `/api/property/comp-map?${params.toString()}`;
+  })();
 
   // Calculate ARV range (±5% of suggested ARV)
   const arvLow = suggestedArv ? Math.round(suggestedArv * 0.95) : null;
@@ -311,16 +365,13 @@ export default function CompReportPdf({
             paddingBottom: '16px',
           }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Avg Square Feet</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{avgSqft.toLocaleString()} sq ft</div>
-            </div>
-            <div>
               <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Price Per Square Foot</div>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{avgPricePerSqft != null ? `$${avgPricePerSqft.toFixed(0)}/sq ft` : 'N/A'}</div>
             </div>
           </div>
 
-          {/* Comps Table */}
+          {/* Comps Table — single merged table:
+                Address | Beds/Baths | Sqft | $/Sqft | Sale Date | Sale Price | Distance | Year Built */}
           <div style={{ marginBottom: '20px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
@@ -328,10 +379,11 @@ export default function CompReportPdf({
                   <th style={{ padding: '8px 6px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Address</th>
                   <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Beds / Baths</th>
                   <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sqft</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Distance</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>$/Sqft</th>
                   <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Date</th>
                   <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Price</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Price/Sqft</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Distance</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Year Built</th>
                 </tr>
               </thead>
               <tbody>
@@ -347,16 +399,19 @@ export default function CompReportPdf({
                       {comp.sqft?.toLocaleString()}
                     </td>
                     <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.distanceFromSubject != null ? `${comp.distanceFromSubject.toFixed(1)} mi` : '—'}
+                      {comp.pricePerSqft != null ? `$${comp.pricePerSqft.toFixed(0)}/sq ft` : '—'}
                     </td>
                     <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.isPending ? 'Pending' : formatDate(comp.saleDate)}
+                      {comp.isPending ? 'Pending' : formatMmDdYy(comp.saleDate)}
                     </td>
                     <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600' }}>
                       {formatCurrency(comp.salePrice)}
                     </td>
                     <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.pricePerSqft != null ? `$${comp.pricePerSqft.toFixed(0)}/sq ft` : '—'}
+                      {comp.distanceFromSubject != null ? `${comp.distanceFromSubject.toFixed(1)} mi` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.yearBuilt || '—'}
                     </td>
                   </tr>
                 ))}
@@ -364,69 +419,19 @@ export default function CompReportPdf({
             </table>
           </div>
 
-          {/* Individual Comparable Properties Table */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
-              Individual Comparable Properties
+          {/* Map of subject + comps (Google Static Maps via /api/property/comp-map).
+              Wrapped in mapImageFailed guard with onError so a failed map
+              never blocks the rest of the PDF from generating. */}
+          {compMapUrl && !mapImageFailed && (
+            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+              <img
+                src={compMapUrl}
+                alt="Subject and comparable properties map"
+                style={{ width: '600px', maxWidth: '100%', height: 'auto', border: '1px solid #e5e7eb' }}
+                onError={() => setMapImageFailed(true)}
+              />
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f9fafb' }}>
-                  <th style={{ padding: '8px 4px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Address</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Sale Price</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Sale Date</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Sq Ft</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Price/Sq Ft</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Bed</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Bath</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Year Built</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Distance</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Pool</th>
-                  <th style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600' }}>Garage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedComps.map((comp, index) => (
-                  <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
-                    <td style={{ padding: '8px 4px', borderBottom: '1px solid #f3f4f6' }}>
-                      <div>{comp.address.length > 22 ? comp.address.substring(0, 22) + '...' : comp.address}</div>
-                      <div style={{ fontSize: '9px', color: '#6b7280' }}>{comp.city}, {comp.state}</div>
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '500' }}>
-                      {formatCurrency(comp.salePrice)}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.isPending ? 'Pending' : formatShortDate(comp.saleDate)}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.sqft?.toLocaleString()}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.pricePerSqft != null ? `$${comp.pricePerSqft.toFixed(0)}` : '—'}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.bedrooms}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.bathrooms}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.yearBuilt || '—'}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.distanceFromSubject ? `${comp.distanceFromSubject.toFixed(1)} mi` : '—'}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.hasPool !== undefined ? (comp.hasPool ? 'Y' : 'N') : '—'}
-                    </td>
-                    <td style={{ padding: '8px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.hasGarage !== undefined ? (comp.hasGarage ? 'Y' : 'N') : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          )}
 
           {/* Footer */}
           <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>

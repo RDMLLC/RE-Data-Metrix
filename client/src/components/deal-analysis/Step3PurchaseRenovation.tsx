@@ -87,6 +87,8 @@ interface SoldPropertyComp {
   outlierFlag?: boolean;
   borderlineFlag?: boolean;
   cityMismatch?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface CompsSearchResponse {
@@ -1942,6 +1944,8 @@ export default function Step3PurchaseRenovation({
                             subjectBaths={bathrooms}
                             subjectSqft={sqft}
                             subjectYearBuilt={form.watch("yearBuilt")}
+                            subjectLat={propertyLatitude}
+                            subjectLng={propertyLongitude}
                             suggestedArv={selectedArvData.arv}
                             avgPricePerSqft={selectedArvData.avgPricePerSqft}
                             selectedComps={(compsData?.comps || []).filter((_, index) => selectedCompIndices.has(index))}
