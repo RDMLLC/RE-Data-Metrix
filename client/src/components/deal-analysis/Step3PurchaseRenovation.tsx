@@ -79,6 +79,8 @@ interface SoldPropertyComp {
   listingUrl?: string; // URL to view the property listing
   isManuallyAdded?: boolean; // Flag for user-added comps
   isPending?: boolean; // Flag for pending sales (not yet closed)
+  isCarriedOver?: boolean; // Comp preserved from a previous (smaller) radius response
+  carriedOverFromRadius?: number; // Original radius the comp came from
   // Backend-computed scoring & flagging (hybrid-comps.service.ts)
   similarityScore?: number;
   distressedFlag?: boolean;
@@ -490,46 +492,73 @@ export default function Step3PurchaseRenovation({
         return `${houseNumber}|${zip}`;
       };
 
-      // Capture the keys of comps currently selected BEFORE we replace compsData,
-      // because selectedCompIndices are indices into the OLD comps array.
-      const previouslySelectedKeys = new Set(
-        (compsData?.comps || [])
-          .filter((_, i) => selectedCompIndices.has(i))
-          .map(compKey)
-      );
+      // Capture the previously selected comps (full objects) BEFORE we replace
+      // compsData, because selectedCompIndices are indices into the OLD comps array.
+      const previouslySelectedComps = (compsData?.comps || [])
+        .filter((_, i) => selectedCompIndices.has(i));
+      const previouslySelectedKeys = new Set(previouslySelectedComps.map(compKey));
 
-      setCompsData(data);
+      // ── SOFT LOCK ──
+      // If the previous selection had ≥3 suitable comps and the new (wider)
+      // radius response is missing any of them (because upstream APIs returned
+      // a different top-K at this radius), carry the missing previously-selected
+      // suitable comps forward into the new comps list. This guarantees the
+      // user's selection survives radius changes even when the upstream APIs
+      // change their mind about which comps to return.
+      const previousSuitableSelected = previouslySelectedComps.filter(
+        (c) => !c.distressedFlag && !c.outlierFlag
+      );
+      const newKeys = new Set((data.comps || []).map((c: any) => compKey(c)));
+      const carriedOver: SoldPropertyComp[] = [];
+      if (previousSuitableSelected.length >= 3) {
+        for (const prev of previousSuitableSelected) {
+          if (!newKeys.has(compKey(prev))) {
+            carriedOver.push({
+              ...prev,
+              isCarriedOver: true,
+              carriedOverFromRadius:
+                prev.carriedOverFromRadius ?? actualRadiusUsed ?? searchRadius,
+            });
+          }
+        }
+      }
+      const mergedComps: SoldPropertyComp[] = carriedOver.length > 0
+        ? [...(data.comps || []), ...carriedOver]
+        : (data.comps || []);
+      const mergedData = { ...data, comps: mergedComps };
+
+      setCompsData(mergedData);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
       // Store the consensus anchor median for use in subsequent radius searches
       if (data.searchStats?.medianPricePerSqft) {
         setConsensusAnchorMedian(data.searchStats.medianPricePerSqft);
       }
-      // Selection lock: track previously selected comps by stable identity
-      // (house number + ZIP) and remap them to new indices in the new comps
-      // array. Only re-run auto-selection if fewer than 3 of the preserved
-      // selections remain suitable (non-flagged) in the new dataset.
-      if (data.comps && data.comps.length > 0) {
+      // Selection lock: remap previously selected comps to new indices in the
+      // merged comps array (which now includes any carried-over comps). Only
+      // re-run auto-selection if fewer than 3 of the preserved selections
+      // remain suitable in the new dataset.
+      if (mergedComps.length > 0) {
         const preservedIndices = new Set<number>();
-        (data.comps as SoldPropertyComp[]).forEach((c, i) => {
+        mergedComps.forEach((c, i) => {
           if (previouslySelectedKeys.has(compKey(c))) {
             preservedIndices.add(i);
           }
         });
 
         const preservedSuitableCount = Array.from(preservedIndices).filter((i) => {
-          const comp = data.comps[i] as SoldPropertyComp;
+          const comp = mergedComps[i];
           return comp && !comp.distressedFlag && !comp.outlierFlag;
         }).length;
 
         if (preservedSuitableCount >= 3) {
           // Lock holds — preserve the user's existing selection by remapping
-          // their addresses to new indices. New comps are added to the visible
+          // their keys to new indices. New comps are added to the visible
           // list but not auto-selected.
           setSelectedCompIndices(preservedIndices);
         } else {
           // Fewer than 3 suitable preserved — run fresh auto-selection
-          setSelectedCompIndices(computeSmartSelection(data.comps as SoldPropertyComp[]));
+          setSelectedCompIndices(computeSmartSelection(mergedComps));
         }
       }
     } catch (error: any) {
@@ -1558,6 +1587,29 @@ export default function Step3PurchaseRenovation({
                                 <TableCell className="font-medium text-sm">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span>{comp.address}</span>
+                                    {(comp as any).isCarriedOver && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Badge
+                                            variant="outline"
+                                            className="bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                            data-testid={`badge-carried-over-${originalIndex}`}
+                                          >
+                                            Carried over
+                                          </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs max-w-xs">
+                                            Preserved from your selection at the
+                                            {(comp as any).carriedOverFromRadius
+                                              ? ` ${(comp as any).carriedOverFromRadius} mi`
+                                              : ' previous'}{' '}
+                                            radius. The current radius search did
+                                            not return this property.
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
                                     {comp.outlierFlag && (
                                       <Tooltip>
                                         <TooltipTrigger asChild>
