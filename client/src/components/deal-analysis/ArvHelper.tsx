@@ -156,10 +156,12 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
 
   const [selectedCompIndices, setSelectedCompIndices] = useState<Set<number>>(new Set());
   // Locked selection captured SYNCHRONOUSLY at the moment a manual radius
-  // button is clicked. searchCompsWithOptions reads this ref to decide
-  // whether to preserve the user's selection across the refetch — bypassing
-  // any closure / re-render timing issues. Cleared after each use.
-  const lockedSelectionRef = useRef<Set<number> | null>(null);
+  // button is clicked. Holds compKey ADDRESS strings (not indices) so the
+  // selection survives a refetch even when the new comps array has a
+  // different length or order. searchCompsWithOptions remaps these address
+  // keys back to numeric indices against the new data.comps. Cleared after
+  // each use.
+  const lockedSelectionRef = useRef<Set<string> | null>(null);
   const [showArvQuotaModal, setShowArvQuotaModal] = useState(false);
 
   const [showAddCompForm, setShowAddCompForm] = useState(false);
@@ -417,11 +419,22 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         setSearchDateRange(data.actualDateRangeDays);
       }
       if (data.comps && data.comps.length > 0) {
-        // If a manual radius click captured a locked selection (≥3) before
-        // this refetch started, preserve it — don't touch selectedCompIndices.
-        // Otherwise fall back to a fresh computeSmartSelection.
+        // If a manual radius click captured locked address keys (≥3), remap
+        // them to indices in the new comps array. Only honor the lock if at
+        // least 3 of the locked addresses survived the refetch — otherwise
+        // fall back to a fresh computeSmartSelection.
         if (lockedSelectionRef.current !== null && lockedSelectionRef.current.size >= 3) {
-          // Keep locked selection — don't call setSelectedCompIndices at all.
+          const newIndices = new Set<number>();
+          (data.comps as SoldPropertyComp[]).forEach((c, i) => {
+            if (lockedSelectionRef.current!.has(compKey(c))) {
+              newIndices.add(i);
+            }
+          });
+          if (newIndices.size >= 3) {
+            setSelectedCompIndices(newIndices);
+          } else {
+            setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+          }
         } else {
           setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
         }
@@ -631,11 +644,18 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     onClick={() => {
                       if (radius !== searchRadius) {
                         // Capture the user's selection SYNCHRONOUSLY before any
-                        // async work or state changes. searchCompsWithOptions
-                        // will read this ref to decide whether to preserve it.
+                        // async work or state changes. We store stable address
+                        // keys (compKey) — not numeric indices — so the lock
+                        // survives a refetch even when the new comps array has
+                        // a different length or order.
                         lockedSelectionRef.current =
                           selectedCompIndices.size >= 3
-                            ? new Set(selectedCompIndices)
+                            ? new Set(
+                                Array.from(selectedCompIndices)
+                                  .map((i) => compsData?.comps[i])
+                                  .filter(Boolean)
+                                  .map((c) => compKey(c as SoldPropertyComp)),
+                              )
                             : null;
                         // TEMP DIAGNOSTIC: send click-time state to server log.
                         fetch('/api/debug/lock-test', {
