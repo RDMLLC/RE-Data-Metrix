@@ -1255,6 +1255,12 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-amber-800 dark:text-amber-200">
                 Not enough comparable sales were found in this area. This is common in rural markets, areas with low sales volume, unique or luxury properties, or very new developments. Try expanding the date range or radius above, or add your own comps using + Add Comp.
+                {compsData.comps.length > 0 && (
+                  <>
+                    {" "}However, {compsData.comps.length}{" "}
+                    {compsData.comps.length === 1 ? "property was" : "properties were"} returned above — you may be able to manually select suitable comps from the list.
+                  </>
+                )}
               </p>
             </div>
           )}
