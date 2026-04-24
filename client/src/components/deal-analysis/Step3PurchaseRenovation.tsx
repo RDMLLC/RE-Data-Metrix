@@ -487,6 +487,24 @@ export default function Step3PurchaseRenovation({
           .map((c) => c.address.toLowerCase().trim())
       );
 
+      // ---- TEMP DEBUG: selection lock ----
+      console.log('[ARV Debug] === Selection lock check (radius=', radius, ') ===');
+      console.log('[ARV Debug] previouslySelectedAddresses:', Array.from(previouslySelectedAddresses));
+      console.log('[ARV Debug] new data.comps addresses:', (data.comps || []).map((c: any) => c.address));
+      const matched: string[] = [];
+      const unmatched: string[] = [];
+      (data.comps || []).forEach((c: any) => {
+        const norm = c.address?.toLowerCase().trim();
+        if (previouslySelectedAddresses.has(norm)) matched.push(c.address);
+      });
+      Array.from(previouslySelectedAddresses).forEach((prev) => {
+        const found = (data.comps || []).some((c: any) => c.address?.toLowerCase().trim() === prev);
+        if (!found) unmatched.push(prev);
+      });
+      console.log('[ARV Debug] matched (preserved):', matched);
+      console.log('[ARV Debug] unmatched (dropped from prev selection):', unmatched);
+      // ---- END TEMP DEBUG ----
+
       setCompsData(data);
       setRadiusWasExpanded(data.radiusExpanded ?? false);
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
