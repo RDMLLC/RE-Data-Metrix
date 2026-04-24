@@ -1,7 +1,7 @@
 import { usePDF } from "react-to-pdf";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import logoPath from "@assets/Transparent Logo_1762969260481.png";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -132,7 +132,26 @@ export default function CompReportPdf({
   selectedComps,
 }: CompReportPdfProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  // Track per-image load failures so we can skip any image that the PDF
+  // rasterizer (html2canvas → jsPDF.addImage) would otherwise reject with
+  // "addImage does not support files of type 'UNKNOWN'". When an external
+  // image URL returns a non-image response (HTML 404, redirect, unsupported
+  // format, etc.), the corresponding flag flips to true and the <img> is
+  // simply not rendered, so PDF generation continues without it.
+  const [userLogoFailed, setUserLogoFailed] = useState(false);
+  const [subjectImageFailed, setSubjectImageFailed] = useState(false);
   const { user } = useAuth();
+
+  // Reset the failure flags whenever the underlying image URLs change so a
+  // bad image for one report doesn't permanently suppress a valid image in
+  // the next report (this component re-renders, not remounts, when the
+  // subject address changes).
+  useEffect(() => {
+    setUserLogoFailed(false);
+  }, [user?.reportLogoUrl]);
+  useEffect(() => {
+    setSubjectImageFailed(false);
+  }, [subjectImageUrl]);
 
   const safeAddress = subjectAddress || 'property';
   const { toPDF, targetRef } = usePDF({
@@ -153,8 +172,15 @@ export default function CompReportPdf({
 
   const handleDownload = async () => {
     setIsGenerating(true);
-    await toPDF();
-    setIsGenerating(false);
+    try {
+      await toPDF();
+    } catch (err) {
+      // Skip silently if a problem image (or any other PDF generation
+      // hiccup) trips jsPDF; the button is still re-enabled below.
+      console.warn('PDF generation failed:', err);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Calculate stats
@@ -229,11 +255,11 @@ export default function CompReportPdf({
           }}
         >
           {/* Header */}
-          {user?.reportLogoUrl ? (
+          {user?.reportLogoUrl && !userLogoFailed ? (
             /* Dual-brand header: user logo left (dominant), RE Data Metrix right */
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '12px', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src={user.reportLogoUrl} alt={user.reportCompanyName || 'Company logo'} style={{ height: '40px', width: 'auto', objectFit: 'contain', maxWidth: '120px' }} />
+                <img src={user.reportLogoUrl} alt={user.reportCompanyName || 'Company logo'} style={{ height: '40px', width: 'auto', objectFit: 'contain', maxWidth: '120px' }} onError={() => setUserLogoFailed(true)} />
                 {user.reportCompanyName && (
                   <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#111' }}>{user.reportCompanyName}</div>
                 )}
@@ -291,12 +317,13 @@ export default function CompReportPdf({
                 Garage: {subjectHasGarage === undefined ? 'N/A' : (subjectHasGarage ? 'Yes' : 'No')}; Pool: {subjectHasPool === undefined ? 'N/A' : (subjectHasPool ? 'Yes' : 'No')}
               </div>
             </div>
-            {subjectImageUrl && (
+            {subjectImageUrl && !subjectImageFailed && (
               <div style={{ width: '200px', height: '140px', overflow: 'hidden' }}>
                 <img 
                   src={subjectImageUrl} 
                   alt="Subject Property" 
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={() => setSubjectImageFailed(true)}
                 />
               </div>
             )}

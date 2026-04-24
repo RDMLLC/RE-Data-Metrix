@@ -1246,7 +1246,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               <Card className="mt-3 border-primary/20" data-testid="card-propstream-fallback">
                 <CardContent className="p-4">
                   <p className="text-sm text-foreground">
-                    Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                    Find more comps with PropStream — 160M+ properties nationwide. PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
                     <a
                       href="https://trial.propstreampro.com/redatametrix/"
                       target="_blank"
@@ -1266,7 +1266,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
             <Card className="mt-3 border-primary/20" data-testid="card-propstream-permanent">
               <CardContent className="p-4">
                 <p className="text-sm text-foreground">
-                  Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                  Find more comps with PropStream — 160M+ properties nationwide. PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
                   <a
                     href="https://trial.propstreampro.com/redatametrix/"
                     target="_blank"
