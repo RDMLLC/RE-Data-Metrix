@@ -185,8 +185,11 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   }>({ salePrice: "", propertyType: "" });
 
   type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
+  // null = no column actively selected → default grouping (selected comps
+  // first, then unselected, both by distance asc). Becomes a SortField the
+  // moment the user clicks any column header.
   type SortDirection = "asc" | "desc";
-  const [compsSortField, setCompsSortField] = useState<SortField>("distance");
+  const [compsSortField, setCompsSortField] = useState<SortField | null>(null);
   const [compsSortDirection, setCompsSortDirection] = useState<SortDirection>("asc");
 
   // Stable identity key for a comp: house-number + ZIP. Resilient to street-suffix
@@ -225,6 +228,18 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       });
     }
     return compsWithIndices.sort((a, b) => {
+      // Default mode (no column actively selected): selected comps on top,
+      // unselected on bottom, both sub-sorted by distance ascending. Flagged
+      // sinking and the active-column path do NOT apply here.
+      if (compsSortField === null) {
+        const aSelected = selectedCompIndices.has(a.originalIndex);
+        const bSelected = selectedCompIndices.has(b.originalIndex);
+        if (aSelected !== bSelected) return aSelected ? -1 : 1;
+        const aDist = a.comp.distanceFromSubject ?? 999;
+        const bDist = b.comp.distanceFromSubject ?? 999;
+        return aDist - bDist;
+      }
+
       // Flagged comps always sink to the bottom, unflagged rise to the top
       const aFlagged = !!(a.comp.outlierFlag || a.comp.distressedFlag);
       const bFlagged = !!(b.comp.outlierFlag || b.comp.distressedFlag);
@@ -263,7 +278,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       }
       return compsSortDirection === "asc" ? diff : -diff;
     });
-  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate]);
+  }, [compsData, compsSortField, compsSortDirection, compsDateFilter, filterCutoffDate, selectedCompIndices]);
 
   const toggleSort = (field: SortField) => {
     if (compsSortField === field) {
