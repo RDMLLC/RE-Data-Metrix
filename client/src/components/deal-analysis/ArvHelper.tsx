@@ -97,12 +97,12 @@ interface ArvHelperProps {
   onClose: () => void;
 }
 
-// Smart initial selection: take comps scoring >= 40 with no flags, top 6 by score.
+// Smart initial selection: take comps scoring >= 20 with no flags, top 6 by score.
 // No minimum floor — quality over quantity.
 function computeSmartSelection(comps: SoldPropertyComp[]): Set<number> {
   const suitableIndices = comps
     .map((comp, i) => ({ comp, i }))
-    .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && (comp.similarityScore ?? 0) >= 40)
+    .filter(({ comp }) => !comp.outlierFlag && !comp.distressedFlag && (comp.similarityScore ?? 0) >= 20)
     .sort((a, b) => (b.comp.similarityScore ?? 0) - (a.comp.similarityScore ?? 0))
     .slice(0, 6)
     .map(({ i }) => i);
