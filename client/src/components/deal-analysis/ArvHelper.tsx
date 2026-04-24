@@ -1675,29 +1675,9 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
           </div>
         )}
 
-        {/* No results message */}
-        {compsData && compsData.comps.length === 0 && (
-          <div className="text-center py-6 text-muted-foreground" data-testid="text-no-comps-message">
-            <Home className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No comparable sales found in this area.</p>
-            <p className="text-xs mt-2">
-              Try expanding your search radius
-              {searchRadius < 5
-                ? ` to ${searchRadius === 0.5 ? "1 mile" : searchRadius === 1 ? "2 miles" : searchRadius === 2 ? "3 miles" : "5 miles"}`
-                : ""}
-              {" "}or adjusting the time range, or consider subscribing to Propstream.{" "}
-              <a
-                href="https://trial.propstreampro.com/redatametrix/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-                data-testid="link-propstream-trial"
-              >
-                Use this link to get a 7-day free trial.
-              </a>
-            </p>
-          </div>
-        )}
+        {/* Empty-state message removed — Message A (above) now handles the
+            < 3 comps case (which includes 0 comps), and the persistent
+            Propstream callout card already provides the trial CTA. */}
       </div>
 
       {/* Edit Comp Dialog */}
