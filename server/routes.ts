@@ -18,6 +18,7 @@ import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts,
 import { outboundWebhookService } from "./services/outbound-webhook.service";
 import { sendMetaCapiEvent } from "./services/metaCapi";
 import { normalizePropertyAddress, extractZpidFromUrl, buildCompCacheKey } from "./utils/normalize-address";
+import { appendFileSync } from "node:fs";
 // @ts-ignore
 import signature from "cookie-signature";
 import { getUncachableStripeClient } from "./services/stripeClient";
@@ -10493,12 +10494,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TEMP DEBUG LOG — remove once map issue is diagnosed
       const keyTail = googleMapsApiKey.slice(-4);
       const redactedUrl = googleUrl.replace(googleMapsApiKey, `***${keyTail}`);
-      console.log(`[comp-map] GET -> ${redactedUrl}`);
+      const ts = new Date().toISOString();
+      appendFileSync("/tmp/comp-map-debug.log", `\n[${ts}] GET -> ${redactedUrl}\n`);
       const googleRes = await fetch(googleUrl);
-      console.log(`[comp-map] Google responded ${googleRes.status} ${googleRes.statusText} content-type=${googleRes.headers.get("content-type")}`);
+      appendFileSync("/tmp/comp-map-debug.log", `[${ts}] Google responded ${googleRes.status} ${googleRes.statusText} content-type=${googleRes.headers.get("content-type")}\n`);
       if (!googleRes.ok) {
         const errBody = await googleRes.text();
-        console.log(`[comp-map] Google error body: ${errBody.slice(0, 500)}`);
+        appendFileSync("/tmp/comp-map-debug.log", `[${ts}] Google error body: ${errBody.slice(0, 500)}\n`);
         return res.status(googleRes.status).json({ error: "Static map fetch failed" });
       }
       const contentType = googleRes.headers.get("content-type") || "image/png";
