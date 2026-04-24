@@ -361,6 +361,13 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
       setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
       setActualDateRangeUsed(data.actualDateRangeDays ?? null);
+      // Make expanded date range sticky: if the backend auto-expanded the
+      // date window, adopt the expanded value as the new searchDateRange so
+      // subsequent radius clicks reuse it instead of reverting to the
+      // originally requested window.
+      if (data.dateRangeExpanded && data.actualDateRangeDays) {
+        setSearchDateRange(data.actualDateRangeDays);
+      }
       if (data.comps && data.comps.length > 0) {
         setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
       }
@@ -403,6 +410,13 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
       setActualRadiusUsed(data.actualRadiusMiles ?? null);
       setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
       setActualDateRangeUsed(data.actualDateRangeDays ?? null);
+      // Make expanded date range sticky: if the backend auto-expanded the
+      // date window, adopt the expanded value as the new searchDateRange so
+      // subsequent radius clicks reuse it instead of reverting to the
+      // originally requested window.
+      if (data.dateRangeExpanded && data.actualDateRangeDays) {
+        setSearchDateRange(data.actualDateRangeDays);
+      }
       if (data.comps && data.comps.length > 0) {
         // Selection preservation across manual radius/date-range changes:
         // find which previously selected comps survived in the new response
