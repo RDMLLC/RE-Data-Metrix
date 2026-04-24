@@ -268,44 +268,44 @@ export default function CompReportPdf({
           ref={targetRef}
           style={{
             width: '8.5in',
-            padding: '0.4in',
+            padding: '0.3in',
             backgroundColor: 'white',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             color: '#1f2937',
-            fontSize: '12px',
-            lineHeight: '1.4',
+            fontSize: '10px',
+            lineHeight: '1.3',
           }}
         >
           {/* Header */}
           {user?.reportLogoUrl && !userLogoFailed ? (
             /* Dual-brand header: user logo left (dominant), RE Data Metrix right */
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '12px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <img src={user.reportLogoUrl} alt={user.reportCompanyName || 'Company logo'} style={{ height: '40px', width: 'auto', objectFit: 'contain', maxWidth: '120px' }} onError={() => setUserLogoFailed(true)} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #e5e7eb', paddingBottom: '10px', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img src={user.reportLogoUrl} alt={user.reportCompanyName || 'Company logo'} style={{ height: '32px', width: 'auto', objectFit: 'contain', maxWidth: '100px' }} onError={() => setUserLogoFailed(true)} />
                 {user.reportCompanyName && (
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#111' }}>{user.reportCompanyName}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111' }}>{user.reportCompanyName}</div>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <img src={logoPath} alt="RE Data Metrix" style={{ height: '28px', width: 'auto', opacity: 0.65 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <img src={logoPath} alt="RE Data Metrix" style={{ height: '22px', width: 'auto', opacity: 0.65 }} />
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d4ed8' }}>RE Data Metrix</div>
-                  <div style={{ fontSize: '10px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
-                  <div style={{ fontSize: '10px', color: '#6b7280' }}>www.redatametrix.com</div>
-                  <div style={{ fontSize: '11px', color: '#6b7280' }}>Deal Analysis Report</div>
+                  <div style={{ fontSize: '10px', fontWeight: '600', color: '#1d4ed8' }}>RE Data Metrix</div>
+                  <div style={{ fontSize: '8px', color: '#6b7280', fontStyle: 'italic' }}>Turning Terms into Returns</div>
+                  <div style={{ fontSize: '8px', color: '#6b7280' }}>www.redatametrix.com</div>
+                  <div style={{ fontSize: '9px', color: '#6b7280' }}>Deal Analysis Report</div>
                 </div>
               </div>
             </div>
           ) : (
             /* Fallback: original simple header (current layout) */
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <img src={logoPath} alt="RE Data Metrix" style={{ height: '36px', width: 'auto' }} />
-              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>RE Data Metrix</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+              <img src={logoPath} alt="RE Data Metrix" style={{ height: '28px', width: 'auto' }} />
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#1a1a2e' }}>RE Data Metrix</span>
             </div>
           )}
 
           {/* Title */}
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>
+          <h1 style={{ fontSize: '19px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
             Comp Report
           </h1>
 
@@ -314,33 +314,33 @@ export default function CompReportPdf({
             display: 'flex', 
             border: '1px solid #e5e7eb', 
             borderRadius: '8px', 
-            marginBottom: '24px',
+            marginBottom: '16px',
             overflow: 'hidden',
           }}>
-            <div style={{ flex: 1, padding: '16px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937', marginBottom: '4px' }}>
+            <div style={{ flex: 1, padding: '12px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '3px' }}>
                 {subjectAddress}, {subjectCity}, {subjectState} {subjectZip}
               </div>
               {subjectLastSoldPrice && subjectLastSoldDate && (
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                <div style={{ fontSize: '10px', color: '#6b7280', marginBottom: '6px' }}>
                   Last sold for {formatCurrency(subjectLastSoldPrice)} on {formatShortDate(subjectLastSoldDate)}
                 </div>
               )}
-              <div style={{ fontSize: '14px', color: '#059669', fontWeight: '600', marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', color: '#059669', fontWeight: '600', marginBottom: '6px' }}>
                 Estimated ARV {arvLow && arvHigh ? `${formatCurrency(arvLow)} - ${formatCurrency(arvHigh)}` : (suggestedArv ? formatCurrency(suggestedArv) : 'N/A')}
               </div>
-              <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>
+              <div style={{ fontSize: '11px', color: '#374151', marginBottom: '3px' }}>
                 {subjectSqft?.toLocaleString()} sq ft
               </div>
-              <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>
+              <div style={{ fontSize: '11px', color: '#374151', marginBottom: '3px' }}>
                 {subjectBeds} Bedrooms; {subjectBaths} Bathrooms
               </div>
-              <div style={{ fontSize: '13px', color: '#374151' }}>
+              <div style={{ fontSize: '11px', color: '#374151' }}>
                 Garage: {subjectHasGarage === undefined ? 'N/A' : (subjectHasGarage ? 'Yes' : 'No')}; Pool: {subjectHasPool === undefined ? 'N/A' : (subjectHasPool ? 'Yes' : 'No')}
               </div>
             </div>
             {subjectImageUrl && !subjectImageFailed && (
-              <div style={{ width: '200px', height: '140px', overflow: 'hidden' }}>
+              <div style={{ width: '160px', height: '110px', overflow: 'hidden' }}>
                 <img 
                   src={subjectImageUrl} 
                   alt="Subject Property" 
@@ -352,65 +352,65 @@ export default function CompReportPdf({
           </div>
 
           {/* Comps Section */}
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
             Comps
           </h2>
 
           {/* Summary Metrics */}
           <div style={{ 
             display: 'flex', 
-            gap: '20px', 
-            marginBottom: '16px',
+            gap: '14px', 
+            marginBottom: '12px',
             borderBottom: '1px solid #e5e7eb',
-            paddingBottom: '16px',
+            paddingBottom: '12px',
           }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Price Per Square Foot</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{avgPricePerSqft != null ? `$${avgPricePerSqft.toFixed(0)}/sq ft` : 'N/A'}</div>
+              <div style={{ fontSize: '9px', color: '#6b7280', marginBottom: '2px' }}>Price Per Square Foot</div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>{avgPricePerSqft != null ? `$${avgPricePerSqft.toFixed(0)}/sq ft` : 'N/A'}</div>
             </div>
           </div>
 
           {/* Comps Table — single merged table:
                 Address | Beds/Baths | Sqft | $/Sqft | Sale Date | Sale Price | Distance | Year Built */}
-          <div style={{ marginBottom: '20px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+          <div style={{ marginBottom: '14px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f9fafb' }}>
-                  <th style={{ padding: '8px 6px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Address</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Beds / Baths</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sqft</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>$/Sqft</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Date</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Price</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Distance</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Year Built</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Address</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Beds / Baths</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sqft</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>$/Sqft</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Date</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Price</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Distance</th>
+                  <th style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Year Built</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedComps.map((comp, index) => (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
-                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.address}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.bedrooms} / {comp.bathrooms}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.sqft?.toLocaleString()}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.pricePerSqft != null ? `$${comp.pricePerSqft.toFixed(0)}/sq ft` : '—'}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.isPending ? 'Pending' : formatMmDdYy(comp.saleDate)}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600' }}>
                       {formatCurrency(comp.salePrice)}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.distanceFromSubject != null ? `${comp.distanceFromSubject.toFixed(1)} mi` : '—'}
                     </td>
-                    <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '5px 4px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
                       {comp.yearBuilt || '—'}
                     </td>
                   </tr>
@@ -423,27 +423,27 @@ export default function CompReportPdf({
               Wrapped in mapImageFailed guard with onError so a failed map
               never blocks the rest of the PDF from generating. */}
           {compMapUrl && !mapImageFailed && (
-            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '14px', textAlign: 'center' }}>
               <img
                 src={compMapUrl}
                 alt="Subject and comparable properties map"
-                style={{ display: 'block', margin: '0 auto', width: '600px', maxWidth: '100%', height: 'auto', border: '1px solid #e5e7eb' }}
+                style={{ display: 'block', margin: '0 auto', width: '600px', maxWidth: '100%', height: '200px', border: '1px solid #e5e7eb' }}
                 onError={() => setMapImageFailed(true)}
               />
             </div>
           )}
 
           {/* Footer */}
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>
+          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <div style={{ fontSize: '9px', color: '#6b7280', marginBottom: '3px' }}>
                 This comparable sales report was generated using RE Data Metrix™
               </div>
-              <div style={{ fontSize: '12px', color: '#1f2937', fontWeight: 'bold' }}>
+              <strong style={{ display: 'block', fontSize: '10px', color: '#1f2937', fontWeight: 700 }}>
                 Start your free 7-day trial at redatametrix.com
-              </div>
+              </strong>
             </div>
-            <div style={{ fontSize: '8px', color: '#9ca3af', textAlign: 'center' }}>
+            <div style={{ fontSize: '7px', color: '#9ca3af', textAlign: 'center' }}>
               Disclaimer: This report is for informational purposes only. Comparable sales data is based on publicly available records. 
               Always conduct your own due diligence and consult with qualified professionals before making investment decisions.
             </div>
