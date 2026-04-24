@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -90,6 +91,12 @@ interface CompsSearchResponse {
   actualRadiusMiles?: number;
   dateRangeExpanded?: boolean;
   actualDateRangeDays?: number;
+  // Server-reported counts after the full hybrid expansion sequence has run.
+  // Used to gate the PropStream fallback callout when there are too few
+  // suitable comps to support a reliable ARV estimate.
+  searchStats?: {
+    suitableCount?: number;
+  };
 }
 
 interface ArvHelperProps {
@@ -1231,6 +1238,47 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 })}
               </TableBody>
             </Table>
+
+            {/* PropStream fallback callout — shown when, after the full
+                auto-expansion sequence has run, there are still fewer than 3
+                suitable comps in the result set. */}
+            {compsData && (compsData.searchStats?.suitableCount ?? 0) < 3 && (
+              <Card className="mt-3 border-primary/20" data-testid="card-propstream-fallback">
+                <CardContent className="p-4">
+                  <p className="text-sm text-foreground">
+                    Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                    <a
+                      href="https://trial.propstreampro.com/redatametrix/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium"
+                      data-testid="link-propstream-fallback"
+                    >
+                      Start your free 7-day trial →
+                    </a>
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* PropStream permanent callout — always visible above the ARV
+                result regardless of comp count. */}
+            <Card className="mt-3 border-primary/20" data-testid="card-propstream-permanent">
+              <CardContent className="p-4">
+                <p className="text-sm text-foreground">
+                  Want more accurate comps? PropStream gives investors access to MLS-backed sales data, off-market properties, and advanced comp tools across 160M+ properties nationwide.{" "}
+                  <a
+                    href="https://trial.propstreampro.com/redatametrix/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline font-medium"
+                    data-testid="link-propstream-permanent"
+                  >
+                    Start your free 7-day trial →
+                  </a>
+                </p>
+              </CardContent>
+            </Card>
 
             {/* Suggested ARV */}
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">

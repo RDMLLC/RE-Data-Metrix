@@ -112,13 +112,6 @@ function calculateMonthsSinceSale(dateString: string): number {
   return Math.max(0, months);
 }
 
-function calculateAdjustment(comp: SoldPropertyComp, subjectSqft: number): number {
-  if (!comp.sqft || !subjectSqft) return 0;
-  const sqftDiff = subjectSqft - comp.sqft;
-  const pricePerSqft = comp.pricePerSqft || (comp.salePrice / comp.sqft);
-  return Math.round(sqftDiff * pricePerSqft);
-}
-
 export default function CompReportPdf({
   subjectAddress,
   subjectCity,
@@ -193,17 +186,6 @@ export default function CompReportPdf({
   const avgLotSize = selectedComps.length > 0 && selectedComps.some(c => c.lotSize)
     ? (selectedComps.filter(c => c.lotSize).reduce((sum, c) => sum + (c.lotSize || 0), 0) / selectedComps.filter(c => c.lotSize).length / 43560).toFixed(2)
     : null;
-
-  // Calculate adjusted prices
-  const compsWithAdjustments = selectedComps.map(comp => ({
-    ...comp,
-    adjustment: calculateAdjustment(comp, subjectSqft),
-    adjustedPrice: comp.salePrice + calculateAdjustment(comp, subjectSqft),
-  }));
-
-  const avgAdjustedPrice = compsWithAdjustments.length > 0
-    ? Math.round(compsWithAdjustments.reduce((sum, c) => sum + c.adjustedPrice, 0) / compsWithAdjustments.length)
-    : 0;
 
   // Calculate ARV range (±5% of suggested ARV)
   const arvLow = suggestedArv ? Math.round(suggestedArv * 0.95) : null;
@@ -334,10 +316,6 @@ export default function CompReportPdf({
             paddingBottom: '16px',
           }}>
             <div>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Avg Sale Price (Adjusted)</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{formatCurrency(avgAdjustedPrice)}</div>
-            </div>
-            <div>
               <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>Avg Square Feet</div>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{avgSqft.toLocaleString()} sq ft</div>
             </div>
@@ -347,39 +325,43 @@ export default function CompReportPdf({
             </div>
           </div>
 
-          {/* Adjustments Table */}
+          {/* Comps Table */}
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
-              Adjustments
-            </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
               <thead>
-                <tr>
-                  <th style={{ padding: '8px 6px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Comp</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Original</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Adjustment</th>
-                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Adjusted</th>
+                <tr style={{ backgroundColor: '#f9fafb' }}>
+                  <th style={{ padding: '8px 6px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Address</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Beds / Baths</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sqft</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Distance</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Date</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Sale Price</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '2px solid #e5e7eb', fontWeight: '600', color: '#6b7280' }}>Price/Sqft</th>
                 </tr>
               </thead>
               <tbody>
-                {compsWithAdjustments.map((comp, index) => (
-                  <tr key={index}>
+                {selectedComps.map((comp, index) => (
+                  <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
                     <td style={{ padding: '8px 6px', borderBottom: '1px solid #f3f4f6' }}>
-                      {comp.address.length > 28 ? comp.address.substring(0, 28) + '...' : comp.address}
+                      {comp.address}
+                    </td>
+                    <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.bedrooms} / {comp.bathrooms}
                     </td>
                     <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
-                      {formatCurrency(comp.salePrice)}
+                      {comp.sqft?.toLocaleString()}
                     </td>
-                    <td style={{ 
-                      padding: '8px 6px', 
-                      textAlign: 'right', 
-                      borderBottom: '1px solid #f3f4f6',
-                      color: comp.adjustment >= 0 ? '#059669' : '#dc2626',
-                    }}>
-                      {comp.adjustment >= 0 ? '+' : ''}{formatCurrency(comp.adjustment)}
+                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.distanceFromSubject != null ? `${comp.distanceFromSubject.toFixed(1)} mi` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 6px', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.isPending ? 'Pending' : formatDate(comp.saleDate)}
                     </td>
                     <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6', fontWeight: '600' }}>
-                      {formatCurrency(comp.adjustedPrice)}
+                      {formatCurrency(comp.salePrice)}
+                    </td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right', borderBottom: '1px solid #f3f4f6' }}>
+                      {comp.pricePerSqft != null ? `$${comp.pricePerSqft.toFixed(0)}/sq ft` : '—'}
                     </td>
                   </tr>
                 ))}
