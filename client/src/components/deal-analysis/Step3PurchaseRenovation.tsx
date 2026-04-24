@@ -499,6 +499,18 @@ export default function Step3PurchaseRenovation({
       const previouslySelectedKeys = new Set(previouslySelectedComps.map(compKey));
 
       // ── SOFT LOCK ──
+      console.error(
+        '[ARV SoftLock] entry — selectedCompIndices.size=',
+        selectedCompIndices.size,
+        'compsData?.comps.length=',
+        compsData?.comps?.length ?? 'null/undefined',
+        'previouslySelectedComps.length=',
+        previouslySelectedComps.length,
+        'newDataComps.length=',
+        (data.comps || []).length,
+        'radius=',
+        radius
+      );
       // If the previous selection had ≥3 suitable comps and the new (wider)
       // radius response is missing any of them (because upstream APIs returned
       // a different top-K at this radius), carry the missing previously-selected
