@@ -10018,8 +10018,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comparable Sales Search Route (for ARV help)
   app.post("/api/comps/search", ensureAuthenticated, async (req, res) => {
     try {
+      console.log('[COMPS DEBUG] Request:', JSON.stringify(req.body, null, 2));
       const { address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType, subjectLat, subjectLng, radiusMiles, saleDateRangeDays, anchorMedian } = req.body;
-      
+
       // Validate required fields
       if (!city || !state || !sqft) {
         return res.status(400).json({ 
@@ -10129,7 +10130,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // expand, but from the current caller's perspective no expansion occurred.
         const cachedActualRadius = Number(compCached.actualRadiusMiles);
         const effectiveRadius = isNaN(cachedActualRadius) ? requestedRadius : cachedActualRadius;
-        return res.json({
+        const cacheSuitableCount = (compCached.comps as any[]).filter((c: any) =>
+          !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
+        ).length;
+        const cacheResponseBody = {
           comps: compCached.comps,
           radiusExpanded: effectiveRadius > requestedRadius,
           actualRadiusMiles: effectiveRadius,
@@ -10145,13 +10149,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             mergedCount: 0,
             totalBeforeDedupe: 0,
             finalCount: (compCached.comps as any[]).length,
-            suitableCount: (compCached.comps as any[]).filter((c: any) =>
-              !c.outlierFlag && !c.distressedFlag && !c.borderlineFlag
-            ).length,
+            suitableCount: cacheSuitableCount,
             medianPricePerSqft: medianFromCache,
           },
           _fromCache: true,
-        });
+        };
+        console.log('[COMPS DEBUG] Response (CACHE HIT):', JSON.stringify({
+          radiusExpanded: cacheResponseBody.radiusExpanded,
+          actualRadiusMiles: cacheResponseBody.actualRadiusMiles,
+          dateRangeExpanded: cacheResponseBody.dateRangeExpanded,
+          actualDateRangeDays: cacheResponseBody.actualDateRangeDays,
+          suitableCount: cacheResponseBody.searchStats.suitableCount,
+          finalCount: (compCached.comps as any[]).length,
+          comps: (compCached.comps as any[]).map((c: any) => ({
+            address: c.address,
+            distressedFlag: c.distressedFlag,
+            outlierFlag: c.outlierFlag,
+            borderlineFlag: c.borderlineFlag,
+            similarityScore: c.similarityScore,
+            pricePerSqft: c.pricePerSqft,
+          })),
+        }, null, 2));
+        return res.json(cacheResponseBody);
       }
 
       const result = await hybridService.searchComps({
@@ -10192,6 +10211,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (compCacheWriteErr: any) {
         console.warn(`[Comp Cache] Write failed (non-fatal): ${compCacheWriteErr.message}`);
       }
+
+      console.log('[COMPS DEBUG] Response (FRESH):', JSON.stringify({
+        radiusExpanded: result.radiusExpanded,
+        actualRadiusMiles: result.actualRadiusMiles,
+        dateRangeExpanded: result.dateRangeExpanded,
+        actualDateRangeDays: result.actualDateRangeDays,
+        suitableCount: result.searchStats?.suitableCount,
+        finalCount: result.comps?.length,
+        comps: result.comps?.map((c: any) => ({
+          address: c.address,
+          distressedFlag: c.distressedFlag,
+          outlierFlag: c.outlierFlag,
+          borderlineFlag: c.borderlineFlag,
+          similarityScore: c.similarityScore,
+          pricePerSqft: c.pricePerSqft,
+        })),
+      }, null, 2));
 
       if (result.comps.length > 0) {
         return res.json({
