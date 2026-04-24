@@ -1232,6 +1232,25 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
           );
         })()}
 
+        {/* Message A — fewer than 3 comps were returned by the search.
+             Sits in the same location the comps table would normally appear
+             so the user immediately sees why the table isn't there (or why
+             it's so small). Triggers only after a search has completed
+             (compsData exists and we are not currently searching). */}
+        {compsData &&
+          compsData.comps.length < 3 &&
+          !isSearchingComps && (
+            <div
+              className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+              data-testid="text-too-few-comps-message"
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Not enough comparable sales were found in this area. This is common in rural markets, areas with low sales volume, unique or luxury properties, or very new developments. Try expanding the date range or radius above, or add your own comps using + Add Comp.
+              </p>
+            </div>
+          )}
+
         {/* Comps Results */}
         {compsData && compsData.comps.length > 0 && (
           <div className="space-y-3">
@@ -1240,6 +1259,25 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 {compsData.comps.length} comp{compsData.comps.length !== 1 ? "s" : ""} found
               </span>
             </div>
+
+            {/* Message B — many comps were returned but auto-selection
+                 produced nothing. Shown above the table so the user
+                 understands why nothing is pre-selected and is prompted to
+                 select manually. Disappears as soon as the user selects
+                 their first comp. */}
+            {compsData.comps.length >= 3 &&
+              selectedCompIndices.size === 0 &&
+              !isSearchingComps && (
+                <div
+                  className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+                  data-testid="text-no-auto-select-warning"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    {compsData.comps.length} comparable sales were found but the system could not automatically identify the best matches. This typically happens when the subject property has an unusual bed/bath count, predominantly distressed nearby sales, or a wide price spread in the area. Please manually select the comps most similar to your subject property.
+                  </p>
+                </div>
+              )}
 
             {/* Insufficient selected comps warning */}
             {selectedCompIndices.size < 3 && (
