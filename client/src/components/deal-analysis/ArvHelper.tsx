@@ -195,6 +195,18 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const propertyLatitude = form.watch("propertyLatitude");
   const propertyLongitude = form.watch("propertyLongitude");
 
+  const [repairBedrooms, setRepairBedrooms] = useState<number | null>(null);
+  const [repairBathrooms, setRepairBathrooms] = useState<number | null>(null);
+  const [repairSqft, setRepairSqft] = useState<number | null>(null);
+  const [showRepairPanel, setShowRepairPanel] = useState(false);
+  const [repairBedroomsInput, setRepairBedroomsInput] = useState("");
+  const [repairBathroomsInput, setRepairBathroomsInput] = useState("");
+  const [repairSqftInput, setRepairSqftInput] = useState("");
+  const effectiveBedrooms = repairBedrooms ?? bedrooms;
+  const effectiveBathrooms = repairBathrooms ?? bathrooms;
+  const effectiveSqft = repairSqft ?? sqft;
+  const hasRepairOverride = repairBedrooms !== null || repairBathrooms !== null || repairSqft !== null;
+
   const [isSearchingComps, setIsSearchingComps] = useState(false);
   const [compsData, setCompsData] = useState<CompsSearchResponse | null>(null);
   const [radiusWasExpanded, setRadiusWasExpanded] = useState(false);
@@ -480,7 +492,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     setActualDateRangeUsed(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
-        address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
+        address, city, state, zipCode, bedrooms: effectiveBedrooms, bathrooms: effectiveBathrooms, sqft: effectiveSqft, propertyType,
         subjectLat: propertyLatitude, subjectLng: propertyLongitude,
         radiusMiles: searchRadius, saleDateRangeDays: searchDateRange,
       });
@@ -528,7 +540,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     setActualDateRangeUsed(null);
     try {
       const response = await apiRequest("POST", "/api/comps/search", {
-        address, city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
+        address, city, state, zipCode, bedrooms: effectiveBedrooms, bathrooms: effectiveBathrooms, sqft: effectiveSqft, propertyType,
         subjectLat: propertyLatitude, subjectLng: propertyLongitude,
         radiusMiles: radius, saleDateRangeDays: dateRange,
       });
@@ -619,7 +631,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     setIsSearchingPending(true);
     try {
       const response = await apiRequest("POST", "/api/comps/search-pending", {
-        city, state, zipCode, bedrooms, bathrooms, sqft, propertyType,
+        city, state, zipCode, bedrooms: effectiveBedrooms, bathrooms: effectiveBathrooms, sqft: effectiveSqft, propertyType,
         subjectLat: propertyLatitude, subjectLng: propertyLongitude,
       });
       const data = await response.json();
@@ -843,13 +855,23 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  {bedrooms && bathrooms && (
+                  {effectiveBedrooms && effectiveBathrooms && (
                     <span className="flex items-center gap-1">
                       <Home className="h-3 w-3" />
-                      {bedrooms}/{bathrooms}
+                      {effectiveBedrooms}/{effectiveBathrooms}
+                      {(repairBedrooms !== null || repairBathrooms !== null) && (
+                        <span className="text-primary font-medium">(modified)</span>
+                      )}
                     </span>
                   )}
-                  {sqft && <span className="flex items-center gap-1">{sqft.toLocaleString()} sqft</span>}
+                  {effectiveSqft && (
+                    <span className="flex items-center gap-1">
+                      {effectiveSqft.toLocaleString()} sqft
+                      {repairSqft !== null && (
+                        <span className="text-primary font-medium">(modified)</span>
+                      )}
+                    </span>
+                  )}
                   {yearBuilt && <span className="flex items-center gap-1">{yearBuilt}</span>}
                   {lotSize && <span className="flex items-center gap-1">{lotSize.toLocaleString()} sqft lot</span>}
                 </div>
@@ -1276,11 +1298,13 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
             <MapPin className="h-3 w-3 inline mr-1" />
             {city}, {state} {zipCode}
           </span>
-          <span className="bg-muted px-2 py-1 rounded">
+          <span className={`px-2 py-1 rounded ${repairBedrooms !== null || repairBathrooms !== null ? "bg-primary/10 text-primary" : "bg-muted"}`}>
             <Home className="h-3 w-3 inline mr-1" />
-            {bedrooms} bed, {bathrooms} bath
+            {effectiveBedrooms} bed, {effectiveBathrooms} bath
           </span>
-          <span className="bg-muted px-2 py-1 rounded">{sqft.toLocaleString()} sqft (±20%)</span>
+          <span className={`px-2 py-1 rounded ${repairSqft !== null ? "bg-primary/10 text-primary" : "bg-muted"}`}>
+            {effectiveSqft.toLocaleString()} sqft (±20%)
+          </span>
           {propertyType && (
             <span className="bg-muted px-2 py-1 rounded">
               {propertyType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}

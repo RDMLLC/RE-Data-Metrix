@@ -1,0 +1,71 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+PART A — Add state declarations
+After the line: const propertyLongitude = form.watch("propertyLongitude");
+Add:
+
+  const [repairBedrooms, setRepairBedrooms] = useState<number | null>(null);
+  const [repairBathrooms, setRepairBathrooms] = useState<number | null>(null);
+  const [repairSqft, setRepairSqft] = useState<number | null>(null);
+  const [showRepairPanel, setShowRepairPanel] = useState(false);
+  const [repairBedroomsInput, setRepairBedroomsInput] = useState("");
+  const [repairBathroomsInput, setRepairBathroomsInput] = useState("");
+  const [repairSqftInput, setRepairSqftInput] = useState("");
+  const effectiveBedrooms = repairBedrooms ?? bedrooms;
+  const effectiveBathrooms = repairBathrooms ?? bathrooms;
+  const effectiveSqft = repairSqft ?? sqft;
+  const hasRepairOverride = repairBedrooms !== null || repairBathrooms !== null || repairSqft !== null;
+
+PART B — Update API call sites
+Find every line containing: bedrooms, bathrooms, sqft
+in an apiRequest POST call body and replace with:
+  bedrooms: effectiveBedrooms, bathrooms: effectiveBathrooms, sqft: effectiveSqft
+
+There are three such lines — in searchComps, the manual radius handler,
+and search-pending.
+
+PART C — Update top summary bar
+Find the spans at the location showing {bedrooms}/{bathrooms} and
+{sqft.toLocaleString()} sqft inside the flex wrap row below the address.
+Replace with:
+
+  {effectiveBedrooms && effectiveBathrooms && (
+    <span className="flex items-center gap-1">
+      <Home className="h-3 w-3" />
+      {effectiveBedrooms}/{effectiveBathrooms}
+      {(repairBedrooms !== null || repairBathrooms !== null) && (
+        <span className="text-primary font-medium">(modified)</span>
+      )}
+    </span>
+  )}
+  {effectiveSqft && (
+    <span className="flex items-center gap-1">
+      {effectiveSqft.toLocaleString()} sqft
+      {repairSqft !== null && (
+        <span className="text-primary font-medium">(modified)</span>
+      )}
+    </span>
+  )}
+
+PART D — Update search filter chips
+Find the two chips showing:
+  {bedrooms} bed, {bathrooms} bath
+  {sqft.toLocaleString()} sqft (±20%)
+Replace with:
+
+  <span className={`px-2 py-1 rounded ${repairBedrooms !== null || repairBathrooms !== null ? "bg-primary/10 text-primary" : "bg-muted"}`}>
+    <Home className="h-3 w-3 inline mr-1" />
+    {effectiveBedrooms} bed, {effectiveBathrooms} bath
+  </span>
+  <span className={`px-2 py-1 rounded ${repairSqft !== null ? "bg-primary/10 text-primary" : "bg-muted"}`}>
+    {effectiveSqft.toLocaleString()} sqft (±20%)
+  </span>
+
+After making these changes output:
+1. New state declarations with line numbers
+2. All three API call sites with line numbers
+3. Updated top summary bar spans with line numbers
+4. Updated search filter chips with line numbers
+
+Raw code only, no prose. Wrap each result in a code block.
