@@ -10132,41 +10132,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         anchorMedian: anchorMedian ?? undefined,
       });
 
-      // TEMP DEBUG: log the live FRESH-path response (every comp's flags) to
-      // /tmp/comps-live.log so we can compare browser-observed selection vs
-      // backend-emitted flags. Remove after city-tier debugging is done.
-      try {
-        appendFileSync(
-          "/tmp/comps-live.log",
-          JSON.stringify(
-            {
-              ts: new Date().toISOString(),
-              radius: req.body.radiusMiles,
-              subject: {
-                addr: req.body.address,
-                city: req.body.city,
-                bedrooms: req.body.bedrooms,
-              },
-              comps: result.comps.map((c: any) => ({
-                addr: c.address,
-                city: c.city,
-                beds: c.bedrooms,
-                ppsf: c.pricePerSqft,
-                dist: c.distanceFromSubject,
-                distressed: c.distressedFlag,
-                outlier: c.outlierFlag,
-                borderline: c.borderlineFlag,
-                cityMismatch: c.cityMismatch,
-              })),
-            },
-            null,
-            2,
-          ) + "\n---\n",
-        );
-      } catch {
-        // best-effort debug log; never fail the request
-      }
-
       // ── Write comp result to cache (24h TTL, keyed by actual radius post-expansion) ──
       // Skip caching empty results: a 0-comp row would short-circuit future
       // expansion attempts for 24h. If the area genuinely has no comps right
