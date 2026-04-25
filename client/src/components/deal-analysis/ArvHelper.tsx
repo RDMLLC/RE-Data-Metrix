@@ -260,7 +260,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     propertyType: string;
   }>({ salePrice: "", propertyType: "" });
 
-  type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
+  type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft" | "bedBath";
   // null = no column actively selected → default grouping (selected comps
   // first, then unselected, both by distance asc). Becomes a SortField the
   // moment the user clicks any column header.
@@ -316,11 +316,6 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         return aDist - bDist;
       }
 
-      // Flagged comps always sink to the bottom, unflagged rise to the top
-      const aFlagged = !!(a.comp.outlierFlag || a.comp.distressedFlag);
-      const bFlagged = !!(b.comp.outlierFlag || b.comp.distressedFlag);
-      if (aFlagged !== bFlagged) return aFlagged ? 1 : -1;
-
       // Within the same group, apply the active sort column
       let aVal: number, bVal: number;
       switch (compsSortField) {
@@ -339,6 +334,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         case "sqft":
           aVal = a.comp.sqft;
           bVal = b.comp.sqft;
+          break;
+        case "bedBath":
+          aVal = (a.comp.bedrooms ?? 0) * 10 + (a.comp.bathrooms ?? 0);
+          bVal = (b.comp.bedrooms ?? 0) * 10 + (b.comp.bathrooms ?? 0);
           break;
         case "distance":
         default:
@@ -1402,7 +1401,23 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10"></TableHead>
+                  <TableHead
+                    className="w-10 cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => {
+                      setCompsSortField(null);
+                      setCompsSortDirection("asc");
+                    }}
+                    title="Show selected comps first"
+                    data-testid="sort-selected-first"
+                  >
+                    <div className="flex items-center justify-center">
+                      {compsSortField === null ? (
+                        <ArrowUpDown className="h-3 w-3 text-primary" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </div>
+                  </TableHead>
                   <TableHead className="w-8"></TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead
@@ -1433,7 +1448,20 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                       )}
                     </div>
                   </TableHead>
-                  <TableHead className="text-center">Bed/Bath</TableHead>
+                  <TableHead
+                    className="text-center cursor-pointer select-none hover:bg-muted/50"
+                    onClick={() => toggleSort("bedBath")}
+                    data-testid="sort-bed-bath"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      Bed/Bath
+                      {compsSortField === "bedBath" ? (
+                        compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </div>
+                  </TableHead>
                   <TableHead
                     className="text-right cursor-pointer select-none hover:bg-muted/50"
                     onClick={() => toggleSort("sqft")}

@@ -1,0 +1,78 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+CHANGE — Sort improvements
+
+PART A — Remove flagged-comps sinking from column sort
+In the sortedCompsWithIndices useMemo, delete lines 319–322 entirely:
+  // Flagged comps always sink to the bottom, unflagged rise to the top
+  const aFlagged = !!(a.comp.outlierFlag || a.comp.distressedFlag);
+  const bFlagged = !!(b.comp.outlierFlag || b.comp.distressedFlag);
+  if (aFlagged !== bFlagged) return aFlagged ? 1 : -1;
+
+When a column sort is active, all comps should sort purely by that column 
+regardless of flag status.
+
+PART B — Add bedBath sort
+At line 263, update SortField type from:
+  type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft";
+To:
+  type SortField = "distance" | "salePrice" | "saleDate" | "pricePerSqft" | "sqft" | "bedBath";
+
+In the sortedCompsWithIndices useMemo switch statement, add a case before the 
+distance default:
+  case "bedBath":
+    aVal = (a.comp.bedrooms ?? 0) * 10 + (a.comp.bathrooms ?? 0);
+    bVal = (b.comp.bedrooms ?? 0) * 10 + (b.comp.bathrooms ?? 0);
+    break;
+
+At line 1436, replace:
+  <TableHead className="text-center">Bed/Bath</TableHead>
+With:
+  <TableHead
+    className="text-center cursor-pointer select-none hover:bg-muted/50"
+    onClick={() => toggleSort("bedBath")}
+    data-testid="sort-bed-bath"
+  >
+    <div className="flex items-center justify-center gap-1">
+      Bed/Bath
+      {compsSortField === "bedBath" ? (
+        compsSortDirection === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+      ) : (
+        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+      )}
+    </div>
+  </TableHead>
+
+PART C — Add selected-first arrow to checkbox column header
+At line 1405, replace:
+  <TableHead className="w-10"></TableHead>
+With:
+  <TableHead
+    className="w-10 cursor-pointer select-none hover:bg-muted/50"
+    onClick={() => {
+      setCompsSortField(null);
+      setCompsSortDirection("asc");
+    }}
+    title="Show selected comps first"
+    data-testid="sort-selected-first"
+  >
+    <div className="flex items-center justify-center">
+      {compsSortField === null ? (
+        <ArrowUpDown className="h-3 w-3 text-primary" />
+      ) : (
+        <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
+      )}
+    </div>
+  </TableHead>
+
+When compsSortField is null (selected-first mode), the icon shows in primary 
+color to indicate it is the active sort. When a column sort is active, it shows 
+in muted color.
+
+After making all changes output:
+1. The updated SortField type declaration with line numbers
+2. The full updated sortedCompsWithIndices useMemo sort block with line numbers
+3. The full updated TableHeader with all column headers with line numbers
+
+Raw code only, no prose. Wrap each result in a code block.
