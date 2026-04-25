@@ -1530,6 +1530,44 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   <div className="text-2xl font-bold text-primary" data-testid="text-suggested-arv">
                     {selectedArvData.arv ? formatCurrency(selectedArvData.arv) : "N/A"}
                   </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <CompReportPdf
+                      subjectAddress={address}
+                      subjectCity={city}
+                      subjectState={state}
+                      subjectZip={zipCode}
+                      subjectBeds={bedrooms}
+                      subjectBaths={bathrooms}
+                      subjectSqft={sqft}
+                      subjectYearBuilt={form.watch("yearBuilt")}
+                      subjectLat={propertyLatitude}
+                      subjectLng={propertyLongitude}
+                      suggestedArv={selectedArvData.arv}
+                      avgPricePerSqft={selectedArvData.avgPricePerSqft}
+                      selectedComps={(compsData?.comps || []).filter((_, index) =>
+                        selectedCompIndices.has(index)
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedArvData.arv) {
+                          form.setValue("arv", selectedArvData.arv);
+                          form.setValue("estimatedValue", selectedArvData.arv);
+                          toast({
+                            title: "ARV Applied",
+                            description: `Est. Market Value set to ${formatCurrency(selectedArvData.arv)}`,
+                          });
+                          onClose();
+                        }
+                      }}
+                      disabled={!selectedArvData.arv}
+                      data-testid="button-use-suggested-arv"
+                    >
+                      Use This ARV
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1908,44 +1946,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 </div>
               )}
 
-              <div className="mt-3 flex justify-end gap-2">
-                <CompReportPdf
-                  subjectAddress={address}
-                  subjectCity={city}
-                  subjectState={state}
-                  subjectZip={zipCode}
-                  subjectBeds={bedrooms}
-                  subjectBaths={bathrooms}
-                  subjectSqft={sqft}
-                  subjectYearBuilt={form.watch("yearBuilt")}
-                  subjectLat={propertyLatitude}
-                  subjectLng={propertyLongitude}
-                  suggestedArv={selectedArvData.arv}
-                  avgPricePerSqft={selectedArvData.avgPricePerSqft}
-                  selectedComps={(compsData?.comps || []).filter((_, index) =>
-                    selectedCompIndices.has(index)
-                  )}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    if (selectedArvData.arv) {
-                      form.setValue("arv", selectedArvData.arv);
-                      form.setValue("estimatedValue", selectedArvData.arv);
-                      toast({
-                        title: "ARV Applied",
-                        description: `Est. Market Value set to ${formatCurrency(selectedArvData.arv)}`,
-                      });
-                      onClose();
-                    }
-                  }}
-                  disabled={!selectedArvData.arv}
-                  data-testid="button-use-suggested-arv"
-                >
-                  Use This ARV
-                </Button>
-              </div>
+
             </div>
           </div>
         )}
