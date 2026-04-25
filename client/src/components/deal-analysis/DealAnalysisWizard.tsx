@@ -441,9 +441,7 @@ export default function DealAnalysisWizard() {
 
   // Scroll to top when navigating to Step 6 (Results) so summary is visible (works for both subscribers and paywall)
   useEffect(() => {
-    if (currentStep === 6) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
   const handleBack = () => {
