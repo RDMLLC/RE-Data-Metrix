@@ -1,0 +1,74 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+CHANGE — Add "Changing beds, baths, or sqft?" repair profile panel
+
+PART A — Add state declarations
+After line 196 (const propertyLongitude = form.watch(...)), add:
+
+  const [repairBedrooms, setRepairBedrooms] = useState<number | null>(null);
+  const [repairBathrooms, setRepairBathrooms] = useState<number | null>(null);
+  const [repairSqft, setRepairSqft] = useState<number | null>(null);
+  const [showRepairPanel, setShowRepairPanel] = useState(false);
+  const [repairBedroomsInput, setRepairBedroomsInput] = useState("");
+  const [repairBathroomsInput, setRepairBathroomsInput] = useState("");
+  const [repairSqftInput, setRepairSqftInput] = useState("");
+
+  const effectiveBedrooms = repairBedrooms ?? bedrooms;
+  const effectiveBathrooms = repairBathrooms ?? bathrooms;
+  const effectiveSqft = repairSqft ?? sqft;
+  const hasRepairOverride = repairBedrooms !== null || repairBathrooms !== null || repairSqft !== null;
+
+PART B — Update API call sites to use effective values
+At lines 483, 531, and 622, replace:
+  bedrooms, bathrooms, sqft
+With:
+  bedrooms: effectiveBedrooms, bathrooms: effectiveBathrooms, sqft: effectiveSqft
+
+PART C — Update the top summary bar (lines 846–854)
+Replace the bed/bath and sqft spans with versions that show effective values 
+and a visual indicator when overridden:
+
+  {effectiveBedrooms && effectiveBathrooms && (
+    <span className="flex items-center gap-1">
+      <Home className="h-3 w-3" />
+      {effectiveBedrooms}/{effectiveBathrooms}
+      {(repairBedrooms !== null || repairBathrooms !== null) && (
+        <span className="text-primary font-medium">(modified)</span>
+      )}
+    </span>
+  )}
+  {effectiveSqft && (
+    <span className="flex items-center gap-1">
+      {effectiveSqft.toLocaleString()} sqft
+      {repairSqft !== null && (
+        <span className="text-primary font-medium">(modified)</span>
+      )}
+    </span>
+  )}
+
+PART D — Update the search filter chips (lines 1279–1283)
+Replace the bed/bath and sqft chips with:
+
+  <span className={`px-2 py-1 rounded ${repairBedrooms !== null || repairBathrooms !== null ? "bg-primary/10 text-primary" : "bg-muted"}`}>
+    <Home className="h-3 w-3 inline mr-1" />
+    {effectiveBedrooms} bed, {effectiveBathrooms} bath
+  </span>
+  <span className={`px-2 py-1 rounded ${repairSqft !== null ? "bg-primary/10 text-primary" : "bg-muted"}`}>
+    {effectiveSqft.toLocaleString()} sqft (±20%)
+  </span>
+
+PART E — Add the repair panel trigger and expandable panel
+Immediately after the closing </div> at line 855 (end of the flex wrap row 
+containing bed/bath, sqft, yearBuilt, lotSize spans), add:
+
+  <div className="mt-1">
+    <button
+      className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
+      onClick={() => {
+        if (!showRepairPanel) {
+          setRepairBedroomsInput(String(repairBedrooms ?? bedrooms));
+          setRepairBathroomsInput(String(repairBathrooms ?? bathrooms));
+          setRepairSqftInput(String(repairSqft ?? sqft));
+        }
+        setShowRepairPanel(!showRepairPan
