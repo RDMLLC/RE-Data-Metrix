@@ -391,16 +391,37 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   // Wide range warning — recomputes whenever selection or data changes
   const wideRangeWarning = useMemo(() => {
     if (!compsData || selectedCompIndices.size < 2) return null;
+
     const selectedComps = compsData.comps.filter((_, i) => selectedCompIndices.has(i));
-    const prices = selectedComps.map(c => c.pricePerSqft).filter(p => p > 0);
-    if (prices.length < 2) return null;
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    if (minPrice <= 0) return null;
-    const spread = (maxPrice - minPrice) / minPrice;
-    if (spread > 0.6) {
-      return `Wide price range detected among selected comps ($${minPrice.toLocaleString()} to $${maxPrice.toLocaleString()} per sqft). One or more comps may not be representative — review before using this ARV.`;
+    const unselectedComps = compsData.comps.filter((_, i) => !selectedCompIndices.has(i));
+
+    const selectedPrices = selectedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+    if (selectedPrices.length < 2) return null;
+
+    const minSelected = Math.min(...selectedPrices);
+    const maxSelected = Math.max(...selectedPrices);
+    if (minSelected <= 0) return null;
+
+    // Condition 1: wide spread among selected comps (>40% of min)
+    const selectedSpread = (maxSelected - minSelected) / minSelected;
+
+    // Condition 2: selected comps cluster significantly above unselected (>40%)
+    let selectedAboveUnselected = false;
+    if (unselectedComps.length > 0) {
+      const unselectedPrices = unselectedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+      if (unselectedPrices.length > 0) {
+        const avgSelected = selectedPrices.reduce((a, b) => a + b, 0) / selectedPrices.length;
+        const avgUnselected = unselectedPrices.reduce((a, b) => a + b, 0) / unselectedPrices.length;
+        if (avgUnselected > 0) {
+          selectedAboveUnselected = (avgSelected - avgUnselected) / avgUnselected > 0.4;
+        }
+      }
     }
+
+    if (selectedSpread > 0.4 || selectedAboveUnselected) {
+      return "This area shows a significant price gap between selected and unselected comps below. This may indicate a mix of distressed and renovated sales. If you are analyzing a renovation project, confirm your selected comps reflect the repaired condition. If not, deselect and review.";
+    }
+
     return null;
   }, [selectedCompIndices, compsData]);
 
@@ -1368,10 +1389,9 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               </div>
             )}
 
-            {/* Wide range warning */}
             {wideRangeWarning && (
               <div
-                className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2"
+                className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 mb-3"
                 data-testid="text-wide-range-warning"
               >
                 <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />

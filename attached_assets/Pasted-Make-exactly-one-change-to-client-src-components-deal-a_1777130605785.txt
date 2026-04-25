@@ -1,0 +1,68 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+CHANGE — Replace wide range warning logic and move it above the comp table
+
+PART A — Replace the wideRangeWarning useMemo block (lines 391–405) with:
+
+  const wideRangeWarning = useMemo(() => {
+    if (!compsData || selectedCompIndices.size < 2) return null;
+
+    const selectedComps = compsData.comps.filter((_, i) => selectedCompIndices.has(i));
+    const unselectedComps = compsData.comps.filter((_, i) => !selectedCompIndices.has(i));
+
+    const selectedPrices = selectedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+    if (selectedPrices.length < 2) return null;
+
+    const minSelected = Math.min(...selectedPrices);
+    const maxSelected = Math.max(...selectedPrices);
+    if (minSelected <= 0) return null;
+
+    // Condition 1: wide spread among selected comps (>40% of min)
+    const selectedSpread = (maxSelected - minSelected) / minSelected;
+
+    // Condition 2: selected comps cluster significantly above unselected (>40%)
+    let selectedAboveUnselected = false;
+    if (unselectedComps.length > 0) {
+      const unselectedPrices = unselectedComps.map(c => c.pricePerSqft).filter(p => p > 0);
+      if (unselectedPrices.length > 0) {
+        const avgSelected = selectedPrices.reduce((a, b) => a + b, 0) / selectedPrices.length;
+        const avgUnselected = unselectedPrices.reduce((a, b) => a + b, 0) / unselectedPrices.length;
+        if (avgUnselected > 0) {
+          selectedAboveUnselected = (avgSelected - avgUnselected) / avgUnselected > 0.4;
+        }
+      }
+    }
+
+    if (selectedSpread > 0.4 || selectedAboveUnselected) {
+      return "This area shows a significant price gap between selected and unselected comps below. This may indicate a mix of distressed and renovated sales. If you are analyzing a renovation project, confirm your selected comps reflect the repaired condition. If not, deselect and review.";
+    }
+
+    return null;
+  }, [selectedCompIndices, compsData]);
+
+PART B — Remove the existing wideRangeWarning JSX block at lines 1371–1380
+(the comment "Wide range warning" and the entire {wideRangeWarning && (...)} block).
+
+PART C — Find the line immediately above the comp table — specifically the line 
+just before the <Table> or <TableHeader> opening tag that contains the comp rows.
+Insert the wideRangeWarning display block there:
+
+  {wideRangeWarning && (
+    <div
+      className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 mb-3"
+      data-testid="text-wide-range-warning"
+    >
+      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+      <p className="text-sm text-amber-800 dark:text-amber-200">{wideRangeWarning}</p>
+    </div>
+  )}
+
+After making all changes output:
+1. The full updated wideRangeWarning useMemo block with line numbers
+2. The new wideRangeWarning JSX block in its new location with 3 lines of 
+   context above and below, with line numbers
+3. Confirm the old wideRangeWarning JSX block at the former location is gone,
+   showing the lines where it previously was with line numbers
+
+Raw code only, no prose. Wrap each result in a code block.
