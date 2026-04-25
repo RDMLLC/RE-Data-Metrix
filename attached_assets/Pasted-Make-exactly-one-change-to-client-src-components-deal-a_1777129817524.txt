@@ -1,0 +1,49 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+CHANGE — Update flag icon and tooltip logic in the comp table row
+
+At lines 1495–1508, replace the existing flag icon and tooltip block with the 
+following logic:
+
+1. Determine the highest priority flag for the icon:
+   - If comp.outlierFlag or comp.distressedFlag → show AlertTriangle, 
+     className="h-3.5 w-3.5 text-amber-500 flex-shrink-0"
+   - Else if comp.borderlineFlag → show AlertCircle, 
+     className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0"
+   - Else if (comp as any).cityMismatch → show Info, 
+     className="h-3.5 w-3.5 text-blue-400 flex-shrink-0"
+   - Else show nothing
+
+2. Show the icon only if at least one flag is present. Keep the existing 
+   Tooltip/TooltipTrigger/TooltipContent wrapper structure.
+
+3. The TooltipContent should stack all applicable reasons as separate <p> elements 
+   with className="mb-1 last:mb-0", using these exact strings:
+   - If comp.distressedFlag: 
+     "Price is significantly below the area median — likely an as-is or distressed 
+     sale. Verify before using."
+   - If comp.outlierFlag: 
+     "Price is significantly above the area median — likely a renovated sale. 
+     Verify before using."
+   - If comp.borderlineFlag: 
+     "Price may be too low or too high to be a reliable comp. Verify before using."
+   - If (comp as any).cityMismatch: 
+     "Located in [comp.city], not [subject city]. Verify before using."
+     Replace [comp.city] with the actual comp.city value and [subject city] with 
+     the city variable from form.watch("city").
+
+4. Make sure AlertCircle and Info are imported from lucide-react alongside the 
+   existing AlertTriangle import. Add them only if not already imported.
+
+5. The isFlagged variable at line 1461 currently only checks outlierFlag and 
+   distressedFlag. Update it to also include borderlineFlag and cityMismatch:
+   const isFlagged = !!(comp.outlierFlag || comp.distressedFlag || 
+     comp.borderlineFlag || (comp as any).cityMismatch);
+
+After making the change output:
+1. The updated isFlagged line with line numbers
+2. The full updated flag icon and tooltip block with line numbers
+3. The lucide-react import line with line numbers
+
+Raw code only, no prose. Wrap each result in a code block.

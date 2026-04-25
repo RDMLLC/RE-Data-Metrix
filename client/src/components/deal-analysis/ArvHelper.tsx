@@ -50,6 +50,8 @@ import {
   Pencil,
   DollarSign,
   AlertTriangle,
+  AlertCircle,
+  Info,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -1458,7 +1460,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               </TableHeader>
               <TableBody>
                 {sortedCompsWithIndices.map(({ comp, originalIndex }) => {
-                  const isFlagged = !!(comp.outlierFlag || comp.distressedFlag);
+                  const isFlagged = !!(comp.outlierFlag || comp.distressedFlag || (comp as any).borderlineFlag || (comp as any).cityMismatch);
                   return (
                     <>
                       <TableRow
@@ -1495,15 +1497,36 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                             {isFlagged && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <AlertTriangle
-                                    className="h-3.5 w-3.5 text-amber-500 flex-shrink-0"
-                                    data-testid={`icon-flag-${originalIndex}`}
-                                  />
+                                  {comp.outlierFlag || comp.distressedFlag ? (
+                                    <AlertTriangle
+                                      className="h-3.5 w-3.5 text-amber-500 flex-shrink-0"
+                                      data-testid={`icon-flag-${originalIndex}`}
+                                    />
+                                  ) : (comp as any).borderlineFlag ? (
+                                    <AlertCircle
+                                      className="h-3.5 w-3.5 text-yellow-400 flex-shrink-0"
+                                      data-testid={`icon-flag-${originalIndex}`}
+                                    />
+                                  ) : (
+                                    <Info
+                                      className="h-3.5 w-3.5 text-blue-400 flex-shrink-0"
+                                      data-testid={`icon-flag-${originalIndex}`}
+                                    />
+                                  )}
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-xs text-xs">
-                                  {comp.distressedFlag
-                                    ? "Possible distressed or investor sale — excluded from ARV by default. Review before including."
-                                    : "Price per sqft is significantly above nearby comps — may indicate incorrect source data. Review before including."}
+                                  {comp.distressedFlag && (
+                                    <p className="mb-1 last:mb-0">Price is significantly below the area median — likely an as-is or distressed sale. Verify before using.</p>
+                                  )}
+                                  {comp.outlierFlag && (
+                                    <p className="mb-1 last:mb-0">Price is significantly above the area median — likely a renovated sale. Verify before using.</p>
+                                  )}
+                                  {(comp as any).borderlineFlag && (
+                                    <p className="mb-1 last:mb-0">Price may be too low or too high to be a reliable comp. Verify before using.</p>
+                                  )}
+                                  {(comp as any).cityMismatch && (
+                                    <p className="mb-1 last:mb-0">Located in {comp.city}, not {city}. Verify before using.</p>
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
                             )}
