@@ -1,0 +1,102 @@
+Make changes to two files. No other edits, no reformatting, no restarts.
+
+FILE 1 — client/src/components/deal-analysis/Step2PropertyDetails.tsx
+
+PART A — Add imports
+Add useRef to the existing React import at line 1:
+  import { useEffect, useRef, useState } from "react";
+
+PART B — Add state and ref
+After line 58 (const [showArvHelper, setShowArvHelper] = useState(false);) add:
+  const [showFormDetails, setShowFormDetails] = useState(true);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const handleArvHelperOpen = () => {
+    setShowFormDetails(false);
+    setShowArvHelper(true);
+  };
+
+  const handleArvHelperClose = () => {
+    setShowArvHelper(false);
+    setShowFormDetails(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
+PART C — Update the "Help with ARV" button onClick
+At line 83, replace:
+  onClick={() => setShowArvHelper(!showArvHelper)}
+With:
+  onClick={() => showArvHelper ? handleArvHelperClose() : handleArvHelperOpen()}
+
+PART D — Update the ArvHelper onClose handler
+At line 93, replace:
+  <ArvHelper form={form} onClose={() => setShowArvHelper(false)} />
+With:
+  <ArvHelper form={form} onClose={handleArvHelperClose} />
+
+PART E — Wrap the Form block in a collapsible section
+At line 96, before <Form {...form}>, insert:
+  <div ref={formRef}>
+    <button
+      type="button"
+      className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-3"
+      onClick={() => setShowFormDetails(!showFormDetails)}
+    >
+      {showFormDetails 
+        ? <ChevronUp className="h-4 w-4" /> 
+        : <ChevronDown className="h-4 w-4" />}
+      {showFormDetails ? "Hide property details" : "Show property details"}
+    </button>
+    {showFormDetails && (
+
+Then after the closing </Form> tag at line 605, close the conditional and div:
+    )}
+  </div>
+
+FILE 2 — client/src/components/deal-analysis/ArvHelper.tsx
+
+PART F — Fix "Changing beds, baths, or sqft?" layout
+At line 877, the closing </div> ends the flex wrap row containing 
+effectiveBedrooms, sqft, yearBuilt, lotSize spans.
+At line 878, the <div className="mt-1"> containing the repair panel trigger 
+is a direct sibling inside the same parent flex container, causing it to 
+render inline.
+
+Find the parent container of lines 857–877 — it has 
+className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"
+Change that className to remove the flex context from the repair panel trigger
+by wrapping lines 857–877 inside a new inner div, and placing the repair 
+panel div (lines 878–962) as a sibling block-level element outside that inner div.
+
+Specifically, change:
+  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+    [bed/bath, sqft, yearBuilt, lotSize spans — lines 858–876]
+  </div>
+  <div className="mt-1">
+    [repair panel trigger and panel]
+  </div>
+
+To:
+  <div className="text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      [bed/bath, sqft, yearBuilt, lotSize spans — lines 858–876]
+    </div>
+    <div className="mt-1">
+      [repair panel trigger and panel]
+    </div>
+  </div>
+
+After making all changes output:
+1. The new state, ref, and handler declarations with line numbers 
+   (Step2PropertyDetails.tsx)
+2. The updated Help with ARV button onClick with line numbers
+3. The updated ArvHelper onClose handler with line numbers
+4. Lines surrounding the Form wrap — the new collapsible toggle button 
+   and opening conditional with line numbers
+5. Lines surrounding the closing )} and </div> after </Form> with line numbers
+6. The updated flex wrap container and repair panel div in ArvHelper.tsx 
+   with line numbers
+
+Raw code only, no prose. Wrap each result in a code block.

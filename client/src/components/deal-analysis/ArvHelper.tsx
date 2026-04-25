@@ -854,7 +854,8 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     {address}, {city}, {state} {zipCode}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   {effectiveBedrooms && effectiveBathrooms && (
                     <span className="flex items-center gap-1">
                       <Home className="h-3 w-3" />
@@ -874,8 +875,8 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   )}
                   {yearBuilt && <span className="flex items-center gap-1">{yearBuilt}</span>}
                   {lotSize && <span className="flex items-center gap-1">{lotSize.toLocaleString()} sqft lot</span>}
-                </div>
-                <div className="mt-1">
+                  </div>
+                  <div className="mt-1">
                   <button
                     className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
                     onClick={() => {

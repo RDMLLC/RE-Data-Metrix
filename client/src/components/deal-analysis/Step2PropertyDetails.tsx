@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { WizardFormData } from "./DealAnalysisWizard";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,21 @@ export default function Step2PropertyDetails({
   const addingSquareFootage = form.watch("addingSquareFootage");
   const dataSource = form.watch("propertyDataSource") || "unknown";
   const [showArvHelper, setShowArvHelper] = useState(false);
+  const [showFormDetails, setShowFormDetails] = useState(true);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const handleArvHelperOpen = () => {
+    setShowFormDetails(false);
+    setShowArvHelper(true);
+  };
+
+  const handleArvHelperClose = () => {
+    setShowArvHelper(false);
+    setShowFormDetails(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
   
   const estimateLabel = "Estimated Market Value";
 
@@ -80,7 +95,7 @@ export default function Step2PropertyDetails({
           variant="outline"
           size="sm"
           className="gap-1.5"
-          onClick={() => setShowArvHelper(!showArvHelper)}
+          onClick={() => showArvHelper ? handleArvHelperClose() : handleArvHelperOpen()}
           data-testid="button-help-with-arv"
         >
           <Search className="h-4 w-4" />
@@ -90,9 +105,21 @@ export default function Step2PropertyDetails({
       </div>
 
       {showArvHelper && (
-        <ArvHelper form={form} onClose={() => setShowArvHelper(false)} />
+        <ArvHelper form={form} onClose={handleArvHelperClose} />
       )}
 
+      <div ref={formRef}>
+        <button
+          type="button"
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-3"
+          onClick={() => setShowFormDetails(!showFormDetails)}
+        >
+          {showFormDetails 
+            ? <ChevronUp className="h-4 w-4" /> 
+            : <ChevronDown className="h-4 w-4" />}
+          {showFormDetails ? "Hide property details" : "Show property details"}
+        </button>
+        {showFormDetails && (
       <Form {...form}>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
@@ -603,6 +630,8 @@ export default function Step2PropertyDetails({
           </div>
         </form>
       </Form>
+        )}
+      </div>
     </div>
   );
 }
