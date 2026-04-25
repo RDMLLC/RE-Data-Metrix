@@ -854,109 +854,28 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     {address}, {city}, {state} {zipCode}
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground space-y-1">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  {effectiveBedrooms && effectiveBathrooms && (
-                    <span className="flex items-center gap-1">
-                      <Home className="h-3 w-3" />
-                      {effectiveBedrooms}/{effectiveBathrooms}
-                      {(repairBedrooms !== null || repairBathrooms !== null) && (
-                        <span className="text-primary font-medium">(modified)</span>
-                      )}
-                    </span>
-                  )}
-                  {effectiveSqft && (
-                    <span className="flex items-center gap-1">
-                      {effectiveSqft.toLocaleString()} sqft
-                      {repairSqft !== null && (
-                        <span className="text-primary font-medium">(modified)</span>
-                      )}
-                    </span>
-                  )}
-                  {yearBuilt && <span className="flex items-center gap-1">{yearBuilt}</span>}
-                  {lotSize && <span className="flex items-center gap-1">{lotSize.toLocaleString()} sqft lot</span>}
+                    {effectiveBedrooms && effectiveBathrooms && (
+                      <span className="flex items-center gap-1">
+                        <Home className="h-3 w-3" />
+                        {effectiveBedrooms}/{effectiveBathrooms}
+                        {(repairBedrooms !== null || repairBathrooms !== null) && (
+                          <span className="text-primary font-medium">(modified)</span>
+                        )}
+                      </span>
+                    )}
+                    {effectiveSqft && (
+                      <span className="flex items-center gap-1">
+                        {effectiveSqft.toLocaleString()} sqft
+                        {repairSqft !== null && (
+                          <span className="text-primary font-medium">(modified)</span>
+                        )}
+                      </span>
+                    )}
+                    {yearBuilt && <span className="flex items-center gap-1">{yearBuilt}</span>}
+                    {lotSize && <span className="flex items-center gap-1">{lotSize.toLocaleString()} sqft lot</span>}
                   </div>
-                  <div className="mt-1">
-                  <button
-                    className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
-                    onClick={() => {
-                      if (!showRepairPanel) {
-                        setRepairBedroomsInput(String(repairBedrooms ?? bedrooms));
-                        setRepairBathroomsInput(String(repairBathrooms ?? bathrooms));
-                        setRepairSqftInput(String(repairSqft ?? sqft));
-                      }
-                      setShowRepairPanel(!showRepairPanel);
-                    }}
-                  >
-                    {showRepairPanel ? "Hide" : "Changing beds, baths, or sqft?"}
-                  </button>
-                  {showRepairPanel && (
-                    <div className="mt-2 flex flex-wrap items-end gap-3 p-3 bg-muted/50 rounded-md border border-border">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Beds after repair</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={repairBedroomsInput}
-                          onChange={(e) => setRepairBedroomsInput(e.target.value)}
-                          className="w-20 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Baths after repair</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          value={repairBathroomsInput}
-                          onChange={(e) => setRepairBathroomsInput(e.target.value)}
-                          className="w-20 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-xs text-muted-foreground">Sqft after repair</label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={repairSqftInput}
-                          onChange={(e) => setRepairSqftInput(e.target.value)}
-                          className="w-24 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
-                        />
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <button
-                          className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
-                          onClick={() => {
-                            const b = parseFloat(repairBedroomsInput);
-                            const ba = parseFloat(repairBathroomsInput);
-                            const s = parseFloat(repairSqftInput);
-                            if (!isNaN(b) && b > 0) setRepairBedrooms(b);
-                            if (!isNaN(ba) && ba > 0) setRepairBathrooms(ba);
-                            if (!isNaN(s) && s > 0) setRepairSqft(s);
-                            setShowRepairPanel(false);
-                          }}
-                        >
-                          Apply
-                        </button>
-                        <button
-                          className="text-sm px-3 py-1 text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
-                          onClick={() => {
-                            setRepairBedrooms(null);
-                            setRepairBathrooms(null);
-                            setRepairSqft(null);
-                            setRepairBedroomsInput("");
-                            setRepairBathroomsInput("");
-                            setRepairSqftInput("");
-                            setShowRepairPanel(false);
-                          }}
-                        >
-                          Reset to as-is
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <Button
                   type="button"
@@ -976,6 +895,88 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                 </Button>
               </div>
             )}
+            <div className="mt-1 px-1">
+              <button
+                className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
+                onClick={() => {
+                  if (!showRepairPanel) {
+                    setRepairBedroomsInput(String(repairBedrooms ?? bedrooms));
+                    setRepairBathroomsInput(String(repairBathrooms ?? bathrooms));
+                    setRepairSqftInput(String(repairSqft ?? sqft));
+                  }
+                  setShowRepairPanel(!showRepairPanel);
+                }}
+              >
+                {showRepairPanel ? "Hide" : "Changing beds, baths, or sqft?"}
+              </button>
+              {showRepairPanel && (
+                <div className="mt-2 flex flex-wrap items-end gap-3 p-3 bg-muted/50 rounded-md border border-border">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-muted-foreground">Beds after repair</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={repairBedroomsInput}
+                      onChange={(e) => setRepairBedroomsInput(e.target.value)}
+                      className="w-20 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-muted-foreground">Baths after repair</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={repairBathroomsInput}
+                      onChange={(e) => setRepairBathroomsInput(e.target.value)}
+                      className="w-20 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-muted-foreground">Sqft after repair</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={repairSqftInput}
+                      onChange={(e) => setRepairSqftInput(e.target.value)}
+                      className="w-24 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
+                    />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <button
+                      className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        const b = parseFloat(repairBedroomsInput);
+                        const ba = parseFloat(repairBathroomsInput);
+                        const s = parseFloat(repairSqftInput);
+                        if (!isNaN(b) && b > 0) setRepairBedrooms(b);
+                        if (!isNaN(ba) && ba > 0) setRepairBathrooms(ba);
+                        if (!isNaN(s) && s > 0) setRepairSqft(s);
+                        setShowRepairPanel(false);
+                      }}
+                    >
+                      Apply
+                    </button>
+                    <button
+                      className="text-sm px-3 py-1 text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
+                      onClick={() => {
+                        setRepairBedrooms(null);
+                        setRepairBathrooms(null);
+                        setRepairSqft(null);
+                        setRepairBedroomsInput("");
+                        setRepairBathroomsInput("");
+                        setRepairSqftInput("");
+                        setShowRepairPanel(false);
+                      }}
+                    >
+                      Reset to as-is
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">

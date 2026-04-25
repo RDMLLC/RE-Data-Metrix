@@ -1,0 +1,139 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+The repair panel block at lines 879–960 is incorrectly nested inside the 
+{address && ( block that also contains the "View on Zillow" button.
+It needs to move outside that container.
+
+Current structure (simplified):
+  {address && (
+    <div ...>          ← line 850
+      <div>address</div>       ← line 851–856
+      <div className="text-xs ...">   ← line 857
+        <div className="flex flex-wrap ...">  ← line 858
+          [chips: beds, sqft, yearBuilt, lotSize]  ← lines 859–877
+        </div>                 ← line 878
+        <div className="mt-1"> ← line 879  ← REPAIR PANEL STARTS HERE
+          [repair panel trigger and expandable panel] ← lines 880–959
+        </div>                 ← line 960
+      </div>
+      <Button>View on Zillow</Button>  ← lines 961–976
+    </div>             ← line 977
+  )}                   ← line 978
+
+Target structure:
+  {address && (
+    <div ...>          ← line 850
+      <div>address</div>
+      <div className="text-xs ...">
+        <div className="flex flex-wrap ...">
+          [chips: beds, sqft, yearBuilt, lotSize]
+        </div>
+      </div>
+      <Button>View on Zillow</Button>
+    </div>
+  )}
+  <div className="mt-1">    ← repair panel moves here, OUTSIDE {address &&}
+    [repair panel trigger and expandable panel]
+  </div>
+
+Specifically make these edits:
+
+1. At line 857, change:
+   <div className="text-xs text-muted-foreground">
+To:
+   <div className="text-xs text-muted-foreground space-y-1">
+
+2. Delete lines 879–960 entirely (the <div className="mt-1"> repair panel block 
+   through its closing </div>).
+
+3. After line 979 (the </div> that closes the space-y-2 div at line 844),
+   insert the repair panel as a sibling:
+
+  <div className="mt-1 px-1">
+    <button
+      className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
+      onClick={() => {
+        if (!showRepairPanel) {
+          setRepairBedroomsInput(String(repairBedrooms ?? bedrooms));
+          setRepairBathroomsInput(String(repairBathrooms ?? bathrooms));
+          setRepairSqftInput(String(repairSqft ?? sqft));
+        }
+        setShowRepairPanel(!showRepairPanel);
+      }}
+    >
+      {showRepairPanel ? "Hide" : "Changing beds, baths, or sqft?"}
+    </button>
+    {showRepairPanel && (
+      <div className="mt-2 flex flex-wrap items-end gap-3 p-3 bg-muted/50 rounded-md border border-border">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">Beds after repair</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={repairBedroomsInput}
+            onChange={(e) => setRepairBedroomsInput(e.target.value)}
+            className="w-20 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">Baths after repair</label>
+          <input
+            type="number"
+            min="0"
+            step="0.5"
+            value={repairBathroomsInput}
+            onChange={(e) => setRepairBathroomsInput(e.target.value)}
+            className="w-20 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground">Sqft after repair</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={repairSqftInput}
+            onChange={(e) => setRepairSqftInput(e.target.value)}
+            className="w-24 text-sm px-2 py-1 border border-border rounded bg-background text-foreground"
+          />
+        </div>
+        <div className="flex items-end gap-2">
+          <button
+            className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
+            onClick={() => {
+              const b = parseFloat(repairBedroomsInput);
+              const ba = parseFloat(repairBathroomsInput);
+              const s = parseFloat(repairSqftInput);
+              if (!isNaN(b) && b > 0) setRepairBedrooms(b);
+              if (!isNaN(ba) && ba > 0) setRepairBathrooms(ba);
+              if (!isNaN(s) && s > 0) setRepairSqft(s);
+              setShowRepairPanel(false);
+            }}
+          >
+            Apply
+          </button>
+          <button
+            className="text-sm px-3 py-1 text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
+            onClick={() => {
+              setRepairBedrooms(null);
+              setRepairBathrooms(null);
+              setRepairSqft(null);
+              setRepairBedroomsInput("");
+              setRepairBathroomsInput("");
+              setRepairSqftInput("");
+              setShowRepairPanel(false);
+            }}
+          >
+            Reset to as-is
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+
+After making the change output:
+1. Lines 850 to 985 in full with line numbers
+
+Raw code only, no prose. Wrap output in a code block.
