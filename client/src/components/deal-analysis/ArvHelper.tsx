@@ -393,7 +393,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     const totalSalePrice = selectedComps.reduce((sum, comp) => sum + comp.salePrice, 0);
     const totalSqft = selectedComps.reduce((sum, comp) => sum + comp.sqft, 0);
     const avgPricePerSqft = Math.round(totalSalePrice / totalSqft);
-    const calculatedArv = Math.round(avgPricePerSqft * sqft);
+    const calculatedArv = Math.round(avgPricePerSqft * effectiveSqft);
     return { arv: calculatedArv, avgPricePerSqft, count: selectedComps.length };
   };
 
@@ -1888,7 +1888,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     Based on {selectedArvData.count} comparable sale{selectedArvData.count !== 1 ? "s" : ""}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Weighted Avg: ${selectedArvData.avgPricePerSqft || 0}/sqft × {sqft.toLocaleString()} sqft
+                    Weighted Avg: ${selectedArvData.avgPricePerSqft || 0}/sqft × {effectiveSqft.toLocaleString()} sqft
                   </div>
                 </div>
                 <div className="text-right">
