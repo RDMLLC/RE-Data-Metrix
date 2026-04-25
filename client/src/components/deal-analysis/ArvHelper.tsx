@@ -897,7 +897,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
             )}
             <div className="mt-1 px-1">
               <button
-                className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
+                className="text-xs font-bold text-foreground hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
                 onClick={() => {
                   if (!showRepairPanel) {
                     setRepairBedroomsInput(String(repairBedrooms ?? bedrooms));
@@ -907,6 +907,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   setShowRepairPanel(!showRepairPanel);
                 }}
               >
+                <Pencil className="h-3 w-3" />
                 {showRepairPanel ? "Hide" : "Changing beds, baths, or sqft?"}
               </button>
               {showRepairPanel && (
