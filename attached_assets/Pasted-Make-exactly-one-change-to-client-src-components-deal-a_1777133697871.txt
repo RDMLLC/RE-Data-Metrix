@@ -1,0 +1,65 @@
+Make exactly one change to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+The repair panel block at lines 879–960 is incorrectly nested inside the 
+{address && ( block that also contains the "View on Zillow" button.
+It needs to move outside that container.
+
+Current structure (simplified):
+  {address && (
+    <div ...>          ← line 850
+      <div>address</div>       ← line 851–856
+      <div className="text-xs ...">   ← line 857
+        <div className="flex flex-wrap ...">  ← line 858
+          [chips: beds, sqft, yearBuilt, lotSize]  ← lines 859–877
+        </div>                 ← line 878
+        <div className="mt-1"> ← line 879  ← REPAIR PANEL STARTS HERE
+          [repair panel trigger and expandable panel] ← lines 880–959
+        </div>                 ← line 960
+      </div>
+      <Button>View on Zillow</Button>  ← lines 961–976
+    </div>             ← line 977
+  )}                   ← line 978
+
+Target structure:
+  {address && (
+    <div ...>          ← line 850
+      <div>address</div>
+      <div className="text-xs ...">
+        <div className="flex flex-wrap ...">
+          [chips: beds, sqft, yearBuilt, lotSize]
+        </div>
+      </div>
+      <Button>View on Zillow</Button>
+    </div>
+  )}
+  <div className="mt-1">    ← repair panel moves here, OUTSIDE {address &&}
+    [repair panel trigger and expandable panel]
+  </div>
+
+Specifically make these edits:
+
+1. At line 857, change:
+   <div className="text-xs text-muted-foreground">
+To:
+   <div className="text-xs text-muted-foreground space-y-1">
+
+2. Delete lines 879–960 entirely (the <div className="mt-1"> repair panel block 
+   through its closing </div>).
+
+3. After line 979 (the </div> that closes the space-y-2 div at line 844),
+   insert the repair panel as a sibling:
+
+  <div className="mt-1 px-1">
+    <button
+      className="text-xs text-muted-foreground hover:text-primary underline-offset-2 hover:underline transition-colors"
+      onClick={() => {
+        if (!showRepairPanel) {
+          setRepairBedroomsInput(String(repairBedrooms ?? bedrooms));
+          setRepairBathroomsInput(String(repairBathrooms ?? bathrooms));
+          setRepairSqftInput(String(repairSqft ?? sqft));
+        }
+        setShowRepairPanel(!showRepairPanel);
+      }}
+    >
+      {showRepairPanel ? "Hide" : "Changin
