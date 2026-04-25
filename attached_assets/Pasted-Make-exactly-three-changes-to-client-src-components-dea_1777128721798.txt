@@ -1,0 +1,77 @@
+Make exactly three changes to client/src/components/deal-analysis/ArvHelper.tsx.
+No other edits, no reformatting, no restarts.
+
+CHANGE 1 — Guard the ARV display block
+At line 1700, the outer <div className="flex items-center justify-between flex-wrap gap-4">
+block renders unconditionally. Wrap it so it only renders when selectedArvData.count >= 2:
+
+Change:
+  <div className="flex items-center justify-between flex-wrap gap-4">
+
+To:
+  {selectedArvData.count >= 2 && (
+  <div className="flex items-center justify-between flex-wrap gap-4">
+
+And close the conditional after the closing </div> at line 1715:
+  </div>
+  )}
+
+CHANGE 2 — Add bathroom filter to computeSmartSelection
+At line 132, update the function signature from:
+  function computeSmartSelection(
+    comps: SoldPropertyComp[],
+    subjectBedrooms: number,
+    preserveIndices: Set<number> = new Set(),
+  ): Set<number> {
+
+To:
+  function computeSmartSelection(
+    comps: SoldPropertyComp[],
+    subjectBedrooms: number,
+    subjectBathrooms: number,
+    preserveIndices: Set<number> = new Set(),
+  ): Set<number> {
+
+At line 146, update the filter return statement from:
+  return (
+    !comp.distressedFlag &&
+    !comp.outlierFlag &&
+    Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1
+  );
+
+To:
+  const baths = comp.bathrooms;
+  return (
+    !comp.distressedFlag &&
+    !comp.outlierFlag &&
+    Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1 &&
+    Math.abs(Math.round(baths ?? subjectBathrooms) - Math.round(subjectBathrooms)) <= 1
+  );
+
+Update all four call sites to pass the bathrooms variable (declared at line 185 
+as `const bathrooms = form.watch("bathrooms") || 2`) as the second argument 
+after bedrooms:
+
+Line 476:  computeSmartSelection(data.comps, bedrooms, bathrooms)
+Line 567:  computeSmartSelection(mergedComps, bedrooms, bathrooms, mergedIndices)
+Line 570:  computeSmartSelection(data.comps, bedrooms, bathrooms)
+Line 574:  computeSmartSelection(data.comps, bedrooms, bathrooms)
+
+CHANGE 3 — Cap mergedIndices at 3 before setting selection
+At line 559, before setSelectedCompIndices(mergedIndices), add a trim so that if
+more than 3 locked addresses survive remapping, only the first 3 are kept:
+
+Change:
+  setSelectedCompIndices(mergedIndices);
+
+To:
+  const trimmedIndices = new Set<number>(Array.from(mergedIndices).slice(0, 3));
+  setSelectedCompIndices(trimmedIndices);
+
+After making all three changes output:
+1. The updated computeSmartSelection function signature and filter block with line numbers
+2. All four computeSmartSelection call sites with line numbers
+3. Lines 1698 to 1718 with line numbers
+4. The mergedIndices trim block with line numbers
+
+Raw code only, no prose. Wrap each result in a code block.

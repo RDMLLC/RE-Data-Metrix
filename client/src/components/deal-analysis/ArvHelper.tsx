@@ -132,6 +132,7 @@ interface ArvHelperProps {
 function computeSmartSelection(
   comps: SoldPropertyComp[],
   subjectBedrooms: number,
+  subjectBathrooms: number,
   preserveIndices: Set<number> = new Set(),
 ): Set<number> {
   const selected = new Set<number>(preserveIndices);
@@ -143,10 +144,12 @@ function computeSmartSelection(
       if (selected.has(i)) return false;
       const beds = comp.bedrooms;
       if (typeof beds === "number" && (beds > 10 || beds < 0)) return false;
+      const baths = comp.bathrooms;
       return (
         !comp.distressedFlag &&
         !comp.outlierFlag &&
-        Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1
+        Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1 &&
+        Math.abs(Math.round(baths ?? subjectBathrooms) - Math.round(subjectBathrooms)) <= 1
       );
     })
     .sort(
@@ -473,7 +476,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         setSearchDateRange(data.actualDateRangeDays);
       }
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+        setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms, bathrooms));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -556,7 +559,8 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
             });
             if (mergedIndices.size >= 3) {
               setCompsData({ ...data, comps: mergedComps });
-              setSelectedCompIndices(mergedIndices);
+              const trimmedIndices = new Set<number>(Array.from(mergedIndices).slice(0, 3));
+              setSelectedCompIndices(trimmedIndices);
             } else if (mergedIndices.size > 0) {
               // Some survivors exist but fewer than 3 total. Preserve those
               // survivors and fill remaining slots from the new search using
@@ -564,14 +568,14 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               // city) baked into computeSmartSelection.
               setCompsData({ ...data, comps: mergedComps });
               setSelectedCompIndices(
-                computeSmartSelection(mergedComps, bedrooms, mergedIndices),
+                computeSmartSelection(mergedComps, bedrooms, bathrooms, mergedIndices),
               );
             } else {
-              setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+              setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms, bathrooms));
             }
           }
         } else {
-          setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms));
+          setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms, bathrooms));
         }
         // Always clear the lock after using it so the next call (e.g. an
         // initial Search Comps press) doesn't accidentally inherit it.
@@ -1697,6 +1701,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   </p>
                 </div>
               )}
+              {selectedArvData.count >= 2 && (
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="text-sm text-muted-foreground">
@@ -1713,6 +1718,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   </div>
                 </div>
               </div>
+              )}
               <div className="mt-3 flex justify-end gap-2">
                 <CompReportPdf
                   subjectAddress={address}
