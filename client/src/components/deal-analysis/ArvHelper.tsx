@@ -510,7 +510,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         setSearchDateRange(data.actualDateRangeDays);
       }
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms, bathrooms));
+        setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -602,14 +602,14 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               // city) baked into computeSmartSelection.
               setCompsData({ ...data, comps: mergedComps });
               setSelectedCompIndices(
-                computeSmartSelection(mergedComps, bedrooms, bathrooms, mergedIndices),
+                computeSmartSelection(mergedComps, effectiveBedrooms, effectiveBathrooms, mergedIndices),
               );
             } else {
-              setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms, bathrooms));
+              setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms));
             }
           }
         } else {
-          setSelectedCompIndices(computeSmartSelection(data.comps, bedrooms, bathrooms));
+          setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms));
         }
         // Always clear the lock after using it so the next call (e.g. an
         // initial Search Comps press) doesn't accidentally inherit it.
@@ -1507,6 +1507,32 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               </div>
             )}
 
+            {hasRepairOverride && compsData && (
+              <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2 mb-3">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Repair profile is active. Click Search Comps to update results for the modified property.
+                </p>
+              </div>
+            )}
+            {selectedArvData.count >= 2 && (
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-3">
+                <div>
+                  <div className="text-sm text-muted-foreground">
+                    Based on {selectedArvData.count} comparable sale{selectedArvData.count !== 1 ? "s" : ""}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Weighted Avg: ${selectedArvData.avgPricePerSqft || 0}/sqft × {effectiveSqft.toLocaleString()} sqft
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-muted-foreground">Suggested ARV</div>
+                  <div className="text-2xl font-bold text-primary" data-testid="text-suggested-arv">
+                    {selectedArvData.arv ? formatCurrency(selectedArvData.arv) : "N/A"}
+                  </div>
+                </div>
+              </div>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1881,24 +1907,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                   </p>
                 </div>
               )}
-              {selectedArvData.count >= 2 && (
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    Based on {selectedArvData.count} comparable sale{selectedArvData.count !== 1 ? "s" : ""}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Weighted Avg: ${selectedArvData.avgPricePerSqft || 0}/sqft × {effectiveSqft.toLocaleString()} sqft
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground">Suggested ARV</div>
-                  <div className="text-2xl font-bold text-primary" data-testid="text-suggested-arv">
-                    {selectedArvData.arv ? formatCurrency(selectedArvData.arv) : "N/A"}
-                  </div>
-                </div>
-              </div>
-              )}
+
               <div className="mt-3 flex justify-end gap-2">
                 <CompReportPdf
                   subjectAddress={address}
