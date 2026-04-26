@@ -861,6 +861,68 @@ export class HasDataAPIService implements IPropertyAPIService {
     return bestCompsFound;
   }
 
+  async searchSoldCompsRedfin(params) {
+    const maxResults = params.maxResults || 20;
+    if (!this.apiKey) { console.warn("[Redfin Comps] API key not configured"); return []; }
+    const sqftMin = Math.round(params.sqft * 0.8);
+    const sqftMax = Math.round(params.sqft * 1.2);
+    const bedroomFilterEnabled = params.bedrooms > 0;
+    const bedsMin = bedroomFilterEnabled ? Math.max(1, params.bedrooms - 1) : 0;
+    const bedsMax = bedroomFilterEnabled ? params.bedrooms + 1 : 0;
+    const userDaysBack = params.daysBack || 180;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - userDaysBack);
+    try {
+      const keyword = params.zipCode || (params.city + ", " + params.state);
+      const url = this.baseUrl + "/scrape/redfin/listing?keyword=" + encodeURIComponent(keyword) + "&type=sold";
+      console.log("[Redfin Comps] Fetching:", url);
+      const response = await fetch(url, { method: "GET", headers: { "x-api-key": this.apiKey, "Content-Type": "application/json" } });
+      if (!response.ok) { console.error("[Redfin Comps] API error:", response.status); return []; }
+      const data = await response.json();
+      const listings = data.listings || data.searchResults || data.properties || data.results || data.homes || [];
+      console.log("[Redfin Comps] Raw listings:", listings.length);
+      if (!Array.isArray(listings) || listings.length === 0) return [];
+      console.log("[Redfin Comps] Sample keys:", Object.keys(listings[0]).slice(0, 20));
+      const comps = [];
+      for (const listing of listings) {
+        const sqft = this.parseNumber(listing.sqft || listing.squareFeet || listing.livingArea || listing.area || listing.sqFt || listing.home_size);
+        const beds = this.parseNumber(listing.beds || listing.bedrooms || listing.bed);
+        const baths = this.parseNumber(listing.baths || listing.bathrooms || listing.bath);
+        const salePrice = this.parseNumber(listing.price || listing.soldPrice || listing.lastSoldPrice || listing.salePrice || listing.sold_price);
+        if (!sqft || !salePrice || sqft === 0) continue;
+        if (sqft < sqftMin || sqft > sqftMax) continue;
+        if (bedroomFilterEnabled && beds && (beds < bedsMin || beds > bedsMax)) continue;
+        const compPropertyType = listing.homeType || listing.propertyType || listing.type;
+        if (!arePropertyTypesCompatible(params.propertyType, compPropertyType)) continue;
+        const lat = this.parseNumber(listing.latitude || listing.lat || (listing.latLong && listing.latLong.latitude) || (listing.coordinates && listing.coordinates.lat));
+        const lng = this.parseNumber(listing.longitude || listing.lng || listing.lon || (listing.latLong && listing.latLong.longitude) || (listing.coordinates && listing.coordinates.lng));
+        let distanceFromSubject;
+        if (lat && lng && params.subjectLat && params.subjectLng) {
+          distanceFromSubject = calculateDistanceMiles(params.subjectLat, params.subjectLng, lat, lng);
+          if (distanceFromSubject > (params.radiusMiles || 1) + 0.05) continue;
+        }
+        const saleDate = listing.soldDate || listing.dateSold || listing.lastSoldDate || listing.saleDate || listing.closeDate || listing.sold_date || listing.date_sold || "";
+        if (saleDate) { const d = new Date(saleDate); if (!isNaN(d.getTime()) && d < cutoffDate) continue; }
+        comps.push({
+          address: (listing.address && listing.address.street) || listing.streetAddress || listing.addressLine1 || listing.address || listing.street || "",
+          city: (listing.address && listing.address.city) || listing.city || params.city,
+          state: (listing.address && listing.address.state) || listing.state || params.state,
+          zipCode: (listing.address && listing.address.zipcode) || listing.zipCode || listing.zip || params.zipCode || "",
+          salePrice, saleDate, bedrooms: beds || 0, bathrooms: baths || 0, sqft,
+          pricePerSqft: Math.round(salePrice / sqft),
+          yearBuilt: this.parseNumber(listing.yearBuilt || listing.year_built),
+          lotSize: this.parseNumber(listing.lotSize || listing.lotAreaValue || listing.lot_size),
+          propertyType: compPropertyType,
+          daysOnMarket: this.parseNumber(listing.daysOnMarket || listing.days_on_market),
+          imageUrl: listing.imgSrc || listing.image || (listing.photos && listing.photos[0]) || listing.photo,
+          latitude: lat, longitude: lng, distanceFromSubject,
+          listingUrl: listing.url || listing.detailUrl || listing.link || listing.redfin_url || "",
+        });
+      }
+      console.log("[Redfin Comps] Returning", comps.length, "comps after filtering");
+      return comps.slice(0, maxResults);
+    } catch (error) { console.error("[Redfin Comps] Error:", error); return []; }
+  }
   /**
    * Fetch property sale history from Zillow to detect flip properties
    * A flip is detected when the same property sold 2+ times within 12 months

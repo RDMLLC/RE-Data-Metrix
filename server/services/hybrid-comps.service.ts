@@ -329,9 +329,10 @@ export class HybridCompsService {
 
     const rentCastComps: HybridCompResult[] = [];
     const hasDataComps: HybridCompResult[] = [];
+    const redfinComps: HybridCompResult[] = [];
 
     try {
-      const [rentCastResult, hasDataResult] = await Promise.allSettled([
+      const [rentCastResult, hasDataResult, redfinResult] = await Promise.allSettled([
         this.rentCastService.searchComparableSales({
           address,
           city,
@@ -347,7 +348,23 @@ export class HybridCompsService {
           subjectLat,
           subjectLng,
         }),
-        this.hasDataService.searchSoldComps({
+        this.hasDataService.searchSoldCompsRedfin({
+          address,
+          city,
+          state,
+          zipCode,
+          bedrooms: 0,
+          bathrooms: 0,
+          sqft,
+          propertyType,
+          subjectLat,
+          subjectLng,
+          radiusMiles,
+          daysBack: saleDateRangeDays,
+          minResults: SUITABLE_TARGET,
+          maxResults: 25,
+        }),
+                this.hasDataService.searchSoldComps({
           address,
           city,
           state,
@@ -382,11 +399,19 @@ export class HybridCompsService {
       } else if (hasDataResult.status === 'rejected') {
         console.error(`[Hybrid Comps] HasData failed:`, hasDataResult.reason);
       }
+      if (redfinResult.status === 'fulfilled' && Array.isArray(redfinResult.value)) {
+        for (const comp of redfinResult.value) {
+          redfinComps.push({ ...comp, dataSource: 'hasdata' });
+        }
+        console.log(`[Hybrid Comps] Redfin returned ${redfinComps.length} comps`);
+      } else if (redfinResult.status === 'rejected') {
+        console.error(`[Hybrid Comps] Redfin failed:`, redfinResult.reason);
+      }
     } catch (error) {
       console.error(`[Hybrid Comps] Error in parallel API calls:`, error);
     }
 
-    const mergedComps = this.mergeAndDeduplicate(rentCastComps, hasDataComps, sqft);
+    const mergedComps = this.mergeAndDeduplicate(rentCastComps, [...hasDataComps, ...redfinComps], sqft);
 
     // Pre-sort: distance, then recency. Final ordering happens after flagging/scoring.
     let sortedComps = mergedComps
