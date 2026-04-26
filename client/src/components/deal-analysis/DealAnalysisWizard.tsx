@@ -258,8 +258,8 @@ export default function DealAnalysisWizard() {
         form.setValue("creditScore", investor.creditScore);
         form.setValue("isNewInvestor", investor.experienceLevel === "new");
       }
-    } else {
-      // Fresh navigation to Step 1: clear session data and reset to empty defaults
+    } else if (!wizardData.property?.address) {
+      // Fresh navigation to Step 1 with no saved data: clear session data and reset to empty defaults
       clearWizardData();
       form.reset({
         address: "",
