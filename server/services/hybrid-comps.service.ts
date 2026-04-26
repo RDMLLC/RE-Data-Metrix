@@ -114,7 +114,7 @@ export class HybridCompsService {
     const requestedDateRange = saleDateRangeDays;
     const expansionConfigs: Array<{ radiusMiles: number; saleDateRangeDays: number }> = [];
 
-    if (requestedRadius > 1) {
+    if (requestedRadius > 2) {
       expansionConfigs.push({ radiusMiles: requestedRadius, saleDateRangeDays: requestedDateRange });
     } else {
       // First attempt always at the requested radius (≤ 1 mi)
@@ -129,6 +129,9 @@ export class HybridCompsService {
       }
       if (requestedDateRange < 365) {
         expansionConfigs.push({ radiusMiles: 1, saleDateRangeDays: 365 });
+      }
+      if (requestedRadius < 2) {
+        expansionConfigs.push({ radiusMiles: 2, saleDateRangeDays: requestedDateRange });
       }
     }
 
