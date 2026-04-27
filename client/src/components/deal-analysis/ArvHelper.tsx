@@ -149,7 +149,6 @@ function computeSmartSelection(
       const baths = comp.bathrooms;
       return (
         !comp.distressedFlag &&
-        !comp.outlierFlag &&
         Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1 &&
         Math.abs(Math.round(baths ?? subjectBathrooms) - Math.round(subjectBathrooms)) <= 1
       );
@@ -160,8 +159,13 @@ function computeSmartSelection(
         (b.comp.distanceFromSubject ?? Infinity),
     );
 
-  // Tier 1: same-city (cityMismatch falsy) clean comps, nearest first.
-  for (const { comp, i } of cleanSorted) {
+  const allPrices = comps.map(x => x.pricePerSqft).filter(p => p > 0).sort((a,b) => a-b);
+  const medianPpsf = allPrices.length > 0 ? allPrices[Math.floor(allPrices.length / 2)] : null;
+  const extremeOutlierThreshold = medianPpsf ? medianPpsf * 3 : Infinity;
+    // Tier 1: same-city (cityMismatch falsy) clean comps, nearest first.
+  // Exclude extreme outliers (>3x median ppsf) from auto-selection
+  const filteredSorted = cleanSorted.filter(({ comp }) => comp.pricePerSqft <= extremeOutlierThreshold);
+  for (const { comp, i } of filteredSorted) {
     if (selected.size >= 3) break;
     if (!(comp as any).cityMismatch) selected.add(i);
   }
@@ -169,7 +173,7 @@ function computeSmartSelection(
   // Tier 2: fill any remaining slots from nearest clean comps regardless
   // of city, skipping anything already chosen above.
   if (selected.size < 3) {
-    for (const { i } of cleanSorted) {
+    for (const { i } of filteredSorted) {
       if (selected.size >= 3) break;
       selected.add(i);
     }
