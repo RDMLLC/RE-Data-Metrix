@@ -154,9 +154,11 @@ function computeSmartSelection(
       );
     })
     .sort(
-      (a, b) =>
-        (a.comp.distanceFromSubject ?? Infinity) -
-        (b.comp.distanceFromSubject ?? Infinity),
+      (a, b) => {
+      const distDiff = (a.comp.distanceFromSubject ?? Infinity) - (b.comp.distanceFromSubject ?? Infinity);
+      if (Math.abs(distDiff) > 0.05) return distDiff;
+      return (b.comp.pricePerSqft ?? 0) - (a.comp.pricePerSqft ?? 0);
+    },
     );
 
   const allPrices = comps.map(x => x.pricePerSqft).filter(p => p > 0).sort((a,b) => a-b);
