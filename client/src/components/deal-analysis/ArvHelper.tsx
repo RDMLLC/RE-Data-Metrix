@@ -135,11 +135,15 @@ function computeSmartSelection(
   comps: SoldPropertyComp[],
   subjectBedrooms: number,
   subjectBathrooms: number,
+  subjectSqft: number = 1500,
   preserveIndices: Set<number> = new Set(),
 ): Set<number> {
   const selected = new Set<number>(preserveIndices);
   if (selected.size >= 3) return selected;
 
+  const allPrices = comps.map(x => x.pricePerSqft).filter(p => p > 0).sort((a,b) => a-b);
+  const medianPpsf = allPrices.length > 0 ? allPrices[Math.floor(allPrices.length / 2)] : null;
+  const extremeOutlierThreshold = medianPpsf ? medianPpsf * 3 : Infinity;
   const cleanSorted = comps
     .map((comp, i) => ({ comp, i }))
     .filter(({ comp, i }) => {
@@ -154,16 +158,26 @@ function computeSmartSelection(
       );
     })
     .sort(
-      (a, b) => {
-      const distDiff = (a.comp.distanceFromSubject ?? Infinity) - (b.comp.distanceFromSubject ?? Infinity);
-      if (Math.abs(distDiff) > 0.05) return distDiff;
-      return (b.comp.pricePerSqft ?? 0) - (a.comp.pricePerSqft ?? 0);
+    (a, b) => {
+      const med = medianPpsf || 150;
+      const subSqft = subjectSqft || 1500;
+      const dA = a.comp.distanceFromSubject ?? Infinity;
+      const dB = b.comp.distanceFromSubject ?? Infinity;
+      const pA = a.comp.pricePerSqft ?? 0;
+      const pB = b.comp.pricePerSqft ?? 0;
+      const bA = Math.round(a.comp.bathrooms ?? subjectBathrooms) === Math.round(subjectBathrooms) ? 1.2 : 1.0;
+      const bB = Math.round(b.comp.bathrooms ?? subjectBathrooms) === Math.round(subjectBathrooms) ? 1.2 : 1.0;
+      const bdA = (a.comp.bedrooms ?? subjectBedrooms) === subjectBedrooms ? 1.2 : 1.0;
+      const bdB = (b.comp.bedrooms ?? subjectBedrooms) === subjectBedrooms ? 1.2 : 1.0;
+      const sqA = 1 - Math.abs((a.comp.sqft ?? subSqft) - subSqft) / subSqft;
+      const sqB = 1 - Math.abs((b.comp.sqft ?? subSqft) - subSqft) / subSqft;
+      const sA = dA > 0 ? (1 / dA) * (pA / med) * bA * bdA * sqA : Infinity;
+      const sB = dB > 0 ? (1 / dB) * (pB / med) * bB * bdB * sqB : Infinity;
+      return sB - sA;
     },
     );
 
-  const allPrices = comps.map(x => x.pricePerSqft).filter(p => p > 0).sort((a,b) => a-b);
-  const medianPpsf = allPrices.length > 0 ? allPrices[Math.floor(allPrices.length / 2)] : null;
-  const extremeOutlierThreshold = medianPpsf ? medianPpsf * 3 : Infinity;
+
     // Tier 1: same-city (cityMismatch falsy) clean comps, nearest first.
   // Exclude extreme outliers (>3x median ppsf) from auto-selection
   const filteredSorted = cleanSorted.filter(({ comp }) => comp.pricePerSqft <= extremeOutlierThreshold);
@@ -516,7 +530,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         setSearchDateRange(data.actualDateRangeDays);
       }
       if (data.comps && data.comps.length > 0) {
-        setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms));
+        setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms, effectiveSqft));
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -608,7 +622,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
               // city) baked into computeSmartSelection.
               setCompsData({ ...data, comps: mergedComps });
               setSelectedCompIndices(
-                computeSmartSelection(mergedComps, effectiveBedrooms, effectiveBathrooms, mergedIndices),
+                computeSmartSelection(mergedComps, effectiveBedrooms, effectiveBathrooms, effectiveSqft, mergedIndices),
               );
             } else {
               setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms));
