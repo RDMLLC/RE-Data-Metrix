@@ -829,6 +829,7 @@ export class HybridCompsService {
 
     const zip = (zipCode || '').replace(/\D/g, '').slice(0, 5);
 
+    normalized = normalized.replace(/\b(\w+)\s+\1\b/g, '$1');
     return `${normalized}|${zip}`;
   }
 
