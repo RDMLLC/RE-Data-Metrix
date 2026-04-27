@@ -749,7 +749,22 @@ export class HybridCompsService {
 
     for (const comp of hasDataComps) {
       const key = this.normalizeAddress(comp.address, comp.zipCode);
-      normalizedHasData.set(key, comp);
+      const existing = normalizedHasData.get(key);
+      if (!existing) {
+        normalizedHasData.set(key, comp);
+      } else {
+        normalizedHasData.set(key, {
+          ...existing,
+          saleDate: existing.saleDate || comp.saleDate,
+          salePrice: existing.salePrice || comp.salePrice,
+          sqft: existing.sqft || comp.sqft,
+          bedrooms: existing.bedrooms || comp.bedrooms,
+          bathrooms: existing.bathrooms || comp.bathrooms,
+          yearBuilt: existing.yearBuilt || comp.yearBuilt,
+          latitude: existing.latitude || comp.latitude,
+          longitude: existing.longitude || comp.longitude,
+        });
+      }
     }
 
     const result: HybridCompResult[] = [];
