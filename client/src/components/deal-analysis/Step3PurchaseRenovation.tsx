@@ -1012,7 +1012,7 @@ export default function Step3PurchaseRenovation({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="gap-1.5"
+                    className="gap-1.5 font-bold text-base"
                     onClick={() => setShowArvHelper(!showArvHelper)}
                     data-testid="button-help-with-arv"
                   >

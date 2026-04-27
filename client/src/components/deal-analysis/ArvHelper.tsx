@@ -200,10 +200,21 @@ function computeSmartSelection(
 
 export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const city = form.watch("city") || "";
   const state = form.watch("state") || "";
+  const NON_DISCLOSURE_STATES: Record<string, string> = {
+    AK: 'Alaska', ID: 'Idaho', IN: 'Indiana', KS: 'Kansas', LA: 'Louisiana',
+    ME: 'Maine', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NM: 'New Mexico',
+    ND: 'North Dakota', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas',
+    UT: 'Utah', WY: 'Wyoming'
+  };
+  const stateCode = state.trim().toUpperCase().slice(0, 2);
+  const isNonDisclosure = !!NON_DISCLOSURE_STATES[stateCode];
+  const stateName = NON_DISCLOSURE_STATES[stateCode] || state;
+  const companyName = user?.reportCompanyName || 'your company';
+  const propStreamUrl = 'https://trial.propstreampro.com/redatametrix';
   const zipCode = form.watch("zipCode") || "";
   const address = form.watch("address") || "";
   const bedrooms = form.watch("bedrooms") || 3;
@@ -1444,7 +1455,41 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
           );
         })()}
 
-        {/* Message A — fewer than 3 comps were returned by the search.
+        {/* Non-disclosure state messaging — 3 tiers based on comp count */}
+        {compsData && isNonDisclosure && !isSearchingComps && (() => {
+          const count = compsData.comps.length;
+          if (count <= 1) {
+            return (
+              <div className="rounded-lg border-2 border-amber-400 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-2">
+                    <p className="font-semibold text-amber-900 dark:text-amber-200">{stateName} is a non-disclosure state</p>
+                    <p className="text-sm text-amber-800 dark:text-amber-300">Sale prices are not publicly recorded in {stateName}. This limits both the number of comps available and the accuracy of prices shown, which may significantly affect your ARV estimate.</p>
+                    <p className="text-sm text-amber-800 dark:text-amber-300">If you have comps from your realtor or MLS, use the <strong>+ Add Comp</strong> button to add them manually. The ARV Helper can still calculate your ARV and generate a branded Comp Report for {companyName}.</p>
+                    <p className="text-sm text-amber-800 dark:text-amber-300"><strong>PropStream</strong> provides MLS-backed sale prices and off-market property data across all 50 states, including non-disclosure states like {stateName}.{" "}<a href={propStreamUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold">Start your free 7-day trial →</a></p>
+                  </div>
+                </div>
+              </div>
+            );
+          } else if (count <= 5) {
+            return (
+              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-md px-3 py-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 dark:text-amber-200"><strong>{stateName} is a non-disclosure state.</strong> The number of available comps and accuracy of sale prices may be limited, which could affect your ARV estimate. PropStream provides MLS-backed sale prices and off-market data for all 50 states, including non-disclosure states.{" "}<a href={propStreamUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold">Start your free 7-day trial →</a></p>
+              </div>
+            );
+          } else {
+            return (
+              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 dark:text-amber-200">Note: <strong>{stateName} is a non-disclosure state.</strong> Sale prices and comp availability may be limited compared to disclosure states. PropStream provides MLS-backed sale prices and off-market data for all 50 states.{" "}<a href={propStreamUrl} target="_blank" rel="noopener noreferrer" className="underline font-semibold">Start your free 7-day trial →</a></p>
+              </div>
+            );
+          }
+        })()}
+
+                {/* Message A — fewer than 3 comps were returned by the search.
              Sits in the same location the comps table would normally appear
              so the user immediately sees why the table isn't there (or why
              it's so small). Triggers only after a search has completed

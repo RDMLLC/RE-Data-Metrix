@@ -94,7 +94,7 @@ export default function Step2PropertyDetails({
           type="button"
           variant="outline"
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 font-bold text-base"
           onClick={() => showArvHelper ? handleArvHelperClose() : handleArvHelperOpen()}
           data-testid="button-help-with-arv"
         >
