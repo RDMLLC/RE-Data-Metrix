@@ -7,7 +7,7 @@ import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
 
 const YOUTUBE_VIDEO_ID = "WkuAgslCrrM";
-const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=1&modestbranding=1&rel=0&playsinline=1`;
+const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`;
 
 const benefits = [
   {
@@ -46,12 +46,22 @@ export default function MetaOffer() {
   const [, setLocation] = useLocation();
   const { trackLead, pixelsLoaded } = useMarketingEvents();
   const hasFiredRef = useRef(false);
-  const [showUnmuteHint, setShowUnmuteHint] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setShowUnmuteHint(false), 4000);
-    return () => clearTimeout(timer);
-  }, []);
+  const handleUnmute = () => {
+    const iframe = document.getElementById("yt-player") as HTMLIFrameElement | null;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: "unMute", args: [] }),
+        "*"
+      );
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: "setVolume", args: [100] }),
+        "*"
+      );
+    }
+    setIsMuted(false);
+  };
 
   useEffect(() => {
     if (pixelsLoaded && !hasFiredRef.current) {
@@ -105,6 +115,7 @@ export default function MetaOffer() {
         <div className="max-w-3xl mx-auto px-6">
           <div className="relative aspect-video bg-black rounded-md overflow-hidden shadow-xl border border-white/20">
             <iframe
+              id="yt-player"
               src={YOUTUBE_EMBED_URL}
               className="absolute inset-0 w-full h-full"
               allow="autoplay; encrypted-media"
@@ -112,12 +123,16 @@ export default function MetaOffer() {
               style={{ border: 0 }}
               data-testid="video-main"
             />
-            <div
-              className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-black/60 text-white text-xs px-2.5 py-1.5 rounded-full pointer-events-none transition-opacity duration-700"
-              style={{ opacity: showUnmuteHint ? 1 : 0 }}
-            >
-              🔊 Tap to unmute
-            </div>
+            {isMuted && (
+              <button
+                type="button"
+                onClick={handleUnmute}
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 bg-black/70 text-white text-sm px-4 py-2 rounded-full backdrop-blur-sm hover:bg-black/80 transition-colors"
+                data-testid="button-unmute-video"
+              >
+                🔇 Tap to unmute
+              </button>
+            )}
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <Button
