@@ -153,6 +153,7 @@ function computeSmartSelection(
       const baths = comp.bathrooms;
       return (
         !comp.distressedFlag &&
+        !(!comp.saleDate || comp.saleDate === "" || comp.saleDate === "N/A" || comp.saleDate === "Pending") &&
         Math.abs((beds ?? subjectBedrooms) - subjectBedrooms) <= 1 &&
         Math.abs(Math.round(baths ?? subjectBathrooms) - Math.round(subjectBathrooms)) <= 1
       );
@@ -541,6 +542,9 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         setSearchDateRange(data.actualDateRangeDays);
       }
       if (data.comps && data.comps.length > 0) {
+        // Fresh search — clear any existing lock so the new auto-selection
+        // is not overridden by a previous radius-change lock.
+        lockedSelectionRef.current = null;
         setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms, effectiveSqft));
       }
     } catch (error: any) {
@@ -593,7 +597,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         // them to indices in the new comps array. Only honor the lock if at
         // least 3 of the locked addresses survived the refetch — otherwise
         // fall back to a fresh computeSmartSelection.
-        if (lockedSelectionRef.current !== null && lockedSelectionRef.current.size >= 3) {
+        if (lockedSelectionRef.current !== null && lockedSelectionRef.current.size >= 1) {
           const newIndices = new Set<number>();
           (data.comps as SoldPropertyComp[]).forEach((c, i) => {
             if (lockedSelectionRef.current!.has(compKey(c))) {
@@ -642,9 +646,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
         } else {
           setSelectedCompIndices(computeSmartSelection(data.comps, effectiveBedrooms, effectiveBathrooms));
         }
-        // Always clear the lock after using it so the next call (e.g. an
-        // initial Search Comps press) doesn't accidentally inherit it.
-        lockedSelectionRef.current = null;
+        // Do NOT clear the lock here — keep it alive so subsequent
+        // auto-expansions by the backend don't trigger a fresh
+        // computeSmartSelection that overrides the user's manual picks.
+        // The lock is cleared only by a fresh Search Comps press.
       }
     } catch (error: any) {
       if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
@@ -1036,7 +1041,7 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                         // survives a refetch even when the new comps array has
                         // a different length or order.
                         lockedSelectionRef.current =
-                          selectedCompIndices.size >= 3
+                          selectedCompIndices.size >= 1
                             ? new Set(
                                 Array.from(selectedCompIndices)
                                   .map((i) => compsData?.comps[i])
