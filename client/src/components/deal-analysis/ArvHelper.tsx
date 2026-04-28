@@ -317,10 +317,9 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
   // is fetched from different sources or at different radii. Mirrors the helper
   // used in Step3PurchaseRenovation.tsx.
   const compKey = (c: { address?: string; zipCode?: string }): string => {
-    const addr = (c.address || '').trim();
-    const houseNumber = addr.split(/\s+/)[0]?.toLowerCase() || '';
+    const addr = (c.address || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const zip = (c.zipCode || '').replace(/\D/g, '').slice(0, 5);
-    return `${houseNumber}|${zip}`;
+    return `${addr}|${zip}`;
   };
 
   type DateFilter = "all" | "6" | "9";
@@ -1034,7 +1033,8 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     size="sm"
                     variant={effectiveRadius === radius ? "default" : "outline"}
                     onClick={() => {
-                      if (radius !== searchRadius) {
+                      const effectiveRadius = radiusWasExpanded && actualRadiusUsed !== null ? actualRadiusUsed : searchRadius;
+                      if (radius !== effectiveRadius) {
                         // Capture the user's selection SYNCHRONOUSLY before any
                         // async work or state changes. We store stable address
                         // keys (compKey) — not numeric indices — so the lock
@@ -1050,7 +1050,10 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                               )
                             : null;
                         setSearchRadius(radius);
-                        if (compsData) setTimeout(() => searchCompsWithOptions(radius, searchDateRange), 0);
+                        // Reset date range to default when user manually changes radius
+                        // so sticky auto-expansion doesn't carry forward.
+                        setSearchDateRange(180);
+                        if (compsData) setTimeout(() => searchCompsWithOptions(radius, 180), 0);
                       }
                     }}
                     disabled={isSearchingComps}
@@ -1078,6 +1081,15 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                     variant={effectiveDateRange === days ? "default" : "outline"}
                     onClick={() => {
                       if (days !== searchDateRange) {
+                        lockedSelectionRef.current =
+                          selectedCompIndices.size >= 1
+                            ? new Set(
+                                Array.from(selectedCompIndices)
+                                  .map((i) => compsData?.comps[i])
+                                  .filter(Boolean)
+                                  .map((c) => compKey(c as SoldPropertyComp)),
+                              )
+                            : null;
                         setSearchDateRange(days);
                         if (compsData) setTimeout(() => searchCompsWithOptions(searchRadius, days), 0);
                       }

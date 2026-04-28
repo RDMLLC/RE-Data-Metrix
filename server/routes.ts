@@ -10155,6 +10155,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             expiresAt: twentyFourHoursOut,
           });
           console.log(`[Comp Cache] SET key=${actualCacheKey} comps=${result.comps.length} ttl=24h`);
+          // Also write an alias keyed by requestedRadius so future clicks on
+          // the same radius button hit cache immediately without re-expanding.
+          if (result.actualRadiusMiles !== requestedRadius) {
+            const requestedCacheKey = buildCompCacheKey(compNormalizedAddr, requestedRadius, requestedDateRange);
+            await storage.setCompCache({
+              cacheKey: requestedCacheKey,
+              normalizedAddress: compNormalizedAddr,
+              radiusMiles: String(requestedRadius),
+              dateRangeDays: requestedDateRange,
+              comps: result.comps as any,
+              radiusExpanded: result.radiusExpanded,
+              actualRadiusMiles: String(result.actualRadiusMiles),
+              dateRangeExpanded: result.dateRangeExpanded,
+              actualDateRangeDays: result.actualDateRangeDays,
+              fetchedAt: new Date(),
+              expiresAt: twentyFourHoursOut,
+            });
+            console.log(`[Comp Cache] SET alias key=${requestedCacheKey} -> actual=${result.actualRadiusMiles}mi comps=${result.comps.length} ttl=24h`);
+          }
         } else if (compNormalizedAddr) {
           console.log(`[Comp Cache] SKIP (0 comps) addr=${compNormalizedAddr} radius=${result.actualRadiusMiles} days=${requestedDateRange}`);
         }

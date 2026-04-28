@@ -195,18 +195,6 @@ export class HybridCompsService {
         bestResult = passResult;
       }
 
-      // For requestedRadius > 1 mi (2/3/5) there is only a single config, so
-      // we always exit after the first pass anyway — the early-break is moot.
-      //
-      // For requestedRadius ≤ 1 mi we INTENTIONALLY do NOT early-break when
-      // suitableCount >= SUITABLE_TARGET. We always walk all configs and pick
-      // the bestResult by suitableCount. This guarantees that an explicit
-      // 1 mi click and a ½ mi search that auto-expanded to 1 mi produce the
-      // same final comp set: both walk through [1/180, 1/270, 1/365] and
-      // settle on whichever pass yielded the most suitable comps. Without
-      // this, 1 mi click would break early at 1/180 while the ½ mi sequence
-      // (whose 0.5/180 pass typically returns 0 suitable) would proceed to
-      // 1/270 or 1/365 and end up with a different — usually larger — set.
       if (requestedRadius > 1 && passResult.suitableCount >= SUITABLE_TARGET) {
         console.log(`[Hybrid Comps] Found ${passResult.suitableCount} suitable comps after attempt ${expansionAttempts}`);
         break;
