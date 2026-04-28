@@ -323,22 +323,8 @@ export class HybridCompsService {
     const redfinComps: HybridCompResult[] = [];
 
     try {
-      const [rentCastResult, hasDataResult, redfinResult] = await Promise.allSettled([
-        this.rentCastService.searchComparableSales({
-          address,
-          city,
-          state,
-          zipCode,
-          bedrooms: 0, // Skip hard bedroom filter — scored as soft preference instead
-          bathrooms: 0, // Bathrooms are display-only, never filtered
-          sqft,
-          propertyType,
-          radiusMiles,
-          saleDateRangeDays,
-          maxResults: 25,
-          subjectLat,
-          subjectLng,
-        }),
+      // Phase 1: fetch HasData sources (Zillow + Redfin) first.
+      const [hasDataResult, redfinResult] = await Promise.allSettled([
         this.hasDataService.searchSoldCompsRedfin({
           address,
           city,
@@ -355,7 +341,7 @@ export class HybridCompsService {
           minResults: SUITABLE_TARGET,
           maxResults: 25,
         }),
-                this.hasDataService.searchSoldComps({
+        this.hasDataService.searchSoldComps({
           address,
           city,
           state,
@@ -373,15 +359,6 @@ export class HybridCompsService {
         }),
       ]);
 
-      if (rentCastResult.status === 'fulfilled' && rentCastResult.value?.comps) {
-        for (const comp of rentCastResult.value.comps) {
-          rentCastComps.push({ ...comp, dataSource: 'rentcast' });
-        }
-        console.log(`[Hybrid Comps] RentCast returned ${rentCastComps.length} comps`);
-      } else if (rentCastResult.status === 'rejected') {
-        console.error(`[Hybrid Comps] RentCast failed:`, rentCastResult.reason);
-      }
-
       if (hasDataResult.status === 'fulfilled' && Array.isArray(hasDataResult.value)) {
         for (const comp of hasDataResult.value) {
           hasDataComps.push({ ...comp, dataSource: 'hasdata' });
@@ -397,6 +374,43 @@ export class HybridCompsService {
         console.log(`[Hybrid Comps] Redfin returned ${redfinComps.length} comps`);
       } else if (redfinResult.status === 'rejected') {
         console.error(`[Hybrid Comps] Redfin failed:`, redfinResult.reason);
+      }
+
+      // Phase 2: only call RentCast if combined HasData (Zillow + Redfin)
+      // returned fewer than 8 suitable comps (no distressed / outlier / borderline flags).
+      const suitableCount = [...hasDataComps, ...redfinComps].filter(
+        c => !c.distressedFlag && !c.outlierFlag && !c.borderlineFlag
+      ).length;
+
+      if (suitableCount < 8) {
+        const rentCastResult = await Promise.allSettled([
+          this.rentCastService.searchComparableSales({
+            address,
+            city,
+            state,
+            zipCode,
+            bedrooms: 0, // Skip hard bedroom filter — scored as soft preference instead
+            bathrooms: 0, // Bathrooms are display-only, never filtered
+            sqft,
+            propertyType,
+            radiusMiles,
+            saleDateRangeDays,
+            maxResults: 25,
+            subjectLat,
+            subjectLng,
+          }),
+        ]).then(r => r[0]);
+
+        if (rentCastResult.status === 'fulfilled' && rentCastResult.value?.comps) {
+          for (const comp of rentCastResult.value.comps) {
+            rentCastComps.push({ ...comp, dataSource: 'rentcast' });
+          }
+          console.log(`[Hybrid Comps] RentCast returned ${rentCastComps.length} comps`);
+        } else if (rentCastResult.status === 'rejected') {
+          console.error(`[Hybrid Comps] RentCast failed:`, rentCastResult.reason);
+        }
+      } else {
+        console.log('[RentCast] skipped — HasData returned sufficient comps:', suitableCount);
       }
     } catch (error) {
       console.error(`[Hybrid Comps] Error in parallel API calls:`, error);
