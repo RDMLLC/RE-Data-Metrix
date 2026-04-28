@@ -228,7 +228,13 @@ export function normalizePropertyAddress(
 export function buildCompCacheKey(
   normalizedAddress: string,
   radiusMiles: number,
-  dateRangeDays: number
+  dateRangeDays: number,
+  bedrooms?: number,
+  bathrooms?: number,
+  sqft?: number
 ): string {
-  return `${normalizedAddress}|${radiusMiles.toFixed(1)}|${dateRangeDays}`;
+  const propSuffix = (bedrooms || bathrooms || sqft)
+    ? `|${bedrooms ?? 0}bd|${bathrooms ?? 0}ba|${sqft ?? 0}sqft`
+    : '';
+  return `${normalizedAddress}|${radiusMiles.toFixed(1)}|${dateRangeDays}${propSuffix}`;
 }

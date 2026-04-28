@@ -10054,7 +10054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const requestedRadius = radiusMiles || 3;
       const requestedDateRange = saleDateRangeDays || 180;
-      const compCacheKey = buildCompCacheKey(compNormalizedAddr, requestedRadius, requestedDateRange);
+      const compCacheKey = buildCompCacheKey(compNormalizedAddr, requestedRadius, requestedDateRange, bedrooms, bathrooms, sqft);
 
       const compCached = await storage.getCompCache(compCacheKey);
       if (compCached) {
@@ -10139,7 +10139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // wrong-looking "no expansion attempted" response.
       try {
         if (compNormalizedAddr && result.comps.length > 0) {
-          const actualCacheKey = buildCompCacheKey(compNormalizedAddr, result.actualRadiusMiles, requestedDateRange);
+          const actualCacheKey = buildCompCacheKey(compNormalizedAddr, result.actualRadiusMiles, requestedDateRange, bedrooms, bathrooms, sqft);
           const twentyFourHoursOut = new Date(Date.now() + 24 * 60 * 60 * 1000);
           await storage.setCompCache({
             cacheKey: actualCacheKey,
@@ -10158,7 +10158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Also write an alias keyed by requestedRadius so future clicks on
           // the same radius button hit cache immediately without re-expanding.
           if (result.actualRadiusMiles !== requestedRadius) {
-            const requestedCacheKey = buildCompCacheKey(compNormalizedAddr, requestedRadius, requestedDateRange);
+            const requestedCacheKey = buildCompCacheKey(compNormalizedAddr, requestedRadius, requestedDateRange, bedrooms, bathrooms, sqft);
             await storage.setCompCache({
               cacheKey: requestedCacheKey,
               normalizedAddress: compNormalizedAddr,

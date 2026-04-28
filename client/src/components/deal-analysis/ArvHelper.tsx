@@ -505,6 +505,47 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
     return fallback;
   };
 
+  const searchCompsWithOverride = async (overrideBeds: number, overrideBaths: number, overrideSqft: number) => {
+    if (!city || !state) return;
+    setIsSearchingComps(true);
+    setCompsError(null);
+    setCompsData(null);
+    setRadiusWasExpanded(false);
+    setActualRadiusUsed(null);
+    setDateRangeWasExpanded(false);
+    setActualDateRangeUsed(null);
+    try {
+      const response = await apiRequest("POST", "/api/comps/search", {
+        address, city, state, zipCode,
+        bedrooms: overrideBeds, bathrooms: overrideBaths, sqft: overrideSqft,
+        propertyType,
+        subjectLat: propertyLatitude, subjectLng: propertyLongitude,
+        radiusMiles: searchRadius, saleDateRangeDays: searchDateRange,
+      });
+      const data = await response.json();
+      setCompsData(data);
+      setRadiusWasExpanded(data.radiusExpanded ?? false);
+      setActualRadiusUsed(data.actualRadiusMiles ?? null);
+      setDateRangeWasExpanded(data.dateRangeExpanded ?? false);
+      setActualDateRangeUsed(data.actualDateRangeDays ?? null);
+      if (data.dateRangeExpanded && data.actualDateRangeDays) {
+        setSearchDateRange(data.actualDateRangeDays);
+      }
+      if (data.comps && data.comps.length > 0) {
+        lockedSelectionRef.current = null;
+        setSelectedCompIndices(computeSmartSelection(data.comps, overrideBeds, overrideBaths, overrideSqft));
+      }
+    } catch (error: any) {
+      if (error?.message?.includes("ARV_QUOTA_EXCEEDED")) {
+        setShowArvQuotaModal(true);
+      } else {
+        setCompsError(extractApiError(error, "Failed to search for comparable sales"));
+      }
+    } finally {
+      setIsSearchingComps(false);
+    }
+  };
+
   const searchComps = async () => {
     if (!city || !state) {
       toast({
@@ -987,10 +1028,18 @@ export default function ArvHelper({ form, onClose }: ArvHelperProps) {
                         const b = parseFloat(repairBedroomsInput);
                         const ba = parseFloat(repairBathroomsInput);
                         const s = parseFloat(repairSqftInput);
-                        if (!isNaN(b) && b > 0) setRepairBedrooms(b);
-                        if (!isNaN(ba) && ba > 0) setRepairBathrooms(ba);
-                        if (!isNaN(s) && s > 0) setRepairSqft(s);
+                        const newBeds = (!isNaN(b) && b > 0) ? b : null;
+                        const newBaths = (!isNaN(ba) && ba > 0) ? ba : null;
+                        const newSqft = (!isNaN(s) && s > 0) ? s : null;
+                        if (newBeds !== null) setRepairBedrooms(newBeds);
+                        if (newBaths !== null) setRepairBathrooms(newBaths);
+                        if (newSqft !== null) setRepairSqft(newSqft);
                         setShowRepairPanel(false);
+                        // Auto-trigger comp search with updated property profile
+                        const appliedBeds = newBeds ?? bedrooms;
+                        const appliedBaths = newBaths ?? bathrooms;
+                        const appliedSqft = newSqft ?? sqft;
+                        setTimeout(() => searchCompsWithOverride(appliedBeds, appliedBaths, appliedSqft), 0);
                       }}
                     >
                       Apply
