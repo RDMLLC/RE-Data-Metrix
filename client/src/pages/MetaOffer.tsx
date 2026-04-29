@@ -141,7 +141,7 @@ export default function MetaOffer() {
               onClick={handleCta}
               data-testid="button-cta-video"
             >
-              See Plans & Pricing
+              Start Analyzing Deals for Free
             </Button>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function MetaOffer() {
               onClick={handleCta}
               data-testid="button-cta-bottom"
             >
-              See Plans & Pricing
+              Start Analyzing Deals for Free
             </Button>
           </div>
         </div>
@@ -197,7 +197,7 @@ export default function MetaOffer() {
           onClick={handleCta}
           data-testid="button-cta-sticky"
         >
-          See Plans & Pricing
+          Start Analyzing Deals for Free
         </Button>
       </div>
     </div>
