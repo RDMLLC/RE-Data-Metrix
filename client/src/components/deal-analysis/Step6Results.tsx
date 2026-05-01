@@ -4032,6 +4032,22 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           const deferredInterest = isInterestDeferred ? interestCostValue : 0;
           const totalDeferred = deferredPoints + deferredInterest + taxesTotal;
           const showDeferredSection = isPointsDeferred || isInterestDeferred || taxesTotal > 0;
+          /**
+           * VERIFIED OOP DEFINITION (May 1, 2026) — DO NOT SIMPLIFY
+           * Out-of-Pocket = cash investor must have before/during hold.
+           * Excludes deferred items (paid from sale proceeds, not out of pocket).
+           *
+           * baseClosingCosts = Attorney + Title Exam + Title Insurance + Transfer Fee (base four only)
+           * lenderFeesOOP = non-deferred Points + Appraisal + Doc Prep + Draw Fees
+           * cashOnlyCarrying = Insurance + Utilities + HOA + Other (NO taxes, NO interest)
+           * displayedOOP = downPayment + baseClosingCosts + lenderFeesOOP + cashOnlyCarrying
+           *
+           * GOLDEN TEST CASE (3127 Snapfinger Ct, Decatur GA):
+           * Purchase $325K | Rehab $75K | 9mo | 12% | 2pts | 90% LTV | 100% rehab
+           * Drawn Funds Only: Yes | Interest Deferred: Yes | Points Deferred: Yes
+           * Expected: OOP $43,322 | CoC 142.11% | Annualized 189.47% | Net Profit $61,562
+           * OOP Breakdown: Down $32,500 + Closing $5,225 + Lender $2,445 + Carrying $3,152
+           */
           const baseClosingCosts = (breakdown?.attorneyFees || 0) + (breakdown?.titleExam || 0) + (breakdown?.titleInsurance || 0) + (breakdown?.transferFee || 0);
           const lenderFeesOOP = (!isPointsDeferred ? totalPointsValue : 0) + (breakdown?.appraisalCost || 0) + (breakdown?.docPrepFee || 0) + (column.lenderDrawFees || 0);
           const displayedOOP = (breakdown?.downPayment || 0) + baseClosingCosts + lenderFeesOOP + cashOnlyCarrying;
