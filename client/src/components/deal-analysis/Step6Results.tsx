@@ -306,19 +306,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     filename: 'loan-comparison-results.pdf',
     method: 'save',
     resolution: 2,
-    page: {
-      margin: 8,
-      format: 'letter',
-      orientation: 'portrait',
-    },
-    canvas: {
-      mimeType: 'image/png',
-      qualityRatio: 0.95,
-    },
-    overrides: {
-      pdf: { compress: true },
-      canvas: { useCORS: true },
-    }
+    page: { margin: 8, format: 'letter', orientation: 'portrait' },
+    canvas: { mimeType: 'image/png', qualityRatio: 0.95 },
+    overrides: { pdf: { compress: true }, canvas: { useCORS: true } },
   });
   // Second PDF hook for single-column export
   const { toPDF: toSingleColumnPDF, targetRef: singleColumnPdfRef } = usePDF({
