@@ -101,6 +101,17 @@ interface OutOfPocketBreakdown {
   lenderFees: number;
   totalClosingCostsBuy: number;
   carryingCosts: number;
+  // Granular Closing Costs (Buy) components — flat dollar amounts
+  attorneyFees?: number;
+  titleExam?: number;
+  titleInsurance?: number;
+  transferFee?: number;
+  // Granular Carrying Costs components — project-period totals
+  insurance?: number;
+  utilities?: number;
+  hoaMonthly?: number;
+  taxes?: number;
+  other?: number;
   total: number;
 }
 
@@ -117,11 +128,16 @@ interface LoanComparisonColumn {
   maxLtvBuy?: number;
   maxLendRehab?: number;
   points?: number;
+  interestDeferred?: boolean;
+  pointsDeferred?: boolean;
+  drawnFundsOnly?: boolean;
   isLtcWeighted?: boolean;
   maxLtcPercent?: number;
   isLtcAdjusted?: boolean;
   effectiveBuyPercent?: number;
   totalLoanAmount?: number;
+  purchaseLoanAmount?: number;
+  rehabLoanAmount?: number;
   purchasePrice: number;
   rehabBudget: number;
   totalProjectCost: number;
@@ -247,7 +263,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const [showSellingCosts, setShowSellingCosts] = useState(false);
   // Summary box expandable states
   const [showOutOfPocketBreakdown, setShowOutOfPocketBreakdown] = useState(false);
+  const [showOopTableBreakdown, setShowOopTableBreakdown] = useState(false);
   const [showCashOnCashBreakdown, setShowCashOnCashBreakdown] = useState(false);
+  const [showAnnualizedBreakdown, setShowAnnualizedBreakdown] = useState(false);
+  const [showLoanAmountBreakdown, setShowLoanAmountBreakdown] = useState(false);
   const [showLoanTerms, setShowLoanTerms] = useState(false);
 
   // PDF generation state - controls visibility of elements during PDF capture
@@ -744,7 +763,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     
     const monthlyInsurance = (formData.annualInsurance || 0) / 12;
     const monthlyUtilities = formData.monthlyUtilities || 0;
-    const monthlyPropertyTax = ((formData.taxAssessedValue || purchasePrice) * getStateTaxRate(formData.state || '')) / 12;
+    const monthlyPropertyTax = formData.annualTax
+      ? (formData.annualTax || 0) / 12
+      : ((formData.taxAssessedValue || purchasePrice) * getStateTaxRate(formData.state || '')) / 12;
     const monthlyHoa = formData.hoaFees || 0;
     const hoaTransferFee = formData.hoaTransferFee || 0;
     const otherCarryingCosts = formData.otherCarryingCosts || 0;
@@ -773,7 +794,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         arv: arv,
         projectLength: projectLength,
         closingCostsBuy: (formData.attorneyFees || 0) + (formData.docPrepFees || 0) + 
-                         (formData.titleExam || 0) + (formData.titleInsurance || 0),
+                         (formData.titleExam || 0) + (formData.titleInsurance || 0) +
+                         (formData.transferFee || 0),
         carryingCosts: totalCarryingCosts,
         sellPrice: formData.sellPrice || arv || 0,
         closingCostsSell: (formData.sellPrice || arv || 0) * 
@@ -784,6 +806,17 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         monthlyUtilities: monthlyUtilities,
         monthlyPropertyTax: monthlyPropertyTax,
         monthlyHoa: monthlyHoa,
+        // Granular Closing Costs (Buy) components — flat dollar amounts
+        attorneyFees: formData.attorneyFees || 0,
+        titleExam: formData.titleExam || 0,
+        titleInsurance: formData.titleInsurance || 0,
+        transferFee: formData.transferFee || 0,
+        // Granular Carrying Costs components — project-period totals
+        insurance: monthlyInsurance * projectLength,
+        utilities: monthlyUtilities * projectLength,
+        hoaMonthly: monthlyHoa * projectLength,
+        taxes: monthlyPropertyTax * projectLength,
+        other: hoaTransferFee + otherCarryingCosts,
       },
       criteriaSelection: {
         useDefaultCriteria: false,
@@ -798,6 +831,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           interestDeferred: formData.interestDeferred || false,
           points: formData.loanPoints || 0,
           pointsDeferred: formData.pointsDeferred || false,
+          drawnFundsOnly: formData.drawnFundsOnly || false,
           maxLendBuy: formData.maxLendBuy,
           maxLendRehab: formData.maxLendRehab || 100,
           maxLoanToArv: formData.maxLoanToArv || 70,
@@ -1107,6 +1141,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       }
     }
     
+    // Always expand Loan Terms so it's captured in BOTH Overview and Detailed PDFs
+    setShowLoanTerms(true);
+
     if (detailed) {
       // Expand all sections for detailed PDF
       setShowProjectCosts(true);
@@ -1116,17 +1153,20 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       setShowSellingCosts(true);
       setShowOutOfPocketBreakdown(true);
       setShowCashOnCashBreakdown(true);
-      setShowLoanTerms(true);
-      // Wait for state updates
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
+    // Wait for React to re-render the expanded sections before capture
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     setIsGeneratingPdf(true);
     await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 350)));
     await toPDF();
     setIsGeneratingPdf(false);
     setSelectedPdfColumnIds([]);
     
+    // Always collapse Loan Terms back after PDF generation (it was always expanded above)
+    setShowLoanTerms(false);
+
     if (detailed) {
       // Collapse sections back after PDF generation
       setShowProjectCosts(false);
@@ -1136,7 +1176,6 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       setShowSellingCosts(false);
       setShowOutOfPocketBreakdown(false);
       setShowCashOnCashBreakdown(false);
-      setShowLoanTerms(false);
     }
   };
 
@@ -1733,272 +1772,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </CardContent>
           </Card>
 
-          {/* Summary Metrics Box - Columns aligned with loan comparison table */}
-          {results && (
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="pt-4 pb-4">
-                <div className="overflow-x-auto">
-                  <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[120px]">Summary</TableHead>
-                        <TableHead className="text-center min-w-[100px]">Cash Sale</TableHead>
-                        {results.userLoanColumn && (
-                          <TableHead className="text-center min-w-[100px]">Entered Loan</TableHead>
-                        )}
-                        {pdfLenders.map((lender, index) => (
-                          <TableHead key={index} className="text-center min-w-[140px] text-xs">
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
-                              {lender.productName && (
-                                <span className="text-muted-foreground font-normal">{lender.productName}</span>
-                              )}
-                            </div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium">Net Profit</TableCell>
-                        <TableCell className="text-center font-bold text-green-600" data-testid="summary-net-profit-cash">
-                          {formatCurrency(results.cashSaleColumn.profit)}
-                        </TableCell>
-                        {results.userLoanColumn && (
-                          <TableCell className="text-center font-bold text-green-600" data-testid="summary-net-profit-loan">
-                            {formatCurrency(results.userLoanColumn.profit)}
-                          </TableCell>
-                        )}
-                        {pdfLenders.map((lender, index) => (
-                          <TableCell key={index} className="text-center font-bold text-green-600">
-                            {formatCurrency(lender.profit)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      {/* Out-of-Pocket - Expandable */}
-                      <TableRow 
-                        className="cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => setShowOutOfPocketBreakdown(!showOutOfPocketBreakdown)}
-                        data-testid="summary-row-oop"
-                      >
-                        <TableCell className="font-medium flex items-center gap-2">
-                          {showOutOfPocketBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          Out-of-Pocket
-                        </TableCell>
-                        <TableCell className="text-center font-bold" data-testid="summary-oop-cash">
-                          {formatCurrency(results.cashSaleColumn.outOfPocketCost)}
-                        </TableCell>
-                        {results.userLoanColumn && (
-                          <TableCell className="text-center font-bold" data-testid="summary-oop-loan">
-                            {formatCurrency(results.userLoanColumn.outOfPocketCost)}
-                          </TableCell>
-                        )}
-                        {pdfLenders.map((lender, index) => (
-                          <TableCell key={index} className="text-center font-bold">
-                            {formatCurrency(lender.outOfPocketCost)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      {showOutOfPocketBreakdown && (
-                        <>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Down Payment</TableCell>
-                            <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.downPayment || results.cashSaleColumn.totalProjectCost)}</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Closing Costs (Buy)</TableCell>
-                            <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.totalClosingCostsBuy || results.cashSaleColumn.closingCostsBuy)}</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.totalClosingCostsBuy || results.userLoanColumn.closingCostsBuy)}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.outOfPocketBreakdown?.totalClosingCostsBuy || lender.closingCostsBuy)}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Carrying Costs</TableCell>
-                            <TableCell className="text-center text-sm">{formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.carryingCosts || results.cashSaleColumn.carryingCosts)}</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.carryingCosts || results.userLoanColumn.carryingCosts)}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.outOfPocketBreakdown?.carryingCosts || lender.carryingCosts)}</TableCell>
-                            ))}
-                          </TableRow>
-                        </>
-                      )}
-                      {/* Cash-on-Cash - Expandable */}
-                      <TableRow 
-                        className="cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => setShowCashOnCashBreakdown(!showCashOnCashBreakdown)}
-                        data-testid="summary-row-coc"
-                      >
-                        <TableCell className="font-medium flex items-center gap-2">
-                          {showCashOnCashBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          Cash-on-Cash
-                        </TableCell>
-                        <TableCell className="text-center font-bold text-primary" data-testid="summary-coc-cash">
-                          {formatPercent(results.cashSaleColumn.cashOnCashRoi)}
-                        </TableCell>
-                        {results.userLoanColumn && (
-                          <TableCell className="text-center font-bold text-primary" data-testid="summary-coc-loan">
-                            {formatPercent(results.userLoanColumn.cashOnCashRoi)}
-                          </TableCell>
-                        )}
-                        {pdfLenders.map((lender, index) => (
-                          <TableCell key={index} className="text-center font-bold text-primary">
-                            {formatPercent(lender.cashOnCashRoi)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      {showCashOnCashBreakdown && (
-                        <TableRow className="bg-muted/20">
-                          <TableCell className="pl-8 text-sm text-muted-foreground italic">
-                            Formula: Net Profit ÷ Out-of-Pocket × 100
-                          </TableCell>
-                          <TableCell className="text-center text-xs text-muted-foreground">
-                            {formatCurrency(results.cashSaleColumn.profit)} ÷ {formatCurrency(results.cashSaleColumn.outOfPocketCost)}
-                          </TableCell>
-                          {results.userLoanColumn && (
-                            <TableCell className="text-center text-xs text-muted-foreground">
-                              {formatCurrency(results.userLoanColumn.profit)} ÷ {formatCurrency(results.userLoanColumn.outOfPocketCost)}
-                            </TableCell>
-                          )}
-                          {pdfLenders.map((lender, index) => (
-                            <TableCell key={index} className="text-center text-xs text-muted-foreground">
-                              {formatCurrency(lender.profit)} ÷ {formatCurrency(lender.outOfPocketCost)}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      )}
-                      <TableRow>
-                        <TableCell className="font-medium">Annualized</TableCell>
-                        <TableCell className="text-center font-bold text-primary" data-testid="summary-annual-cash">
-                          {formatPercent(results.cashSaleColumn.annualizedRoi)}
-                        </TableCell>
-                        {results.userLoanColumn && (
-                          <TableCell className="text-center font-bold text-primary" data-testid="summary-annual-loan">
-                            {formatPercent(results.userLoanColumn.annualizedRoi)}
-                          </TableCell>
-                        )}
-                        {pdfLenders.map((lender, index) => (
-                          <TableCell key={index} className="text-center font-bold text-primary">
-                            {formatPercent(lender.annualizedRoi)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      {/* Loan Terms - Expandable */}
-                      <TableRow 
-                        className="cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => setShowLoanTerms(!showLoanTerms)}
-                        data-testid="summary-row-loan-terms"
-                      >
-                        <TableCell className="font-medium flex items-center gap-2">
-                          {showLoanTerms ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          Loan Terms
-                        </TableCell>
-                        <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                        {results.userLoanColumn && (
-                          <TableCell className="text-center text-sm">
-                            {results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}
-                          </TableCell>
-                        )}
-                        {pdfLenders.map((lender, index) => (
-                          <TableCell key={index} className="text-center text-sm">
-                            {lender.interestRate ? `${lender.interestRate}%` : '—'}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      {showLoanTerms && (
-                        <>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Interest Rate</TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{lender.interestRate ? `${lender.interestRate}%` : '—'}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Points</TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{results.userLoanColumn.points !== undefined ? `${results.userLoanColumn.points}%` : '—'}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{lender.points !== undefined ? `${lender.points}%` : '—'}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Total Loan Amount</TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{results.userLoanColumn.totalLoanAmount ? formatCurrency(results.userLoanColumn.totalLoanAmount) : '—'}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{lender.totalLoanAmount ? formatCurrency(lender.totalLoanAmount) : '—'}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Max LTV (Buy)</TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{results.userLoanColumn.maxLtvBuy ? `${results.userLoanColumn.maxLtvBuy}%` : '—'}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{lender.maxLtvBuy ? `${lender.maxLtvBuy}%` : '—'}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Max Loan % (Rehab)</TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{results.userLoanColumn.maxLendRehab ? `${results.userLoanColumn.maxLendRehab}%` : '—'}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{lender.maxLendRehab ? `${lender.maxLendRehab}%` : '—'}</TableCell>
-                            ))}
-                          </TableRow>
-                          <TableRow className="bg-muted/20">
-                            <TableCell className="pl-8 text-sm text-muted-foreground">Max ARV %</TableCell>
-                            <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                            {results.userLoanColumn && (
-                              <TableCell className="text-center text-sm">{results.userLoanColumn.maxLoanArv ? `${results.userLoanColumn.maxLoanArv}%` : '—'}</TableCell>
-                            )}
-                            {pdfLenders.map((lender, index) => (
-                              <TableCell key={index} className="text-center text-sm">{lender.maxLoanArv ? `${lender.maxLoanArv}%` : '—'}</TableCell>
-                            ))}
-                          </TableRow>
-                          {pdfLenders.some(l => l.isLtcWeighted && l.maxLtcPercent) && (
-                            <TableRow className="bg-muted/20">
-                              <TableCell className="pl-8 text-sm text-muted-foreground">Max LTC %</TableCell>
-                              <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
-                              {results.userLoanColumn && (
-                                <TableCell className="text-center text-sm">—</TableCell>
-                              )}
-                              {pdfLenders.map((lender, index) => (
-                                <TableCell key={index} className="text-center text-sm">
-                                  {lender.isLtcWeighted && lender.maxLtcPercent ? `${lender.maxLtcPercent}%` : '—'}
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          )}
-                        </>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* PDF capture wrapper — includes BOTH Summary Metrics Box and Loan Comparison Results card */}
+          <div ref={targetRef}>
 
           {/* Usage counter for free authenticated users — shows near lender results */}
           {isAuthenticated && !effectiveIsSubscriber && results && !isGeneratingPdf && (
@@ -2044,7 +1819,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </Card>
           )}
 
-          <Card ref={targetRef}>
+          <Card>
             {/* Company Header for PDF */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
               {/* Left side: user branding if set, otherwise RE Data Metrix */}
@@ -2087,6 +1862,425 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               <CardTitle>Loan Comparison Results</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Summary Metrics - styled to match detailed table */}
+              {results && (
+                <div className="overflow-x-auto mb-6">
+                  <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[160px]">Summary</TableHead>
+                        <TableHead className="text-center min-w-[100px]">Cash Sale</TableHead>
+                        {results.userLoanColumn && (
+                          <TableHead className="text-center min-w-[100px]">Entered Loan</TableHead>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableHead key={index} className="text-center min-w-[140px] text-xs">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="font-semibold">{lender.lenderName || `Lender ${index + 1}`}</span>
+                              {lender.productName && (
+                                <span className="text-muted-foreground font-normal">{lender.productName}</span>
+                              )}
+                            </div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Net Profit</TableCell>
+                        <TableCell className="text-center font-bold text-green-600" data-testid="summary-net-profit-cash">
+                          {formatCurrency(results.cashSaleColumn.profit)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center font-bold text-green-600" data-testid="summary-net-profit-loan">
+                            {formatCurrency(results.userLoanColumn.profit)}
+                          </TableCell>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center font-bold text-green-600">
+                            {formatCurrency(lender.profit)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {/* Out-of-Pocket - Expandable */}
+                      <TableRow
+                        className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
+                        onClick={() => setShowOutOfPocketBreakdown(!showOutOfPocketBreakdown)}
+                        data-testid="summary-row-oop"
+                      >
+                        <TableCell className="font-semibold flex items-center gap-2">
+                          {showOutOfPocketBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Out-of-Pocket
+                        </TableCell>
+                        <TableCell className="text-center text-sm" data-testid="summary-oop-cash">
+                          {formatCurrency((results.cashSaleColumn.outOfPocketBreakdown?.downPayment || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0) +
+                        (!results.cashSaleColumn.outOfPocketBreakdown?.pointsDeferred ? (results.cashSaleColumn.outOfPocketBreakdown?.totalPointsCost || results.cashSaleColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.cashSaleColumn.lenderDrawFees || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.insurance || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.utilities || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.other || 0))}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center text-sm" data-testid="summary-oop-loan">
+                            {formatCurrency((results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0) +
+                        (!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred ? (results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.userLoanColumn.lenderDrawFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.insurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.utilities || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.other || 0))}
+                          </TableCell>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center text-sm">
+                            {formatCurrency((lender.outOfPocketBreakdown?.downPayment || 0) +
+                        (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (lender.outOfPocketBreakdown?.titleExam || 0) +
+                        (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (lender.outOfPocketBreakdown?.transferFee || 0) +
+                        (!lender.outOfPocketBreakdown?.pointsDeferred ? (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (lender.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (lender.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (lender.lenderDrawFees || 0) +
+                        (lender.outOfPocketBreakdown?.insurance || 0) +
+                        (lender.outOfPocketBreakdown?.utilities || 0) +
+                        (lender.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (lender.outOfPocketBreakdown?.other || 0))}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {showOutOfPocketBreakdown && (
+                        <>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Down Payment</TableCell>
+                            <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.downPayment || results.cashSaleColumn.totalProjectCost)}</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Closing Costs (Buy)</TableCell>
+                            <TableCell className="text-center">{formatCurrency(
+                            (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                            (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                            (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                            (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0)
+                          )}</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{formatCurrency(
+                            (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0)
+                          )}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{formatCurrency(
+                            (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                            (lender.outOfPocketBreakdown?.titleExam || 0) +
+                            (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                            (lender.outOfPocketBreakdown?.transferFee || 0)
+                          )}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Carrying Costs</TableCell>
+                            <TableCell className="text-center">{formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.carryingCosts || results.cashSaleColumn.carryingCosts)}</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.carryingCosts || results.userLoanColumn.carryingCosts)}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.carryingCosts || lender.carryingCosts)}</TableCell>
+                            ))}
+                          </TableRow>
+                        </>
+                      )}
+                      {/* Cash-on-Cash - Expandable */}
+                      <TableRow
+                        className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
+                        onClick={() => setShowCashOnCashBreakdown(!showCashOnCashBreakdown)}
+                        data-testid="summary-row-coc"
+                      >
+                        <TableCell className="font-semibold flex items-center gap-2">
+                          {showCashOnCashBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Cash-on-Cash
+                        </TableCell>
+                        <TableCell className="text-center text-sm font-bold text-primary" data-testid="summary-coc-cash">
+                          {formatPercent(results.cashSaleColumn.profit/((results.cashSaleColumn.outOfPocketBreakdown?.downPayment||0)+(results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleExam||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.transferFee||0)+(results.cashSaleColumn.outOfPocketBreakdown?.insurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.utilities||0)+(results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.cashSaleColumn.outOfPocketBreakdown?.other||0))*100)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center text-sm font-bold text-primary" data-testid="summary-coc-loan">
+                            {formatPercent(results.userLoanColumn.profit/((results.userLoanColumn.outOfPocketBreakdown?.downPayment||0)+(results.userLoanColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleExam||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.transferFee||0)+(!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred?(results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost||results.userLoanColumn.outOfPocketBreakdown?.pointsCost||0):0)+(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost||0)+(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee||0)+(results.userLoanColumn.lenderDrawFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.insurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.utilities||0)+(results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.userLoanColumn.outOfPocketBreakdown?.other||0))*100)}
+                          </TableCell>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center text-sm font-bold text-primary">
+                            {formatPercent(lender.profit/((lender.outOfPocketBreakdown?.downPayment||0)+(lender.outOfPocketBreakdown?.attorneyFees||0)+(lender.outOfPocketBreakdown?.titleExam||0)+(lender.outOfPocketBreakdown?.titleInsurance||0)+(lender.outOfPocketBreakdown?.transferFee||0)+(!lender.outOfPocketBreakdown?.pointsDeferred?(lender.outOfPocketBreakdown?.totalPointsCost||lender.outOfPocketBreakdown?.pointsCost||0):0)+(lender.outOfPocketBreakdown?.appraisalCost||0)+(lender.outOfPocketBreakdown?.docPrepFee||0)+(lender.lenderDrawFees||0)+(lender.outOfPocketBreakdown?.insurance||0)+(lender.outOfPocketBreakdown?.utilities||0)+(lender.outOfPocketBreakdown?.hoaMonthly||0)+(lender.outOfPocketBreakdown?.other||0))*100)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {showCashOnCashBreakdown && (
+                        <TableRow>
+                          <TableCell className="font-medium pl-8 italic text-muted-foreground">
+                            Formula: Net Profit ÷ Out-of-Pocket × 100
+                          </TableCell>
+                          <TableCell className="text-center text-xs text-muted-foreground">
+                            {formatCurrency(results.cashSaleColumn.profit)} ÷ {formatCurrency((results.cashSaleColumn.outOfPocketBreakdown?.downPayment || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0) +
+                        (!results.cashSaleColumn.outOfPocketBreakdown?.pointsDeferred ? (results.cashSaleColumn.outOfPocketBreakdown?.totalPointsCost || results.cashSaleColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.cashSaleColumn.lenderDrawFees || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.insurance || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.utilities || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (results.cashSaleColumn.outOfPocketBreakdown?.other || 0))}
+                          </TableCell>
+                          {results.userLoanColumn && (
+                            <TableCell className="text-center text-xs text-muted-foreground">
+                              {formatCurrency(results.userLoanColumn.profit)} ÷ {formatCurrency((results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0) +
+                        (!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred ? (results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.userLoanColumn.lenderDrawFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.insurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.utilities || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.other || 0))}
+                            </TableCell>
+                          )}
+                          {pdfLenders.map((lender, index) => (
+                            <TableCell key={index} className="text-center text-xs text-muted-foreground">
+                              {formatCurrency(lender.profit)} ÷ {formatCurrency((lender.outOfPocketBreakdown?.downPayment || 0) +
+                        (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (lender.outOfPocketBreakdown?.titleExam || 0) +
+                        (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (lender.outOfPocketBreakdown?.transferFee || 0) +
+                        (!lender.outOfPocketBreakdown?.pointsDeferred ? (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (lender.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (lender.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (lender.lenderDrawFees || 0) +
+                        (lender.outOfPocketBreakdown?.insurance || 0) +
+                        (lender.outOfPocketBreakdown?.utilities || 0) +
+                        (lender.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (lender.outOfPocketBreakdown?.other || 0))}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )}
+                      {/* Annualized - Expandable */}
+                      <TableRow
+                        className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
+                        onClick={() => setShowAnnualizedBreakdown(!showAnnualizedBreakdown)}
+                        data-testid="summary-row-annualized"
+                      >
+                        <TableCell className="font-semibold flex items-center gap-2">
+                          {showAnnualizedBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Annualized
+                        </TableCell>
+                        <TableCell className="text-center text-sm font-bold text-primary" data-testid="summary-annual-cash">
+                          {formatPercent(results.cashSaleColumn.profit/((results.cashSaleColumn.outOfPocketBreakdown?.downPayment||0)+(results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleExam||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.transferFee||0)+(results.cashSaleColumn.outOfPocketBreakdown?.insurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.utilities||0)+(results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.cashSaleColumn.outOfPocketBreakdown?.other||0))*(12/(results.cashSaleColumn.totalHoldMonths||formData.projectLength||6))*100)}
+                        </TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center text-sm font-bold text-primary" data-testid="summary-annual-loan">
+                            {formatPercent(results.userLoanColumn.profit/((results.userLoanColumn.outOfPocketBreakdown?.downPayment||0)+(results.userLoanColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleExam||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.transferFee||0)+(!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred?(results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost||results.userLoanColumn.outOfPocketBreakdown?.pointsCost||0):0)+(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost||0)+(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee||0)+(results.userLoanColumn.lenderDrawFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.insurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.utilities||0)+(results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.userLoanColumn.outOfPocketBreakdown?.other||0))*(12/(results.userLoanColumn.totalHoldMonths||formData.projectLength||6))*100)}
+                          </TableCell>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center text-sm font-bold text-primary">
+                            {formatPercent(lender.profit/((lender.outOfPocketBreakdown?.downPayment||0)+(lender.outOfPocketBreakdown?.attorneyFees||0)+(lender.outOfPocketBreakdown?.titleExam||0)+(lender.outOfPocketBreakdown?.titleInsurance||0)+(lender.outOfPocketBreakdown?.transferFee||0)+(!lender.outOfPocketBreakdown?.pointsDeferred?(lender.outOfPocketBreakdown?.totalPointsCost||lender.outOfPocketBreakdown?.pointsCost||0):0)+(lender.outOfPocketBreakdown?.appraisalCost||0)+(lender.outOfPocketBreakdown?.docPrepFee||0)+(lender.lenderDrawFees||0)+(lender.outOfPocketBreakdown?.insurance||0)+(lender.outOfPocketBreakdown?.utilities||0)+(lender.outOfPocketBreakdown?.hoaMonthly||0)+(lender.outOfPocketBreakdown?.other||0))*(12/(lender.totalHoldMonths||formData.projectLength||6))*100)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {showAnnualizedBreakdown && (
+                        <TableRow>
+                          <TableCell className="font-medium pl-8 italic text-muted-foreground">
+                            Formula: Cash-on-Cash × (12 ÷ Hold Months)
+                          </TableCell>
+                          <TableCell className="text-center text-xs text-muted-foreground">
+                            {formatPercent(results.cashSaleColumn.profit/((results.cashSaleColumn.outOfPocketBreakdown?.downPayment||0)+(results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleExam||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.transferFee||0)+(results.cashSaleColumn.outOfPocketBreakdown?.insurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.utilities||0)+(results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.cashSaleColumn.outOfPocketBreakdown?.other||0))*100)} × (12 ÷ {results.cashSaleColumn.totalHoldMonths || formData.totalHoldMonths || 6})
+                          </TableCell>
+                          {results.userLoanColumn && (
+                            <TableCell className="text-center text-xs text-muted-foreground">
+                              {formatPercent(results.userLoanColumn.profit/((results.userLoanColumn.outOfPocketBreakdown?.downPayment||0)+(results.userLoanColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleExam||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.transferFee||0)+(!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred?(results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost||results.userLoanColumn.outOfPocketBreakdown?.pointsCost||0):0)+(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost||0)+(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee||0)+(results.userLoanColumn.lenderDrawFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.insurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.utilities||0)+(results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.userLoanColumn.outOfPocketBreakdown?.other||0))*100)} × (12 ÷ {results.userLoanColumn.totalHoldMonths || formData.totalHoldMonths || 6})
+                            </TableCell>
+                          )}
+                          {pdfLenders.map((lender, index) => (
+                            <TableCell key={index} className="text-center text-xs text-muted-foreground">
+                              {formatPercent(lender.profit/((lender.outOfPocketBreakdown?.downPayment||0)+(lender.outOfPocketBreakdown?.attorneyFees||0)+(lender.outOfPocketBreakdown?.titleExam||0)+(lender.outOfPocketBreakdown?.titleInsurance||0)+(lender.outOfPocketBreakdown?.transferFee||0)+(!lender.outOfPocketBreakdown?.pointsDeferred?(lender.outOfPocketBreakdown?.totalPointsCost||lender.outOfPocketBreakdown?.pointsCost||0):0)+(lender.outOfPocketBreakdown?.appraisalCost||0)+(lender.outOfPocketBreakdown?.docPrepFee||0)+(lender.lenderDrawFees||0)+(lender.outOfPocketBreakdown?.insurance||0)+(lender.outOfPocketBreakdown?.utilities||0)+(lender.outOfPocketBreakdown?.hoaMonthly||0)+(lender.outOfPocketBreakdown?.other||0))*100)} × (12 ÷ {lender.totalHoldMonths || formData.totalHoldMonths || 6})
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )}
+                      {/* Total Loan Amount - Expandable */}
+                      <TableRow
+                        className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
+                        onClick={() => setShowLoanAmountBreakdown(!showLoanAmountBreakdown)}
+                        data-testid="summary-row-loan-amount"
+                      >
+                        <TableCell className="font-semibold flex items-center gap-2">
+                          {showLoanAmountBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Total Loan Amount
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center text-sm">{results.userLoanColumn.totalLoanAmount ? formatCurrency(results.userLoanColumn.totalLoanAmount) : '—'}</TableCell>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center text-sm">{lender.totalLoanAmount ? formatCurrency(lender.totalLoanAmount) : '—'}</TableCell>
+                        ))}
+                      </TableRow>
+                      {showLoanAmountBreakdown && (
+                        <>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Purchase Loan</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{formatCurrency(results.userLoanColumn.purchaseLoanAmount ?? 0)}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{formatCurrency(lender.purchaseLoanAmount ?? 0)}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Rehab Loan</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{formatCurrency(results.userLoanColumn.rehabLoanAmount ?? 0)}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{formatCurrency(lender.rehabLoanAmount ?? 0)}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Down Payment</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.downPayment ?? 0)}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.downPayment ?? 0)}</TableCell>
+                            ))}
+                          </TableRow>
+                        </>
+                      )}
+                      {/* Loan Terms - Expandable */}
+                      <TableRow
+                        className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
+                        onClick={() => setShowLoanTerms(!showLoanTerms)}
+                        data-testid="summary-row-loan-terms"
+                      >
+                        <TableCell className="font-semibold flex items-center gap-2">
+                          {showLoanTerms ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          Loan Terms
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">—</TableCell>
+                        {results.userLoanColumn && (
+                          <TableCell className="text-center text-sm">
+                            {results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}
+                          </TableCell>
+                        )}
+                        {pdfLenders.map((lender, index) => (
+                          <TableCell key={index} className="text-center text-sm">
+                            {lender.interestRate ? `${lender.interestRate}%` : '—'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {showLoanTerms && (
+                        <>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Interest Rate</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{results.userLoanColumn.interestRate ? `${results.userLoanColumn.interestRate}%` : '—'}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{lender.interestRate ? `${lender.interestRate}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Points</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{results.userLoanColumn.points !== undefined ? `${results.userLoanColumn.points}%` : '—'}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{lender.points !== undefined ? `${lender.points}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Max LTV (Buy)</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{results.userLoanColumn.maxLtvBuy ? `${results.userLoanColumn.maxLtvBuy}%` : '—'}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{lender.maxLtvBuy ? `${lender.maxLtvBuy}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Max Loan % (Rehab)</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{results.userLoanColumn.maxLendRehab ? `${results.userLoanColumn.maxLendRehab}%` : '—'}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{lender.maxLendRehab ? `${lender.maxLendRehab}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-8">Max ARV %</TableCell>
+                            <TableCell className="text-center text-muted-foreground">—</TableCell>
+                            {results.userLoanColumn && (
+                              <TableCell className="text-center">{results.userLoanColumn.maxLoanArv ? `${results.userLoanColumn.maxLoanArv}%` : '—'}</TableCell>
+                            )}
+                            {pdfLenders.map((lender, index) => (
+                              <TableCell key={index} className="text-center">{lender.maxLoanArv ? `${lender.maxLoanArv}%` : '—'}</TableCell>
+                            ))}
+                          </TableRow>
+                          {pdfLenders.some(l => l.isLtcWeighted && l.maxLtcPercent) && (
+                            <TableRow>
+                              <TableCell className="font-medium pl-8">Max LTC %</TableCell>
+                              <TableCell className="text-center text-muted-foreground">—</TableCell>
+                              {results.userLoanColumn && (
+                                <TableCell className="text-center">—</TableCell>
+                              )}
+                              {pdfLenders.map((lender, index) => (
+                                <TableCell key={index} className="text-center">
+                                  {lender.isLtcWeighted && lender.maxLtcPercent ? `${lender.maxLtcPercent}%` : '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          )}
+                        </>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
               {/* Mobile Card View - visible only on small screens */}
               <div className="lg:hidden space-y-4">
                 {/* Cash Sale Card */}
@@ -2122,15 +2316,25 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Out-of-Pocket</span>
-                      <span className="font-semibold">{formatCurrency(results.cashSaleColumn.outOfPocketCost)}</span>
+                      <span className="font-semibold">{formatCurrency(
+                      (results.cashSaleColumn.outOfPocketBreakdown?.downPayment || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.insurance || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.utilities || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.other || 0)
+                    )}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Cash-on-Cash ROI</span>
-                      <span className="font-semibold">{results.cashSaleColumn.cashOnCashRoi.toFixed(1)}%</span>
+                      <span className="font-semibold">{(results.cashSaleColumn.profit/((results.cashSaleColumn.outOfPocketBreakdown?.downPayment||0)+(results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleExam||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.transferFee||0)+(results.cashSaleColumn.outOfPocketBreakdown?.insurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.utilities||0)+(results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.cashSaleColumn.outOfPocketBreakdown?.other||0))*100).toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Annualized ROI</span>
-                      <span className="font-semibold">{results.cashSaleColumn.annualizedRoi.toFixed(1)}%</span>
+                      <span className="font-semibold">{(results.cashSaleColumn.profit/((results.cashSaleColumn.outOfPocketBreakdown?.downPayment||0)+(results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleExam||0)+(results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.transferFee||0)+(results.cashSaleColumn.outOfPocketBreakdown?.insurance||0)+(results.cashSaleColumn.outOfPocketBreakdown?.utilities||0)+(results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.cashSaleColumn.outOfPocketBreakdown?.other||0))*(12/(results.cashSaleColumn.totalHoldMonths||formData.projectLength||6))*100).toFixed(1)}%</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between text-sm">
@@ -2139,7 +2343,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Closing Costs</span>
-                        <span>{formatCurrency(results.cashSaleColumn.closingCostsBuy)}</span>
+                        <span>{formatCurrency(
+                      (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0)
+                    )}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Carrying Costs</span>
@@ -2187,15 +2396,29 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Out-of-Pocket</span>
-                        <span className="font-semibold">{formatCurrency(results.userLoanColumn.outOfPocketCost)}</span>
+                        <span className="font-semibold">{formatCurrency(
+                        (results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0) +
+                        (!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred ? (results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.userLoanColumn.lenderDrawFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.insurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.utilities || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.other || 0)
+                      )}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Cash-on-Cash ROI</span>
-                        <span className="font-semibold">{results.userLoanColumn.cashOnCashRoi.toFixed(1)}%</span>
+                        <span className="font-semibold">{(results.userLoanColumn.profit/((results.userLoanColumn.outOfPocketBreakdown?.downPayment||0)+(results.userLoanColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleExam||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.transferFee||0)+(!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred?(results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost||results.userLoanColumn.outOfPocketBreakdown?.pointsCost||0):0)+(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost||0)+(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee||0)+(results.userLoanColumn.lenderDrawFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.insurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.utilities||0)+(results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.userLoanColumn.outOfPocketBreakdown?.other||0))*100).toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Annualized ROI</span>
-                        <span className="font-semibold">{results.userLoanColumn.annualizedRoi.toFixed(1)}%</span>
+                        <span className="font-semibold">{(results.userLoanColumn.profit/((results.userLoanColumn.outOfPocketBreakdown?.downPayment||0)+(results.userLoanColumn.outOfPocketBreakdown?.attorneyFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleExam||0)+(results.userLoanColumn.outOfPocketBreakdown?.titleInsurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.transferFee||0)+(!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred?(results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost||results.userLoanColumn.outOfPocketBreakdown?.pointsCost||0):0)+(results.userLoanColumn.outOfPocketBreakdown?.appraisalCost||0)+(results.userLoanColumn.outOfPocketBreakdown?.docPrepFee||0)+(results.userLoanColumn.lenderDrawFees||0)+(results.userLoanColumn.outOfPocketBreakdown?.insurance||0)+(results.userLoanColumn.outOfPocketBreakdown?.utilities||0)+(results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly||0)+(results.userLoanColumn.outOfPocketBreakdown?.other||0))*(12/(results.userLoanColumn.totalHoldMonths||formData.projectLength||6))*100).toFixed(1)}%</span>
                       </div>
                       <div className="border-t pt-2 mt-2">
                         <div className="flex justify-between text-sm">
@@ -2204,7 +2427,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Closing + Lender Fees</span>
-                          <span>{formatCurrency(results.userLoanColumn.closingCostsBuy + (results.userLoanColumn.outOfPocketBreakdown?.lenderFees || 0))}</span>
+                          <span>{formatCurrency(
+                          (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                          (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                          (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                          (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0)
+                        )}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Carrying Costs</span>
@@ -2254,15 +2482,29 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Out-of-Pocket</span>
-                        <span className="font-semibold">{formatCurrency(lender.outOfPocketCost)}</span>
+                        <span className="font-semibold">{formatCurrency(
+                        (lender.outOfPocketBreakdown?.downPayment || 0) +
+                        (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (lender.outOfPocketBreakdown?.titleExam || 0) +
+                        (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (lender.outOfPocketBreakdown?.transferFee || 0) +
+                        (!lender.outOfPocketBreakdown?.pointsDeferred ? (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (lender.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (lender.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (lender.lenderDrawFees || 0) +
+                        (lender.outOfPocketBreakdown?.insurance || 0) +
+                        (lender.outOfPocketBreakdown?.utilities || 0) +
+                        (lender.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (lender.outOfPocketBreakdown?.other || 0)
+                      )}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Cash-on-Cash ROI</span>
-                        <span className="font-semibold">{lender.cashOnCashRoi.toFixed(1)}%</span>
+                        <span className="font-semibold">{(lender.profit/((lender.outOfPocketBreakdown?.downPayment||0)+(lender.outOfPocketBreakdown?.attorneyFees||0)+(lender.outOfPocketBreakdown?.titleExam||0)+(lender.outOfPocketBreakdown?.titleInsurance||0)+(lender.outOfPocketBreakdown?.transferFee||0)+(!lender.outOfPocketBreakdown?.pointsDeferred?(lender.outOfPocketBreakdown?.totalPointsCost||lender.outOfPocketBreakdown?.pointsCost||0):0)+(lender.outOfPocketBreakdown?.appraisalCost||0)+(lender.outOfPocketBreakdown?.docPrepFee||0)+(lender.lenderDrawFees||0)+(lender.outOfPocketBreakdown?.insurance||0)+(lender.outOfPocketBreakdown?.utilities||0)+(lender.outOfPocketBreakdown?.hoaMonthly||0)+(lender.outOfPocketBreakdown?.other||0))*100).toFixed(1)}%</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Annualized ROI</span>
-                        <span className="font-semibold">{lender.annualizedRoi.toFixed(1)}%</span>
+                        <span className="font-semibold">{(lender.profit/((lender.outOfPocketBreakdown?.downPayment||0)+(lender.outOfPocketBreakdown?.attorneyFees||0)+(lender.outOfPocketBreakdown?.titleExam||0)+(lender.outOfPocketBreakdown?.titleInsurance||0)+(lender.outOfPocketBreakdown?.transferFee||0)+(!lender.outOfPocketBreakdown?.pointsDeferred?(lender.outOfPocketBreakdown?.totalPointsCost||lender.outOfPocketBreakdown?.pointsCost||0):0)+(lender.outOfPocketBreakdown?.appraisalCost||0)+(lender.outOfPocketBreakdown?.docPrepFee||0)+(lender.lenderDrawFees||0)+(lender.outOfPocketBreakdown?.insurance||0)+(lender.outOfPocketBreakdown?.utilities||0)+(lender.outOfPocketBreakdown?.hoaMonthly||0)+(lender.outOfPocketBreakdown?.other||0))*(12/(lender.totalHoldMonths||formData.projectLength||6))*100).toFixed(1)}%</span>
                       </div>
                       
                       {/* Loan Terms */}
@@ -2274,6 +2516,22 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                         <div>
                           <span className="text-muted-foreground">Points</span>
                           <p className="font-medium">{lender.points}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Total Loan Amount</span>
+                          <p className="font-medium">{lender.totalLoanAmount ? formatCurrency(lender.totalLoanAmount) : "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Purchase Loan</span>
+                          <p className="font-medium">{formatCurrency(lender.purchaseLoanAmount ?? 0)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Rehab Loan</span>
+                          <p className="font-medium">{formatCurrency(lender.rehabLoanAmount ?? 0)}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Down Payment</span>
+                          <p className="font-medium">{formatCurrency(lender.outOfPocketBreakdown?.downPayment ?? 0)}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Max LTV</span>
@@ -2301,7 +2559,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Closing Costs</span>
-                          <span>{formatCurrency(lender.closingCostsBuy)}</span>
+                          <span>{formatCurrency(
+                          (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                          (lender.outOfPocketBreakdown?.titleExam || 0) +
+                          (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                          (lender.outOfPocketBreakdown?.transferFee || 0)
+                        )}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Lender Fees</span>
@@ -2545,15 +2808,30 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                     Closing Costs (Buy)
                   </TableCell>
                   <TableCell className="text-center text-sm sticky z-10 bg-accent/30" style={{ left: `${metricColWidth}px` }}>
-                    {formatCurrency(results.cashSaleColumn.closingCostsBuy)}
+                    {formatCurrency(
+                    (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                    (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                    (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                    (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0)
+                  )}
                   </TableCell>
                   {results.userLoanColumn && (
                     <TableCell className="text-center text-sm sticky z-10 bg-accent/30" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
-                      {formatCurrency(results.userLoanColumn.closingCostsBuy)}
+                      {formatCurrency(
+                        (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0)
+                      )}
                     </TableCell>
                   )}
                   {pdfLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center text-sm">{formatCurrency(lender.closingCostsBuy)}</TableCell>
+                    <TableCell key={index} className="text-center text-sm">{formatCurrency(
+                      (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                      (lender.outOfPocketBreakdown?.titleExam || 0) +
+                      (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                      (lender.outOfPocketBreakdown?.transferFee || 0)
+                    )}</TableCell>
                   ))}
                 </TableRow>
                 {showClosingCostsBuy && (
@@ -2842,20 +3120,186 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 )}
 
                 {/* 5. EST OUT-OF-POCKET Row */}
-                <TableRow className="bg-muted">
-                  <TableCell className={`font-bold ${stickyFirstColMuted}`}>Est Out-of-Pocket</TableCell>
-                  <TableCell className="text-center font-bold sticky z-10 bg-muted" style={{ left: `${metricColWidth}px` }}>
-                    {formatCurrency(results.cashSaleColumn.totalInvestment)}
+                <TableRow
+                  className="bg-accent/30 cursor-pointer hover:bg-accent/40 transition-colors"
+                  onClick={() => setShowOopTableBreakdown(!showOopTableBreakdown)}
+                  data-testid="section-header-oop"
+                >
+                  <TableCell className={`font-semibold ${stickyFirstColAccent} flex items-center gap-2`}>
+                    {showOopTableBreakdown ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    Est Out-of-Pocket
+                  </TableCell>
+                  <TableCell className="text-center font-semibold sticky z-10 bg-accent/30" style={{ left: `${metricColWidth}px` }}>
+                    {formatCurrency(
+                      (results.cashSaleColumn.outOfPocketBreakdown?.downPayment || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                      (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0) +
+                      ((results.cashSaleColumn.outOfPocketBreakdown?.insurance || 0)) +
+                      ((results.cashSaleColumn.outOfPocketBreakdown?.utilities || 0)) +
+                      ((results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly || 0)) +
+                      ((results.cashSaleColumn.outOfPocketBreakdown?.other || 0))
+                    )}
                   </TableCell>
                   {results.userLoanColumn && (
-                    <TableCell className="text-center font-bold sticky z-10 bg-muted" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
-                      {formatCurrency(results.userLoanColumn.totalInvestment)}
+                    <TableCell className="text-center font-semibold sticky z-10 bg-accent/30" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                      {formatCurrency(
+                        (results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0) +
+                        (!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred ? (results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (results.userLoanColumn.lenderDrawFees || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.insurance || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.utilities || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (results.userLoanColumn.outOfPocketBreakdown?.other || 0)
+                      )}
                     </TableCell>
                   )}
                   {pdfLenders.map((lender, index) => (
-                    <TableCell key={index} className="text-center font-bold">{formatCurrency(lender.totalInvestment)}</TableCell>
+                    <TableCell key={index} className="text-center font-bold">
+                      {formatCurrency(
+                        (lender.outOfPocketBreakdown?.downPayment || 0) +
+                        (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                        (lender.outOfPocketBreakdown?.titleExam || 0) +
+                        (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                        (lender.outOfPocketBreakdown?.transferFee || 0) +
+                        (!lender.outOfPocketBreakdown?.pointsDeferred ? (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                        (lender.outOfPocketBreakdown?.appraisalCost || 0) +
+                        (lender.outOfPocketBreakdown?.docPrepFee || 0) +
+                        (lender.lenderDrawFees || 0) +
+                        (lender.outOfPocketBreakdown?.insurance || 0) +
+                        (lender.outOfPocketBreakdown?.utilities || 0) +
+                        (lender.outOfPocketBreakdown?.hoaMonthly || 0) +
+                        (lender.outOfPocketBreakdown?.other || 0)
+                      )}
+                    </TableCell>
                   ))}
                 </TableRow>
+                {showOopTableBreakdown && (
+                  <>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>Down Payment</TableCell>
+                      <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth}px` }}>
+                        {formatCurrency(results.cashSaleColumn.outOfPocketBreakdown?.downPayment || 0)}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                          {formatCurrency(results.userLoanColumn.outOfPocketBreakdown?.downPayment || 0)}
+                        </TableCell>
+                      )}
+                      {pdfLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">{formatCurrency(lender.outOfPocketBreakdown?.downPayment || 0)}</TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>
+                        <span className="flex items-center gap-1">
+                          Closing Costs (Buy)
+                          <span title="Also shown in Closing Costs (Buy) above. Included here as part of your total cash required at closing." className="text-muted-foreground cursor-help text-xs">ⓘ</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth}px` }}>
+                        {formatCurrency(
+                          (results.cashSaleColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                          (results.cashSaleColumn.outOfPocketBreakdown?.titleExam || 0) +
+                          (results.cashSaleColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                          (results.cashSaleColumn.outOfPocketBreakdown?.transferFee || 0)
+                        )}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                          {formatCurrency(
+                            (results.userLoanColumn.outOfPocketBreakdown?.attorneyFees || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.titleExam || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.titleInsurance || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.transferFee || 0)
+                          )}
+                        </TableCell>
+                      )}
+                      {pdfLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">
+                          {formatCurrency(
+                            (lender.outOfPocketBreakdown?.attorneyFees || 0) +
+                            (lender.outOfPocketBreakdown?.titleExam || 0) +
+                            (lender.outOfPocketBreakdown?.titleInsurance || 0) +
+                            (lender.outOfPocketBreakdown?.transferFee || 0)
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>
+                        <span className="flex items-center gap-1">
+                          Lender Fees
+                          <span title="Also shown in Lender Fees above. Only non-deferred fees are included here as cash required at or before closing." className="text-muted-foreground cursor-help text-xs">ⓘ</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth}px` }}>$0</TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                          {formatCurrency(
+                            (!results.userLoanColumn.outOfPocketBreakdown?.pointsDeferred ? (results.userLoanColumn.outOfPocketBreakdown?.totalPointsCost || results.userLoanColumn.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.appraisalCost || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.docPrepFee || 0) +
+                            (results.userLoanColumn.lenderDrawFees || 0)
+                          )}
+                        </TableCell>
+                      )}
+                      {pdfLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">
+                          {formatCurrency(
+                            (!lender.outOfPocketBreakdown?.pointsDeferred ? (lender.outOfPocketBreakdown?.totalPointsCost || lender.outOfPocketBreakdown?.pointsCost || 0) : 0) +
+                            (lender.outOfPocketBreakdown?.appraisalCost || 0) +
+                            (lender.outOfPocketBreakdown?.docPrepFee || 0) +
+                            (lender.lenderDrawFees || 0)
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className={`font-medium ${stickyFirstColBase} pl-8`}>
+                        <span className="flex items-center gap-1">
+                          Carrying Costs
+                          <span title="Also shown in Carrying Costs above. Only cash expenses paid during the hold period are included here — excludes deferred interest and taxes." className="text-muted-foreground cursor-help text-xs">ⓘ</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth}px` }}>
+                        {formatCurrency(
+                          (results.cashSaleColumn.outOfPocketBreakdown?.insurance || 0) +
+                          (results.cashSaleColumn.outOfPocketBreakdown?.utilities || 0) +
+                          (results.cashSaleColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                          (results.cashSaleColumn.outOfPocketBreakdown?.other || 0)
+                        )}
+                      </TableCell>
+                      {results.userLoanColumn && (
+                        <TableCell className="text-center sticky z-10 bg-background" style={{ left: `${metricColWidth + cashSaleColWidth}px` }}>
+                          {formatCurrency(
+                            (results.userLoanColumn.outOfPocketBreakdown?.insurance || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.utilities || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.hoaMonthly || 0) +
+                            (results.userLoanColumn.outOfPocketBreakdown?.other || 0)
+                          )}
+                        </TableCell>
+                      )}
+                      {pdfLenders.map((lender, index) => (
+                        <TableCell key={index} className="text-center">
+                          {formatCurrency(
+                            (lender.outOfPocketBreakdown?.insurance || 0) +
+                            (lender.outOfPocketBreakdown?.utilities || 0) +
+                            (lender.outOfPocketBreakdown?.hoaMonthly || 0) +
+                            (lender.outOfPocketBreakdown?.other || 0)
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </>
+                )}
 
                 {/* 6. ESTIMATED SALE PRICE Row */}
                 <TableRow>
@@ -3091,6 +3535,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
         </CardContent>
       </Card>
+          </div>
         </TabsContent>
 
         {/* Rental / DSCR Analysis Tab */}
@@ -3572,6 +4017,24 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           const formData = form.getValues();
           const isLoanType = column.interestRate && column.interestRate > 0;
           const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+          const breakdown = column.outOfPocketBreakdown;
+          const insuranceTotal = breakdown?.insurance || 0;
+          const utilitiesTotal = breakdown?.utilities || 0;
+          const hoaMonthlyTotal = breakdown?.hoaMonthly || 0;
+          const otherCarryingTotal = breakdown?.other || 0;
+          const taxesTotal = breakdown?.taxes || 0;
+          const cashOnlyCarrying = insuranceTotal + utilitiesTotal + hoaMonthlyTotal + otherCarryingTotal;
+          const totalPointsValue = breakdown?.totalPointsCost || breakdown?.pointsCost || 0;
+          const interestCostValue = column.interestCost || 0;
+          const isPointsDeferred = !!column.outOfPocketBreakdown?.pointsDeferred;
+          const isInterestDeferred = !!column.interestDeferred;
+          const deferredPoints = isPointsDeferred ? totalPointsValue : 0;
+          const deferredInterest = isInterestDeferred ? interestCostValue : 0;
+          const totalDeferred = deferredPoints + deferredInterest + taxesTotal;
+          const showDeferredSection = isPointsDeferred || isInterestDeferred || taxesTotal > 0;
+          const baseClosingCosts = (breakdown?.attorneyFees || 0) + (breakdown?.titleExam || 0) + (breakdown?.titleInsurance || 0) + (breakdown?.transferFee || 0);
+          const lenderFeesOOP = (!isPointsDeferred ? totalPointsValue : 0) + (breakdown?.appraisalCost || 0) + (breakdown?.docPrepFee || 0) + (column.lenderDrawFees || 0);
+          const displayedOOP = (breakdown?.downPayment || 0) + baseClosingCosts + lenderFeesOOP + cashOnlyCarrying;
           return (
             <div style={{ fontFamily: 'Arial, sans-serif', padding: '24px' }}>
               {/* Header */}
@@ -3633,9 +4096,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
                   <div style={{ color: '#6b7280' }}>Net Profit</div>
                   <div style={{ textAlign: 'right', fontWeight: '700', color: column.profit >= 0 ? '#059669' : '#dc2626' }}>{fmt(column.profit)}</div>
-                  <div style={{ color: '#6b7280' }}>Out-of-Pocket Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.outOfPocketCost)}</div>
-                  <div style={{ color: '#6b7280' }}>Cash-on-Cash ROI</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.cashOnCashRoi.toFixed(2)}%</div>
-                  <div style={{ color: '#6b7280' }}>Annualized ROI</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.annualizedRoi.toFixed(2)}%</div>
+                  <div style={{ color: '#6b7280' }}>Out-of-Pocket Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(displayedOOP)}</div>
+                  <div style={{ color: '#6b7280' }}>Cash-on-Cash ROI</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{displayedOOP > 0 ? ((column.profit / displayedOOP) * 100).toFixed(2) : '0.00'}%</div>
+                  <div style={{ color: '#6b7280' }}>Annualized ROI</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{displayedOOP > 0 ? ((column.profit / displayedOOP) * (12 / (formData.projectLength || 12)) * 100).toFixed(2) : '0.00'}%</div>
                 </div>
               </div>
 
@@ -3647,8 +4110,15 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                     <div style={{ color: '#6b7280' }}>Interest Rate</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.interestRate}%</div>
                     {column.points !== undefined && <><div style={{ color: '#6b7280' }}>Points</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.points}%</div></>}
                     {column.totalLoanAmount ? <><div style={{ color: '#6b7280' }}>Total Loan Amount</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.totalLoanAmount)}</div></> : null}
+                    <div style={{ color: '#6b7280' }}>Purchase Loan</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.purchaseLoanAmount ?? 0)}</div>
+                    <div style={{ color: '#6b7280' }}>Rehab Loan</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.rehabLoanAmount ?? 0)}</div>
+                    <div style={{ color: '#6b7280' }}>Down Payment</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.outOfPocketBreakdown?.downPayment ?? 0)}</div>
                     {column.maxLtvBuy ? <><div style={{ color: '#6b7280' }}>Max LTV (Buy)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.maxLtvBuy}%</div></> : null}
                     {column.maxLendRehab ? <><div style={{ color: '#6b7280' }}>Max Loan % (Rehab)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.maxLendRehab}%</div></> : null}
+                    {column.maxLoanArv ? <><div style={{ color: '#6b7280' }}>Max ARV %</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.maxLoanArv}%</div></> : null}
+                    <div style={{ color: '#6b7280' }}>Drawn Funds Only</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.drawnFundsOnly ? 'Yes' : 'No'}</div>
+                    <div style={{ color: '#6b7280' }}>Interest Deferred</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.interestDeferred ? 'Yes' : 'No'}</div>
+                    <div style={{ color: '#6b7280' }}>Points Deferred</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.outOfPocketBreakdown?.pointsDeferred ? 'Yes' : 'No'}</div>
                     {column.timeToClose ? <><div style={{ color: '#6b7280' }}>Time to Close</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{column.timeToClose} days</div></> : null}
                   </div>
                 </div>
@@ -3661,11 +4131,26 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <div style={{ color: '#6b7280' }}>Total Project Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.totalProjectCost)}</div>
                   <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Purchase Price</div><div style={{ textAlign: 'right' }}>{fmt(column.purchasePrice)}</div>
                   <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Rehab Budget</div><div style={{ textAlign: 'right' }}>{fmt(column.rehabBudget)}</div>
-                  <div style={{ color: '#6b7280' }}>Closing Costs (Buy)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.closingCostsBuy)}</div>
-                  {column.outOfPocketBreakdown?.lenderFees ? <><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Lender Fees</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.lenderFees)}</div></> : null}
-                  {column.interestCost ? <><div style={{ color: '#6b7280' }}>Interest Cost</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.interestCost)}</div></> : null}
-                  <div style={{ color: '#6b7280' }}>Carrying Costs</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.carryingCosts)}</div>
+                  <div style={{ color: '#6b7280' }}>Closing Costs (Buy)</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(baseClosingCosts)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Attorney Fees</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown?.attorneyFees || 0)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Title Exam</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown?.titleExam || 0)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Title Insurance</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown?.titleInsurance || 0)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Transfer Fee</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown?.transferFee || 0)}</div>
+
+                  <div style={{ color: '#6b7280' }}>Carrying Costs</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(cashOnlyCarrying)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Insurance</div><div style={{ textAlign: 'right' }}>{fmt(insuranceTotal)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Utilities</div><div style={{ textAlign: 'right' }}>{fmt(utilitiesTotal)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>HOA Monthly</div><div style={{ textAlign: 'right' }}>{fmt(hoaMonthlyTotal)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Other</div><div style={{ textAlign: 'right' }}>{fmt(otherCarryingTotal)}</div>
+                  {showDeferredSection && (<>
+                    <div style={{ color: '#6b7280' }}>Deferred to Closing</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(totalDeferred)}</div>
+                    {isPointsDeferred && (<><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Points Cost (deferred)</div><div style={{ textAlign: 'right' }}>{fmt(deferredPoints)}</div></>)}
+                    {isInterestDeferred && (<><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Interest Payments (deferred)</div><div style={{ textAlign: 'right' }}>{fmt(deferredInterest)}</div></>)}
+                    {taxesTotal > 0 && (<><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Taxes (est. — reconciled at closing)</div><div style={{ textAlign: 'right' }}>{fmt(taxesTotal)}</div></>)}
+                  </>)}
                   <div style={{ color: '#6b7280' }}>Selling Costs</div><div style={{ textAlign: 'right', fontWeight: '600' }}>{fmt(column.closingCostsSell + column.commission)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Real Estate Commission</div><div style={{ textAlign: 'right' }}>{fmt(column.commission || 0)}</div>
+                  <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Closing Costs (Sell)</div><div style={{ textAlign: 'right' }}>{fmt(column.closingCostsSell || 0)}</div>
                 </div>
               </div>
 
@@ -3675,11 +4160,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <div style={{ fontSize: '13px', fontWeight: '700', backgroundColor: '#f3f4f6', padding: '6px 10px', marginBottom: '8px', borderRadius: '4px' }}>Out-of-Pocket Breakdown</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: '12px', padding: '0 10px' }}>
                     <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Down Payment</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.downPayment || 0)}</div>
-                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Closing Costs (Buy)</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.totalClosingCostsBuy || 0)}</div>
-                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Carrying Costs</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.carryingCosts || 0)}</div>
-                    {column.outOfPocketBreakdown.pointsCost ? <><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Points Cost</div><div style={{ textAlign: 'right' }}>{fmt(column.outOfPocketBreakdown.pointsCost)}</div></> : null}
+                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Closing Costs (Buy)</div><div style={{ textAlign: 'right' }}>{fmt(baseClosingCosts)}</div>
+                    {lenderFeesOOP > 0 && (<><div style={{ color: '#6b7280', paddingLeft: '12px' }}>Lender Fees</div><div style={{ textAlign: 'right' }}>{fmt(lenderFeesOOP)}</div></>)}
+                    <div style={{ color: '#6b7280', paddingLeft: '12px' }}>Carrying Costs</div><div style={{ textAlign: 'right' }}>{fmt(cashOnlyCarrying)}</div>
                     <div style={{ color: '#111', fontWeight: '700', borderTop: '1px solid #e5e7eb', paddingTop: '4px' }}>Total Out-of-Pocket</div>
-                    <div style={{ textAlign: 'right', fontWeight: '700', borderTop: '1px solid #e5e7eb', paddingTop: '4px' }}>{fmt(column.outOfPocketCost)}</div>
+                    <div style={{ textAlign: 'right', fontWeight: '700', borderTop: '1px solid #e5e7eb', paddingTop: '4px' }}>{fmt(displayedOOP)}</div>
                   </div>
                 </div>
               )}

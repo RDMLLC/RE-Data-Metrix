@@ -18,6 +18,7 @@ import { seedAffiliates, seedAffiliateCategories, seedLenders, seedLoanProducts,
 import { outboundWebhookService } from "./services/outbound-webhook.service";
 import { sendMetaCapiEvent } from "./services/metaCapi";
 import { normalizePropertyAddress, extractZpidFromUrl, buildCompCacheKey } from "./utils/normalize-address";
+import { calculateDrawSchedule, calculateRehabLoanInterest, calculateBuyLoanInterest } from "@shared/calculations/loan-calculations";
 import { appendFileSync } from "node:fs";
 // @ts-ignore
 import signature from "cookie-signature";
@@ -8933,6 +8934,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       monthlyUtilities: z.number().optional(),
       monthlyPropertyTax: z.number().optional(),
       monthlyHoa: z.number().optional(),
+      // Granular Closing Costs (Buy) components — flat dollar amounts
+      attorneyFees: z.number().optional(),
+      titleExam: z.number().optional(),
+      titleInsurance: z.number().optional(),
+      transferFee: z.number().optional(),
+      // Granular Carrying Costs components — project-period totals (already multiplied by projectLength where applicable)
+      insurance: z.number().optional(),
+      utilities: z.number().optional(),
+      hoaMonthly: z.number().optional(),
+      taxes: z.number().optional(),
+      other: z.number().optional(),
     }),
     criteriaSelection: z.object({
       useDefaultCriteria: z.boolean(),
@@ -8946,6 +8958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       interestDeferred: z.boolean().optional(),
       points: z.number(),
       pointsDeferred: z.boolean().optional(),
+      drawnFundsOnly: z.boolean().optional(),
       maxLendBuy: z.number().optional(), // Max % Lend on Purchase
       maxLendRehab: z.number().optional(), // Max % Lend on Rehab
       maxLoanToArv: z.number(),
@@ -8977,6 +8990,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const { purchasePrice, rehabBudget, arv, projectLength, closingCostsBuy, carryingCosts, sellPrice, closingCostsSell, commission } = dealInputs;
+      // Granular cost components (defaulted to 0 when client omits them)
+      const attorneyFees = dealInputs.attorneyFees || 0;
+      const titleExam = dealInputs.titleExam || 0;
+      const titleInsurance = dealInputs.titleInsurance || 0;
+      const transferFee = dealInputs.transferFee || 0;
+      const insuranceTotal = dealInputs.insurance || 0;
+      const utilitiesTotal = dealInputs.utilities || 0;
+      const hoaMonthlyTotal = dealInputs.hoaMonthly || 0;
+      const taxesTotal = dealInputs.taxes || 0;
+      const otherCarryingTotal = dealInputs.other || 0;
       const totalProjectCost = purchasePrice + rehabBudget;
       const percentageArv = arv > 0 ? (totalProjectCost / arv) * 100 : 0;
 
@@ -9058,8 +9081,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         const pointsCost = loanAmount * (userLoan.points / 100);
-        const monthlyInterestPayment = (loanAmount * (userLoan.interestRate / 100) / 12);
-        const interestCost = monthlyInterestPayment * projectLength;
+        const drawSchedule = calculateDrawSchedule(projectLength, numberOfDraws);
+        const buyInterest = calculateBuyLoanInterest(purchaseLoanAmount, userLoan.interestRate, projectLength, userLoan.interestDeferred || false);
+        const rehabInterest = calculateRehabLoanInterest(rehabLoanAmount, userLoan.interestRate, projectLength, userLoan.drawnFundsOnly || false, drawSchedule);
+        console.log('[DRAWN FUNDS DEBUG][user-loan] drawnFundsOnly:', userLoan.drawnFundsOnly || false, 'rehabInterest:', rehabInterest, 'buyInterest:', buyInterest, 'rehabLoanAmount:', rehabLoanAmount, 'purchaseLoanAmount:', purchaseLoanAmount, 'rate:', userLoan.interestRate, 'months:', projectLength);
+        const interestCost = buyInterest + rehabInterest;
         const appraisalCost = userLoan.appraisalRequired ? (userLoan.appraisalFee || 500) : 0;
         const drawFeesCost = (userLoan.drawFees || 0) * numberOfDraws;
         const docPrepFees = userLoan.loanDocPrepFees || 0;
@@ -9103,6 +9129,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lenderFees: drawFeesCost,
           totalClosingCostsBuy: totalClosingCostsBuyUser + drawFeesCost,
           carryingCosts: userLoanCarryingCosts,
+          // Granular Closing Costs (Buy) components
+          attorneyFees,
+          titleExam,
+          titleInsurance,
+          transferFee,
+          // Granular Carrying Costs components (project-period totals)
+          insurance: insuranceTotal,
+          utilities: utilitiesTotal,
+          hoaMonthly: hoaMonthlyTotal,
+          taxes: taxesTotal,
+          other: otherCarryingTotal,
           total: outOfPocket,
         };
         
@@ -9110,10 +9147,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'user-loan' as const,
           interestRate: userLoan.interestRate,
           points: userLoan.points,
+          interestDeferred: userLoan.interestDeferred || false,
+          pointsDeferred: userLoan.pointsDeferred || false,
+          drawnFundsOnly: userLoan.drawnFundsOnly || false,
           maxLtvBuy: userMaxLtvBuy,
           maxLendRehab: userMaxLendRehab,
           maxLoanArv: userMaxLoanArv,
           totalLoanAmount: loanAmount,
+          purchaseLoanAmount: purchaseLoanAmount,
+          rehabLoanAmount: rehabLoanAmount,
           purchasePrice,
           rehabBudget,
           totalProjectCost,
@@ -9255,8 +9297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const pointsCost = loanAmount * (points / 100);
-        const monthlyInterestPayment = (loanAmount * (interestRate / 100) / 12);
-        const interestCost = monthlyInterestPayment * projectLength;
+        const drawSchedule = calculateDrawSchedule(projectLength, numberOfDraws);
+        const buyInterest = calculateBuyLoanInterest(purchaseLoanAmount, interestRate, projectLength, product.interestDeferred || false);
+        const rehabInterest = calculateRehabLoanInterest(rehabLoanAmount, interestRate, projectLength, product.drawnFundsOnly || false, drawSchedule);
+        console.log('[DRAWN FUNDS DEBUG][lender]', product.productName, 'drawnFundsOnly:', product.drawnFundsOnly || false, 'rehabInterest:', rehabInterest, 'buyInterest:', buyInterest, 'rehabLoanAmount:', rehabLoanAmount, 'purchaseLoanAmount:', purchaseLoanAmount, 'rate:', interestRate, 'months:', projectLength);
+        const interestCost = buyInterest + rehabInterest;
         const drawFeesCost = costPerDraw * numberOfDraws;
         const appraisalCost = product.appraisalRequired ? estimatedAppraisalCost : 0;
         
@@ -9343,6 +9388,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lenderFees: drawFeesCost, // Draw fees only
           totalClosingCostsBuy: totalClosingCostsBuyLender + drawFeesCost,
           carryingCosts: lenderCarryingCosts,
+          // Granular Closing Costs (Buy) components
+          attorneyFees,
+          titleExam,
+          titleInsurance,
+          transferFee,
+          // Granular Carrying Costs components (project-period totals)
+          insurance: insuranceTotal,
+          utilities: utilitiesTotal,
+          hoaMonthly: hoaMonthlyTotal,
+          taxes: taxesTotal,
+          other: otherCarryingTotal,
           total: outOfPocket,
         };
 
@@ -9359,11 +9415,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxLtvBuy,
           maxLendRehab,
           points,
+          interestDeferred: product.interestDeferred || false,
+          pointsDeferred: product.pointsDeferred || false,
+          drawnFundsOnly: product.drawnFundsOnly || false,
           isLtcWeighted,
           maxLtcPercent,
           isLtcAdjusted,
           effectiveBuyPercent,
           totalLoanAmount: loanAmount,
+          purchaseLoanAmount: purchaseLoanAmount,
+          rehabLoanAmount: rehabLoanAmount,
           purchasePrice,
           rehabBudget,
           totalProjectCost,
