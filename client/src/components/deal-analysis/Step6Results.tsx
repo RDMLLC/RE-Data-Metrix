@@ -30,6 +30,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { usePDF } from "react-to-pdf";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { QRCodeCanvas } from "qrcode.react";
 import type { LoanCriteria } from "@shared/schema";
 import { useWizardData } from "@/contexts/WizardDataContext";
@@ -302,14 +304,35 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
   // PDF generation
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const { toPDF, targetRef } = usePDF({
-    filename: 'loan-comparison-results.pdf',
-    method: 'save',
-    resolution: 2,
-    page: { margin: 8, format: 'letter', orientation: 'portrait' },
-    canvas: { mimeType: 'image/png', qualityRatio: 0.95 },
-    overrides: { pdf: { compress: true }, canvas: { useCORS: true } },
-  });
+  // Two-page comparison PDF: separate refs for page 1 (header + summary) and page 2 (comparison table)
+  const pdfPage1Ref = useRef<HTMLDivElement>(null);
+  const pdfPage2Ref = useRef<HTMLDivElement>(null);
+
+  // Inject ~10% condensed sizing only while generating the PDF; live UI is untouched.
+  useEffect(() => {
+    if (!isGeneratingPdf) return;
+    const el = document.createElement('style');
+    el.id = 'pdf-condensed-style';
+    el.textContent = `
+      .pdf-page1, .pdf-page2 { font-size: 0.9em; }
+      .pdf-page1 table, .pdf-page2 table { border-collapse: collapse; }
+      .pdf-page1 td, .pdf-page1 th,
+      .pdf-page2 td, .pdf-page2 th {
+        padding-top: 0.4rem !important;
+        padding-bottom: 0.4rem !important;
+        padding-left: 0.55rem !important;
+        padding-right: 0.55rem !important;
+        font-size: 0.78rem !important;
+        line-height: 1.2 !important;
+      }
+      .pdf-page1 .text-xs, .pdf-page2 .text-xs { font-size: 0.65rem !important; }
+      .pdf-page1 .text-sm, .pdf-page2 .text-sm { font-size: 0.72rem !important; }
+      .pdf-page1 h1, .pdf-page2 h1, .pdf-page1 h2, .pdf-page2 h2,
+      .pdf-page1 h3, .pdf-page2 h3 { font-size: 0.95em !important; }
+    `;
+    document.head.appendChild(el);
+    return () => { el.remove(); };
+  }, [isGeneratingPdf]);
   // Second PDF hook for single-column export
   const { toPDF: toSingleColumnPDF, targetRef: singleColumnPdfRef } = usePDF({
     filename: 'loan-analysis.pdf',
@@ -1149,8 +1172,35 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     await new Promise(resolve => setTimeout(resolve, 500));
 
     setIsGeneratingPdf(true);
-    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 350)));
-    await toPDF();
+    // Wait for the condensed-style useEffect + section expansions to apply
+    await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 400)));
+    try {
+      const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false };
+      const c1 = await html2canvas(pdfPage1Ref.current!, opts);
+      const c2 = await html2canvas(pdfPage2Ref.current!, opts);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter', compress: true });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const availW = pageW - margin * 2;
+      const availH = pageH - margin * 2;
+      const place = (cv: HTMLCanvasElement, addPage: boolean) => {
+        if (addPage) pdf.addPage();
+        const cw = cv.width / 2;
+        const ch = cv.height / 2;
+        const ratio = Math.min(availW / cw, availH / ch);
+        const w = cw * ratio;
+        const h = ch * ratio;
+        const x = margin + (availW - w) / 2;
+        pdf.addImage(cv.toDataURL('image/png', 0.95), 'PNG', x, margin, w, h, undefined, 'FAST');
+      };
+      place(c1, false);
+      place(c2, true);
+      pdf.save('loan-comparison-results.pdf');
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      toast({ title: 'PDF generation failed', description: String((err as any)?.message || err), variant: 'destructive' });
+    }
     setIsGeneratingPdf(false);
     setSelectedPdfColumnIds([]);
     
@@ -1762,8 +1812,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </CardContent>
           </Card>
 
-          {/* PDF capture wrapper — includes BOTH Summary Metrics Box and Loan Comparison Results card */}
-          <div ref={targetRef}>
+          {/* Outer wrapper kept for layout; PDF capture now uses pdfPage1Ref + pdfPage2Ref */}
+          <div>
 
           {/* Usage counter for free authenticated users — shows near lender results */}
           {isAuthenticated && !effectiveIsSubscriber && results && !isGeneratingPdf && (
@@ -1810,6 +1860,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           )}
 
           <Card>
+            <div ref={pdfPage1Ref} className="pdf-page1">
             {/* Company Header for PDF */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
               {/* Left side: user branding if set, otherwise RE Data Metrix */}
@@ -1851,7 +1902,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             <CardHeader>
               <CardTitle>Loan Comparison Results</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-0">
               {/* Summary Metrics - styled to match detailed table */}
               {results && (
                 <div className="overflow-x-auto mb-6">
@@ -2271,6 +2322,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </Table>
                 </div>
               )}
+            </CardContent>
+            </div>
+            <CardContent className="pt-0">
               {/* Mobile Card View - visible only on small screens */}
               <div className="lg:hidden space-y-4">
                 {/* Cash Sale Card */}
@@ -2634,6 +2688,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               </div>
               
               {/* Desktop Table View - hidden on mobile */}
+              <div ref={pdfPage2Ref} className="pdf-page2">
               <div className="hidden lg:block overflow-x-auto relative" ref={scrollContainerRef}>
                 <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
               <TableHeader>
@@ -3494,6 +3549,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               </TableBody>
             </Table>
           </div>
+              </div>
 
           {/* Show More Loans Button - Hidden in PDF */}
           {hasMoreLenders && !isGeneratingPdf && (
