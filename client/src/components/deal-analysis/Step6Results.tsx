@@ -1166,6 +1166,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       setShowSellingCosts(true);
       setShowOutOfPocketBreakdown(true);
       setShowCashOnCashBreakdown(true);
+      setShowAnnualizedBreakdown(true);
+      setShowLoanAmountBreakdown(true);
+      setShowOopTableBreakdown(true);
     }
 
     // Wait for React to re-render the expanded sections before capture
@@ -1184,13 +1187,20 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       const margin = 8;
       const availW = pageW - margin * 2;
       const availH = pageH - margin * 2;
+      // Shared scale across both pages so row heights look identical.
+      // Pick the smallest of all four width/height constraints to guarantee both fit.
+      const c1w = c1.width / 2, c1h = c1.height / 2;
+      const c2w = c2.width / 2, c2h = c2.height / 2;
+      const sharedRatio = Math.min(
+        availW / c1w, availH / c1h,
+        availW / c2w, availH / c2h,
+      );
       const place = (cv: HTMLCanvasElement, addPage: boolean) => {
         if (addPage) pdf.addPage();
         const cw = cv.width / 2;
         const ch = cv.height / 2;
-        const ratio = Math.min(availW / cw, availH / ch);
-        const w = cw * ratio;
-        const h = ch * ratio;
+        const w = cw * sharedRatio;
+        const h = ch * sharedRatio;
         const x = margin + (availW - w) / 2;
         pdf.addImage(cv.toDataURL('image/png', 0.95), 'PNG', x, margin, w, h, undefined, 'FAST');
       };
@@ -1216,6 +1226,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       setShowSellingCosts(false);
       setShowOutOfPocketBreakdown(false);
       setShowCashOnCashBreakdown(false);
+      setShowAnnualizedBreakdown(false);
+      setShowLoanAmountBreakdown(false);
+      setShowOopTableBreakdown(false);
     }
   };
 
