@@ -853,73 +853,43 @@ export default function AdminReports() {
                       </div>
                     )}
                     {showWeeklyReport && (
-                      <div className="mt-6 border-t pt-6" data-testid="section-weekly-report">
-                        <h3 className="text-lg font-semibold mb-3">Weekly Signup Report</h3>
-                        {weeklyReportLoading ? (
-                          <div className="text-center py-8 text-muted-foreground" data-testid="text-weekly-report-loading">
-                            Loading weekly report...
-                          </div>
-                        ) : !weeklyReport || weeklyReport.length === 0 ? (
-                          <div className="text-center py-8 text-muted-foreground" data-testid="text-weekly-report-empty">
-                            No weekly data available for the selected range.
-                          </div>
-                        ) : (
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Week</TableHead>
-                                  <TableHead className="text-right">New Free</TableHead>
-                                  <TableHead className="text-right">New Monthly</TableHead>
-                                  <TableHead className="text-right">New Annual</TableHead>
-                                  <TableHead className="text-right">Upgrades</TableHead>
-                                  <TableHead className="text-right">Total Free</TableHead>
-                                  <TableHead className="text-right">Total Monthly</TableHead>
-                                  <TableHead className="text-right">Total Annual</TableHead>
-                                  <TableHead className="text-right">Total Subscribers</TableHead>
+                      <div className="mt-6 border-t pt-6">
+                        <h3 className="text-base font-medium mb-4">Weekly Signup Report</h3>
+                        {weeklyReportLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+                        {!weeklyReportLoading && (!weeklyReport || weeklyReport.length === 0) && (
+                          <p className="text-sm text-muted-foreground">No data available.</p>
+                        )}
+                        {!weeklyReportLoading && weeklyReport && weeklyReport.length > 0 && (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Week</TableHead>
+                                <TableHead className="text-right">New Free</TableHead>
+                                <TableHead className="text-right">New Monthly</TableHead>
+                                <TableHead className="text-right">New Annual</TableHead>
+                                <TableHead className="text-right">Upgrades</TableHead>
+                                <TableHead className="text-right">Total Free</TableHead>
+                                <TableHead className="text-right">Total Monthly</TableHead>
+                                <TableHead className="text-right">Total Annual</TableHead>
+                                <TableHead className="text-right font-bold">Total Subscribers</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {weeklyReport.map((row) => (
+                                <TableRow key={row.weekStart}>
+                                  <TableCell>{new Date(`${row.weekStart}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
+                                  <TableCell className="text-right">{row.newFree}</TableCell>
+                                  <TableCell className={`text-right ${row.newMonthly > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newMonthly}</TableCell>
+                                  <TableCell className={`text-right ${row.newAnnual > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newAnnual}</TableCell>
+                                  <TableCell className="text-right">{row.upgrades === 0 ? '—' : row.upgrades}</TableCell>
+                                  <TableCell className="text-right">{row.totalFree}</TableCell>
+                                  <TableCell className="text-right">{row.totalMonthly}</TableCell>
+                                  <TableCell className="text-right">{row.totalAnnual}</TableCell>
+                                  <TableCell className="text-right font-bold">{row.totalSubscribers}</TableCell>
                                 </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {weeklyReport.map((w) => (
-                                  <TableRow key={w.weekStart} data-testid={`row-weekly-${w.weekStart}`}>
-                                    <TableCell className="whitespace-nowrap font-medium" data-testid={`text-week-${w.weekStart}`}>
-                                      {format(new Date(`${w.weekStart}T00:00:00`), 'MMM d, yyyy')}
-                                    </TableCell>
-                                    <TableCell className="text-right" data-testid={`text-new-free-${w.weekStart}`}>
-                                      {w.newFree}
-                                    </TableCell>
-                                    <TableCell
-                                      className={`text-right ${w.newMonthly > 0 ? 'bg-success/10 text-success font-medium' : ''}`}
-                                      data-testid={`text-new-monthly-${w.weekStart}`}
-                                    >
-                                      {w.newMonthly}
-                                    </TableCell>
-                                    <TableCell
-                                      className={`text-right ${w.newAnnual > 0 ? 'bg-success/10 text-success font-medium' : ''}`}
-                                      data-testid={`text-new-annual-${w.weekStart}`}
-                                    >
-                                      {w.newAnnual}
-                                    </TableCell>
-                                    <TableCell className="text-right" data-testid={`text-upgrades-${w.weekStart}`}>
-                                      {w.upgrades > 0 ? w.upgrades : '—'}
-                                    </TableCell>
-                                    <TableCell className="text-right" data-testid={`text-total-free-${w.weekStart}`}>
-                                      {w.totalFree}
-                                    </TableCell>
-                                    <TableCell className="text-right" data-testid={`text-total-monthly-${w.weekStart}`}>
-                                      {w.totalMonthly}
-                                    </TableCell>
-                                    <TableCell className="text-right" data-testid={`text-total-annual-${w.weekStart}`}>
-                                      {w.totalAnnual}
-                                    </TableCell>
-                                    <TableCell className="text-right font-bold" data-testid={`text-total-subscribers-${w.weekStart}`}>
-                                      {w.totalSubscribers}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
+                              ))}
+                            </TableBody>
+                          </Table>
                         )}
                       </div>
                     )}
