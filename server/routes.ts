@@ -4235,6 +4235,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/weekly-signups", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const startDateRaw = typeof req.query.startDate === 'string' ? req.query.startDate : undefined;
+      const endDateRaw = typeof req.query.endDate === 'string' ? req.query.endDate : undefined;
+      const startDate = startDateRaw ? new Date(startDateRaw) : undefined;
+      const endDate = endDateRaw ? new Date(endDateRaw) : undefined;
+      if (startDate && isNaN(startDate.getTime())) {
+        return res.status(400).json({ error: "Invalid startDate" });
+      }
+      if (endDate && isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: "Invalid endDate" });
+      }
+      const rows = await storage.getWeeklySignupReport(startDate, endDate);
+      res.json(rows);
+    } catch (error) {
+      console.error('Weekly signups report error:', error);
+      res.status(500).json({ error: "Failed to fetch weekly signup report" });
+    }
+  });
+
   // Helper function to sanitize user data for admin responses (excludes sensitive fields)
   function sanitizeUserForAdmin(user: User) {
     return {

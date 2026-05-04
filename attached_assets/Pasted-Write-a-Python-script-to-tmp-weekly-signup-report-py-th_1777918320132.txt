@@ -1,0 +1,55 @@
+Write a Python script to /tmp/weekly_signup_report.py then execute it with python3 /tmp/weekly_signup_report.py. The script must make the following precise changes. Raw code output only, no prose. Wrap in code block. Line numbers required.
+
+FILE 1 — server/routes.ts
+After the /api/admin/reports/subscriptions route, insert a new route:
+GET /api/admin/reports/weekly-signups
+Auth: ensureAdminReadAccess
+Query params: startDate (ISO date, optional), endDate (ISO date, optional), defaults to last 12 weeks if omitted
+
+For each week (Monday–Sunday) in the range:
+  weekStart: Monday date (YYYY-MM-DD)
+  weekEnd: Sunday date
+  newFree: count of subscriptionEvents WHERE eventType = 'new_free' AND createdAt BETWEEN weekStart AND weekEnd
+  newMonthly: count WHERE eventType = 'new_monthly' AND createdAt BETWEEN weekStart AND weekEnd
+  newAnnual: count WHERE eventType = 'new_annual' AND createdAt BETWEEN weekStart AND weekEnd
+  upgrades: count WHERE eventType IN ('upgrade_free_to_monthly', 'upgrade_free_to_annual', 'upgrade_monthly_to_annual') AND createdAt BETWEEN weekStart AND weekEnd
+  totalFree: count of users WHERE (subscriptionPlan = 'free' OR (subscriptionStatus = 'free' AND subscriptionPlan IS NULL)) AND createdAt <= weekEnd
+  totalMonthly: count of users WHERE subscriptionPlan = 'monthly' AND subscriptionStatus = 'active' AND createdAt <= weekEnd
+  totalAnnual: count of users WHERE subscriptionPlan = 'annual' AND subscriptionStatus = 'active' AND createdAt <= weekEnd
+  totalSubscribers: totalFree + totalMonthly + totalAnnual
+
+IMPORTANT: totalFree, totalMonthly, totalAnnual, totalSubscribers must be calculated as DB counts of users with createdAt <= weekEnd — never by adding/subtracting weekly deltas.
+
+Return array ordered by weekStart DESC.
+FILE 2 — server/storage.ts
+Add getWeeklySignupReport(startDate?: Date, endDate?: Date): Promise<WeeklySignupRow[]> to IStorage interface and DatabaseStorage. WeeklySignupRow type: { weekStart: string, weekEnd: string, newFree: number, newMonthly: number, newAnnual: number, upgrades: number, totalFree: number, totalMonthly: number, totalAnnual: number, totalSubscribers: number }.
+FILE 3 — client/src/pages/admin/Reports.tsx
+Add the following state variables near the top of the component:
+const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+const [reportStartDate, setReportStartDate] = useState('');
+const [reportEndDate, setReportEndDate] = useState('');
+Add useQuery hook for /api/admin/reports/weekly-signups with startDate/endDate params. Only fires when showWeeklyReport is true.
+Update the Users tab toolbar row (containing Search Users input and Export CSV button):
+
+Search Users input stays left as-is
+Add "Weekly Signup Report" / "Hide Report" toggle button to right of search field
+When showWeeklyReport is true, show "From" and "To" date inputs between toggle button and Export CSV
+Export CSV button stays far right, label changes to "Export Weekly Report" when showWeeklyReport is true
+
+Make Export CSV context-aware:
+
+showWeeklyReport false: existing export behavior unchanged
+showWeeklyReport true: exports weekly report columns: Week Start, Week End, New Free, New Monthly, New Annual, Upgrades, Total Free, Total Monthly, Total Annual, Total Subscribers — respects active date range
+
+Add weekly report table inline below existing user list, visible only when showWeeklyReport is true:
+
+Columns: Week, New Free, New Monthly, New Annual, Upgrades, Total Free, Total Monthly, Total Annual, Total Subscribers
+Week column: weekStart formatted as "MMM d, yyyy"
+All numeric columns right-aligned
+Total Subscribers column bold
+Upgrades shows "—" if 0
+New Monthly and New Annual highlight green (success-bg) if > 0
+Loading and empty states required
+Use existing shadcn/ui Table component consistent with other tabs
+
+After script executes, read back and output the modified sections of all three files with line numbers to confirm changes were applied correctly.

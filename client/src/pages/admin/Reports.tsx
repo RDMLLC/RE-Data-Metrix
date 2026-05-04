@@ -131,6 +131,19 @@ interface SubscriptionStats {
   referralConversions: number;
 }
 
+interface WeeklySignupRow {
+  weekStart: string;
+  weekEnd: string;
+  newFree: number;
+  newMonthly: number;
+  newAnnual: number;
+  upgrades: number;
+  totalFree: number;
+  totalMonthly: number;
+  totalAnnual: number;
+  totalSubscribers: number;
+}
+
 export default function AdminReports() {
   const [, setLocation] = useLocation();
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -141,6 +154,9 @@ export default function AdminReports() {
   const [affiliateSearch, setAffiliateSearch] = useState("");
   const [dealSearch, setDealSearch] = useState("");
   const [lenderSearch, setLenderSearch] = useState("");
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
 
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -177,6 +193,19 @@ export default function AdminReports() {
 
   const { data: users, isLoading: usersLoading } = useQuery<UserReport[]>({
     queryKey: ["/api/admin/reports/users"],
+  });
+
+  const weeklyReportUrl = (() => {
+    const params = new URLSearchParams();
+    if (reportStartDate) params.set('startDate', reportStartDate);
+    if (reportEndDate) params.set('endDate', reportEndDate);
+    const qs = params.toString();
+    return qs ? `/api/admin/reports/weekly-signups?${qs}` : '/api/admin/reports/weekly-signups';
+  })();
+
+  const { data: weeklyReport, isLoading: weeklyReportLoading } = useQuery<WeeklySignupRow[]>({
+    queryKey: [weeklyReportUrl],
+    enabled: showWeeklyReport,
   });
 
   const { data: affiliateClicks, isLoading: affiliateClicksLoading } = useQuery<AffiliateClick[]>({
@@ -298,6 +327,31 @@ export default function AdminReports() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `users-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportWeeklyReportToCSV = () => {
+    if (!weeklyReport || weeklyReport.length === 0) return;
+    const headers = ['Week Start', 'Week End', 'New Free', 'New Monthly', 'New Annual', 'Upgrades', 'Total Free', 'Total Monthly', 'Total Annual', 'Total Subscribers'];
+    const rows = weeklyReport.map(w => [
+      w.weekStart,
+      w.weekEnd,
+      String(w.newFree),
+      String(w.newMonthly),
+      String(w.newAnnual),
+      String(w.upgrades),
+      String(w.totalFree),
+      String(w.totalMonthly),
+      String(w.totalAnnual),
+      String(w.totalSubscribers),
+    ]);
+    const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `weekly-signups-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -676,7 +730,7 @@ export default function AdminReports() {
                           View all registered users and their subscription status
                         </CardDescription>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
@@ -689,12 +743,45 @@ export default function AdminReports() {
                         </div>
                         <Button
                           variant="outline"
-                          onClick={exportUsersToCSV}
-                          disabled={!users?.length}
+                          onClick={() => setShowWeeklyReport(v => !v)}
+                          data-testid="button-toggle-weekly-report"
+                        >
+                          {showWeeklyReport ? 'Hide Report' : 'Weekly Signup Report'}
+                        </Button>
+                        {showWeeklyReport && (
+                          <>
+                            <div className="flex items-center gap-1">
+                              <label htmlFor="weekly-report-start" className="text-sm text-muted-foreground">From</label>
+                              <Input
+                                id="weekly-report-start"
+                                type="date"
+                                value={reportStartDate}
+                                onChange={(e) => setReportStartDate(e.target.value)}
+                                className="w-40"
+                                data-testid="input-weekly-report-start"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <label htmlFor="weekly-report-end" className="text-sm text-muted-foreground">To</label>
+                              <Input
+                                id="weekly-report-end"
+                                type="date"
+                                value={reportEndDate}
+                                onChange={(e) => setReportEndDate(e.target.value)}
+                                className="w-40"
+                                data-testid="input-weekly-report-end"
+                              />
+                            </div>
+                          </>
+                        )}
+                        <Button
+                          variant="outline"
+                          onClick={showWeeklyReport ? exportWeeklyReportToCSV : exportUsersToCSV}
+                          disabled={showWeeklyReport ? !weeklyReport?.length : !users?.length}
                           data-testid="button-export-users"
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Export CSV
+                          {showWeeklyReport ? 'Export Weekly Report' : 'Export CSV'}
                         </Button>
                       </div>
                     </div>
@@ -757,6 +844,77 @@ export default function AdminReports() {
                     {filteredUsers.length > 0 && (
                       <div className="mt-4 text-sm text-muted-foreground">
                         Showing {filteredUsers.length} of {users?.length || 0} users
+                      </div>
+                    )}
+                    {showWeeklyReport && (
+                      <div className="mt-6 border-t pt-6" data-testid="section-weekly-report">
+                        <h3 className="text-lg font-semibold mb-3">Weekly Signup Report</h3>
+                        {weeklyReportLoading ? (
+                          <div className="text-center py-8 text-muted-foreground" data-testid="text-weekly-report-loading">
+                            Loading weekly report...
+                          </div>
+                        ) : !weeklyReport || weeklyReport.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground" data-testid="text-weekly-report-empty">
+                            No weekly data available for the selected range.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Week</TableHead>
+                                  <TableHead className="text-right">New Free</TableHead>
+                                  <TableHead className="text-right">New Monthly</TableHead>
+                                  <TableHead className="text-right">New Annual</TableHead>
+                                  <TableHead className="text-right">Upgrades</TableHead>
+                                  <TableHead className="text-right">Total Free</TableHead>
+                                  <TableHead className="text-right">Total Monthly</TableHead>
+                                  <TableHead className="text-right">Total Annual</TableHead>
+                                  <TableHead className="text-right">Total Subscribers</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {weeklyReport.map((w) => (
+                                  <TableRow key={w.weekStart} data-testid={`row-weekly-${w.weekStart}`}>
+                                    <TableCell className="whitespace-nowrap font-medium" data-testid={`text-week-${w.weekStart}`}>
+                                      {format(new Date(`${w.weekStart}T00:00:00`), 'MMM d, yyyy')}
+                                    </TableCell>
+                                    <TableCell className="text-right" data-testid={`text-new-free-${w.weekStart}`}>
+                                      {w.newFree}
+                                    </TableCell>
+                                    <TableCell
+                                      className={`text-right ${w.newMonthly > 0 ? 'bg-success/10 text-success font-medium' : ''}`}
+                                      data-testid={`text-new-monthly-${w.weekStart}`}
+                                    >
+                                      {w.newMonthly}
+                                    </TableCell>
+                                    <TableCell
+                                      className={`text-right ${w.newAnnual > 0 ? 'bg-success/10 text-success font-medium' : ''}`}
+                                      data-testid={`text-new-annual-${w.weekStart}`}
+                                    >
+                                      {w.newAnnual}
+                                    </TableCell>
+                                    <TableCell className="text-right" data-testid={`text-upgrades-${w.weekStart}`}>
+                                      {w.upgrades > 0 ? w.upgrades : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-right" data-testid={`text-total-free-${w.weekStart}`}>
+                                      {w.totalFree}
+                                    </TableCell>
+                                    <TableCell className="text-right" data-testid={`text-total-monthly-${w.weekStart}`}>
+                                      {w.totalMonthly}
+                                    </TableCell>
+                                    <TableCell className="text-right" data-testid={`text-total-annual-${w.weekStart}`}>
+                                      {w.totalAnnual}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold" data-testid={`text-total-subscribers-${w.weekStart}`}>
+                                      {w.totalSubscribers}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

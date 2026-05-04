@@ -358,6 +358,20 @@ export interface IStorage {
     usersByMonth: Array<{month: string; count: number}>;
     referralConversions: number;
   }>;
+
+  // Weekly Signup Report
+  getWeeklySignupReport(startDate?: Date, endDate?: Date): Promise<Array<{
+    weekStart: string;
+    weekEnd: string;
+    newFree: number;
+    newMonthly: number;
+    newAnnual: number;
+    upgrades: number;
+    totalFree: number;
+    totalMonthly: number;
+    totalAnnual: number;
+    totalSubscribers: number;
+  }>>;
   
   // New Construction Lenders
   getNewConstructionLenders(state: string): Promise<Array<{
@@ -2942,6 +2956,113 @@ export class DatabaseStorage implements IStorage {
       usersByMonth,
       referralConversions,
     };
+  }
+
+  async getWeeklySignupReport(startDate?: Date, endDate?: Date): Promise<Array<{
+    weekStart: string;
+    weekEnd: string;
+    newFree: number;
+    newMonthly: number;
+    newAnnual: number;
+    upgrades: number;
+    totalFree: number;
+    totalMonthly: number;
+    totalAnnual: number;
+    totalSubscribers: number;
+  }>> {
+    const toMondayUTC = (d: Date) => {
+      const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+      const dow = dt.getUTCDay(); // 0=Sun..6=Sat
+      const offset = dow === 0 ? 6 : dow - 1;
+      dt.setUTCDate(dt.getUTCDate() - offset);
+      return dt;
+    };
+    const addDaysUTC = (d: Date, n: number) => {
+      const dt = new Date(d);
+      dt.setUTCDate(dt.getUTCDate() + n);
+      return dt;
+    };
+    const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+
+    const now = new Date();
+    const endMonday = toMondayUTC(endDate ?? now);
+    const endSunday = addDaysUTC(endMonday, 6);
+    const startMonday = startDate ? toMondayUTC(startDate) : addDaysUTC(endMonday, -11 * 7);
+    const endExclusive = addDaysUTC(endSunday, 1); // start of next Monday
+
+    if (startMonday > endMonday) {
+      return [];
+    }
+
+    const weeks: Array<{ weekStart: Date; weekEnd: Date }> = [];
+    for (let cursor = new Date(startMonday); cursor <= endMonday; cursor = addDaysUTC(cursor, 7)) {
+      weeks.push({ weekStart: new Date(cursor), weekEnd: addDaysUTC(cursor, 6) });
+    }
+
+    // Pull all users created on or before the last week's end (need createdAt for bucketed totals)
+    const allUsers = await db.select({
+      createdAt: usersTable.createdAt,
+      subscriptionPlan: usersTable.subscriptionPlan,
+      subscriptionStatus: usersTable.subscriptionStatus,
+    }).from(usersTable).where(sql`${usersTable.createdAt} < ${endExclusive}`);
+
+    // Pull subscription events within the date range
+    const eventsInRange = await db.select({
+      createdAt: subscriptionEventsTable.createdAt,
+      eventType: subscriptionEventsTable.eventType,
+    }).from(subscriptionEventsTable).where(and(
+      sql`${subscriptionEventsTable.createdAt} >= ${startMonday}`,
+      sql`${subscriptionEventsTable.createdAt} < ${endExclusive}`,
+    ));
+
+    const upgradeTypes = new Set([
+      'upgrade_free_to_monthly',
+      'upgrade_free_to_annual',
+      'upgrade_monthly_to_annual',
+    ]);
+
+    const result = weeks.map(({ weekStart, weekEnd }) => {
+      const weekEndExclusive = addDaysUTC(weekEnd, 1);
+
+      let newFree = 0, newMonthly = 0, newAnnual = 0, upgrades = 0;
+      for (const ev of eventsInRange) {
+        if (!ev.createdAt) continue;
+        if (ev.createdAt >= weekStart && ev.createdAt < weekEndExclusive) {
+          if (ev.eventType === 'new_free') newFree++;
+          else if (ev.eventType === 'new_monthly') newMonthly++;
+          else if (ev.eventType === 'new_annual') newAnnual++;
+          else if (upgradeTypes.has(ev.eventType)) upgrades++;
+        }
+      }
+
+      let totalFree = 0, totalMonthly = 0, totalAnnual = 0;
+      for (const u of allUsers) {
+        if (!u.createdAt) continue;
+        if (u.createdAt >= weekEndExclusive) continue;
+        if (u.subscriptionPlan === 'free' || (u.subscriptionStatus === 'free' && u.subscriptionPlan === null)) {
+          totalFree++;
+        } else if (u.subscriptionPlan === 'monthly' && u.subscriptionStatus === 'active') {
+          totalMonthly++;
+        } else if (u.subscriptionPlan === 'annual' && u.subscriptionStatus === 'active') {
+          totalAnnual++;
+        }
+      }
+
+      return {
+        weekStart: fmtDate(weekStart),
+        weekEnd: fmtDate(weekEnd),
+        newFree,
+        newMonthly,
+        newAnnual,
+        upgrades,
+        totalFree,
+        totalMonthly,
+        totalAnnual,
+        totalSubscribers: totalFree + totalMonthly + totalAnnual,
+      };
+    });
+
+    return result.sort((a, b) => b.weekStart.localeCompare(a.weekStart));
   }
 
   async getNewConstructionLenders(state: string): Promise<Array<{
