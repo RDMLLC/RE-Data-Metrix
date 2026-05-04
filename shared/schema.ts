@@ -51,6 +51,26 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+export const subscriptionEvents = pgTable("subscription_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  eventType: text("event_type").notNull(),
+  previousPlan: text("previous_plan"),
+  currentPlan: text("current_plan"),
+  previousStatus: text("previous_status"),
+  currentStatus: text("current_status"),
+  triggeredBy: text("triggered_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
+export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
+
 export const compInvites = pgTable("comp_invites", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull(),

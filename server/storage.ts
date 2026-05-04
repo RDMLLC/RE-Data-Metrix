@@ -99,7 +99,10 @@ import {
   type AuditorInvite,
   reportingSnapshots,
   type InsertReportingSnapshot,
-  type ReportingSnapshot
+  type ReportingSnapshot,
+  subscriptionEvents as subscriptionEventsTable,
+  type SubscriptionEvent,
+  type InsertSubscriptionEvent
 } from "@shared/schema";
 import { randomBytes, randomUUID } from "crypto";
 import { db } from "./db";
@@ -192,6 +195,9 @@ export interface IStorage {
   getUserByStripeCustomerId(customerId: string): Promise<User | undefined>;
   getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
   deleteUserSavedData(userId: string): Promise<void>;
+
+  // Subscription Events
+  insertSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent>;
   
   // Affiliate Clicks
   trackAffiliateClick(data: {
@@ -5151,6 +5157,14 @@ export class DatabaseStorage implements IStorage {
       .from(reportingSnapshots)
       .orderBy(desc(reportingSnapshots.weekStart))
       .limit(limit);
+  }
+
+  async insertSubscriptionEvent(data: InsertSubscriptionEvent): Promise<SubscriptionEvent> {
+    const [row] = await db
+      .insert(subscriptionEventsTable)
+      .values(data)
+      .returning();
+    return row;
   }
 
 }

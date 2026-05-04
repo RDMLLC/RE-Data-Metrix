@@ -1,0 +1,34 @@
+Add a subscriptionEvents table to track all subscription plan transitions. Raw code output only, no prose. Wrap in code block. Line numbers required.
+Step 1 — shared/schema.ts:
+Add after the users table definition. New table:
+subscriptionEvents: {
+  id: uuid primary key default gen_random_uuid()
+  userId: varchar references users.id (not null)
+  eventType: text not null — values: 'new_free' | 'new_monthly' | 'new_annual' | 'upgrade_free_to_monthly' | 'upgrade_free_to_annual' | 'upgrade_monthly_to_annual' | 'downgrade_annual_to_monthly' | 'downgrade_to_free' | 'cancel' | 'comped' | 'referral_trial' | 'admin_override'
+  previousPlan: text (nullable)
+  currentPlan: text (nullable)
+  previousStatus: text (nullable)
+  currentStatus: text (nullable)
+  triggeredBy: text (nullable) — values: 'stripe' | 'admin' | 'discount_code' | 'comp_invite' | 'system'
+  createdAt: timestamp defaultNow()
+}
+Export insert schema and types.
+Step 2 — server/storage.ts:
+Add insertSubscriptionEvent(data) method to IStorage interface and DatabaseStorage implementation.
+Step 3 — server/routes.ts:
+Insert a subscriptionEvent row at every subscription mutation site identified below. Do NOT change any existing logic — only add the insert call immediately after each db.update:
+
+L1832-1843 — new paid signup via discount code → eventType based on selectedPlan, triggeredBy: 'discount_code'
+L1904 — comp invite redemption → eventType: 'comped', triggeredBy: 'comp_invite'
+L2670-2685 — Stripe checkout complete → use upgradeWorkflowTrigger already computed at L2707 as eventType, triggeredBy: 'stripe'
+L2391-2398 — cancel flow downgrade → eventType: 'downgrade_to_free', triggeredBy: 'stripe'
+L2425-2431 — cancel flow cancel → eventType: 'cancel', triggeredBy: 'stripe'
+L2503 — annual to monthly downgrade → eventType: 'downgrade_annual_to_monthly', triggeredBy: 'stripe'
+L4473 — admin manual override → eventType: 'admin_override', triggeredBy: 'admin'
+L4604 — admin reset to free → eventType: 'downgrade_to_free', triggeredBy: 'admin'
+L7323 — restore path → eventType: 'downgrade_to_free', triggeredBy: 'system'
+
+Also insert a subscriptionEvent at user registration for new free signups — find the user insert in the registration route and add eventType: 'new_free', triggeredBy: 'system' immediately after.
+Step 4 — database migration:
+Write and execute a Drizzle migration to create the subscriptionEvents table in the live DB.
+Verify by reading back the updated sections of all three files after changes are applied.

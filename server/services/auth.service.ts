@@ -276,6 +276,24 @@ class AuthService {
         zipCode: validatedData.zipCode || null,
       });
 
+      const signupEventType =
+        subscriptionStatus === 'comped' ? 'comped' :
+        subscriptionStatus === 'referral_trial' ? 'referral_trial' :
+        'new_free';
+      const signupTriggeredBy =
+        auditorInviteToAccept ? 'comp_invite' :
+        compInviteToAccept ? 'comp_invite' :
+        'system';
+      await storage.insertSubscriptionEvent({
+        userId: newUser.id,
+        eventType: signupEventType,
+        previousPlan: null,
+        currentPlan: null,
+        previousStatus: null,
+        currentStatus: subscriptionStatus,
+        triggeredBy: signupTriggeredBy,
+      }).catch(err => console.error('[SubEvent] registration insert error:', err));
+
       if (auditorInviteToAccept) {
         await storage.acceptAuditorInvite(validatedData.auditorCode!.toUpperCase(), newUser.id);
       } else if (compInviteToAccept) {

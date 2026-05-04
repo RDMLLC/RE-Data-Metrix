@@ -1842,6 +1842,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
 
+      await storage.insertSubscriptionEvent({
+        userId: newUser.id,
+        eventType: selectedPlan === 'annual' ? 'new_annual' : 'new_monthly',
+        previousPlan: null,
+        currentPlan: selectedPlan,
+        previousStatus: null,
+        currentStatus: 'active',
+        triggeredBy: 'discount_code',
+      }).catch(err => console.error('[SubEvent] discount-code signup insert error:', err));
+
       // Create user profile
       await db.insert(userProfiles).values({
         userId: newUser.id,
@@ -2397,6 +2407,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pendingCancellationChoice: 'downgrade',
         }).where(eq(users.id, user.id));
 
+        await storage.insertSubscriptionEvent({
+          userId: user.id,
+          eventType: 'downgrade_to_free',
+          previousPlan,
+          currentPlan: previousPlan,
+          previousStatus: user.subscriptionStatus,
+          currentStatus: 'cancelling',
+          triggeredBy: 'stripe',
+        }).catch(err => console.error('[SubEvent] cancel/downgrade insert error:', err));
+
         console.log(`[CANCEL] User ${user.email} set to cancelling (downgrade) — access until period end`);
 
         outboundWebhookService.triggerWebhooks('subscription_cancelling', {
@@ -2429,6 +2449,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionStatus: 'cancelling',
           pendingCancellationChoice: 'cancel',
         }).where(eq(users.id, user.id));
+
+        await storage.insertSubscriptionEvent({
+          userId: user.id,
+          eventType: 'cancel',
+          previousPlan,
+          currentPlan: previousPlan,
+          previousStatus: user.subscriptionStatus,
+          currentStatus: 'cancelling',
+          triggeredBy: 'stripe',
+        }).catch(err => console.error('[SubEvent] cancel insert error:', err));
 
         console.log(`[CANCEL] User ${user.email} set to cancelling (full cancel) — access until period end`);
 
@@ -2501,6 +2531,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the user record
       await db.update(users).set({ subscriptionPlan: 'monthly' }).where(eq(users.id, user.id));
+
+      await storage.insertSubscriptionEvent({
+        userId: user.id,
+        eventType: 'downgrade_annual_to_monthly',
+        previousPlan: 'annual',
+        currentPlan: 'monthly',
+        previousStatus: user.subscriptionStatus,
+        currentStatus: user.subscriptionStatus,
+        triggeredBy: 'stripe',
+      }).catch(err => console.error('[SubEvent] annual→monthly downgrade insert error:', err));
 
       console.log(`[DOWNGRADE] User ${user.email} downgraded annual → monthly`);
 
@@ -2682,6 +2722,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subscriptionPlan,
           })
           .where(eq(users.id, user.id));
+
+        const stripeUpgradeEventType =
+          previousPlan === 'free' && subscriptionPlan === 'monthly' ? 'upgrade_free_to_monthly' :
+          previousPlan === 'free' && subscriptionPlan === 'annual' ? 'upgrade_free_to_annual' :
+          previousPlan === 'monthly' && subscriptionPlan === 'annual' ? 'upgrade_monthly_to_annual' :
+          'upgrade_free_to_monthly';
+
+        await storage.insertSubscriptionEvent({
+          userId: user.id,
+          eventType: stripeUpgradeEventType,
+          previousPlan,
+          currentPlan: subscriptionPlan,
+          previousStatus: user.subscriptionStatus,
+          currentStatus: 'active',
+          triggeredBy: 'stripe',
+        }).catch(err => console.error('[SubEvent] stripe upgrade insert error:', err));
 
         console.log(`[STRIPE] User ${user.id} subscription activated: ${subscription.id} (plan: ${subscriptionPlan})`);
 
@@ -4507,6 +4563,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
+      await storage.insertSubscriptionEvent({
+        userId: id,
+        eventType: 'admin_override',
+        previousPlan: existingUser.subscriptionPlan ?? null,
+        currentPlan: updated.subscriptionPlan ?? null,
+        previousStatus,
+        currentStatus: subscriptionStatus,
+        triggeredBy: 'admin',
+      }).catch(err => console.error('[SubEvent] admin override insert error:', err));
+
       const wasLocked = previousStatus === 'archived' || previousStatus === 'suspended';
       const isNowLocked = subscriptionStatus === 'archived' || subscriptionStatus === 'suspended';
 
@@ -4603,6 +4669,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: 'developer',
         subscriptionStatus: 'free',
       });
+
+      await storage.insertSubscriptionEvent({
+        userId: newUser.id,
+        eventType: 'downgrade_to_free',
+        previousPlan: null,
+        currentPlan: null,
+        previousStatus: null,
+        currentStatus: 'free',
+        triggeredBy: 'admin',
+      }).catch(err => console.error('[SubEvent] admin developer create insert error:', err));
       
       res.status(201).json({ 
         message: "Developer account created successfully",
@@ -7327,6 +7403,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             termsVersion: '1.0',
             privacyVersion: '1.0',
           }).returning();
+
+          await storage.insertSubscriptionEvent({
+            userId: newUser.id,
+            eventType: 'downgrade_to_free',
+            previousPlan: null,
+            currentPlan: null,
+            previousStatus: null,
+            currentStatus: 'free',
+            triggeredBy: 'system',
+          }).catch(err => console.error('[SubEvent] contractor signup insert error:', err));
 
           await db.insert(userProfiles).values({
             userId: newUser.id,
