@@ -288,7 +288,7 @@ class AuthService {
         userId: newUser.id,
         eventType: signupEventType,
         previousPlan: null,
-        currentPlan: null,
+        currentPlan: signupEventType === 'new_free' ? 'free' : null,
         previousStatus: null,
         currentStatus: subscriptionStatus,
         triggeredBy: signupTriggeredBy,
