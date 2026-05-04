@@ -2398,7 +2398,7 @@ export class DatabaseStorage implements IStorage {
     const referralsResult = await db.select({ count: count() }).from(lenderReferralsTable);
     const totalReferrals = referralsResult[0]?.count || 0;
 
-    const dealsResult = await db.select({ count: count() }).from(dealAnalysesTable);
+    const dealsResult = await db.select({ count: count() }).from(savedDealsTable);
     const totalDealsAnalyzed = dealsResult[0]?.count || 0;
 
     return {
@@ -3027,13 +3027,13 @@ export class DatabaseStorage implements IStorage {
       sql`${subscriptionEventsTable.createdAt} < ${endExclusive}`,
     ));
 
-    const dealAnalysesInRange = await db.select({
-      createdAt: dealAnalysesTable.createdAt,
-      userId: dealAnalysesTable.userId,
-    }).from(dealAnalysesTable).where(and(
-      sql`${dealAnalysesTable.createdAt} >= ${startMonday}`,
-      sql`${dealAnalysesTable.createdAt} < ${endExclusive}`,
-      sql`${dealAnalysesTable.userId} IS NOT NULL`,
+    const savedDealsInRange = await db.select({
+      createdAt: savedDealsTable.createdAt,
+      userId: savedDealsTable.userId,
+    }).from(savedDealsTable).where(and(
+      sql`${savedDealsTable.createdAt} >= ${startMonday}`,
+      sql`${savedDealsTable.createdAt} < ${endExclusive}`,
+      sql`${savedDealsTable.userId} IS NOT NULL`,
     ));
 
     const lenderReferralsInRange = await db.select({
@@ -3088,7 +3088,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       const dealUserSet = new Set<string>();
-      for (const d of dealAnalysesInRange) {
+      for (const d of savedDealsInRange) {
         if (!d.createdAt || !d.userId) continue;
         if (d.createdAt >= weekStart && d.createdAt < weekEndExclusive) dealUserSet.add(d.userId);
       }
