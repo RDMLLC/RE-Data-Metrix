@@ -847,6 +847,9 @@ export default function AdminReports() {
                         </Table>
                       </div>
                     )}
+                    <div data-testid="weekly-debug" style={{background:'red', padding:'20px', color:'white', fontSize:'20px'}}>
+                      showWeeklyReport = {String(showWeeklyReport)}
+                    </div>
                     {filteredUsers.length > 0 && (
                       <div className="mt-4 text-sm text-muted-foreground">
                         Showing {filteredUsers.length} of {users?.length || 0} users
