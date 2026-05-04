@@ -847,57 +847,57 @@ export default function AdminReports() {
                         </Table>
                       </div>
                     )}
-                    <div data-testid="weekly-debug" style={{background:'red', padding:'20px', color:'white', fontSize:'20px'}}>
-                      showWeeklyReport = {String(showWeeklyReport)}
-                    </div>
                     {filteredUsers.length > 0 && (
                       <div className="mt-4 text-sm text-muted-foreground">
                         Showing {filteredUsers.length} of {users?.length || 0} users
                       </div>
                     )}
-                    {showWeeklyReport && (
-                      <div className="mt-6 border-t pt-6">
-                        <h3 className="text-base font-medium mb-4">Weekly Signup Report</h3>
-                        {weeklyReportLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
-                        {!weeklyReportLoading && (!weeklyReport || weeklyReport.length === 0) && (
-                          <p className="text-sm text-muted-foreground">No data available.</p>
-                        )}
-                        {!weeklyReportLoading && weeklyReport && weeklyReport.length > 0 && (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Week</TableHead>
-                                <TableHead className="text-right">New Free</TableHead>
-                                <TableHead className="text-right">New Monthly</TableHead>
-                                <TableHead className="text-right">New Annual</TableHead>
-                                <TableHead className="text-right">Upgrades</TableHead>
-                                <TableHead className="text-right">Total Free</TableHead>
-                                <TableHead className="text-right">Total Monthly</TableHead>
-                                <TableHead className="text-right">Total Annual</TableHead>
-                                <TableHead className="text-right font-bold">Total Subscribers</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {weeklyReport.map((row) => (
-                                <TableRow key={row.weekStart}>
-                                  <TableCell>{new Date(`${row.weekStart}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
-                                  <TableCell className="text-right">{row.newFree}</TableCell>
-                                  <TableCell className={`text-right ${row.newMonthly > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newMonthly}</TableCell>
-                                  <TableCell className={`text-right ${row.newAnnual > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newAnnual}</TableCell>
-                                  <TableCell className="text-right">{row.upgrades === 0 ? '—' : row.upgrades}</TableCell>
-                                  <TableCell className="text-right">{row.totalFree}</TableCell>
-                                  <TableCell className="text-right">{row.totalMonthly}</TableCell>
-                                  <TableCell className="text-right">{row.totalAnnual}</TableCell>
-                                  <TableCell className="text-right font-bold">{row.totalSubscribers}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        )}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
+                <div data-testid="weekly-debug" style={{background:'red', padding:'20px', color:'white', fontSize:'20px'}}>
+                  showWeeklyReport = {String(showWeeklyReport)}
+                </div>
+                {showWeeklyReport && (
+                  <div className="mt-6 border-t pt-6">
+                    <h3 className="text-base font-medium mb-4">Weekly Signup Report</h3>
+                    {weeklyReportLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+                    {!weeklyReportLoading && (!weeklyReport || weeklyReport.length === 0) && (
+                      <p className="text-sm text-muted-foreground">No data available.</p>
+                    )}
+                    {!weeklyReportLoading && weeklyReport && weeklyReport.length > 0 && (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Week</TableHead>
+                            <TableHead className="text-right">New Free</TableHead>
+                            <TableHead className="text-right">New Monthly</TableHead>
+                            <TableHead className="text-right">New Annual</TableHead>
+                            <TableHead className="text-right">Upgrades</TableHead>
+                            <TableHead className="text-right">Total Free</TableHead>
+                            <TableHead className="text-right">Total Monthly</TableHead>
+                            <TableHead className="text-right">Total Annual</TableHead>
+                            <TableHead className="text-right font-bold">Total Subscribers</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {weeklyReport.map((row) => (
+                            <TableRow key={row.weekStart}>
+                              <TableCell>{new Date(`${row.weekStart}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
+                              <TableCell className="text-right">{row.newFree}</TableCell>
+                              <TableCell className={`text-right ${row.newMonthly > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newMonthly}</TableCell>
+                              <TableCell className={`text-right ${row.newAnnual > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newAnnual}</TableCell>
+                              <TableCell className="text-right">{row.upgrades === 0 ? '—' : row.upgrades}</TableCell>
+                              <TableCell className="text-right">{row.totalFree}</TableCell>
+                              <TableCell className="text-right">{row.totalMonthly}</TableCell>
+                              <TableCell className="text-right">{row.totalAnnual}</TableCell>
+                              <TableCell className="text-right font-bold">{row.totalSubscribers}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="affiliates">
