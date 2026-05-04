@@ -852,18 +852,6 @@ export default function AdminReports() {
                         Showing {filteredUsers.length} of {users?.length || 0} users
                       </div>
                     )}
-                    {(() => {
-                      console.log('[WEEKLY REPORT DEBUG]', {
-                        showWeeklyReport,
-                        weeklyReportLoading,
-                        weeklyReportLength: weeklyReport?.length,
-                        weeklyReportSample: weeklyReport?.[0],
-                        reportStartDate,
-                        reportEndDate,
-                        weeklyReportUrl,
-                      });
-                      return null;
-                    })()}
                     {showWeeklyReport && (
                       <div className="mt-6 border-t pt-6" data-testid="section-weekly-report">
                         <h3 className="text-lg font-semibold mb-3">Weekly Signup Report</h3>
