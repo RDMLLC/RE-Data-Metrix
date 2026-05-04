@@ -749,7 +749,7 @@ export default function AdminReports() {
                         </div>
                         <Button
                           variant="outline"
-                          onClick={() => setShowWeeklyReport(v => !v)}
+                          onClick={() => { console.log('TOGGLE CLICKED', !showWeeklyReport); setShowWeeklyReport(v => !v); }}
                           data-testid="button-toggle-weekly-report"
                         >
                           {showWeeklyReport ? 'Hide Report' : 'Weekly Signup Report'}
