@@ -155,8 +155,14 @@ export default function AdminReports() {
   const [dealSearch, setDealSearch] = useState("");
   const [lenderSearch, setLenderSearch] = useState("");
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
-  const [reportStartDate, setReportStartDate] = useState('');
-  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportStartDate, setReportStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 83); // 12 weeks back
+    return d.toISOString().split('T')[0];
+  });
+  const [reportEndDate, setReportEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
 
   useEffect(() => {
     const checkAdminAuth = async () => {
