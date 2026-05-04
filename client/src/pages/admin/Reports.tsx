@@ -142,6 +142,12 @@ interface WeeklySignupRow {
   totalMonthly: number;
   totalAnnual: number;
   totalSubscribers: number;
+  dealAnalysisUsers: number;
+  dealAnalysisPct: number;
+  lenderReferralUsers: number;
+  lenderReferralPct: number;
+  affiliateClickUsers: number;
+  affiliateClickPct: number;
 }
 
 export default function AdminReports() {
@@ -339,7 +345,7 @@ export default function AdminReports() {
 
   const exportWeeklyReportToCSV = () => {
     if (!weeklyReport || weeklyReport.length === 0) return;
-    const headers = ['Week Start', 'Week End', 'New Free', 'New Monthly', 'New Annual', 'Upgrades', 'Total Free', 'Total Monthly', 'Total Annual', 'Total Subscribers'];
+    const headers = ['Week Start', 'Week End', 'New Free', 'New Monthly', 'New Annual', 'Upgrades', 'Total Free', 'Total Monthly', 'Total Annual', 'Total Subscribers', 'Deal Analysis Users', 'Deal Analysis %', 'Lender Referral Users', 'Lender Referral %', 'Affiliate Click Users', 'Affiliate Click %'];
     const rows = weeklyReport.map(w => [
       w.weekStart,
       w.weekEnd,
@@ -351,6 +357,12 @@ export default function AdminReports() {
       String(w.totalMonthly),
       String(w.totalAnnual),
       String(w.totalSubscribers),
+      String(w.dealAnalysisUsers),
+      `${w.dealAnalysisPct}%`,
+      String(w.lenderReferralUsers),
+      `${w.lenderReferralPct}%`,
+      String(w.affiliateClickUsers),
+      `${w.affiliateClickPct}%`,
     ]);
     const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -802,50 +814,52 @@ export default function AdminReports() {
                         {userSearch ? 'No users match your search' : 'No users registered yet'}
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Username</TableHead>
-                              <TableHead>Email</TableHead>
-                              <TableHead>Role</TableHead>
-                              <TableHead>Subscription</TableHead>
-                              <TableHead>Verified</TableHead>
-                              <TableHead>Joined</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredUsers.map((user) => (
-                              <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
-                                <TableCell className="font-medium">
-                                  {user.username}
-                                </TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>
-                                  <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
-                                    {user.role}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {getSubscriptionBadge(user.subscriptionStatus)}
-                                </TableCell>
-                                <TableCell>
-                                  {user.isEmailVerified ? (
-                                    <Badge variant="default">Yes</Badge>
-                                  ) : (
-                                    <Badge variant="secondary">No</Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell className="whitespace-nowrap">
-                                  {user.createdAt
-                                    ? format(new Date(user.createdAt), 'MMM d, yyyy')
-                                    : '-'}
-                                </TableCell>
+                      !showWeeklyReport && (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Username</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Subscription</TableHead>
+                                <TableHead>Verified</TableHead>
+                                <TableHead>Joined</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredUsers.map((user) => (
+                                <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                                  <TableCell className="font-medium">
+                                    {user.username}
+                                  </TableCell>
+                                  <TableCell>{user.email}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                                      {user.role}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {getSubscriptionBadge(user.subscriptionStatus)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {user.isEmailVerified ? (
+                                      <Badge variant="default">Yes</Badge>
+                                    ) : (
+                                      <Badge variant="secondary">No</Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    {user.createdAt
+                                      ? format(new Date(user.createdAt), 'MMM d, yyyy')
+                                      : '-'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )
                     )}
                     {filteredUsers.length > 0 && (
                       <div className="mt-4 text-sm text-muted-foreground">
@@ -854,9 +868,6 @@ export default function AdminReports() {
                     )}
                   </CardContent>
                 </Card>
-                <div data-testid="weekly-debug" style={{background:'red', padding:'20px', color:'white', fontSize:'20px'}}>
-                  showWeeklyReport = {String(showWeeklyReport)}
-                </div>
                 {showWeeklyReport && (
                   <div className="mt-6 border-t pt-6">
                     <h3 className="text-base font-medium mb-4">Weekly Signup Report</h3>
@@ -877,6 +888,12 @@ export default function AdminReports() {
                             <TableHead className="text-right">Total Monthly</TableHead>
                             <TableHead className="text-right">Total Annual</TableHead>
                             <TableHead className="text-right font-bold">Total Subscribers</TableHead>
+                            <TableHead className="text-right">Deal Analysis Users</TableHead>
+                            <TableHead className="text-right">Deal Analysis %</TableHead>
+                            <TableHead className="text-right">Lender Referral Users</TableHead>
+                            <TableHead className="text-right">Lender Referral %</TableHead>
+                            <TableHead className="text-right">Affiliate Click Users</TableHead>
+                            <TableHead className="text-right">Affiliate Click %</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -891,6 +908,12 @@ export default function AdminReports() {
                               <TableCell className="text-right">{row.totalMonthly}</TableCell>
                               <TableCell className="text-right">{row.totalAnnual}</TableCell>
                               <TableCell className="text-right font-bold">{row.totalSubscribers}</TableCell>
+                              <TableCell className="text-right">{row.dealAnalysisUsers}</TableCell>
+                              <TableCell className="text-right">{row.dealAnalysisPct}%</TableCell>
+                              <TableCell className="text-right">{row.lenderReferralUsers}</TableCell>
+                              <TableCell className="text-right">{row.lenderReferralPct}%</TableCell>
+                              <TableCell className="text-right">{row.affiliateClickUsers}</TableCell>
+                              <TableCell className="text-right">{row.affiliateClickPct}%</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>

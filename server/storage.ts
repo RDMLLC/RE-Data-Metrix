@@ -371,6 +371,12 @@ export interface IStorage {
     totalMonthly: number;
     totalAnnual: number;
     totalSubscribers: number;
+    dealAnalysisUsers: number;
+    dealAnalysisPct: number;
+    lenderReferralUsers: number;
+    lenderReferralPct: number;
+    affiliateClickUsers: number;
+    affiliateClickPct: number;
   }>>;
   
   // New Construction Lenders
@@ -2969,6 +2975,12 @@ export class DatabaseStorage implements IStorage {
     totalMonthly: number;
     totalAnnual: number;
     totalSubscribers: number;
+    dealAnalysisUsers: number;
+    dealAnalysisPct: number;
+    lenderReferralUsers: number;
+    lenderReferralPct: number;
+    affiliateClickUsers: number;
+    affiliateClickPct: number;
   }>> {
     const toMondayUTC = (d: Date) => {
       const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -3015,6 +3027,33 @@ export class DatabaseStorage implements IStorage {
       sql`${subscriptionEventsTable.createdAt} < ${endExclusive}`,
     ));
 
+    const dealAnalysesInRange = await db.select({
+      createdAt: dealAnalysesTable.createdAt,
+      userId: dealAnalysesTable.userId,
+    }).from(dealAnalysesTable).where(and(
+      sql`${dealAnalysesTable.createdAt} >= ${startMonday}`,
+      sql`${dealAnalysesTable.createdAt} < ${endExclusive}`,
+      sql`${dealAnalysesTable.userId} IS NOT NULL`,
+    ));
+
+    const lenderReferralsInRange = await db.select({
+      createdAt: lenderReferralsTable.createdAt,
+      userId: lenderReferralsTable.userId,
+    }).from(lenderReferralsTable).where(and(
+      sql`${lenderReferralsTable.createdAt} >= ${startMonday}`,
+      sql`${lenderReferralsTable.createdAt} < ${endExclusive}`,
+      sql`${lenderReferralsTable.userId} IS NOT NULL`,
+    ));
+
+    const affiliateClicksInRange = await db.select({
+      createdAt: affiliateClicksTable.createdAt,
+      userId: affiliateClicksTable.userId,
+    }).from(affiliateClicksTable).where(and(
+      sql`${affiliateClicksTable.createdAt} >= ${startMonday}`,
+      sql`${affiliateClicksTable.createdAt} < ${endExclusive}`,
+      sql`${affiliateClicksTable.userId} IS NOT NULL`,
+    ));
+
     const upgradeTypes = new Set([
       'upgrade_free_to_monthly',
       'upgrade_free_to_annual',
@@ -3048,6 +3087,27 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      const dealUserSet = new Set<string>();
+      for (const d of dealAnalysesInRange) {
+        if (!d.createdAt || !d.userId) continue;
+        if (d.createdAt >= weekStart && d.createdAt < weekEndExclusive) dealUserSet.add(d.userId);
+      }
+      const lenderUserSet = new Set<string>();
+      for (const r of lenderReferralsInRange) {
+        if (!r.createdAt || !r.userId) continue;
+        if (r.createdAt >= weekStart && r.createdAt < weekEndExclusive) lenderUserSet.add(r.userId);
+      }
+      const affiliateUserSet = new Set<string>();
+      for (const c of affiliateClicksInRange) {
+        if (!c.createdAt || !c.userId) continue;
+        if (c.createdAt >= weekStart && c.createdAt < weekEndExclusive) affiliateUserSet.add(c.userId);
+      }
+      const dealAnalysisUsers = dealUserSet.size;
+      const lenderReferralUsers = lenderUserSet.size;
+      const affiliateClickUsers = affiliateUserSet.size;
+      const totalSubscribers = totalFree + totalMonthly + totalAnnual;
+      const pct = (n: number) => totalSubscribers === 0 ? 0 : Math.round((n / totalSubscribers) * 1000) / 10;
+
       return {
         weekStart: fmtDate(weekStart),
         weekEnd: fmtDate(weekEnd),
@@ -3058,7 +3118,13 @@ export class DatabaseStorage implements IStorage {
         totalFree,
         totalMonthly,
         totalAnnual,
-        totalSubscribers: totalFree + totalMonthly + totalAnnual,
+        totalSubscribers,
+        dealAnalysisUsers,
+        dealAnalysisPct: pct(dealAnalysisUsers),
+        lenderReferralUsers,
+        lenderReferralPct: pct(lenderReferralUsers),
+        affiliateClickUsers,
+        affiliateClickPct: pct(affiliateClickUsers),
       };
     });
 

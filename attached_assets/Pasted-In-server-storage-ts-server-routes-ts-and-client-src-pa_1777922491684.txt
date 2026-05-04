@@ -1,0 +1,41 @@
+In server/storage.ts, server/routes.ts, and client/src/pages/admin/Reports.tsx, make the following changes. Raw code output only, no prose. Wrap in code block. Line numbers required.
+
+STEP 1 — server/storage.ts
+Update getWeeklySignupReport to add three new metrics per week. For each week (Monday–Sunday):
+dealAnalysisUsers: count of DISTINCT userId in dealAnalyses WHERE createdAt BETWEEN weekStart AND weekEnd AND userId IS NOT NULL
+dealAnalysisPct: dealAnalysisUsers / totalSubscribers * 100, rounded to 1 decimal, 0 if totalSubscribers = 0
+lenderReferralUsers: count of DISTINCT userId in lenderReferrals WHERE createdAt BETWEEN weekStart AND weekEnd AND userId IS NOT NULL
+lenderReferralPct: lenderReferralUsers / totalSubscribers * 100, rounded to 1 decimal, 0 if totalSubscribers = 0
+affiliateClickUsers: count of DISTINCT userId in affiliateClicks WHERE createdAt BETWEEN weekStart AND weekEnd AND userId IS NOT NULL
+affiliateClickPct: affiliateClickUsers / totalSubscribers * 100, rounded to 1 decimal, 0 if totalSubscribers = 0
+Update the WeeklySignupRow type to include all six new fields.
+
+STEP 2 — server/routes.ts
+No changes needed — endpoint already passes through whatever storage returns.
+
+STEP 3 — client/src/pages/admin/Reports.tsx
+3a — Update WeeklySignupRow interface to add:
+dealAnalysisUsers: number
+dealAnalysisPct: number
+lenderReferralUsers: number
+lenderReferralPct: number
+affiliateClickUsers: number
+affiliateClickPct: number
+3b — Remove red debug box — delete the entire <div data-testid="weekly-debug"...> block at approximately L857-859.
+3c — Collapse user list when report is open — wrap the existing user list table <div className="overflow-x-auto"> block in {!showWeeklyReport && (...)} so it only renders when the report is hidden.
+3d — Update weekly report table to add six new columns after Total Subscribers:
+<TableHead className="text-right">Deal Analysis Users</TableHead>
+<TableHead className="text-right">Deal Analysis %</TableHead>
+<TableHead className="text-right">Lender Referral Users</TableHead>
+<TableHead className="text-right">Lender Referral %</TableHead>
+<TableHead className="text-right">Affiliate Click Users</TableHead>
+<TableHead className="text-right">Affiliate Click %</TableHead>
+And corresponding TableCell entries in the row:
+<TableCell className="text-right">{row.dealAnalysisUsers}</TableCell>
+<TableCell className="text-right">{row.dealAnalysisPct}%</TableCell>
+<TableCell className="text-right">{row.lenderReferralUsers}</TableCell>
+<TableCell className="text-right">{row.lenderReferralPct}%</TableCell>
+<TableCell className="text-right">{row.affiliateClickUsers}</TableCell>
+<TableCell className="text-right">{row.affiliateClickPct}%</TableCell>
+3e — Update exportWeeklyReportToCSV to include the six new columns in the CSV export.
+After all changes, read back the modified sections of all three files with line numbers to confirm.
