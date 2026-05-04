@@ -876,48 +876,50 @@ export default function AdminReports() {
                       <p className="text-sm text-muted-foreground">No data available.</p>
                     )}
                     {!weeklyReportLoading && weeklyReport && weeklyReport.length > 0 && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Week</TableHead>
-                            <TableHead className="text-right">New Free</TableHead>
-                            <TableHead className="text-right">New Monthly</TableHead>
-                            <TableHead className="text-right">New Annual</TableHead>
-                            <TableHead className="text-right">Upgrades</TableHead>
-                            <TableHead className="text-right">Total Free</TableHead>
-                            <TableHead className="text-right">Total Monthly</TableHead>
-                            <TableHead className="text-right">Total Annual</TableHead>
-                            <TableHead className="text-right font-bold">Total Subscribers</TableHead>
-                            <TableHead className="text-right">Deal Analysis Users</TableHead>
-                            <TableHead className="text-right">Deal Analysis %</TableHead>
-                            <TableHead className="text-right">Lender Referral Users</TableHead>
-                            <TableHead className="text-right">Lender Referral %</TableHead>
-                            <TableHead className="text-right">Affiliate Click Users</TableHead>
-                            <TableHead className="text-right">Affiliate Click %</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {weeklyReport.map((row) => (
-                            <TableRow key={row.weekStart}>
-                              <TableCell>{new Date(`${row.weekStart}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
-                              <TableCell className="text-right">{row.newFree}</TableCell>
-                              <TableCell className={`text-right ${row.newMonthly > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newMonthly}</TableCell>
-                              <TableCell className={`text-right ${row.newAnnual > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newAnnual}</TableCell>
-                              <TableCell className="text-right">{row.upgrades === 0 ? '—' : row.upgrades}</TableCell>
-                              <TableCell className="text-right">{row.totalFree}</TableCell>
-                              <TableCell className="text-right">{row.totalMonthly}</TableCell>
-                              <TableCell className="text-right">{row.totalAnnual}</TableCell>
-                              <TableCell className="text-right font-bold">{row.totalSubscribers}</TableCell>
-                              <TableCell className="text-right">{row.dealAnalysisUsers}</TableCell>
-                              <TableCell className="text-right">{row.dealAnalysisPct}%</TableCell>
-                              <TableCell className="text-right">{row.lenderReferralUsers}</TableCell>
-                              <TableCell className="text-right">{row.lenderReferralPct}%</TableCell>
-                              <TableCell className="text-right">{row.affiliateClickUsers}</TableCell>
-                              <TableCell className="text-right">{row.affiliateClickPct}%</TableCell>
+                      <div className="overflow-x-auto w-full">
+                        <Table className="text-xs">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-left">Week</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">New Free</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">New Mo.</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">New Ann.</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">Upgrades</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">Total Free</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">Total Monthly</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">Total Annual</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right font-bold">Total Subs.</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">DA Users</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">DA %</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">LR Users</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">LR %</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">Aff. Users</TableHead>
+                              <TableHead className="px-2 py-2 text-xs whitespace-nowrap text-right">Aff. %</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {weeklyReport.map((row) => (
+                              <TableRow key={row.weekStart}>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-left">{new Date(`${row.weekStart}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.newFree}</TableCell>
+                                <TableCell className={`px-2 py-2 text-xs whitespace-nowrap text-right ${row.newMonthly > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newMonthly}</TableCell>
+                                <TableCell className={`px-2 py-2 text-xs whitespace-nowrap text-right ${row.newAnnual > 0 ? 'text-green-600 font-medium' : ''}`}>{row.newAnnual}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.upgrades === 0 ? '—' : row.upgrades}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.totalFree}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.totalMonthly}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.totalAnnual}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right font-bold">{row.totalSubscribers}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.dealAnalysisUsers}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.dealAnalysisPct}%</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.lenderReferralUsers}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.lenderReferralPct}%</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.affiliateClickUsers}</TableCell>
+                                <TableCell className="px-2 py-2 text-xs whitespace-nowrap text-right">{row.affiliateClickPct}%</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     )}
                   </div>
                 )}
