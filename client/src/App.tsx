@@ -247,6 +247,7 @@ function Router() {
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/complete" component={CheckoutComplete} />
         <Route path="/meta-offer" component={MetaOffer} />
+        <Route path="/linkedin-offer" component={MetaOffer} />
         <Route path="/google-offer" component={GoogleOffer} />
         <Route path="/cancelled" component={Cancelled} />
         <Route path="/beta-signup" component={BetaSignup} />
