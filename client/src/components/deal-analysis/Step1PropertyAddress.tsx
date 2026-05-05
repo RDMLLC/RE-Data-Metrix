@@ -348,6 +348,22 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                 </div>
               </div>
 
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <span>▶</span> See How It Works
+                </h3>
+                <div className="relative aspect-video rounded-md overflow-hidden bg-black">
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src="https://www.youtube.com/embed/m6SjKQ3dYe4?rel=0&modestbranding=1"
+                    title="Deal Analysis and Loan Comparison Tool"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">3:56 · Step by step tutorial</p>
+              </div>
+
               <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-6">
                 <div className="flex items-start gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
