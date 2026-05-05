@@ -19,7 +19,8 @@ export function OrganizationSchema() {
     "logo": `${BASE_URL}/logo.png`,
     "description": "Real estate investment analysis and funding platform connecting investors with lenders.",
     "sameAs": [
-      "https://www.facebook.com/groups/1455681056068763/"
+      "https://www.facebook.com/groups/1455681056068763/",
+      "https://www.linkedin.com/company/re-data-metrix-llc"
     ],
     "contactPoint": {
       "@type": "ContactPoint",
