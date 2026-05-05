@@ -1,0 +1,48 @@
+Three fixes for the registration hang. Raw code output only, no prose. Line numbers required.
+Fix A — Make verification email fire-and-forget in server/services/auth.service.ts:
+Find the await emailService.sendVerificationEmail(...) call (around line 306) and replace it with a fire-and-forget pattern:
+Change from:
+typescriptemailSent = await emailService.sendVerificationEmail(
+  newUser.email,
+  firstName,
+  verificationToken,
+  validatedData.pendingPlan
+);
+if (!emailSent) {
+  console.error('[AuthService] Failed to send verification email to:', newUser.email);
+}
+Change to:
+typescriptemailSent = true; // optimistic — email sends in background
+emailService.sendVerificationEmail(
+  newUser.email,
+  firstName,
+  verificationToken,
+  validatedData.pendingPlan
+).then(ok => {
+  if (!ok) console.error('[AuthService] Verification email failed to send to:', newUser.email);
+}).catch(err => console.error('[AuthService] Verification email error:', err));
+Fix B — Add AbortSignal timeout to outbound webhook fetch in server/services/outbound-webhook.service.ts:
+Find the fetch call around line 59 with no timeout and add an 8-second abort signal:
+Change from:
+typescriptconst response = await fetch(webhook.targetUrl, fetchOptions);
+Change to:
+typescriptconst response = await fetch(webhook.targetUrl, {
+  ...fetchOptions,
+  signal: AbortSignal.timeout(8000)
+});
+Fix C — Add AbortSignal timeout to Meta CAPI fetch in server/services/metaCapi.ts (or wherever the fetch is on line 61):
+Find the fetch call with no timeout and add an 8-second abort signal:
+Change from:
+typescriptconst response = await fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ data: [eventPayload] }),
+});
+Change to:
+typescriptconst response = await fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ data: [eventPayload] }),
+  signal: AbortSignal.timeout(8000)
+});
+After all three changes, show me the modified lines in each file to verify.

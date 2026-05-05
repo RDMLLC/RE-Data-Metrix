@@ -303,16 +303,15 @@ class AuthService {
       let emailSent = false;
       if (!isAutoVerified) {
         const firstName = (validatedData.fullName || '').trim().split(/\s+/)[0] || newUser.username;
-        emailSent = await emailService.sendVerificationEmail(
+        emailSent = true; // optimistic — email sends in background
+        emailService.sendVerificationEmail(
           newUser.email,
           firstName,
           verificationToken,
           validatedData.pendingPlan
-        );
-
-        if (!emailSent) {
-          console.error('[AuthService] Failed to send verification email to:', newUser.email);
-        }
+        ).then(ok => {
+          if (!ok) console.error('[AuthService] Verification email failed to send to:', newUser.email);
+        }).catch(err => console.error('[AuthService] Verification email error:', err));
       }
 
       const message = isAutoVerified

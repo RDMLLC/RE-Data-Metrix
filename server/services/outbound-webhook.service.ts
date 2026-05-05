@@ -56,7 +56,10 @@ export class OutboundWebhookService {
         fetchOptions.body = JSON.stringify(payload);
       }
 
-      const response = await fetch(webhook.targetUrl, fetchOptions);
+      const response = await fetch(webhook.targetUrl, {
+        ...fetchOptions,
+        signal: AbortSignal.timeout(8000)
+      });
 
       statusCode = response.status;
       success = response.ok;

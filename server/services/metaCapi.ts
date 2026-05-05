@@ -62,6 +62,7 @@ export async function sendMetaCapiEvent(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: [eventPayload] }),
+      signal: AbortSignal.timeout(8000)
     });
 
     if (!response.ok) {
