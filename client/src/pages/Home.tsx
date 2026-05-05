@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Users, BarChart3, Wrench, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SEO } from "@/components/SEO";
+import { OrganizationSchema, WebApplicationSchema } from "@/components/StructuredData";
 
 export default function Home() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -99,6 +100,8 @@ export default function Home() {
         description="Analyze real estate deals, compare loan options, and connect with lenders. Built for fix and flip and wholesale investors."
         canonicalUrl="https://redatametrix.com/"
       />
+      <OrganizationSchema />
+      <WebApplicationSchema />
       <Hero />
       
       {/* Features Section - Hidden on mobile to reduce scrolling */}

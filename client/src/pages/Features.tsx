@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SEO } from "@/components/SEO";
+import { WebApplicationSchema } from "@/components/StructuredData";
 
 const coreFeatures = [
   {
@@ -101,6 +102,7 @@ export default function Features() {
         description="Explore RE Data Metrix features: Fix & Flip deal analysis, DSCR rental calculators, ARV helper with comparable sales, wholesale calculator, and private lender directory."
         canonicalUrl="https://redatametrix.com/features"
       />
+      <WebApplicationSchema />
       <div className="min-h-[calc(100vh-16rem)] bg-background">
         {/* Hero Section */}
         <section className="py-20 bg-gradient-to-b from-primary/5 to-background">

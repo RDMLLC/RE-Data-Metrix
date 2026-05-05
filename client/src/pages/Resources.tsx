@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
 import { SEO } from "@/components/SEO";
+import { WebApplicationSchema } from "@/components/StructuredData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AffiliateCard } from "@/components/AffiliateCard";
 import { GlossarySection } from "@/components/GlossarySection";
@@ -326,6 +327,7 @@ export default function Resources() {
         description="Discover real estate investing tools for deal analysis, lead generation, project management, and more. Built for serious investors."
         canonicalUrl="https://redatametrix.com/toolbox"
       />
+      <WebApplicationSchema />
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
