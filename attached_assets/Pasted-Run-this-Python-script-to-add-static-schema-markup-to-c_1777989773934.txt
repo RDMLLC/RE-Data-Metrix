@@ -1,24 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-    <title>RE Data Metrix - Real Estate Investment Analysis & Funding</title>
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-    <!-- Zoho PageSense Analytics -->
-    <script src="https://cdn.pagesense.io/js/redatametrix/6aa2b6805eb84544a46360a8b193ac5d.js"></script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-49SJERQFW1"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-49SJERQFW1');
-    </script>
-    <!-- Static Schema Markup for crawlers -->
+Run this Python script to add static schema markup to client/index.html. Write the script to /tmp/add_schema.py first, then execute it.
+pythonwith open('client/index.html', 'r') as f:
+    content = f.read()
+
+schema_block = """    <!-- Static Schema Markup for crawlers -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -64,9 +48,12 @@
       ]
     }
     </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+"""
+
+new_content = content.replace('  </head>', schema_block + '  </head>')
+
+with open('client/index.html', 'w') as f:
+    f.write(new_content)
+
+print("Done. Line count:", new_content.count('\n'))
+After running, show me the full contents of client/index.html to verify. Raw code output only, no prose. Line numbers required.
