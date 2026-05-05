@@ -394,7 +394,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               <div>
                 <h2 className="text-xl font-semibold mb-2">Property Lookup</h2>
                 <p className="text-muted-foreground">
-                  Paste a Redfin or Zillow property URL to get started. We'll automatically fetch property details to help you analyze the deal.
+                  Paste a <a href="https://www.redfin.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Redfin</a> or <a href="https://www.zillow.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Zillow</a> property URL to get started. We'll automatically fetch property details to help you analyze the deal.
                 </p>
 
                 <Collapsible open={videoOpen} onOpenChange={setVideoOpen} className="mt-3">

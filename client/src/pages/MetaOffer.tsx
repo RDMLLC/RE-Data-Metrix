@@ -105,7 +105,7 @@ export default function MetaOffer() {
             Turn guesswork into data-driven decisions — know your profit, compare lenders, and move fast.
           </p>
           <p className="text-sm text-white/60 mt-3" data-testid="text-social-proof-hero">
-            Join hundreds of real estate investors already using RE Data Metrix.
+            Built by Investors for Investors.
           </p>
         </div>
       </section>
