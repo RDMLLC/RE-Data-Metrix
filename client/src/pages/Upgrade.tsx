@@ -236,26 +236,26 @@ export default function Upgrade() {
               <table className="w-full" data-testid="table-feature-comparison">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="text-left px-6 py-3 font-semibold text-foreground">Feature</th>
-                    <th className="text-center px-6 py-3 font-semibold text-foreground">Free</th>
-                    <th className="text-center px-6 py-3 font-semibold text-foreground">Paid</th>
+                    <th className="text-left px-3 py-3 font-semibold text-foreground text-sm">Feature</th>
+                    <th className="text-center px-3 py-3 font-semibold text-foreground text-sm">Free</th>
+                    <th className="text-center px-3 py-3 font-semibold text-foreground text-sm">Paid</th>
                   </tr>
                 </thead>
                 <tbody>
                   {featureComparison.map((row, index) => (
                     <tr key={index} className={index % 2 === 0 ? "bg-muted/20" : ""}>
-                      <td className="px-6 py-3 text-foreground">{row.feature}</td>
-                      <td className="px-6 py-3 text-center">
+                      <td className="px-3 py-3 text-foreground text-xs">{row.feature}</td>
+                      <td className="px-3 py-3 text-center text-xs">
                         {row.freeHas ? (
-                          <span className={`text-sm ${row.paidBetter ? "text-muted-foreground" : "text-foreground"}`}>
+                          <span className={`${row.paidBetter ? "text-muted-foreground" : "text-foreground"}`}>
                             {row.free}
                           </span>
                         ) : (
                           <X className="h-4 w-4 text-muted-foreground mx-auto" />
                         )}
                       </td>
-                      <td className="px-6 py-3 text-center">
-                        <span className="text-sm text-success font-medium">{row.paid}</span>
+                      <td className="px-3 py-3 text-center text-xs">
+                        <span className="text-success font-medium">{row.paid}</span>
                       </td>
                     </tr>
                   ))}

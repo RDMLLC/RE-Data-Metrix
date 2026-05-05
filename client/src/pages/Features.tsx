@@ -235,64 +235,64 @@ export default function Features() {
                   </thead>
                   <tbody>
                     <tr className="bg-muted/30">
-                      <td className="px-6 py-4 font-medium">Property Lookups</td>
-                      <td className="px-6 py-4 text-center">2/month</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
+                      <td className="px-3 py-3 text-xs font-medium">Property Lookups</td>
+                      <td className="px-3 py-3 text-xs text-center">2/month</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Unlimited</td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-medium">Manual Deal Entry</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
+                      <td className="px-3 py-3 text-xs font-medium">Manual Deal Entry</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Unlimited</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Unlimited</td>
                     </tr>
                     <tr className="bg-muted/30">
-                      <td className="px-6 py-4 font-medium">Lender Comparisons</td>
-                      <td className="px-6 py-4 text-center">First 2 lookups</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
+                      <td className="px-3 py-3 text-xs font-medium">Lender Comparisons</td>
+                      <td className="px-3 py-3 text-xs text-center">First 2 lookups</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Unlimited</td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-medium">DSCR Analysis</td>
-                      <td className="px-6 py-4 text-center">Manual entry</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Full access</td>
+                      <td className="px-3 py-3 text-xs font-medium">DSCR Analysis</td>
+                      <td className="px-3 py-3 text-xs text-center">Manual entry</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Full access</td>
                     </tr>
                     <tr className="bg-muted/30">
-                      <td className="px-6 py-4 font-medium">Wholesale Calculator</td>
-                      <td className="px-6 py-4 text-center">2/month</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
+                      <td className="px-3 py-3 text-xs font-medium">Wholesale Calculator</td>
+                      <td className="px-3 py-3 text-xs text-center">2/month</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Unlimited</td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-medium">Lender Search</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs font-medium">Lender Search</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr className="bg-muted/30">
-                      <td className="px-6 py-4 font-medium">Save Deals</td>
-                      <td className="px-6 py-4 text-center text-muted-foreground">No</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Unlimited</td>
+                      <td className="px-3 py-3 text-xs font-medium">Save Deals</td>
+                      <td className="px-3 py-3 text-xs text-center text-muted-foreground">No</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Unlimited</td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-medium">PDF Export</td>
-                      <td className="px-6 py-4 text-center text-muted-foreground">No</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs font-medium">PDF Export</td>
+                      <td className="px-3 py-3 text-xs text-center text-muted-foreground">No</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr className="bg-muted/30">
-                      <td className="px-6 py-4 font-medium">Toolbox Resources</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs font-medium">Toolbox Resources</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-medium">CSV Export</td>
-                      <td className="px-6 py-4 text-center text-muted-foreground">No</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs font-medium">CSV Export</td>
+                      <td className="px-3 py-3 text-xs text-center text-muted-foreground">No</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr className="bg-muted/30">
-                      <td className="px-6 py-4 font-medium">State-Specific Calculations</td>
-                      <td className="px-6 py-4 text-center text-muted-foreground">No</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Yes</td>
+                      <td className="px-3 py-3 text-xs font-medium">State-Specific Calculations</td>
+                      <td className="px-3 py-3 text-xs text-center text-muted-foreground">No</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Yes</td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-medium">Support</td>
-                      <td className="px-6 py-4 text-center">Standard</td>
-                      <td className="px-6 py-4 text-center text-success font-medium">Priority</td>
+                      <td className="px-3 py-3 text-xs font-medium">Support</td>
+                      <td className="px-3 py-3 text-xs text-center">Standard</td>
+                      <td className="px-3 py-3 text-xs text-center text-success font-medium">Priority</td>
                     </tr>
                   </tbody>
                 </table>
