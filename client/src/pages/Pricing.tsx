@@ -366,22 +366,22 @@ export default function Pricing() {
                 <table className="w-full" data-testid="table-feature-comparison">
                   <thead>
                     <tr className="bg-primary text-primary-foreground">
-                      <th className="text-left px-6 py-4 font-semibold">Feature</th>
-                      <th className="text-center px-6 py-4 font-semibold">Free</th>
-                      <th className="text-center px-6 py-4 font-semibold">Paid</th>
+                      <th className="text-left px-3 py-3 font-semibold text-sm">Feature</th>
+                      <th className="text-center px-3 py-3 font-semibold text-sm">Free</th>
+                      <th className="text-center px-3 py-3 font-semibold text-sm">Paid</th>
                     </tr>
                   </thead>
                   <tbody>
                     {featureComparison.map((row, index) => (
                       <tr key={index} className={index % 2 === 0 ? "bg-muted/30" : ""}>
-                        <td className="px-6 py-4 text-foreground font-medium">{row.feature}</td>
-                        <td className="px-6 py-4 text-center">
-                          <span className={`text-sm ${row.free === "No" ? "text-muted-foreground" : "text-foreground"}`}>
+                        <td className="px-3 py-3 text-foreground font-medium text-xs">{row.feature}</td>
+                        <td className="px-3 py-3 text-center text-xs">
+                          <span className={`${row.free === "No" ? "text-muted-foreground" : "text-foreground"}`}>
                             {row.free}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-sm text-success font-medium">{row.paid}</span>
+                        <td className="px-3 py-3 text-center text-xs">
+                          <span className="text-success font-medium">{row.paid}</span>
                         </td>
                       </tr>
                     ))}

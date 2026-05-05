@@ -34,34 +34,28 @@ export function CookieConsent() {
   if (isAdmin || !showBanner) return null;
 
   return (
-    <div 
+    <div
       className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-lg"
       data-testid="banner-cookie-consent"
     >
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div className="flex items-start gap-3 flex-1">
-            <Cookie className="h-6 w-6 text-accent flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="text-sm text-foreground font-medium">
-                Cookie Notice
-              </p>
-              <p className="text-sm text-muted-foreground">
-                We use essential cookies to keep you logged in and enable site features. 
-                By continuing to use this site, you consent to our use of cookies.{" "}
-                <Link href="/privacy" className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-cookie-policy">
-                  Learn more
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </p>
-            </div>
+      <div className="container mx-auto px-4 py-2">
+        <div className="flex flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Cookie className="h-4 w-4 text-accent flex-shrink-0" />
+            <p className="text-xs text-muted-foreground truncate">
+              We use essential cookies to keep you logged in.{" "}
+              <Link href="/privacy" className="text-primary hover:underline inline-flex items-center gap-1" data-testid="link-cookie-policy">
+                Learn more
+              </Link>
+            </p>
           </div>
-          <Button 
+          <Button
+            size="sm"
             onClick={handleAccept}
-            className="flex-shrink-0"
+            className="flex-shrink-0 text-xs px-3 py-1 h-7"
             data-testid="button-accept-cookies"
           >
-            I Understand
+            Got It
           </Button>
         </div>
       </div>
