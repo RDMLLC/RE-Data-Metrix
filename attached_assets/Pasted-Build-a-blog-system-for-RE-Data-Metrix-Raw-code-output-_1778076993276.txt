@@ -1,0 +1,120 @@
+Build a blog system for RE Data Metrix. Raw code output only, no prose. Wrap in code block. Line numbers required.
+
+STEP 1 — CREATE POST DATA FILE
+Create client/src/data/blogPosts.ts with the following:
+typescriptexport interface BlogPost {
+  slug: string;
+  title: string;
+  excerpt: string;
+  publishDate: string; // YYYY-MM-DD
+  tags: string[];
+  content: string; // HTML content
+}
+
+export const blogPosts: BlogPost[] = [
+  {
+    slug: "turning-terms-into-returns-part-1-understand-the-variables",
+    title: "Turning Terms into Returns — Part 1: Understand the Variables",
+    excerpt: "Hard money loan terms vary more than most investors realize — and the differences compound. Two lenders offering the same loan on identical properties can produce dramatically different outcomes. Here's what you need to understand before you sign.",
+    publishDate: "2026-05-07",
+    tags: ["Hard Money", "Loan Terms", "Fix and Flip", "Turning Terms into Returns"],
+    content: "<p>Placeholder content — Part 1</p>"
+  }
+];
+
+STEP 2 — CREATE BLOG INDEX PAGE
+Create client/src/pages/Blog.tsx:
+
+Import blogPosts from ../data/blogPosts
+Filter posts where publishDate <= today's date (use new Date(post.publishDate) <= new Date())
+Sort filtered posts newest first by publishDate
+Set page meta in useEffect: document.title = "Real Estate Investing Blog | RE Data Metrix" and update meta description to "Practical guides on hard money loans, deal analysis, wholesaling, and real estate investing strategy."
+Page heading: "Real Estate Investing Insights"
+Page subheading: "Practical guides for investors who want to understand the numbers."
+Render each published post as a card showing: title, formatted publish date, excerpt, tags as small pills, and a "Read More →" link to /blog/[slug] using Wouter's <Link>
+If no published posts exist show: "New posts are published every Tuesday and Thursday. Check back soon."
+Use RDM brand colors: primary navy #1d408b, sidebar blue #2463eb, gold accent #e0b32e, dark #0f1729, muted #65758b
+Use Inter font — already loaded globally
+Clean professional layout consistent with existing RDM pages — no generic AI aesthetics
+
+
+STEP 3 — CREATE BLOG POST PAGE
+Create client/src/pages/BlogPost.tsx:
+
+Import blogPosts from ../data/blogPosts
+Use useParams() from Wouter to get slug from URL
+Find post by slug in blogPosts array
+If post not found OR publishDate > today: render a not-found message with a <Link> back to /blog
+In useEffect, set document.title to [post title] | RE Data Metrix and update meta description to post excerpt
+In useEffect, inject Article schema as <script type="application/ld+json"> into document head:
+
+json{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "[post.title]",
+  "datePublished": "[post.publishDate]",
+  "author": { "@type": "Organization", "name": "RE Data Metrix" },
+  "publisher": { "@type": "Organization", "name": "RE Data Metrix", "url": "https://redatametrix.com" },
+  "description": "[post.excerpt]"
+}
+
+Clean up schema script tag on component unmount
+Layout:
+
+"← Back to Blog" link at top using Wouter <Link> to /blog
+Post title as h1
+Formatted publish date and tags as pills
+Full post content rendered via dangerouslySetInnerHTML={{ __html: post.content }} — content is internal and trusted
+After content: "← Back to Blog" link
+After back link: a related links section with two links: "Analyze your next deal →" to /deal-analysis and "Explore the Glossary →" to /toolbox
+
+
+Match RDM brand styling
+
+
+STEP 4 — ADD ROUTES
+In client/src/App.tsx, add two new routes in the appropriate location alongside existing page routes:
+tsx<Route path="/blog" component={Blog} />
+<Route path="/blog/:slug" component={BlogPost} />
+Import Blog from ./pages/Blog and BlogPost from ./pages/BlogPost.
+
+STEP 5 — TOOLBOX TAB SWAP
+In client/src/pages/Toolbox.tsx, find the Resources tab section. Inside it, find the sub-tabs row that currently contains "Marketplace & Community", "Glossary", and "Legal".
+Replace the "Marketplace & Community" sub-tab and its panel content entirely with a "Blog" sub-tab. The Blog sub-tab panel should:
+
+Import blogPosts from ../data/blogPosts
+Filter and sort posts exactly as in Blog.tsx (published only, newest first)
+Display the 3 most recently published posts as cards with: title, formatted date, excerpt, "Read More →" link to /blog/[slug]
+Below the cards, show a "View All Posts →" link to /blog
+If no published posts exist yet, show the same "New posts are published every Tuesday and Thursday. Check back soon." message
+Match RDM brand styling
+
+
+STEP 6 — FOOTER LINK
+Find the site footer component (likely in client/src/components/layout/ or similar). Add a "Blog" link to /blog in an appropriate location in the footer navigation. Match existing footer link styling exactly.
+
+STEP 7 — SITEMAP
+In public/sitemap.xml, add the following URLs after the existing entries. Do not remove or modify any existing entries:
+xml<url>
+  <loc>https://redatametrix.com/blog</loc>
+  <lastmod>2026-05-07</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.7</priority>
+</url>
+<url>
+  <loc>https://redatametrix.com/blog/turning-terms-into-returns-part-1-understand-the-variables</loc>
+  <lastmod>2026-05-07</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+VERIFICATION
+After completing all steps, confirm by reading and outputting the full contents of:
+
+client/src/data/blogPosts.ts
+client/src/pages/Blog.tsx
+client/src/pages/BlogPost.tsx
+The two new route lines added to client/src/App.tsx
+The modified Resources tab section in client/src/pages/Toolbox.tsx
+The footer change
+The new sitemap entries

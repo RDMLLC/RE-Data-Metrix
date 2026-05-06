@@ -97,6 +97,11 @@ export default function Footer() {
                   Pricing
                 </Link>
               </li>
+              <li>
+                <Link href="/blog" className="text-primary-foreground/80 hover:text-accent transition-colors" data-testid="link-footer-blog">
+                  Blog
+                </Link>
+              </li>
             </ul>
           </div>
 

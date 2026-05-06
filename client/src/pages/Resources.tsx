@@ -10,14 +10,15 @@ import ToolFinder, { ToolFinderTutorial } from "@/components/ToolFinder";
 import ContractorSearch from "@/components/ContractorSearch";
 import { categoryInfo } from "@/data/affiliatePrograms";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users, Shield, ExternalLink } from "lucide-react";
+import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users, Shield, ExternalLink, Newspaper, ArrowRight } from "lucide-react";
+import { blogPosts } from "../data/blogPosts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import type { Affiliate, TrainingVideo } from "@shared/schema";
@@ -155,6 +156,67 @@ function TrainingVideosSection() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function BlogSection() {
+  const formatDate = (iso: string) => {
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  };
+  const now = new Date();
+  const published = blogPosts
+    .filter(p => new Date(p.publishDate) <= now)
+    .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+    .slice(0, 3);
+
+  return (
+    <div className="space-y-6" data-testid="section-blog">
+      <div className="flex items-center gap-3 mb-2">
+        <Newspaper className="h-7 w-7 text-primary" />
+        <h2 className="text-2xl font-semibold">Latest from the Blog</h2>
+      </div>
+
+      {published.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground" data-testid="text-blog-tab-empty">
+            New posts are published every Tuesday and Thursday. Check back soon.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid gap-4">
+            {published.map(post => (
+              <Card key={post.slug} className="hover-elevate" data-testid={`card-blog-tab-${post.slug}`}>
+                <CardContent className="py-5">
+                  <p className="text-xs text-muted-foreground mb-1">{formatDate(post.publishDate)}</p>
+                  <h3 className="text-lg font-semibold text-primary mb-2">{post.title}</h3>
+                  <p className="text-sm text-foreground/90 mb-3">{post.excerpt}</p>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    data-testid={`link-blog-tab-read-${post.slug}`}
+                  >
+                    Read More
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="text-center">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              data-testid="link-blog-tab-view-all"
+            >
+              View All Posts
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -404,11 +466,11 @@ export default function Resources() {
           </TabsContent>
 
           <TabsContent value="resources" className="space-y-6">
-            <Tabs defaultValue="marketplace" className="space-y-4">
+            <Tabs defaultValue="blog" className="space-y-4">
               <TabsList className="bg-muted/50 p-1" data-testid="tabs-resources">
-                <TabsTrigger value="marketplace" data-testid="tab-resources-marketplace" className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  Marketplace & Community
+                <TabsTrigger value="blog" data-testid="tab-resources-blog" className="flex items-center gap-1">
+                  <Newspaper className="h-4 w-4" />
+                  Blog
                 </TabsTrigger>
                 <TabsTrigger value="glossary" data-testid="tab-resources-glossary" className="flex items-center gap-1">
                   <BookOpen className="h-4 w-4" />
@@ -420,8 +482,8 @@ export default function Resources() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="marketplace">
-                {renderAffiliateContent("marketplace", categoryInfo.marketplace)}
+              <TabsContent value="blog">
+                <BlogSection />
               </TabsContent>
 
               <TabsContent value="glossary">

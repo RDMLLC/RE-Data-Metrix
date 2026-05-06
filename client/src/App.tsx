@@ -109,6 +109,8 @@ const AdminFeatureFeedback = lazy(() => import("@/pages/admin/FeatureFeedback"))
 const MetaOffer = lazy(() => import("@/pages/MetaOffer"));
 const GoogleOffer = lazy(() => import("@/pages/GoogleOffer"));
 const Cancelled = lazy(() => import("@/pages/Cancelled"));
+const Blog = lazy(() => import("@/pages/Blog"));
+const BlogPost = lazy(() => import("@/pages/BlogPost"));
 
 function PageLoader() {
   return (
@@ -186,6 +188,8 @@ function Router() {
         <Route path="/about-private-lenders" component={AboutPrivateLenders} />
         <Route path="/toolbox" component={Resources} />
         <Route path="/resources" component={Resources} />
+        <Route path="/blog" component={Blog} />
+        <Route path="/blog/:slug" component={BlogPost} />
         <Route path="/webinar" component={Webinar} />
         <Route path="/webinar/rsvp/:registrationId/thank-you" component={WebinarRsvpThankYou} />
         <Route path="/login" component={Login} />
