@@ -1,0 +1,104 @@
+Add FAQ sections to the Homepage and both landing pages. Raw code output only, no prose. Wrap in code block. Line numbers required.
+
+OVERVIEW
+Add a collapsible accordion FAQ section to three pages: Homepage (client/src/pages/Home.tsx), and the Meta/LinkedIn landing page (client/src/pages/MetaOffer.tsx). Each FAQ section gets FAQPage schema markup. Use the existing shadcn/ui Accordion components already in use on the /faq page.
+
+FAQ CONTENT
+Homepage FAQ — 5 questions:
+Q: What is RE Data Metrix?
+A: RE Data Metrix is an online tool that helps real estate investors analyze individual deals and compare loan options side by side based on profit, cash required, and ROI metrics.
+
+Q: Is RE Data Metrix free?
+A: Yes. Free accounts include 2 automated deal analyses per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support — for $25/month or $250/year.
+
+Q: What is an ARV Helper?
+A: The ARV Helper pulls recent sold listings from Zillow, Redfin, and RentCast, scores them automatically by distance, price per square foot, and property characteristics, and calculates ARV instantly based on your selections. You can add your own comps from any source — your agent, a wholesaler, or PropStream — and download a branded comp report when you're done.
+
+Q: How is RE Data Metrix different from a spreadsheet?
+A: RE Data Metrix standardizes your assumptions, automates complex loan math, and lets you compare multiple scenarios and lenders in one place instead of manually updating formulas.
+
+Q: Who is RE Data Metrix built for?
+A: It is built for real estate investors who want a clear, data-driven way to evaluate each deal and compare financing options — from newer investors learning the numbers to experienced investors standardizing their underwriting.
+Landing Page FAQ — 4 questions (same content for both /meta-offer and /linkedin-offer):
+Q: Is RE Data Metrix free?
+A: Yes. Free accounts include 2 automated deal analyses per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support — for $25/month or $250/year.
+
+Q: How quickly can I analyze a deal?
+A: Most deals take one to five minutes depending on how many built-in tools you use. Paste a Zillow or Redfin link and the platform fills in the property details automatically — then enter your assumptions and you'll have a full profitability and loan analysis ready to review.
+
+Q: Do I need to be an experienced investor to use this?
+A: No. The tool is designed to simplify the math so newer investors can understand key numbers without building complex spreadsheets. Experienced investors use it to standardize their underwriting and scale deal volume with a consistent framework.
+
+Q: What loan types and strategies does RE Data Metrix support?
+A: The platform supports fix-and-flip, BRRRR, buy-and-hold rentals, DSCR loans, and wholesale pricing strategies. It handles loan structure modeling, cash to close calculations, DSCR analysis, and maximum offer pricing for wholesale deals.
+
+IMPLEMENTATION INSTRUCTIONS
+For each FAQ section, create a reusable inline component within the page file:
+tsxconst pageFaqs = [
+  { question: "...", answer: "..." },
+  // etc
+];
+
+function PageFAQSection() {
+  return (
+    <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible className="space-y-2">
+        {pageFaqs.map((faq, i) => (
+          <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+            <AccordionTrigger className="text-left font-medium text-foreground">
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground">
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
+Placement:
+
+Homepage: add <PageFAQSection /> above the existing final CTA section near the bottom of the page
+MetaOffer: add <PageFAQSection /> above the final CTA/signup button section near the bottom of the page
+
+Schema markup:
+For each page, add a FAQPage JSON-LD script via useEffect (same pattern as BlogPost.tsx Article schema):
+tsxuseEffect(() => {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": pageFaqs.map(faq => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.answer
+      }
+    }))
+  };
+  const script = document.createElement("script");
+  script.type = "application/ld+json";
+  script.id = "faq-schema-[pagename]";
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
+  return () => {
+    const existing = document.getElementById("faq-schema-[pagename]");
+    if (existing) existing.remove();
+  };
+}, []);
+Use id="faq-schema-home" for Home.tsx and id="faq-schema-landing" for MetaOffer.tsx.
+Required imports to add to each file:
+tsximport { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+VERIFICATION
+After completing all changes, read and output:
+
+The pageFaqs array and PageFAQSection component from Home.tsx
+The pageFaqs array and PageFAQSection component from MetaOffer.tsx
+The useEffect FAQ schema block from Home.tsx
+The useEffect FAQ schema block from MetaOffer.tsx
+Confirm <PageFAQSection /> is placed correctly in the render output of both files — show the 5 lines above and below the placement in each file

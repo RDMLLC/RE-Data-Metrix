@@ -8,6 +8,52 @@ import { Users, BarChart3, Wrench, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SEO } from "@/components/SEO";
 import { OrganizationSchema, WebApplicationSchema } from "@/components/StructuredData";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const pageFaqs = [
+  {
+    question: "What is RE Data Metrix?",
+    answer: "RE Data Metrix is an online tool that helps real estate investors analyze individual deals and compare loan options side by side based on profit, cash required, and ROI metrics."
+  },
+  {
+    question: "Is RE Data Metrix free?",
+    answer: "Yes. Free accounts include 2 automated deal analyses per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support — for $25/month or $250/year."
+  },
+  {
+    question: "What is an ARV Helper?",
+    answer: "The ARV Helper pulls recent sold listings from Zillow, Redfin, and RentCast, scores them automatically by distance, price per square foot, and property characteristics, and calculates ARV instantly based on your selections. You can add your own comps from any source — your agent, a wholesaler, or PropStream — and download a branded comp report when you're done."
+  },
+  {
+    question: "How is RE Data Metrix different from a spreadsheet?",
+    answer: "RE Data Metrix standardizes your assumptions, automates complex loan math, and lets you compare multiple scenarios and lenders in one place instead of manually updating formulas."
+  },
+  {
+    question: "Who is RE Data Metrix built for?",
+    answer: "It is built for real estate investors who want a clear, data-driven way to evaluate each deal and compare financing options — from newer investors learning the numbers to experienced investors standardizing their underwriting."
+  }
+];
+
+function PageFAQSection() {
+  return (
+    <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="section-home-faq">
+      <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible className="space-y-2">
+        {pageFaqs.map((faq, i) => (
+          <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+            <AccordionTrigger className="text-left font-medium text-foreground" data-testid={`accordion-home-faq-trigger-${i}`}>
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground" data-testid={`accordion-home-faq-content-${i}`}>
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
 
 export default function Home() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -57,6 +103,30 @@ export default function Home() {
       }
     }
   }, [authLoading, lenderChecked, isAuthenticated, isLender, user, setLocation]);
+
+  useEffect(() => {
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": pageFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    };
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-home";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+    return () => {
+      const existing = document.getElementById("faq-schema-home");
+      if (existing) existing.remove();
+    };
+  }, []);
 
   if (authLoading || !lenderChecked) {
     return (
@@ -161,6 +231,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <PageFAQSection />
 
       {/* Signup CTA Section */}
       <section id="signup-cta" className="hidden md:block py-24 bg-background">

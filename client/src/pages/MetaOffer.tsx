@@ -3,8 +3,50 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
+
+const pageFaqs = [
+  {
+    question: "Is RE Data Metrix free?",
+    answer: "Yes. Free accounts include 2 automated deal analyses per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support — for $25/month or $250/year."
+  },
+  {
+    question: "How quickly can I analyze a deal?",
+    answer: "Most deals take one to five minutes depending on how many built-in tools you use. Paste a Zillow or Redfin link and the platform fills in the property details automatically — then enter your assumptions and you'll have a full profitability and loan analysis ready to review."
+  },
+  {
+    question: "Do I need to be an experienced investor to use this?",
+    answer: "No. The tool is designed to simplify the math so newer investors can understand key numbers without building complex spreadsheets. Experienced investors use it to standardize their underwriting and scale deal volume with a consistent framework."
+  },
+  {
+    question: "What loan types and strategies does RE Data Metrix support?",
+    answer: "The platform supports fix-and-flip, BRRRR, buy-and-hold rentals, DSCR loans, and wholesale pricing strategies. It handles loan structure modeling, cash to close calculations, DSCR analysis, and maximum offer pricing for wholesale deals."
+  }
+];
+
+function PageFAQSection() {
+  return (
+    <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="section-landing-faq">
+      <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible className="space-y-2">
+        {pageFaqs.map((faq, i) => (
+          <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+            <AccordionTrigger className="text-left font-medium text-foreground" data-testid={`accordion-landing-faq-trigger-${i}`}>
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground" data-testid={`accordion-landing-faq-content-${i}`}>
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
 
 const YOUTUBE_VIDEO_ID = "WkuAgslCrrM";
 const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=1&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`;
@@ -69,6 +111,30 @@ export default function MetaOffer() {
       hasFiredRef.current = true;
     }
   }, [pixelsLoaded, trackLead]);
+
+  useEffect(() => {
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": pageFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    };
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-landing";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+    return () => {
+      const existing = document.getElementById("faq-schema-landing");
+      if (existing) existing.remove();
+    };
+  }, []);
 
   const handleCta = () => {
     setLocation(getPricingUrl());
@@ -165,6 +231,8 @@ export default function MetaOffer() {
           </div>
         </div>
       </section>
+
+      <PageFAQSection />
 
       {/* 4. Closing CTA */}
       <section className="py-16 lg:py-24 bg-background">
