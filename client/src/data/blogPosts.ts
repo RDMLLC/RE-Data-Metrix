@@ -524,4 +524,285 @@ export const blogPosts: BlogPost[] = [
       <p><a href="/lenders">Find transactional funding lenders on RE Data Metrix →</a></p>
     `
   }
+  ,{
+    slug: "turning-terms-into-returns-part-7-putting-it-all-together",
+    title: "Turning Terms into Returns — Part 7: Putting It All Together",
+    excerpt: "Two lenders. Same deal. Different structures. One produces more profit. The other requires less cash. Here is how every variable covered in this series plays out on a single real deal — and why the rate is never the whole story.",
+    publishDate: "2026-06-02",
+    tags: ["Hard Money", "Loan Terms", "Cash on Cash", "Deal Analysis", "Turning Terms into Returns"],
+    content: `
+      <p>Over the past six posts we covered every major variable in hard money lending — the percentage caps that determine your maximum loan, the sliding scale that quietly reduces your purchase loan as rehab grows, how points and rate interact with hold time, how deferrals change your cash position without changing your profit, and the fees many investors overlook.</p>
+      <p>Now let's put it all together with one real deal and two real loan structures.</p>
+      <hr/>
+      <h2>The Deal</h2>
+      <ul>
+        <li><strong>Purchase Price:</strong> $325,000</li>
+        <li><strong>Rehab Budget:</strong> $75,000</li>
+        <li><strong>Total Project Cost:</strong> $400,000</li>
+        <li><strong>ARV:</strong> $558,000</li>
+        <li><strong>Hold Time:</strong> 9 months</li>
+      </ul>
+      <hr/>
+      <h2>Two Lenders. Same Deal. Different Structures.</h2>
+      <p>Both lenders will fund this deal. Their terms look similar on the surface. Here's what they actually look like side by side:</p>
+      <table>
+        <thead><tr><th>Term</th><th>Lender A</th><th>Lender B</th></tr></thead>
+        <tbody>
+          <tr><td>Interest Rate</td><td>10%</td><td>12%</td></tr>
+          <tr><td>Points</td><td>1%</td><td>2%</td></tr>
+          <tr><td>Max Buy %</td><td>85%</td><td>90%</td></tr>
+          <tr><td>Max Rehab %</td><td>100%</td><td>100%</td></tr>
+          <tr><td>Max ARV %</td><td>70%</td><td>70%</td></tr>
+          <tr><td>Doc Prep Fee</td><td>$1,995</td><td>$995</td></tr>
+          <tr><td>Appraisal</td><td>$700</td><td>$0</td></tr>
+          <tr><td>Draw Fees</td><td>$750 (3 draws)</td><td>$750 (3 draws)</td></tr>
+          <tr><td>Drawn Funds Only</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Interest Deferred</td><td>No</td><td>Yes</td></tr>
+          <tr><td>Points Deferred</td><td>Yes</td><td>No</td></tr>
+        </tbody>
+      </table>
+      <p>Lender A has the lower rate, fewer points, and a higher doc prep fee. On a quick scan of a term sheet, most investors would call it the better deal. Let's see if that holds up.</p>
+      <hr/>
+      <h2>The Loan Math</h2>
+      <p><strong>Lender A</strong><br/>
+      Purchase Loan: $325,000 × 85% = $276,250<br/>
+      Rehab Loan: $75,000 × 100% = $75,000<br/>
+      Total Loan: $351,250<br/>
+      Down Payment: $325,000 × 15% = <strong>$48,750</strong></p>
+      <p><strong>Lender B</strong><br/>
+      Purchase Loan: $325,000 × 90% = $292,500<br/>
+      Rehab Loan: $75,000 × 100% = $75,000<br/>
+      Total Loan: $367,500<br/>
+      Down Payment: $325,000 × 10% = <strong>$32,500</strong></p>
+      <p>That 5% difference in Max Buy % translates to $16,250 more cash required at closing with Lender A — before a single point is paid or a draw is taken.</p>
+      <hr/>
+      <h2>Out-of-Pocket Breakdown</h2>
+      <p><strong>Lender A — $60,572</strong></p>
+      <table>
+        <thead><tr><th>Component</th><th>Amount</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Down Payment</td><td>$48,750</td><td>15% of $325,000</td></tr>
+          <tr><td>Closing Costs (Buy)</td><td>$5,225</td><td>Attorney, title, transfer fee</td></tr>
+          <tr><td>Lender Fees</td><td>$3,445</td><td>See breakdown below</td></tr>
+          <tr><td>&nbsp;&nbsp;— Doc Prep</td><td>$1,995</td><td></td></tr>
+          <tr><td>&nbsp;&nbsp;— Appraisal</td><td>$700</td><td></td></tr>
+          <tr><td>&nbsp;&nbsp;— Draw Fees</td><td>$750</td><td>3 × $250</td></tr>
+          <tr><td>&nbsp;&nbsp;— Points</td><td>$0</td><td>Deferred to closing</td></tr>
+          <tr><td>Carrying Costs</td><td>$3,152</td><td>Insurance, utilities, other</td></tr>
+          <tr><td>Interest Payments</td><td>included above</td><td>Paid monthly — drawn funds only</td></tr>
+          <tr><td><strong>Total Out-of-Pocket</strong></td><td><strong>$60,572</strong></td><td></td></tr>
+        </tbody>
+      </table>
+      <p>Interest on Lender A is not deferred — monthly payments are due during the hold on drawn funds only. Those payments are part of carrying costs and are fully out-of-pocket.</p>
+      <p><strong>Deferred to Closing (not OOP):</strong></p>
+      <ul>
+        <li>Points: $3,513</li>
+        <li>Interest: calculated on drawn funds over 9 months</li>
+        <li>Taxes: $2,535 (estimated, reconciled at closing)</li>
+      </ul>
+      <hr/>
+      <p><strong>Lender B — $49,972</strong></p>
+      <table>
+        <thead><tr><th>Component</th><th>Amount</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Down Payment</td><td>$32,500</td><td>10% of $325,000</td></tr>
+          <tr><td>Closing Costs (Buy)</td><td>$5,225</td><td>Attorney, title, transfer fee</td></tr>
+          <tr><td>Lender Fees</td><td>$9,095</td><td>See breakdown below</td></tr>
+          <tr><td>&nbsp;&nbsp;— Doc Prep</td><td>$995</td><td></td></tr>
+          <tr><td>&nbsp;&nbsp;— Appraisal</td><td>$0</td><td>Waived</td></tr>
+          <tr><td>&nbsp;&nbsp;— Draw Fees</td><td>$750</td><td>3 × $250</td></tr>
+          <tr><td>&nbsp;&nbsp;— Points</td><td>$7,350</td><td>2% of $367,500 — paid at closing</td></tr>
+          <tr><td>Carrying Costs</td><td>$3,152</td><td>Insurance, utilities, other</td></tr>
+          <tr><td>Interest Payments</td><td>$0 OOP</td><td>Deferred to closing</td></tr>
+          <tr><td><strong>Total Out-of-Pocket</strong></td><td><strong>$49,972</strong></td><td></td></tr>
+        </tbody>
+      </table>
+      <p>Interest on Lender B is fully deferred — no monthly payments during the hold. It accrues and is paid at payoff from sale proceeds.</p>
+      <p><strong>Deferred to Closing (not OOP):</strong></p>
+      <ul>
+        <li>Interest: $33,075</li>
+        <li>Taxes: $2,535 (estimated, reconciled at closing)</li>
+      </ul>
+      <hr/>
+      <h2>What's Happening Under the Hood</h2>
+      <p>Two forces are working in opposite directions.</p>
+      <p><strong>Lender B's cash advantages:</strong></p>
+      <ul>
+        <li>90% Max Buy vs 85% — lender funds $16,250 more of the purchase, directly reducing your down payment</li>
+        <li>No appraisal — saves $700 and potentially a week at closing</li>
+        <li>Deferred interest — no monthly payments during the hold</li>
+      </ul>
+      <p><strong>Lender B's cash disadvantages:</strong></p>
+      <ul>
+        <li>Higher rate (12% vs 10%) — costs more in total interest</li>
+        <li>More points (2% vs 1%) — higher fee on a larger loan, paid at closing</li>
+        <li>Points paid at closing — $7,350 cash out on day one vs $0 for Lender A</li>
+      </ul>
+      <p>The $16,250 down payment advantage is partially offset by $5,650 more in lender fees OOP. Net cash advantage for Lender B: <strong>$10,600</strong>.</p>
+      <hr/>
+      <h2>The Results</h2>
+      <table>
+        <thead><tr><th>Metric</th><th>Lender A</th><th>Lender B</th></tr></thead>
+        <tbody>
+          <tr><td>Total Loan</td><td>$351,250</td><td>$367,500</td></tr>
+          <tr><td>Down Payment</td><td>$48,750</td><td>$32,500</td></tr>
+          <tr><td>Out-of-Pocket</td><td>$60,572</td><td>$49,972</td></tr>
+          <tr><td>Net Profit</td><td>$76,380</td><td>$65,859</td></tr>
+          <tr><td>Cash-on-Cash</td><td>126.10%</td><td>131.79%</td></tr>
+          <tr><td>Annualized</td><td>168.13%</td><td>175.72%</td></tr>
+        </tbody>
+      </table>
+      <p>Lender A puts <strong>$10,521 more in your pocket</strong> on this deal.</p>
+      <p>Lender B requires <strong>$10,600 less cash</strong> to execute it.</p>
+      <p>The cash-on-cash difference is 5.69 points — 131.79% vs 126.10%. Not dramatic. But the story behind that number matters enormously.</p>
+      <hr/>
+      <h2>Why the "More Expensive" Loan Has a Higher Return</h2>
+      <p>An investor who doesn't have $60,572 available may not be able to execute Loan A at all. An investor who can cover either loan might deploy the $10,600 difference into another deal — wholesaling, a down payment contribution, a private money loan — and change the return picture entirely. An investor who bridges the gap with a cash advance or short-term credit line adds cost that further erodes Loan A's profit advantage. The question is never which loan costs less on paper. The question is how much of your capital is available, and how much of it is working.</p>
+      <p>There is no universally correct answer. A newer investor on their first deal may prefer Lender A — lower rate, drawn funds only, and the discipline of monthly interest payments keeping them engaged with the project timeline. An experienced investor running multiple deals simultaneously may find Lender B's structure significantly more valuable than the $10,521 profit difference.</p>
+      <p><strong>What the numbers tell you:</strong> On identical deals, the loan with the higher rate and more points produced a higher cash-on-cash return — because it required less cash. That is the central lesson of this series. The rate is not the cost. The total cost of capital, modeled against your actual deal, your actual cash position, and your actual hold time, is the only number that matters.</p>
+      <hr/>
+      <h2>What This Series Covered</h2>
+      <p>Seven posts. Every major variable in hard money lending:</p>
+      <ul>
+        <li><strong>Max Buy %</strong> — determines your down payment directly</li>
+        <li><strong>Max Rehab %</strong> — determines how much of your renovation the lender funds</li>
+        <li><strong>Max ARV %</strong> — the universal cap every loan is subject to</li>
+        <li><strong>Max LTV</strong> — the optional sliding scale that quietly reduces your purchase loan as rehab grows</li>
+        <li><strong>Points vs Rate</strong> — how hold time determines which one costs more</li>
+        <li><strong>Deferrals</strong> — how shifting when you pay changes your cash-on-cash return without changing your profit</li>
+        <li><strong>Fees</strong> — doc prep, draw fees, and appraisals that are fixed costs regardless of loan size</li>
+      </ul>
+      <p>None of these variables exist in isolation. The only way to evaluate a loan accurately is to model all of them together against your specific deal — not compare rate sheets line by line.</p>
+      <hr/>
+      <p>RE Data Metrix models every variable automatically. Enter a lender's full term sheet and the platform calculates your out-of-pocket, net profit, cash-on-cash, and annualized return — side by side across multiple lenders — so you can see the real cost of each loan before you sign anything.</p>
+      <p><a href="/deal-analysis">Analyze your next deal with RE Data Metrix →</a></p>
+      <p><em>The Turning Terms into Returns series is complete. Coming posts will cover closing costs, wholesaling strategy, real estate tax treatment, and more tools for investors who want to understand the numbers before they commit.</em></p>
+    `
+  }
+  ,{
+    slug: "how-to-calculate-arv-in-real-estate",
+    title: "How to Calculate ARV in Real Estate",
+    excerpt: "After-repair value — ARV — determines how much a lender will loan you, how much you can offer for a property, and whether a deal is worth pursuing at all. This guide walks through the formula, how to find comparable sales, what agents do differently, and what can make a good ARV estimate go wrong.",
+    publishDate: "2026-06-16",
+    tags: ["ARV", "Deal Analysis", "Comps", "Fix and Flip", "Real Estate Investing"],
+    content: `
+      <p>After-repair value — ARV — is one of the most important numbers in real estate investing. It determines how much a lender will loan you, how much you can offer for a property, and whether a deal is worth pursuing at all. Get it wrong and every number downstream is wrong with it.</p>
+      <p>This post walks through what ARV is, how to find comparable sales, how to run the math, what agents do differently, and what can make a good ARV estimate go wrong.</p>
+      <hr/>
+      <h2>What Is ARV?</h2>
+      <p>ARV is the estimated market value of a property after all planned repairs and renovations are complete. It is not the current value. It is not the purchase price. It is what the property will be worth when it is ready to sell.</p>
+      <p>Every major calculation in fix and flip investing flows from ARV:</p>
+      <ul>
+        <li><strong>Maximum loan amount</strong> — most hard money lenders cap the total loan at 70% of ARV</li>
+        <li><strong>Maximum offer price</strong> — the 70% rule and other offer formulas use ARV as the starting point</li>
+        <li><strong>Profitability</strong> — your net profit is what remains after all costs are subtracted from ARV</li>
+      </ul>
+      <p>If your ARV is inflated, your max offer is too high, your loan amount is overstated, and your projected profit is fiction.</p>
+      <hr/>
+      <h2>The Formula</h2>
+      <p>The investor's approach to ARV uses price per square foot:</p>
+      <p><strong>ARV = Average Price Per Square Foot of Comps × Square Footage of Subject Property</strong></p>
+      <p><strong>Worked example:</strong></p>
+      <ul>
+        <li>Comp 1 sold for $252,000 / 1,750 sq ft = $144.00/sq ft</li>
+        <li>Comp 2 sold for $261,000 / 1,800 sq ft = $145.00/sq ft</li>
+        <li>Comp 3 sold for $255,500 / 1,750 sq ft = $146.00/sq ft</li>
+        <li>Average PPSF: ($144 + $145 + $146) ÷ 3 = <strong>$145.00/sq ft</strong></li>
+        <li>Subject property: 1,800 sq ft</li>
+        <li><strong>ARV = $145.00 × 1,800 = $261,000</strong></li>
+      </ul>
+      <p>Many investors run these numbers using a back-of-the-napkin approach, while others use spreadsheets. Either way, the math has to be done. RE Data Metrix automates it — but understanding what the platform is calculating is what separates investors who use ARV confidently from those who guess.</p>
+      <hr/>
+      <h2>How Agents Do It — The CMA</h2>
+      <p>Real estate agents use a more formal process called a Comparative Market Analysis (CMA). The goal is the same — estimate what the property will sell for — but the methodology is more rigorous.</p>
+      <p>An agent running a CMA:</p>
+      <ol>
+        <li><strong>Selects comparable sales</strong> — recently sold properties that closely match the subject in location, size, style, and condition</li>
+        <li><strong>Makes adjustments</strong> — every difference between a comp and the subject property gets a dollar adjustment. A comp with one extra bathroom gets adjusted down. A comp with an older kitchen gets adjusted up. A comp with a pool in a non-pool market gets adjusted down.</li>
+        <li><strong>Calculates adjusted price per square foot</strong> — after adjustments, divides each comp's adjusted price by its square footage</li>
+        <li><strong>Averages the results</strong> — multiplies the average adjusted PPSF by the subject property's square footage</li>
+      </ol>
+      <p>Common adjustment categories include bedrooms, bathrooms, square footage, garage, pool, condition, kitchen and bath updates, lot size, and location within the neighborhood.</p>
+      <p>The adjustments are where agent expertise matters most. Two agents can look at the same comps and arrive at different values based on their knowledge of what specific features are worth in that specific market. A finished basement adds more value in some markets than others. A pool adds value in Florida and may subtract it in Minnesota.</p>
+      <p>Agents have access to MLS data, private transaction details, and agent remarks that public platforms don't provide — which is why a professional CMA is generally more accurate than any online estimator.</p>
+      <hr/>
+      <h2>How to Find Comparable Sales</h2>
+      <p>The quality of your ARV is only as good as the quality of your comps. Here's how investors at different levels find them:</p>
+      <p><strong>Beginning and bootstrapping investors</strong> use free online sources like Zillow, Redfin, and Realtor.com. Filter for sold properties, set your parameters, and pull recent sales manually. It's time-consuming and the data has limitations — particularly in non-disclosure states — but it's a reasonable starting point.</p>
+      <p><strong>RE Data Metrix</strong> automates this process. Enter the property address and the ARV Helper pulls recent sold listings from Zillow, Redfin, and RentCast, scores and ranks them automatically, and calculates ARV based on your comp selections. You can also add your own comps from any source.</p>
+      <p><strong>Investors working with agents</strong> can request comps directly from a licensed agent with MLS access. MLS data is more complete and more accurate than public platforms. Keep in mind that agents are typically licensed in specific states or regions — if you invest across multiple markets you may need relationships with agents in each area.</p>
+      <p><strong>Investors using paid tools</strong> get nationwide comp data with MLS-level accuracy. Tools like PropStream, DealMachine, BatchLeads, and DealCheck provide property data, ownership information, and comparable sales across all markets. The advantage is breadth and depth. The tradeoff is cost.</p>
+      <hr/>
+      <h2>Comp Selection Criteria</h2>
+      <p>No matter how you source your comps, the selection criteria matter. Poor comp selection produces a poor ARV regardless of how carefully you run the math.</p>
+      <p><strong>Use comps that are:</strong></p>
+      <ul>
+        <li>Sold within the last 3–6 months (extend to 12 months only in low-transaction markets)</li>
+        <li>Located within half a mile to one mile of the subject property</li>
+        <li>No more than 20% larger or smaller in square footage than the subject property</li>
+        <li>Same property style — ranch comps for ranch houses, two-story comps for two-story houses</li>
+        <li>Same bed and bath count where possible</li>
+        <li>Similar lot size — in markets where properties range from small city lots to rural acreage, lot size can be a significant value driver and a poor lot size match can produce a misleading comp</li>
+        <li>Pool or no pool should match the subject where possible — in pool markets this can be a meaningful value difference</li>
+      </ul>
+      <p>The fewer adjustments required between a comp and the subject property, the more reliable that comp is. A comp that requires five major adjustments is a weak comp regardless of how close it is in distance or price.</p>
+      <hr/>
+      <h2>The Non-Disclosure State Challenge</h2>
+      <p>In non-disclosure states, sale prices are not recorded in public records. This creates a real challenge for investors who rely on free online tools — Zillow, Redfin, and Realtor.com all struggle in these markets because their data is built primarily on public records.</p>
+      <p><strong>Full non-disclosure states:</strong> Alaska, Idaho, Indiana, Kansas, Louisiana, Maine, Mississippi, Missouri, Montana, New Mexico, North Dakota, South Dakota, Tennessee, Texas, Utah, and Wyoming.</p>
+      <p><strong>Partial non-disclosure:</strong> North Carolina (deed stamps), Alabama (inconsistent).</p>
+      <p>Investors and agents with MLS access are not significantly impacted — the MLS contains sold data regardless of public disclosure requirements. Investors without MLS access in these states need paid comp tools with proprietary data sources, or a relationship with a local agent.</p>
+      <hr/>
+      <h2>What Can Make Your ARV Wrong</h2>
+      <p>Getting the comp selection right is necessary but not sufficient. Several property-specific factors can make a well-comped ARV meaningless if they're not accounted for.</p>
+      <p><strong>Functional obsolescence — curable</strong></p>
+      <p>Some issues reduce value but can be addressed in the renovation plan. If they are addressed, they affect your rehab budget. If they are not addressed, they affect your ARV — because the finished property still has the deficiency.</p>
+      <ul>
+        <li>Single bathroom in a multi-bedroom home in a market where buyers expect two</li>
+        <li>No garage in a garage market</li>
+        <li>Outdated electrical, HVAC, or plumbing systems</li>
+        <li>Dated kitchen or bathroom layouts that can be renovated</li>
+      </ul>
+      <p>Whether to cure these items is a financial decision — the cost to fix them versus the value they add. That analysis belongs in your deal underwriting.</p>
+      <p><strong>Functional obsolescence — incurable or cost-prohibitive</strong></p>
+      <p>Some issues appear fixable but aren't — or aren't at a cost that makes financial sense for the market.</p>
+      <p>A floor plan with a small kitchen tucked behind a staircase is a common example. Technically, you could move the staircase. In practice, that means structural engineering, permits, inspections, and construction costs that can easily exceed what the market will reward. When the cost of the structural work exceeds what buyers will pay for the improvement, the limitation becomes effectively incurable for that deal.</p>
+      <p>Other examples:</p>
+      <ul>
+        <li>Load-bearing walls that prevent open-plan reconfiguration without structural work</li>
+        <li>Choppy layouts with narrow doorways and small rooms that can't be addressed without moving walls</li>
+        <li>Bedroom count that can't be increased without reducing room size below market expectations</li>
+        <li>Single-car garage on a lot with no room to expand in a two-car market</li>
+      </ul>
+      <p>The distinction between curable and incurable isn't always obvious from the street. It requires a realistic assessment of what the renovation would cost relative to what buyers in that market will pay for the result.</p>
+      <p><strong>External obsolescence — incurable</strong></p>
+      <p>These are location-based factors entirely outside your control:</p>
+      <ul>
+        <li><strong>Railroad tracks</strong> — a house directly adjacent to active tracks is worth meaningfully less than one a block away. The gradient matters — directly across the street is a different level of impact than the next block over</li>
+        <li><strong>High-voltage power lines</strong> — properties directly beneath transmission lines carry a persistent value discount in most markets</li>
+        <li><strong>Heavy industrial neighbors</strong> — noise, odor, truck traffic, and visual impact from adjacent industrial uses. Directly next door is different from one block away.</li>
+        <li><strong>Busy road adjacency</strong> — a house fronting or backing a high-traffic road versus a quiet residential street</li>
+        <li><strong>Flight paths</strong> — properties under active approach or departure paths near airports</li>
+        <li><strong>Commercial adjacency</strong> — nightclubs, bars, and 24-hour commercial uses that generate noise and traffic in residential areas</li>
+        <li><strong>Flood zone designation</strong> — FEMA flood zone properties carry insurance cost burdens that depress value and limit the buyer pool</li>
+        <li><strong>Poor school district</strong> — in family-oriented markets, school district quality is a significant value driver. A district boundary that runs through a neighborhood can mean two nearly identical houses on the same street have meaningfully different values.</li>
+      </ul>
+      <p>The critical nuance on all external factors: <strong>proximity is not binary.</strong> When selecting comps, be precise about whether your comp has the same exposure to the external factor as your subject property. A comp one block removed from a rail line is not the same as a house directly across the street from it.</p>
+      <hr/>
+      <h2>The ARV Helper in RE Data Metrix</h2>
+      <p><strong>Pulls comps automatically</strong> — sold listings from Zillow, Redfin, and RentCast, scored and ranked by distance, price per square foot, bed and bath match, and square footage proximity.</p>
+      <p><strong>Add your own comps from any source</strong> — your agent, a wholesaler, PropStream, DealMachine, BatchLeads, DealCheck, or your own research. The ARV updates automatically as you add or remove comps.</p>
+      <p><strong>Automates the math</strong> — calculates average price per square foot and ARV instantly based on your selected comps. No spreadsheet required.</p>
+      <p><strong>Branded comp report</strong> — download a professional comp report with your own logo and company name for use in your business, presentations, or lender packages.</p>
+      <p><a href="/deal-analysis">Try the ARV Helper in RE Data Metrix →</a></p>
+      <hr/>
+      <p><strong>Tools mentioned in this post:</strong></p>
+      <p>PropStream — <a href="https://bit.ly/4wfLgAu" rel="nofollow sponsored">https://bit.ly/4wfLgAu</a></p>
+      <p>DealMachine — <a href="https://bit.ly/4u1kOsM" rel="nofollow sponsored">https://bit.ly/4u1kOsM</a></p>
+      <p>BatchLeads — <a href="https://bit.ly/4uSLzjl" rel="nofollow sponsored">https://bit.ly/4uSLzjl</a></p>
+      <p>DealCheck — <a href="https://bit.ly/4wl7QrA" rel="nofollow sponsored">https://bit.ly/4wl7QrA</a></p>
+      <hr/>
+      <p><em>Affiliate disclosure: Some links in this post are affiliate links. RE Data Metrix may receive a commission if you purchase through these links at no additional cost to you.</em></p>
+    `
+  }
 ];
