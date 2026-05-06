@@ -204,9 +204,8 @@ export const blogPosts: BlogPost[] = [
       <p><a href="/deal-analysis">Analyze your next deal with RE Data Metrix →</a></p>
       <p><em>Next in the series — Part 6: Doc prep fees, draw fees, appraisals, and why your lender's process matters as much as their rate.</em></p>
     `
-  }
   },
-{
+  {
     slug: "turning-terms-into-returns-part-6-the-fees-many-investors-overlook",
     title: "Turning Terms into Returns — Part 6: The Fees Many Investors Overlook",
     excerpt: "Rate, points, and LTV caps get all the attention when evaluating hard money lenders. Doc prep fees, draw fees, and appraisal requirements rarely come up in lender conversations — but they affect your bottom line on every deal.",
