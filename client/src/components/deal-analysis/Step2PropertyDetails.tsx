@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, HelpCircle, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Home, HelpCircle, Search, ChevronDown, ChevronUp, PlayCircle } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Tooltip,
   TooltipContent,
@@ -56,6 +57,7 @@ export default function Step2PropertyDetails({
   const addingSquareFootage = form.watch("addingSquareFootage");
   const dataSource = form.watch("propertyDataSource") || "unknown";
   const [showArvHelper, setShowArvHelper] = useState(false);
+  const [arvVideoOpen, setArvVideoOpen] = useState(false);
   const [showFormDetails, setShowFormDetails] = useState(true);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -90,6 +92,7 @@ export default function Step2PropertyDetails({
             Review and update the property information below
           </p>
         </div>
+        <div className="flex flex-col items-end gap-2">
         <Button
           type="button"
           variant="outline"
@@ -107,6 +110,32 @@ export default function Step2PropertyDetails({
       {showArvHelper && (
         <ArvHelper form={form} onClose={handleArvHelperClose} />
       )}
+
+      <Collapsible open={arvVideoOpen} onOpenChange={setArvVideoOpen} className="mt-3">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-sm text-foreground bg-muted/60 border border-border px-3 py-1.5 rounded-md hover:bg-muted transition-colors"
+          >
+            <PlayCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+            <strong>Watch ARV Helper Tutorial</strong>
+            <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${arvVideoOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3">
+          <div className="relative aspect-video bg-black rounded-md overflow-hidden border border-border">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src="https://www.youtube.com/embed/gxVt-VspJRU?rel=0&modestbranding=1"
+              title="ARV Helper Tutorial"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">ARV Helper step-by-step tutorial</p>
+        </CollapsibleContent>
+      </Collapsible>
 
       <div ref={formRef}>
         <button
@@ -341,7 +370,7 @@ export default function Step2PropertyDetails({
                             value={field.value ?? ""}
                             onChange={(e) =>
                               field.onChange(
-                                e.target.value ? parseFloat(e.target.value) : undefined
+                                e.target.value ? Math.round(parseFloat(e.target.value)) : undefined
                               )
                             }
                             className={isEmpty ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20" : ""}

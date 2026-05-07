@@ -99,7 +99,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         lotSize: data.lotSize,
         yearBuilt: data.yearBuilt,
         taxAssessedValue: data.taxAssessedValue,
-        annualTax: data.annualTax,
+        annualTax: data.annualTax ? Math.round(data.annualTax) : undefined,
         estimatedValue: data.estimatedValue,
         hoaFees: data.hoaFees,
         propertyDataSource: dataSource,
@@ -405,7 +405,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       data-testid="button-toggle-training-video"
                     >
                       <PlayCircle className="h-4 w-4 flex-shrink-0 text-primary" />
-                      Watch a quick demo
+                      <strong>Watch a quick demo</strong>
                       <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${videoOpen ? 'rotate-180' : ''}`} />
                     </button>
                   </CollapsibleTrigger>
