@@ -927,4 +927,89 @@ export const blogPosts: BlogPost[] = [
       <p><a href="https://bit.ly/3Pdjyn7">Try it free at RE Data Metrix →</a></p>
     `
   }
+  ,{
+    slug: "how-to-calculate-max-offer-price-fix-and-flip",
+    title: "How to Calculate Your Max Offer Price on a Fix and Flip Deal",
+    excerpt: "Learn how to calculate your maximum offer price on a fix and flip deal. We break down the 70% and 75% ARV rules, gross profit, and all the costs that come out of your margin before you see a dollar.",
+    publishDate: "2026-06-25",
+    tags: ["Fix and Flip", "Deal Analysis", "Max Offer", "ARV"],
+    content: `
+      <p>Before you make an offer on an investment property, you need to know one number: the maximum price you can pay and still make the deal work.</p>
+      <p>Pay too much and your profit evaporates — not at closing, but months later when the bills come in and the numbers don't add up. Get the number right before you make the call, and every decision that follows gets easier.</p>
+      <hr/>
+      <h2>What the Percentage of ARV Actually Means</h2>
+      <p>Fix and flip investors don't think in terms of purchase price alone. They think in terms of total project cost as a percentage of ARV — After Repair Value, the estimated market value of the property once renovations are complete.</p>
+      <p>The reason is simple: ARV is the exit. Everything you spend between now and that exit — purchase price, rehab, holding costs, closing costs, lender fees — has to fit inside what the market will pay when you sell.</p>
+      <p>The most widely used benchmarks are 70% and 75% of ARV. These aren't arbitrary numbers. They represent the margin an experienced investor needs to cover all project costs and still walk away with a meaningful profit. In high-cost markets like California or New York City, investors may go as high as 80–85% because competition is fierce and finished product sells quickly. In war zone markets — areas with high vacancy and uncertain resale demand — experienced investors may stay at 65% or below.</p>
+      <p><strong>The formula:</strong></p>
+      <p><strong>Max Offer Price = (ARV × Target %) − Rehab Budget</strong></p>
+      <p>At 70%: ($400,000 × 70%) − $80,000 = <strong>$200,000</strong></p>
+      <p>At 75%: ($400,000 × 75%) − $80,000 = <strong>$220,000</strong></p>
+      <p>That $20,000 difference in purchase price matters more than it looks.</p>
+      <hr/>
+      <h2>Two Scenarios, Side by Side</h2>
+      <p>Using the same deal — $400,000 ARV, $80,000 rehab budget, 9-month hold — here's what changes when you move from 70% to 75%:</p>
+      <table>
+        <thead>
+          <tr><th></th><th>70% Scenario</th><th>75% Scenario</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Purchase Price</td><td>$200,000</td><td>$220,000</td></tr>
+          <tr><td>Rehab Budget</td><td>$80,000</td><td>$80,000</td></tr>
+          <tr><td>Total Project Cost</td><td>$280,000</td><td>$300,000</td></tr>
+          <tr><td>Expected ARV</td><td>$400,000</td><td>$400,000</td></tr>
+          <tr><td>Gross Profit</td><td>$120,000</td><td>$100,000</td></tr>
+          <tr><td>Percentage of ARV</td><td>70%</td><td>75%</td></tr>
+        </tbody>
+      </table>
+      <p>The 75% scenario isn't a bad deal — but it starts with $20,000 less margin. And as you'll see, that margin has a lot of ground to cover.</p>
+      <hr/>
+      <h2>Gross Profit Is Not Net Profit</h2>
+      <p>This is where many investors get into trouble. They look at $120,000 in gross profit and assume that's what they'll make. It isn't. Gross profit is what's left between your total project cost and ARV before the costs of doing the deal are paid.</p>
+      <p>Here's what comes out of that margin:</p>
+      <p><strong>Lender Fees</strong><br/>Hard money and private lenders charge points (typically 1–3% of the loan amount) plus interest on the loan balance for the duration of the hold. On a $200,000 purchase at 90% LTV with a 12% rate and 9-month hold, interest alone can run $25,000–$30,000 depending on whether the lender charges on drawn funds or the full loan balance.</p>
+      <p><strong>Closing Costs (Buy Side)</strong><br/>Every purchase comes with closing costs — title insurance, title search, recording fees, attorney fees if you're in an attorney state, and transfer tax. These vary significantly by location. In Georgia on a $200,000 purchase, expect roughly $3,750. In Philadelphia on the same purchase, transfer tax alone adds over $8,500.</p>
+      <p><strong>Holding Costs</strong><br/>For every month the property sits, you're paying insurance, utilities, property taxes, and possibly HOA fees. On a 9-month hold, these can add $3,000–$5,000 or more depending on the property and market.</p>
+      <p><strong>Closing Costs (Sell Side)</strong><br/>When you sell, you pay again — agent commissions (typically 5–6% of sale price), seller-side closing costs, and any concessions negotiated with the buyer. On a $400,000 sale at 6% commission, that's $24,000 before anything else.</p>
+      <p><strong>Renovation Overruns</strong><br/>Rehab budgets are estimates. Experienced investors build in a contingency — typically 10–15% of the rehab budget — for surprises inside the walls, permit delays, and material cost changes.</p>
+      <hr/>
+      <h2>What's Left After Costs</h2>
+      <p>Here's a rough illustration of how gross profit gets consumed on the 70% scenario:</p>
+      <table>
+        <thead>
+          <tr><th>Cost</th><th>Estimated Amount</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Lender Interest (9mo, 12%, drawn funds)</td><td>~$27,000</td></tr>
+          <tr><td>Lender Points (2pts on $180K loan)</td><td>~$3,600</td></tr>
+          <tr><td>Closing Costs (Buy)</td><td>~$3,750</td></tr>
+          <tr><td>Holding Costs (9mo)</td><td>~$4,000</td></tr>
+          <tr><td>Closing Costs (Sell, 6%)</td><td>~$24,000</td></tr>
+          <tr><td>Rehab Contingency (10%)</td><td>~$8,000</td></tr>
+          <tr><td><strong>Total Costs</strong></td><td><strong>~$70,350</strong></td></tr>
+          <tr><td><strong>Gross Profit</strong></td><td><strong>$120,000</strong></td></tr>
+          <tr><td><strong>Estimated Net Profit</strong></td><td><strong>~$49,650</strong></td></tr>
+        </tbody>
+      </table>
+      <p>On the 75% scenario, start with $100,000 gross profit instead of $120,000, and the same costs leave you with roughly $29,650 — less than $30,000 on a $400,000 deal.</p>
+      <p>That's not a catastrophic outcome, but it's a thin margin for a 9-month project with $280,000+ at risk. One unexpected structural issue or a market softening at exit can turn a thin deal into a losing one.</p>
+      <p>This is why experienced investors prefer to buy at 70% when the market allows it. The extra $20,000 in margin isn't greed — it's the buffer that keeps a deal profitable when reality doesn't match the plan.</p>
+      <hr/>
+      <h2>Why the Purchase Price Is the Only Variable You Control</h2>
+      <p>Once you own the property, most of the costs are fixed or largely outside your control. Interest rates, lender fees, transfer taxes, agent commissions, material costs — these are what they are.</p>
+      <p>The purchase price is the one number you negotiate before you're committed. Get it right and you've built a cushion into every line item that follows. Overpay by $20,000 and you've spent that cushion before the ink is dry.</p>
+      <p>This is why investors run the max offer calculation before they make an offer — not after.</p>
+      <hr/>
+      <h2>How the Market Affects Your Target Percentage</h2>
+      <p>The 70% and 75% benchmarks are starting points, not universal rules. Market conditions push them in both directions.</p>
+      <p>In high-cost, competitive markets — California, New York, certain Sun Belt metros — investors routinely pay 80–85% of ARV because deal flow is limited and buyer demand for finished product is strong. The math still works, but the margin for error is smaller.</p>
+      <p>In war zone markets — areas with high vacancy, distressed inventory, and uncertain buyer demand at exit — experienced investors may stay at 65% or below. More uncertainty in the ARV estimate, longer hold times, and softer resale demand all justify a tighter entry price.</p>
+      <p>Know your market. Know what finished product actually sells for and how long it sits. Your ARV estimate is only as good as the comps behind it — which is exactly why running accurate comps before you calculate your max offer is the right order of operations.</p>
+      <hr/>
+      <h2>Run the Numbers Before You Make the Call</h2>
+      <p>Whether you're analyzing your first deal or your fiftieth, the max offer calculation should happen before you engage with the seller — not during the negotiation.</p>
+      <p>The RE Data Metrix Deal Analysis tool walks you through the full calculation, from ARV and rehab budget through lender scenarios, closing costs, holding costs, and net profit. You'll know your 70% and 75% numbers, what your gross profit looks like at each entry price, and how different loan structures affect your bottom line — all before you make an offer.</p>
+      <p><a href="https://bit.ly/3Pdjyn7">Try it free at RE Data Metrix →</a></p>
+    `
+  }
 ];
