@@ -105,6 +105,7 @@ export default function Step2PropertyDetails({
           Help with ARV
           {showArvHelper ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </Button>
+        </div>
       </div>
 
       {showArvHelper && (
