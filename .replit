@@ -58,12 +58,6 @@ integrations = ["javascript_database:1.0.0", "stripe:2.0.0", "javascript_stripe:
 [userenv]
 
 [userenv.shared]
-HASDATA_API_KEY = "981d27db-574b-411a-ad4e-cdc48676a5e8"
-VITE_APP_URL = "https://redatametrix.com"
-TESTING_VITE_STRIPE_PUBLIC_KEY = "pk_test_51SbqSxE2Dwq4BBojTVXmE60f2pHWKHd4YjUCPqdIhyNwFNBYETn2XzCHSABNuCqdtSufnGIODB3CFfCxE361Gb6r00eh8A82DG"
-TESTING_STRIPE_SECRET_KEY = "sk_test_51SbqSxE2Dwq4BBojefBG4DkxFZqLTm20AO4zrriCTMe1GCTJcW6JWiUJXfGlI2ha2L4ybtYIt3Jh2lbSFYV8Iqj1008j54HURv"
-ZOHO_ZSOID = "763487044"
-
 [userenv.production]
 NODE_ENV = "production"
 
