@@ -805,4 +805,126 @@ export const blogPosts: BlogPost[] = [
       <p><em>Affiliate disclosure: Some links in this post are affiliate links. RE Data Metrix may receive a commission if you purchase through these links at no additional cost to you.</em></p>
     `
   }
+  ,{
+    slug: "how-to-calculate-max-wholesale-offer-price",
+    title: "How to Calculate Your Max Wholesale Offer Price",
+    excerpt: "Learn how to calculate your Max Wholesale Offer accurately. We break down the math for assignments vs. double closes, including transfer taxes, attorney fees, and transactional funding costs.",
+    publishDate: "2026-06-23",
+    tags: ["Wholesaling", "Deal Analysis", "Closing Costs", "Transactional Funding"],
+    content: `
+      <p>If you're wholesaling real estate, the most important number in any deal isn't the ARV, the rehab budget, or your fee. It's the maximum price you can offer the seller and still walk away with the profit you're targeting.</p>
+      <p>Offer too much, and your deal falls apart when your end buyer runs the numbers. Offer too little, and you lose the contract to someone else. Getting this number right — every time — is what separates consistent wholesalers from ones who grind through deals only to leave money on the table or blow up at the closing table.</p>
+      <hr/>
+      <h2>Start With What Your Buyer Will Pay</h2>
+      <p>Wholesaling math works backwards. You don't start with what you want to offer the seller. You start with what your end buyer — typically a fix and flip investor — is willing to pay for the completed project.</p>
+      <p>Most experienced investors won't exceed 70–75% of ARV as their maximum total project cost. That ceiling exists because they need room for rehab costs, holding costs, closing costs, and profit. If you bring them a deal that doesn't fit inside that number, they'll pass.</p>
+      <p>One important caveat: the percentage varies by market. In high-cost markets like California or New York City, buyers may go as high as 80–85% of ARV because competition is fierce and margins are thinner on a percentage basis. In distressed or low-demand markets, buyers may stay below 65%. Know what your specific buyer pool actually pays — not what the national average says.</p>
+      <p>The key distinction: your buyer's max buy price is not simply a percentage of ARV. It's what's left after their rehab budget comes out.</p>
+      <p><strong>The Wholesaler's Golden Formula:</strong></p>
+      <p><strong>[(ARV × Buyer's %) − Rehab Budget] − Wholesale Fee − Closing Costs = Max Wholesale Offer Price</strong></p>
+      <p><strong>Example:</strong></p>
+      <ul>
+        <li>ARV: $400,000</li>
+        <li>Buyer's Max Total Project Cost (75% of ARV): $300,000</li>
+        <li>Less Rehab Budget: $80,000</li>
+        <li><strong>Buyer's Max Buy Price: $220,000</strong></li>
+      </ul>
+      <p>Your buyer will pay up to $220,000 for the property. That's the ceiling everything else works backward from — not $300,000.</p>
+      <hr/>
+      <h2>Subtract Your Wholesale Fee</h2>
+      <p>Your fee is the spread between what you pay the seller and what your buyer pays you. It comes directly off the buyer's max buy price.</p>
+      <ul>
+        <li>Buyer's Max Buy Price: $220,000</li>
+        <li>Less Your Wholesale Fee: $20,000</li>
+        <li><strong>Remaining: $200,000</strong></li>
+      </ul>
+      <p>With a clean assignment and no additional transaction costs, your max offer to the seller is <strong>$200,000</strong>. Your buyer pays $220,000, you collect $20,000 at assignment, and the deal works for everyone.</p>
+      <p>This is the straightforward version — assignment with no lender fees or double close costs in the equation.</p>
+      <p><strong>A note on wholesale fees:</strong> $20,000 is not a standard fee — it's the fee this particular deal can support. Your fee is a variable, not a fixed number. It's determined by how much "meat is on the bone" after the buyer's max buy price is calculated. A deal with a thinner spread might support $8,000. A larger deal might support $35,000. The fee you target should be based on what the math allows, not what you've decided you want to make.</p>
+      <hr/>
+      <h2>Why a Double Close Changes the Math</h2>
+      <p>An assignment is the simplest structure: you assign your purchase contract to the buyer and collect your fee. But not every deal can be assigned. Some sellers won't allow it. Some title companies won't handle it. And in some cases, you may not want your buyer to see what you paid.</p>
+      <p>A double close solves that — you close on the property yourself (Transaction 1), then immediately resell it to your buyer (Transaction 2). The problem is that double closes introduce closing costs that assignments don't.</p>
+      <p>Transaction 1 — your purchase from the seller — comes with its own closing costs. And this is where the math gets location-dependent.</p>
+      <hr/>
+      <h2>Closing Costs: What's Fixed and What Varies</h2>
+      <p>Not all closing costs are created equal. Some are relatively consistent across markets. Others vary significantly by state, county, or even city — and getting them wrong throws off your max offer calculation before you ever make a call to the seller.</p>
+      <p><strong>Title Insurance</strong> is typically calculated as a percentage of the purchase price. A conservative default is 1.2% — on a $200,000 purchase, that's $2,400. The national average is closer to 0.5%, but actual rates vary widely by state and title company. Three states — Texas, Florida, and New Mexico — have government-regulated rates that every title company must charge identically. The remaining states allow title companies to set their own rates within regulatory guidelines, meaning you can shop providers in most markets.</p>
+      <p><strong>Recording Fees</strong> are county-level fees charged to record the deed transfer with the local government. A reasonable default is $150, but actual fees vary by county — some charge flat fees, others charge per page.</p>
+      <p><strong>Attorney Fees</strong> only apply in attorney states — jurisdictions where state law requires a licensed attorney to handle the closing. If you're investing in Georgia, South Carolina, New York, Massachusetts, or about a dozen other states, budget for attorney fees. If you're in a title company state, this line item may be $0.</p>
+      <p><strong>Transfer Tax</strong> is the most variable closing cost of all, with differences at the state, county, and city level that can be dramatic. Fourteen states charge no transfer tax at all — including Texas, Idaho, and Missouri. Other states layer state, county, and city taxes on top of each other. Pennsylvania is a clear example of how wide the range can be: the statewide rate is 2%, but Philadelphia adds another 3.278% on top. A $200,000 purchase in rural Pennsylvania costs $4,000 in transfer tax. The same purchase in Philadelphia costs $10,556.</p>
+      <p>For a wholesaler doing deals across multiple markets, transfer tax alone can be the difference between a deal that works and one that doesn't — and it needs to be in your model before you make an offer.</p>
+      <p><strong>Example closing costs on a $200,000 double close in Georgia:</strong></p>
+      <table>
+        <thead>
+          <tr><th>Fee</th><th>Amount</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Title Search</td><td>$250</td><td>Relatively consistent</td></tr>
+          <tr><td>Title Insurance</td><td>$2,400</td><td>1.2% conservative default</td></tr>
+          <tr><td>Recording Fees</td><td>$150</td><td>County-level, varies</td></tr>
+          <tr><td>Transfer Tax</td><td>$200</td><td>Georgia: $1 per $1,000 (0.1%)</td></tr>
+          <tr><td>Attorney Fees</td><td>$750</td><td>Georgia is an attorney state</td></tr>
+          <tr><td><strong>Total</strong></td><td><strong>$3,750</strong></td><td></td></tr>
+        </tbody>
+      </table>
+      <hr/>
+      <h2>Double Close With Transactional Funding</h2>
+      <p>If you don't have cash available to fund your side of the double close, transactional funding provides a short-term loan — typically just long enough to close both transactions back to back. It solves the cash problem, but it has a cost.</p>
+      <p>Transactional funding typically runs 1–1.25% of the purchase price. On a $200,000 purchase, that's approximately $2,423 in lender fees. Note that many transactional lenders charge a minimum fee — often $2,500 or more — regardless of loan size. On smaller deals, the minimum can eat deeper into your spread than the percentage would suggest. Always confirm the fee structure with your lender before you lock in an offer price.</p>
+      <p>Now your full calculation looks like this:</p>
+      <table>
+        <tbody>
+          <tr><td>Buyer's Max Total Project Cost (ARV × 75%)</td><td>$300,000</td></tr>
+          <tr><td>Less: Rehab Budget</td><td>− $80,000</td></tr>
+          <tr><td>Less: Your Wholesale Fee</td><td>− $20,000</td></tr>
+          <tr><td>Less: Closing Costs</td><td>− $3,750</td></tr>
+          <tr><td>Less: Lender Fee (1.25%)</td><td>− $2,423</td></tr>
+          <tr><td><strong>Max Wholesale Offer Price</strong></td><td><strong>$193,827</strong></td></tr>
+        </tbody>
+      </table>
+      <p>To walk away with the same $20,000 fee using a double close with transactional funding, you need to offer the seller <strong>$193,827</strong> — not $200,000. That's a <strong>$6,173 reduction</strong> in your offer price just to cover transaction costs.</p>
+      <p>If you offered $200,000 without accounting for those costs, you'd net roughly $13,827 instead of $20,000. That's a significant difference on a deal you thought you had dialed in.</p>
+      <blockquote><p><strong>Pro Tip:</strong> Before budgeting for transactional funding, check whether your state allows pass-through funding — using the end buyer's funds to close your purchase transaction. If it's permitted in your market and your buyer agrees, you may be able to eliminate the transactional lender fee entirely. If pass-through funding isn't available, you'll need either transactional funding or your own cash as outlined below.</p></blockquote>
+      <hr/>
+      <h2>Double Close With Your Own Cash</h2>
+      <p>If you're using your own cash — or pass-through funding — to fund Transaction 1, there's no lender fee. Your calculation tightens up:</p>
+      <table>
+        <tbody>
+          <tr><td>Buyer's Max Total Project Cost (ARV × 75%)</td><td>$300,000</td></tr>
+          <tr><td>Less: Rehab Budget</td><td>− $80,000</td></tr>
+          <tr><td>Less: Your Wholesale Fee</td><td>− $20,000</td></tr>
+          <tr><td>Less: Closing Costs</td><td>− $3,750</td></tr>
+          <tr><td>Lender Fee</td><td>$0 (Using Own Cash)</td></tr>
+          <tr><td><strong>Max Wholesale Offer Price</strong></td><td><strong>$196,250</strong></td></tr>
+        </tbody>
+      </table>
+      <p>Using your own cash, you can offer <strong>$196,250</strong> and still net $20,000. That's $2,423 more than the transactional funding scenario — exactly the lender fee you're not paying.</p>
+      <hr/>
+      <h2>The Three Numbers Side by Side</h2>
+      <table>
+        <thead>
+          <tr><th>Structure</th><th>Max Offer to Seller</th><th>Your Net Fee</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Assignment</td><td><strong>$200,000</strong></td><td>$20,000</td></tr>
+          <tr><td>Double Close (Transactional Funding)</td><td><strong>$193,827</strong></td><td>$20,000</td></tr>
+          <tr><td>Double Close (Own Cash)</td><td><strong>$196,250</strong></td><td>$20,000</td></tr>
+        </tbody>
+      </table>
+      <p>Same deal. Same ARV. Same end buyer. Same $20,000 fee. Three different max offer prices depending on how you structure the transaction.</p>
+      <p>This is why wholesalers who don't run the full math end up either overpaying for contracts or leaving money on the table. The structure of your close matters just as much as the numbers in the deal.</p>
+      <hr/>
+      <h2>What This Means for Your Offers</h2>
+      <p><strong>Know your structure before you make your offer.</strong> If you know you'll be doing a double close, factor in closing costs and any lender fees before you lock in a price with the seller. Renegotiating after the fact is a fast way to lose deals and damage relationships.</p>
+      <p><strong>Know your buyer's percentage.</strong> In this example, we used 75% of ARV as the buyer's ceiling. If your buyer pool typically buys at 70%, the buyer's max total project cost drops to $280,000 — and after the $80,000 rehab budget, their max buy price is $200,000, not $220,000. That changes every number downstream. Know what your buyers actually pay, not what you hope they'll pay.</p>
+      <p><strong>Transactional funding is a tool, not a free pass.</strong> It solves the problem of not having cash available for a double close, but it has a real cost. On smaller deals, minimum fee requirements can make it disproportionately expensive. If your spread is thin, explore pass-through funding or use your own cash if available.</p>
+      <p><strong>Know your market's closing costs.</strong> Transfer tax alone can swing by thousands of dollars depending on where the property is located. Attorney fees apply in some states and not others. Recording fees vary by county. These aren't details to figure out at the closing table — they belong in your offer calculation.</p>
+      <hr/>
+      <h2>Run the Math Every Time</h2>
+      <p>Whether you use a spreadsheet, a calculator, or the back of a napkin, this is math you need to know to achieve the desired profitability on every wholesale deal.</p>
+      <p>The RE Data Metrix Max Wholesale Offer Price calculator automates the math for you — accounting for your buyer's ARV percentage, rehab budget, wholesale fee, closing costs including state-level transfer tax, and lender fees depending on whether you're doing an assignment, a double close with transactional funding, or a double close with your own cash. Plug in your numbers and know your ceiling before you ever pick up the phone.</p>
+      <p><a href="https://bit.ly/3Pdjyn7">Try it free at RE Data Metrix →</a></p>
+    `
+  }
 ];
