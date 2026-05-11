@@ -655,6 +655,9 @@ export interface IStorage {
   incrementUserDscrCalc(userId: string, propertyKey?: string): Promise<{ dscrCount: number; remainingDscrCalcs: number; canUse: boolean }>;
   incrementUserMaxOfferCalc(userId: string, propertyKey?: string): Promise<{ maxOfferCount: number; remainingMaxOfferCalcs: number; canUse: boolean }>;
   resetUserUsageIfExpired(userId: string): Promise<void>;
+  incrementDealAnalysisAuto(userId: string): Promise<void>;
+  incrementDealAnalysisManual(userId: string): Promise<void>;
+  getUserDealAnalysisCounts(userId: string): Promise<{ dealAnalysisAuto: number, dealAnalysisManual: number }>;
   
   // Marketing Pixels
   getAllMarketingPixels(): Promise<MarketingPixel[]>;
@@ -1438,6 +1441,9 @@ export class MemStorage implements IStorage {
   async incrementUserDscrCalc(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async incrementUserMaxOfferCalc(userId: string, propertyKey?: string): Promise<any> { throw new Error("Not implemented in MemStorage"); }
   async resetUserUsageIfExpired(userId: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async incrementDealAnalysisAuto(userId: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async incrementDealAnalysisManual(userId: string): Promise<void> { throw new Error("Not implemented in MemStorage"); }
+  async getUserDealAnalysisCounts(userId: string): Promise<{ dealAnalysisAuto: number, dealAnalysisManual: number }> { throw new Error("Not implemented in MemStorage"); }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4432,6 +4438,29 @@ export class DatabaseStorage implements IStorage {
       remainingSavedDeals: Math.max(0, this.FREE_SAVED_DEALS_PER_MONTH - newCount),
       canSave: true
     };
+  }
+
+  async incrementDealAnalysisAuto(userId: string): Promise<void> {
+    await db.update(usersTable)
+      .set({ dealAnalysisAuto: sql`deal_analysis_auto + 1` })
+      .where(eq(usersTable.id, userId));
+  }
+
+  async incrementDealAnalysisManual(userId: string): Promise<void> {
+    await db.update(usersTable)
+      .set({ dealAnalysisManual: sql`deal_analysis_manual + 1` })
+      .where(eq(usersTable.id, userId));
+  }
+
+  async getUserDealAnalysisCounts(userId: string): Promise<{ dealAnalysisAuto: number, dealAnalysisManual: number }> {
+    const result = await db.select({
+      dealAnalysisAuto: usersTable.dealAnalysisAuto,
+      dealAnalysisManual: usersTable.dealAnalysisManual
+    })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+    return result[0] || { dealAnalysisAuto: 0, dealAnalysisManual: 0 };
   }
 
   async incrementUserSavedLender(userId: string): Promise<{ savedLenderCount: number; remainingSavedLenders: number; canSave: boolean }> {

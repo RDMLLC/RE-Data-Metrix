@@ -33,6 +33,8 @@ export const users = pgTable("users", {
   reportLogoUrl: text("report_logo_url"),       // user's logo URL for PDF reports
   reportCompanyName: text("report_company_name"), // user's company name for PDF reports
   archiveReason: text("archive_reason"), // 'cancelled', 'fraud', 'erasure', 'test', 'other'
+  dealAnalysisAuto: integer("deal_analysis_auto").notNull().default(0),
+  dealAnalysisManual: integer("deal_analysis_manual").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

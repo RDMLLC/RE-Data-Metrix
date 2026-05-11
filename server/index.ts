@@ -108,6 +108,8 @@ async function runStartupMigrations() {
   try {
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_cancellation_choice text`);
     await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamp`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS deal_analysis_auto INTEGER NOT NULL DEFAULT 0`);
+    await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS deal_analysis_manual INTEGER NOT NULL DEFAULT 0`);
     // Remove duplicate (user_id, email_type) rows before creating the unique index, keeping the earliest sent record
     await db.execute(sql`
       DELETE FROM sent_signup_followups

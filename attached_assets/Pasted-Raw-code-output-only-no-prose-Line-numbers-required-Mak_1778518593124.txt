@@ -1,0 +1,88 @@
+Raw code output only, no prose. Line numbers required.
+
+Make the following changes. Do not modify anything else.
+
+---
+
+CHANGE 1 — Add two columns to the users table in shared/schema.ts
+
+Find the users table definition and add these two columns:
+
+  dealAnalysisAuto: integer("deal_analysis_auto").notNull().default(0),
+  dealAnalysisManual: integer("deal_analysis_manual").notNull().default(0),
+
+---
+
+CHANGE 2 — Add DB migration
+
+In server/storage.ts or wherever startup migrations are run, add a migration to add these columns if they don't exist:
+
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS deal_analysis_auto INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS deal_analysis_manual INTEGER NOT NULL DEFAULT 0;
+
+---
+
+CHANGE 3 — Update POST /api/member/deals in server/routes.ts
+
+Find the POST /api/member/deals route handler. After the deal is successfully saved (after saveDealMutation or the equivalent server-side insert), add the following logic:
+
+1. Read dealSnapshot.propertyDataSource from req.body.dealSnapshot
+2. Determine if automated: propertyDataSource !== "manual" is automated, propertyDataSource === "manual" is manual
+3. Increment the appropriate counter on the user record:
+   - If automated: UPDATE users SET deal_analysis_auto = deal_analysis_auto + 1 WHERE id = userId
+   - If manual: UPDATE users SET deal_analysis_manual = deal_analysis_manual + 1 WHERE id = userId
+4. After updating, read the updated values back from the user record
+5. Fire a webhook (fire and forget, same pattern as existing webhooks):
+
+outboundWebhookService.triggerWebhooks('deal_analysis_counted', {
+  userId: user.id,
+  email: user.email,
+  dealAnalysisAuto: updatedUser.dealAnalysisAuto,
+  dealAnalysisManual: updatedUser.dealAnalysisManual,
+  isAutomated: propertyDataSource !== "manual",
+  propertyDataSource: propertyDataSource,
+  createdAt: new Date().toISOString()
+}).catch(err => console.error('[Webhook] deal_analysis_counted trigger error:', err));
+
+---
+
+CHANGE 4 — Add storage methods
+
+In server/storage.ts, add the following two methods to the storage interface and implementation:
+
+Interface:
+  incrementDealAnalysisAuto(userId: string): Promise<void>;
+  incrementDealAnalysisManual(userId: string): Promise<void>;
+  getUserDealAnalysisCounts(userId: string): Promise<{ dealAnalysisAuto: number, dealAnalysisManual: number }>;
+
+Implementation:
+  async incrementDealAnalysisAuto(userId: string): Promise<void> {
+    await db.update(users)
+      .set({ dealAnalysisAuto: sql`deal_analysis_auto + 1` })
+      .where(eq(users.id, userId));
+  }
+
+  async incrementDealAnalysisManual(userId: string): Promise<void> {
+    await db.update(users)
+      .set({ dealAnalysisManual: sql`deal_analysis_manual + 1` })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserDealAnalysisCounts(userId: string): Promise<{ dealAnalysisAuto: number, dealAnalysisManual: number }> {
+    const result = await db.select({
+      dealAnalysisAuto: users.dealAnalysisAuto,
+      dealAnalysisManual: users.dealAnalysisManual
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+    return result[0] || { dealAnalysisAuto: 0, dealAnalysisManual: 0 };
+  }
+
+---
+
+After all changes are complete, show me:
+1. The two new columns in the users table in shared/schema.ts
+2. The migration SQL
+3. The updated POST /api/member/deals route showing the new logic
+4. The three new storage methods in server/storage.ts

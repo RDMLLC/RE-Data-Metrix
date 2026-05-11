@@ -11213,7 +11213,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lendersPresented,
         })
         .returning();
-      
+
+      // Increment automated/manual deal analysis counter on the user record
+      try {
+        const propertyDataSource = (dealSnapshot as any)?.propertyDataSource;
+        const isAutomated = propertyDataSource !== "manual";
+        if (isAutomated) {
+          await storage.incrementDealAnalysisAuto(userId);
+        } else {
+          await storage.incrementDealAnalysisManual(userId);
+        }
+        const updatedCounts = await storage.getUserDealAnalysisCounts(userId);
+
+        outboundWebhookService.triggerWebhooks('deal_analysis_counted', {
+          userId: user.id,
+          email: user.email,
+          dealAnalysisAuto: updatedCounts.dealAnalysisAuto,
+          dealAnalysisManual: updatedCounts.dealAnalysisManual,
+          isAutomated: isAutomated,
+          propertyDataSource: propertyDataSource,
+          createdAt: new Date().toISOString()
+        }).catch(err => console.error('[Webhook] deal_analysis_counted trigger error:', err));
+      } catch (counterErr) {
+        console.error('[deal_analysis_counted] increment error:', counterErr);
+      }
+
       res.status(201).json(newDeal);
     } catch (error) {
       console.error("Error saving deal:", error);
