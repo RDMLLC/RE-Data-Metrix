@@ -36,7 +36,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
   const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
   const [missingAutoFillFields, setMissingAutoFillFields] = useState<string[]>([]);
-  const [videoOpen, setVideoOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("demo") === "true";
+  });
 
   const { data: usageData, isLoading: usageLoading, isError: usageError } = useQuery<{
     isSubscriber: boolean;
