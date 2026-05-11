@@ -60,6 +60,13 @@ interface Snapshot {
   googleCtr: number;
   googleCostPerConv: number;
   metaConversions: number;
+  metaLinkClicks: number | null;
+  metaReach: number | null;
+  metaCpm: number | null;
+  metaCpc: number | null;
+  metaCtr: number | null;
+  metaLandingPageViews: number | null;
+  metaCostPerResult: number | null;
   organicImpressions: number;
   organicClicks: number;
   avgPosition: number;
@@ -87,6 +94,8 @@ const EMPTY_FORM: Omit<Snapshot, "id"> = {
   googleCtr: 0,
   googleCostPerConv: 0,
   metaConversions: 0,
+  metaLinkClicks: null, metaReach: null, metaCpm: null, metaCpc: null,
+  metaCtr: null, metaLandingPageViews: null, metaCostPerResult: null,
   organicImpressions: 0, organicClicks: 0, avgPosition: 0,
   notes: "",
 };
@@ -510,6 +519,10 @@ export default function Reporting() {
       googleAvgCpc: (rest.googleAvgCpc || 0) / 100,
       googleCtr: (rest.googleCtr || 0) / 100,
       googleCostPerConv: (rest.googleCostPerConv || 0) / 100,
+      metaCpm: rest.metaCpm == null ? null : rest.metaCpm / 100,
+      metaCpc: rest.metaCpc == null ? null : rest.metaCpc / 100,
+      metaCtr: rest.metaCtr == null ? null : rest.metaCtr / 100,
+      metaCostPerResult: rest.metaCostPerResult == null ? null : rest.metaCostPerResult / 100,
       avgPosition: Math.round((rest.avgPosition || 0) / 10 * 10) / 10,
     });
     setEditingId(id);
@@ -540,6 +553,13 @@ export default function Reporting() {
           googleAvgCpc: Math.round((form.googleAvgCpc || 0) * 100),
           googleCtr: Math.round((form.googleCtr || 0) * 100),
           googleCostPerConv: Math.round((form.googleCostPerConv || 0) * 100),
+          metaLinkClicks: form.metaLinkClicks === null || form.metaLinkClicks === undefined || (form.metaLinkClicks as any) === "" ? null : Number(form.metaLinkClicks),
+          metaReach: form.metaReach === null || form.metaReach === undefined || (form.metaReach as any) === "" ? null : Number(form.metaReach),
+          metaCpm: form.metaCpm === null || form.metaCpm === undefined || (form.metaCpm as any) === "" ? null : Math.round(Number(form.metaCpm) * 100),
+          metaCpc: form.metaCpc === null || form.metaCpc === undefined || (form.metaCpc as any) === "" ? null : Math.round(Number(form.metaCpc) * 100),
+          metaCtr: form.metaCtr === null || form.metaCtr === undefined || (form.metaCtr as any) === "" ? null : Math.round(Number(form.metaCtr) * 100),
+          metaLandingPageViews: form.metaLandingPageViews === null || form.metaLandingPageViews === undefined || (form.metaLandingPageViews as any) === "" ? null : Number(form.metaLandingPageViews),
+          metaCostPerResult: form.metaCostPerResult === null || form.metaCostPerResult === undefined || (form.metaCostPerResult as any) === "" ? null : Math.round(Number(form.metaCostPerResult) * 100),
           avgPosition: Math.round((form.avgPosition || 0) * 10),
         }),
       });
@@ -666,6 +686,20 @@ export default function Reporting() {
                   help="Meta Ads Manager → Campaigns → Results (conversions). Note: may differ from GA4 — use GA4 as source of truth for signups." />
                 <Field label="Spend ($)" id="metaSpend" value={form.metaSpend} onChange={set("metaSpend")}
                   help="Meta Ads Manager → Campaigns → Amount spent. Enter as dollars: $150.00 → type 150." />
+                <Field label="Link Clicks" id="metaLinkClicks" value={form.metaLinkClicks ?? ""} onChange={set("metaLinkClicks")}
+                  help="Meta Ads Manager → Performance → Link Clicks. Number of clicks on links within the ad." />
+                <Field label="Reach" id="metaReach" value={form.metaReach ?? ""} onChange={set("metaReach")}
+                  help="Meta Ads Manager → Performance → Reach. Unique people who saw the ad at least once." />
+                <Field label="CPM ($)" id="metaCpm" value={form.metaCpm ?? ""} onChange={set("metaCpm")}
+                  help="Meta Ads Manager → Performance → CPM. Cost per 1,000 impressions. Enter as dollars: $138.18 → type 138.18." />
+                <Field label="CPC ($)" id="metaCpc" value={form.metaCpc ?? ""} onChange={set("metaCpc")}
+                  help="Meta Ads Manager → Performance → CPC (Link). Cost per link click. Enter as dollars: $3.04 → type 3.04." />
+                <Field label="CTR (%)" id="metaCtr" value={form.metaCtr ?? ""} onChange={set("metaCtr")}
+                  help="Meta Ads Manager → Performance → CTR (Link). Enter as percentage: 4.55% → type 4.55." />
+                <Field label="Landing Page Views" id="metaLandingPageViews" value={form.metaLandingPageViews ?? ""} onChange={set("metaLandingPageViews")}
+                  help="Meta Ads Manager → Performance → Landing Page Views. Times people landed on the destination page after clicking the ad." />
+                <Field label="Cost Per Result ($)" id="metaCostPerResult" value={form.metaCostPerResult ?? ""} onChange={set("metaCostPerResult")}
+                  help="Meta Ads Manager → Performance → Cost per Result. Enter as dollars: $66.88 → type 66.88." />
               </FormSection>
 
               <FormSection title="Google Ads" source="Google Ads — Campaigns" defaultOpen={false}>
@@ -1099,7 +1133,7 @@ export default function Reporting() {
                         </thead>
                         <tbody>
                           {[
-                            { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaClicks, impressions: latest.metaImpressions, conversions: latest.metaConversions, avgCpc: null, ctr: null, costPerConv: null },
+                            { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaClicks, impressions: latest.metaImpressions, conversions: latest.metaConversions, avgCpc: latest.metaCpc, ctr: latest.metaCtr, costPerConv: latest.metaCostPerResult },
                             { name: "Google Ads", spend: latest.googleSpend, clicks: latest.googleClicks, impressions: latest.googleImpressions, conversions: latest.googleConversions, avgCpc: latest.googleAvgCpc, ctr: latest.googleCtr, costPerConv: latest.googleCostPerConv },
                           ].map(row => (
                             <tr key={row.name} className="border-b last:border-0">

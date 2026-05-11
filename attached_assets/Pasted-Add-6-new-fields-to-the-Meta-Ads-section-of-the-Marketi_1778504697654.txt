@@ -1,0 +1,24 @@
+Add 6 new fields to the Meta Ads section of the Marketing Dashboard at /admin/reporting. The dashboard is at the "Add Week" and "Edit Week" modal forms. The Meta Ads section currently has 4 fields: Clicks, Impressions, Conversions, and Spend.
+Add these 6 new fields to the Meta Ads section, in this order after the existing fields:
+
+Link Clicks — the number of clicks on links within the ad that lead to destinations on or off Meta. Label: "Link Clicks"
+Reach — the number of unique people who saw the ad at least once. Label: "Reach"
+CPM — cost per 1,000 impressions. Store as a decimal dollar value (e.g. 138.18). Label: "CPM ($)"
+CPC — cost per link click. Store as a decimal dollar value (e.g. 3.04). Label: "CPC ($)"
+CTR — link click-through rate as a percentage. Store as a decimal (e.g. 4.55 for 4.55%). Label: "CTR (%)"
+Landing Page Views — the number of times people landed on the destination page after clicking the ad. Label: "Landing Page Views"
+Cost Per Result — cost per conversion result. Store as a decimal dollar value (e.g. 66.88). Label: "Cost Per Result ($)"
+
+Requirements:
+
+Add the new columns to the database schema in shared/schema.ts in the reporting_snapshots table
+Add storage methods in server/storage.ts to handle the new fields
+Update the API routes in server/routes.ts to accept and return the new fields
+Update the Add Week modal form in the Marketing Dashboard React component to include input fields for all 7 new Meta fields
+Update the Edit Week modal to include the same fields
+Update the dashboard display table to show the new fields in the Meta Ads section
+All new fields should be nullable — existing weeks with no data for these fields should show as blank, not zero
+Store CPM, CPC, CTR, and Cost Per Result as integers internally (multiply by 100 for CPM/CPC/Cost Per Result, multiply by 100 for CTR) consistent with how Spend is stored as cents — convert back to decimal for display
+Do not break any existing functionality
+
+After making changes, confirm which files were modified and show the new schema fields added.

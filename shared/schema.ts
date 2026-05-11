@@ -1545,6 +1545,13 @@ export const reportingSnapshots = pgTable("reporting_snapshots", {
   metaClicks: integer("meta_clicks").default(0),
   metaImpressions: integer("meta_impressions").default(0),
   metaConversions: integer("meta_conversions").default(0),
+  metaLinkClicks: integer("meta_link_clicks"),
+  metaReach: integer("meta_reach"),
+  metaCpm: integer("meta_cpm"),
+  metaCpc: integer("meta_cpc"),
+  metaCtr: integer("meta_ctr"),
+  metaLandingPageViews: integer("meta_landing_page_views"),
+  metaCostPerResult: integer("meta_cost_per_result"),
   // Ad Spend — Google
   googleSpend: integer("google_spend").default(0),
   googleClicks: integer("google_clicks").default(0),
