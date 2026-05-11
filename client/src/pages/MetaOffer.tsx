@@ -9,24 +9,45 @@ import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
 
 const pageFaqs = [
   {
-    question: "Is RE Data Metrix free?",
-    answer: "Yes. Free accounts include 2 automated deal analyses per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support — for $25/month or $250/year."
+    question: "Do I need a credit card to sign up?",
+    answer: "No. Create your free account with just an email address and phone number."
   },
   {
-    question: "How quickly can I analyze a deal?",
-    answer: "Most deals take one to five minutes depending on how many built-in tools you use. Paste a Zillow or Redfin link and the platform fills in the property details automatically — then enter your assumptions and you'll have a full profitability and loan analysis ready to review."
+    question: "What do I get with a free account?",
+    answer: "Unlimited deal analyses via manual entry, 2 automated property lookups per month, and unlimited access to the lender directory. Upgrade to paid for unlimited automated lookups, saved deals, PDF and CSV reports, and more."
   },
   {
-    question: "Do I need to be an experienced investor to use this?",
-    answer: "No. The tool is designed to simplify the math so newer investors can understand key numbers without building complex spreadsheets. Experienced investors use it to standardize their underwriting and scale deal volume with a consistent framework."
-  },
-  {
-    question: "What loan types and strategies does RE Data Metrix support?",
-    answer: "The platform supports fix-and-flip, BRRRR, buy-and-hold rentals, DSCR loans, and wholesale pricing strategies. It handles loan structure modeling, cash to close calculations, DSCR analysis, and maximum offer pricing for wholesale deals."
+    question: "How does the loan comparison work?",
+    answer: "Enter your deal parameters once and the Deal Analysis Wizard compares up to four loan scenarios side by side — showing how each one affects your out-of-pocket costs, cash-on-cash return, ROI, and net profit."
   }
 ];
 
 function PageFAQSection() {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-landing";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": pageFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    });
+    if (!document.getElementById("faq-schema-landing")) {
+      document.head.appendChild(script);
+    }
+    return () => {
+      const existing = document.getElementById("faq-schema-landing");
+      if (existing) existing.remove();
+    };
+  }, []);
+
   return (
     <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="section-landing-faq">
       <h2 className="text-2xl font-bold text-primary mb-6 text-center">

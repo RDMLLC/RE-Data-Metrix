@@ -1,0 +1,165 @@
+Raw code output only, no prose. Line numbers required.
+
+Make the following changes to two files. Do not modify anything else.
+
+---
+
+FILE 1: client/src/pages/MetaOffer.tsx
+
+CHANGE 1 — Replace the pageFaqs array (lines 10–27) with this:
+
+const pageFaqs = [
+  {
+    question: "Do I need a credit card to sign up?",
+    answer: "No. Create your free account with just an email address and phone number."
+  },
+  {
+    question: "What do I get with a free account?",
+    answer: "Unlimited deal analyses via manual entry, 2 automated property lookups per month, and unlimited access to the lender directory. Upgrade to paid for unlimited automated lookups, saved deals, PDF and CSV reports, and more."
+  },
+  {
+    question: "How does the loan comparison work?",
+    answer: "Enter your deal parameters once and the Deal Analysis Wizard compares up to four loan scenarios side by side — showing how each one affects your out-of-pocket costs, cash-on-cash return, ROI, and net profit."
+  }
+];
+
+CHANGE 2 — Add FAQPage JSON-LD schema injection. Find the PageFAQSection function (line 29) and replace it entirely with this:
+
+function PageFAQSection() {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-landing";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": pageFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    });
+    if (!document.getElementById("faq-schema-landing")) {
+      document.head.appendChild(script);
+    }
+    return () => {
+      const existing = document.getElementById("faq-schema-landing");
+      if (existing) existing.remove();
+    };
+  }, []);
+
+  return (
+    <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="section-landing-faq">
+      <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible className="space-y-2">
+        {pageFaqs.map((faq, i) => (
+          <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+            <AccordionTrigger className="text-left font-medium text-foreground" data-testid={`accordion-landing-faq-trigger-${i}`}>
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground" data-testid={`accordion-landing-faq-content-${i}`}>
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
+
+Note: useEffect is already imported at line 1 of this file — do not add a duplicate import.
+
+---
+
+FILE 2: client/src/pages/Home.tsx
+
+CHANGE 1 — Add the following FAQ section. Find the closing </Layout> tag near the bottom of the component's return statement and insert the following immediately before it:
+
+      {/* FAQ Section */}
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+          Frequently Asked Questions
+        </h2>
+        <Accordion type="single" collapsible className="space-y-2">
+          {homeFaqs.map((faq, i) => (
+            <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+              <AccordionTrigger className="text-left font-medium text-foreground">
+                {faq.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                {faq.answer}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </section>
+
+CHANGE 2 — Add the homeFaqs data array and FAQPage schema injection. Find the line that reads:
+
+export default function Home() {
+
+Insert the following immediately before that line:
+
+const homeFaqs = [
+  {
+    question: "Is RE Data Metrix free to use?",
+    answer: "Yes. The free plan includes unlimited deal analyses via manual entry, 2 automated property lookups per month, and unlimited access to the lender directory. No credit card required."
+  },
+  {
+    question: "What makes RE Data Metrix different from other deal analysis tools?",
+    answer: "Most deal analysis tools stop at the numbers. RE Data Metrix combines deal analysis with side-by-side loan comparison and a verified lender directory — so you can analyze a deal and find financing for it in the same place."
+  },
+  {
+    question: "Who is RE Data Metrix built for?",
+    answer: "Real estate investors — fix and flip, wholesale, and buy and hold. The platform helps you analyze deals, compare loan options, save your analyses, connect with lenders, and access curated tools to manage and grow your investing business."
+  }
+];
+
+CHANGE 3 — Add FAQPage schema injection inside the Home component. Find the line that reads:
+
+export default function Home() {
+
+Locate the first useEffect inside that function and add the following as a new useEffect immediately after it:
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-home";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": homeFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    });
+    if (!document.getElementById("faq-schema-home")) {
+      document.head.appendChild(script);
+    }
+    return () => {
+      const existing = document.getElementById("faq-schema-home");
+      if (existing) existing.remove();
+    };
+  }, []);
+
+CHANGE 4 — Add missing imports to Home.tsx. Find the existing imports at the top of the file and add the following if not already present:
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+---
+
+After all changes are complete, show me:
+1. Lines 1–30 of the updated MetaOffer.tsx
+2. The complete updated PageFAQSection function in MetaOffer.tsx
+3. The homeFaqs array and the new FAQ useEffect in Home.tsx
+4. The new FAQ JSX section in Home.tsx
+5. The imports at the top of Home.tsx confirming the Accordion import was added
