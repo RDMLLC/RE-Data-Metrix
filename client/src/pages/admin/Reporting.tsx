@@ -1066,10 +1066,22 @@ export default function Reporting() {
                   <MetricCard title="Total Spend" value={dollars(totalSpend(latest))} icon={DollarSign} color="blue" />
                   <MetricCard title="Total Clicks" value={fmt(totalClicks(latest))} icon={MousePointer} color="green" />
                   <MetricCard
-                    title="Avg Cost Per Click"
-                    value={totalClicks(latest) > 0
-                      ? `$${(totalSpend(latest) / 100 / totalClicks(latest)).toFixed(2)}`
-                      : "—"}
+                    title="Avg CPC"
+                    value={(() => {
+                      const mCpc = latest.metaCpc;
+                      const gCpc = latest.googleAvgCpc || 0;
+                      const mSpend = latest.metaSpend || 0;
+                      const gSpend = latest.googleSpend || 0;
+                      if (mCpc != null && gCpc > 0 && (mSpend + gSpend) > 0) {
+                        const weighted = (mCpc * mSpend + gCpc * gSpend) / (mSpend + gSpend);
+                        return `$${(weighted / 100).toFixed(2)}`;
+                      }
+                      if (mCpc != null && gCpc === 0) return `$${(mCpc / 100).toFixed(2)}`;
+                      if (mCpc == null && gCpc > 0) return `$${(gCpc / 100).toFixed(2)}`;
+                      return totalClicks(latest) > 0
+                        ? `$${(totalSpend(latest) / 100 / totalClicks(latest)).toFixed(2)}`
+                        : "—";
+                    })()}
                     icon={TrendingUp} color="amber"
                   />
                   <MetricCard
@@ -1124,6 +1136,7 @@ export default function Reporting() {
                             <th className="text-left py-2">Platform</th>
                             <th className="text-right py-2">Spend</th>
                             <th className="text-right py-2">Clicks</th>
+                            <th className="text-right py-2">Link Clicks</th>
                             <th className="text-right py-2">Impressions</th>
                             <th className="text-right py-2">Conversions</th>
                             <th className="text-right py-2">CPC</th>
@@ -1133,13 +1146,14 @@ export default function Reporting() {
                         </thead>
                         <tbody>
                           {[
-                            { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaClicks, impressions: latest.metaImpressions, conversions: latest.metaConversions, avgCpc: latest.metaCpc, ctr: latest.metaCtr, costPerConv: latest.metaCostPerResult },
-                            { name: "Google Ads", spend: latest.googleSpend, clicks: latest.googleClicks, impressions: latest.googleImpressions, conversions: latest.googleConversions, avgCpc: latest.googleAvgCpc, ctr: latest.googleCtr, costPerConv: latest.googleCostPerConv },
+                            { name: "Meta Ads", spend: latest.metaSpend, clicks: latest.metaLinkClicks ?? latest.metaClicks, linkClicks: latest.metaLinkClicks, impressions: latest.metaImpressions, conversions: latest.metaConversions, avgCpc: latest.metaCpc, ctr: latest.metaCtr, costPerConv: latest.metaCostPerResult },
+                            { name: "Google Ads", spend: latest.googleSpend, clicks: latest.googleClicks, linkClicks: null, impressions: latest.googleImpressions, conversions: latest.googleConversions, avgCpc: latest.googleAvgCpc, ctr: latest.googleCtr, costPerConv: latest.googleCostPerConv },
                           ].map(row => (
                             <tr key={row.name} className="border-b last:border-0">
                               <td className="py-2 font-medium">{row.name}</td>
                               <td className="text-right">{dollars(row.spend)}</td>
                               <td className="text-right">{fmt(row.clicks)}</td>
+                              <td className="text-right">{row.linkClicks != null ? fmt(row.linkClicks) : "—"}</td>
                               <td className="text-right">{fmt(row.impressions)}</td>
                               <td className="text-right">{fmt(row.conversions)}</td>
                               <td className="text-right">
@@ -1164,6 +1178,35 @@ export default function Reporting() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Meta Performance — only show if data exists */}
+                {(latest.metaReach != null || latest.metaCpm != null || latest.metaLandingPageViews != null || latest.metaCostPerResult != null) && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Meta Performance</h3>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                      <MetricCard
+                        title="Reach"
+                        value={latest.metaReach != null ? fmt(latest.metaReach) : "—"}
+                        icon={Users} color="blue"
+                      />
+                      <MetricCard
+                        title="CPM"
+                        value={latest.metaCpm != null ? `$${(latest.metaCpm / 100).toFixed(2)}` : "—"}
+                        icon={TrendingUp} color="purple"
+                      />
+                      <MetricCard
+                        title="Landing Page Views"
+                        value={latest.metaLandingPageViews != null ? fmt(latest.metaLandingPageViews) : "—"}
+                        icon={MousePointer} color="green"
+                      />
+                      <MetricCard
+                        title="Cost Per Result"
+                        value={latest.metaCostPerResult != null ? `$${(latest.metaCostPerResult / 100).toFixed(2)}` : "—"}
+                        icon={DollarSign} color="amber"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

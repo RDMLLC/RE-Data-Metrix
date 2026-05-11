@@ -1,0 +1,55 @@
+Update the Marketing Dashboard reporting page at client/src/pages/admin/Reporting.tsx based on this audit. Make the following specific changes. Do not change anything not listed here.
+CHANGE 1 — CPC fallback at line 1148
+Update the CPC column in the Platform Breakdown table to prefer the stored metaCpc field when available. The current fallback computes Spend ÷ Clicks — keep that fallback only when metaCpc is null. The logic should already be correct since avgCpc maps to metaCpc at line 1136 — verify this is working correctly and that metaCpc takes priority over the computed fallback.
+CHANGE 2 — CTR fallback at line 1153
+Same approach as CPC. The stored metaCtr should take priority. The fallback computing CTR from Clicks ÷ Impressions should only fire when metaCtr is null. Verify the existing row.ctr wiring at line 1136 correctly maps to metaCtr and takes priority.
+CHANGE 3 — "Avg Cost Per Click" card on Ads tab (lines 1068-1074)
+Update this card to use a smarter calculation when stored values are available:
+
+When metaCpc is available AND googleAvgCpc is available: weight the average by spend
+When only metaCpc is available: use it directly for Meta portion
+When neither is available: fall back to totalSpend ÷ totalClicks as currently implemented
+Label the card "Avg CPC" for brevity
+
+CHANGE 4 — Add Link Clicks column to Platform Breakdown table (Meta row)
+In the Platform Breakdown table on the Ads tab, update the Meta Ads row wiring at line 1136 to include metaLinkClicks. Add a new "Link Clicks" column to the Platform Breakdown table that shows metaLinkClicks for the Meta row and the equivalent for Google if available, or — if not. Place this column after the existing Clicks column.
+CHANGE 5 — Add Meta Performance section to Ads tab
+Add a new section to the Ads tab below the existing Platform Breakdown table. Title it "Meta Performance". Show 4 MetricCards in a 2x2 grid (or 4-column on larger screens):
+Card 1 — Reach
+
+Title: "Reach"
+Value: metaReach formatted as a plain integer with comma separators
+Show — when null
+Icon: Users, color: blue
+
+Card 2 — CPM
+
+Title: "CPM"
+Value: metaCpm formatted as $X.XX
+Show — when null
+Icon: TrendingUp, color: purple
+
+Card 3 — Landing Page Views
+
+Title: "Landing Page Views"
+Value: metaLandingPageViews formatted as a plain integer with comma separators
+Show — when null
+Icon: MousePointer, color: green
+
+Card 4 — Cost Per Result
+
+Title: "Cost Per Result"
+Value: metaCostPerResult formatted as $X.XX
+Show — when null
+Icon: DollarSign, color: amber
+
+Only show this section when at least one of the 4 values is not null for the latest snapshot. Use the same conditional rendering pattern as the existing Ad Spend Summary section at line 864.
+All 4 values use the latest snapshot (same pattern as existing MetricCards on that tab). Use the same MetricCard component already used elsewhere on the page. No new components needed.
+CHANGE 6 — Update the clicks wiring for Meta row in Platform Breakdown
+At line 1136 where the Meta Ads row is defined, update the clicks field to show metaLinkClicks when available, falling back to metaClicks when metaLinkClicks is null. This ensures Meta's CPC calculation in the table is based on link clicks (which is how Meta calculates it) rather than all clicks.
+After all changes confirm:
+
+Which lines were modified
+That no existing functionality was broken
+That the Meta Performance section only appears when data exists
+That all null values render as — not 0
