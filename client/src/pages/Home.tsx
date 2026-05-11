@@ -12,24 +12,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const pageFaqs = [
   {
-    question: "What is RE Data Metrix?",
-    answer: "RE Data Metrix is an online tool that helps real estate investors analyze individual deals and compare loan options side by side based on profit, cash required, and ROI metrics."
+    question: "Is RE Data Metrix free to use?",
+    answer: "Yes. The free plan includes unlimited deal analyses via manual entry, 2 automated property lookups per month, and unlimited access to the lender directory. No credit card required."
   },
   {
-    question: "Is RE Data Metrix free?",
-    answer: "Yes. Free accounts include 2 automated deal analyses per month, unlimited manual deal entry, access to all three calculators (Fix & Flip, DSCR, and Wholesale Max Offer), full Toolbox access, lender search, and CSV export. Paid subscribers get unlimited automated analyses, PDF export, deal saving, deal sharing, and priority support — for $25/month or $250/year."
-  },
-  {
-    question: "What is an ARV Helper?",
-    answer: "The ARV Helper pulls recent sold listings from Zillow, Redfin, and RentCast, scores them automatically by distance, price per square foot, and property characteristics, and calculates ARV instantly based on your selections. You can add your own comps from any source — your agent, a wholesaler, or PropStream — and download a branded comp report when you're done."
-  },
-  {
-    question: "How is RE Data Metrix different from a spreadsheet?",
-    answer: "RE Data Metrix standardizes your assumptions, automates complex loan math, and lets you compare multiple scenarios and lenders in one place instead of manually updating formulas."
+    question: "What makes RE Data Metrix different from other deal analysis tools?",
+    answer: "Most deal analysis tools stop at the numbers. RE Data Metrix combines deal analysis with side-by-side loan comparison and a verified lender directory — so you can analyze a deal and find financing for it in the same place."
   },
   {
     question: "Who is RE Data Metrix built for?",
-    answer: "It is built for real estate investors who want a clear, data-driven way to evaluate each deal and compare financing options — from newer investors learning the numbers to experienced investors standardizing their underwriting."
+    answer: "Real estate investors — fix and flip, wholesale, and buy and hold. The platform helps you analyze deals, compare loan options, save your analyses, connect with lenders, and access curated tools to manage and grow your investing business."
   }
 ];
 
