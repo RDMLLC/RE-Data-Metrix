@@ -79,7 +79,7 @@ export default function Pricing() {
         canonicalUrl="https://redatametrix.com/pricing"
       />
       <PricingPageSchema />
-      <div className="min-h-[calc(100vh-16rem)] py-16 bg-background">
+      <div className="min-h-[calc(100vh-16rem)] pt-16 pb-20 sm:pb-16 bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4" data-testid="text-pricing-title">
@@ -391,7 +391,7 @@ export default function Pricing() {
             </Card>
           </div>
 
-          <div className="mb-16">
+          <div className="hidden sm:block mb-16">
             <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8">
               Why RE Data Metrix?
             </h2>
@@ -435,7 +435,7 @@ export default function Pricing() {
             </div>
           </div>
 
-          <section className="mb-12">
+          <section className="hidden sm:block mb-12">
             <h2 className="text-2xl lg:text-3xl font-bold text-primary mb-6">What You Get with RE Data Metrix</h2>
 
             <h3 className="text-xl font-semibold text-primary mb-2">Advanced Deal Analysis Tools</h3>
@@ -489,6 +489,22 @@ export default function Pricing() {
               <Link href="/contact" className="text-primary hover:underline">contact us</Link> for more information.
             </p>
           </div>
+        </div>
+
+        {/* Sticky mobile CTA bar */}
+        <div
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary border-t border-white/20 shadow-lg px-4 py-3"
+          data-testid="sticky-mobile-cta"
+        >
+          <Link href="/register">
+            <Button
+              size="lg"
+              className="bg-accent text-accent-foreground border-accent-border w-full"
+              data-testid="button-cta-sticky"
+            >
+              Start Analyzing Deals for Free
+            </Button>
+          </Link>
         </div>
       </div>
     </Layout>
