@@ -458,7 +458,7 @@ export default function Pricing() {
             </p>
           </section>
 
-          <div className="bg-primary rounded-xl p-8 text-center">
+          <div className="hidden sm:block bg-primary rounded-xl p-8 text-center">
             <h2 className="text-2xl font-bold text-primary-foreground mb-4">
               Ready to Transform Your Deal Analysis?
             </h2>
