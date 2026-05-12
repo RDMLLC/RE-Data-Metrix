@@ -184,8 +184,8 @@ export default function MetaOffer() {
 
         <div className="relative z-10 max-w-3xl mx-auto px-6 pt-10 pb-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3" data-testid="heading-hero">
-            Analyze Any Deal.{" "}
-            <span className="text-accent">Find the Right Lender.</span>{" "}
+            Analyze Any Deal.<br />
+            <span className="text-accent">Find the Right Lender.</span><br />
             Close with Confidence.
           </h1>
           <p className="text-lg text-white/85" data-testid="text-subheadline">
@@ -195,7 +195,7 @@ export default function MetaOffer() {
             <ul className="inline-block text-left text-white text-sm sm:text-[15px] space-y-1.5">
               <li className="flex items-start gap-2">
                 <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
-                <span>Analyze any fix-and-flip or rental deal in minutes</span>
+                <span>Analyze fix and flip, wholesale, or DSCR deals in minutes</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
