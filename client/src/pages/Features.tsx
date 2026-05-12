@@ -16,6 +16,7 @@ import {
   Home,
   Wrench
 } from "lucide-react";
+import { SiFacebook, SiLinkedin } from "react-icons/si";
 import { useAuth } from "@/contexts/AuthContext";
 import { SEO } from "@/components/SEO";
 import { WebApplicationSchema } from "@/components/StructuredData";
@@ -179,9 +180,9 @@ export default function Features() {
         </section>
 
         {/* Additional Benefits Section */}
-        <section className="py-16 bg-muted/30">
+        <section className="py-0 sm:py-16 bg-transparent sm:bg-muted/30">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
+            <div className="hidden sm:block text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font-bold text-primary mb-4">
                 Additional Benefits
               </h2>
@@ -190,11 +191,11 @@ export default function Features() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-8 sm:space-y-0 sm:grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 sm:gap-6">
               {additionalBenefits.map((benefit, index) => (
                 <Card key={index} className="relative border-0 sm:border bg-transparent sm:bg-card shadow-none sm:shadow-sm rounded-none sm:rounded-lg" data-testid={`card-benefit-${index}`}>
                   {benefit.badge && (
-                    <Badge className="absolute top-4 right-4 bg-accent text-accent-foreground">
+                    <Badge className="hidden sm:inline-flex absolute top-4 right-4 bg-accent text-accent-foreground">
                       {benefit.badge}
                     </Badge>
                   )}
@@ -202,7 +203,14 @@ export default function Features() {
                     <div className="hidden sm:flex w-12 h-12 bg-primary/10 rounded-lg items-center justify-center mb-4">
                       <benefit.icon className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="text-lg">{benefit.title}</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {benefit.badge && (
+                        <Badge className="sm:hidden bg-accent text-accent-foreground" data-testid={`badge-benefit-mobile-${index}`}>
+                          {benefit.badge}
+                        </Badge>
+                      )}
+                      <span>{benefit.title}</span>
+                    </CardTitle>
                     <CardDescription>{benefit.description}</CardDescription>
                   </CardHeader>
                 </Card>
@@ -302,7 +310,7 @@ export default function Features() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-primary text-primary-foreground">
+        <section className="hidden sm:block py-20 bg-primary text-primary-foreground">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
               Ready to Start Analyzing Deals?
@@ -343,6 +351,33 @@ export default function Features() {
                 </Link>
               )}
             </div>
+          </div>
+        </section>
+
+        {/* Mobile-only social follow nudge */}
+        <section className="sm:hidden max-w-3xl mx-auto px-6 pt-8 pb-4 text-center" data-testid="section-social-follow">
+          <p className="text-base text-muted-foreground mb-3">Follow us for tips and strategies</p>
+          <div className="flex items-center justify-center gap-5">
+            <a
+              href="https://www.facebook.com/profile.php?id=61582008407624"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow RE Data Metrix on Facebook"
+              className="transition-opacity hover:opacity-80"
+              data-testid="link-social-facebook"
+            >
+              <SiFacebook className="h-7 w-7" style={{ color: "#1877F2" }} />
+            </a>
+            <a
+              href="https://linkedin.com/company/re-data-metrix-llc"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow RE Data Metrix on LinkedIn"
+              className="transition-opacity hover:opacity-80"
+              data-testid="link-social-linkedin"
+            >
+              <SiLinkedin className="h-7 w-7" style={{ color: "#0A66C2" }} />
+            </a>
           </div>
         </section>
 
