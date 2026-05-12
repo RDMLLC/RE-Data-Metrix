@@ -1,13 +1,80 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Check, Star, Zap, Shield, TrendingUp, Users, Calculator, Building2, ArrowRight, Tag, Copy, CheckCheck } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { PricingPageSchema } from "@/components/StructuredData";
+
+const pricingFaqs = [
+  {
+    question: "Is RE Data Metrix free to use?",
+    answer: "Yes. The free plan gives you 2 automated deal analyses per month, 2 wholesale calculations, 2 ARV calculations, and access to the lender search tool. No credit card required."
+  },
+  {
+    question: "What is included in the paid plan?",
+    answer: "The monthly plan at $25/month and annual plan at $209/year include unlimited deal analyses, unlimited lender comparisons, PDF and CSV exports, save unlimited deals, state-specific calculations, and priority support."
+  },
+  {
+    question: "Can I cancel anytime?",
+    answer: "Yes. The monthly plan can be cancelled at any time with no penalties. The annual plan is billed once per year."
+  },
+  {
+    question: "What types of deals can I analyze?",
+    answer: "RE Data Metrix supports fix and flip, wholesale, and DSCR rental deals. The platform helps you calculate your max offer price and projected returns so you know your numbers before you make an offer."
+  }
+];
+
+function PricingFAQSection() {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-pricing";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": pricingFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    });
+    if (!document.getElementById("faq-schema-pricing")) {
+      document.head.appendChild(script);
+    }
+    return () => {
+      const existing = document.getElementById("faq-schema-pricing");
+      if (existing) existing.remove();
+    };
+  }, []);
+
+  return (
+    <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="section-pricing-faq">
+      <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible className="space-y-2">
+        {pricingFaqs.map((faq, i) => (
+          <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+            <AccordionTrigger className="text-left font-medium text-foreground" data-testid={`accordion-pricing-faq-trigger-${i}`}>
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground" data-testid={`accordion-pricing-faq-content-${i}`}>
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
 
 const featureComparison = [
   { feature: "Property Lookups", free: "2 per month", paid: "Unlimited" },
@@ -489,6 +556,8 @@ export default function Pricing() {
               <Link href="/contact" className="text-primary hover:underline">contact us</Link> for more information.
             </p>
           </div>
+
+          <PricingFAQSection />
         </div>
 
         {/* Sticky mobile CTA bar */}
