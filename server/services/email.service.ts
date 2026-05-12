@@ -1704,6 +1704,20 @@ END:VCALENDAR`;
     });
   }
 
+  async sendCustomEmail(
+    to: string,
+    subject: string,
+    html: string,
+    category: EmailCategory = 'marketing',
+  ): Promise<boolean> {
+    return this.sendEmail({
+      to,
+      subject,
+      html,
+      from: await this.getFromForCategory(category),
+    });
+  }
+
   async getFromForCategory(category: EmailCategory): Promise<{ name: string; email: string }> {
     try {
       const [setting] = await db.select().from(emailCategorySettings).where(eq(emailCategorySettings.category, category)).limit(1);

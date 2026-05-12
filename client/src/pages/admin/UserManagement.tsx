@@ -70,6 +70,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Send } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -140,6 +143,11 @@ export default function UserManagement() {
   const [userToEditEmail, setUserToEditEmail] = useState<UserWithStats | null>(null);
   const [editEmailValue, setEditEmailValue] = useState("");
   const [editEmailError, setEditEmailError] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [emailErrorDetails, setEmailErrorDetails] = useState<string[]>([]);
 
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -319,6 +327,68 @@ export default function UserManagement() {
       setEditEmailError(error.message || "Failed to update email");
     },
   });
+
+  const sendBulkEmailMutation = useMutation({
+    mutationFn: async ({ userIds, subject, body }: { userIds: string[]; subject: string; body: string }) => {
+      const response = await apiRequest("POST", "/api/admin/users/send-email", { userIds, subject, body });
+      return response.json() as Promise<{ sent: number; failed: number; errors: string[] }>;
+    },
+    onSuccess: (data) => {
+      if (data.failed > 0 && data.sent === 0) {
+        setEmailErrorDetails(data.errors.length ? data.errors : ["All sends failed"]);
+        toast({
+          title: "Send Failed",
+          description: `Failed to send to all ${data.failed} recipient(s).`,
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Emails Sent",
+        description: `Email sent to ${data.sent} recipient${data.sent === 1 ? '' : 's'}${data.failed > 0 ? ` (${data.failed} failed)` : ''}.`,
+      });
+      setSendEmailOpen(false);
+      setEmailSubject("");
+      setEmailBody("");
+      setEmailErrorDetails([]);
+      setSelectedUserIds(new Set());
+    },
+    onError: (error: any) => {
+      const msg = error?.message || "Failed to send emails";
+      setEmailErrorDetails([msg]);
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const handleToggleUser = (userId: string, checked: boolean) => {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev);
+      if (checked) next.add(userId); else next.delete(userId);
+      return next;
+    });
+  };
+
+  const handleToggleAllVisible = (checked: boolean, visibleIds: string[]) => {
+    setSelectedUserIds(prev => {
+      const next = new Set(prev);
+      if (checked) {
+        visibleIds.forEach(id => next.add(id));
+      } else {
+        visibleIds.forEach(id => next.delete(id));
+      }
+      return next;
+    });
+  };
+
+  const handleSendEmailSubmit = () => {
+    setEmailErrorDetails([]);
+    if (!emailSubject.trim() || !emailBody.trim() || selectedUserIds.size === 0) return;
+    sendBulkEmailMutation.mutate({
+      userIds: Array.from(selectedUserIds),
+      subject: emailSubject,
+      body: emailBody,
+    });
+  };
 
   const handleEditEmailOpen = (user: UserWithStats) => {
     setUserToEditEmail(user);
@@ -556,17 +626,33 @@ export default function UserManagement() {
                     <CardTitle>User Directory</CardTitle>
                     <CardDescription>Search and manage all registered users</CardDescription>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="default"
-                    data-testid="button-export-csv"
-                    onClick={() => {
-                      window.location.href = "/api/admin/users/export.csv";
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download CSV
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {!isAuditor && selectedUserIds.size > 0 && (
+                      <Button
+                        variant="default"
+                        size="default"
+                        data-testid="button-send-email"
+                        onClick={() => {
+                          setEmailErrorDetails([]);
+                          setSendEmailOpen(true);
+                        }}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Email ({selectedUserIds.size})
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="default"
+                      data-testid="button-export-csv"
+                      onClick={() => {
+                        window.location.href = "/api/admin/users/export.csv";
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download CSV
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -615,6 +701,21 @@ export default function UserManagement() {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            {!isAuditor && (
+                              <TableHead className="w-10">
+                                <Checkbox
+                                  data-testid="checkbox-select-all"
+                                  checked={
+                                    directoryUsers.length > 0 &&
+                                    directoryUsers.every(u => selectedUserIds.has(u.id))
+                                  }
+                                  onCheckedChange={(checked) =>
+                                    handleToggleAllVisible(!!checked, directoryUsers.map(u => u.id))
+                                  }
+                                  aria-label="Select all visible users"
+                                />
+                              </TableHead>
+                            )}
                             <TableHead>User</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Role</TableHead>
@@ -630,7 +731,22 @@ export default function UserManagement() {
                         </TableHeader>
                         <TableBody>
                           {directoryUsers.map((user) => (
-                            <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                            <TableRow
+                              key={user.id}
+                              data-testid={`row-user-${user.id}`}
+                              data-state={selectedUserIds.has(user.id) ? 'selected' : undefined}
+                              className={selectedUserIds.has(user.id) ? 'bg-blue-50 dark:bg-blue-950/30' : ''}
+                            >
+                              {!isAuditor && (
+                                <TableCell>
+                                  <Checkbox
+                                    data-testid={`checkbox-user-${user.id}`}
+                                    checked={selectedUserIds.has(user.id)}
+                                    onCheckedChange={(checked) => handleToggleUser(user.id, !!checked)}
+                                    aria-label={`Select ${user.email}`}
+                                  />
+                                </TableCell>
+                              )}
                               <TableCell>
                                 <div>
                                   <p className="font-medium">{user.fullName || user.username}</p>
@@ -1353,6 +1469,91 @@ export default function UserManagement() {
                 <>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Developer
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={sendEmailOpen}
+        onOpenChange={(open) => {
+          if (!sendBulkEmailMutation.isPending) {
+            setSendEmailOpen(open);
+            if (!open) setEmailErrorDetails([]);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send Email to {selectedUserIds.size} Recipient{selectedUserIds.size === 1 ? '' : 's'}</DialogTitle>
+            <DialogDescription>
+              Compose a one-time email to the selected users. Merge fields are personalized per recipient.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="bulk-email-subject">Subject</Label>
+              <Input
+                id="bulk-email-subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Subject line"
+                data-testid="input-bulk-email-subject"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulk-email-body">Body</Label>
+              <Textarea
+                id="bulk-email-body"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={10}
+                placeholder={`Hi {{firstName}},\n\nWrite your message here...`}
+                data-testid="input-bulk-email-body"
+              />
+              <p className="text-xs text-muted-foreground">
+                Available merge fields: {`{{firstName}}, {{fullName}}, {{email}}`}
+              </p>
+            </div>
+            {emailErrorDetails.length > 0 && (
+              <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-3" data-testid="bulk-email-errors">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">Send errors:</p>
+                <ul className="text-xs text-red-700 dark:text-red-300 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto">
+                  {emailErrorDetails.map((e, i) => (<li key={i}>{e}</li>))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSendEmailOpen(false)}
+              disabled={sendBulkEmailMutation.isPending}
+              data-testid="button-cancel-bulk-email"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendEmailSubmit}
+              disabled={
+                sendBulkEmailMutation.isPending ||
+                !emailSubject.trim() ||
+                !emailBody.trim() ||
+                selectedUserIds.size === 0
+              }
+              data-testid="button-confirm-bulk-email"
+            >
+              {sendBulkEmailMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send
                 </>
               )}
             </Button>

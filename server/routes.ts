@@ -4825,6 +4825,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk send custom email to selected users (Admin)
+  app.post("/api/admin/users/send-email", ensureAdmin, async (req, res) => {
+    try {
+      const { userIds, subject, body } = req.body as { userIds?: string[]; subject?: string; body?: string };
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "userIds is required and must be a non-empty array" });
+      }
+      if (!subject || typeof subject !== "string" || !subject.trim()) {
+        return res.status(400).json({ error: "subject is required" });
+      }
+      if (!body || typeof body !== "string" || !body.trim()) {
+        return res.status(400).json({ error: "body is required" });
+      }
+
+      const recipients = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+          fullName: userProfiles.fullName,
+        })
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
+        .where(inArray(users.id, userIds));
+
+      const escapeHtml = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string }) =>
+        template
+          .replace(/\{\{\s*firstName\s*\}\}/g, ctx.firstName)
+          .replace(/\{\{\s*fullName\s*\}\}/g, ctx.fullName)
+          .replace(/\{\{\s*email\s*\}\}/g, ctx.email);
+
+      let sent = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      await Promise.all(recipients.map(async (r) => {
+        try {
+          const fullName = (r.fullName || r.username || '').trim();
+          const firstName = fullName.split(/\s+/)[0] || r.username;
+          const ctx = { firstName, fullName: fullName || r.username, email: r.email };
+
+          const renderedSubject = applyMerge(subject, ctx);
+          const renderedBodyText = applyMerge(body, ctx);
+          const renderedBodyHtml = escapeHtml(renderedBodyText).replace(/\r?\n/g, '<br>');
+
+          const html = `<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">${renderedBodyHtml}</body></html>`;
+
+          const ok = await emailService.sendCustomEmail(r.email, renderedSubject, html, 'marketing');
+          if (ok) {
+            sent++;
+          } else {
+            failed++;
+            errors.push(`${r.email}: SMTP send failed`);
+          }
+        } catch (err: any) {
+          failed++;
+          errors.push(`${r.email}: ${err?.message || 'Unknown error'}`);
+        }
+      }));
+
+      const missing = userIds.length - recipients.length;
+      if (missing > 0) {
+        failed += missing;
+        errors.push(`${missing} user ID(s) not found`);
+      }
+
+      res.json({ sent, failed, errors });
+    } catch (error: any) {
+      console.error('Bulk send email error:', error);
+      res.status(500).json({ error: error?.message || "Failed to send bulk emails" });
+    }
+  });
+
   // Delete user (Admin) - only allowed if user has no referrals
   app.delete("/api/admin/users/:id", ensureAdmin, async (req, res) => {
     try {

@@ -1,0 +1,54 @@
+Raw code output only, no prose. Line numbers required.
+
+Add bulk email functionality to the User Directory page at /admin/users.
+
+---
+
+BACKEND CHANGES — server/routes.ts
+
+Add a new route: POST /api/admin/users/send-email
+- Protected by ensureAdmin middleware
+- Accepts request body: { userIds: string[], subject: string, body: string }
+- For each userId, fetch the user's email and profile (fullName) from the database
+- Replace merge fields in both subject and body before sending:
+  - {{firstName}} → first word of fullName (or username if fullName is null)
+  - {{fullName}} → fullName (or username if null)
+  - {{email}} → user's email
+- Send individual emails to each recipient using the existing email/SMTP service already in use in this codebase
+- Return { sent: number, failed: number, errors: string[] }
+- Fire and forget per recipient — one failure should not block others
+- Show me the existing email sending service/function used elsewhere in the codebase before implementing, so the new route uses the same pattern
+
+---
+
+FRONTEND CHANGES — client/src/pages/admin/Users.tsx (or wherever the User Directory lives)
+
+1. Add a checkbox column as the first column in the user table
+   - Checkbox in the header row = Select All / Deselect All for currently visible/filtered users
+   - Checkbox on each row = select that individual user
+   - Selected rows should have a subtle highlight (light blue or muted background)
+
+2. Add a "Send Email" button in the top right area near the existing "Download CSV" button
+   - Only visible/enabled when at least one user is selected
+   - Show a count badge: "Send Email (3)" when 3 users are selected
+
+3. When "Send Email" is clicked, open a modal with:
+   - Title: "Send Email to X Recipients"
+   - Subject field (single line text input)
+   - Body field (textarea, minimum 8 rows)
+   - Merge field helper text below the body field:
+     "Available merge fields: {{firstName}}, {{fullName}}, {{email}}"
+   - Two buttons: Cancel and Send
+   - Send button shows a loading state while sending
+   - On success: show a toast notification "Email sent to X recipients" and close the modal and clear selections
+   - On failure: show error details in the modal without closing it
+
+4. Do not change any existing filtering, sorting, search, or CSV export functionality
+
+---
+
+After changes are complete, show me:
+1. The new backend route in server/routes.ts
+2. The checkbox and Send Email button additions in the frontend
+3. The modal component
+4. Confirmation that the existing email service pattern was followed
