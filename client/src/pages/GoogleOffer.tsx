@@ -3,8 +3,71 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
+
+const pageFaqs = [
+  {
+    question: "Do I need a credit card to sign up?",
+    answer: "No. Create your free account with just an email address and phone number."
+  },
+  {
+    question: "What do I get with a free account?",
+    answer: "Unlimited deal analyses via manual entry, 2 automated property lookups per month, and unlimited access to the lender directory. Upgrade to paid for unlimited automated lookups, saved deals, PDF and CSV reports, and more."
+  },
+  {
+    question: "How does the loan comparison work?",
+    answer: "Enter your deal parameters once and the Deal Analysis Wizard compares up to four loan scenarios side by side — showing how each one affects your out-of-pocket costs, cash-on-cash return, ROI, and net profit."
+  }
+];
+
+function PageFAQSection() {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.id = "faq-schema-landing";
+    script.text = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": pageFaqs.map(faq => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": faq.answer
+        }
+      }))
+    });
+    if (!document.getElementById("faq-schema-landing")) {
+      document.head.appendChild(script);
+    }
+    return () => {
+      const existing = document.getElementById("faq-schema-landing");
+      if (existing) existing.remove();
+    };
+  }, []);
+
+  return (
+    <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-testid="section-landing-faq">
+      <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible className="space-y-2">
+        {pageFaqs.map((faq, i) => (
+          <AccordionItem key={i} value={`faq-${i}`} className="border rounded-lg px-4">
+            <AccordionTrigger className="text-left font-medium text-foreground" data-testid={`accordion-landing-faq-trigger-${i}`}>
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="text-muted-foreground" data-testid={`accordion-landing-faq-content-${i}`}>
+              {faq.answer}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </section>
+  );
+}
 
 const YOUTUBE_VIDEO_ID = "WkuAgslCrrM";
 const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${YOUTUBE_VIDEO_ID}&controls=1&modestbranding=1&rel=0&playsinline=1`;
@@ -87,8 +150,8 @@ export default function GoogleOffer() {
 
         <div className="relative z-10 max-w-3xl mx-auto px-6 pt-10 pb-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3" data-testid="heading-hero">
-            Analyze Any Deal.{" "}
-            <span className="text-accent">Find the Right Lender.</span>{" "}
+            Analyze Any Deal.<br />
+            <span className="text-accent">Find the Right Lender.</span><br />
             Close with Confidence.
           </h1>
           <p className="text-lg text-white/85" data-testid="text-subheadline">
@@ -98,7 +161,7 @@ export default function GoogleOffer() {
             <ul className="inline-block text-left text-white text-sm sm:text-[15px] space-y-1.5">
               <li className="flex items-start gap-2">
                 <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
-                <span>Analyze any fix-and-flip or rental deal in minutes</span>
+                <span>Analyze fix and flip, wholesale, or DSCR deals in minutes</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
@@ -149,9 +212,9 @@ export default function GoogleOffer() {
       </section>
 
       {/* 3. Benefits */}
-      <section className="py-16 lg:py-24 bg-background">
+      <section className="pt-8 pb-12 lg:py-24 bg-background">
         <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-2xl lg:text-3xl font-bold text-center mb-10" data-testid="heading-benefits">
+          <h2 className="text-[clamp(0.95rem,4vw,1.5rem)] sm:text-2xl lg:text-3xl font-bold text-center mb-10 tracking-tight whitespace-nowrap" data-testid="heading-benefits">
             Everything you need to invest smarter
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -167,6 +230,8 @@ export default function GoogleOffer() {
         </div>
       </section>
 
+      <PageFAQSection />
+
       {/* 4. Closing CTA */}
       <section className="py-16 lg:py-24 bg-background">
         <div className="max-w-3xl mx-auto px-6 text-center">
@@ -177,7 +242,7 @@ export default function GoogleOffer() {
           <div className="flex flex-col items-center gap-2">
             <Button
               size="lg"
-              className="bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
+              className="hidden sm:inline-flex bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
               onClick={handleCta}
               data-testid="button-cta-bottom"
             >
