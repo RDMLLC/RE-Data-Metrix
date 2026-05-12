@@ -103,9 +103,9 @@ export default function Features() {
         canonicalUrl="https://redatametrix.com/features"
       />
       <WebApplicationSchema />
-      <div className="min-h-[calc(100vh-16rem)] bg-background">
+      <div className="min-h-[calc(100vh-16rem)] bg-background pb-20 sm:pb-0">
         {/* Hero Section */}
-        <section className="py-20 bg-gradient-to-b from-primary/5 to-background">
+        <section className="hidden sm:block py-20 bg-gradient-to-b from-primary/5 to-background">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-6" data-testid="text-features-title">
               Everything You Need to Analyze Real Estate Deals
@@ -148,14 +148,14 @@ export default function Features() {
 
             <div className="space-y-8">
               {coreFeatures.map((feature, index) => (
-                <Card key={index} className="overflow-hidden" data-testid={`card-feature-${index}`}>
+                <Card key={index} className="overflow-hidden border-0 sm:border bg-transparent sm:bg-card shadow-none sm:shadow-sm rounded-none sm:rounded-lg" data-testid={`card-feature-${index}`}>
                   <div className="md:flex">
-                    <div className="md:w-1/3 bg-primary/5 p-8 flex items-center justify-center">
+                    <div className="hidden md:flex md:w-1/3 bg-primary/5 p-8 items-center justify-center">
                       <div className="w-20 h-20 bg-accent/20 rounded-xl flex items-center justify-center">
                         <feature.icon className="h-10 w-10 text-accent" />
                       </div>
                     </div>
-                    <div className="md:w-2/3 p-8">
+                    <div className="md:w-2/3 p-0 sm:p-8">
                       <CardHeader className="p-0 mb-4">
                         <CardTitle className="text-2xl text-primary">{feature.title}</CardTitle>
                         <CardDescription className="text-base mt-2">{feature.description}</CardDescription>
@@ -164,7 +164,7 @@ export default function Features() {
                         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {feature.highlights.map((highlight, hIndex) => (
                             <li key={hIndex} className="flex items-center gap-2 text-sm text-foreground">
-                              <Check className="h-4 w-4 text-success flex-shrink-0" />
+                              <Check className="hidden sm:inline-block h-4 w-4 text-success flex-shrink-0" />
                               {highlight}
                             </li>
                           ))}
@@ -192,14 +192,14 @@ export default function Features() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {additionalBenefits.map((benefit, index) => (
-                <Card key={index} className="relative" data-testid={`card-benefit-${index}`}>
+                <Card key={index} className="relative border-0 sm:border bg-transparent sm:bg-card shadow-none sm:shadow-sm rounded-none sm:rounded-lg" data-testid={`card-benefit-${index}`}>
                   {benefit.badge && (
                     <Badge className="absolute top-4 right-4 bg-accent text-accent-foreground">
                       {benefit.badge}
                     </Badge>
                   )}
-                  <CardHeader>
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <CardHeader className="p-0 sm:p-6">
+                    <div className="hidden sm:flex w-12 h-12 bg-primary/10 rounded-lg items-center justify-center mb-4">
                       <benefit.icon className="h-6 w-6 text-primary" />
                     </div>
                     <CardTitle className="text-lg">{benefit.title}</CardTitle>
@@ -314,7 +314,7 @@ export default function Features() {
               {isAuthenticated ? (
                 isSubscriber ? (
                   <Link href="/deal-analysis">
-                    <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-analyze">
+                    <Button size="lg" className="hidden sm:inline-flex bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-analyze">
                       Start Analyzing
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
@@ -322,12 +322,12 @@ export default function Features() {
                 ) : (
                   <>
                     <Link href="/deal-analysis">
-                      <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-cta-try-free">
+                      <Button size="lg" variant="outline" className="hidden sm:inline-flex border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-cta-try-free">
                         Try Free Features
                       </Button>
                     </Link>
                     <Link href="/pricing">
-                      <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-upgrade">
+                      <Button size="lg" className="hidden sm:inline-flex bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-upgrade">
                         Upgrade for Full Access
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
@@ -336,7 +336,7 @@ export default function Features() {
                 )
               ) : (
                 <Link href="/pricing">
-                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-signup">
+                  <Button size="lg" className="hidden sm:inline-flex bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-cta-signup">
                     Get Started
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
@@ -345,6 +345,22 @@ export default function Features() {
             </div>
           </div>
         </section>
+
+        {/* Sticky mobile CTA bar */}
+        <div
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary border-t border-white/20 shadow-lg px-4 py-3"
+          data-testid="sticky-mobile-cta"
+        >
+          <Link href="/register">
+            <Button
+              size="lg"
+              className="bg-accent text-accent-foreground border-accent-border w-full"
+              data-testid="button-cta-sticky"
+            >
+              Start Analyzing Deals for Free
+            </Button>
+          </Link>
+        </div>
       </div>
     </Layout>
   );
