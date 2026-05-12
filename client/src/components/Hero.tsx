@@ -82,7 +82,7 @@ export default function Hero() {
             <Button
               size="lg"
               variant="outline"
-              className="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20 text-base px-6 py-5 w-full"
+              className="hidden bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20 text-base px-6 py-5 w-full"
               onClick={() => window.location.href = '/features'}
               data-testid="button-learn-more-mobile"
             >

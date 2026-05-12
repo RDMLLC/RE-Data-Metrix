@@ -226,6 +226,14 @@ export default function Home() {
 
       <PageFAQSection />
 
+      <div className="sm:hidden text-center text-sm text-muted-foreground px-4 pb-6" data-testid="text-not-ready-mobile">
+        Not ready to start?{" "}
+        <a href="/features" className="text-accent hover:underline" data-testid="link-learn-more-features">
+          Learn more about what we offer
+        </a>
+        .
+      </div>
+
       {/* Signup CTA Section */}
       <section id="signup-cta" className="hidden md:block py-24 bg-background">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
