@@ -146,13 +146,13 @@ export default function Pricing() {
         canonicalUrl="https://redatametrix.com/pricing"
       />
       <PricingPageSchema />
-      <div className="min-h-[calc(100vh-16rem)] pt-16 pb-20 sm:pb-16 bg-background">
+      <div className="min-h-[calc(100vh-16rem)] pt-6 pb-20 sm:pt-16 sm:pb-16 bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4" data-testid="text-pricing-title">
+          <div className="text-center mb-4 sm:mb-12">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-primary mb-2 sm:mb-4" data-testid="text-pricing-title">
               Simple Pricing for Real Estate Deal Analysis Software
             </h1>
-            <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
+            <div className="h-1 w-24 bg-accent mx-auto mb-3 sm:mb-6"></div>
             <p className="hidden sm:block text-lg text-muted-foreground max-w-2xl mx-auto mb-3">
               <strong><em>real estate deal analysis software pricing</em></strong> designed for investors who need powerful tools to analyze deals, compare lenders, and make smarter investment decisions.
             </p>
