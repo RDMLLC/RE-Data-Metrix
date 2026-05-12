@@ -240,7 +240,7 @@ export default function MetaOffer() {
           <div className="flex flex-col items-center gap-2 mt-6">
             <Button
               size="lg"
-              className="bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
+              className="hidden sm:inline-flex bg-accent text-accent-foreground border-accent-border w-full sm:w-auto"
               onClick={handleCta}
               data-testid="button-cta-video"
             >
