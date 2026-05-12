@@ -86,15 +86,15 @@ export default function Pricing() {
               Simple Pricing for Real Estate Deal Analysis Software
             </h1>
             <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-3">
+            <p className="hidden sm:block text-lg text-muted-foreground max-w-2xl mx-auto mb-3">
               <strong><em>real estate deal analysis software pricing</em></strong> designed for investors who need powerful tools to analyze deals, compare lenders, and make smarter investment decisions.
             </p>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="hidden sm:block text-lg text-muted-foreground max-w-2xl mx-auto">
               Choose a plan that fits your strategy, whether you're analyzing a few deals per month or scaling your investment business with unlimited access.
             </p>
           </div>
 
-          <div className="mb-8 text-center">
+          <div className="hidden sm:block mb-8 text-center">
             <h2 className="text-2xl font-bold text-primary mb-3">Choose the Right Plan for Your Investment Strategy</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Whether you're just getting started or actively scaling your portfolio, our pricing plans are built to support every stage of your real estate investing journey.

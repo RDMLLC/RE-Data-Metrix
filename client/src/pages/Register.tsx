@@ -310,7 +310,7 @@ export default function Register() {
         <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
             {/* Left Side - Navy Value Prop Panel */}
-            <div className="lg:col-span-2 bg-primary text-primary-foreground rounded-lg p-12 space-y-8">
+            <div className="hidden sm:block lg:col-span-2 bg-primary text-primary-foreground rounded-lg p-12 space-y-8">
               <div>
                 <h1 className="text-4xl font-bold mb-6">Join RE Data Metrix</h1>
                 <div className="h-1 w-24 bg-accent mb-8"></div>
@@ -339,7 +339,7 @@ export default function Register() {
             <div className="lg:col-span-3">
               <Card className="p-8 shadow-xl bg-card" data-testid="card-register">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Create Your Free Account</CardTitle>
+                  <CardTitle className="text-lg sm:text-2xl">Create Your Free Account</CardTitle>
                   <CardDescription>
                     Get started with free access to deal analysis tools
                   </CardDescription>
