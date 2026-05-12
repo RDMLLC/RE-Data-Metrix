@@ -106,20 +106,20 @@ export default function Features() {
       <WebApplicationSchema />
       <div className="min-h-[calc(100vh-16rem)] bg-background pb-20 sm:pb-0">
         {/* Hero Section */}
-        <section className="hidden sm:block py-20 bg-gradient-to-b from-primary/5 to-background">
+        <section className="hidden sm:block pt-16 pb-6 bg-gradient-to-b from-primary/5 to-background">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-6" data-testid="text-features-title">
               Analyze Deals. Compare Lenders. Move Fast.
             </h1>
             <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-0">
               From quick property lookups to detailed profit analysis, our tools help you make informed investment decisions and connect with the right lenders.
             </p>
           </div>
         </section>
 
         {/* Core Features Section */}
-        <section className="py-16">
+        <section className="pt-4 pb-16 sm:pt-6 sm:pb-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font-bold text-primary mb-4">
