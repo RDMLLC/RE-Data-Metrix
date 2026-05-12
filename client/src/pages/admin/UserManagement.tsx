@@ -30,6 +30,7 @@ import {
   EyeOff,
   Download,
   Pencil,
+  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -148,6 +149,7 @@ export default function UserManagement() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [emailErrorDetails, setEmailErrorDetails] = useState<string[]>([]);
+  const [lastSendResult, setLastSendResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
 
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -334,6 +336,7 @@ export default function UserManagement() {
       return response.json() as Promise<{ sent: number; failed: number; errors: string[] }>;
     },
     onSuccess: (data) => {
+      setLastSendResult({ sent: data.sent, failed: data.failed, errors: data.errors || [] });
       if (data.failed > 0 && data.sent === 0) {
         setEmailErrorDetails(data.errors.length ? data.errors : ["All sends failed"]);
         toast({
@@ -382,6 +385,7 @@ export default function UserManagement() {
 
   const handleSendEmailSubmit = () => {
     setEmailErrorDetails([]);
+    setLastSendResult(null);
     if (!emailSubject.trim() || !emailBody.trim() || selectedUserIds.size === 0) return;
     sendBulkEmailMutation.mutate({
       userIds: Array.from(selectedUserIds),
@@ -654,6 +658,46 @@ export default function UserManagement() {
                     </Button>
                   </div>
                 </CardHeader>
+                {lastSendResult && (
+                  <div className="px-6 pb-2" data-testid="bulk-email-summary">
+                    <div className={`rounded-md border p-3 ${
+                      lastSendResult.failed > 0
+                        ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800'
+                        : 'border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800'
+                    }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${
+                            lastSendResult.failed > 0
+                              ? 'text-amber-900 dark:text-amber-100'
+                              : 'text-green-900 dark:text-green-100'
+                          }`} data-testid="text-bulk-email-summary">
+                            Sent: {lastSendResult.sent} | Failed: {lastSendResult.failed}
+                          </p>
+                          {lastSendResult.failed > 0 && lastSendResult.errors.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium text-amber-900 dark:text-amber-100 mb-1">Failed recipients:</p>
+                              <ul className="text-xs text-amber-800 dark:text-amber-200 list-disc pl-5 space-y-0.5 max-h-40 overflow-auto">
+                                {lastSendResult.errors.map((e, i) => (
+                                  <li key={i} data-testid={`text-bulk-email-failed-${i}`}>{e}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setLastSendResult(null)}
+                          data-testid="button-dismiss-bulk-email-summary"
+                          aria-label="Dismiss send summary"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <CardContent>
                   <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="relative flex-1">
