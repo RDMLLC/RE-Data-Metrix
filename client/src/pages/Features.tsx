@@ -182,11 +182,11 @@ export default function Features() {
         {/* Additional Benefits Section */}
         <section className="py-0 sm:py-16 bg-transparent sm:bg-muted/30">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="hidden sm:block text-center mb-12">
-              <h2 className="text-3xl lg:text-4xl font-bold text-primary mb-4">
+            <div className="mb-6 sm:mb-12 sm:text-center">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-1 sm:mb-4">
                 Additional Benefits
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground sm:max-w-2xl sm:mx-auto">
                 More features to help you succeed in real estate investing
               </p>
             </div>
