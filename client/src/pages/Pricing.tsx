@@ -549,7 +549,7 @@ export default function Pricing() {
             )}
           </div>
 
-          <div className="mt-16 text-center">
+          <div className="hidden sm:block mt-16 text-center">
             <h3 className="text-lg font-semibold text-foreground mb-4">Questions?</h3>
             <p className="text-muted-foreground mb-4">
               Check our <Link href="/faq" className="text-primary hover:underline">FAQ</Link> or{" "}
