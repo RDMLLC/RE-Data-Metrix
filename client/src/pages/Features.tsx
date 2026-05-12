@@ -109,29 +109,12 @@ export default function Features() {
         <section className="hidden sm:block py-20 bg-gradient-to-b from-primary/5 to-background">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-6" data-testid="text-features-title">
-              Everything You Need to Analyze Real Estate Deals
+              Analyze Deals. Compare Lenders. Move Fast.
             </h1>
             <div className="h-1 w-24 bg-accent mx-auto mb-6"></div>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
               From quick property lookups to detailed profit analysis, our tools help you make informed investment decisions and connect with the right lenders.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {isAuthenticated ? (
-                <Link href="/deal-analysis">
-                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-start-analyzing">
-                    Start Analyzing Deals
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/pricing">
-                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" data-testid="button-get-started">
-                    Get Started Free
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              )}
-            </div>
           </div>
         </section>
 
