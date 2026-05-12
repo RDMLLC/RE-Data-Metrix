@@ -19,6 +19,10 @@ const pageFaqs = [
   {
     question: "How does the loan comparison work?",
     answer: "Enter your deal parameters once and the Deal Analysis Wizard compares up to four loan scenarios side by side — showing how each one affects your out-of-pocket costs, cash-on-cash return, ROI, and net profit."
+  },
+  {
+    question: "What types of real estate deals can I analyze?",
+    answer: "RE Data Metrix supports fix and flip, wholesale, and DSCR rental deals. The platform helps you calculate your max offer price and projected returns — so you know your numbers before you make an offer. You can also compare hard money lenders and loan products side by side, and connect directly with lenders through the platform."
   }
 ];
 
@@ -150,7 +154,7 @@ export default function GoogleOffer() {
 
         <div className="relative z-10 max-w-3xl mx-auto px-6 pt-10 pb-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-3" data-testid="heading-hero">
-            Analyze Any Deal.<br />
+            Analyze Your Deal.<br />
             <span className="text-accent">Find the Right Lender.</span><br />
             Close with Confidence.
           </h1>
