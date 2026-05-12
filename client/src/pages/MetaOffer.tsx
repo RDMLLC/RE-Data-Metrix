@@ -253,7 +253,7 @@ export default function MetaOffer() {
       {/* 3. Benefits */}
       <section className="py-16 lg:py-24 bg-background">
         <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-2xl lg:text-3xl font-bold text-center mb-10" data-testid="heading-benefits">
+          <h2 className="text-[clamp(0.95rem,4vw,1.5rem)] sm:text-2xl lg:text-3xl font-bold text-center mb-10 tracking-tight whitespace-nowrap" data-testid="heading-benefits">
             Everything you need to invest smarter
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
