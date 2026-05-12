@@ -76,7 +76,28 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath, { index: false }));
+  app.use(
+    express.static(distPath, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (/[\\/]assets[\\/]/.test(filePath)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+        if (/\.(woff2?|ttf|otf|eot)$/i.test(filePath)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return;
+        }
+        if (/\.(png|jpe?g|webp|gif|svg|ico|avif)$/i.test(filePath)) {
+          res.setHeader("Cache-Control", "public, max-age=2592000");
+          return;
+        }
+        if (filePath.endsWith("index.html")) {
+          res.setHeader("Cache-Control", "no-store");
+        }
+      },
+    }),
+  );
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
