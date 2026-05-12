@@ -191,6 +191,22 @@ export default function MetaOffer() {
           <p className="text-lg text-white/85" data-testid="text-subheadline">
             Turn guesswork into data-driven decisions — know your profit, compare lenders, and move fast.
           </p>
+          <div className="mt-5 mb-2 text-left sm:text-center" data-testid="hero-value-bullets">
+            <ul className="inline-block text-left text-white text-sm sm:text-[15px] space-y-1.5">
+              <li className="flex items-start gap-2">
+                <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
+                <span>Analyze any fix-and-flip or rental deal in minutes</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
+                <span>Compare hard money lenders and loan terms side by side</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-accent flex-shrink-0 leading-relaxed" aria-hidden="true">✓</span>
+                <span>Free to start — no credit card required</span>
+              </li>
+            </ul>
+          </div>
           <p className="text-sm text-white/60 mt-3" data-testid="text-social-proof-hero">
             Built by Investors for Investors.
           </p>
