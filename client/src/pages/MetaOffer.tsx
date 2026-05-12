@@ -5,7 +5,8 @@ import { SEO } from "@/components/SEO";
 import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
-import { TrendingUp, Search, ShieldAlert, FileText, Facebook, Linkedin } from "lucide-react";
+import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
+import { SiFacebook, SiLinkedin } from "react-icons/si";
 
 const pageFaqs = [
   {
@@ -277,27 +278,27 @@ export default function MetaOffer() {
 
       {/* Social follow nudge */}
       <section className="max-w-3xl mx-auto px-6 pb-4 text-center" data-testid="section-social-follow">
-        <p className="text-sm text-muted-foreground mb-2">Follow us for tips and strategies</p>
-        <div className="flex items-center justify-center gap-4">
+        <p className="text-base text-muted-foreground mb-3">Follow us for tips and strategies</p>
+        <div className="flex items-center justify-center gap-5">
           <a
             href="https://www.facebook.com/profile.php?id=61582008407624"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Follow RE Data Metrix on Facebook"
-            className="text-primary hover:text-accent transition-colors"
+            className="transition-opacity hover:opacity-80"
             data-testid="link-social-facebook"
           >
-            <Facebook className="h-5 w-5" />
+            <SiFacebook className="h-7 w-7" style={{ color: "#1877F2" }} />
           </a>
           <a
             href="https://linkedin.com/company/re-data-metrix-llc"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Follow RE Data Metrix on LinkedIn"
-            className="text-primary hover:text-accent transition-colors"
+            className="transition-opacity hover:opacity-80"
             data-testid="link-social-linkedin"
           >
-            <Linkedin className="h-5 w-5" />
+            <SiLinkedin className="h-7 w-7" style={{ color: "#0A66C2" }} />
           </a>
         </div>
       </section>
