@@ -6,6 +6,7 @@ import { useMarketingEvents } from "@/components/MarketingPixelLoader";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { TrendingUp, Search, ShieldAlert, FileText } from "lucide-react";
+import { SiFacebook, SiLinkedin } from "react-icons/si";
 
 const pageFaqs = [
   {
@@ -236,6 +237,33 @@ export default function GoogleOffer() {
 
       <PageFAQSection />
 
+      {/* Social follow nudge */}
+      <section className="max-w-3xl mx-auto px-6 pb-4 text-center" data-testid="section-social-follow">
+        <p className="text-base text-muted-foreground mb-3">Follow us for tips and strategies</p>
+        <div className="flex items-center justify-center gap-5">
+          <a
+            href="https://www.facebook.com/profile.php?id=61582008407624"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Follow RE Data Metrix on Facebook"
+            className="transition-opacity hover:opacity-80"
+            data-testid="link-social-facebook"
+          >
+            <SiFacebook className="h-7 w-7" style={{ color: "#1877F2" }} />
+          </a>
+          <a
+            href="https://linkedin.com/company/re-data-metrix-llc"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Follow RE Data Metrix on LinkedIn"
+            className="transition-opacity hover:opacity-80"
+            data-testid="link-social-linkedin"
+          >
+            <SiLinkedin className="h-7 w-7" style={{ color: "#0A66C2" }} />
+          </a>
+        </div>
+      </section>
+
       {/* 4. Closing CTA */}
       <section className="py-16 lg:py-24 bg-background">
         <div className="max-w-3xl mx-auto px-6 text-center">
@@ -267,7 +295,7 @@ export default function GoogleOffer() {
           onClick={handleCta}
           data-testid="button-cta-sticky"
         >
-          See Plans & Pricing
+          Start Analyzing Deals for Free
         </Button>
       </div>
     </div>
