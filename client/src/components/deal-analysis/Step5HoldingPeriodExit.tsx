@@ -18,7 +18,7 @@ import {
   CollapsibleContent, 
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
-import { TrendingUp, ChevronDown, HelpCircle, AlertTriangle } from "lucide-react";
+import { TrendingUp, ChevronDown, ChevronUp, HelpCircle, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -51,6 +51,7 @@ export default function Step4HoldingPeriodExit({
   const [closingCostsOpen, setClosingCostsOpen] = useState(false);
   const [closingCosts2Open, setClosingCosts2Open] = useState(false);
   const [carryingCostsOpen, setCarryingCostsOpen] = useState(false);
+  const [arvRuleExpanded, setArvRuleExpanded] = useState(false);
 
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
@@ -1056,9 +1057,22 @@ export default function Step4HoldingPeriodExit({
                       </div>
                     );
                   })()}
-                  <p className="sm:hidden text-[10px] text-muted-foreground mt-1 leading-tight" data-testid="text-arv-rule-help-mobile-step5">
-                    70% Rule: target ≤70% of ARV for margin after rehab and holding costs. Higher may be OK in high-value markets.
-                  </p>
+                  <div className="sm:hidden mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setArvRuleExpanded(!arvRuleExpanded)}
+                      className="flex items-center justify-center gap-1 mx-auto text-[10px] text-muted-foreground min-h-8 cursor-pointer"
+                      data-testid="button-arv-rule-toggle-mobile-step5"
+                    >
+                      {arvRuleExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span>What does this mean?</span>
+                    </button>
+                    {arvRuleExpanded && (
+                      <p className="text-[10px] text-muted-foreground mt-1 leading-tight" data-testid="text-arv-rule-help-mobile-step5">
+                        70% Rule: target ≤70% of ARV for margin after rehab and holding costs. Higher may be OK in high-value markets.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="text-center">
                   <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">Cash on Cash</div>

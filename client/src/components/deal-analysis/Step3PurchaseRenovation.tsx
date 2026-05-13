@@ -145,9 +145,11 @@ export default function Step3PurchaseRenovation({
 
   // Max Offer Calculator state
   const [showMaxOfferCalc, setShowMaxOfferCalc] = useState(false);
+  const [showMaxOfferCalcMobile, setShowMaxOfferCalcMobile] = useState(false);
   const [maxArvPercent, setMaxArvPercent] = useState(70);
   const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
+  const [arvRuleExpanded, setArvRuleExpanded] = useState(false);
 
   // Max Offer Calculator calculations
   const maxProjectCost = calcArv * (maxArvPercent / 100);
@@ -1011,7 +1013,7 @@ export default function Step3PurchaseRenovation({
             <CardHeader>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <CardTitle className="text-lg w-full sm:w-auto text-center sm:text-left">Investment Details</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -2267,11 +2269,152 @@ export default function Step3PurchaseRenovation({
                   {percentageOfArv.toFixed(1)}%
                 </span>
               </div>
-              <p className="sm:hidden text-xs text-muted-foreground mt-1" data-testid="text-arv-rule-help-mobile">
-                The 70% Rule: most investors target buying at or below 70% of ARV to ensure enough margin after rehab and holding costs. In high-value markets, a higher percentage may still be acceptable due to larger absolute profit margins.
-              </p>
+              <div className="sm:hidden mt-1">
+                <button
+                  type="button"
+                  onClick={() => setArvRuleExpanded(!arvRuleExpanded)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground min-h-8 cursor-pointer"
+                  data-testid="button-arv-rule-toggle-mobile"
+                >
+                  {arvRuleExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  <span>What does this mean?</span>
+                </button>
+                {arvRuleExpanded && (
+                  <p className="text-xs text-muted-foreground mt-1" data-testid="text-arv-rule-help-mobile">
+                    The 70% Rule: most investors target buying at or below 70% of ARV to ensure enough margin after rehab and holding costs. In high-value markets, a higher percentage may still be acceptable due to larger absolute profit margins.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
+
+          {/* Mobile-only: Help with ARV + Max Offer Calculator (moved from Investment Details header) */}
+          <div className="sm:hidden flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-h-11 gap-1.5 font-bold"
+              onClick={() => setShowArvHelper(!showArvHelper)}
+              data-testid="button-help-with-arv-mobile"
+            >
+              <Search className="h-4 w-4" />
+              Help with ARV
+              {showArvHelper ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
+            <Popover open={showMaxOfferCalcMobile} onOpenChange={(open) => {
+              if (open) {
+                setCalcArv(arv || 0);
+                setCalcRehabBudget(rehabBudget || 0);
+              }
+              setShowMaxOfferCalcMobile(open);
+            }}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full min-h-11 gap-1.5"
+                  data-testid="button-max-offer-calc-mobile"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  Max Offer Calculator
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="center">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Help Determine Max Offer Price</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Calculate your maximum purchase price based on ARV percentage and rehab costs
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="calcArvMobile" className="text-xs font-medium">ARV</Label>
+                      <Input
+                        id="calcArvMobile"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={calcArv || ""}
+                        onChange={(e) => setCalcArv(parseFloat(e.target.value) || 0)}
+                        placeholder="Enter ARV"
+                        className="mt-1"
+                        data-testid="input-calc-arv-mobile"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="calcRehabMobile" className="text-xs font-medium">Rehab Budget</Label>
+                      <Input
+                        id="calcRehabMobile"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={calcRehabBudget || ""}
+                        onChange={(e) => setCalcRehabBudget(parseFloat(e.target.value) || 0)}
+                        placeholder="Enter rehab budget"
+                        className="mt-1"
+                        data-testid="input-calc-rehab-mobile"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="maxArvPctMobile" className="text-xs font-medium">Max % of ARV ({maxArvPercent}%)</Label>
+                      <Input
+                        id="maxArvPctMobile"
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="1"
+                        value={maxArvPercent}
+                        onChange={(e) => setMaxArvPercent(parseFloat(e.target.value) || 70)}
+                        className="mt-1"
+                        data-testid="input-max-arv-pct-mobile"
+                      />
+                    </div>
+                    <div className="border-t pt-3 space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Max Project Cost:</span>
+                        <span className="font-medium">{formatCurrency(maxProjectCost)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Max Offer Price:</span>
+                        <span className="text-primary">{formatCurrency(maxOfferPrice)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          form.setValue("purchasePrice", maxOfferPrice);
+                          if (calcArv > 0) form.setValue("arv", calcArv);
+                          if (calcRehabBudget > 0) form.setValue("rehabBudget", calcRehabBudget);
+                          toast({
+                            title: "Values Applied",
+                            description: `ARV: ${formatCurrency(calcArv)}, Rehab: ${formatCurrency(calcRehabBudget)}, Purchase: ${formatCurrency(maxOfferPrice)}`,
+                          });
+                          setShowMaxOfferCalcMobile(false);
+                        }}
+                        disabled={maxOfferPrice <= 0}
+                        data-testid="button-use-max-offer-mobile"
+                      >
+                        Use This Offer Price
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowMaxOfferCalcMobile(false)}
+                        data-testid="button-close-calc-mobile"
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
           <div className="flex flex-col gap-4">
             <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between flex-wrap">

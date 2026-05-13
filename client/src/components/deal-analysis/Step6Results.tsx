@@ -233,6 +233,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const loanPreference = form.watch("loanPreference") || "one-of-each";
   const [hasCalculated, setHasCalculated] = useState(false);
   const [visibleLenderCount, setVisibleLenderCount] = useState(2);
+  const [showCashSale, setShowCashSale] = useState(false);
+  const [showAllLoansMobile, setShowAllLoansMobile] = useState(false);
   const [results, setResults] = useState<ResultsResponse | null>(null);
   
   // Auto-save state — suppressed on the initial mount of a saved deal view so no
@@ -1890,11 +1892,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <img src={logoImg} alt="RE Data Metrix" className="h-12 w-12" />
-                  <div>
-                    <div className="font-bold text-lg text-primary">RE Data Metrix</div>
-                    <div className="text-xs text-muted-foreground italic">Turning Terms into Returns</div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-lg text-primary whitespace-nowrap">RE Data Metrix</div>
+                    <div className="text-xs text-muted-foreground italic whitespace-nowrap">Turning Terms into Returns</div>
                   </div>
                 </div>
               )}
@@ -2345,8 +2347,20 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             <CardContent className="pt-0">
               {/* Mobile Card View - visible only on small screens */}
               <div className="lg:hidden space-y-4">
-                {/* Cash Sale Card */}
-                {!pdfHideCash && <div className="border rounded-lg p-4 bg-card">
+                {/* Mobile-only: Show/Hide Cash Sale toggle (Cash Sale always visible on sm+) */}
+                {!pdfHideCash && !isGeneratingPdf && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="sm:hidden w-full min-h-11"
+                    onClick={() => setShowCashSale(!showCashSale)}
+                    data-testid="button-toggle-cash-sale-mobile"
+                  >
+                    {showCashSale ? 'Hide Cash Sale' : 'Show Cash Sale'}
+                  </Button>
+                )}
+                {/* Cash Sale Card — hidden by default on mobile, always shown on sm+ */}
+                {!pdfHideCash && <div className={`${showCashSale || isGeneratingPdf ? '' : 'hidden sm:block'} border rounded-lg p-4 bg-card`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-lg">Cash Sale</h3>
                     {!isGeneratingPdf && (
@@ -2505,9 +2519,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </div>
                 )}
 
-                {/* Lender Cards */}
+                {/* Lender Cards — first 2 always shown on mobile; rest hidden until "Show more loans" */}
                 {pdfLenders.map((lender, index) => (
-                  <div key={index} className="border rounded-lg p-4 bg-card">
+                  <div
+                    key={index}
+                    className={`${index < 2 || showAllLoansMobile || isGeneratingPdf ? '' : 'hidden sm:block'} border rounded-lg p-4 bg-card`}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="font-semibold text-lg">{lender.lenderName}</h3>
@@ -2677,13 +2694,27 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </div>
                 ))}
                 
-                {/* Show More Button for Mobile */}
+                {/* Mobile-only: Show more / fewer loans toggle (visible only when there are >2 loan cards) */}
+                {!isGeneratingPdf && pdfLenders.length > 2 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="sm:hidden w-full min-h-11"
+                    onClick={() => setShowAllLoansMobile(!showAllLoansMobile)}
+                    data-testid="button-show-more-loans-mobile"
+                  >
+                    {showAllLoansMobile
+                      ? 'Show fewer loans'
+                      : `Show more loans (+${pdfLenders.length - 2} more)`}
+                  </Button>
+                )}
+                {/* Desktop "Show More" — pagination across all screens for the visibleLenderCount cap */}
                 {hasMoreLenders && !isGeneratingPdf && (
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="hidden sm:flex w-full"
                     onClick={handleViewMoreLoans}
-                    data-testid="button-show-more-loans-mobile"
+                    data-testid="button-load-more-loans"
                   >
                     Show More Loans ({results.lenderColumns.length - visibleLenderCount} remaining)
                   </Button>
@@ -3569,9 +3600,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           </div>
               </div>
 
-          {/* Show More Loans Button - Hidden in PDF */}
+          {/* Show More Loans Button - Desktop table pagination only (hidden on mobile; mobile uses sm:hidden toggle inside the lg:hidden card view) */}
           {hasMoreLenders && !isGeneratingPdf && (
-            <div className="flex justify-center mt-4">
+            <div className="hidden lg:flex justify-center mt-4">
               <Button
                 variant="outline"
                 onClick={handleViewMoreLoans}

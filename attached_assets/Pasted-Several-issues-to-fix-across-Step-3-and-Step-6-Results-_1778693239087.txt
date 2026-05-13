@@ -1,0 +1,62 @@
+Several issues to fix across Step 3 and Step 6 Results. Apply in order.
+
+Fix 1 — Step 3 buttons still showing at top on mobile
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, verify the current button order. On mobile the buttons should be ordered:
+
+Continue to Investor Information (primary, full width)
+Calculate Wholesale Max Offer Price (secondary, full width)
+Analyze as Rental Property card (below both)
+
+And the "Help with ARV" + "Max Offer Calculator" buttons in the Investment Details section header area should be moved below the Summary section on mobile. If these changes didn't take, reapply them. Show me the current button layout code before and after.
+
+Fix 2 — Percentage of ARV collapsible tooltip on mobile
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx and Step5HoldingPeriodExit.tsx, the mobile inline help text below Percentage of ARV should be a collapsible/expandable section. If not yet applied:
+
+Add const [arvRuleExpanded, setArvRuleExpanded] = useState(false)
+Replace the always-visible sm:hidden paragraph with a tappable row: ChevronDown/ChevronUp icon + "What does this mean?" in text-xs text-muted-foreground
+Explanation text only renders when arvRuleExpanded === true
+min-h-8 cursor-pointer on the toggle row
+
+
+Fix 3 — PDF/print header layout (RE Data Metrix wrapping)
+In client/src/components/deal-analysis/Step6Results.tsx, find the report header showing the logo, "RE Data Metrix", and "Turning Terms into Returns". Fix so:
+
+Logo + "RE Data Metrix" stay on one line — whitespace-nowrap on company name, flex-shrink-0 on logo, min-w-0 on text container
+"Turning Terms into Returns" on its own single line below, whitespace-nowrap
+Logo size on mobile: h-8 w-8 sm:h-10 sm:w-10
+
+
+Fix 4 — Step 6 Results mobile comparison layout
+First, read the current Step 6 Results component in full and tell me:
+
+Is the mobile view currently using the stacked card view (lg:hidden) or the table view?
+How many loan result columns can there be — what is the maximum? What drives that number (user-entered loans + lender matches)?
+Where is the existing "Show more loans" button or pagination for loan columns, if any? Show me the exact code.
+
+Then apply these changes:
+A — Mobile card view (if lg:hidden card view is what renders on mobile):
+
+Default state on mobile: show 2 loan columns side by side in grid-cols-2, hide remaining loans
+Cash Sale card: hidden by default on mobile. Add a sm:hidden text button above the grid: "Show Cash Sale" / "Hide Cash Sale" that toggles showCashSale state. On sm+ always show.
+"Show more loans" button: below the 2-column grid, show a sm:hidden button "Show more loans (+N more)" where N is the number of hidden loan columns. Tapping expands to show all loans in the grid. When expanded, button changes to "Show fewer loans". On sm+ always show all columns.
+Reduce card padding to p-3 on mobile
+All text text-xs on mobile within cards
+Net Profit stays green and most prominent
+Key metrics (Net Profit, OOP, CoC, Annualized) prominent; secondary detail rows text-[10px]
+
+B — Mobile table view (if the table renders on mobile):
+
+Default state: show label column + first 2 loan columns only. Hide Cash Sale column and any loan columns beyond the first 2.
+Add sm:hidden toggle button above table: "Show Cash Sale" / "Hide Cash Sale"
+Add sm:hidden button below table: "Show more loans (+N more)" / "Show fewer loans"
+Table: table-fixed w-full, cell padding px-2 py-2, font text-xs on mobile
+Label column w-2/5, each loan column w-[30%]
+
+C — Regardless of which view:
+
+The "Show more loans" and "Show Cash Sale" toggles must be sm:hidden — desktop always shows everything
+"Show more loans" button: variant="outline" w-full min-h-11 sm:min-h-9 matching the secondary button standard used elsewhere in the wizard
+State variables: showCashSale (default false on mobile) and showAllLoans (default false on mobile)
+
+
+After all fixes confirm build compiles cleanly and list pre-existing errors separately.
