@@ -153,6 +153,9 @@ export default function Pricing() {
               Simple Pricing for Real Estate Deal Analysis Software
             </h1>
             <div className="h-1 w-24 bg-accent mx-auto mb-3 sm:mb-6"></div>
+            <p className="sm:hidden text-sm text-muted-foreground max-w-md mx-auto" data-testid="text-pricing-intro-mobile">
+              Plans start free. Upgrade anytime for unlimited analyses, PDF exports, and full lender comparisons.
+            </p>
             <p className="hidden sm:block text-lg text-muted-foreground max-w-2xl mx-auto mb-3">
               <strong><em>real estate deal analysis software pricing</em></strong> designed for investors who need powerful tools to analyze deals, compare lenders, and make smarter investment decisions.
             </p>
@@ -249,10 +252,6 @@ export default function Pricing() {
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
                     <Check className="h-4 w-4 text-success" />
-                    2 automated deal analyses/month
-                  </li>
-                  <li className="flex items-center gap-2 text-sm text-foreground">
-                    <Check className="h-4 w-4 text-success" />
                     Unlimited manual deal analysis
                   </li>
                   <li className="flex items-center gap-2 text-sm text-foreground">
@@ -268,13 +267,13 @@ export default function Pricing() {
               <CardFooter>
                 {isAuthenticated ? (
                   <Link href="/deal-analysis" className="w-full">
-                    <Button className="w-full" variant="outline" data-testid="button-start-free">
+                    <Button className="w-full min-h-11 sm:min-h-9" variant="outline" data-testid="button-start-free">
                       Start Analyzing
                     </Button>
                   </Link>
                 ) : (
                   <Link href={getRegisterUrl()} className="w-full">
-                    <Button className="w-full" variant="outline" data-testid="button-signup-free">
+                    <Button className="w-full min-h-11 sm:min-h-9" variant="outline" data-testid="button-signup-free">
                       Get Started
                     </Button>
                   </Link>
@@ -333,9 +332,9 @@ export default function Pricing() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Link href={isAuthenticated ? "/portal/upgrade" : "/checkout?plan=monthly"}>
+                  <Link href={isAuthenticated ? "/portal/upgrade" : "/checkout?plan=monthly"} className="w-full">
                     <Button 
-                      className={`w-full ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
+                      className={`w-full min-h-11 sm:min-h-9 ${billingCycle === "monthly" ? "bg-accent text-accent-foreground" : ""}`}
                       variant={billingCycle === "monthly" ? "default" : "outline"}
                       data-testid="button-get-started-monthly"
                     >
@@ -411,7 +410,7 @@ export default function Pricing() {
                 <CardFooter>
                   <Link href={isAuthenticated ? "/portal/upgrade?plan=annual&code=FREEMONTH" : "/checkout?plan=annual&code=FREEMONTH"} className="w-full">
                     <Button 
-                      className={`w-full ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
+                      className={`w-full min-h-11 sm:min-h-9 ${billingCycle === "annual" ? "bg-accent text-accent-foreground" : ""}`}
                       variant={billingCycle === "annual" ? "default" : "outline"}
                       data-testid="button-get-started-annual"
                     >
@@ -428,7 +427,47 @@ export default function Pricing() {
             <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8" data-testid="text-features-title">
               Feature Comparison
             </h2>
-            <Card className="overflow-hidden max-w-3xl mx-auto">
+
+            {/* Mobile stacked view */}
+            <div className="sm:hidden max-w-3xl mx-auto" data-testid="list-feature-comparison-mobile">
+              <h3 className="text-base font-semibold text-foreground mb-3">Free vs. Paid — What's Included</h3>
+              <div className="space-y-2">
+                {featureComparison.map((row, index) => (
+                  <Card key={index} className="p-3" data-testid={`row-feature-mobile-${index}`}>
+                    <p className="font-medium text-sm text-foreground mb-2">{row.feature}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="border-r border-border pr-2">
+                        <p className="text-xs text-muted-foreground mb-0.5">Free</p>
+                        {row.free === "No" ? (
+                          <p className="text-xs text-muted-foreground">—</p>
+                        ) : row.free === "Yes" ? (
+                          <p className="text-xs text-success flex items-center gap-1">
+                            <Check className="h-3.5 w-3.5" />Yes
+                          </p>
+                        ) : (
+                          <p className="text-xs text-foreground">{row.free}</p>
+                        )}
+                      </div>
+                      <div className="pl-1">
+                        <p className="text-xs text-muted-foreground mb-0.5">Paid</p>
+                        {row.paid === "No" ? (
+                          <p className="text-xs text-muted-foreground">—</p>
+                        ) : row.paid === "Yes" ? (
+                          <p className="text-xs text-success font-medium flex items-center gap-1">
+                            <Check className="h-3.5 w-3.5" />Yes
+                          </p>
+                        ) : (
+                          <p className="text-xs text-success font-medium">{row.paid}</p>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop table view */}
+            <Card className="hidden sm:block overflow-hidden max-w-3xl mx-auto">
               <div className="overflow-x-auto">
                 <table className="w-full" data-testid="table-feature-comparison">
                   <thead>
@@ -458,44 +497,44 @@ export default function Pricing() {
             </Card>
           </div>
 
-          <div className="hidden sm:block mb-16">
+          <div className="mb-16">
             <h2 className="text-2xl lg:text-3xl font-bold text-primary text-center mb-8">
               Why RE Data Metrix?
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="text-center p-6">
-                <div className="w-12 h-12 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Calculator className="h-6 w-6 text-primary" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+              <Card className="text-center p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Calculator className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Smart Analysis</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">Smart Analysis</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">
                   Comprehensive deal analysis with ROI, cash flow, and profitability calculations.
                 </p>
               </Card>
-              <Card className="text-center p-6">
-                <div className="w-12 h-12 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-primary" />
+              <Card className="text-center p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Curated Lenders</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">Curated Lenders</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">
                   Access our vetted network of private lenders specializing in real estate.
                 </p>
               </Card>
-              <Card className="text-center p-6">
-                <div className="w-12 h-12 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-primary" />
+              <Card className="hidden sm:block text-center p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Compare Options</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">Compare Options</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Side-by-side loan comparisons to find the best financing for your deals.
                 </p>
               </Card>
-              <Card className="text-center p-6">
-                <div className="w-12 h-12 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-primary" />
+              <Card className="hidden sm:block text-center p-4 sm:p-6">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Secure Platform</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold text-foreground mb-2 text-sm sm:text-base">Secure Platform</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Your data is protected with enterprise-grade security and encryption.
                 </p>
               </Card>
@@ -525,11 +564,11 @@ export default function Pricing() {
             </p>
           </section>
 
-          <div className="hidden sm:block bg-primary rounded-xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-primary-foreground mb-4">
+          <div className="bg-primary rounded-xl p-4 sm:p-8 text-center">
+            <h2 className="text-xl sm:text-2xl font-bold text-primary-foreground mb-3 sm:mb-4">
               Ready to Transform Your Deal Analysis?
             </h2>
-            <p className="text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
+            <p className="hidden sm:block text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
               Create your free account today and start analyzing deals, comparing lenders, and making smarter investment decisions.
             </p>
             {isSubscriber ? (
@@ -549,7 +588,7 @@ export default function Pricing() {
             )}
           </div>
 
-          <div className="hidden sm:block mt-16 text-center">
+          <div className="mt-12 sm:mt-16 text-center">
             <h3 className="text-lg font-semibold text-foreground mb-4">Questions?</h3>
             <p className="text-muted-foreground mb-4">
               Check our <Link href="/faq" className="text-primary hover:underline">FAQ</Link> or{" "}
@@ -561,20 +600,34 @@ export default function Pricing() {
         </div>
 
         {/* Sticky mobile CTA bar */}
-        <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary border-t border-white/20 shadow-lg px-4 py-3"
-          data-testid="sticky-mobile-cta"
-        >
-          <Link href="/register">
-            <Button
-              size="lg"
-              className="bg-accent text-accent-foreground border-accent-border w-full"
-              data-testid="button-cta-sticky"
-            >
-              Start Analyzing Deals for Free
-            </Button>
-          </Link>
-        </div>
+        {!(isAuthenticated && isSubscriber) && (
+          <div
+            className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-primary border-t border-white/20 shadow-lg px-4 py-3"
+            data-testid="sticky-mobile-cta"
+          >
+            {isAuthenticated ? (
+              <Link href="/portal/upgrade">
+                <Button
+                  size="lg"
+                  className="bg-accent text-accent-foreground border-accent-border w-full"
+                  data-testid="button-cta-sticky"
+                >
+                  Upgrade Your Account
+                </Button>
+              </Link>
+            ) : (
+              <Link href={getRegisterUrl()}>
+                <Button
+                  size="lg"
+                  className="bg-accent text-accent-foreground border-accent-border w-full"
+                  data-testid="button-cta-sticky"
+                >
+                  Start Analyzing Deals for Free
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -1,0 +1,61 @@
+Read client/src/pages/Pricing.tsx in full, then apply the following fixes in order.
+
+Fix 1 — Unhide and adapt the 7 hidden mobile sections
+Do NOT simply remove hidden sm:block from these sections — instead replace each hidden section with a mobile-appropriate version that sits above the sm breakpoint and a desktop version that preserves the existing layout. Specific instructions per section:
+Lines 156–168 (intro paragraphs + "Choose the Right Plan" h2):
+
+Replace the two hidden sm:block paragraphs with a single short paragraph visible on mobile only (sm:hidden): "Plans start free. Upgrade anytime for unlimited analyses, PDF exports, and full lender comparisons."
+Keep the existing desktop paragraphs as-is
+
+Lines 461–502 ("Why RE Data Metrix?" 4-card grid):
+
+Replace the hidden sm:block wrapper with a mobile-friendly version: show 2 of the 4 cards on mobile in a grid-cols-2 layout (Smart Analysis + Curated Lenders — the two most relevant to a pricing decision), show all 4 on desktop as before
+Keep text concise — truncate descriptions to 1 line on mobile using line-clamp-2
+
+Lines 505–525 ("What You Get" SEO section):
+
+Keep hidden on mobile — this is pure SEO copy and adds no conversion value on mobile. Leave as-is.
+
+Lines 528–550 (bottom CTA banner "Ready to Transform…"):
+
+Replace hidden sm:block with a visible mobile version — simplify to just the headline and button, remove the subtitle paragraph on mobile: <p className="hidden sm:block …">
+The banner itself should be visible on mobile but with reduced padding: p-4 sm:p-8
+
+Lines 552–558 ("Questions?" block):
+
+Remove hidden sm:block — this is a simple text link and should be visible on mobile
+
+
+Fix 2 — Feature comparison table — add mobile stacked view
+Above the existing overflow-x-auto table (line 432), add a mobile-only stacked version (sm:hidden) and wrap the existing table in hidden sm:block.
+The mobile stacked version should:
+
+Show each feature as a card row with the feature name on top in font-medium text-sm
+Below it, two columns side by side: "Free" label + value on the left, "Paid" label + value on the right
+Use the same featureComparison array data
+Checkmark (✓) in green for included, X or dash for not included — match whatever icons/text the existing table uses
+Add a header row at the top: "Free vs. Paid — What's Included" as text-base font-semibold mb-3
+
+
+Fix 3 — Monthly card Link missing w-full
+Line 336: add className="w-full" to the <Link> wrapping the Monthly card CTA button, matching the Free (line 270) and Annual (line 412) cards.
+
+Fix 4 — Pricing card CTA tap targets
+Lines 268, 335, 411 — the three primary pricing card CTA buttons use default Button height (36px). Add className="w-full min-h-11 sm:min-h-9" to each of the three CardFooter buttons to give 44px touch targets on mobile only.
+
+Fix 5 — Sticky CTA bar auth awareness
+Lines 563–577 — the sticky bar always shows "Start Analyzing Deals for Free" linking to /register regardless of auth state. Update it to:
+
+If isAuthenticated && isSubscriber: hide the sticky bar entirely (they're already a subscriber, no CTA needed)
+If isAuthenticated && !isSubscriber: show "Upgrade Your Account" linking to the appropriate upgrade/checkout path
+If !isAuthenticated: keep existing "Start Analyzing Deals for Free" → /register but wrap with getRegisterUrl() to preserve UTM params
+
+
+Fix 6 — Duplicate Free card row
+Lines 252–253: remove the duplicate "2 automated deal analyses/month" row in the Free card feature list.
+
+After all fixes:
+
+Confirm the build compiles cleanly
+Verify the mobile stacked comparison table renders correctly — check the featureComparison array values to make sure checkmarks/dashes display properly in the new layout
+List any pre-existing errors separately so we can distinguish them from anything new
