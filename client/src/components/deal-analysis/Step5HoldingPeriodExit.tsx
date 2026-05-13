@@ -1031,10 +1031,34 @@ export default function Step4HoldingPeriodExit({
               </div>
               <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t">
                 <div className="text-center">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">% of ARV</div>
-                  <div className="text-base sm:text-lg font-semibold" data-testid="text-percentage-arv-step4">
-                    {percentageArv.toFixed(1)}%
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-1 inline-flex items-center justify-center gap-1">
+                    % of ARV
+                    <span className="hidden sm:inline-flex">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>The 70% Rule: most investors target buying at or below 70% of ARV to ensure enough margin after rehab and holding costs. In high-value markets, a higher percentage may still be acceptable due to larger absolute profit margins.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
                   </div>
+                  {(() => {
+                    const roundedArvPct = parseFloat(percentageArv.toFixed(1));
+                    const arvPctColor =
+                      roundedArvPct <= 70 ? 'text-green-600 dark:text-green-400' :
+                      roundedArvPct < 80 ? 'text-amber-500 dark:text-amber-400' :
+                      'text-red-600 dark:text-red-400';
+                    return (
+                      <div className={`text-base sm:text-lg font-semibold ${arvPctColor}`} data-testid="text-percentage-arv-step4">
+                        {percentageArv.toFixed(1)}%
+                      </div>
+                    );
+                  })()}
+                  <p className="sm:hidden text-[10px] text-muted-foreground mt-1 leading-tight" data-testid="text-arv-rule-help-mobile-step5">
+                    70% Rule: target ≤70% of ARV for margin after rehab and holding costs. Higher may be OK in high-value markets.
+                  </p>
                 </div>
                 <div className="text-center">
                   <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">Cash on Cash</div>

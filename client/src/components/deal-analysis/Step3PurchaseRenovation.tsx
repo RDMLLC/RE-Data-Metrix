@@ -137,6 +137,11 @@ export default function Step3PurchaseRenovation({
   const totalProjectCost = purchasePrice + rehabBudget;
   const grossProfit = arv - totalProjectCost;
   const percentageOfArv = arv > 0 ? (totalProjectCost / arv) * 100 : 0;
+  const roundedPercentageOfArv = parseFloat(percentageOfArv.toFixed(1));
+  const arvPercentageColor =
+    roundedPercentageOfArv <= 70 ? 'text-green-600 dark:text-green-400' :
+    roundedPercentageOfArv < 80 ? 'text-amber-500 dark:text-amber-400' :
+    'text-red-600 dark:text-red-400';
 
   // Max Offer Calculator state
   const [showMaxOfferCalc, setShowMaxOfferCalc] = useState(false);
@@ -2246,11 +2251,26 @@ export default function Step3PurchaseRenovation({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Percentage of ARV:</span>
-                <span className="text-lg font-semibold" data-testid="text-percentage-arv">
+                <span className="text-sm font-medium inline-flex items-center gap-1">
+                  Percentage of ARV:
+                  <span className="hidden sm:inline-flex">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>The 70% Rule: most investors target buying at or below 70% of ARV to ensure enough margin after rehab and holding costs. In high-value markets, a higher percentage may still be acceptable due to larger absolute profit margins.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                </span>
+                <span className={`text-lg font-semibold ${arvPercentageColor}`} data-testid="text-percentage-arv">
                   {percentageOfArv.toFixed(1)}%
                 </span>
               </div>
+              <p className="sm:hidden text-xs text-muted-foreground mt-1" data-testid="text-arv-rule-help-mobile">
+                The 70% Rule: most investors target buying at or below 70% of ARV to ensure enough margin after rehab and holding costs. In high-value markets, a higher percentage may still be acceptable due to larger absolute profit margins.
+              </p>
             </CardContent>
           </Card>
 

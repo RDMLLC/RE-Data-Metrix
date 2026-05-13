@@ -1,0 +1,36 @@
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, before making any changes, find where the Percentage of ARV value is calculated and formatted for display. Show me:
+
+The raw calculation
+How it is rounded or formatted before display (e.g. toFixed(1), Math.round(), etc.)
+The exact variable name used
+
+Then apply the following changes, ensuring the color logic runs against the rounded display value — not the raw calculated value — so the color always matches what the user sees on screen.
+
+Change 1 — Color-code the Percentage of ARV value:
+Use these brackets:
+
+≤ 70.0% → green (text-green-600 or project success color)
+70.1%–79.9% → amber (text-amber-500 or project warning color)
+≥ 80.0% → red (text-red-600 or project destructive color)
+
+Create a helper based on the rounded display value:
+typescriptconst arvPercentageColor =
+  roundedArvPercentage <= 70 ? 'text-green-600' :
+  roundedArvPercentage < 80 ? 'text-amber-500' :
+  'text-red-600';
+Apply the color class to the percentage number only, not the label.
+
+Change 2 — Add info icon with tooltip (desktop) and inline help text (mobile) next to the "Percentage of ARV" label:
+
+On desktop (hidden sm:inline-flex): add a shadcn/ui Tooltip triggered by a CircleHelp Lucide icon (h-3.5 w-3.5 text-muted-foreground) placed immediately after the label text. Tooltip content:
+
+"The 70% Rule: most investors target buying at or below 70% of ARV to ensure enough margin after rehab and holding costs. In high-value markets, a higher percentage may still be acceptable due to larger absolute profit margins."
+
+
+On mobile (sm:hidden): add a text-xs text-muted-foreground mt-1 line directly below the Percentage of ARV row, full width, always visible — no tap required. Same text as above.
+
+
+Change 3 — Check for other instances:
+Search the wizard for any other screen locations that display Percentage of ARV (e.g. Step 6 Results summary card). If found, apply the same color coding using the same rounded-value logic. Do NOT apply color to any PDF output — screen only.
+
+After all changes, confirm the build compiles cleanly and list any pre-existing errors separately.
