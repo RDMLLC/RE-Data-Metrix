@@ -150,6 +150,8 @@ export default function Step3PurchaseRenovation({
   const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
   const [arvRuleExpanded, setArvRuleExpanded] = useState(false);
+  const [arvFieldHelpExpanded, setArvFieldHelpExpanded] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   // Max Offer Calculator calculations
   const maxProjectCost = calcArv * (maxArvPercent / 100);
@@ -935,15 +937,28 @@ export default function Step3PurchaseRenovation({
   }, [form]);
 
   const handleSubmit = form.handleSubmit(() => {
+    const purchasePriceVal = form.getValues("purchasePrice");
+    const arvVal = form.getValues("arv");
     const projectLength = form.getValues("projectLength");
-    
+
     const errors: string[] = [];
-    
+    const missing: string[] = [];
+
+    if (!purchasePriceVal || purchasePriceVal <= 0) {
+      errors.push("Purchase Price is required");
+      missing.push("purchasePrice");
+    }
+    if (!arvVal || arvVal <= 0) {
+      errors.push("Est. Market Value (ARV) is required");
+      missing.push("arv");
+    }
     if (!projectLength || projectLength <= 0) {
       errors.push("Project Length is required");
+      missing.push("projectLength");
     }
-    
+
     if (errors.length > 0) {
+      setMissingFields(missing);
       toast({
         title: "Required Fields Missing",
         description: errors.join(". "),
@@ -951,9 +966,14 @@ export default function Step3PurchaseRenovation({
       });
       return;
     }
-    
+
+    setMissingFields([]);
     onNext();
   });
+
+  const clearMissing = (field: string) => {
+    setMissingFields((prev) => (prev.includes(field) ? prev.filter((f) => f !== field) : prev));
+  };
 
   const handleNavigateToRentalAnalysis = () => {
     // Save current form data to WizardDataContext before navigating
@@ -2019,11 +2039,13 @@ export default function Step3PurchaseRenovation({
                           placeholder="Enter purchase price"
                           {...field}
                           value={field.value ?? ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            clearMissing("purchasePrice");
                             field.onChange(
                               e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
+                            );
+                          }}
+                          className={missingFields.includes("purchasePrice") ? "border-red-500 focus-visible:ring-red-500" : undefined}
                           data-testid="input-purchase-price"
                         />
                       </FormControl>
@@ -2127,15 +2149,17 @@ export default function Step3PurchaseRenovation({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-1 text-sm">
-                        Est. Market Value
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        Est. Market Value (ARV)
+                        <span className="hidden sm:inline-flex">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -2145,14 +2169,32 @@ export default function Step3PurchaseRenovation({
                           placeholder="Enter estimated market value"
                           {...field}
                           value={field.value ?? ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            clearMissing("arv");
                             field.onChange(
                               e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
+                            );
+                          }}
+                          className={missingFields.includes("arv") ? "border-red-500 focus-visible:ring-red-500" : undefined}
                           data-testid="input-arv"
                         />
                       </FormControl>
+                      <div className="sm:hidden mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setArvFieldHelpExpanded(!arvFieldHelpExpanded)}
+                          className="flex items-center gap-1 text-xs text-muted-foreground min-h-8 cursor-pointer"
+                          data-testid="button-arv-field-help-toggle-mobile"
+                        >
+                          {arvFieldHelpExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          <span>What does this mean?</span>
+                        </button>
+                        {arvFieldHelpExpanded && (
+                          <p className="text-xs text-muted-foreground mt-1" data-testid="text-arv-field-help-mobile">
+                            The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.
+                          </p>
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -2173,11 +2215,13 @@ export default function Step3PurchaseRenovation({
                           placeholder="Months"
                           {...field}
                           value={field.value ?? ""}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            clearMissing("projectLength");
                             field.onChange(
                               e.target.value ? parseInt(e.target.value) : undefined
-                            )
-                          }
+                            );
+                          }}
+                          className={missingFields.includes("projectLength") ? "border-red-500 focus-visible:ring-red-500" : undefined}
                           data-testid="input-project-length"
                         />
                       </FormControl>
@@ -2288,8 +2332,15 @@ export default function Step3PurchaseRenovation({
             </CardContent>
           </Card>
 
-          {/* Mobile-only: Help with ARV + Max Offer Calculator (moved from Investment Details header) */}
-          <div className="sm:hidden flex flex-col gap-2">
+          {/* Mobile-only stacked actions (sm and below). Order: Continue → Help with ARV → Max Offer → Wholesale → Back */}
+          <div className="sm:hidden flex flex-col gap-3">
+            <Button
+              type="submit"
+              className="w-full min-h-11"
+              data-testid="button-continue-mobile"
+            >
+              Continue to Investor Information
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -2414,9 +2465,57 @@ export default function Step3PurchaseRenovation({
                 </div>
               </PopoverContent>
             </Popover>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-h-11"
+              onClick={() => {
+                const formData = form.getValues();
+                updatePropertyData({
+                  address: formData.address,
+                  city: formData.city,
+                  state: formData.state,
+                  zip: formData.zipCode,
+                  bedrooms: formData.bedrooms,
+                  bathrooms: formData.bathrooms,
+                  squareFootage: formData.sqft,
+                  purchasePrice: formData.purchasePrice,
+                  arv: formData.arv,
+                  rehabBudget: formData.rehabBudget,
+                  taxAssessedValue: formData.taxAssessedValue,
+                  annualInsurance: formData.annualInsurance,
+                  monthlyUtilities: formData.monthlyUtilities,
+                  hoaFees: formData.hoaFees,
+                  hoaTransferFee: formData.hoaTransferFee,
+                  projectLength: formData.projectLength,
+                  sellPrice: formData.sellPrice,
+                  closingCostsSellPercent: formData.closingCostsSellPercent,
+                  realEstateCommissionPercent: formData.realEstateCommissionPercent,
+                  attorneyFees: formData.attorneyFees,
+                  docPrepFees: formData.docPrepFees,
+                  titleExam: formData.titleExam,
+                  titleInsurance: formData.titleInsurance,
+                });
+                setCurrentStep(3);
+                setLocation("/deal-analysis/wholesale-calculator");
+              }}
+              data-testid="button-wholesale-calculator-mobile"
+            >
+              <Calculator className="mr-2 h-4 w-4" />
+              Calculate Wholesale Max Offer Price
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-h-11"
+              onClick={onBack}
+              data-testid="button-back-mobile"
+            >
+              Back
+            </Button>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="hidden sm:flex flex-col gap-4">
             <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between flex-wrap">
               <Button
                 type="button"

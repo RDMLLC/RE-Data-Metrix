@@ -1900,8 +1900,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </div>
                 </div>
               )}
-              {/* Right side: RE Data Metrix branding */}
-              <div className="flex items-center gap-2 text-right text-sm text-muted-foreground">
+              {/* Right side: RE Data Metrix branding — hidden on mobile to prevent overlap with logo/name */}
+              <div className="hidden sm:flex items-center gap-2 text-right text-sm text-muted-foreground">
                 {user?.reportLogoUrl && (
                   <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8 opacity-70" />
                 )}
@@ -2345,14 +2345,14 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </CardContent>
             </div>
             <CardContent className="pt-0">
-              {/* Mobile Card View - visible only on small screens */}
-              <div className="lg:hidden space-y-4">
+              {/* Mobile Card View - visible only on truly small screens (< sm). 2-col grid; toggles span full width */}
+              <div className="sm:hidden grid grid-cols-2 gap-2">
                 {/* Mobile-only: Show/Hide Cash Sale toggle (Cash Sale always visible on sm+) */}
                 {!pdfHideCash && !isGeneratingPdf && (
                   <Button
                     type="button"
                     variant="outline"
-                    className="sm:hidden w-full min-h-11"
+                    className="sm:hidden w-full min-h-11 col-span-2"
                     onClick={() => setShowCashSale(!showCashSale)}
                     data-testid="button-toggle-cash-sale-mobile"
                   >
@@ -2360,7 +2360,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   </Button>
                 )}
                 {/* Cash Sale Card — hidden by default on mobile, always shown on sm+ */}
-                {!pdfHideCash && <div className={`${showCashSale || isGeneratingPdf ? '' : 'hidden sm:block'} border rounded-lg p-4 bg-card`}>
+                {!pdfHideCash && <div className={`${showCashSale || isGeneratingPdf ? '' : 'hidden sm:block'} border rounded-lg p-2 bg-card text-xs`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-lg">Cash Sale</h3>
                     {!isGeneratingPdf && (
@@ -2523,7 +2523,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 {pdfLenders.map((lender, index) => (
                   <div
                     key={index}
-                    className={`${index < 2 || showAllLoansMobile || isGeneratingPdf ? '' : 'hidden sm:block'} border rounded-lg p-4 bg-card`}
+                    className={`${index < 2 || showAllLoansMobile || isGeneratingPdf ? '' : 'hidden sm:block'} border rounded-lg p-2 bg-card text-xs`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -2699,7 +2699,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   <Button
                     type="button"
                     variant="outline"
-                    className="sm:hidden w-full min-h-11"
+                    className="sm:hidden w-full min-h-11 col-span-2"
                     onClick={() => setShowAllLoansMobile(!showAllLoansMobile)}
                     data-testid="button-show-more-loans-mobile"
                   >
@@ -2738,7 +2738,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               
               {/* Desktop Table View - hidden on mobile */}
               <div ref={pdfPage2Ref} className="pdf-page2">
-              <div className="hidden lg:block overflow-x-auto relative" ref={scrollContainerRef}>
+              <div className="hidden sm:block overflow-x-auto relative" ref={scrollContainerRef}>
                 <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
               <TableHeader>
                 <TableRow>

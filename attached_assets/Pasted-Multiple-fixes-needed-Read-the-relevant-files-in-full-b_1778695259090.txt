@@ -1,0 +1,71 @@
+Multiple fixes needed. Read the relevant files in full before making changes.
+
+Fix 0 — Property image not loading on automated lookup — INVESTIGATE FIRST
+A user performed an automated property lookup (Zillow URL paste) and no image is showing. The Street View metadata pre-check was just deployed. Investigate:
+
+Check the server logs for the most recent property lookup request — look for the address "957 Rowland Rd, Stone Mountain, GA 30083". What did the lookup return for imageUrl? Did HasData return an image URL? Did Street View get attempted?
+Check the Street View proxy route /api/property/street-view — is the metadata pre-check code actually present in the current deployed code? Show me lines around the metadata fetch.
+Check Step1PropertyAddress.tsx — when the lookup returns, how is propertyImage set? Is there any condition that could cause it to be skipped even when imageUrl is present in the response?
+Hit the Street View metadata endpoint directly for this address and report what Google returns: https://maps.googleapis.com/maps/api/streetview/metadata?location=957+Rowland+Rd,Stone+Mountain,GA+30083&key=${GOOGLE_MAPS_API_KEY}
+Fix whatever is preventing the image from showing
+
+
+Fix 1 — Button order on Step 3 mobile
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, the button order on mobile must be strictly:
+
+Continue to Investor Information (primary, full width, navy)
+Help with ARV (secondary, full width, outline)
+Max Offer Calculator (secondary, full width, outline)
+Calculate Wholesale Max Offer Price (secondary, full width, outline)
+Back (tertiary, full width, ghost or outline)
+Analyze as Rental Property card (below all buttons)
+
+On desktop keep existing layout. Show me the current button layout code before changing.
+
+Fix 2 — Required field validation — red borders on missing fields
+In Step3PurchaseRenovation.tsx, when the user taps Continue without filling required fields, only a red toast appears. Add red border highlighting to the specific missing fields:
+
+Find the handleSubmit validation logic — identify which fields are checked as required
+Add const [missingFields, setMissingFields] = useState<string[]>([])
+When validation fails, populate missingFields with the names of empty required fields
+On each required input add conditional: border-red-500 when that field is in missingFields
+Clear the red border onChange when the user starts typing in that field
+Keep the existing toast in addition to the red borders
+
+
+Fix 3 — Est. Market Value label and mobile tooltip
+In Step3PurchaseRenovation.tsx:
+
+Change label "Est. Market Value" to "Est. Market Value (ARV)"
+Add mobile collapsible tooltip — same "What does this mean?" expand/collapse pattern used on Percentage of ARV — showing the existing tooltip content for this field
+
+
+Fix 4 — Estimated Closing Costs and Carrying Costs labels wrapping
+Labels "Estimated Closing Costs (Buy)" and "Estimated Carrying Costs" are wrapping to multiple lines in their card headers. Fix the header label only to stay on one line — whitespace-nowrap or truncate with title attribute. Expandable content below is fine as-is.
+
+Fix 5 — Step 6 loan results mobile view
+Read Step6Results.tsx and answer before fixing:
+
+What breakpoint controls mobile card view (lg:hidden) vs desktop table (hidden lg:block)?
+At 390px which view renders?
+Are showCashSale and showAllLoans state variables present in the current code?
+
+Then fix:
+
+Change the breakpoint from lg to sm so the card view renders on all mobile devices
+Ensure showCashSale (default false) and showAllLoans (default false) are present and wired to toggle buttons
+2-column grid for loan cards: grid-cols-2 gap-2, card padding p-2, all text text-xs
+Net Profit stays green and most visually prominent
+"Show Cash Sale" and "Show more loans (+N)" toggles: sm:hidden, variant="outline", w-full, min-h-11
+
+
+Fix 6 — Report header overlapping on mobile
+In Step6Results.tsx, find the report header. The right side content (website URL + "Deal Analysis Report") is overlapping the logo and name on mobile. Fix:
+
+Logo: h-8 w-8 flex-shrink-0
+"RE Data Metrix": whitespace-nowrap text-sm font-bold
+Right side (website + report type): hidden sm:block — hide entirely on mobile
+"Turning Terms into Returns": whitespace-nowrap text-xs italic
+
+
+After all fixes confirm build compiles cleanly and list pre-existing errors separately.

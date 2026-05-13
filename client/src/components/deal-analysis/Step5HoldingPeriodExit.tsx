@@ -291,7 +291,7 @@ export default function Step4HoldingPeriodExit({
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="text-left">
-                      <CardTitle className="text-lg">
+                      <CardTitle className="text-lg whitespace-nowrap" title={showBuy2ClosingCosts ? "Estimated Closing Costs (Buy1)" : "Estimated Closing Costs (Buy)"}>
                         {showBuy2ClosingCosts ? "Estimated Closing Costs (Buy1)" : "Estimated Closing Costs (Buy)"}
                       </CardTitle>
                       <CardDescription>
@@ -489,7 +489,7 @@ export default function Step4HoldingPeriodExit({
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="text-left">
-                        <CardTitle className="text-lg">Estimated Closing Costs (Buy2)</CardTitle>
+                        <CardTitle className="text-lg whitespace-nowrap" title="Estimated Closing Costs (Buy2)">Estimated Closing Costs (Buy2)</CardTitle>
                         <CardDescription>
                           {formatCurrency(estimatedClosingCostsBuy2)} total
                         </CardDescription>
@@ -597,7 +597,7 @@ export default function Step4HoldingPeriodExit({
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="text-left">
-                      <CardTitle className="text-lg">Estimated Carrying Costs</CardTitle>
+                      <CardTitle className="text-lg whitespace-nowrap" title="Estimated Carrying Costs">Estimated Carrying Costs</CardTitle>
                       <CardDescription>
                         {formatCurrency(estimatedCarryingCosts)} total
                       </CardDescription>
