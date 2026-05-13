@@ -2114,7 +2114,7 @@ export default function Step3PurchaseRenovation({
                 />
               )}
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4">
                 <FormField
                   control={form.control}
                   name="arv"

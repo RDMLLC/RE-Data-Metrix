@@ -111,7 +111,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
               />
 
               {isNewInvestor === false && (
-                <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <FormField
                     control={form.control}
                     name="projectsLast12Months"
@@ -303,7 +303,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
 
               {hasExistingLoan === true && (
                 <div className="space-y-4 pt-4 border-t">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="maxLendBuy"
@@ -320,6 +320,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pr-7"
                                 data-testid="input-max-lend-buy"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -346,6 +347,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pr-7"
                                 data-testid="input-max-lend-rehab"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -357,7 +359,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="loanInterestRate"
@@ -374,6 +376,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pr-7"
                                 data-testid="input-interest-rate"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -403,6 +406,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pr-7"
                                 data-testid="input-points"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -432,6 +436,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="pr-7"
                                 data-testid="input-max-loan-arv"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -443,7 +448,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="interestDeferred"
@@ -594,7 +599,7 @@ export default function Step5LoanCriteria({ form, onNext, onBack }: Step5LoanCri
                     />
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="drawFees"

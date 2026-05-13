@@ -1595,14 +1595,15 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex gap-2">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between sm:flex-wrap gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           {isViewingDeal ? (
             <>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={onBack}
+                className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
                 data-testid="button-back-to-deals"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1613,6 +1614,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   type="button"
                   variant="outline"
                   onClick={onEditDeal}
+                  className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
                   data-testid="button-edit-deal"
                 >
                   <Pencil className="h-4 w-4 mr-2" />
@@ -1625,6 +1627,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               type="button"
               variant="ghost"
               onClick={onBack}
+              className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
               data-testid="button-back"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -1633,11 +1636,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           )}
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={generateCSV}
+            className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
             data-testid="button-download-csv"
           >
             <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -1651,6 +1655,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                   variant="outline"
                   size="sm"
                   disabled={isGeneratingPdf}
+                  className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
                   data-testid="button-download-pdf"
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -1670,11 +1675,11 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/pricing">
+            <Link href="/pricing" className="flex-1 sm:flex-initial">
               <Button
                 variant="outline"
                 size="sm"
-                className="text-muted-foreground"
+                className="text-muted-foreground w-full sm:w-auto min-h-11 sm:min-h-8"
                 data-testid="button-upgrade-pdf"
               >
                 <Download className="h-4 w-4 mr-2" />
@@ -3605,7 +3610,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               <CardTitle>Property Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
                   <p className="font-medium">{formData.address}, {formData.city}, {formData.state} {formData.zipCode}</p>
@@ -3844,7 +3849,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                             </Alert>
                           )}
                           
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
                             <div>
                               <p className="text-muted-foreground">Interest Rate</p>
                               <p className="font-semibold">{dscrCalculation.interestRate}%</p>

@@ -140,7 +140,7 @@ export default function WizardLayout({
           )}
         </div>
 
-        <Card className="p-8">{children}</Card>
+        <Card className="p-4 sm:p-8">{children}</Card>
       </div>
     </div>
   );

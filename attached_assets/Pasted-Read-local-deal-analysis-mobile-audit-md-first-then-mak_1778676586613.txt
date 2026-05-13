@@ -1,0 +1,42 @@
+Read .local/deal-analysis-mobile-audit.md first, then make the following changes to the Deal Analysis wizard for mobile. Work through these in order.
+
+Fix 1 — WizardLayout card padding (affects all 6 steps)
+In the WizardLayout component (or wherever Card p-8 wraps the wizard steps), replace the fixed p-8 with responsive padding: p-4 sm:p-8. This is the single highest-leverage change — it recovers 32px of horizontal space on every step at 390px.
+
+Fix 2 — Step 5 LoanCriteria grids (worst step — fix all 5 grids)
+For every grid-cols-2 and grid-cols-3 in the LoanCriteria step component:
+
+Replace grid-cols-2 with grid-cols-1 sm:grid-cols-2
+Replace grid-cols-3 with grid-cols-1 sm:grid-cols-3
+
+For the $ and % adornments that overlap input values at 390px — ensure the input has enough left/right padding to clear the adornment at all viewport sizes. Check that pl-7 or pr-7 (or equivalent) is applied consistently on every adorned input in this step.
+
+Fix 3 — Step 3 closing cost grid
+Find the 2-column closing cost grid in Step 3 (Purchase & Renovation) that forces 2 columns at 390px. Apply the same fix: grid-cols-1 sm:grid-cols-2.
+
+Fix 4 — Step 6 Results action bar
+The top action bar (Back / Save / Apply / Export buttons) wraps to 2–3 rows on mobile. Fix this by:
+
+On mobile (< sm): stack the action bar into two rows — primary actions (Save, Apply) on top row, secondary (Back, Export) on bottom row, each full width
+On desktop: keep existing layout unchanged
+Ensure all buttons in this bar are minimum h-11 (44px) on mobile
+
+
+Fix 5 — Step 6 DSCR tiles grid
+Add grid-cols-1 sm:grid-cols-2 to the DSCR tiles that currently use unprefixed grid-cols-2.
+
+Fix 6 — Small tap targets globally in wizard
+Search the wizard components for size="sm" and size="icon" buttons that have explicit h-6 w-6 or h-8 w-8 sizing. On mobile these fall below the 44px tap target minimum. For any button that is a primary or secondary action (not a purely decorative or admin-only control):
+
+Remove the explicit h-6 w-6 / h-8 w-8 override
+Use size="default" on mobile, keeping size="sm" only on sm: and above: add class h-11 w-11 sm:h-8 sm:w-8 or equivalent
+
+
+Fix 7 — ARV Helper double padding
+The ARV Helper panel sits inside the wizard's Card p-8 (now p-4 sm:p-8 after Fix 1) and also has its own inner p-4. On mobile this wastes ~80px of horizontal space combined. Remove or reduce the ARV Helper's inner padding on mobile: change its inner padding to p-2 sm:p-4.
+
+After all fixes:
+
+Confirm the build compiles cleanly
+Check each fixed component renders correctly at 390px — no overflowing elements, no overlapping adornments
+List any pre-existing unrelated errors so we can distinguish them from anything introduced here
