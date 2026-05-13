@@ -10639,6 +10639,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // Pre-check Street View coverage via the (free) metadata endpoint so we can
+      // return a real 404 instead of streaming Google's generic gray "Sorry, we
+      // have no imagery here" panorama (which the Static API returns with HTTP 200
+      // when there's no panorama at the requested location). The client's <img>
+      // onError handler then falls back to /images/property-placeholder.svg.
+      const metadataParams = new URLSearchParams({
+        location: address,
+        key: googleMapsApiKey,
+      });
+      const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?${metadataParams.toString()}`;
+      try {
+        const metadataRes = await fetch(metadataUrl);
+        const metadata: any = await metadataRes.json().catch(() => null);
+        if (!metadata || metadata.status !== 'OK') {
+          console.log(`[Street View Proxy] No imagery for "${address}" (metadata status: ${metadata?.status ?? 'unknown'})`);
+          return res.status(404).json({ error: "No street view available", status: metadata?.status });
+        }
+      } catch (metaErr: any) {
+        // If metadata lookup itself fails (network/transient), fall through and
+        // attempt the image fetch — better to risk a placeholder than to error
+        // out for a real coverage area.
+        console.warn(`[Street View Proxy] Metadata pre-check failed (continuing): ${metaErr.message}`);
+      }
+
       const params = new URLSearchParams({
         location: address,
         size: "640x480",

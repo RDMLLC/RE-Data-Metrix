@@ -1,0 +1,22 @@
+In server/routes.ts, find the Street View proxy/fallback section (around line 11048–11063) where the property image falls back to Google Street View. Apply the following fix:
+Before proxying the Street View image, call the Street View Static API metadata endpoint first. If the metadata returns ZERO_RESULTS or REQUEST_DENIED, return a 404 instead of streaming the gray "no imagery" image so the client falls back to the placeholder.
+Specific changes:
+
+Find the section where https://maps.googleapis.com/maps/api/streetview is called as a fallback image source. Show me the current code before changing anything.
+Before the existing Street View image proxy call, add a metadata pre-check:
+
+typescript// Check Street View availability before proxying
+const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${encodeURIComponent(address)}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+const metadataRes = await fetch(metadataUrl);
+const metadata = await metadataRes.json();
+
+if (!metadata || metadata.status !== 'OK') {
+  // No Street View coverage — let client use placeholder
+  return res.status(404).json({ error: 'No street view available' });
+}
+
+The address parameter passed to the metadata check should be the same formatted address string already being used for the Street View image URL — confirm this is ${streetAddress}, ${city}, ${state} ${zip} or equivalent and use whatever is already constructed.
+Also check: is the Street View fallback also triggered for manual address entry (not just Zillow URL paste)? The real-device test showed no image when the user typed an address manually. If manual entry currently skips the Street View fallback entirely, add it so that when no imageUrl is returned from any data source, the server attempts Street View for manually entered addresses too.
+On the client side (client/src/pages/deal-analysis/Step1PropertyAddress.tsx or wherever propertyImage is set): confirm that a 404 response from the image endpoint correctly causes the UI to show /images/property-placeholder.svg rather than a broken image. If not, add handling so any failed image fetch falls back to the placeholder.
+
+After changes confirm build compiles cleanly and list pre-existing errors separately.
