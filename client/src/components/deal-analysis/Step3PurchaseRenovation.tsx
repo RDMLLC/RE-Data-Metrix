@@ -996,9 +996,8 @@ export default function Step3PurchaseRenovation({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
-          <DollarSign className="h-6 w-6 text-primary" />
+      <div className="text-center sm:text-left">
+        <h2 className="text-2xl font-semibold">
           Purchase & Renovation
         </h2>
         <p className="text-muted-foreground mt-1">
@@ -1011,7 +1010,7 @@ export default function Step3PurchaseRenovation({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <CardTitle className="text-lg">Investment Details</CardTitle>
+                <CardTitle className="text-lg w-full sm:w-auto text-center sm:text-left">Investment Details</CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -2222,7 +2221,7 @@ export default function Step3PurchaseRenovation({
           </Card>
 
           <Card className="bg-muted/50">
-            <CardHeader>
+            <CardHeader className="text-center sm:text-left">
               <CardTitle className="text-lg">Summary</CardTitle>
               <CardDescription>
                 Calculated metrics for this deal
@@ -2275,23 +2274,24 @@ export default function Step3PurchaseRenovation({
           </Card>
 
           <div className="flex flex-col gap-4">
-            <div className="flex gap-3 justify-between flex-wrap">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between flex-wrap">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onBack}
+                className="w-full sm:w-auto min-h-11 sm:min-h-9"
                 data-testid="button-back"
               >
                 Back
               </Button>
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
                 <Button type="submit" className="w-full sm:w-auto" data-testid="button-continue">
                   Continue to Investor Information
                 </Button>
                 <Button
                   type="button"
-                  variant="secondary"
-                  className="w-full sm:w-auto"
+                  variant="outline"
+                  className="w-full sm:w-auto min-h-11 sm:min-h-9"
                   onClick={() => {
                     const formData = form.getValues();
                     // Save ALL form data to context before navigating
@@ -2334,9 +2334,9 @@ export default function Step3PurchaseRenovation({
             {purchasePrice > 0 && arv > 0 && (
               <Card className="bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
                 <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                     <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-1" />
-                    <div className="flex-1">
+                    <div className="flex-1 w-full">
                       <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
                         Planning to Keep as Rental?
                       </h3>
@@ -2345,9 +2345,9 @@ export default function Step3PurchaseRenovation({
                       </p>
                       <Button
                         type="button"
-                        variant="default"
+                        variant="outline"
                         onClick={handleNavigateToRentalAnalysis}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        className="w-full sm:w-auto min-h-11 sm:min-h-9 border-emerald-600 text-emerald-700 dark:text-emerald-400"
                         data-testid="button-rental-analysis"
                       >
                         <TrendingUp className="mr-2 h-4 w-4" />

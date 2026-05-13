@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, HelpCircle, Search, ChevronDown, ChevronUp, PlayCircle } from "lucide-react";
+import { HelpCircle, Search, ChevronDown, ChevronUp, PlayCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Tooltip,
@@ -83,16 +83,15 @@ export default function Step2PropertyDetails({
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <Home className="h-6 w-6 text-primary" />
+        <div className="w-full sm:w-auto text-center sm:text-left">
+          <h2 className="text-2xl font-semibold">
             Property Details
           </h2>
           <p className="text-muted-foreground mt-1">
             Review and update the property information below
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="hidden sm:flex flex-col items-end gap-2">
         <Button
           type="button"
           variant="outline"
@@ -112,7 +111,7 @@ export default function Step2PropertyDetails({
         <ArvHelper form={form} onClose={handleArvHelperClose} />
       )}
 
-      <Collapsible open={arvVideoOpen} onOpenChange={setArvVideoOpen} className="mt-3">
+      <Collapsible open={arvVideoOpen} onOpenChange={setArvVideoOpen} className="mt-3 hidden sm:block">
         <CollapsibleTrigger asChild>
           <button
             type="button"
@@ -645,18 +644,62 @@ export default function Step2PropertyDetails({
             </CardContent>
           </Card>
 
-          <div className="flex gap-3 justify-between">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
             <Button
               type="button"
               variant="outline"
               onClick={onBack}
+              className="w-full sm:w-auto min-h-11 sm:min-h-9"
               data-testid="button-back"
             >
               Back
             </Button>
-            <Button type="submit" data-testid="button-continue">
+            <Button type="submit" className="w-full sm:w-auto" data-testid="button-continue">
               Continue to Purchase Details
             </Button>
+          </div>
+
+          {/* Mobile-only: Help with ARV + Tutorial appear below the Continue button so the
+              primary CTA is the first thing users see on small screens. */}
+          <div className="sm:hidden flex flex-col gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-h-11 gap-1.5"
+              onClick={() => showArvHelper ? handleArvHelperClose() : handleArvHelperOpen()}
+              data-testid="button-help-with-arv-mobile"
+            >
+              <Search className="h-4 w-4" />
+              Help with ARV
+              {showArvHelper ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
+            <Collapsible open={arvVideoOpen} onOpenChange={setArvVideoOpen}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full min-h-11 gap-1.5"
+                  data-testid="button-watch-arv-tutorial-mobile"
+                >
+                  <PlayCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+                  <strong>Watch ARV Helper Tutorial</strong>
+                  <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${arvVideoOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="relative aspect-video bg-black rounded-md overflow-hidden border border-border">
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src="https://www.youtube.com/embed/gxVt-VspJRU?rel=0&modestbranding=1"
+                    title="ARV Helper Tutorial"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">ARV Helper step-by-step tutorial</p>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </form>
       </Form>

@@ -1,0 +1,54 @@
+Apply the following changes to the Deal Analysis wizard. Read the relevant files in full before making changes.
+
+Step 1 — Auto-scroll fix (affects all step transitions)
+In DealAnalysisWizard.tsx, find where currentStep changes (the handleNext and handleBack functions). After each step transition, add a scroll to bring the user to the top of the wizard content area — not the top of the page (which scrolls past the header). Target the wizard's main content container by ref or by scrolling to the first input/heading within the new step. Use:
+typescriptwindow.scrollTo({ top: 0, behavior: 'smooth' });
+If there is already a scroll call on step transition, check why it's scrolling to the very top of the page instead of the content area and fix it.
+
+Step 2 — Remove decorative icons
+
+In Step2PropertyDetails.tsx — find and remove the house icon to the left of the "Property Details" section heading. Remove the icon element only, keep the heading text.
+In Step3PurchaseRenovation.tsx — find and remove the dollar sign icon to the left of the "Purchase & Renovation" section heading. Remove the icon element only, keep the heading text.
+
+
+Step 3 — Reorder buttons in Step 2 (Property Details)
+In Step2PropertyDetails.tsx, find the "Help with ARV" button and the "Watch ARV Tutorial" option. Move both of these BELOW the main "Continue to Purchase Details" button. The Continue button should be the first/primary action the user sees. Order from top to bottom on mobile should be:
+
+Continue to Purchase Details (primary CTA)
+Help with ARV
+Watch ARV Tutorial
+
+On desktop keep the existing layout if Help with ARV is currently inline with the section header — only reorder on mobile using order- classes or by restructuring the flex/grid layout with responsive ordering.
+
+Step 4 — Reorder and format buttons in Step 3 (Purchase & Renovation)
+In Step3PurchaseRenovation.tsx, after the Continue button fix already applied (Continue before Wholesale), also move the DSCR "Analyze as Rental Property" card/button below the Continue and Wholesale buttons. Order from top to bottom on mobile:
+
+Continue to Investor Information (primary CTA, already fixed to w-full)
+Calculate Wholesale Max Offer Price (w-full sm:w-auto)
+Analyze as Rental Property card (full width, below both)
+
+
+Step 5 — Standardize secondary button format
+In Step 2 and Step 3, ensure these secondary action buttons all match the same format:
+
+variant="outline"
+w-full sm:w-auto
+min-h-11 sm:min-h-9 (44px tap target on mobile)
+
+Buttons to standardize: Help with ARV, Watch ARV Tutorial, Calculate Wholesale Max Offer Price, Analyze as Rental Property button inside the DSCR card.
+
+Step 6 — Center-justify headings and subtitles on mobile
+In Step2PropertyDetails.tsx and Step3PurchaseRenovation.tsx, for all section headings (<h2>, <h3>, card titles) and subtitle/description lines that are currently left-aligned, add text-center sm:text-left so they center on mobile only.
+
+Step 7 — Admin dashboard switcher on mobile
+In the mobile header or mobile nav component, find where the admin role check exists on desktop that shows the dashboard switcher (Member / Lender / Admin / Developer view options). Add the same switcher to the mobile header, visible only when role === 'admin' or role === 'developer'. It can be a compact dropdown or a row of small buttons. Check how the desktop version is implemented and use the same underlying state/context — just render a mobile-appropriate version.
+
+Step 8 — No property photo investigation
+A real device test showed no property photo for 957 Rowland Rd, Stone Mountain, GA 30083. Investigate why the property image is not loading for this address:
+
+Check what API/service provides the property photo in Step 1 or Step 2
+Check if the Street View Static API is being called for this address and what it returns
+Report findings — this may be related to the existing "No Street View fallback" open issue
+
+
+After all changes, confirm build compiles cleanly and list pre-existing errors separately.

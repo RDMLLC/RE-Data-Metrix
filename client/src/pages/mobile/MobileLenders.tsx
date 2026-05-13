@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import MobileAdminSwitcher from "@/components/MobileAdminSwitcher";
 import { useDeviceMode } from "@/contexts/DeviceModeContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -241,15 +242,18 @@ export default function MobileLenders() {
             <h1 className="text-xl font-semibold leading-tight" data-testid="text-page-title">Find Lenders</h1>
             <p className="text-[11px] text-muted-foreground leading-tight truncate">Verified investment property lenders</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Desktop Version"
-            onClick={handleViewDesktop}
-            data-testid="button-desktop-version"
-          >
-            <Monitor className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <MobileAdminSwitcher />
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Desktop Version"
+              onClick={handleViewDesktop}
+              data-testid="button-desktop-version"
+            >
+              <Monitor className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 

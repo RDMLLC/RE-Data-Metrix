@@ -439,9 +439,15 @@ export default function DealAnalysisWizard() {
     }
   };
 
-  // Scroll to top when navigating to Step 6 (Results) so summary is visible (works for both subscribers and paywall)
+  // Scroll to the top of the wizard content (not the page) on every step transition
+  // so the user lands on the new step's heading instead of the page intro above the wizard.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const wizardRoot = document.querySelector('[data-wizard-root]');
+    if (wizardRoot) {
+      wizardRoot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [currentStep]);
 
   const handleBack = () => {

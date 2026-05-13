@@ -22,6 +22,7 @@ import {
   Monitor,
 } from "lucide-react";
 import type { TrainingVideo } from "@shared/schema";
+import MobileAdminSwitcher from "@/components/MobileAdminSwitcher";
 
 function getYoutubeVideoId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/);
@@ -81,15 +82,18 @@ export default function MobileDealAnalysis() {
             <h1 className="text-xl font-semibold leading-tight" data-testid="text-page-title">Deal Analysis</h1>
             <p className="text-[11px] text-muted-foreground leading-tight truncate">Profit projections & lender comparison</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Desktop Version"
-            onClick={handleViewDesktop}
-            data-testid="button-desktop-version"
-          >
-            <Monitor className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <MobileAdminSwitcher />
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Desktop Version"
+              onClick={handleViewDesktop}
+              data-testid="button-desktop-version"
+            >
+              <Monitor className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
