@@ -1,0 +1,49 @@
+Two-phase test for the deal_analysis_counted webhook. Execute phase 1 first, report results, then execute phase 2.
+
+Phase 1 — Local dispatch test (no Zoho call)
+
+Temporarily add deal_analysis_counted to the active webhook's event_types array in the dev database
+Set up a webhook.site or requestbin URL — go to https://webhook.site and get a unique URL, then temporarily update the webhook's target URL in the dev DB to that webhook.site URL
+Fire a test payload by calling outboundWebhookService.triggerWebhooks('deal_analysis_counted', ...) directly with this sample payload:
+
+json{
+  "userId": "test-user-001",
+  "email": "webhook-test+deal-counted@redatametrix.com",
+  "dealAnalysisAuto": 1,
+  "dealAnalysisManual": 0,
+  "isAutomated": true,
+  "propertyDataSource": "hasdata",
+  "createdAt": "<current ISO timestamp>"
+}
+
+Check integration_sync_logs — confirm an entry was written with the correct event type, payload, and a 200 response from webhook.site
+Report the full payload shape that was sent and the response received
+Restore the webhook URL back to the production Zoho URL — do NOT leave it pointing at webhook.site
+
+
+Phase 2 — Live Zoho function test (after Phase 1 confirms dispatch works)
+
+With the webhook URL restored to the Zoho production endpoint, send a one-off direct POST to the Zoho function URL with this payload — use a clearly fake email that won't match any real Zoho contact:
+
+json{
+  "eventType": "deal_analysis_counted",
+  "timestamp": "<current ISO timestamp>",
+  "data": {
+    "userId": "test-user-001",
+    "email": "webhook-test+deal-counted@redatametrix.com",
+    "dealAnalysisAuto": 1,
+    "dealAnalysisManual": 0,
+    "isAutomated": true,
+    "propertyDataSource": "hasdata",
+    "createdAt": "<current ISO timestamp>"
+  }
+}
+
+Report the HTTP response code and body from Zoho
+If Zoho returns an error or unexpected response, show the full response body — this will tell us whether the Zoho function is wired to handle deal_analysis_counted or ignores it
+
+
+After both phases:
+
+Leave deal_analysis_counted in the webhook's event_types in the dev DB — we'll need it there permanently
+Report whether the full pipeline works end-to-end or where it breaks
