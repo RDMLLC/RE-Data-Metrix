@@ -52,6 +52,11 @@ export default function MobileDealAnalysis() {
     setLocation("/deal-analysis");
   };
 
+  const handleStartAnalysis = () => {
+    setDeviceMode("desktop");
+    setLocation("/deal-analysis");
+  };
+
   const { data: videos = [] } = useQuery<TrainingVideo[]>({
     queryKey: ["/api/training-videos"],
   });
@@ -156,16 +161,15 @@ export default function MobileDealAnalysis() {
         )}
 
         {/* Start/Continue Analysis — available to all logged-in users */}
-        <Link href="/deal-analysis">
-          <Button 
-            className="w-full" 
-            size="lg"
-            data-testid="button-start-analysis"
-          >
-            <Calculator className="h-5 w-5 mr-2" />
-            {hasInProgressDeal ? "Continue Analysis" : "Start New Analysis"}
-          </Button>
-        </Link>
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={handleStartAnalysis}
+          data-testid="button-start-analysis"
+        >
+          <Calculator className="h-5 w-5 mr-2" />
+          {hasInProgressDeal ? "Continue Analysis" : "Start New Analysis"}
+        </Button>
 
         {hasInProgressDeal && (
           <Card className="p-3 border-accent/50 bg-accent/5" data-testid="card-in-progress-deal">
@@ -180,12 +184,15 @@ export default function MobileDealAnalysis() {
                   {wizardData.property?.city}, {wizardData.property?.state}
                 </p>
               </div>
-              <Link href="/deal-analysis">
-                <Button variant="outline" size="sm" data-testid="button-continue-deal">
-                  Continue
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartAnalysis}
+                data-testid="button-continue-deal"
+              >
+                Continue
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </Card>
         )}
