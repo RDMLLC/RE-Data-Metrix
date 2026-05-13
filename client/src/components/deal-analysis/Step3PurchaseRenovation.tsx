@@ -2284,10 +2284,14 @@ export default function Step3PurchaseRenovation({
               >
                 Back
               </Button>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
+                <Button type="submit" className="w-full sm:w-auto" data-testid="button-continue">
+                  Continue to Investor Information
+                </Button>
                 <Button
                   type="button"
                   variant="secondary"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     const formData = form.getValues();
                     // Save ALL form data to context before navigating
@@ -2323,9 +2327,6 @@ export default function Step3PurchaseRenovation({
                 >
                   <Calculator className="mr-2 h-4 w-4" />
                   Calculate Wholesale Max Offer Price
-                </Button>
-                <Button type="submit" data-testid="button-continue">
-                  Continue to Investor Information
                 </Button>
               </div>
             </div>

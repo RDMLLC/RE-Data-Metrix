@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     retry: false,
     enabled: authChecked && !isLandingPage,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: !isLandingPage,
+    refetchOnWindowFocus: false, // Disabled — iOS Safari ITP causes false 401 on focus, silently clears auth state
     queryFn: async () => {
       try {
         const token = localStorage.getItem('_sessionToken');
