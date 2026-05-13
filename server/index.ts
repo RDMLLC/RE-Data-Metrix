@@ -479,7 +479,8 @@ app.use((req, res, next) => {
 
     // Start background services
     closingRemindersService.start();
-    webinarReminderService.start();
+    // WEBINAR_ENABLED = false — webinar reminder cron deactivated
+    // webinarReminderService.start();
     signupFollowupService.start();
     verificationReminderService.start();
     subscriptionRetentionService.start();

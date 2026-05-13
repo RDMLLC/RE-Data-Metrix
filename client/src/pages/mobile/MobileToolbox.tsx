@@ -15,9 +15,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { 
-  Wrench, 
-  Video, 
+import {
+  Video,
   ExternalLink,
   Filter,
   X,
@@ -26,11 +25,14 @@ import {
   Lock,
   RotateCcw,
   DollarSign,
-  Check
+  Check,
+  BookOpen,
+  GraduationCap,
+  Scale,
+  HardHat,
 } from "lucide-react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
-// Tool Finder Tutorial video - shown on toolbox landing page
 const TOOL_FINDER_VIDEO_ID = "5hfQdtC42fk";
 const TOOL_FINDER_VIDEO_TITLE = "Tool Finder Tutorial";
 
@@ -84,17 +86,24 @@ const PLACEHOLDER_AFFILIATES: Affiliate[] = (([
 ]) as any[]);
 
 export default function MobileToolbox() {
-  const { isSubscriber, isLoading: authLoading } = useAuth();
-  const { isDemoMode, hasDemoToken } = useDemoAccess();
+  const { isSubscriber, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { hasDemoToken } = useDemoAccess();
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  
+  const [showFilters, setShowFilters] = useState(false);
+
+  const backHref = isAuthenticated ? "/portal/dashboard" : "/";
+
   const handleViewDesktop = () => {
     setDeviceMode("desktop");
     setLocation("/toolbox");
   };
-  const [showFilters, setShowFilters] = useState(false);
+
+  const handleContractorsDesktop = () => {
+    setDeviceMode("desktop");
+    setLocation("/toolbox");
+  };
 
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
 
@@ -119,15 +128,10 @@ export default function MobileToolbox() {
     return affiliates?.filter(a => a.categories && a.categories.length > 0) || [];
   }, [affiliates, isSystemDemoMode]);
 
-  const categoryLabels: Record<string, string> = {};
-  categories?.forEach(cat => {
-    categoryLabels[cat.id] = cat.name;
-  });
-
   const sortedCategories = [...categories].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
   const toggleCategory = (categoryId: string) => {
-    setSelectedCategories(prev => 
+    setSelectedCategories(prev =>
       prev.includes(categoryId)
         ? prev.filter(c => c !== categoryId)
         : [...prev, categoryId]
@@ -139,7 +143,7 @@ export default function MobileToolbox() {
   };
 
   const matchingTools = selectedCategories.length > 0
-    ? displayAffiliates.filter(affiliate => 
+    ? displayAffiliates.filter(affiliate =>
         selectedCategories.every(categoryId => affiliate.categories?.includes(categoryId))
       ).sort((a, b) => (b.categories?.length || 0) - (a.categories?.length || 0))
     : displayAffiliates;
@@ -165,17 +169,20 @@ export default function MobileToolbox() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="flex items-center justify-between p-3">
-          <Link href="/">
+        <div className="flex items-center justify-between px-3 py-2">
+          <Link href={backHref}>
             <Button variant="ghost" size="icon" data-testid="button-back-home">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-base font-semibold">Toolbox</h1>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Desktop Version" 
+          <div className="flex flex-col items-center min-w-0 px-2">
+            <h1 className="text-xl font-semibold leading-tight" data-testid="text-page-title">Toolbox</h1>
+            <p className="text-[11px] text-muted-foreground leading-tight truncate">Investor tools & resources</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Desktop Version"
             onClick={handleViewDesktop}
             data-testid="button-desktop-version"
           >
@@ -184,95 +191,56 @@ export default function MobileToolbox() {
         </div>
       </header>
 
-      <main className="p-4 pb-24 space-y-4">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">
-            <Wrench className="h-6 w-6 text-primary" />
-          </div>
-          <h2 className="text-lg font-bold text-foreground">Investor Tools</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Curated tools for real estate investing success
-          </p>
-        </div>
-
-        {/* Tool Finder Tutorial Video - always shown */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5">
-            <Video className="h-4 w-4 text-accent" />
-            <span className="text-xs font-medium text-muted-foreground">{TOOL_FINDER_VIDEO_TITLE}</span>
-          </div>
-          <div className="w-full">
-            <div 
-              className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border"
-              data-testid="video-tool-finder-tutorial"
-            >
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
-                title={TOOL_FINDER_VIDEO_TITLE}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Learn how to use the Tool Finder
-            </p>
-          </div>
-        </div>
-
-        {/* Only show filter/categories for subscribers */}
-        {effectiveIsSubscriber && (
-          <div className="flex gap-2">
-            <Sheet open={showFilters} onOpenChange={setShowFilters}>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="flex-1" data-testid="button-filter-tools">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
+      <main className="p-4 pb-6 space-y-4">
+        {!authLoading && effectiveIsSubscriber && (
+          <Sheet open={showFilters} onOpenChange={setShowFilters}>
+            <SheetTrigger asChild>
+              <Button className="w-full" size="lg" data-testid="button-filter-tools">
+                <Filter className="h-5 w-5 mr-2" />
+                Browse Tools
+                {selectedCategories.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">{selectedCategories.length}</Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[70vh]">
+              <SheetHeader>
+                <SheetTitle className="flex items-center justify-between">
+                  <span>Filter by Category</span>
                   {selectedCategories.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">{selectedCategories.length}</Badge>
+                    <Button variant="ghost" size="sm" onClick={resetFilters}>
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Reset
+                    </Button>
                   )}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
+                {sortedCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex items-center space-x-3 p-2 rounded-lg hover-elevate"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <Checkbox
+                      id={category.id}
+                      checked={selectedCategories.includes(category.id)}
+                      onCheckedChange={() => toggleCategory(category.id)}
+                      data-testid={`checkbox-category-${category.id}`}
+                    />
+                    <label htmlFor={category.id} className="text-sm flex-1 cursor-pointer">
+                      {category.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <Button className="w-full" onClick={() => setShowFilters(false)} data-testid="button-apply-filters">
+                  Show {matchingTools.length} Tool{matchingTools.length !== 1 ? 's' : ''}
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-[70vh]">
-                <SheetHeader>
-                  <SheetTitle className="flex items-center justify-between">
-                    <span>Filter by Category</span>
-                    {selectedCategories.length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={resetFilters}>
-                        <RotateCcw className="h-3 w-3 mr-1" />
-                        Reset
-                      </Button>
-                    )}
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
-                  {sortedCategories.map((category) => (
-                    <div 
-                      key={category.id} 
-                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50"
-                      onClick={() => toggleCategory(category.id)}
-                    >
-                      <Checkbox
-                        id={category.id}
-                        checked={selectedCategories.includes(category.id)}
-                        onCheckedChange={() => toggleCategory(category.id)}
-                        data-testid={`checkbox-category-${category.id}`}
-                      />
-                      <label htmlFor={category.id} className="text-sm flex-1 cursor-pointer">
-                        {category.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4">
-                  <Button className="w-full" onClick={() => setShowFilters(false)} data-testid="button-apply-filters">
-                    Show {matchingTools.length} Tool{matchingTools.length !== 1 ? 's' : ''}
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         )}
 
         {!effectiveIsSubscriber && (
@@ -292,7 +260,6 @@ export default function MobileToolbox() {
           </Card>
         )}
 
-        {/* Only show tools list for subscribers */}
         {effectiveIsSubscriber && (
           <div className="space-y-3" data-testid="section-tools-list">
             <div className="flex items-center justify-between">
@@ -306,7 +273,7 @@ export default function MobileToolbox() {
                 </Button>
               )}
             </div>
-            
+
             {matchingTools.map((tool) => {
               const logoUrl = getLogoUrl(tool.referralLink);
               const costDisplay = formatCostRange(tool.costFrom, tool.costTo);
@@ -317,8 +284,8 @@ export default function MobileToolbox() {
                   <div className="flex gap-3">
                     {logoUrl && (
                       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border flex items-center justify-center overflow-hidden">
-                        <img 
-                          src={logoUrl} 
+                        <img
+                          src={logoUrl}
                           alt={tool.name}
                           className="w-8 h-8 object-contain"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -374,6 +341,95 @@ export default function MobileToolbox() {
             })}
           </div>
         )}
+
+        {/* Resources section — mirrors desktop Resources tab */}
+        <div className="space-y-2 pt-2">
+          <h3 className="text-sm font-semibold" data-testid="heading-resources">Resources</h3>
+          <div className="space-y-2">
+            <Link href="/blog">
+              <Card className="p-3 hover-elevate cursor-pointer" data-testid="card-resource-blog">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Blog</p>
+                    <p className="text-[11px] text-muted-foreground">Investor education and analysis</p>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+            <Link href="/toolbox#glossary">
+              <Card className="p-3 hover-elevate cursor-pointer" data-testid="card-resource-glossary">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Glossary</p>
+                    <p className="text-[11px] text-muted-foreground">Real estate investing terms</p>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+            <a href="https://www.legalshield.com" target="_blank" rel="noopener noreferrer">
+              <Card className="p-3 hover-elevate cursor-pointer" data-testid="card-resource-legal">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10">
+                    <Scale className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium">Legal Services</p>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">LegalShield for investors</p>
+                  </div>
+                </div>
+              </Card>
+            </a>
+          </div>
+        </div>
+
+        {/* Contractors — desktop-only for now */}
+        <Card className="p-3" data-testid="card-contractors-desktop-note">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 p-2 rounded-lg bg-muted">
+              <HardHat className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Contractor Search</p>
+              <p className="text-[11px] text-muted-foreground">Available on the desktop site</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleContractorsDesktop} data-testid="button-contractors-desktop">
+              <Monitor className="h-3 w-3 mr-1" />
+              View
+            </Button>
+          </div>
+        </Card>
+
+        {/* Tool Finder Tutorial Video — moved below the fold */}
+        <div className="space-y-2 pt-2">
+          <div className="flex items-center gap-1.5">
+            <Video className="h-4 w-4 text-accent" />
+            <span className="text-xs font-medium text-muted-foreground">{TOOL_FINDER_VIDEO_TITLE}</span>
+          </div>
+          <div className="w-full">
+            <div
+              className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border"
+              data-testid="video-tool-finder-tutorial"
+            >
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
+                title={TOOL_FINDER_VIDEO_TITLE}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

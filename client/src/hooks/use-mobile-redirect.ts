@@ -6,14 +6,16 @@ const MOBILE_ROUTE_MAP: Record<string, string> = {
   "/deal-analysis": "/m/deal-analysis",
   "/toolbox": "/m/toolbox",
   "/lenders": "/m/lenders",
-  "/webinar": "/m/webinar",
+  // WEBINAR_ENABLED = false — webinar route map removed
+  // "/webinar": "/m/webinar",
 };
 
 const DESKTOP_ROUTE_MAP: Record<string, string> = {
   "/m/deal-analysis": "/deal-analysis",
   "/m/toolbox": "/toolbox",
   "/m/lenders": "/lenders",
-  "/m/webinar": "/webinar",
+  // WEBINAR_ENABLED = false — webinar route map removed
+  // "/m/webinar": "/webinar",
 };
 
 export function useMobileRedirect() {

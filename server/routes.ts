@@ -5513,8 +5513,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Webinar Registration Routes
   // =====================
 
-  // Register for webinar (public - no auth required)
-  app.post("/api/webinar/register", async (req, res) => {
+  // WEBINAR_ENABLED = false — registration endpoint deactivated, returns 410 Gone
+  app.post("/api/webinar/register", async (_req, res) => {
+    return res.status(410).json({ error: "Webinar registration is no longer available." });
+  });
+  app.post("/api/webinar/register/__disabled__", async (req, res) => {
     try {
       const { name, email, phone, webinarId, source, referralSource, webinarDate } = req.body;
       

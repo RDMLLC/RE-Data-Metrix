@@ -1,0 +1,79 @@
+Please make the following changes across the mobile experience. Do them in order.
+
+PART 1 — Deactivate all webinar content
+
+Search the entire codebase for all webinar-related references: components, routes, nav links, footer links, email CTAs, sitemap entries, schema markup, and any database records.
+Deactivate (do not delete) the following — comment out or add a WEBINAR_ENABLED = false flag where appropriate:
+
+/m/webinar route in client/src/App.tsx
+/webinar route in client/src/App.tsx
+MobileWebinar.tsx component
+Webinar.tsx component
+Any nav, footer, or sidebar links to /webinar or /m/webinar
+Any email CTA links pointing to /webinar in server/services/email.service.ts
+Sitemap entries for /webinar and /m/webinar
+Remove webinar from MOBILE_ROUTE_MAP in use-mobile-redirect.ts
+
+
+Add a redirect: anyone hitting /webinar or /m/webinar should redirect to /
+Show me everything you found and deactivated.
+
+
+PART 2 — Audit what's broken or missing on mobile
+For each of these pages, load the page at 390px viewport width and tell me exactly what a mobile user sees:
+
+Homepage (/)
+Deal Analysis (/deal-analysis) — both gate view (logged out) and wizard (logged in)
+Lenders (/lenders)
+Toolbox/Resources (/toolbox)
+Blog (/blog)
+Pricing (/pricing)
+Portal/Dashboard (/portal/dashboard)
+
+For each page identify:
+
+Any components that are completely invisible, clipped, or broken at 390px
+Any horizontal overflow or elements extending past the viewport
+Any text that's too large and dominates the screen
+Any desktop-only layout that hasn't been adapted for mobile
+
+Do NOT make changes yet — just report findings per page.
+
+PART 3 — Mobile UX cleanup across all /m/ pages*
+Apply these changes to /m/deal-analysis, /m/lenders, and /m/toolbox:
+Headers:
+
+Reduce the hero section on each page — remove the large round icon badge (Calculator, Building2, Wrench), reduce the title font size to text-xl (from whatever it currently is), reduce the subtitle to 1 line max, reduce vertical padding
+The entire header + hero block should take no more than 80px of vertical space
+
+Back arrow:
+
+Change the back arrow destination: if the user isAuthenticated, navigate to /portal/dashboard; if not authenticated, navigate to /
+
+deviceMode sticky trap fix:
+
+In use-mobile-redirect.ts or DeviceModeContext.tsx: when setDeviceMode("desktop") is called programmatically by a wizard button (not by the user tapping the Desktop Version toggle in the header), do NOT persist the value to localStorage. Only persist to localStorage when the user explicitly taps the Desktop Version toggle.
+Implement this by adding an ephemeral parameter to setDeviceMode: setDeviceMode("desktop", { persist: false }) — ephemeral mode overrides for the current navigation only, then resets to "auto" after the desktop page mounts.
+
+Remove extraneous decorative elements on mobile:
+
+Any section that is purely decorative (icon grids, "What You'll Get" info cards, "Quick Steps" static lists) — hide these on mobile with hidden or move them below the fold
+The primary action (Start New Analysis, Search Lenders, Browse Tools) should be the first interactive element visible after the header
+
+Bottom padding:
+
+Change pb-24 to pb-6 on all three pages since there is no bottom navigation bar
+
+Lenders filter — expand to all 50 states:
+
+Replace the hard-coded 8-state array in MobileLenders.tsx with the full 50-state list used on the desktop /lenders page
+Add the missing filters from desktop: closing speed/window, entity type (Lender/Broker), and at minimum 2-3 of the Yes/No filters (works with new investors, 100% funding available, no prepayment penalty)
+
+Toolbox — add missing tabs:
+
+Add a "Resources" section to /m/toolbox that includes links to /blog (Blog), /toolbox#glossary (Glossary), and a Legal Services entry matching what's on the desktop Resources tab
+The Contractors feature can remain desktop-only for now — add a "View on Desktop" note in its place
+
+Dead code cleanup:
+
+Remove all unused imports and destructured variables flagged in the audit across all four mobile pages

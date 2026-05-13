@@ -146,7 +146,7 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Two-row layout for desktop */}
         <div className="hidden md:block">
-          {/* Top row: Logo and branding with Free Webinar */}
+          {/* Top row: Logo and branding */}
           <div className="flex items-center justify-between py-3 border-b border-border">
             <div className="flex-1" /> {/* Spacer for centering */}
             <Link href="/" className="flex items-center gap-4 hover-elevate active-elevate-2 px-2 py-1 rounded-md" data-testid="link-home">

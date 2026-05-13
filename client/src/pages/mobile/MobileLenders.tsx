@@ -7,8 +7,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,22 +20,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Search, 
-  Heart, 
+import {
+  Search,
+  Heart,
   ExternalLink,
   Phone,
   Mail,
-  Building2,
   Filter,
-  X,
   ArrowLeft,
   Monitor,
   Video,
   Play,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import type { TrainingVideo } from "@shared/schema";
 
@@ -88,8 +84,28 @@ const PLACEHOLDER_LENDERS: SearchResult[] = [
   },
 ];
 
+const ALL_STATES: { code: string; name: string }[] = [
+  { code: "AL", name: "Alabama" }, { code: "AK", name: "Alaska" }, { code: "AZ", name: "Arizona" },
+  { code: "AR", name: "Arkansas" }, { code: "CA", name: "California" }, { code: "CO", name: "Colorado" },
+  { code: "CT", name: "Connecticut" }, { code: "DE", name: "Delaware" }, { code: "FL", name: "Florida" },
+  { code: "GA", name: "Georgia" }, { code: "HI", name: "Hawaii" }, { code: "ID", name: "Idaho" },
+  { code: "IL", name: "Illinois" }, { code: "IN", name: "Indiana" }, { code: "IA", name: "Iowa" },
+  { code: "KS", name: "Kansas" }, { code: "KY", name: "Kentucky" }, { code: "LA", name: "Louisiana" },
+  { code: "ME", name: "Maine" }, { code: "MD", name: "Maryland" }, { code: "MA", name: "Massachusetts" },
+  { code: "MI", name: "Michigan" }, { code: "MN", name: "Minnesota" }, { code: "MS", name: "Mississippi" },
+  { code: "MO", name: "Missouri" }, { code: "MT", name: "Montana" }, { code: "NE", name: "Nebraska" },
+  { code: "NV", name: "Nevada" }, { code: "NH", name: "New Hampshire" }, { code: "NJ", name: "New Jersey" },
+  { code: "NM", name: "New Mexico" }, { code: "NY", name: "New York" }, { code: "NC", name: "North Carolina" },
+  { code: "ND", name: "North Dakota" }, { code: "OH", name: "Ohio" }, { code: "OK", name: "Oklahoma" },
+  { code: "OR", name: "Oregon" }, { code: "PA", name: "Pennsylvania" }, { code: "RI", name: "Rhode Island" },
+  { code: "SC", name: "South Carolina" }, { code: "SD", name: "South Dakota" }, { code: "TN", name: "Tennessee" },
+  { code: "TX", name: "Texas" }, { code: "UT", name: "Utah" }, { code: "VT", name: "Vermont" },
+  { code: "VA", name: "Virginia" }, { code: "WA", name: "Washington" }, { code: "WV", name: "West Virginia" },
+  { code: "WI", name: "Wisconsin" }, { code: "WY", name: "Wyoming" },
+];
+
 export default function MobileLenders() {
-  const { user, isSubscriber } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
@@ -99,7 +115,9 @@ export default function MobileLenders() {
   const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
   const [expandedLender, setExpandedLender] = useState<string | null>(null);
   const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
-  
+
+  const backHref = isAuthenticated ? "/portal/dashboard" : "/";
+
   const handleViewDesktop = () => {
     setDeviceMode("desktop");
     setLocation("/lenders");
@@ -108,6 +126,11 @@ export default function MobileLenders() {
   const [filters, setFilters] = useState({
     state: "any",
     loanType: "any",
+    brokerOrDirectLender: "any",
+    fastestClosingTime: "any",
+    workWithNewInvestors: "any",
+    offer100PercentFunding: "any",
+    offerDeferredPayment: "any",
   });
 
   const { data: videos = [] } = useQuery<TrainingVideo[]>({
@@ -131,8 +154,8 @@ export default function MobileLenders() {
 
   const savedLenderIds = savedLendersData?.map((sl) => sl.lenderId) ?? [];
 
-  const lenderVideos = videos.filter(v => 
-    v.title.toLowerCase().includes("lender") || 
+  const lenderVideos = videos.filter(v =>
+    v.title.toLowerCase().includes("lender") ||
     v.title.toLowerCase().includes("financing") ||
     v.title.toLowerCase().includes("loan")
   ).slice(0, 2);
@@ -208,17 +231,20 @@ export default function MobileLenders() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="flex items-center justify-between p-3">
-          <Link href="/">
+        <div className="flex items-center justify-between px-3 py-2">
+          <Link href={backHref}>
             <Button variant="ghost" size="icon" data-testid="button-back-home">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-base font-semibold">Lender Search</h1>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Desktop Version" 
+          <div className="flex flex-col items-center min-w-0 px-2">
+            <h1 className="text-xl font-semibold leading-tight" data-testid="text-page-title">Find Lenders</h1>
+            <p className="text-[11px] text-muted-foreground leading-tight truncate">Verified investment property lenders</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Desktop Version"
             onClick={handleViewDesktop}
             data-testid="button-desktop-version"
           >
@@ -227,57 +253,9 @@ export default function MobileLenders() {
         </div>
       </header>
 
-      <main className="p-4 pb-24 space-y-4">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">
-            <Building2 className="h-6 w-6 text-primary" />
-          </div>
-          <h2 className="text-lg font-bold text-foreground">Find Lenders</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Connect with verified investment property lenders
-          </p>
-        </div>
-
-        {lenderVideos.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Video className="h-4 w-4 text-accent" />
-              <span className="text-xs font-medium text-muted-foreground">Learn About Financing</span>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-              {lenderVideos.map((video) => {
-                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
-                return (
-                  <Card
-                    key={video.id}
-                    className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover-elevate"
-                    onClick={() => setSelectedVideo(video)}
-                    data-testid={`card-video-${video.id}`}
-                  >
-                    <div className="aspect-video bg-muted relative">
-                      {thumbnail ? (
-                        <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <Play className="h-8 w-8 text-white" />
-                      </div>
-                    </div>
-                    <div className="p-2">
-                      <p className="text-[11px] font-medium line-clamp-2">{video.title}</p>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <Button 
-          className="w-full" 
+      <main className="p-4 pb-6 space-y-4">
+        <Button
+          className="w-full"
           size="lg"
           onClick={() => setShowFilters(true)}
           data-testid="button-search-lenders"
@@ -301,7 +279,7 @@ export default function MobileLenders() {
 
               return (
                 <Card key={lender.id} className="overflow-hidden" data-testid={`card-lender-${lender.id}`}>
-                  <div 
+                  <div
                     className="p-3 cursor-pointer"
                     onClick={() => setExpandedLender(isExpanded ? null : lender.id)}
                   >
@@ -314,7 +292,6 @@ export default function MobileLenders() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
                           onClick={(e) => { e.stopPropagation(); handleToggleSave(lender.id); }}
                           disabled={isPending}
                           data-testid={`button-save-lender-${lender.id}`}
@@ -358,19 +335,47 @@ export default function MobileLenders() {
           </div>
         )}
 
-        {searchResults.length === 0 && (
-          <Card className="p-4 text-center">
-            <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm font-medium">Search for Lenders</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Use the search button to find lenders that match your criteria
-            </p>
-          </Card>
+        {lenderVideos.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Video className="h-4 w-4 text-accent" />
+              <span className="text-xs font-medium text-muted-foreground">Learn About Financing</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              {lenderVideos.map((video) => {
+                const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+                return (
+                  <Card
+                    key={video.id}
+                    className="flex-shrink-0 w-36 overflow-hidden cursor-pointer hover-elevate"
+                    onClick={() => setSelectedVideo(video)}
+                    data-testid={`card-video-${video.id}`}
+                  >
+                    <div className="aspect-video bg-muted relative">
+                      {thumbnail ? (
+                        <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Video className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <Play className="h-8 w-8 text-white" />
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[11px] font-medium line-clamp-2">{video.title}</p>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         )}
       </main>
 
       <Dialog open={showFilters} onOpenChange={setShowFilters}>
-        <DialogContent className="max-w-[95vw]">
+        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
@@ -386,14 +391,9 @@ export default function MobileLenders() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="any">Any State</SelectItem>
-                  <SelectItem value="FL">Florida</SelectItem>
-                  <SelectItem value="TX">Texas</SelectItem>
-                  <SelectItem value="CA">California</SelectItem>
-                  <SelectItem value="NY">New York</SelectItem>
-                  <SelectItem value="GA">Georgia</SelectItem>
-                  <SelectItem value="NC">North Carolina</SelectItem>
-                  <SelectItem value="OH">Ohio</SelectItem>
-                  <SelectItem value="PA">Pennsylvania</SelectItem>
+                  {ALL_STATES.map(s => (
+                    <SelectItem key={s.code} value={s.code}>{s.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -419,11 +419,79 @@ export default function MobileLenders() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowFilters(false)}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Direct Lender or Broker</label>
+              <Select value={filters.brokerOrDirectLender} onValueChange={(v) => setFilters(f => ({ ...f, brokerOrDirectLender: v }))}>
+                <SelectTrigger data-testid="select-broker-or-lender">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="Lender">Lender</SelectItem>
+                  <SelectItem value="Broker">Broker</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fastest Closing Time</label>
+              <Select value={filters.fastestClosingTime} onValueChange={(v) => setFilters(f => ({ ...f, fastestClosingTime: v }))}>
+                <SelectTrigger data-testid="select-closing-time">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="1-7 DAYS">1-7 Days</SelectItem>
+                  <SelectItem value="8-14 DAYS">8-14 Days</SelectItem>
+                  <SelectItem value="15-21 DAYS">15-21 Days</SelectItem>
+                  <SelectItem value="22-30 DAYS">22-30 Days</SelectItem>
+                  <SelectItem value="More than 30 days">More than 30 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Works with New Investors</label>
+              <Select value={filters.workWithNewInvestors} onValueChange={(v) => setFilters(f => ({ ...f, workWithNewInvestors: v }))}>
+                <SelectTrigger data-testid="select-new-investors">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="Yes">Yes</SelectItem>
+                  <SelectItem value="No">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">100% Funding Available</label>
+              <Select value={filters.offer100PercentFunding} onValueChange={(v) => setFilters(f => ({ ...f, offer100PercentFunding: v }))}>
+                <SelectTrigger data-testid="select-100-percent-funding">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="Yes">Yes</SelectItem>
+                  <SelectItem value="No">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Deferred Payment Loans</label>
+              <Select value={filters.offerDeferredPayment} onValueChange={(v) => setFilters(f => ({ ...f, offerDeferredPayment: v }))}>
+                <SelectTrigger data-testid="select-deferred-payment">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="Yes">Yes</SelectItem>
+                  <SelectItem value="No">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="flex-1 min-w-[120px]" onClick={() => setShowFilters(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleSearch} disabled={isSearching} data-testid="button-apply-search">
+              <Button className="flex-1 min-w-[120px]" onClick={handleSearch} disabled={isSearching} data-testid="button-apply-search">
                 {isSearching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
                 Search
               </Button>

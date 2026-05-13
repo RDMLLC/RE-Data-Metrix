@@ -6,24 +6,20 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { useDeviceMode } from "@/contexts/DeviceModeContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Calculator, 
-  Play, 
-  Video, 
-  ChevronRight, 
-  Home, 
-  FileText,
-  TrendingUp,
+import {
+  Calculator,
+  Play,
+  Video,
+  ChevronRight,
+  Home,
   ArrowLeft,
   Monitor,
-  CheckCircle
 } from "lucide-react";
 import type { TrainingVideo } from "@shared/schema";
 
@@ -41,19 +37,21 @@ function getYoutubeThumbnail(url: string): string {
 }
 
 export default function MobileDealAnalysis() {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { wizardData } = useWizardData();
   const { setDeviceMode } = useDeviceMode();
   const [, setLocation] = useLocation();
   const [selectedVideo, setSelectedVideo] = useState<TrainingVideo | null>(null);
-  
+
+  const backHref = isAuthenticated ? "/portal/dashboard" : "/";
+
   const handleViewDesktop = () => {
     setDeviceMode("desktop");
     setLocation("/deal-analysis");
   };
 
   const handleStartAnalysis = () => {
-    setDeviceMode("desktop");
+    setDeviceMode("desktop", { persist: false });
     setLocation("/deal-analysis");
   };
 
@@ -61,8 +59,8 @@ export default function MobileDealAnalysis() {
     queryKey: ["/api/training-videos"],
   });
 
-  const dealAnalysisVideos = videos.filter(v => 
-    v.title.toLowerCase().includes("deal") || 
+  const dealAnalysisVideos = videos.filter(v =>
+    v.title.toLowerCase().includes("deal") ||
     v.title.toLowerCase().includes("analysis") ||
     v.title.toLowerCase().includes("wizard") ||
     v.isFeatured
@@ -73,17 +71,20 @@ export default function MobileDealAnalysis() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="flex items-center justify-between p-3">
-          <Link href="/">
+        <div className="flex items-center justify-between px-3 py-2">
+          <Link href={backHref}>
             <Button variant="ghost" size="icon" data-testid="button-back-home">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-base font-semibold">Deal Analysis</h1>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Desktop Version" 
+          <div className="flex flex-col items-center min-w-0 px-2">
+            <h1 className="text-xl font-semibold leading-tight" data-testid="text-page-title">Deal Analysis</h1>
+            <p className="text-[11px] text-muted-foreground leading-tight truncate">Profit projections & lender comparison</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Desktop Version"
             onClick={handleViewDesktop}
             data-testid="button-desktop-version"
           >
@@ -92,75 +93,7 @@ export default function MobileDealAnalysis() {
         </div>
       </header>
 
-      <main className="p-4 pb-24 space-y-4">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-2">
-            <Calculator className="h-6 w-6 text-primary" />
-          </div>
-          <h2 className="text-lg font-bold text-foreground">Analyze Your Deal</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Get detailed profit projections and lender comparisons
-          </p>
-        </div>
-
-        {dealAnalysisVideos.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Video className="h-4 w-4 text-accent" />
-              <span className="text-xs font-medium text-muted-foreground">How It Works</span>
-            </div>
-            {/* Full-width main video matching home page style */}
-            <div className="w-full">
-              <div 
-                className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border cursor-pointer"
-                onClick={() => dealAnalysisVideos[0] && setSelectedVideo(dealAnalysisVideos[0])}
-                data-testid="card-video-main"
-              >
-                {dealAnalysisVideos[0] && (
-                  <>
-                    <img
-                      src={dealAnalysisVideos[0].thumbnailUrl || getYoutubeThumbnail(dealAnalysisVideos[0].youtubeUrl)}
-                      alt={dealAnalysisVideos[0].title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <Play className="h-12 w-12 text-white" />
-                    </div>
-                  </>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-2">{dealAnalysisVideos[0]?.title}</p>
-            </div>
-            {/* Additional videos in smaller row */}
-            {dealAnalysisVideos.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {dealAnalysisVideos.slice(1).map((video) => {
-                  const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
-                  return (
-                    <div
-                      key={video.id}
-                      className="flex-shrink-0 w-24 cursor-pointer"
-                      onClick={() => setSelectedVideo(video)}
-                      data-testid={`card-video-${video.id}`}
-                    >
-                      <div className="aspect-video bg-muted rounded-lg relative overflow-hidden">
-                        {thumbnail && (
-                          <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
-                        )}
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                          <Play className="h-5 w-5 text-white" />
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{video.title}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Start/Continue Analysis — available to all logged-in users */}
+      <main className="p-4 pb-6 space-y-4">
         <Button
           className="w-full"
           size="lg"
@@ -197,46 +130,60 @@ export default function MobileDealAnalysis() {
           </Card>
         )}
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold">What You'll Get</h3>
-          <div className="grid grid-cols-2 gap-2">
-            <Card className="p-3">
-              <TrendingUp className="h-5 w-5 text-accent mb-1.5" />
-              <p className="text-xs font-medium">Profit Projections</p>
-              <p className="text-[10px] text-muted-foreground">ROI & cash-on-cash returns</p>
-            </Card>
-            <Card className="p-3">
-              <FileText className="h-5 w-5 text-accent mb-1.5" />
-              <p className="text-xs font-medium">Lender Comparison</p>
-              <p className="text-[10px] text-muted-foreground">Side-by-side loan terms</p>
-            </Card>
+        {dealAnalysisVideos.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Video className="h-4 w-4 text-accent" />
+              <span className="text-xs font-medium text-muted-foreground">How It Works</span>
+            </div>
+            <div className="w-full">
+              <div
+                className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border cursor-pointer"
+                onClick={() => dealAnalysisVideos[0] && setSelectedVideo(dealAnalysisVideos[0])}
+                data-testid="card-video-main"
+              >
+                {dealAnalysisVideos[0] && (
+                  <>
+                    <img
+                      src={dealAnalysisVideos[0].thumbnailUrl || getYoutubeThumbnail(dealAnalysisVideos[0].youtubeUrl)}
+                      alt={dealAnalysisVideos[0].title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <Play className="h-12 w-12 text-white" />
+                    </div>
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-2">{dealAnalysisVideos[0]?.title}</p>
+            </div>
+            {dealAnalysisVideos.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {dealAnalysisVideos.slice(1).map((video) => {
+                  const thumbnail = video.thumbnailUrl || getYoutubeThumbnail(video.youtubeUrl);
+                  return (
+                    <div
+                      key={video.id}
+                      className="flex-shrink-0 w-24 cursor-pointer"
+                      onClick={() => setSelectedVideo(video)}
+                      data-testid={`card-video-${video.id}`}
+                    >
+                      <div className="aspect-video bg-muted rounded-lg relative overflow-hidden">
+                        {thumbnail && (
+                          <img src={thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                        )}
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <Play className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{video.title}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold" id="quick-steps-heading">Quick Steps</h3>
-          <ul className="space-y-1.5" aria-labelledby="quick-steps-heading" role="list" data-testid="list-wizard-steps">
-            {[
-              { step: 1, title: "Enter Property Address", desc: "Auto-lookup or manual entry" },
-              { step: 2, title: "Property Details", desc: "Beds, baths, sqft" },
-              { step: 3, title: "Purchase & Renovation", desc: "Price, rehab budget, ARV" },
-              { step: 4, title: "Your Info", desc: "Experience & credit" },
-              { step: 5, title: "Holding Period", desc: "Timeline & exit strategy" },
-              { step: 6, title: "Results", desc: "Profit & lender comparison" },
-            ].map(({ step, title, desc }) => (
-              <li key={step} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50" data-testid={`step-${step}`}>
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
-                  <span className="text-xs font-bold text-primary">{step}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium" data-testid={`text-step-${step}-title`}>{title}</p>
-                  <p className="text-[10px] text-muted-foreground">{desc}</p>
-                </div>
-                <CheckCircle className="h-4 w-4 text-muted-foreground/30" aria-hidden="true" />
-              </li>
-            ))}
-          </ul>
-        </div>
+        )}
       </main>
 
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>

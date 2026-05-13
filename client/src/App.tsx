@@ -21,7 +21,8 @@ import NotFound from "@/pages/not-found";
 const MobileDealAnalysis = lazy(() => import("@/pages/mobile/MobileDealAnalysis"));
 const MobileLenders = lazy(() => import("@/pages/mobile/MobileLenders"));
 const MobileToolbox = lazy(() => import("@/pages/mobile/MobileToolbox"));
-const MobileWebinar = lazy(() => import("@/pages/mobile/MobileWebinar"));
+// WEBINAR_ENABLED = false — webinar feature deactivated
+// const MobileWebinar = lazy(() => import("@/pages/mobile/MobileWebinar"));
 const About = lazy(() => import("@/pages/About"));
 const Company = lazy(() => import("@/pages/Company"));
 const DealAnalysis = lazy(() => import("@/pages/DealAnalysis"));
@@ -101,8 +102,9 @@ const Checkout = lazy(() => import("@/pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
 const CheckoutComplete = lazy(() => import("@/pages/CheckoutComplete"));
 const WholesaleCalculator = lazy(() => import("@/pages/WholesaleCalculator"));
-const Webinar = lazy(() => import("@/pages/Webinar"));
-const WebinarRsvpThankYou = lazy(() => import("@/pages/WebinarRsvpThankYou"));
+// WEBINAR_ENABLED = false — webinar feature deactivated
+// const Webinar = lazy(() => import("@/pages/Webinar"));
+// const WebinarRsvpThankYou = lazy(() => import("@/pages/WebinarRsvpThankYou"));
 const BetaSignup = lazy(() => import("@/pages/BetaSignup"));
 const FeatureFeedback = lazy(() => import("@/pages/FeatureFeedback"));
 const AdminFeatureFeedback = lazy(() => import("@/pages/admin/FeatureFeedback"));
@@ -174,7 +176,8 @@ function Router() {
         <Route path="/m/deal-analysis" component={MobileDealAnalysis} />
         <Route path="/m/lenders" component={MobileLenders} />
         <Route path="/m/toolbox" component={MobileToolbox} />
-        <Route path="/m/webinar" component={MobileWebinar} />
+        {/* WEBINAR_ENABLED = false — redirect to home */}
+        <Route path="/m/webinar">{() => { window.location.replace("/"); return null; }}</Route>
         <Route path="/m/meta-offer">{() => { window.location.replace("/meta-offer" + window.location.search); return null; }}</Route>
         
         <Route path="/" component={Home} />
@@ -191,8 +194,9 @@ function Router() {
         <Route path="/resources" component={Resources} />
         <Route path="/blog" component={Blog} />
         <Route path="/blog/:slug" component={BlogPost} />
-        <Route path="/webinar" component={Webinar} />
-        <Route path="/webinar/rsvp/:registrationId/thank-you" component={WebinarRsvpThankYou} />
+        {/* WEBINAR_ENABLED = false — redirect to home */}
+        <Route path="/webinar">{() => { window.location.replace("/"); return null; }}</Route>
+        <Route path="/webinar/rsvp/:registrationId/thank-you">{() => { window.location.replace("/"); return null; }}</Route>
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/verify-email/:token" component={VerifyEmail} />

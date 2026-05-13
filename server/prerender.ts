@@ -273,13 +273,14 @@ export const PRERENDER_ROUTES: RouteConfig[] = [
     canonicalUrl: `${BASE_URL}/toolbox`,
     schemas: BASE_SCHEMAS
   },
-  {
-    path: '/webinar',
-    title: 'Free Webinar - Real Estate Investment Training',
-    description: 'Join our free live webinar to learn how to analyze real estate deals, connect with private lenders, and use data-driven tools to maximize your investment returns.',
-    canonicalUrl: `${BASE_URL}/webinar`,
-    schemas: BASE_SCHEMAS
-  },
+  // WEBINAR_ENABLED = false — webinar prerender route deactivated
+  // {
+  //   path: '/webinar',
+  //   title: 'Free Webinar - Real Estate Investment Training',
+  //   description: 'Join our free live webinar to learn how to analyze real estate deals, connect with private lenders, and use data-driven tools to maximize your investment returns.',
+  //   canonicalUrl: `${BASE_URL}/webinar`,
+  //   schemas: BASE_SCHEMAS
+  // },
   {
     path: '/meta-offer',
     title: 'Analyze Deals & Find the Right Lender',
