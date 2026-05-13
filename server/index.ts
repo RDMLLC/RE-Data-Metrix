@@ -316,17 +316,27 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
-  // One-time fix: ensure admin@redatametrix.com has admin role
-  try {
-    await db.update(users)
-      .set({ role: 'admin' })
-      .where(sql`LOWER(${users.email}) = 'admin@redatametrix.com' AND ${users.role} != 'admin'`);
-  } catch (e) {
-    console.error('Admin role fix error:', e);
-  }
+  // Deferred startup work — runs AFTER server.listen() so the deploy port-opening
+  // health check is not blocked by long-running data fixes / seeds / prerender.
+  const runDeferredStartupWork = async () => {
+    try {
+      await db.update(users)
+        .set({ role: 'admin' })
+        .where(sql`LOWER(${users.email}) = 'admin@redatametrix.com' AND ${users.role} != 'admin'`);
+    } catch (e) {
+      console.error('Admin role fix error:', e);
+    }
+    await runAffiliateDataFix();
+    await runServiceRegionsSeed();
+    if (app.get("env") !== "development") {
+      await runPrerender().catch(err => {
+        console.error('[prerender] Non-fatal error during prerender:', err);
+      });
+    }
+  };
 
-  // Data fixes: correct affiliate data on startup
-  try {
+  async function runAffiliateDataFix() {
+   try {
     const { sql } = await import('drizzle-orm');
     await db.update(affiliates)
       .set({ name: 'DealMachine', logoUrl: null })
@@ -353,11 +363,13 @@ app.use((req, res, next) => {
         .set({ contactEmail: email })
         .where(sql`${affiliates.name} = ${name} AND ${affiliates.contactEmail} IS NULL`);
     }
-  } catch (e) {
+   } catch (e) {
     console.error('Data fix error:', e);
+   }
   }
 
-  try {
+  async function runServiceRegionsSeed() {
+   try {
     const [{ count: regionCount }] = await db.select({ count: count() }).from(serviceRegions);
     if (Number(regionCount) === 0) {
       console.log('Seeding service regions...');
@@ -421,8 +433,9 @@ app.use((req, res, next) => {
       }
       console.log(`Seeded ${regions.length} service regions`);
     }
-  } catch (e) {
+   } catch (e) {
     console.error('Service regions seed error:', e);
+   }
   }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -439,9 +452,9 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    await runPrerender().catch(err => {
-      console.error('[prerender] Non-fatal error during prerender:', err);
-    });
+    // Prerender now runs in deferred startup work (after listen) so the deploy
+    // port-opening health check is not blocked. Routes are still registered
+    // here so they're served from disk if dist/public/<route>/index.html exists.
     registerPrerenderRoutes(app);
 
     // Explicit streaming route for large video assets — must come before serveStatic
@@ -497,6 +510,12 @@ app.use((req, res, next) => {
     // Seed FREEMONTH discount code (no-op if already exists)
     seedFreeMonthDiscount().catch((err) => {
       console.error('FREEMONTH seed error (non-fatal):', err);
+    });
+
+    // Run deferred startup work AFTER port is open so the deploy health check
+    // succeeds even if these tasks take a long time.
+    runDeferredStartupWork().catch((err) => {
+      console.error('Deferred startup work error (non-fatal):', err);
     });
   });
 })();
