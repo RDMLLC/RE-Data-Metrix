@@ -43,14 +43,19 @@ class EmailService {
   }
 
   private getBaseUrl(): string {
-    if (process.env.VITE_APP_URL) {
-      return process.env.VITE_APP_URL;
+    const explicit = (process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || '').trim();
+    if (explicit) {
+      return explicit.replace(/\/+$/, '');
     }
-    
+
+    if (process.env.REPLIT_DEPLOYMENT === '1' || process.env.NODE_ENV === 'production') {
+      return 'https://redatametrix.com';
+    }
+
     if (process.env.REPLIT_DEV_DOMAIN) {
       return `https://${process.env.REPLIT_DEV_DOMAIN}`;
     }
-    
+
     return 'http://localhost:5000';
   }
 

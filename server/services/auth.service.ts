@@ -165,7 +165,13 @@ class AuthService {
 
   async registerUser(input: RegistrationInput): Promise<RegistrationResult> {
     try {
-      const validatedData = registrationSchema.parse(input);
+      const trimmedInput = {
+        ...input,
+        username: typeof input?.username === 'string' ? input.username.trim() : input?.username,
+        email: typeof input?.email === 'string' ? input.email.trim().toLowerCase() : input?.email,
+        fullName: typeof input?.fullName === 'string' ? input.fullName.trim() : input?.fullName,
+      };
+      const validatedData = registrationSchema.parse(trimmedInput);
 
       const emailExists = await this.checkEmailExists(validatedData.email);
       if (emailExists) {
