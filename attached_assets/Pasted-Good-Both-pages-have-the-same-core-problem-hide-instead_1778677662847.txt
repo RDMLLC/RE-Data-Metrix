@@ -1,0 +1,65 @@
+Good. Both pages have the same core problem — hide instead of adapt on Home, and no mobile optimization at all on Lenders. Let's fix both.
+Give Replit Agent This Prompt:
+Read .local/home-lenders-mobile-audit.md in full, then read client/src/pages/Home.tsx and client/src/pages/Lenders.tsx in full. Apply the following fixes.
+
+HOME.TSX FIXES
+Fix 1 — "Why Choose RE Data Metrix" section (hidden md:block)
+Replace the hidden md:block wrapper with a mobile-adapted version:
+
+On mobile (md:hidden): show a simple 2-column icon grid with just the heading and one-line description per item, no decorative card borders, reduced padding p-3
+On desktop: keep existing layout exactly as-is
+Section heading "Why Choose RE Data Metrix?" should be visible on mobile at text-xl md:text-2xl
+
+Fix 2 — Stats section ("Analyze/Fund/Grow", hidden md:block)
+Replace with a mobile-adapted version:
+
+On mobile: show the 3 stats in a single row grid-cols-3, each stat as a number + short label only (no descriptions), compact py-4
+On desktop: keep existing layout exactly as-is
+
+Fix 3 — Signup CTA section with 6 benefits (hidden md:block)
+This is the most important conversion section. Replace with a mobile version:
+
+On mobile: show the section heading + a single full-width CTA button only — skip the 6 benefit bullets (they duplicate what's already in Hero)
+Button should use getRegisterUrl() for UTM preservation
+On desktop: keep existing layout exactly as-is
+
+Fix 4 — Hero h1 font size
+Check the Hero <h1> — if it's text-4xl or larger with no mobile override, add a mobile size: text-2xl sm:text-3xl md:text-4xl (or similar step-down). Only apply if no mobile override already exists.
+
+LENDERS.TSX FIXES
+Fix 5 — h1 font size
+Line with text-4xl lg:text-5xl and no mobile override — change to text-2xl sm:text-3xl lg:text-5xl
+Fix 6 — Search form — collapse boolean filters on mobile
+The 7 Yes/No/Any boolean filter fields make the search form ~990px tall on mobile before any results appear. Fix:
+
+Wrap the 7 boolean filter fields in a collapsible "More Filters" section on mobile only
+Default state: collapsed (hidden on mobile)
+Show a "More Filters" button below the main filters (State + Loan Type + entity type) that expands them
+On desktop (md:) show all fields as currently — no change to desktop layout
+The collapse/expand is client-side state only, no API changes needed
+
+Fix 7 — Card padding on mobile
+
+Card p-12 on the bottom CTA card: change to p-6 sm:p-12
+Card p-8 on search and loan type cards: change to p-4 sm:p-8
+
+Fix 8 — Primary CTA tap targets
+The following buttons need min-h-11 sm:min-h-9 added:
+
+"Search Lenders" button
+"Contact the Lender" button on result cards — also add w-full sm:w-auto so it fills the card width on mobile
+Heart save button — add min-h-11 min-w-11 sm:min-h-9 sm:min-w-9
+"View All Loan Types" button
+"Get Started Free" bottom CTA button
+
+Fix 9 — Result card URL/email overflow
+Add break-words (or break-all for URLs) to any email address or website URL rendered in lender result cards to prevent horizontal overflow on mobile.
+Fix 10 — Accordion content padding
+Change pl-13 (52px) in accordion content to pl-4 sm:pl-13 on mobile.
+
+After all fixes:
+
+Confirm build compiles cleanly
+Verify the Home page mobile render order now includes all 4 sections
+Verify the Lenders search form collapses correctly on mobile with "More Filters" toggle
+List pre-existing errors separately

@@ -178,6 +178,7 @@ const PLACEHOLDER_LENDERS: SearchResult[] = [
 export default function Lenders() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [location, setLocation] = useLocation();
   const lastHandledQueryRef = useRef<string>('');
   const [pendingLenderIds, setPendingLenderIds] = useState<Set<string>>(new Set());
@@ -392,7 +393,7 @@ export default function Lenders() {
       <LendersPageSchema />
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="text-center mb-8">
-          <h1 className="text-4xl lg:text-5xl font-bold text-primary mb-4">Real Estate Investment Lenders for Every Deal Type</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-primary mb-4">Real Estate Investment Lenders for Every Deal Type</h1>
           <div className="h-1 w-32 bg-accent mx-auto mb-6"></div>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-3">
             <strong><em>real estate investment lenders</em></strong> matched to your deal type, experience level, and financing needs so you can secure funding faster and with better terms.
@@ -403,7 +404,7 @@ export default function Lenders() {
         </div>
 
         {/* Search Form */}
-        <Card className="p-8 mb-12">
+        <Card className="p-4 sm:p-8 mb-12">
           <h2 className="text-2xl font-semibold text-primary mb-6">Search for Lenders</h2>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -564,6 +565,8 @@ export default function Lenders() {
                   )}
                 />
 
+                {/* 7 boolean filter fields - collapsible on mobile */}
+                <div className={`${showMoreFilters ? "contents" : "hidden"} md:contents`} data-testid="more-filters-fields">
                 {/* Do you offer non-traditional / creative lending? */}
                 <FormField
                   control={form.control}
@@ -733,12 +736,26 @@ export default function Lenders() {
                     </FormItem>
                   )}
                 />
+                </div>
+              </div>
+
+              {/* Mobile-only "More Filters" toggle */}
+              <div className="md:hidden flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full min-h-11"
+                  onClick={() => setShowMoreFilters((prev) => !prev)}
+                  data-testid="button-toggle-more-filters"
+                >
+                  {showMoreFilters ? "Hide Filters" : "More Filters"}
+                </Button>
               </div>
 
               <div className="flex justify-center">
                 <Button
                   type="submit"
-                  className="w-full md:w-auto bg-accent text-accent-foreground hover:bg-accent/90"
+                  className="w-full md:w-auto min-h-11 sm:min-h-9 bg-accent text-accent-foreground hover:bg-accent/90"
                   data-testid="button-search-lenders"
                   disabled={isSearching}
                 >
@@ -762,9 +779,9 @@ export default function Lenders() {
                 return (
                   <Card key={lender.id} className="p-6" data-testid={`card-lender-${lender.id}`}>
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-2xl font-semibold text-primary mb-2" data-testid={`text-company-name-${lender.id}`}>
+                          <h3 className="text-2xl font-semibold text-primary mb-2 break-words" data-testid={`text-company-name-${lender.id}`}>
                             {lender.companyName || "Lender"}
                           </h3>
                           <Button
@@ -772,7 +789,7 @@ export default function Lenders() {
                             size="icon"
                             onClick={() => handleToggleSave(lender.id)}
                             disabled={isThisLenderPending}
-                            className={`flex-shrink-0 ${isSaved ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
+                            className={`flex-shrink-0 min-h-11 min-w-11 sm:min-h-9 sm:min-w-9 ${isSaved ? 'text-destructive hover:text-destructive/80' : 'text-muted-foreground hover:text-destructive'}`}
                             data-testid={`button-save-lender-${lender.id}`}
                           >
                             <Heart className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
@@ -790,12 +807,12 @@ export default function Lenders() {
                             </p>
                           )}
                           {lender.email && (
-                            <p data-testid={`text-email-${lender.id}`}>
+                            <p className="break-all" data-testid={`text-email-${lender.id}`}>
                               <span className="font-medium">Email:</span> {lender.email}
                             </p>
                           )}
                           {lender.website && (
-                            <p data-testid={`text-website-${lender.id}`}>
+                            <p className="break-all" data-testid={`text-website-${lender.id}`}>
                               <span className="font-medium">Website:</span>{" "}
                               <a
                                 href={lender.website}
@@ -809,20 +826,21 @@ export default function Lenders() {
                           )}
                         </div>
                         {lender.companyDescription && (
-                          <p className="mt-4 text-foreground" data-testid={`text-description-${lender.id}`}>
+                          <p className="mt-4 text-foreground break-words" data-testid={`text-description-${lender.id}`}>
                             {lender.companyDescription}
                           </p>
                         )}
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 w-full md:w-auto">
                         {lender.referralLink ? (
                           <a
                             href={lender.referralLink}
                             target="_blank"
                             rel="noopener noreferrer"
+                            className="block w-full sm:w-auto"
                             data-testid={`button-contact-lender-${lender.id}`}
                           >
-                            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+                            <Button className="w-full sm:w-auto min-h-11 sm:min-h-9 bg-accent text-accent-foreground hover:bg-accent/90">
                               Contact the Lender
                               <ExternalLink className="ml-2 h-4 w-4" />
                             </Button>
@@ -831,7 +849,7 @@ export default function Lenders() {
                           <Button
                             disabled
                             data-testid={`button-contact-lender-${lender.id}`}
-                            className="bg-muted text-muted-foreground"
+                            className="w-full sm:w-auto min-h-11 sm:min-h-9 bg-muted text-muted-foreground"
                           >
                             No Referral Link
                           </Button>
@@ -855,7 +873,7 @@ export default function Lenders() {
         )}
 
         {/* Loan Types Education Section */}
-        <Card className="p-8 mb-12" data-testid="section-loan-types">
+        <Card className="p-4 sm:p-8 mb-12" data-testid="section-loan-types">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
               <GraduationCap className="h-6 w-6 text-accent" />
@@ -878,7 +896,7 @@ export default function Lenders() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
-                  <div className="space-y-4 pl-13">
+                  <div className="space-y-4 pl-4 sm:pl-13">
                     <p className="text-muted-foreground">{loanType.description}</p>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -936,7 +954,7 @@ export default function Lenders() {
 
           <div className="mt-6 pt-4 border-t">
             <Link href="/loan-types">
-              <Button variant="outline" className="w-full md:w-auto" data-testid="button-view-all-loan-types">
+              <Button variant="outline" className="w-full md:w-auto min-h-11 sm:min-h-9" data-testid="button-view-all-loan-types">
                 View All Loan Types with Full Details
               </Button>
             </Link>
@@ -971,13 +989,13 @@ export default function Lenders() {
 
         {/* Call to Action - Only show for non-subscribers */}
         {!isSubscriber && (
-          <Card className="p-12 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Connect with Our Lender Network?</h2>
-            <p className="text-lg text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
+          <Card className="p-6 sm:p-12 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">Ready to Connect with Our Lender Network?</h2>
+            <p className="text-base sm:text-lg text-primary-foreground/80 mb-6 max-w-2xl mx-auto">
               Create a free account to access deal analysis tools and connect with verified lenders.
             </p>
             <Button 
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              className="w-full sm:w-auto min-h-11 sm:min-h-10 bg-accent text-accent-foreground hover:bg-accent/90"
               size="lg"
               onClick={() => setLocation('/pricing')}
             >

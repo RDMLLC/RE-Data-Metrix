@@ -165,8 +165,28 @@ export default function Home() {
       <OrganizationSchema />
       <WebApplicationSchema />
       <Hero />
-      
-      {/* Features Section - Hidden on mobile to reduce scrolling */}
+
+      {/* Features Section - Mobile compact version */}
+      <section className="md:hidden py-8 bg-background" data-testid="section-features-mobile">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl md:text-2xl font-bold text-primary text-center mb-4">
+            Why Choose RE Data Metrix?
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {features.map((feature, index) => (
+              <div key={index} className="p-3 text-center" data-testid={`feature-mobile-${index}`}>
+                <div className="flex justify-center mb-2">
+                  {feature.icon}
+                </div>
+                <h3 className="text-sm font-semibold text-primary mb-1">{feature.title}</h3>
+                <p className="text-xs text-muted-foreground line-clamp-2">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section - Desktop full version */}
       <section className="hidden md:block py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -188,7 +208,27 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section - Hidden on mobile to reduce scrolling */}
+      {/* Stats Section - Mobile compact version */}
+      <section className="md:hidden py-4 bg-primary text-primary-foreground" data-testid="section-stats-mobile">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div data-testid="stat-mobile-analyze">
+              <div className="text-2xl font-bold text-accent mb-0.5">Analyze</div>
+              <div className="text-xs text-primary-foreground/80">Deals</div>
+            </div>
+            <div data-testid="stat-mobile-fund">
+              <div className="text-2xl font-bold text-accent mb-0.5">Fund</div>
+              <div className="text-xs text-primary-foreground/80">Faster</div>
+            </div>
+            <div data-testid="stat-mobile-grow">
+              <div className="text-2xl font-bold text-accent mb-0.5">Grow</div>
+              <div className="text-xs text-primary-foreground/80">Portfolio</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section - Desktop full version */}
       <section className="hidden md:block py-24 bg-primary text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
@@ -234,7 +274,25 @@ export default function Home() {
         .
       </div>
 
-      {/* Signup CTA Section */}
+      {/* Signup CTA Section - Mobile compact version */}
+      <section id="signup-cta-mobile" className="md:hidden py-8 px-4 bg-background" data-testid="section-signup-cta-mobile">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-xl font-bold text-primary mb-3">
+            Start Analyzing Deals for Free
+          </h2>
+          <a href="/register">
+            <Button
+              size="lg"
+              className="w-full min-h-11 bg-accent text-accent-foreground hover:bg-accent/90"
+              data-testid="button-signup-cta-mobile"
+            >
+              Get Started Free
+            </Button>
+          </a>
+        </div>
+      </section>
+
+      {/* Signup CTA Section - Desktop full version */}
       <section id="signup-cta" className="hidden md:block py-24 bg-background">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
