@@ -1,0 +1,29 @@
+In the Admin User Management bulk email tool (/admin/user-management or /admin/users), the email sending functionality accepts a subject line and body with merge fields like {{firstName}}, {{fullName}}, and {{email}}. Currently these are being sent as literal text instead of being replaced with each recipient's actual data.
+Find the bulk email sending code and implement merge field substitution:
+
+Find the bulk email route — search server/routes.ts for the admin bulk email endpoint (likely POST /api/admin/users/bulk-email or similar). Show me the current code.
+Find where the email body is passed to the mailer — show me how the subject and body are currently passed to sendMail or equivalent.
+Implement merge field substitution — before sending each email, replace all merge fields in both the subject line AND the body with the recipient's actual data:
+
+typescriptfunction applyMergeFields(template: string, user: { firstName?: string; fullName?: string; email: string; username?: string }): string {
+  return template
+    .replace(/\{\{firstName\}\}/gi, user.firstName || user.fullName?.split(' ')[0] || 'there')
+    .replace(/\{\{fullName\}\}/gi, user.fullName || user.firstName || '')
+    .replace(/\{\{email\}\}/gi, user.email)
+    .replace(/\{\{username\}\}/gi, user.username || '')
+    .replace(/\{\{firstName\}\}/gi, user.firstName || 'there'); // fallback pass
+}
+Apply this function to both subject and body for each recipient individually before calling the mailer — so each email is personalized.
+
+Fallback for missing first name — if firstName is null or empty, use "there" as the fallback (e.g. "Hi there,") so the email never shows "Hi ," or "Hi {{firstName}},".
+Check the frontend bulk email UI (client/src/pages/admin/UserManagement.tsx or equivalent) — confirm it shows the available merge fields to the admin user. If there is no merge field reference shown in the UI, add a small helper text below the body textarea listing the available fields:
+
+{{firstName}} — recipient's first name
+{{fullName}} — recipient's full name
+{{email}} — recipient's email address
+{{username}} — recipient's username
+
+
+Also check the subject line field — confirm merge fields work there too, not just in the body.
+
+After changes confirm build compiles cleanly and list pre-existing errors separately.

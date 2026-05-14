@@ -4853,11 +4853,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const escapeHtml = (s: string) =>
         s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string }) =>
+      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string; username: string }) =>
         template
-          .replace(/\{\{\s*firstName\s*\}\}/g, ctx.firstName)
-          .replace(/\{\{\s*fullName\s*\}\}/g, ctx.fullName)
-          .replace(/\{\{\s*email\s*\}\}/g, ctx.email);
+          .replace(/\{\{\s*firstName\s*\}\}/gi, ctx.firstName)
+          .replace(/\{\{\s*fullName\s*\}\}/gi, ctx.fullName)
+          .replace(/\{\{\s*email\s*\}\}/gi, ctx.email)
+          .replace(/\{\{\s*username\s*\}\}/gi, ctx.username);
 
       let sent = 0;
       let failed = 0;
@@ -4865,9 +4866,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await Promise.all(recipients.map(async (r) => {
         try {
-          const fullName = (r.fullName || r.username || '').trim();
-          const firstName = fullName.split(/\s+/)[0] || r.username;
-          const ctx = { firstName, fullName: fullName || r.username, email: r.email };
+          const fullName = (r.fullName || '').trim();
+          const derivedFirst = fullName.split(/\s+/)[0] || '';
+          const firstName = derivedFirst || 'there';
+          const ctx = {
+            firstName,
+            fullName: fullName || r.username || '',
+            email: r.email,
+            username: r.username || '',
+          };
 
           const renderedSubject = applyMerge(subject, ctx);
           const renderedBodyText = applyMerge(body, ctx);

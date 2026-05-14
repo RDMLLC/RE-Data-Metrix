@@ -1557,9 +1557,15 @@ export default function UserManagement() {
                 placeholder={`Hi {{firstName}},\n\nWrite your message here...`}
                 data-testid="input-bulk-email-body"
               />
-              <p className="text-xs text-muted-foreground">
-                Available merge fields: {`{{firstName}}, {{fullName}}, {{email}}`}
-              </p>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Available merge fields (work in subject and body):</p>
+                <ul className="list-disc pl-5 space-y-0.5">
+                  <li><code>{`{{firstName}}`}</code> — recipient's first name (falls back to "there")</li>
+                  <li><code>{`{{fullName}}`}</code> — recipient's full name</li>
+                  <li><code>{`{{email}}`}</code> — recipient's email address</li>
+                  <li><code>{`{{username}}`}</code> — recipient's username</li>
+                </ul>
+              </div>
             </div>
             {emailErrorDetails.length > 0 && (
               <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-3" data-testid="bulk-email-errors">
