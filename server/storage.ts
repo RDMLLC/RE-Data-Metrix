@@ -191,6 +191,8 @@ export interface IStorage {
     termsAcceptedAt: Date | null;
     createdAt: Date | null;
     isEmailVerified: boolean;
+    signupSource: string | null;
+    signupRef: string | null;
   }>>;
   getUserByStripeCustomerId(customerId: string): Promise<User | undefined>;
   getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
@@ -1148,6 +1150,8 @@ export class MemStorage implements IStorage {
     termsAcceptedAt: Date | null;
     createdAt: Date | null;
     isEmailVerified: boolean;
+    signupSource: string | null;
+    signupRef: string | null;
   }>> {
     throw new Error("Not implemented in MemStorage");
   }
@@ -2428,6 +2432,8 @@ export class DatabaseStorage implements IStorage {
     termsAcceptedAt: Date | null;
     createdAt: Date | null;
     isEmailVerified: boolean;
+    signupSource: string | null;
+    signupRef: string | null;
   }>> {
     const users = await db.select({
       id: usersTable.id,
@@ -2440,6 +2446,8 @@ export class DatabaseStorage implements IStorage {
       termsAcceptedAt: usersTable.termsAcceptedAt,
       createdAt: usersTable.createdAt,
       isEmailVerified: usersTable.isEmailVerified,
+      signupSource: usersTable.signupSource,
+      signupRef: usersTable.signupRef,
     }).from(usersTable).orderBy(desc(usersTable.createdAt));
 
     return users;
