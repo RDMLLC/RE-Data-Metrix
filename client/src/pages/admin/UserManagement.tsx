@@ -800,7 +800,7 @@ export default function UserManagement() {
                         className="overflow-x-auto"
                         data-testid="scroll-users-bottom"
                       >
-                      <Table>
+                      <Table className="table-fixed w-full">
                         <TableHeader>
                           <TableRow>
                             {!isAuditor && (
@@ -818,17 +818,16 @@ export default function UserManagement() {
                                 />
                               </TableHead>
                             )}
-                            <TableHead>User</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Verified</TableHead>
-                            <TableHead>Terms</TableHead>
-                            <TableHead>Deals</TableHead>
-                            <TableHead>Lenders</TableHead>
-                            <TableHead>Referrals</TableHead>
-                            <TableHead>Joined</TableHead>
-                            <TableHead>Source</TableHead>
-                            <TableHead>Actions</TableHead>
+                            <TableHead className="w-48">User</TableHead>
+                            <TableHead className="w-32">Status</TableHead>
+                            <TableHead className="w-28">Role</TableHead>
+                            <TableHead className="w-12 text-center">Verified</TableHead>
+                            <TableHead className="w-14 text-center">Deals</TableHead>
+                            <TableHead className="w-14 text-center">Lenders</TableHead>
+                            <TableHead className="w-14 text-center">Referrals</TableHead>
+                            <TableHead className="w-20">Joined</TableHead>
+                            <TableHead className="w-20 text-center">Source</TableHead>
+                            <TableHead className="w-16">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -869,7 +868,7 @@ export default function UserManagement() {
                                       }
                                     }}
                                   >
-                                    <SelectTrigger className="w-[130px]">
+                                    <SelectTrigger className="w-28">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -893,7 +892,7 @@ export default function UserManagement() {
                                     value={user.role}
                                     onValueChange={(value) => updateRoleMutation.mutate({ userId: user.id, role: value })}
                                   >
-                                    <SelectTrigger className="w-[110px]" data-testid={`select-role-${user.id}`}>
+                                    <SelectTrigger className="w-24" data-testid={`select-role-${user.id}`}>
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -907,44 +906,20 @@ export default function UserManagement() {
                                   <span className="text-sm capitalize">{user.role}</span>
                                 )}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">
                                 {user.isEmailVerified ? (
-                                  <CheckCircle className="h-5 w-5 text-green-500" />
+                                  <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />
                                 ) : (
-                                  <XCircle className="h-5 w-5 text-red-500" />
+                                  <XCircle className="h-5 w-5 text-red-500 mx-auto" />
                                 )}
                               </TableCell>
-                              <TableCell>
-                                {user.termsAcceptedAt ? (
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <FileCheck className="h-5 w-5 text-green-500" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-xs">
-                                        Accepted v{user.termsVersion || "1.0"}<br />
-                                        {format(new Date(user.termsAcceptedAt), 'MMM d, yyyy')}
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ) : (
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <FileX className="h-5 w-5 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-xs">No acceptance record</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
+                              <TableCell className="text-center">{user.dealsAnalyzed}</TableCell>
+                              <TableCell className="text-center">{user.lendersSaved}</TableCell>
+                              <TableCell className="text-center">{user.referralCount}</TableCell>
+                              <TableCell className="text-sm whitespace-nowrap">
+                                {user.createdAt ? format(new Date(user.createdAt), 'M/d/yy') : '-'}
                               </TableCell>
-                              <TableCell>{user.dealsAnalyzed}</TableCell>
-                              <TableCell>{user.lendersSaved}</TableCell>
-                              <TableCell>{user.referralCount}</TableCell>
-                              <TableCell>
-                                {user.createdAt ? format(new Date(user.createdAt), 'MMM d, yyyy') : '-'}
-                              </TableCell>
-                              <TableCell data-testid={`text-source-${user.id}`}>
+                              <TableCell className="text-center" data-testid={`text-source-${user.id}`}>
                                 {user.signupSource === 'meta' ? (
                                   <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-transparent">Meta</Badge>
                                 ) : user.signupSource === 'google' ? (
@@ -958,6 +933,7 @@ export default function UserManagement() {
                               <TableCell>
                                 {!isAuditor && (
                                   <div className="flex items-center gap-1">
+                                    {/* EDIT_BUTTON_HIDDEN — uncomment to restore
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button
@@ -971,6 +947,7 @@ export default function UserManagement() {
                                       </TooltipTrigger>
                                       <TooltipContent>Edit email address</TooltipContent>
                                     </Tooltip>
+                                    */}
                                     {!user.isEmailVerified && (
                                       <Tooltip>
                                         <TooltipTrigger asChild>

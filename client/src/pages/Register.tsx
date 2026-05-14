@@ -176,10 +176,16 @@ export default function Register() {
       source = "meta";
     } else if (ref === "google" || utmSource === "google" || utmMedium === "cpc" || utmMedium === "paid_search") {
       source = "google";
+    } else if (ref === "linkedin" || utmSource === "linkedin") {
+      source = "linkedin";
+    } else if (ref === "blog" || utmSource === "blog") {
+      source = "blog";
     } else if (utmSource) {
       source = utmSource;
     } else if (ref) {
       source = ref;
+    } else {
+      source = "direct";
     }
 
     setSignupSource(source);

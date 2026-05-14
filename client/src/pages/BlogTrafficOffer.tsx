@@ -78,8 +78,8 @@ function getPricingUrl() {
       utm.set(key, value);
     }
   }
-  if (!utm.has("ref")) utm.set("ref", "meta");
-  if (!utm.has("utm_source")) utm.set("utm_source", "meta");
+  if (!utm.has("ref")) utm.set("ref", "blog");
+  if (!utm.has("utm_source")) utm.set("utm_source", "blog");
   const qs = utm.toString();
   return qs ? `/pricing?${qs}` : "/pricing";
 }

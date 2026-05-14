@@ -1,0 +1,37 @@
+In client/src/pages/admin/UserManagement.tsx, make the following changes to the user table:
+
+Change 1 — Remove Terms column
+Remove the "Terms" <TableHead> and its corresponding <TableCell> from every row. The Terms column shows a checkmark for every user since acceptance is required at signup — it provides no useful information. Remove the column entirely from the UI. Do not remove any backend logic related to terms acceptance.
+
+Change 2 — Remove pencil/edit icon from Actions column
+Find the edit/pencil icon button in the Actions column. Remove it from the rendered UI but do NOT delete the underlying code — comment it out with {/* EDIT_BUTTON_HIDDEN — uncomment to restore */} so it can be re-enabled later. Keep the email icon and delete icon exactly as they are.
+
+Change 3 — Condense column widths to eliminate horizontal scroll
+The goal is to fit all columns in a standard 1280px desktop viewport without a scrollbar. Apply these changes:
+
+User column — set w-48 (192px). Name + email stacked, email in text-xs text-muted-foreground. No change to content.
+Status column — set w-32 (128px). Reduce the Select trigger to w-28.
+Role column — set w-28 (112px). Reduce the Select trigger to w-24.
+Verified column — set w-12 (48px), text-center. Icon only.
+Deals, Lenders, Referrals columns — set w-14 (56px) each, text-center.
+Joined column — set w-20 (80px). Format date as M/D/YY (e.g. 5/14/26) in text-sm whitespace-nowrap.
+Source column — set w-20 (80px), text-center.
+Actions column — set w-16 (64px) since only email + delete remain.
+Add table-fixed and w-full to the <Table> element.
+Remove overflow-x-auto wrapper if all columns fit, or keep as safety fallback.
+
+
+Change 4 — Source column display
+When signupSource is null or empty, show — (em dash) instead of nothing.
+Also ensure source capture is firing from all registration entry points. Check these files and confirm each passes signupSource in the register API call:
+
+client/src/pages/Register.tsx — add signupSource: 'direct' when no other source is detected
+client/src/pages/MetaOffer.tsx — signupSource: 'meta' ✅ already working
+client/src/pages/GoogleOffer.tsx — add signupSource: 'google'
+client/src/pages/LinkedInOffer.tsx — add signupSource: 'linkedin'
+client/src/pages/BlogTrafficOffer.tsx — add signupSource: 'blog'
+client/src/pages/Pricing.tsx register CTA — add signupSource: 'direct'
+
+For any missing signupSource, add it. Show me before/after for each file changed.
+
+After all changes confirm build compiles cleanly and list pre-existing errors separately.
