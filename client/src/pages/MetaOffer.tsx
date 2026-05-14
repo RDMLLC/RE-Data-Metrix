@@ -104,8 +104,14 @@ function getPricingUrl() {
       utm.set(key, value);
     }
   }
-  if (!utm.has("ref")) utm.set("ref", "meta");
-  if (!utm.has("utm_source")) utm.set("utm_source", "meta");
+  // This component is shared by /meta-offer and /linkedin-offer — pick the
+  // correct default source from the current path so LinkedIn traffic is
+  // recorded as 'linkedin', not 'meta'.
+  const defaultSource = window.location.pathname.startsWith("/linkedin-offer")
+    ? "linkedin"
+    : "meta";
+  if (!utm.has("ref")) utm.set("ref", defaultSource);
+  if (!utm.has("utm_source")) utm.set("utm_source", defaultSource);
   const qs = utm.toString();
   return qs ? `/pricing?${qs}` : "/pricing";
 }
