@@ -1,0 +1,82 @@
+In client/src/pages/admin/UserManagement.tsx, add a slide-out detail panel that opens when a user's name is clicked in the table. The panel has two modes: view and edit.
+
+Step 1 — Add a new API endpoint for full user detail
+In server/routes.ts, add GET /api/admin/users/:id/detail that returns the full user record including all fields:
+
+Identity: id, fullName, email, username, phone, street, city, state, zipCode
+Account: subscriptionType, subscriptionStatus, signupSource, signupRef, createdAt, isEmailVerified, emailVerifiedAt, role, accountStatus
+Activity: dealAnalysisAuto, dealAnalysisManual, savedLendersCount (query count from saved_lenders table), referralsCount (query count from referrals table), lastArvAddress
+Billing: stripeCustomerId, stripeSubscriptionId
+Branding: reportLogoUrl, reportCompanyName
+
+Protect with ensureAdminReadAccess.
+
+Step 2 — Add a PATCH endpoint for editing
+Add PATCH /api/admin/users/:id that accepts and updates these fields only:
+
+fullName, email, phone, street, city, state, zipCode
+subscriptionType, role, accountStatus
+
+Protect with ensureAdmin. Validate that email is unique before saving — return a clear error if the email is already taken by another user.
+
+Step 3 — Build the slide-out panel component
+Create client/src/components/admin/UserDetailPanel.tsx — a slide-out sheet using shadcn/ui Sheet component (from the right, side="right", className="w-full sm:w-[480px]").
+Panel header:
+
+User's full name as the title
+Email below in muted text
+"Edit" button (pencil icon) in the top right that toggles edit mode
+Close button (X)
+
+View mode — organized in labeled sections:
+Identity
+
+Full Name, Email, Username, Phone
+Address (street, city, state, zip — displayed as single line if all present)
+
+Account
+
+Subscription Type (badge), Subscription Status (badge), Role (badge)
+Account Status (badge — green Active / amber Archived / red Suspended)
+Signup Date (formatted M/D/YY), Source, Signup Ref
+Email Verified (✅ with date, or ❌ Unverified)
+
+Activity
+
+Deal Analyses: X automated + Y manual
+Saved Lenders, Referrals
+Last ARV Address (if present)
+
+Billing
+
+Stripe Customer ID (monospace, truncated with copy button)
+Stripe Subscription ID (monospace, truncated with copy button)
+
+Branding
+
+Report Company Name, Report Logo URL (if present)
+
+Edit mode:
+
+Replace view fields with inputs for editable fields only
+Read-only fields remain as display text
+"Save Changes" primary button + "Cancel" secondary button at the bottom
+Show inline error if email already taken
+On successful save: show success toast, refresh the user row in the table, return to view mode
+
+
+Step 4 — Wire up the panel
+In UserManagement.tsx:
+
+Add selectedUserId state (string | null, default null)
+Make the user's name in each table row a clickable button with className="text-left font-medium hover:underline cursor-pointer" — onClick sets selectedUserId to that user's ID
+Render <UserDetailPanel userId={selectedUserId} onClose={() => setSelectedUserId(null)} /> at the bottom of the component
+When selectedUserId changes to a non-null value, fetch /api/admin/users/:id/detail and pass the data to the panel
+
+
+After all changes:
+
+Confirm build compiles cleanly
+Verify the Sheet opens and closes correctly
+Verify the edit form saves and updates the table row
+List pre-existing errors separately

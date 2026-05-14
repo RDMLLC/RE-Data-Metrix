@@ -77,6 +77,7 @@ import { Send } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import UserDetailPanel from "@/components/admin/UserDetailPanel";
 
 interface UserWithStats {
   id: string;
@@ -145,6 +146,7 @@ export default function UserManagement() {
   const [editEmailValue, setEditEmailValue] = useState("");
   const [editEmailError, setEditEmailError] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
@@ -850,8 +852,15 @@ export default function UserManagement() {
                               )}
                               <TableCell>
                                 <div>
-                                  <p className="font-medium">{user.fullName || user.username}</p>
-                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedUserId(user.id)}
+                                    className="text-left font-medium hover:underline cursor-pointer truncate max-w-full"
+                                    data-testid={`button-open-detail-${user.id}`}
+                                  >
+                                    {user.fullName || user.username}
+                                  </button>
+                                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -1646,6 +1655,10 @@ export default function UserManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UserDetailPanel
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+      />
     </Layout>
   );
 }

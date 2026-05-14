@@ -4546,6 +4546,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Full user detail for the slide-out admin panel
+  app.get("/api/admin/users/:id/detail", ensureAdminReadAccess, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const [profile] = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, id))
+        .limit(1);
+      const [savedLendersCountRow] = await db
+        .select({ count: count() })
+        .from(savedLenders)
+        .where(eq(savedLenders.userId, id));
+      const [referralsCountRow] = await db
+        .select({ count: count() })
+        .from(users)
+        .where(eq(users.referredBy, id));
+      const [usage] = await db
+        .select({ lastArvAddress: userUsageCounters.lastArvAddress })
+        .from(userUsageCounters)
+        .where(eq(userUsageCounters.userId, id))
+        .limit(1);
+
+      const u = user as any;
+      res.json({
+        // Identity
+        id: u.id,
+        fullName: profile?.fullName || null,
+        email: u.email,
+        username: u.username,
+        phone: profile?.phone || null,
+        street: profile?.street || null,
+        city: profile?.city || null,
+        state: profile?.state || null,
+        zipCode: profile?.zipCode || null,
+        // Account
+        subscriptionType: u.subscriptionPlan || null,
+        subscriptionStatus: u.subscriptionStatus,
+        accountStatus: ['archived', 'suspended'].includes(u.subscriptionStatus)
+          ? u.subscriptionStatus
+          : 'active',
+        signupSource: u.signupSource ?? null,
+        signupRef: u.signupRef ?? null,
+        createdAt: u.createdAt,
+        isEmailVerified: u.isEmailVerified,
+        emailVerifiedAt: u.emailVerifiedAt ?? null,
+        role: u.role,
+        // Activity
+        dealAnalysisAuto: u.dealAnalysisAuto ?? 0,
+        dealAnalysisManual: u.dealAnalysisManual ?? 0,
+        savedLendersCount: Number(savedLendersCountRow?.count || 0),
+        referralsCount: Number(referralsCountRow?.count || 0),
+        lastArvAddress: usage?.lastArvAddress || null,
+        // Billing
+        stripeCustomerId: u.stripeCustomerId ?? null,
+        stripeSubscriptionId: u.stripeSubscriptionId ?? null,
+        // Branding
+        reportLogoUrl: u.reportLogoUrl ?? null,
+        reportCompanyName: u.reportCompanyName ?? null,
+      });
+    } catch (error) {
+      console.error('Get user detail error:', error);
+      res.status(500).json({ error: "Failed to fetch user detail" });
+    }
+  });
+
+  // Edit user fields from the slide-out admin panel
+  app.patch("/api/admin/users/:id", ensureAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const editSchema = z.object({
+        fullName: z.string().trim().min(1).max(200).optional(),
+        email: z.string().trim().email().optional(),
+        phone: z.string().trim().max(50).optional().nullable(),
+        street: z.string().trim().max(200).optional().nullable(),
+        city: z.string().trim().max(100).optional().nullable(),
+        state: z.string().trim().max(50).optional().nullable(),
+        zipCode: z.string().trim().max(20).optional().nullable(),
+        subscriptionType: z.enum(['monthly', 'annual', 'free']).optional().nullable(),
+        role: z.enum(['user', 'auditor', 'developer', 'admin']).optional(),
+        accountStatus: z.enum(['active', 'archived', 'suspended']).optional(),
+      });
+      const parsed = editSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "Invalid input",
+          details: parsed.error.flatten(),
+        });
+      }
+      const data = parsed.data;
+
+      const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      if (!existing) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Email uniqueness check
+      const userUpdates: Record<string, any> = {};
+      if (data.email) {
+        const normalizedEmail = data.email.toLowerCase();
+        if (normalizedEmail !== existing.email.toLowerCase()) {
+          const [conflict] = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(sql`LOWER(${users.email}) = ${normalizedEmail}`)
+            .limit(1);
+          if (conflict && conflict.id !== id) {
+            return res.status(400).json({
+              error: "This email address is already in use by another account",
+            });
+          }
+          userUpdates.email = normalizedEmail;
+        }
+      }
+      if (data.role !== undefined) userUpdates.role = data.role;
+      if (data.subscriptionType !== undefined) {
+        userUpdates.subscriptionPlan =
+          data.subscriptionType === 'free' ? null : data.subscriptionType;
+      }
+      if (data.accountStatus !== undefined) {
+        // Map accountStatus to subscriptionStatus only for the three managed values.
+        // Setting back to "active" only clears archive/suspended states; if the
+        // user is on a billing-driven status (cancelling, comped, etc) we leave it.
+        if (data.accountStatus === 'archived' || data.accountStatus === 'suspended') {
+          userUpdates.subscriptionStatus = data.accountStatus;
+        } else if (
+          data.accountStatus === 'active' &&
+          (existing.subscriptionStatus === 'archived' ||
+            existing.subscriptionStatus === 'suspended')
+        ) {
+          userUpdates.subscriptionStatus = (existing as any).subscriptionPlan
+            ? 'active'
+            : 'free';
+        }
+      }
+
+      if (Object.keys(userUpdates).length > 0) {
+        await db.update(users).set(userUpdates).where(eq(users.id, id));
+      }
+
+      // Profile updates
+      const profileUpdates: Record<string, any> = {};
+      if (data.fullName !== undefined) profileUpdates.fullName = data.fullName;
+      if (data.phone !== undefined) profileUpdates.phone = data.phone || null;
+      if (data.street !== undefined) profileUpdates.street = data.street || null;
+      if (data.city !== undefined) profileUpdates.city = data.city || null;
+      if (data.state !== undefined) profileUpdates.state = data.state || null;
+      if (data.zipCode !== undefined) profileUpdates.zipCode = data.zipCode || null;
+
+      if (Object.keys(profileUpdates).length > 0) {
+        const [existingProfile] = await db
+          .select({ id: userProfiles.id })
+          .from(userProfiles)
+          .where(eq(userProfiles.userId, id))
+          .limit(1);
+        if (existingProfile) {
+          await db
+            .update(userProfiles)
+            .set({ ...profileUpdates, updatedAt: new Date() })
+            .where(eq(userProfiles.userId, id));
+        } else {
+          await db.insert(userProfiles).values({
+            userId: id,
+            fullName: profileUpdates.fullName || existing.username,
+            ...profileUpdates,
+          });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Update user error:', error);
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
   app.patch("/api/admin/users/:id/subscription", ensureAdmin, async (req, res) => {
     try {
       const { id } = req.params;
