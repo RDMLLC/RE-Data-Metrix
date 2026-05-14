@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import Layout from "@/components/Layout";
@@ -150,6 +150,49 @@ export default function UserManagement() {
   const [emailBody, setEmailBody] = useState("");
   const [emailErrorDetails, setEmailErrorDetails] = useState<string[]>([]);
   const [lastSendResult, setLastSendResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
+
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const topScrollInnerRef = useRef<HTMLDivElement>(null);
+  const isSyncingScroll = useRef(false);
+
+  useEffect(() => {
+    const sync = () => {
+      const table = tableScrollRef.current;
+      const inner = topScrollInnerRef.current;
+      if (table && inner) {
+        inner.style.width = `${table.scrollWidth}px`;
+      }
+    };
+    sync();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+    if (ro && tableScrollRef.current) ro.observe(tableScrollRef.current);
+    window.addEventListener('resize', sync);
+    return () => {
+      window.removeEventListener('resize', sync);
+      if (ro) ro.disconnect();
+    };
+  }, []);
+
+  const handleTopScroll = () => {
+    if (isSyncingScroll.current) { isSyncingScroll.current = false; return; }
+    const top = topScrollRef.current;
+    const table = tableScrollRef.current;
+    if (top && table && table.scrollLeft !== top.scrollLeft) {
+      isSyncingScroll.current = true;
+      table.scrollLeft = top.scrollLeft;
+    }
+  };
+
+  const handleTableScroll = () => {
+    if (isSyncingScroll.current) { isSyncingScroll.current = false; return; }
+    const top = topScrollRef.current;
+    const table = tableScrollRef.current;
+    if (top && table && top.scrollLeft !== table.scrollLeft) {
+      isSyncingScroll.current = true;
+      top.scrollLeft = table.scrollLeft;
+    }
+  };
 
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -741,7 +784,22 @@ export default function UserManagement() {
                   {usersLoading ? (
                     <div className="text-center py-8">Loading users...</div>
                   ) : (
-                    <div className="overflow-x-auto">
+                    <>
+                      <div
+                        ref={topScrollRef}
+                        onScroll={handleTopScroll}
+                        className="overflow-x-auto"
+                        style={{ height: 12 }}
+                        data-testid="scroll-users-top"
+                      >
+                        <div ref={topScrollInnerRef} style={{ height: 1 }} />
+                      </div>
+                      <div
+                        ref={tableScrollRef}
+                        onScroll={handleTableScroll}
+                        className="overflow-x-auto"
+                        data-testid="scroll-users-bottom"
+                      >
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -954,7 +1012,8 @@ export default function UserManagement() {
                       {directoryUsers.length === 0 && (
                         <p className="text-center py-8 text-muted-foreground">No users found</p>
                       )}
-                    </div>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
