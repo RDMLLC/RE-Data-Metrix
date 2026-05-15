@@ -26,6 +26,7 @@ const MobileToolbox = lazy(() => import("@/pages/mobile/MobileToolbox"));
 const About = lazy(() => import("@/pages/About"));
 const Company = lazy(() => import("@/pages/Company"));
 const DealAnalysis = lazy(() => import("@/pages/DealAnalysis"));
+const DealAnalysisAbout = lazy(() => import("@/pages/DealAnalysisAbout"));
 const RentalAnalysis = lazy(() => import("@/pages/RentalAnalysis"));
 const Lenders = lazy(() => import("@/pages/Lenders"));
 const Resources = lazy(() => import("@/pages/Resources"));
@@ -184,6 +185,7 @@ function Router() {
         <Route path="/about" component={About} />
         <Route path="/company" component={Company} />
         <Route path="/deal-analysis" component={DealAnalysis} />
+        <Route path="/deal-analysis/about" component={DealAnalysisAbout} />
         <Route path="/deal-analysis/wholesale-calculator" component={WholesaleCalculator} />
         <Route path="/rental-analysis" component={RentalAnalysis} />
         <Route path="/lenders" component={Lenders} />

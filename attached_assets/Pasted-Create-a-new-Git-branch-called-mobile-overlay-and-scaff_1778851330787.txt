@@ -1,0 +1,56 @@
+Create a new Git branch called `mobile-overlay` and scaffold the mobile Deal Analysis overlay feature. Do NOT modify any existing files. Create new files only.
+
+## Step 1 — Create the branch
+Run in Shell:
+git checkout -b mobile-overlay
+
+## Step 2 — New files to create
+
+### 1. `/client/src/components/mobile/DealAnalysisOverlay.tsx`
+A full-screen mobile overlay wrapper component for the Deal Analysis wizard. Specifications:
+- Fixed position, 100dvh, 100vw, z-index 9999, white background
+- Header strip: RE Data Metrix logo left, X button right
+- X button navigates to `/deal-analysis/about`
+- Progress indicator below header: "Step X of 6" centered, with a thin progress bar
+- Body: full viewport between header and footer, internal scroll enabled
+- Sticky footer: Back button left, Continue/primary action button right
+- Mobile only — renders nothing and returns null if viewport is >= 768px
+- Accept props: currentStep (1-6), onNext, onBack, onClose, children
+
+### 2. `/client/src/pages/DealAnalysisAbout.tsx`
+A mobile-friendly marketing landing page at `/deal-analysis/about`. Specifications:
+- RE Data Metrix header
+- Hero section: "Real Estate Deal Analyzer" headline, short description (2-3 sentences about what the tool does)
+- Embedded YouTube demo video: https://youtu.be/m6SjKQ3dYe4 — use standard YouTube embed (iframe with 16:9 aspect ratio, full width)
+- "Launch Calculator" button — large, full width, navigates to `/deal-analysis`
+- Feature bullets: Calculate cash-on-cash return, Compare loan products, Analyze fix & flip and rental deals
+- Mobile-optimized layout, clean and simple
+
+### 3. `/client/src/components/mobile/MobileStepWrapper.tsx`
+A wrapper for individual steps inside the overlay. Specifications:
+- Accepts props: title, subtitle, children
+- Renders step title and optional subtitle at top
+- All sections passed as children render inside a collapsible accordion pattern
+- Each section: tap header to expand/collapse, chevron icon indicates state
+- Smooth expand/collapse animation
+
+### 4. `/client/src/components/mobile/CollapsibleSection.tsx`
+A reusable collapsible section component. Specifications:
+- Props: title, children, defaultOpen (boolean, default false)
+- Tap header toggles open/closed
+- Chevron rotates on open/close
+- Smooth height transition animation
+- Clean divider between sections
+
+## Step 3 — Register the new route
+In the router file (wherever existing routes are defined), ADD (do not modify existing routes):
+- `/deal-analysis/about` → `DealAnalysisAbout` page
+
+## Step 4 — Verify
+After creating all files, read each one back and confirm:
+- Branch is `mobile-overlay`
+- No existing files were modified
+- All 4 new files exist with correct content
+- New route is registered
+
+Raw code output only. Wrap each file in a code block. Line numbers required.
