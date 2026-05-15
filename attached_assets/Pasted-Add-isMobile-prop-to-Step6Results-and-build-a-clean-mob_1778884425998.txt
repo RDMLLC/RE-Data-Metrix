@@ -1,0 +1,102 @@
+Add isMobile prop to Step6Results and build a clean mobile render path. Same pattern as Steps 1-5. Desktop render path must be byte-identical to today — zero changes.
+
+## Step 1 — Add isMobile prop
+
+In client/src/components/deal-analysis/Step6Results.tsx:
+- Add `isMobile?: boolean` to the Step5ResultsProps interface
+- Add `isMobile = false` to the destructured props
+
+In client/src/components/deal-analysis/DealAnalysisWizard.tsx:
+- Pass `isMobile={isMobile}` to the Step6Results component call
+
+---
+
+## Step 2 — Mobile render path
+
+At the top of the Step6Results component function, after all hooks and state, add:
+if (isMobile) {
+return <MobileResultsView ... />
+}
+
+Where MobileResultsView is defined inline or as a local const. It must use all existing state, handlers, and computed values — no new logic, just new layout.
+
+## Mobile layout spec
+
+### Section 1 — Variables (CollapsibleSection, defaultOpen=false, title="Adjust Variables")
+4 inputs in a 2×2 grid:
+- Buy Price (editBuyPrice, setEditBuyPrice)
+- Rehab (editRehab, setEditRehab)
+- Project (mo.) (editProjectLength, setEditProjectLength)
+- ARV Sale (editArv, setEditArv)
+All inputs w-full. Show "Recalculating..." spinner when calculateResultsMutation.isPending.
+
+### Section 2 — Loan Comparison Results
+Title: "Loan Comparison Results" as a heading above the table.
+
+Layout: sticky label column on left + horizontally scrollable loan columns.
+
+Structure:
+- Outer div: w-full overflow-x-auto
+- Inner table or div grid:
+  - First column: sticky left-0 bg-background z-10, min-w-[130px], contains row labels
+  - Each loan column: min-w-[130px], contains values
+
+Rows (in this exact order, matching desktop):
+1. Header row: empty label | loan product names (lender name + product name, stacked)
+2. Net Profit — color coded green/red
+3. Out-of-Pocket — expandable (tap to show breakdown)
+4. Cash-on-Cash ROI
+5. Annualized ROI
+6. Total Loan Amount
+7. Loan Terms (interest rate + points)
+--- section divider ---
+8. Project Cost
+9. Closing Costs (Buy) — expandable
+10. Lender Fees — expandable  
+11. Carrying Costs — expandable
+12. Est Out-of-Pocket
+13. Estimated Sale Price
+14. Gross Profit
+15. Selling Costs — expandable
+16. Net Profit (bold)
+--- 
+17. Contact Lender button (per lender column, where applicable)
+
+Columns shown:
+- Cash Sale: hidden by default. "Show Cash Sale" / "Hide Cash Sale" toggle button above table, full width.
+- Entered Loan (userLoanColumn): always shown if present
+- Lender columns: first 2 shown, rest hidden. "Show More Loans (X remaining)" button below table, full width, same logic as desktop (showAllLoansMobile state).
+
+Use existing state: showCashSale, setShowCashSale, showAllLoansMobile (add this state if not present — check existing names).
+
+### Section 3 — Save / Download actions
+Below the table, full width buttons stacked:
+- Save Deal button (existing save logic)
+- Download CSV button (existing CSV handler)
+- Download PDF button (existing PDF handler)
+
+Only show Save Deal if authenticated. Match existing conditions exactly.
+
+### Error / loading / quota states
+If results is null or loading: show existing loading spinner — reuse existing loading JSX.
+If quota exceeded: show existing upgrade CTA — reuse existing upgrade JSX.
+If error: show existing error state — reuse existing error JSX.
+
+---
+
+## Constraints
+- All existing state variables, handlers, mutations, and computed values used as-is
+- No new logic or calculations
+- Desktop render path (the existing return statement) completely unchanged
+- Use CollapsibleSection from @/components/mobile/CollapsibleSection for the Variables section
+- Import MobileStepWrapper if needed for the overall wrapper, or just use a plain div
+- TypeScript: no new errors
+- Run npx tsc --noEmit to verify after changes
+
+## Verification
+1. Read back the isMobile branch in full
+2. Confirm desktop render path is untouched (read the existing return statement)
+3. Confirm isMobile={isMobile} is passed in DealAnalysisWizard.tsx
+4. Confirm npx tsc --noEmit shows no new errors in Step6Results.tsx
+
+Raw code output only. Line numbers required.

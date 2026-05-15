@@ -614,6 +614,7 @@ export default function DealAnalysisWizard() {
             onEditDeal={viewingDealId ? handleEditDeal : undefined}
             suppressAutoSave={suppressStep6AutoSave.current}
             originalResultsSnapshot={savedDeal?.resultsSnapshot as ResultsResponse | null | undefined}
+            isMobile={isMobile}
           />
         );
       default:
