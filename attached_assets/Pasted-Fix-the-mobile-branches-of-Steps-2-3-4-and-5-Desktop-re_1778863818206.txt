@@ -1,0 +1,87 @@
+Fix the mobile branches of Steps 2, 3, 4, and 5. Desktop render paths unchanged. No logic or calculation changes.
+
+## Global rule for all steps
+Every input, select, and textarea in every mobile branch must have w-full applied. No fixed widths. Parent containers w-full with px-4. This is the root cause of fields spilling off the right edge — fix it everywhere in Steps 2, 3, 4, and 5 mobile branches.
+
+Every required field must show a red border on validation failure. Use the same red border pattern already in the codebase (border-red-500 or border-destructive, whichever is used on desktop).
+
+---
+
+## Step 2 — client/src/components/deal-analysis/Step2PropertyDetails.tsx
+
+Read the desktop render path to identify every field rendered. Then audit the mobile branch and add any missing fields.
+
+Fields confirmed missing from mobile branch:
+- Property Address (read-only display at top of Property Info section)
+- Annual Tax ($)
+- HOA Monthly
+- HOA Transfer Fee
+- Lot Size (sq ft)
+
+Add these to the correct CollapsibleSection in the mobile branch:
+- Property Address display → top of "Property Info" section
+- Annual Tax, HOA Monthly, HOA Transfer Fee → "Property Info" section
+- Lot Size → "Property Info" section
+
+ARV tooltip: The mobile branch must use the existing mobile collapsible tooltip component/pattern already in the codebase for the Estimated Market Value (ARV) field. Read the desktop Step 2 to find how the ARV tooltip is implemented, then apply the mobile version of it in the Valuation section. Do not build a new tooltip — use what already exists.
+
+---
+
+## Step 3 — client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+
+Read the full desktop render path. Audit the mobile branch against it. Add every field that exists on desktop but is missing from mobile. Apply w-full to all inputs.
+
+Pay particular attention to:
+- "Click Here if Double Close" checkbox — include if present on desktop
+- Length (months) field
+- Close Speed selector
+- All closing cost line item inputs (not just totals)
+- All carrying cost line item inputs
+- All sell-side closing cost inputs
+
+---
+
+## Step 4 — client/src/components/deal-analysis/Step4InvestorInfo.tsx
+
+Apply w-full to all inputs.
+
+"Save to my profile" behavior — replicate the desktop pattern exactly in the mobile branch:
+- Checkbox "Save to my profile for future deals" is always visible
+- For free accounts (not subscribed): show message beneath checkbox: "Upgrade your account to save to your profile." with an "Upgrade Now" link to /pricing
+- For paid accounts: checkbox is enabled and functional
+- Do not hide the checkbox for free accounts — match desktop behavior exactly
+
+---
+
+## Step 5 — client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx
+
+Apply w-full to all inputs.
+
+Add "Edit" toggle per CollapsibleSection for sections that contain read-only summary data. Specifically these sections need an Edit toggle:
+- "Project Overview"
+- "Estimated Closing Costs (Buy)"
+- "Estimated Carrying Costs"
+- "Profitability Analysis"
+
+Pattern for each:
+- Default state: section shows read-only summary (labels + values, no input fields)
+- A small "Edit" checkbox or toggle in the section header (right-aligned, next to the chevron)
+- When Edit is checked/toggled on: input fields appear, replacing the read-only display
+- When Edit is toggled off: returns to read-only summary
+- Edit state is local useState per section, defaults to false
+
+Sections that are already input-only (Exit Strategy, Loan Options, Loan Preferences) do not need an Edit toggle — they stay as editable fields by default.
+
+---
+
+## Verification
+
+After all changes:
+1. List every file modified
+2. Confirm w-full applied to all inputs in all four mobile branches
+3. Confirm Step 2 now includes all missing fields
+4. Confirm Step 4 Save to profile matches desktop pattern
+5. Confirm Step 5 Edit toggle implemented on the four summary sections
+6. Read back the mobile branch of Step4InvestorInfo.tsx in full with line numbers
+
+Raw code output only. Line numbers required.
