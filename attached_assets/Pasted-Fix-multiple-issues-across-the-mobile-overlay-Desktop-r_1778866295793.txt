@@ -1,0 +1,105 @@
+Fix multiple issues across the mobile overlay. Desktop render paths unchanged. No logic or calculation changes. No improvising — every element must match the desktop exactly.
+
+## MANDATORY PROCESS — follow this for every section you touch
+1. Read the desktop render path first
+2. List every element, field, label, button, and display value present on desktop
+3. Then write the mobile version — every item on your list must appear in the mobile version
+4. If something exists on desktop, it exists on mobile. No exceptions, no omissions.
+
+---
+
+## Fix 1 — "Start New Analysis" button label in overlay header
+
+Read client/src/components/mobile/DealAnalysisOverlay.tsx.
+
+The button currently says "New". Change the label to "Start New Analysis". Do not change any other behavior or styling. Match the desktop label exactly.
+
+---
+
+## Fix 2 — Step 1 fields spilling off right edge
+
+Read the mobile branch of client/src/components/deal-analysis/Step1PropertyAddress.tsx.
+
+Find every input, div wrapper, and container in the mobile branch. Ensure:
+- Every wrapper div has w-full
+- Every input has w-full
+- No fixed widths or min-w values anywhere in the mobile branch
+- Outer container has px-4 and w-full
+- No element can exceed viewport width
+
+---
+
+## Fix 3 — Step 3 missing Draw Fee section + broken Close Speed dropdown
+
+Read client/src/components/deal-analysis/Step3PurchaseRenovation.tsx desktop render path in full. List every section and field present. Then read the mobile branch and identify every missing element.
+
+Known issues to fix:
+1. Draw Fee section — exists on desktop, missing from mobile. Add it to the correct CollapsibleSection in the mobile branch with all its fields, exactly matching desktop.
+2. Close Speed dropdown — not functional on mobile. Find the Select component used on desktop for Close Speed. Replicate it exactly in the mobile branch using the same component, same options, same onChange handler, same form registration. Do not use a plain HTML select — use the same shadcn Select component the desktop uses.
+
+After fixing, read back the Transaction & Timeline section of the mobile branch to confirm both are present and functional.
+
+---
+
+## Fix 4 — Step 5 complete audit and rebuild
+
+Read client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx desktop render path IN FULL. List every element present. Then audit the mobile branch against that list.
+
+### Exit Strategy section — change layout to 2×2 grid
+Current: fields stacked one per row
+Required: 2-column grid layout
+- Row 1: Project Length (months) | Estimated Sell Price (ARV)
+- Row 2: Closing Costs (Sell) % | Real Estate Commission %
+Use grid grid-cols-2 gap-3. Each input w-full min-h-12.
+Keep dollar/percentage helper text beneath each field.
+
+### Property summary strip — ADD at top of Step 5 mobile, above all CollapsibleSections
+The desktop Step 5 shows a property summary bar with: property address, beds, baths, sqft, year built, lot size.
+Add this same summary strip at the top of the MobileStepWrapper in the mobile branch, before the first CollapsibleSection. Read the desktop to find the exact data fields and format used. Replicate it exactly.
+
+### Project Overview section — fix read-only display
+Currently missing data. Must show:
+- Purchase Price: $X
+- Rehab Budget: $X  
+- Total Project Cost: $X (bold)
+Read desktop to find exact field names and formatting. Replicate exactly.
+
+### Estimated Closing Costs (Buy) section — fix read-only display
+Must show the total ($X,XXX total) prominently, plus all line items:
+- Attorney Fees: $X
+- Title Exam: $X
+- Title Insurance: $X
+- Transfer Tax/Fee: $X
+- Any other line items present on desktop
+Read desktop to find all line items. Replicate exactly.
+
+### Estimated Carrying Costs section — fix read-only display
+Must show total prominently, plus all line items:
+- Property Tax (X months): $X
+- Utilities (X months): $X
+- Insurance (X months): $X
+- HOA (if applicable): $X
+- Any other line items present on desktop
+Read desktop to find all line items. Replicate exactly.
+
+### Profitability Analysis section — fix to show full data
+Currently missing most data. Must show exactly what desktop shows:
+- Estimated Total Investment: $X
+- Estimated Sell Price: $X
+- Estimated Profit: $X (colored — green/red based on value)
+- % of ARV (with color coding: ≤70% green, 71–79% amber, ≥80% red)
+- Cash on Cash: X%
+- Annual ROI: X%
+Read desktop Profitability Analysis section to find exact field names, calculated values, and formatting. Replicate exactly.
+
+---
+
+## Verification
+
+After all fixes:
+1. List every file modified
+2. For Step 3: confirm Draw Fee section present, Close Speed uses shadcn Select with correct options and handler
+3. For Step 5: confirm property summary strip present, all 6 CollapsibleSections have complete data matching desktop
+4. Read back the full mobile branch of Step5HoldingPeriodExit.tsx with line numbers
+
+Raw code output only. Line numbers required.

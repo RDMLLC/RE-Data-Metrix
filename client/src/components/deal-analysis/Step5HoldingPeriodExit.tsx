@@ -19,7 +19,7 @@ import {
   CollapsibleContent, 
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
-import { TrendingUp, ChevronDown, ChevronUp, HelpCircle, AlertTriangle } from "lucide-react";
+import { TrendingUp, ChevronDown, ChevronUp, HelpCircle, AlertTriangle, MapPin, Bed, Ruler, Calendar, LandPlot } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -265,8 +265,45 @@ export default function Step4HoldingPeriodExit({
       >
         <Form {...form}>
           <form onSubmit={handleSubmit} className="space-y-0">
+            {(() => {
+              const addr = form.watch("address");
+              const cityW = form.watch("city");
+              const stateW = form.watch("state");
+              const zip = form.watch("zipCode");
+              const beds = form.watch("bedrooms");
+              const baths = form.watch("bathrooms");
+              const sqftW = form.watch("sqft");
+              const year = form.watch("yearBuilt");
+              const lot = form.watch("lotSize");
+              const fullAddr = [addr, cityW, stateW, zip].filter(Boolean).join(", ");
+              if (!fullAddr) return null;
+              return (
+                <div className="bg-muted/50 rounded-md px-3 py-2 mb-3 space-y-1" data-testid="property-summary-strip-mobile-step5">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm font-medium leading-snug">{fullAddr}</span>
+                  </div>
+                  {(beds || sqftW || year || lot) ? (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pl-6">
+                      {beds && baths ? (
+                        <span className="flex items-center gap-1"><Bed className="h-3 w-3" />{beds}/{baths}</span>
+                      ) : null}
+                      {sqftW ? (
+                        <span className="flex items-center gap-1"><Ruler className="h-3 w-3" />{Number(sqftW).toLocaleString()} sqft</span>
+                      ) : null}
+                      {year ? (
+                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{year}</span>
+                      ) : null}
+                      {lot ? (
+                        <span className="flex items-center gap-1"><LandPlot className="h-3 w-3" />{Number(lot).toLocaleString()} sqft lot</span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
             <CollapsibleSection title="Exit Strategy" defaultOpen={true}>
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="projectLength"
@@ -718,11 +755,45 @@ export default function Step4HoldingPeriodExit({
                     {formatCurrency(estimatedProfit)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center border-t pt-3">
-                  <span className="text-sm font-medium">Cash on Cash:</span>
-                  <span className="text-lg font-semibold" data-testid="text-cash-on-cash-roi-mobile">
-                    {cashOnCashRoi.toFixed(1)}%
-                  </span>
+                <div className="grid grid-cols-3 gap-2 pt-3 border-t">
+                  <div className="text-center">
+                    <div className="text-[10px] text-muted-foreground mb-1">% of ARV</div>
+                    {(() => {
+                      const r = parseFloat(percentageArv.toFixed(1));
+                      const c = r <= 70 ? 'text-green-600 dark:text-green-400' : r < 80 ? 'text-amber-500 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
+                      return (
+                        <div className={`text-base font-semibold ${c}`} data-testid="text-percentage-arv-mobile">
+                          {percentageArv.toFixed(1)}%
+                        </div>
+                      );
+                    })()}
+                    <button
+                      type="button"
+                      onClick={() => setArvRuleExpanded(!arvRuleExpanded)}
+                      className="flex items-center justify-center gap-1 mx-auto text-[10px] text-muted-foreground min-h-8 cursor-pointer mt-1"
+                      data-testid="button-arv-rule-toggle-mobile"
+                    >
+                      {arvRuleExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span>What does this mean?</span>
+                    </button>
+                    {arvRuleExpanded ? (
+                      <p className="text-[10px] text-muted-foreground mt-1 leading-tight text-left" data-testid="text-arv-rule-help-mobile">
+                        70% Rule: target &le;70% of ARV for margin after rehab and holding costs. Higher may be OK in high-value markets.
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[10px] text-muted-foreground mb-1">Cash on Cash</div>
+                    <div className="text-base font-semibold" data-testid="text-cash-on-cash-roi-mobile">
+                      {cashOnCashRoi.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[10px] text-muted-foreground mb-1">Annual ROI</div>
+                    <div className="text-base font-semibold" data-testid="text-annual-roi-mobile">
+                      {annualCashOnCashRoi.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
               </div>
             </CollapsibleSection>

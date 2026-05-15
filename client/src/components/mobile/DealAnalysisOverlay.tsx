@@ -78,7 +78,7 @@ export default function DealAnalysisOverlay({
               data-testid="button-overlay-start-new"
             >
               <RotateCcw className="h-4 w-4 mr-1" />
-              New
+              Start New Analysis
             </Button>
           )}
           <Button
