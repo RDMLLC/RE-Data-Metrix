@@ -2474,7 +2474,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             <CardContent className="pb-0">
               {/* Summary Metrics - styled to match detailed table */}
               {results && (
-                <div className="hidden sm:block overflow-x-auto mb-6">
+                <div className="overflow-x-auto mb-6">
                   <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
                     <TableHeader>
                       <TableRow>
@@ -3136,7 +3136,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                       </div>
                       
                       {/* Loan Terms */}
-                      <div className="border-t pt-2 mt-2 grid grid-cols-1 gap-2 text-sm">
+                      <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <span className="text-muted-foreground">Interest Rate</span>
                           <p className="font-medium">{lender.interestRate}%</p>
