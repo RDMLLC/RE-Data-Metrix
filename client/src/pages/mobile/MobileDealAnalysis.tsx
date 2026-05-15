@@ -52,7 +52,6 @@ export default function MobileDealAnalysis() {
   };
 
   const handleStartAnalysis = () => {
-    setDeviceMode("desktop", { persist: false });
     setLocation("/deal-analysis");
   };
 

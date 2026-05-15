@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { useDeviceMode } from "@/contexts/DeviceModeContext";
 
 const MOBILE_ROUTE_MAP: Record<string, string> = {
-  "/deal-analysis": "/m/deal-analysis",
+  // /deal-analysis intentionally NOT redirected to /m/deal-analysis —
+  // mobile users now get the full overlay wizard at /deal-analysis.
   "/toolbox": "/m/toolbox",
   "/lenders": "/m/lenders",
   // WEBINAR_ENABLED = false — webinar route map removed

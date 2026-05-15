@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useWizardData } from "@/contexts/WizardDataContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { normalizePropertyTypeToEnum } from "./propertyTypeUtils";
 import WizardLayout from "./WizardLayout";
 import Step1PropertyAddress from "./Step1PropertyAddress";
@@ -14,7 +16,36 @@ import Step4InvestorInfo from "./Step4InvestorInfo";
 import Step5HoldingPeriodExit from "./Step5HoldingPeriodExit";
 import Step6Results, { ResultsResponse } from "./Step6Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
+import DealAnalysisOverlay from "@/components/mobile/DealAnalysisOverlay";
+import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
 import type { SavedDeal } from "@shared/schema";
+
+const MOBILE_STEP_META: Record<number, { title: string; subtitle: string }> = {
+  1: {
+    title: "Find Your Property",
+    subtitle: "Search by address or enter manually",
+  },
+  2: {
+    title: "Property Details",
+    subtitle: "Confirm or adjust the property information",
+  },
+  3: {
+    title: "Purchase & Renovation",
+    subtitle: "Enter your purchase price, rehab costs, and closing details",
+  },
+  4: {
+    title: "Your Investor Profile",
+    subtitle: "Tell us about your investment approach",
+  },
+  5: {
+    title: "Holding Period & Exit Strategy",
+    subtitle: "Define your timeline and financing",
+  },
+  6: {
+    title: "Results",
+    subtitle: "Compare lender options and profitability",
+  },
+};
 
 const wizardSchema = z.object({
   address: z.string(),
@@ -125,6 +156,8 @@ export type WizardFormData = z.infer<typeof wizardSchema>;
 export default function DealAnalysisWizard() {
   const { wizardData, updatePropertyData, updateInvestorData, clearWizardData, setCurrentStep: setContextStep } = useWizardData();
   const [currentStep, setCurrentStep] = useState(1);
+  const isMobile = useIsMobile();
+  const [, setLocation] = useLocation();
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
   const [step1ResetKey, setStep1ResetKey] = useState(0);
   const { isSubscriber, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -614,6 +647,64 @@ export default function DealAnalysisWizard() {
     yearBuilt: formValues.yearBuilt,
     lotSize: formValues.lotSize,
   };
+
+  // Mobile: wrap steps 1-5 in the full-screen DealAnalysisOverlay.
+  // Step 6 (Results) falls back to the existing WizardLayout per spec
+  // ("Do NOT touch Step6Results.tsx yet").
+  if (isMobile && currentStep >= 1 && currentStep <= 5) {
+    const meta = MOBILE_STEP_META[currentStep];
+    const fv = form.watch();
+    // Per-step gating for the overlay's Continue button. Mirrors the
+    // minimum data each step requires before advancing. Step components
+    // still own their own internal validation/UX.
+    const isNextDisabled = (() => {
+      switch (currentStep) {
+        case 1:
+          return !(
+            fv.address &&
+            fv.address.trim().length > 0 &&
+            fv.city &&
+            fv.city.trim().length > 0 &&
+            fv.state &&
+            fv.state.trim().length > 0
+          );
+        case 2:
+          return !(
+            fv.propertyType &&
+            (fv.bedrooms ?? 0) > 0 &&
+            (fv.bathrooms ?? 0) > 0 &&
+            (fv.sqft ?? 0) > 0
+          );
+        case 3:
+          return !(
+            (fv.purchasePrice ?? 0) > 0 &&
+            (fv.arv ?? 0) > 0 &&
+            (fv.rehabBudget ?? -1) >= 0
+          );
+        case 4:
+          return !fv.creditScore;
+        case 5:
+          return !(fv.projectLength && fv.projectLength > 0);
+        default:
+          return false;
+      }
+    })();
+
+    return (
+      <DealAnalysisOverlay
+        currentStep={currentStep}
+        onNext={handleNext}
+        onBack={handleBack}
+        onClose={() => setLocation("/deal-analysis/about")}
+        nextLabel={currentStep === 5 ? "View Results" : "Continue"}
+        isNextDisabled={isNextDisabled}
+      >
+        <MobileStepWrapper title={meta.title} subtitle={meta.subtitle}>
+          {renderStep()}
+        </MobileStepWrapper>
+      </DealAnalysisOverlay>
+    );
+  }
 
   return (
     <WizardLayout

@@ -1,0 +1,135 @@
+Wire the Deal Analysis wizard steps 1–5 into the new mobile overlay. Do NOT touch Step6Results.tsx yet. Do NOT modify any desktop behavior. Desktop must remain 100% unchanged.
+
+## Overview
+
+Mobile users hitting /deal-analysis currently get redirected to /m/deal-analysis by use-mobile-redirect.ts. We are changing this. Mobile users will now get the full overlay wizard experience directly at /deal-analysis. The redirect to /m/deal-analysis must be updated.
+
+## Architecture
+
+The overlay shell already exists:
+- client/src/components/mobile/DealAnalysisOverlay.tsx — full-screen overlay wrapper (header, progress bar, sticky footer)
+- client/src/components/mobile/MobileStepWrapper.tsx — step title + collapsible section container
+- client/src/components/mobile/CollapsibleSection.tsx — individual collapsible section with chevron animation
+
+The wizard orchestrator is:
+- client/src/components/deal-analysis/DealAnalysisWizard.tsx — manages currentStep, form state via react-hook-form, WizardDataContext
+
+## Changes Required
+
+---
+
+### 1. client/src/hooks/use-mobile-redirect.ts
+
+Currently redirects mobile users from /deal-analysis → /m/deal-analysis.
+
+Change: when isMobileView is true and the current path is /deal-analysis OR starts with /deal-analysis, do NOT redirect. Remove the /deal-analysis → /m/deal-analysis redirect entry only. All other redirects in this hook remain unchanged.
+
+---
+
+### 2. client/src/components/deal-analysis/DealAnalysisWizard.tsx
+
+The wizard must detect mobile and render either:
+- Mobile: wrap the current step in DealAnalysisOverlay, passing currentStep, onNext (handleNext), onBack (handleBack), onClose (navigates to /deal-analysis/about), and nextLabel/isNextDisabled as appropriate per step
+- Desktop: render exactly as today — no changes to desktop rendering path
+
+Add useIsMobile() import from @/hooks/use-mobile.
+
+When isMobile is true, wrap the step render output in:
+```tsx
+<DealAnalysisOverlay
+  currentStep={currentStep}
+  onNext={handleNext}
+  onBack={handleBack}
+  onClose={() => setLocation("/deal-analysis/about")}
+  nextLabel={currentStep === 6 ? "View Results" : "Continue"}
+  isNextDisabled={/* existing disabled logic per step */}
+>
+  {/* mobile step content — see below */}
+</DealAnalysisOverlay>
+```
+
+Do not alter the desktop render path at all.
+
+---
+
+### 3. Mobile Step Content — Steps 1–5
+
+For each step, create a mobile layout using MobileStepWrapper and CollapsibleSection. The existing step components (Step1PropertyAddress, Step2PropertyDetails, etc.) contain the actual form logic — do not modify them. Instead, compose the mobile view by rendering their sub-sections inside CollapsibleSection wrappers.
+
+Use the following structure for each step:
+
+---
+
+#### Step 1 — Property Address (MobileStepWrapper title="Find Your Property" subtitle="Search by address or enter manually")
+
+Sections — all rendered directly, no collapsible needed on Step 1 (it's a single focused action):
+- Property search input (Zillow/Redfin URL or address paste field) — full width, large touch target (min-h-12)
+- "Search" button — full width, min-h-12, primary style
+- Divider with "or"
+- "Enter Manually" button — full width, outline style, min-h-12
+- "Watch a Demo" button — full width, ghost style, min-h-12, links to https://youtu.be/m6SjKQ3dYe4 (opens in new tab)
+
+Step 1 already has its own internal state and handlers in Step1PropertyAddress.tsx — pass through all required props unchanged.
+
+---
+
+#### Step 2 — Property Details (MobileStepWrapper title="Property Details" subtitle="Confirm or adjust the property information")
+
+CollapsibleSection sections:
+1. "Property Info" defaultOpen={true} — property type, beds, baths, sqft, year built
+2. "Valuation" defaultOpen={true} — Est. Market Value (ARV), Zestimate/Redfin estimate if available
+3. "ARV Helper" defaultOpen={false} — trigger button for ARV Helper modal
+
+---
+
+#### Step 3 — Purchase & Renovation (MobileStepWrapper title="Purchase & Renovation" subtitle="Enter your purchase price, rehab costs, and closing details")
+
+CollapsibleSection sections:
+1. "Purchase Price" defaultOpen={true} — purchase price input
+2. "Rehab Budget" defaultOpen={true} — rehab budget input
+3. "After Repair Value (ARV)" defaultOpen={true} — ARV input + % of ARV color indicator (≤70% green, 71–79% amber, ≥80% red)
+4. "Closing Costs (Buy)" defaultOpen={false} — all closing cost line items
+5. "Carrying Costs" defaultOpen={false} — all carrying cost line items
+6. "Closing Costs (Sell)" defaultOpen={false} — sell-side closing cost line items
+
+---
+
+#### Step 4 — Investor Info (MobileStepWrapper title="Your Investor Profile" subtitle="Tell us about your investment approach")
+
+CollapsibleSection sections:
+1. "Investment Strategy" defaultOpen={true} — fix & flip vs rental toggle/select
+2. "Experience & Goals" defaultOpen={false} — experience level, target return fields
+
+---
+
+#### Step 5 — Holding Period & Exit (MobileStepWrapper title="Holding Period & Exit Strategy" subtitle="Define your timeline and financing")
+
+CollapsibleSection sections:
+1. "Exit Strategy" defaultOpen={true} — exit strategy inputs (the most critical fields)
+2. "Project Overview" defaultOpen={false} — purchase price, rehab, total project cost summary
+3. "Estimated Closing Costs (Buy)" defaultOpen={false} — closing cost summary
+4. "Estimated Carrying Costs" defaultOpen={false} — carrying cost summary
+5. "Profitability Analysis" defaultOpen={false} — estimated total investment, sell price, net profit
+6. "Loan Options" defaultOpen={false} — do you have a loan / currently looking
+7. "Loan Preferences" defaultOpen={false} — lowest OOP / highest net profit / one of each selector
+
+---
+
+### 4. client/src/pages/mobile/MobileDealAnalysis.tsx
+
+This page currently serves as the mobile landing page at /m/deal-analysis. It is NOT being removed — it may still be accessed directly. No changes needed here.
+
+However: the "Start Analysis" button in MobileDealAnalysis currently calls setDeviceMode("desktop", { persist: false }) before redirecting to /deal-analysis. This ephemeral override is no longer needed since mobile users now get the overlay wizard natively. Change the Start Analysis handler to navigate directly to /deal-analysis without calling setDeviceMode. The "Switch to Desktop" / monitor icon button behavior remains unchanged.
+
+---
+
+### 5. Verification
+
+After all changes:
+1. Read back use-mobile-redirect.ts in full — confirm /deal-analysis redirect removed, all others intact
+2. Read back DealAnalysisWizard.tsx in full — confirm mobile branch added, desktop branch untouched
+3. Read back MobileDealAnalysis.tsx — confirm Start Analysis no longer calls setDeviceMode
+4. Confirm DealAnalysisOverlay, MobileStepWrapper, CollapsibleSection are imported correctly with no TypeScript errors
+5. List every file modified
+
+Raw code output only. Wrap each modified file in a code block. Line numbers required.
