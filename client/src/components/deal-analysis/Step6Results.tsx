@@ -267,6 +267,12 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const [showLenderFees, setShowLenderFees] = useState(false);
   const [showCarryingCosts, setShowCarryingCosts] = useState(false);
   const [showSellingCosts, setShowSellingCosts] = useState(false);
+  // Mobile-only expandable row states
+  const [mobileExpandOop, setMobileExpandOop] = useState(false);
+  const [mobileExpandClosingCosts, setMobileExpandClosingCosts] = useState(false);
+  const [mobileExpandLenderFees, setMobileExpandLenderFees] = useState(false);
+  const [mobileExpandCarrying, setMobileExpandCarrying] = useState(false);
+  const [mobileExpandSelling, setMobileExpandSelling] = useState(false);
   // Summary box expandable states
   const [showOutOfPocketBreakdown, setShowOutOfPocketBreakdown] = useState(false);
   const [showOopTableBreakdown, setShowOopTableBreakdown] = useState(false);
@@ -1755,23 +1761,91 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       }
     };
 
-    const mobileRows: { key: string; label: string; divider?: boolean; bold?: boolean }[] = [
+    type MobileRow = {
+      key: string;
+      label: string;
+      divider?: boolean;
+      bold?: boolean;
+      expandKey?: 'oop' | 'closingBuy' | 'lenderFees' | 'carrying' | 'selling';
+    };
+    const mobileRows: MobileRow[] = [
       { key: 'netProfitTop', label: 'Net Profit' },
-      { key: 'oop', label: 'Out-of-Pocket' },
+      { key: 'oop', label: 'Out-of-Pocket', expandKey: 'oop' },
       { key: 'coc', label: 'Cash-on-Cash ROI' },
       { key: 'annRoi', label: 'Annualized ROI' },
       { key: 'totalLoan', label: 'Total Loan Amount' },
       { key: 'loanTerms', label: 'Loan Terms' },
       { key: 'projectCost', label: 'Project Cost', divider: true },
-      { key: 'closingCostsBuy', label: 'Closing Costs (Buy)' },
-      { key: 'lenderFees', label: 'Lender Fees' },
-      { key: 'carryingCosts', label: 'Carrying Costs' },
+      { key: 'closingCostsBuy', label: 'Closing Costs (Buy)', expandKey: 'closingBuy' },
+      { key: 'lenderFees', label: 'Lender Fees', expandKey: 'lenderFees' },
+      { key: 'carryingCosts', label: 'Carrying Costs', expandKey: 'carrying' },
       { key: 'estOop', label: 'Est Out-of-Pocket' },
       { key: 'salePrice', label: 'Estimated Sale Price' },
       { key: 'grossProfit', label: 'Gross Profit' },
-      { key: 'sellingCosts', label: 'Selling Costs' },
+      { key: 'sellingCosts', label: 'Selling Costs', expandKey: 'selling' },
       { key: 'netProfitBottom', label: 'Net Profit', bold: true },
     ];
+
+    const projLen = formData.projectLength || 6;
+    const breakdownDefs: Record<
+      'oop' | 'closingBuy' | 'lenderFees' | 'carrying' | 'selling',
+      { isOpen: boolean; toggle: () => void; rows: { label: string; value: (c: MobileCol) => number }[] }
+    > = {
+      oop: {
+        isOpen: mobileExpandOop,
+        toggle: () => setMobileExpandOop(v => !v),
+        rows: [
+          { label: 'Down Payment', value: (c) => c.col.outOfPocketBreakdown?.downPayment ?? (c.type === 'cash' ? c.col.totalProjectCost : 0) },
+          { label: 'Closing Costs', value: (c) => c.col.outOfPocketBreakdown?.totalClosingCostsBuy ?? c.col.closingCostsBuy },
+          { label: 'Lender Fees', value: (c) => {
+              if (c.type === 'cash') return 0;
+              const b = c.col.outOfPocketBreakdown;
+              return (b?.totalPointsCost || b?.pointsCost || 0) + (b?.docPrepFee || 0) + (b?.appraisalCost || 0) + (c.col.lenderDrawFees || 0);
+            } },
+          { label: 'Carrying Costs', value: (c) => c.col.outOfPocketBreakdown?.carryingCosts ?? c.col.carryingCosts },
+          { label: 'Selling Costs', value: (c) => (c.col.closingCostsSell || 0) + (c.col.commission || 0) },
+        ],
+      },
+      closingBuy: {
+        isOpen: mobileExpandClosingCosts,
+        toggle: () => setMobileExpandClosingCosts(v => !v),
+        rows: [
+          { label: 'Attorney Fees', value: () => formData.attorneyFees || 0 },
+          { label: 'Title Exam', value: () => formData.titleExam || 0 },
+          { label: 'Title Insurance', value: () => formData.titleInsurance || 0 },
+          { label: 'Transfer Fee', value: () => formData.transferFee || 0 },
+        ],
+      },
+      lenderFees: {
+        isOpen: mobileExpandLenderFees,
+        toggle: () => setMobileExpandLenderFees(v => !v),
+        rows: [
+          { label: 'Points', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.totalPointsCost || c.col.outOfPocketBreakdown?.pointsCost || 0) },
+          { label: 'Doc Prep', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.docPrepFee || 0) },
+          { label: 'Draw Fees', value: (c) => c.type === 'cash' ? 0 : (c.col.lenderDrawFees || 0) },
+          { label: 'Appraisal', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.appraisalCost || 0) },
+        ],
+      },
+      carrying: {
+        isOpen: mobileExpandCarrying,
+        toggle: () => setMobileExpandCarrying(v => !v),
+        rows: [
+          { label: 'Property Tax', value: () => ((formData.annualTax || 0) / 12) * projLen },
+          { label: 'Utilities', value: () => (formData.monthlyUtilities || 0) * projLen },
+          { label: 'Insurance', value: () => ((formData.annualInsurance || 0) / 12) * projLen },
+          { label: 'HOA', value: () => (formData.hoaFees || 0) * projLen },
+          { label: 'Other', value: () => formData.otherCarryingCosts || 0 },
+        ],
+      },
+      selling: {
+        isOpen: mobileExpandSelling,
+        toggle: () => setMobileExpandSelling(v => !v),
+        rows: [
+          { label: 'Closing Costs (Sell)', value: (c) => c.col.closingCostsSell || 0 },
+          { label: 'Commission', value: (c) => c.col.commission || 0 },
+        ],
+      },
+    };
 
     const COL_W = 130;
     const LABEL_W = 130;
@@ -1902,29 +1976,73 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 </div>
 
                 {/* Data rows */}
-                {mobileRows.map((r) => (
-                  <div
-                    key={r.key}
-                    className={`flex border-b last:border-b-0 ${r.divider ? 'border-t-2 border-t-muted-foreground/20' : ''}`}
-                  >
-                    <div
-                      className={`sticky left-0 z-10 bg-background px-2 py-2 text-xs border-r ${r.bold ? 'font-bold' : 'font-medium'}`}
-                      style={{ minWidth: LABEL_W, width: LABEL_W }}
-                    >
-                      {r.label}
-                    </div>
-                    {mobileColumns.map((c) => (
+                {mobileRows.map((r) => {
+                  const def = r.expandKey ? breakdownDefs[r.expandKey] : null;
+                  const isOpen = !!def?.isOpen;
+                  const clickable = !!def;
+                  return (
+                    <div key={r.key}>
                       <div
-                        key={c.key}
-                        className="px-2 py-2 text-xs border-r last:border-r-0 text-right"
-                        style={{ minWidth: COL_W, width: COL_W }}
-                        data-testid={`cell-mobile-${r.key}-${c.key}`}
+                        className={`flex border-b last:border-b-0 ${r.divider ? 'border-t-2 border-t-muted-foreground/20' : ''} ${clickable ? 'cursor-pointer hover-elevate' : ''}`}
+                        onClick={clickable ? def!.toggle : undefined}
+                        role={clickable ? 'button' : undefined}
+                        data-testid={clickable ? `row-mobile-expandable-${r.expandKey}` : undefined}
                       >
-                        {renderMobileCellValue(r.key, c)}
+                        <div
+                          className={`sticky left-0 z-10 bg-background px-2 py-2 text-xs border-r ${r.bold ? 'font-bold' : 'font-medium'} ${clickable ? 'flex items-center gap-1' : ''}`}
+                          style={{ minWidth: LABEL_W, width: LABEL_W }}
+                        >
+                          {clickable && (
+                            <ChevronRight
+                              className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                            />
+                          )}
+                          <span className="truncate">{r.label}</span>
+                        </div>
+                        {mobileColumns.map((c) => (
+                          <div
+                            key={c.key}
+                            className="px-2 py-2 text-xs border-r last:border-r-0 text-right"
+                            style={{ minWidth: COL_W, width: COL_W }}
+                            data-testid={`cell-mobile-${r.key}-${c.key}`}
+                          >
+                            {renderMobileCellValue(r.key, c)}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ))}
+                      {def && isOpen && (
+                        <div
+                          className="overflow-hidden transition-all duration-200"
+                          data-testid={`breakdown-mobile-${r.expandKey}`}
+                        >
+                          {def.rows.map((br) => (
+                            <div
+                              key={br.label}
+                              className="flex border-b last:border-b-0 bg-muted/30"
+                            >
+                              <div
+                                className="sticky left-0 z-10 bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground border-r pl-7"
+                                style={{ minWidth: LABEL_W, width: LABEL_W }}
+                              >
+                                <span className="truncate">{br.label}</span>
+                              </div>
+                              {mobileColumns.map((c) => (
+                                <div
+                                  key={c.key}
+                                  className="px-2 py-1.5 text-xs text-muted-foreground border-r last:border-r-0 text-right"
+                                  style={{ minWidth: COL_W, width: COL_W }}
+                                  data-testid={`cell-mobile-${r.expandKey}-${br.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${c.key}`}
+                                >
+                                  {formatCurrency(br.value(c))}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
                 {/* Contact lender row */}
                 <div className="flex border-b last:border-b-0">
