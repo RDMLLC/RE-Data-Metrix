@@ -309,7 +309,7 @@ export default function Step4HoldingPeriodExit({
                   name="sellPrice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estimated Sell Price (ARV)</FormLabel>
+                      <FormLabel className="min-h-[3rem] flex items-start">Estimated Sell Price (ARV)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -326,7 +326,7 @@ export default function Step4HoldingPeriodExit({
                           data-testid="input-sell-price-mobile"
                         />
                       </FormControl>
-                      <p className="text-sm text-muted-foreground mt-1">Defaults to Market Value (Not ARV)</p>
+                      <FormDescription>Defaults to Market Value (Not ARV)</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -336,7 +336,7 @@ export default function Step4HoldingPeriodExit({
                   name="projectLength"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Project Length (months)</FormLabel>
+                      <FormLabel className="min-h-[3rem] flex items-start">Project Length (months)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -363,7 +363,7 @@ export default function Step4HoldingPeriodExit({
                   name="closingCostsSellPercent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Closing Costs (Sell) %</FormLabel>
+                      <FormLabel className="min-h-[3rem] flex items-start">Closing Costs (Sell) %</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -391,7 +391,7 @@ export default function Step4HoldingPeriodExit({
                   name="realEstateCommissionPercent"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Real Estate Commission %</FormLabel>
+                      <FormLabel className="min-h-[3rem] flex items-start">Real Estate Commission %</FormLabel>
                       <FormControl>
                         <Input
                           type="number"

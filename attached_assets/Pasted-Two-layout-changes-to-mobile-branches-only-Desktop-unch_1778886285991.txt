@@ -1,0 +1,62 @@
+Two layout changes to mobile branches only. Desktop unchanged. No logic changes.
+
+---
+
+## Fix 1 — Step 3 mobile: compact inline layout
+
+Read the mobile branch of client/src/components/deal-analysis/Step3PurchaseRenovation.tsx.
+
+Replace the current CollapsibleSection structure for the main input fields with compact inline label+input rows. New layout:
+
+Each row: flex justify-between items-center, border-b border-border py-3 px-4
+- Left: label (text-sm font-medium, max-w-[45%])
+- Right: input or select (w-[52%], text-right for number inputs)
+
+Rows in this exact order:
+1. Purchase Price — number input
+2. Rehab Budget — number input, show "Rehab $/SqFt: $X.XX" as helper text below the row if sqft > 0
+3. Est. Market Value (ARV) — number input, show % of ARV color indicator below the row
+4. Length (months) — number input
+5. Close Speed — shadcn Select, same options and handler as before, SelectContent z-[10002]
+
+After these 5 inline rows, keep the following as CollapsibleSections (unchanged):
+6. "Closing Costs (Buy)" — defaultOpen=false
+7. "Carrying Costs" — defaultOpen=false  
+8. "Closing Costs (Sell)" — defaultOpen=false
+
+At the bottom, after all sections:
+9. "Click Here if Double Close" checkbox — full width, same handler as before
+
+Keep the "What does this mean?" tap-to-toggle on the ARV row.
+Keep all existing form registration, handlers, validation unchanged.
+Remove min-h-12 from inputs in the inline rows — use default height.
+
+---
+
+## Fix 2 — Step 5 mobile: fix Exit Strategy label alignment
+
+Read the mobile branch of client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx.
+
+In the Exit Strategy CollapsibleSection, the 2×2 grid has misaligned input boxes because labels have different heights.
+
+Fix: add a consistent min-h to each label wrapper so all four labels occupy the same height regardless of text wrapping. Use min-h-[3rem] on each FormLabel or its wrapper div inside the grid cells.
+
+The four labels are:
+- "Estimated Sell Price (ARV)"
+- "Project Length (months)"  
+- "Closing Costs (Sell) %"
+- "Real Estate Commission %"
+
+Also change "Defaults to Market Value (Not ARV)" static text below Estimated Sell Price to match desktop exactly — read desktop to find the exact text used there.
+
+---
+
+## Verification
+
+After both fixes:
+1. Read back the full mobile branch of Step3PurchaseRenovation.tsx — confirm inline rows, CollapsibleSections for costs, Double Close at bottom
+2. Read back the Exit Strategy section of Step5HoldingPeriodExit.tsx mobile branch — confirm min-h on labels
+3. List every file modified
+4. npx tsc --noEmit — confirm no new errors
+
+Raw code output only. Line numbers required.

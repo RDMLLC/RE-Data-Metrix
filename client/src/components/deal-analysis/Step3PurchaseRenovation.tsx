@@ -58,7 +58,6 @@ import { apiRequest } from "@/lib/queryClient";
 import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 import CompReportPdf from "./CompReportPdf";
 import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
-import CollapsibleSection from "@/components/mobile/CollapsibleSection";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -1028,19 +1027,20 @@ export default function Step3PurchaseRenovation({
       >
         <Form {...form}>
           <form onSubmit={handleSubmit}>
-            <CollapsibleSection title="Purchase Price" defaultOpen={true}>
-              <FormField
-                control={form.control}
-                name="purchasePrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Purchase Price</FormLabel>
+            {/* Inline rows */}
+            <FormField
+              control={form.control}
+              name="purchasePrice"
+              render={({ field }) => (
+                <FormItem className="flex justify-between items-center border-b border-border py-3 px-4 space-y-0">
+                  <FormLabel className="text-sm font-medium max-w-[45%] m-0">Purchase Price</FormLabel>
+                  <div className="w-[52%]">
                     <FormControl>
                       <Input
                         type="number"
                         min="0"
                         step="1"
-                        placeholder="Enter purchase price"
+                        placeholder="Enter price"
                         {...field}
                         value={field.value ?? ""}
                         onChange={(e) => {
@@ -1049,65 +1049,67 @@ export default function Step3PurchaseRenovation({
                             e.target.value ? parseFloat(e.target.value) : undefined
                           );
                         }}
-                        className={`min-h-12 w-full ${missingFields.includes("purchasePrice") ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                        className={`w-full text-right ${missingFields.includes("purchasePrice") ? "border-destructive focus-visible:ring-destructive" : ""}`}
                         data-testid="input-purchase-price-mobile"
                       />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CollapsibleSection>
+                  </div>
+                </FormItem>
+              )}
+            />
 
-            <CollapsibleSection title="Rehab Budget" defaultOpen={true}>
-              <FormField
-                control={form.control}
-                name="rehabBudget"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rehab Budget</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="Enter rehab budget"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : undefined
-                          )
-                        }
-                        className="min-h-12 w-full"
-                        data-testid="input-rehab-budget-mobile"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    {rehabBudget > 0 && sqft > 0 && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Rehab $/SqFt: ${(rehabBudget / sqft).toFixed(2)}
-                      </p>
-                    )}
-                  </FormItem>
-                )}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection title="After Repair Value (ARV)" defaultOpen={true}>
-              <div className="w-full space-y-3">
-                <FormField
-                  control={form.control}
-                  name="arv"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Est. Market Value (ARV)</FormLabel>
+            <FormField
+              control={form.control}
+              name="rehabBudget"
+              render={({ field }) => (
+                <FormItem className="border-b border-border py-3 px-4 space-y-0">
+                  <div className="flex justify-between items-center">
+                    <FormLabel className="text-sm font-medium max-w-[45%] m-0">Rehab Budget</FormLabel>
+                    <div className="w-[52%]">
                       <FormControl>
                         <Input
                           type="number"
                           min="0"
                           step="1"
-                          placeholder="Enter estimated market value"
+                          placeholder="Enter budget"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className="w-full text-right"
+                          data-testid="input-rehab-budget-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </div>
+                  </div>
+                  {rehabBudget > 0 && sqft > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      Rehab $/SqFt: ${(rehabBudget / sqft).toFixed(2)}
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="arv"
+              render={({ field }) => (
+                <FormItem className="border-b border-border py-3 px-4 space-y-0">
+                  <div className="flex justify-between items-center">
+                    <FormLabel className="text-sm font-medium max-w-[45%] m-0">Est. Market Value (ARV)</FormLabel>
+                    <div className="w-[52%]">
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="Enter ARV"
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) => {
@@ -1116,167 +1118,168 @@ export default function Step3PurchaseRenovation({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             );
                           }}
-                          className={`min-h-12 w-full ${missingFields.includes("arv") ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          className={`w-full text-right ${missingFields.includes("arv") ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           data-testid="input-arv-mobile"
                         />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {arv > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Percentage of ARV:</span>
-                    <span
-                      className={`text-base font-semibold ${arvPercentageColor}`}
-                      data-testid="text-percentage-arv-mobile"
-                    >
-                      {percentageOfArv.toFixed(1)}%
-                    </span>
+                    </div>
                   </div>
-                )}
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setArvFieldHelpExpanded(!arvFieldHelpExpanded)}
-                    className="flex items-center gap-1 text-xs text-muted-foreground min-h-8 cursor-pointer"
-                    data-testid="button-arv-field-help-toggle-mobile-wrapper"
-                  >
-                    {arvFieldHelpExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    <span>What does this mean?</span>
-                  </button>
-                  {arvFieldHelpExpanded && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CollapsibleSection>
-
-            <CollapsibleSection title="Transaction & Timeline" defaultOpen={true}>
-              <div className="w-full space-y-4">
-                <FormField
-                  control={form.control}
-                  name="isDoubleClose"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value === true}
-                          onCheckedChange={(checked) => {
-                            field.onChange(checked === true);
-                            if (checked !== true) {
-                              form.setValue("payingForBothSides", false);
-                            }
-                          }}
-                          data-testid="checkbox-double-close-mobile"
-                        />
-                      </FormControl>
-                      <FormLabel className="font-normal cursor-pointer">
-                        Click Here if Double Close
-                      </FormLabel>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch("isDoubleClose") === true && (
-                  <FormField
-                    control={form.control}
-                    name="payingForBothSides"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Are you paying for both transactions?</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={(value) => field.onChange(value === "yes")}
-                            value={field.value === true ? "yes" : field.value === false ? "no" : ""}
-                            className="flex gap-4"
-                            data-testid="radio-paying-both-sides-mobile"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="yes" id="paying-both-yes-mobile" data-testid="radio-paying-both-yes-mobile" />
-                              <Label htmlFor="paying-both-yes-mobile">Yes</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="no" id="paying-both-no-mobile" data-testid="radio-paying-both-no-mobile" />
-                              <Label htmlFor="paying-both-no-mobile">No</Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="projectLength"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Length (months)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="60"
-                          step="1"
-                          placeholder="Months"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) => {
-                            clearMissing("projectLength");
-                            field.onChange(
-                              e.target.value ? parseInt(e.target.value) : undefined
-                            );
-                          }}
-                          className={`w-full min-h-12 ${missingFields.includes("projectLength") ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          data-testid="input-project-length-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="closingTimeline"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Close Speed</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                        data-testid="select-closing-timeline-mobile"
+                  {arv > 0 && (
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-muted-foreground">Percentage of ARV:</span>
+                      <span
+                        className={`text-sm font-semibold ${arvPercentageColor}`}
+                        data-testid="text-percentage-arv-mobile"
                       >
-                        <FormControl>
-                          <SelectTrigger className="w-full min-h-12" data-testid="button-closing-timeline-mobile">
-                            <SelectValue placeholder="Select timeline" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="z-[10002]">
-                          {closingTimelineOptions.map((option) => (
-                            <SelectItem
-                              key={option.value}
-                              value={option.value}
-                              data-testid={`option-closing-mobile-${option.value}`}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {percentageOfArv.toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                  <div className="mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setArvFieldHelpExpanded(!arvFieldHelpExpanded)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground min-h-8 cursor-pointer"
+                      data-testid="button-arv-field-help-toggle-mobile-wrapper"
+                    >
+                      {arvFieldHelpExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      <span>What does this mean?</span>
+                    </button>
+                    {arvFieldHelpExpanded && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.
+                      </p>
+                    )}
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="projectLength"
+              render={({ field }) => (
+                <FormItem className="flex justify-between items-center border-b border-border py-3 px-4 space-y-0">
+                  <FormLabel className="text-sm font-medium max-w-[45%] m-0">Length (months)</FormLabel>
+                  <div className="w-[52%]">
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="60"
+                        step="1"
+                        placeholder="Months"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          clearMissing("projectLength");
+                          field.onChange(
+                            e.target.value ? parseInt(e.target.value) : undefined
+                          );
+                        }}
+                        className={`w-full text-right ${missingFields.includes("projectLength") ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                        data-testid="input-project-length-mobile"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="closingTimeline"
+              render={({ field }) => (
+                <FormItem className="flex justify-between items-center border-b border-border py-3 px-4 space-y-0">
+                  <FormLabel className="text-sm font-medium max-w-[45%] m-0">Close Speed</FormLabel>
+                  <div className="w-[52%]">
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                      data-testid="select-closing-timeline-mobile"
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full" data-testid="button-closing-timeline-mobile">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="z-[10002]">
+                        {closingTimelineOptions.map((option) => (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            data-testid={`option-closing-mobile-${option.value}`}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {/* Double Close — full width at bottom */}
+            <div className="px-4 py-3 space-y-3">
+              <FormField
+                control={form.control}
+                name="isDoubleClose"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === true}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true);
+                          if (checked !== true) {
+                            form.setValue("payingForBothSides", false);
+                          }
+                        }}
+                        data-testid="checkbox-double-close-mobile"
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal cursor-pointer">
+                      Click Here if Double Close
+                    </FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {form.watch("isDoubleClose") === true && (
+                <FormField
+                  control={form.control}
+                  name="payingForBothSides"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Are you paying for both transactions?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => field.onChange(value === "yes")}
+                          value={field.value === true ? "yes" : field.value === false ? "no" : ""}
+                          className="flex gap-4"
+                          data-testid="radio-paying-both-sides-mobile"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="paying-both-yes-mobile" data-testid="radio-paying-both-yes-mobile" />
+                            <Label htmlFor="paying-both-yes-mobile">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="paying-both-no-mobile" data-testid="radio-paying-both-no-mobile" />
+                            <Label htmlFor="paying-both-no-mobile">No</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-            </CollapsibleSection>
+              )}
+            </div>
           </form>
         </Form>
       </MobileStepWrapper>
