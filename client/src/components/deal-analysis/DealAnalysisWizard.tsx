@@ -674,6 +674,7 @@ export default function DealAnalysisWizard() {
         onNext={handleNext}
         onBack={handleBack}
         onClose={() => setLocation("/deal-analysis/about")}
+        onStartNew={handleStartNew}
         nextLabel={currentStep === 5 ? "View Results" : "Continue"}
         isNextDisabled={isNextDisabled}
       >

@@ -30,7 +30,7 @@ interface Step1Props {
 export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false, isMobile = false }: Step1Props) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { updatePropertyData, clearWizardData } = useWizardData();
+  const { wizardData, updatePropertyData, clearWizardData } = useWizardData();
   const [isLookupComplete, setIsLookupComplete] = useState(false);
   const [propertyUrl, setPropertyUrl] = useState("");
   const [manualEntryPreference, setManualEntryPreference] = useState<boolean>(false);
@@ -64,12 +64,19 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     const city = form.getValues("city");
     const state = form.getValues("state");
     const propertyDataSource = form.getValues("propertyDataSource");
-    
+
     if (address && city && state) {
       if (propertyDataSource === "manual") {
         setManualEntryPreference(true);
       } else {
         setIsLookupComplete(true);
+        // Restore the previously-fetched property image so the result card
+        // doesn't show the "Property Image Not Available" placeholder when
+        // the user navigates back to Step 1 from a later step.
+        const savedImageUrl = wizardData?.property?.imageUrl;
+        if (savedImageUrl) {
+          setPropertyImage(savedImageUrl);
+        }
       }
     }
   }, [form]);
@@ -152,6 +159,11 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       } else {
         setPropertyImage(null);
       }
+
+      // Persist image URL in wizard context so it survives Step 1 remounts
+      // (e.g. when the user navigates back from later steps in the mobile
+      // overlay, which unmounts/remounts the step component).
+      updatePropertyData({ imageUrl: data.imageUrl || undefined });
       
       // Save only the lookup data to WizardDataContext (with financial fields cleared)
       updatePropertyData({
