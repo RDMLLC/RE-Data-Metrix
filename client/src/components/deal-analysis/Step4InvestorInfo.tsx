@@ -162,7 +162,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                                 <SelectValue placeholder="Select range" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="z-[10002]">
                               <SelectItem value="0">0</SelectItem>
                               <SelectItem value="1-2">1-2</SelectItem>
                               <SelectItem value="3-5">3-5</SelectItem>
@@ -187,7 +187,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                                 <SelectValue placeholder="Select range" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="z-[10002]">
                               <SelectItem value="0">0</SelectItem>
                               <SelectItem value="1-5">1-5</SelectItem>
                               <SelectItem value="6-10">6-10</SelectItem>
@@ -217,7 +217,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                             <SelectValue placeholder="Select range" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10002]">
                           <SelectItem value="below-600">Below 600</SelectItem>
                           <SelectItem value="600-649">600-649</SelectItem>
                           <SelectItem value="650-699">650-699</SelectItem>

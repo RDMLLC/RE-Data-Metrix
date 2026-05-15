@@ -1259,7 +1259,7 @@ export default function Step3PurchaseRenovation({
                             <SelectValue placeholder="Select timeline" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10002]">
                           {closingTimelineOptions.map((option) => (
                             <SelectItem
                               key={option.value}

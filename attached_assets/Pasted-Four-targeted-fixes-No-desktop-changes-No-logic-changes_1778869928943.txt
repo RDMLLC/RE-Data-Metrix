@@ -1,0 +1,66 @@
+Four targeted fixes. No desktop changes. No logic changes. No label or copy changes unless explicitly specified.
+
+---
+
+## Fix 1 — Replace all hover tooltips in Steps 2, 3, 4, 5 mobile branches with tap-to-toggle
+
+Hover tooltips (shadcn Tooltip/TooltipTrigger/TooltipContent) do not work on mobile touch screens.
+
+Search every mobile branch (isMobile block) in these files for any use of Tooltip, TooltipTrigger, TooltipContent:
+- client/src/components/deal-analysis/Step2PropertyDetails.tsx
+- client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+- client/src/components/deal-analysis/Step4InvestorInfo.tsx
+- client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx
+
+For each one found, replace with this tap-to-toggle pattern:
+- A HelpCircle icon button (type="button") that toggles a local boolean state on tap
+- When toggled open: show the tooltip text in a small rounded box below (bg-muted, text-sm, p-2, rounded, mt-1)
+- When toggled closed: hide the text
+- Use a separate useState per tooltip instance
+- Do NOT use shadcn Tooltip anywhere in any mobile branch
+
+Do not touch desktop render paths.
+
+---
+
+## Fix 2 — Step 3 Close Speed SelectContent z-index fix
+
+The Close Speed dropdown options are not appearing on mobile because SelectContent renders behind the DealAnalysisOverlay (z-[9999]).
+
+In the mobile branch of client/src/components/deal-analysis/Step3PurchaseRenovation.tsx, find the Close Speed SelectContent and add className="z-[10002]" to it.
+
+Apply the same z-index fix to ALL SelectContent components in ALL mobile branches (Steps 2, 3, 4, 5) — any Select dropdown that could be obscured by the overlay needs className="z-[10002]".
+
+Do not touch desktop render paths.
+
+---
+
+## Fix 3 — Step 5 remove "Defaults to Market Value" Select
+
+In the mobile branch of client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx, find the sellPriceModeMobile Select (the local UI-only dropdown added previously, around lines 358–377).
+
+Remove it entirely. Replace with the same static helper text the desktop shows below the Estimated Sell Price field. Read the desktop render path to find the exact text used and replicate it as plain text (text-sm text-muted-foreground).
+
+---
+
+## Fix 4 — Step 5 move Edit toggle inside expanded section content
+
+Currently the Edit (pencil icon) toggle sits in the CollapsibleSection header via the headerAction prop. Move it inside the expanded content instead — it should appear as the first element inside the section body, before the read-only summary data.
+
+For each of the three sections with Edit toggles (Project Overview, Est. Closing Costs Buy, Est. Carrying Costs):
+- Remove the headerAction prop from the CollapsibleSection
+- Add the Edit toggle (checkbox + pencil icon or just a small "Edit" text button) as the FIRST element inside the section's children, above the read-only data
+- Style: small, right-aligned, text-sm, outline or ghost button labeled "Edit" with a Pencil icon
+
+---
+
+## Verification
+
+After all fixes:
+1. List every file modified
+2. Confirm zero uses of Tooltip/TooltipTrigger/TooltipContent remain in any mobile branch
+3. Confirm SelectContent has z-[10002] in all mobile branch Select components
+4. Confirm sellPriceModeMobile Select is gone from Step 5 mobile branch
+5. Confirm headerAction prop removed from the three Edit-toggle sections in Step 5
+
+Raw code output only. Line numbers required.

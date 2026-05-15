@@ -63,6 +63,9 @@ export default function Step2PropertyDetails({
   const [showArvHelper, setShowArvHelper] = useState(false);
   const [arvVideoOpen, setArvVideoOpen] = useState(false);
   const [showFormDetails, setShowFormDetails] = useState(true);
+  const [showAnnualTaxHelpMobile, setShowAnnualTaxHelpMobile] = useState(false);
+  const [showHoaTransferHelpMobile, setShowHoaTransferHelpMobile] = useState(false);
+  const [showEstValueHelpMobile, setShowEstValueHelpMobile] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const handleArvHelperOpen = () => {
@@ -141,7 +144,7 @@ export default function Step2PropertyDetails({
                             <SelectValue placeholder="Select property type" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10002]">
                           {propertyTypes.map((type) => (
                             <SelectItem
                               key={type.value}
@@ -304,15 +307,20 @@ export default function Step2PropertyDetails({
                       <FormItem>
                         <div className="flex items-center gap-1">
                           <FormLabel>Annual Tax ($)</FormLabel>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p>Tax data is not always accurate. Users are encouraged to fetch the data themselves from the county and enter it here if there is a discrepancy.</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <button
+                            type="button"
+                            onClick={() => setShowAnnualTaxHelpMobile(v => !v)}
+                            aria-label="Help: Annual Tax"
+                            data-testid="button-help-annual-tax-mobile"
+                          >
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </div>
+                        {showAnnualTaxHelpMobile && (
+                          <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-annual-tax-mobile">
+                            Tax data is not always accurate. Users are encouraged to fetch the data themselves from the county and enter it here if there is a discrepancy.
+                          </div>
+                        )}
                         <FormControl>
                           <Input
                             type="number"
@@ -374,17 +382,22 @@ export default function Step2PropertyDetails({
                   name="hoaTransferFee"
                   render={({ field, fieldState }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        HOA Transfer Fee
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </FormLabel>
+                      <div className="flex items-center gap-1">
+                        <FormLabel>HOA Transfer Fee</FormLabel>
+                        <button
+                          type="button"
+                          onClick={() => setShowHoaTransferHelpMobile(v => !v)}
+                          aria-label="Help: HOA Transfer Fee"
+                          data-testid="button-help-hoa-transfer-mobile"
+                        >
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                      {showHoaTransferHelpMobile && (
+                        <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-hoa-transfer-mobile">
+                          HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.
+                        </div>
+                      )}
                       <FormControl>
                         <Input
                           type="number"
@@ -423,16 +436,21 @@ export default function Step2PropertyDetails({
                         <span>{estimateLabel}</span>
                         <span className="flex items-center gap-1">
                           (Enter ARV Here)
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setShowEstValueHelpMobile(v => !v); }}
+                            aria-label="Help: Estimated Value"
+                            data-testid="button-help-est-value-mobile"
+                          >
+                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          </button>
                         </span>
                       </FormLabel>
+                      {showEstValueHelpMobile && (
+                        <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-est-value-mobile">
+                          The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.
+                        </div>
+                      )}
                       <FormControl>
                         <Input
                           type="number"

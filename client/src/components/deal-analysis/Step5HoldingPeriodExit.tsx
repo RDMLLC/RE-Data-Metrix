@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
@@ -61,7 +60,6 @@ export default function Step4HoldingPeriodExit({
   const [editClosingCostsBuyMobile, setEditClosingCostsBuyMobile] = useState(false);
   const [editCarryingCostsMobile, setEditCarryingCostsMobile] = useState(false);
   const [arvRuleExpanded, setArvRuleExpanded] = useState(false);
-  const [sellPriceModeMobile, setSellPriceModeMobile] = useState<"market" | "arv">("market");
 
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
@@ -355,26 +353,7 @@ export default function Step4HoldingPeriodExit({
                           data-testid="input-sell-price-mobile"
                         />
                       </FormControl>
-                      <div className="mt-1">
-                        <Select
-                          value={sellPriceModeMobile}
-                          onValueChange={(v) => {
-                            setSellPriceModeMobile(v as "market" | "arv");
-                            if (v === "arv") {
-                              const a = form.getValues("arv");
-                              if (a) form.setValue("sellPrice", a);
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-7 px-2 text-xs w-full" data-testid="select-sell-price-mode-mobile">
-                            <SelectValue placeholder="Defaults to Market Value" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="market">Defaults to Market Value</SelectItem>
-                            <SelectItem value="arv">Use ARV</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">Defaults to Market Value (Not ARV)</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -438,19 +417,19 @@ export default function Step4HoldingPeriodExit({
               </div>
             </CollapsibleSection>
 
-            <CollapsibleSection
-              title="Project Overview"
-              headerAction={
-                <label className="flex items-center gap-1 text-sm font-medium cursor-pointer select-none py-2" aria-label="Edit Project Overview">
-                  <Checkbox
-                    checked={editProjectOverviewMobile}
-                    onCheckedChange={(v) => setEditProjectOverviewMobile(v === true)}
-                    data-testid="checkbox-edit-project-overview-mobile"
-                  />
-                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                </label>
-              }
-            >
+            <CollapsibleSection title="Project Overview">
+              <div className="flex justify-end mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditProjectOverviewMobile(v => !v)}
+                  data-testid="button-edit-project-overview-mobile"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                  Edit
+                </Button>
+              </div>
               {editProjectOverviewMobile ? (
                 <div className="w-full space-y-4">
                   <FormField
@@ -524,19 +503,19 @@ export default function Step4HoldingPeriodExit({
               )}
             </CollapsibleSection>
 
-            <CollapsibleSection
-              title="Est. Closing Costs (Buy)"
-              headerAction={
-                <label className="flex items-center gap-1 text-sm font-medium cursor-pointer select-none py-2" aria-label="Edit Closing Costs (Buy)">
-                  <Checkbox
-                    checked={editClosingCostsBuyMobile}
-                    onCheckedChange={(v) => setEditClosingCostsBuyMobile(v === true)}
-                    data-testid="checkbox-edit-closing-costs-buy-mobile"
-                  />
-                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                </label>
-              }
-            >
+            <CollapsibleSection title="Est. Closing Costs (Buy)">
+              <div className="flex justify-end mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditClosingCostsBuyMobile(v => !v)}
+                  data-testid="button-edit-closing-costs-buy-mobile"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                  Edit
+                </Button>
+              </div>
               {editClosingCostsBuyMobile ? (
                 <div className="w-full space-y-4">
                   {(["attorneyFees", "titleExam", "titleInsurance", "transferFee"] as const).map((fname) => {
@@ -651,19 +630,19 @@ export default function Step4HoldingPeriodExit({
               )}
             </CollapsibleSection>
 
-            <CollapsibleSection
-              title="Est. Carrying Costs"
-              headerAction={
-                <label className="flex items-center gap-1 text-sm font-medium cursor-pointer select-none py-2" aria-label="Edit Carrying Costs">
-                  <Checkbox
-                    checked={editCarryingCostsMobile}
-                    onCheckedChange={(v) => setEditCarryingCostsMobile(v === true)}
-                    data-testid="checkbox-edit-carrying-costs-mobile"
-                  />
-                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-                </label>
-              }
-            >
+            <CollapsibleSection title="Est. Carrying Costs">
+              <div className="flex justify-end mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditCarryingCostsMobile(v => !v)}
+                  data-testid="button-edit-carrying-costs-mobile"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                  Edit
+                </Button>
+              </div>
               {editCarryingCostsMobile ? (
                 <div className="w-full space-y-4">
                   {(["monthlyUtilities", "annualInsurance", "hoaTransferFee", "otherCarryingCosts"] as const).map((fname) => {
