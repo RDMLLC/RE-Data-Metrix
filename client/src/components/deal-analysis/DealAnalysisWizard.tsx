@@ -17,35 +17,7 @@ import Step5HoldingPeriodExit from "./Step5HoldingPeriodExit";
 import Step6Results, { ResultsResponse } from "./Step6Results";
 import MembershipPaywall from "@/components/MembershipPaywall";
 import DealAnalysisOverlay from "@/components/mobile/DealAnalysisOverlay";
-import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
 import type { SavedDeal } from "@shared/schema";
-
-const MOBILE_STEP_META: Record<number, { title: string; subtitle: string }> = {
-  1: {
-    title: "Find Your Property",
-    subtitle: "Search by address or enter manually",
-  },
-  2: {
-    title: "Property Details",
-    subtitle: "Confirm or adjust the property information",
-  },
-  3: {
-    title: "Purchase & Renovation",
-    subtitle: "Enter your purchase price, rehab costs, and closing details",
-  },
-  4: {
-    title: "Your Investor Profile",
-    subtitle: "Tell us about your investment approach",
-  },
-  5: {
-    title: "Holding Period & Exit Strategy",
-    subtitle: "Define your timeline and financing",
-  },
-  6: {
-    title: "Results",
-    subtitle: "Compare lender options and profitability",
-  },
-};
 
 const wizardSchema = z.object({
   address: z.string(),
@@ -574,6 +546,7 @@ export default function DealAnalysisWizard() {
             onPropertyDataLoaded={handlePropertyDataLoaded}
             isSubscriber={isSubscriber}
             isAuthenticated={isAuthenticated}
+            isMobile={isMobile}
           />
         );
       case 2:
@@ -582,6 +555,7 @@ export default function DealAnalysisWizard() {
             form={form}
             onNext={handleNext}
             onBack={handleBack}
+            isMobile={isMobile}
           />
         );
       case 3:
@@ -590,6 +564,7 @@ export default function DealAnalysisWizard() {
             form={form}
             onNext={handleNext}
             onBack={handleBack}
+            isMobile={isMobile}
           />
         );
       case 4:
@@ -598,6 +573,7 @@ export default function DealAnalysisWizard() {
             form={form}
             onNext={handleNext}
             onBack={handleBack}
+            isMobile={isMobile}
           />
         );
       case 5:
@@ -606,6 +582,7 @@ export default function DealAnalysisWizard() {
             form={form}
             onNext={handleNext}
             onBack={handleBack}
+            isMobile={isMobile}
           />
         );
       case 6:
@@ -649,10 +626,11 @@ export default function DealAnalysisWizard() {
   };
 
   // Mobile: wrap steps 1-5 in the full-screen DealAnalysisOverlay.
-  // Step 6 (Results) falls back to the existing WizardLayout per spec
-  // ("Do NOT touch Step6Results.tsx yet").
+  // Each step component now renders its own MobileStepWrapper internally
+  // when isMobile is true, so this branch only owns the overlay chrome
+  // (header, progress, sticky footer). Step 6 (Results) still falls back
+  // to the existing WizardLayout per spec ("Do NOT touch Step6Results.tsx").
   if (isMobile && currentStep >= 1 && currentStep <= 5) {
-    const meta = MOBILE_STEP_META[currentStep];
     const fv = form.watch();
     // Per-step gating for the overlay's Continue button. Mirrors the
     // minimum data each step requires before advancing. Step components
@@ -699,9 +677,7 @@ export default function DealAnalysisWizard() {
         nextLabel={currentStep === 5 ? "View Results" : "Continue"}
         isNextDisabled={isNextDisabled}
       >
-        <MobileStepWrapper title={meta.title} subtitle={meta.subtitle}>
-          {renderStep()}
-        </MobileStepWrapper>
+        {renderStep()}
       </DealAnalysisOverlay>
     );
   }

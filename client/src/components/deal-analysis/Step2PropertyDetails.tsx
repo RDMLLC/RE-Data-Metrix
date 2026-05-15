@@ -28,11 +28,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import ArvHelper from "./ArvHelper";
+import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
+import CollapsibleSection from "@/components/mobile/CollapsibleSection";
 
 interface Step2PropertyDetailsProps {
   form: UseFormReturn<WizardFormData>;
   onNext: () => void;
   onBack: () => void;
+  isMobile?: boolean;
 }
 
 const propertyTypes = [
@@ -49,6 +52,7 @@ export default function Step2PropertyDetails({
   form,
   onNext,
   onBack,
+  isMobile,
 }: Step2PropertyDetailsProps) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -79,6 +83,244 @@ export default function Step2PropertyDetails({
   const handleSubmit = form.handleSubmit(() => {
     onNext();
   });
+
+  if (isMobile) {
+    const purchasePrice = form.watch("purchasePrice") || 0;
+    const rehabBudget = form.watch("rehabBudget") || 0;
+    const arvValue = form.watch("arv") || form.watch("estimatedValue") || 0;
+    const percentOfArv =
+      arvValue > 0 ? ((purchasePrice + rehabBudget) / arvValue) * 100 : 0;
+    const percentColorClass =
+      percentOfArv <= 70
+        ? "text-green-600 dark:text-green-400"
+        : percentOfArv < 80
+          ? "text-amber-600 dark:text-amber-400"
+          : "text-red-600 dark:text-red-400";
+
+    return (
+      <MobileStepWrapper
+        title="Property Details"
+        subtitle="Confirm or adjust the property information"
+      >
+        <Form {...form}>
+          <form onSubmit={handleSubmit}>
+            <CollapsibleSection title="Property Info" defaultOpen={true}>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="propertyType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Property Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        data-testid="select-property-type-mobile"
+                      >
+                        <FormControl>
+                          <SelectTrigger
+                            className="min-h-12"
+                            data-testid="button-property-type-mobile"
+                          >
+                            <SelectValue placeholder="Select property type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {propertyTypes.map((type) => (
+                            <SelectItem
+                              key={type.value}
+                              value={type.value}
+                              data-testid={`option-property-type-mobile-${type.value}`}
+                            >
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="bedrooms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bedrooms</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseFloat(e.target.value) : undefined
+                              )
+                            }
+                            className="min-h-12"
+                            data-testid="input-bedrooms-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bathrooms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bathrooms</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseFloat(e.target.value) : undefined
+                              )
+                            }
+                            className="min-h-12"
+                            data-testid="input-bathrooms-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="sqft"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Square Footage</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-sqft-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="yearBuilt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year Built</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="1800"
+                          max={new Date().getFullYear() + 1}
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-year-built-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Valuation" defaultOpen={true}>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="estimatedValue"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{estimateLabel} (ARV)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder={`Enter ${estimateLabel.toLowerCase()}`}
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-estimated-value-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {arvValue > 0 && (purchasePrice > 0 || rehabBudget > 0) && (
+                  <div
+                    className={`text-sm font-medium ${percentColorClass}`}
+                    data-testid="text-percent-of-arv-mobile"
+                  >
+                    {percentOfArv.toFixed(1)}% of ARV
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="ARV Helper" defaultOpen={false}>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Use comparable sales to estimate ARV
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full min-h-12"
+                  onClick={handleArvHelperOpen}
+                  data-testid="button-open-arv-helper-mobile"
+                >
+                  Open ARV Helper
+                </Button>
+              </div>
+            </CollapsibleSection>
+
+            {showArvHelper && (
+              <div className="px-4 py-4">
+                <ArvHelper form={form} onClose={handleArvHelperClose} />
+              </div>
+            )}
+          </form>
+        </Form>
+      </MobileStepWrapper>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -644,6 +886,7 @@ export default function Step2PropertyDetails({
             </CardContent>
           </Card>
 
+          {!isMobile && (
           <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
             <Button
               type="button"
@@ -658,6 +901,7 @@ export default function Step2PropertyDetails({
               Continue to Purchase Details
             </Button>
           </div>
+          )}
 
           {/* Mobile-only: Help with ARV + Tutorial appear below the Continue button so the
               primary CTA is the first thing users see on small screens. */}

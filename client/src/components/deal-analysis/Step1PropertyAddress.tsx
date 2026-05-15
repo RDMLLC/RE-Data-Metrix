@@ -14,6 +14,7 @@ import GroundUpModal from "./GroundUpModal";
 import QuotaExhaustedModal from "./QuotaExhaustedModal";
 import { normalizePropertyTypeToEnum } from "./propertyTypeUtils";
 import { Link, useLocation } from "wouter";
+import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
 
 const YOUTUBE_VIDEO_ID = "m6SjKQ3dYe4";
 
@@ -23,9 +24,10 @@ interface Step1Props {
   onPropertyDataLoaded: (data: any) => void;
   isSubscriber?: boolean;
   isAuthenticated?: boolean;
+  isMobile?: boolean;
 }
 
-export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false }: Step1Props) {
+export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false, isMobile = false }: Step1Props) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { updatePropertyData, clearWizardData } = useWizardData();
@@ -318,6 +320,156 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     onNext();
   };
 
+  if (isMobile) {
+    return (
+      <MobileStepWrapper
+        title="Find Your Property"
+        subtitle="Search by address or enter manually"
+      >
+        <div className="px-4 py-4 space-y-4">
+          {!manualEntryPreference ? (
+            <>
+              <div className="space-y-2">
+                <label
+                  htmlFor="mobile-property-url"
+                  className="text-sm font-medium"
+                >
+                  Paste a Zillow or Redfin link
+                </label>
+                <Input
+                  id="mobile-property-url"
+                  value={propertyUrl}
+                  onChange={(e) => setPropertyUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleLookup();
+                    }
+                  }}
+                  placeholder="https://www.zillow.com/..."
+                  className="w-full min-h-12"
+                  data-testid="input-mobile-property-url"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={handleLookup}
+                disabled={
+                  propertyLookupMutation.isPending ||
+                  lookupQuotaExhausted ||
+                  (!isSubscriber && !usageReady)
+                }
+                className="w-full min-h-12"
+                data-testid="button-mobile-search-property"
+              >
+                {propertyLookupMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Search Property
+                  </>
+                )}
+              </Button>
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t border-border" />
+                <span className="mx-3 text-xs text-muted-foreground">or</span>
+                <div className="flex-grow border-t border-border" />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setManualEntryPreference(true);
+                  form.setValue("propertyDataSource", "manual");
+                }}
+                className="w-full min-h-12"
+                data-testid="button-mobile-enter-manually"
+              >
+                Enter Manually
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  window.open(
+                    "https://youtu.be/m6SjKQ3dYe4",
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+                className="w-full min-h-12"
+                data-testid="button-mobile-watch-demo"
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Watch a Demo
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setManualEntryPreference(false)}
+                className="min-h-12 -ml-2"
+                data-testid="button-mobile-back-to-search"
+              >
+                Back to Search
+              </Button>
+              <div className="space-y-2">
+                <label
+                  htmlFor="mobile-address"
+                  className="text-sm font-medium"
+                >
+                  Address
+                </label>
+                <Input
+                  id="mobile-address"
+                  {...form.register("address")}
+                  className="w-full min-h-12"
+                  data-testid="input-mobile-address"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="mobile-city" className="text-sm font-medium">
+                  City
+                </label>
+                <Input
+                  id="mobile-city"
+                  {...form.register("city")}
+                  className="w-full min-h-12"
+                  data-testid="input-mobile-city"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="mobile-state" className="text-sm font-medium">
+                  State
+                </label>
+                <Input
+                  id="mobile-state"
+                  {...form.register("state")}
+                  className="w-full min-h-12"
+                  data-testid="input-mobile-state"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="mobile-zip" className="text-sm font-medium">
+                  ZIP
+                </label>
+                <Input
+                  id="mobile-zip"
+                  {...form.register("zipCode")}
+                  className="w-full min-h-12"
+                  data-testid="input-mobile-zip"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </MobileStepWrapper>
+    );
+  }
+
   return (
     <div className="space-y-6">
 
@@ -528,27 +680,29 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                       </Alert>
                     )}
 
-                    <div className="flex gap-3 flex-wrap">
-                      <Button
-                        type="button"
-                        onClick={handleNext}
-                        className="flex-1 md:flex-initial"
-                        data-testid="button-next-step"
-                      >
-                        Continue to Property Details
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
-                        disabled={!propertyUrl}
-                        className="flex-1 md:flex-initial"
-                        data-testid="button-view-listing"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View Listing
-                      </Button>
-                    </div>
+                    {!isMobile && (
+                      <div className="flex gap-3 flex-wrap">
+                        <Button
+                          type="button"
+                          onClick={handleNext}
+                          className="flex-1 md:flex-initial"
+                          data-testid="button-next-step"
+                        >
+                          Continue to Property Details
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => window.open(propertyUrl, '_blank', 'noopener,noreferrer')}
+                          disabled={!propertyUrl}
+                          className="flex-1 md:flex-initial"
+                          data-testid="button-view-listing"
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          View Listing
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -600,45 +754,47 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             </p>
           </div>
           
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setManualEntryPreference(false)}
-              data-testid="button-back-to-lookup"
-            >
-              Back to Property Lookup
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                // Clear financial fields for fresh analysis (not wizard context)
-                form.setValue("purchasePrice", undefined);
-                form.setValue("rehabBudget", undefined);
-                form.setValue("arv", undefined);
-                form.setValue("projectLength", undefined);
-                form.setValue("sellPrice", undefined);
-                form.setValue("closingTimeline", "22-30-days");
-                form.setValue("isDoubleClose", undefined);
-                form.setValue("payingForBothSides", undefined);
-                
-                form.setValue("propertyDataSource", "manual");
-                form.setValue("address", "");
-                form.setValue("city", "");
-                form.setValue("state", "");
-                form.setValue("zipCode", "");
-                updatePropertyData({ estimatedRent: undefined, estimatedRentSource: undefined });
-                window.gtag?.('event', 'deal_analysis_submitted', {
-                  event_category: 'engagement',
-                  event_label: 'deal_analysis',
-                });
-                onNext();
-              }}
-              data-testid="button-manual-next"
-            >
-              Next
-            </Button>
-          </div>
+          {!isMobile && (
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setManualEntryPreference(false)}
+                data-testid="button-back-to-lookup"
+              >
+                Back to Property Lookup
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  // Clear financial fields for fresh analysis (not wizard context)
+                  form.setValue("purchasePrice", undefined);
+                  form.setValue("rehabBudget", undefined);
+                  form.setValue("arv", undefined);
+                  form.setValue("projectLength", undefined);
+                  form.setValue("sellPrice", undefined);
+                  form.setValue("closingTimeline", "22-30-days");
+                  form.setValue("isDoubleClose", undefined);
+                  form.setValue("payingForBothSides", undefined);
+                  
+                  form.setValue("propertyDataSource", "manual");
+                  form.setValue("address", "");
+                  form.setValue("city", "");
+                  form.setValue("state", "");
+                  form.setValue("zipCode", "");
+                  updatePropertyData({ estimatedRent: undefined, estimatedRentSource: undefined });
+                  window.gtag?.('event', 'deal_analysis_submitted', {
+                    event_category: 'engagement',
+                    event_label: 'deal_analysis',
+                  });
+                  onNext();
+                }}
+                data-testid="button-manual-next"
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -57,6 +57,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 import CompReportPdf from "./CompReportPdf";
+import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
+import CollapsibleSection from "@/components/mobile/CollapsibleSection";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -120,12 +122,14 @@ interface Step3PurchaseRenovationProps {
   form: UseFormReturn<WizardFormData>;
   onNext: () => void;
   onBack: () => void;
+  isMobile?: boolean;
 }
 
 export default function Step3PurchaseRenovation({
   form,
   onNext,
   onBack,
+  isMobile,
 }: Step3PurchaseRenovationProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -1015,6 +1019,147 @@ export default function Step3PurchaseRenovation({
 
     setLocation("/rental-analysis");
   };
+
+  if (isMobile) {
+    return (
+      <MobileStepWrapper
+        title="Purchase & Renovation"
+        subtitle="Enter your purchase price, rehab costs, and closing details"
+      >
+        <Form {...form}>
+          <form onSubmit={handleSubmit}>
+            <CollapsibleSection title="Purchase Price" defaultOpen={true}>
+              <FormField
+                control={form.control}
+                name="purchasePrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Purchase Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="Enter purchase price"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          clearMissing("purchasePrice");
+                          field.onChange(
+                            e.target.value ? parseFloat(e.target.value) : undefined
+                          );
+                        }}
+                        className={`min-h-12 w-full ${missingFields.includes("purchasePrice") ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                        data-testid="input-purchase-price-mobile"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Rehab Budget" defaultOpen={true}>
+              <FormField
+                control={form.control}
+                name="rehabBudget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rehab Budget</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="Enter rehab budget"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? parseFloat(e.target.value) : undefined
+                          )
+                        }
+                        className="min-h-12 w-full"
+                        data-testid="input-rehab-budget-mobile"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {rehabBudget > 0 && sqft > 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Rehab $/SqFt: ${(rehabBudget / sqft).toFixed(2)}
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection title="After Repair Value (ARV)" defaultOpen={true}>
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="arv"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Est. Market Value (ARV)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="Enter estimated market value"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            clearMissing("arv");
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            );
+                          }}
+                          className={`min-h-12 w-full ${missingFields.includes("arv") ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                          data-testid="input-arv-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {arv > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Percentage of ARV:</span>
+                    <span
+                      className={`text-base font-semibold ${arvPercentageColor}`}
+                      data-testid="text-percentage-arv-mobile"
+                    >
+                      {percentageOfArv.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setArvFieldHelpExpanded(!arvFieldHelpExpanded)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground min-h-8 cursor-pointer"
+                    data-testid="button-arv-field-help-toggle-mobile-wrapper"
+                  >
+                    {arvFieldHelpExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    <span>What does this mean?</span>
+                  </button>
+                  {arvFieldHelpExpanded && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CollapsibleSection>
+          </form>
+        </Form>
+      </MobileStepWrapper>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -2333,6 +2478,7 @@ export default function Step3PurchaseRenovation({
           </Card>
 
           {/* Mobile-only stacked actions (sm and below). Order: Continue → Help with ARV → Max Offer → Wholesale → Back */}
+          {!isMobile && (
           <div className="sm:hidden flex flex-col gap-3">
             <Button
               type="submit"
@@ -2514,7 +2660,9 @@ export default function Step3PurchaseRenovation({
               Back
             </Button>
           </div>
+          )}
 
+          {!isMobile && (
           <div className="hidden sm:flex flex-col gap-4">
             <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between flex-wrap">
               <Button
@@ -2601,6 +2749,7 @@ export default function Step3PurchaseRenovation({
               </Card>
             )}
           </div>
+          )}
         </form>
       </Form>
       

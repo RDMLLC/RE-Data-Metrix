@@ -1,0 +1,218 @@
+Refactor the Deal Analysis wizard so Steps 1–5 each support both a desktop layout (identical to today) and a mobile layout (collapsible sections inside the overlay). This is Option A — shared logic, presentation split by platform. No desktop behavior changes. No calculation changes.
+
+## Guiding principle
+
+Each step component will accept an optional `isMobile?: boolean` prop. When false or undefined, the component renders exactly as it does today. When true, it renders its fields organized into CollapsibleSection groups inside a MobileStepWrapper. All form state, validation, handlers, and props remain shared — only the JSX layout branches.
+
+## Files to modify
+
+---
+
+### 1. client/src/components/deal-analysis/DealAnalysisWizard.tsx
+
+Already imports useIsMobile, DealAnalysisOverlay, MobileStepWrapper. 
+
+Add `isMobile={isMobile}` prop to every step component rendered (Step1 through Step5) in both the mobile and desktop render paths.
+
+The mobile render path already wraps steps in DealAnalysisOverlay. Remove the MobileStepWrapper from DealAnalysisWizard — each step component will now render its own MobileStepWrapper internally when isMobile is true.
+
+Keep all existing overlay logic (currentStep, onNext, onBack, onClose, nextLabel, isNextDisabled) exactly as is.
+
+---
+
+### 2. client/src/components/deal-analysis/Step1PropertyAddress.tsx (646 lines)
+
+Add `isMobile?: boolean` to props interface.
+
+Desktop render: unchanged — return exactly what it returns today.
+
+Mobile render: return a MobileStepWrapper with title="Find Your Property" subtitle="Search by address or enter manually"
+
+Inside MobileStepWrapper render these directly (no CollapsibleSection needed — Step 1 is a single focused action):
+
+- If in URL/link lookup mode:
+  - Label: "Paste a Zillow or Redfin link"
+  - Full-width text input for the property URL, min-h-12
+  - "Search Property" button — full width, min-h-12, primary
+  - Divider: thin line with "or" centered
+  - "Enter Manually" button — full width, min-h-12, outline variant
+  - "Watch a Demo" button — full width, min-h-12, ghost variant, opens https://youtu.be/m6SjKQ3dYe4 in new tab
+
+- If in manual entry mode:
+  - Show the manual entry form fields (address, city, state, zip) full width stacked
+  - "Back to Search" link at top
+  - All fields min-h-12 for touch targets
+
+All existing handlers (handleSearch, handleManualToggle, etc.) wire up identically — only layout changes.
+
+---
+
+### 3. client/src/components/deal-analysis/Step2PropertyDetails.tsx (711 lines)
+
+Add `isMobile?: boolean` to props interface.
+
+Desktop render: unchanged.
+
+Mobile render: MobileStepWrapper title="Property Details" subtitle="Confirm or adjust the property information"
+
+CollapsibleSection sections:
+1. title="Property Info" defaultOpen={true}
+   - Property type selector
+   - Beds, baths (side by side, each 50% width)
+   - Square footage
+   - Year built
+
+2. title="Valuation" defaultOpen={true}
+   - Est. Market Value (ARV) input
+   - Zestimate display (read-only, show if available)
+   - Redfin estimate display (read-only, show if available)
+   - % of ARV indicator with color coding (≤70% green, 71–79% amber, ≥80% red)
+
+3. title="ARV Helper" defaultOpen={false}
+   - Brief explainer text: "Use comparable sales to estimate ARV"
+   - "Open ARV Helper" button — full width, outline variant
+
+All inputs min-h-12.
+
+---
+
+### 4. client/src/components/deal-analysis/Step3PurchaseRenovation.tsx (2,673 lines)
+
+Add `isMobile?: boolean` to props interface.
+
+Desktop render: unchanged.
+
+Mobile render: MobileStepWrapper title="Purchase & Renovation" subtitle="Enter your purchase price, rehab costs, and closing details"
+
+CollapsibleSection sections:
+1. title="Purchase Price" defaultOpen={true}
+   - Purchase price input, full width, min-h-12
+
+2. title="Rehab Budget" defaultOpen={true}
+   - Rehab budget input, full width, min-h-12
+
+3. title="After Repair Value (ARV)" defaultOpen={true}
+   - ARV input, full width, min-h-12
+   - % of ARV color indicator (≤70% green, 71–79% amber, ≥80% red)
+   - "What does this mean?" collapsible tooltip (existing logic)
+
+4. title="Closing Costs (Buy)" defaultOpen={false}
+   - All buy-side closing cost line items
+   - Total display at bottom of section
+
+5. title="Carrying Costs" defaultOpen={false}
+   - All carrying cost line items
+   - Total display at bottom of section
+
+6. title="Closing Costs (Sell)" defaultOpen={false}
+   - All sell-side closing cost line items
+   - Total display at bottom of section
+
+All inputs min-h-12.
+
+---
+
+### 5. client/src/components/deal-analysis/Step4InvestorInfo.tsx (289 lines)
+
+Add `isMobile?: boolean` to props interface.
+
+Desktop render: unchanged.
+
+Mobile render: MobileStepWrapper title="Your Investor Profile" subtitle="Tell us about your investment approach"
+
+CollapsibleSection sections:
+1. title="Investment Strategy" defaultOpen={true}
+   - Fix & flip vs rental strategy selector
+   - Any strategy-specific fields that appear conditionally
+
+2. title="Experience & Goals" defaultOpen={false}
+   - Experience level field
+   - Target return / other goal fields
+   - Credit score input
+
+All inputs min-h-12.
+
+---
+
+### 6. client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx (1,678 lines)
+
+Add `isMobile?: boolean` to props interface.
+
+Desktop render: unchanged.
+
+Mobile render: MobileStepWrapper title="Holding Period & Exit Strategy" subtitle="Define your timeline and financing"
+
+CollapsibleSection sections:
+1. title="Exit Strategy" defaultOpen={true}
+   - All exit strategy inputs (project length, estimated sell price, closing costs sell %, real estate commission %)
+   - These are the most critical fields — always open by default
+
+2. title="Project Overview" defaultOpen={false}
+   - Purchase price (read-only summary)
+   - Rehab budget (read-only summary)
+   - Total project cost (read-only summary)
+
+3. title="Estimated Closing Costs (Buy)" defaultOpen={false}
+   - Closing cost line items summary
+   - Total
+
+4. title="Estimated Carrying Costs" defaultOpen={false}
+   - Carrying cost line items summary
+   - Total
+
+5. title="Profitability Analysis" defaultOpen={false}
+   - Estimated total investment
+   - Estimated sell price
+   - Net profit
+   - Cash-on-cash return
+
+6. title="Loan Options" defaultOpen={false}
+   - "Do you have a loan in mind?" yes/no
+   - "Are you currently looking at a loan?" yes/no
+   - Loan details entry if yes
+
+7. title="Loan Preferences" defaultOpen={false}
+   - Lowest out-of-pocket / Highest net profit / One of each selector
+
+All inputs min-h-12.
+
+---
+
+### 7. client/src/components/mobile/DealAnalysisOverlay.tsx
+
+Remove the MobileStepWrapper import and usage if it was added here — it now lives inside each step component.
+
+Everything else unchanged.
+
+---
+
+### 8. Duplicate navigation buttons — fix
+
+The existing step components render their own internal Back/Continue buttons. On mobile these are redundant with the overlay footer buttons. 
+
+In each of Steps 1–5, when isMobile is true, do not render the internal Back/Continue/Next button row. The overlay footer handles navigation. 
+
+The internal button row must still render on desktop — do not remove it, gate it with `!isMobile`.
+
+---
+
+## Constraints
+
+- Zero changes to desktop render paths
+- Zero changes to calculation logic
+- Zero changes to form state, validation, or handlers  
+- Zero changes to Step6Results.tsx
+- Zero changes to WizardLayout.tsx
+- All existing props each step already accepts remain unchanged — isMobile is additive only
+- TypeScript: no new errors
+
+## Verification
+
+After all changes:
+1. List every file modified
+2. For each step component (1–5), confirm: desktop render path untouched, mobile render path added, internal nav buttons gated with !isMobile
+3. Confirm DealAnalysisWizard.tsx passes isMobile to all steps
+4. Confirm no TypeScript errors introduced
+5. Read back DealAnalysisWizard.tsx in full
+
+Raw code output only. Wrap each modified file in a code block. Line numbers required.

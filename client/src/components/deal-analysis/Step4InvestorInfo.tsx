@@ -13,6 +13,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
+import CollapsibleSection from "@/components/mobile/CollapsibleSection";
 
 interface InvestorInfoResponse {
   hasSavedInfo: boolean;
@@ -28,9 +30,10 @@ interface Step4InvestorInfoProps {
   form: UseFormReturn<WizardFormData>;
   onNext: () => void;
   onBack: () => void;
+  isMobile?: boolean;
 }
 
-export default function Step4InvestorInfo({ form, onNext, onBack }: Step4InvestorInfoProps) {
+export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: Step4InvestorInfoProps) {
   const isNewInvestor = form.watch("isNewInvestor");
   const { user } = useAuth();
   const { toast } = useToast();
@@ -106,6 +109,165 @@ export default function Step4InvestorInfo({ form, onNext, onBack }: Step4Investo
     }
     onNext();
   });
+
+  if (isMobile) {
+    return (
+      <MobileStepWrapper
+        title="Your Investor Profile"
+        subtitle="Tell us about your investment approach"
+      >
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-2">
+            <CollapsibleSection title="Experience & Goals" defaultOpen={true}>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="isNewInvestor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Are you a new investor?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => field.onChange(value === "true")}
+                          value={field.value === undefined ? undefined : field.value.toString()}
+                          className="flex gap-4"
+                          data-testid="radio-new-investor-mobile"
+                        >
+                          <div className="flex items-center space-x-2 min-h-12">
+                            <RadioGroupItem value="true" id="new-yes-mobile" data-testid="radio-new-investor-yes-mobile" />
+                            <label htmlFor="new-yes-mobile" className="cursor-pointer">Yes</label>
+                          </div>
+                          <div className="flex items-center space-x-2 min-h-12">
+                            <RadioGroupItem value="false" id="new-no-mobile" data-testid="radio-new-investor-no-mobile" />
+                            <label htmlFor="new-no-mobile" className="cursor-pointer">No</label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {isNewInvestor === false && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="projectsLast12Months"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Projects completed (last 12 months)</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="min-h-12" data-testid="select-projects-12-mobile">
+                                <SelectValue placeholder="Select range" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              <SelectItem value="1-2">1-2</SelectItem>
+                              <SelectItem value="3-5">3-5</SelectItem>
+                              <SelectItem value="6-10">6-10</SelectItem>
+                              <SelectItem value="11+">11+</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="projectsLast36Months"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Projects completed (last 36 months)</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="min-h-12" data-testid="select-projects-36-mobile">
+                                <SelectValue placeholder="Select range" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">0</SelectItem>
+                              <SelectItem value="1-5">1-5</SelectItem>
+                              <SelectItem value="6-10">6-10</SelectItem>
+                              <SelectItem value="11-20">11-20</SelectItem>
+                              <SelectItem value="21+">21+</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="creditScore"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estimated Credit Score</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="min-h-12" data-testid="select-credit-score-mobile">
+                            <SelectValue placeholder="Select range" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="below-600">Below 600</SelectItem>
+                          <SelectItem value="600-649">600-649</SelectItem>
+                          <SelectItem value="650-699">650-699</SelectItem>
+                          <SelectItem value="700-749">700-749</SelectItem>
+                          <SelectItem value="750+">750+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {investorInfoData?.hasSavedInfo && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md p-2">
+                    <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                    <span>Auto-filled from your saved profile</span>
+                  </div>
+                )}
+
+                {!!user && (
+                  <div className="pt-2 border-t space-y-2">
+                    <div className="flex items-center space-x-2 min-h-12">
+                      <Checkbox
+                        id="save-to-profile-mobile"
+                        checked={saveToProfile}
+                        onCheckedChange={(checked) => setSaveToProfile(checked === true)}
+                        disabled={!isSubscriber}
+                        data-testid="checkbox-save-to-profile-mobile"
+                      />
+                      <label
+                        htmlFor="save-to-profile-mobile"
+                        className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Save to my profile for future deals
+                      </label>
+                    </div>
+                    {!isSubscriber && (
+                      <p className="text-sm text-muted-foreground">
+                        Upgrade your account to save to your profile.{" "}
+                        <Link href="/pricing" className="text-primary font-medium hover:underline" data-testid="link-upgrade-investor-profile-mobile">
+                          Upgrade Now
+                        </Link>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+          </form>
+        </Form>
+      </MobileStepWrapper>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -273,15 +435,17 @@ export default function Step4InvestorInfo({ form, onNext, onBack }: Step4Investo
             </CardContent>
           </Card>
 
-          <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={onBack} data-testid="button-back">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <Button type="submit" data-testid="button-continue">
-              Continue
-            </Button>
-          </div>
+          {!isMobile && (
+            <div className="flex justify-between">
+              <Button type="button" variant="outline" onClick={onBack} data-testid="button-back">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <Button type="submit" data-testid="button-continue">
+                Continue
+              </Button>
+            </div>
+          )}
         </form>
       </Form>
     </div>

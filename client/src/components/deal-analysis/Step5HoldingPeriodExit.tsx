@@ -36,17 +36,21 @@ import { getUtilityCostPerSqFt } from "@shared/data/utility-costs";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { getTransferTaxRate } from "@shared/data/transferTaxRates";
 import { getTieredRate, TieredTransferTax } from "@shared/data/transferTaxTiers";
+import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
+import CollapsibleSection from "@/components/mobile/CollapsibleSection";
 
 interface Step4HoldingPeriodExitProps {
   form: UseFormReturn<WizardFormData>;
   onNext: () => void;
   onBack: () => void;
+  isMobile?: boolean;
 }
 
 export default function Step4HoldingPeriodExit({
   form,
   onNext,
   onBack,
+  isMobile,
 }: Step4HoldingPeriodExitProps) {
   const [closingCostsOpen, setClosingCostsOpen] = useState(false);
   const [closingCosts2Open, setClosingCosts2Open] = useState(false);
@@ -248,6 +252,539 @@ export default function Step4HoldingPeriodExit({
       maximumFractionDigits: 0,
     }).format(value);
   };
+
+  if (isMobile) {
+    return (
+      <MobileStepWrapper
+        title="Holding Period & Exit Strategy"
+        subtitle="Define your timeline and financing"
+      >
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-0">
+            <CollapsibleSection title="Exit Strategy" defaultOpen={true}>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="projectLength"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Length (months)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="60"
+                          step="1"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-project-length-exit-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sellPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estimated Sell Price (ARV)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-sell-price-mobile"
+                        />
+                      </FormControl>
+                      <FormDescription>Defaults to Market Value (Not ARV)</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="closingCostsSellPercent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Closing Costs (Sell) %</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-closing-costs-sell-percent-mobile"
+                        />
+                      </FormControl>
+                      <FormDescription>{formatCurrency(closingCostsSell)}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="realEstateCommissionPercent"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Real Estate Commission %</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className="min-h-12"
+                          data-testid="input-commission-percent-mobile"
+                        />
+                      </FormControl>
+                      <FormDescription>{formatCurrency(realEstateCommission)}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Project Overview">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm">Purchase Price:</span>
+                  <span className="font-medium">{formatCurrency(purchasePrice)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Rehab Budget:</span>
+                  <span className="font-medium">{formatCurrency(rehabBudget)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-semibold">Total Project Cost:</span>
+                  <span className="font-semibold" data-testid="text-total-project-cost-step4-mobile">
+                    {formatCurrency(totalProjectCost)}
+                  </span>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Estimated Closing Costs (Buy)">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Attorney Fees:</span>
+                  <span className="font-medium">{formatCurrency(attorneyFees)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Title Exam:</span>
+                  <span className="font-medium">{formatCurrency(titleExam)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Title Insurance:</span>
+                  <span className="font-medium">{formatCurrency(titleInsurance)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Transfer Tax/Fee:</span>
+                  <span className="font-medium">{formatCurrency(transferFee)}</span>
+                </div>
+                {showBuy2ClosingCosts && (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Attorney Fees (Buy2):</span>
+                      <span className="font-medium">{formatCurrency(attorneyFees2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Title Exam (Buy2):</span>
+                      <span className="font-medium">{formatCurrency(titleExam2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Title Insurance (Buy2):</span>
+                      <span className="font-medium">{formatCurrency(titleInsurance2)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-semibold">Total:</span>
+                  <span className="font-semibold">{formatCurrency(estimatedClosingCostsBuy)}</span>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Estimated Carrying Costs">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Property Tax ({projectLength} months):</span>
+                  <span className="font-medium">{formatCurrency(propertyTaxTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Utilities ({projectLength} months):</span>
+                  <span className="font-medium">{formatCurrency(utilitiesTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Insurance ({projectLength} months):</span>
+                  <span className="font-medium">{formatCurrency(insuranceTotal)}</span>
+                </div>
+                {hoaFeesTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span>HOA ({projectLength} months):</span>
+                    <span className="font-medium">{formatCurrency(hoaFeesTotal)}</span>
+                  </div>
+                )}
+                {hoaTransferFee > 0 && (
+                  <div className="flex justify-between">
+                    <span>HOA Transfer Fee:</span>
+                    <span className="font-medium">{formatCurrency(hoaTransferFee)}</span>
+                  </div>
+                )}
+                {otherCarryingCosts > 0 && (
+                  <div className="flex justify-between">
+                    <span>Other:</span>
+                    <span className="font-medium">{formatCurrency(otherCarryingCosts)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-semibold">Total:</span>
+                  <span className="font-semibold">{formatCurrency(estimatedCarryingCosts)}</span>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Profitability Analysis">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Estimated Total Investment:</span>
+                  <span className="text-lg font-semibold" data-testid="text-total-investment-mobile">
+                    {formatCurrency(estimatedTotalInvestment)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Estimated Sell Price:</span>
+                  <span className="text-lg font-semibold">{formatCurrency(sellPrice)}</span>
+                </div>
+                <div className="flex justify-between items-center border-t pt-3">
+                  <span className="font-semibold">Estimated Profit:</span>
+                  <span
+                    className={`text-xl font-bold ${estimatedProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+                    data-testid="text-estimated-profit-mobile"
+                  >
+                    {formatCurrency(estimatedProfit)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-t pt-3">
+                  <span className="text-sm font-medium">Cash on Cash:</span>
+                  <span className="text-lg font-semibold" data-testid="text-cash-on-cash-roi-mobile">
+                    {cashOnCashRoi.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Loan Options">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="hasExistingLoan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Do you have a loan you are currently looking at?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => field.onChange(value === "true")}
+                          value={field.value === undefined ? undefined : field.value.toString()}
+                          className="flex gap-4"
+                          data-testid="radio-has-loan-mobile"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id="loan-yes-mobile" data-testid="radio-has-loan-yes-mobile" />
+                            <label htmlFor="loan-yes-mobile" className="cursor-pointer">Yes</label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id="loan-no-mobile" data-testid="radio-has-loan-no-mobile" />
+                            <label htmlFor="loan-no-mobile" className="cursor-pointer">No</label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {hasExistingLoan === true && (
+                  <div className="space-y-4 pt-4 border-t">
+                    <FormField
+                      control={form.control}
+                      name="maxLendBuy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max % Lend on Purchase</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="min-h-12"
+                                data-testid="input-max-lend-buy-mobile"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maxLendRehab"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max % Lend on Rehab</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="min-h-12"
+                                data-testid="input-max-lend-rehab-mobile"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="loanInterestRate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interest Rate (Annual)</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="min-h-12"
+                                data-testid="input-interest-rate-mobile"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="loanPoints"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Points</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="min-h-12"
+                                data-testid="input-points-mobile"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maxLoanToArv"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max % Loan to ARV</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="min-h-12"
+                                data-testid="input-max-loan-arv-mobile"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="appraisalRequired"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Appraisal Required?</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-appraisal-required-mobile"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="appr-yes-mobile" data-testid="radio-appraisal-yes-mobile" />
+                                <label htmlFor="appr-yes-mobile" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="appr-no-mobile" data-testid="radio-appraisal-no-mobile" />
+                                <label htmlFor="appr-no-mobile" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {appraisalRequired === true && (
+                      <FormField
+                        control={form.control}
+                        name="appraisalFee"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Appraisal Fee</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  min="0"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="pl-7 min-h-12"
+                                  data-testid="input-appraisal-fee-mobile"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Loan Preferences">
+              <FormField
+                control={form.control}
+                name="loanPreference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select your loan preferences:</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value || "one-of-each"}
+                        className="space-y-3 pt-2"
+                        data-testid="radio-loan-preference-mobile"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <RadioGroupItem value="lowest-oop" id="pref-lowest-oop-mobile" data-testid="radio-lowest-oop-mobile" />
+                          <div className="flex flex-col">
+                            <label htmlFor="pref-lowest-oop-mobile" className="cursor-pointer font-medium">
+                              Lowest out-of-pocket
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                              Show 2 lenders with the lowest upfront cash required
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <RadioGroupItem value="highest-profit" id="pref-highest-profit-mobile" data-testid="radio-highest-profit-mobile" />
+                          <div className="flex flex-col">
+                            <label htmlFor="pref-highest-profit-mobile" className="cursor-pointer font-medium">
+                              Highest Net Profit
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                              Show 2 lenders that maximize your profit in dollars
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <RadioGroupItem value="one-of-each" id="pref-one-of-each-mobile" data-testid="radio-one-of-each-mobile" />
+                          <div className="flex flex-col">
+                            <label htmlFor="pref-one-of-each-mobile" className="cursor-pointer font-medium">
+                              One of each
+                            </label>
+                            <span className="text-xs text-muted-foreground">
+                              Show the best lender for lowest out-of-pocket AND the best for highest profit
+                            </span>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CollapsibleSection>
+          </form>
+        </Form>
+      </MobileStepWrapper>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -1540,19 +2077,21 @@ export default function Step4HoldingPeriodExit({
             </CardContent>
           </Card>
 
-          <div className="flex gap-3 justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-              data-testid="button-back"
-            >
-              Back
-            </Button>
-            <Button type="submit" data-testid="button-continue">
-              Continue to Results
-            </Button>
-          </div>
+          {!isMobile && (
+            <div className="flex gap-3 justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+                data-testid="button-back"
+              >
+                Back
+              </Button>
+              <Button type="submit" data-testid="button-continue">
+                Continue to Results
+              </Button>
+            </div>
+          )}
         </form>
       </Form>
 
