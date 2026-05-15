@@ -105,11 +105,27 @@ export default function Step2PropertyDetails({
         <Form {...form}>
           <form onSubmit={handleSubmit}>
             <CollapsibleSection title="Property Info" defaultOpen={true}>
-              <div className="space-y-4">
+              <div className="w-full space-y-4">
+                {(form.watch("address") || form.watch("city") || form.watch("state")) && (
+                  <div className="w-full space-y-2">
+                    <FormLabel>Property Address</FormLabel>
+                    <div className="p-3 bg-muted rounded-md border">
+                      <p className="font-medium" data-testid="text-property-address-mobile">
+                        {[
+                          form.watch("address"),
+                          form.watch("city"),
+                          form.watch("state"),
+                          form.watch("zipCode")
+                        ].filter(Boolean).join(", ").replace(/, ([A-Z]{2}),/, ", $1")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <FormField
                   control={form.control}
                   name="propertyType"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Property Type</FormLabel>
                       <Select
@@ -119,7 +135,7 @@ export default function Step2PropertyDetails({
                       >
                         <FormControl>
                           <SelectTrigger
-                            className="min-h-12"
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
                             data-testid="button-property-type-mobile"
                           >
                             <SelectValue placeholder="Select property type" />
@@ -146,7 +162,7 @@ export default function Step2PropertyDetails({
                   <FormField
                     control={form.control}
                     name="bedrooms"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <FormLabel>Bedrooms</FormLabel>
                         <FormControl>
@@ -161,7 +177,7 @@ export default function Step2PropertyDetails({
                                 e.target.value ? parseFloat(e.target.value) : undefined
                               )
                             }
-                            className="min-h-12"
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
                             data-testid="input-bedrooms-mobile"
                           />
                         </FormControl>
@@ -172,7 +188,7 @@ export default function Step2PropertyDetails({
                   <FormField
                     control={form.control}
                     name="bathrooms"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <FormLabel>Bathrooms</FormLabel>
                         <FormControl>
@@ -187,7 +203,7 @@ export default function Step2PropertyDetails({
                                 e.target.value ? parseFloat(e.target.value) : undefined
                               )
                             }
-                            className="min-h-12"
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
                             data-testid="input-bathrooms-mobile"
                           />
                         </FormControl>
@@ -200,7 +216,7 @@ export default function Step2PropertyDetails({
                 <FormField
                   control={form.control}
                   name="sqft"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Square Footage</FormLabel>
                       <FormControl>
@@ -215,7 +231,7 @@ export default function Step2PropertyDetails({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
                           data-testid="input-sqft-mobile"
                         />
                       </FormControl>
@@ -226,8 +242,35 @@ export default function Step2PropertyDetails({
 
                 <FormField
                   control={form.control}
+                  name="lotSize"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel>Lot Size (sq ft)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          data-testid="input-lot-size-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="yearBuilt"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Year Built</FormLabel>
                       <FormControl>
@@ -243,7 +286,7 @@ export default function Step2PropertyDetails({
                               e.target.value ? parseInt(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           data-testid="input-year-built-mobile"
                         />
                       </FormControl>
@@ -251,6 +294,121 @@ export default function Step2PropertyDetails({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="annualTax"
+                  render={({ field }) => {
+                    const isEmpty = !field.value || field.value === 0;
+                    return (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormLabel>Annual Tax ($)</FormLabel>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Tax data is not always accurate. Users are encouraged to fetch the data themselves from the county and enter it here if there is a discrepancy.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            placeholder="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? Math.round(parseFloat(e.target.value)) : undefined
+                              )
+                            }
+                            className={`w-full min-h-12 ${isEmpty ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20" : ""}`}
+                            data-testid="input-annual-tax-mobile"
+                          />
+                        </FormControl>
+                        {isEmpty && (
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Tax data was not found. Please look up the annual property tax from your county records and enter it here.
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="hoaFees"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel>HOA Monthly</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          data-testid="input-hoa-monthly-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="hoaTransferFee"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        HOA Transfer Fee
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseFloat(e.target.value) : undefined
+                            )
+                          }
+                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          data-testid="input-hoa-transfer-fee-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Please fill in the HOA values if there is an HOA
+                </p>
               </div>
             </CollapsibleSection>
 
@@ -261,7 +419,20 @@ export default function Step2PropertyDetails({
                   name="estimatedValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{estimateLabel} (ARV)</FormLabel>
+                      <FormLabel className="flex flex-col items-start gap-0">
+                        <span>{estimateLabel}</span>
+                        <span className="flex items-center gap-1">
+                          (Enter ARV Here)
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>The estimated market value is based on Rentcast Data. It may or may not represent improved properties. Do your own research.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -275,7 +446,7 @@ export default function Step2PropertyDetails({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className="w-full min-h-12"
                           data-testid="input-estimated-value-mobile"
                         />
                       </FormControl>

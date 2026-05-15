@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   Collapsible, 
@@ -55,6 +56,9 @@ export default function Step4HoldingPeriodExit({
   const [closingCostsOpen, setClosingCostsOpen] = useState(false);
   const [closingCosts2Open, setClosingCosts2Open] = useState(false);
   const [carryingCostsOpen, setCarryingCostsOpen] = useState(false);
+  const [editProjectOverviewMobile, setEditProjectOverviewMobile] = useState(false);
+  const [editClosingCostsBuyMobile, setEditClosingCostsBuyMobile] = useState(false);
+  const [editCarryingCostsMobile, setEditCarryingCostsMobile] = useState(false);
   const [arvRuleExpanded, setArvRuleExpanded] = useState(false);
 
   const purchasePrice = form.watch("purchasePrice") || 0;
@@ -282,7 +286,7 @@ export default function Step4HoldingPeriodExit({
                               e.target.value ? parseInt(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className="w-full min-h-12"
                           data-testid="input-project-length-exit-mobile"
                         />
                       </FormControl>
@@ -308,7 +312,7 @@ export default function Step4HoldingPeriodExit({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className="w-full min-h-12"
                           data-testid="input-sell-price-mobile"
                         />
                       </FormControl>
@@ -336,7 +340,7 @@ export default function Step4HoldingPeriodExit({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className="w-full min-h-12"
                           data-testid="input-closing-costs-sell-percent-mobile"
                         />
                       </FormControl>
@@ -364,7 +368,7 @@ export default function Step4HoldingPeriodExit({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             )
                           }
-                          className="min-h-12"
+                          className="w-full min-h-12"
                           data-testid="input-commission-percent-mobile"
                         />
                       </FormControl>
@@ -376,103 +380,321 @@ export default function Step4HoldingPeriodExit({
               </div>
             </CollapsibleSection>
 
-            <CollapsibleSection title="Project Overview">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Purchase Price:</span>
-                  <span className="font-medium">{formatCurrency(purchasePrice)}</span>
+            <CollapsibleSection
+              title="Project Overview"
+              headerAction={
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none py-2">
+                  <Checkbox
+                    checked={editProjectOverviewMobile}
+                    onCheckedChange={(v) => setEditProjectOverviewMobile(v === true)}
+                    data-testid="checkbox-edit-project-overview-mobile"
+                  />
+                  Edit
+                </label>
+              }
+            >
+              {editProjectOverviewMobile ? (
+                <div className="w-full space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="purchasePrice"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>Purchase Price</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                            data-testid="input-purchase-price-overview-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="rehabBudget"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>Rehab Budget</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                            data-testid="input-rehab-budget-overview-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Total Project Cost:</span>
+                    <span className="font-semibold" data-testid="text-total-project-cost-step4-mobile">
+                      {formatCurrency(totalProjectCost)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Rehab Budget:</span>
-                  <span className="font-medium">{formatCurrency(rehabBudget)}</span>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Purchase Price:</span>
+                    <span className="font-medium">{formatCurrency(purchasePrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Rehab Budget:</span>
+                    <span className="font-medium">{formatCurrency(rehabBudget)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Total Project Cost:</span>
+                    <span className="font-semibold" data-testid="text-total-project-cost-step4-mobile">
+                      {formatCurrency(totalProjectCost)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-semibold">Total Project Cost:</span>
-                  <span className="font-semibold" data-testid="text-total-project-cost-step4-mobile">
-                    {formatCurrency(totalProjectCost)}
-                  </span>
-                </div>
-              </div>
+              )}
             </CollapsibleSection>
 
-            <CollapsibleSection title="Estimated Closing Costs (Buy)">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Attorney Fees:</span>
-                  <span className="font-medium">{formatCurrency(attorneyFees)}</span>
+            <CollapsibleSection
+              title="Estimated Closing Costs (Buy)"
+              headerAction={
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none py-2">
+                  <Checkbox
+                    checked={editClosingCostsBuyMobile}
+                    onCheckedChange={(v) => setEditClosingCostsBuyMobile(v === true)}
+                    data-testid="checkbox-edit-closing-costs-buy-mobile"
+                  />
+                  Edit
+                </label>
+              }
+            >
+              {editClosingCostsBuyMobile ? (
+                <div className="w-full space-y-4">
+                  {(["attorneyFees", "titleExam", "titleInsurance", "transferFee"] as const).map((fname) => {
+                    const labels: Record<typeof fname, string> = {
+                      attorneyFees: "Attorney Fees",
+                      titleExam: "Title Exam",
+                      titleInsurance: "Title Insurance",
+                      transferFee: "Transfer Tax/Fee",
+                    };
+                    return (
+                      <FormField
+                        key={fname}
+                        control={form.control}
+                        name={fname}
+                        render={({ field, fieldState }) => (
+                          <FormItem>
+                            <FormLabel>{labels[fname]}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                                data-testid={`input-${fname}-mobile`}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })}
+                  {showBuy2ClosingCosts && (["attorneyFees2", "titleExam2", "titleInsurance2"] as const).map((fname) => {
+                    const labels: Record<typeof fname, string> = {
+                      attorneyFees2: "Attorney Fees (Buy2)",
+                      titleExam2: "Title Exam (Buy2)",
+                      titleInsurance2: "Title Insurance (Buy2)",
+                    };
+                    return (
+                      <FormField
+                        key={fname}
+                        control={form.control}
+                        name={fname}
+                        render={({ field, fieldState }) => (
+                          <FormItem>
+                            <FormLabel>{labels[fname]}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                                data-testid={`input-${fname}-mobile`}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })}
+                  <div className="flex justify-between border-t pt-2 text-sm">
+                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold">{formatCurrency(estimatedClosingCostsBuy)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Title Exam:</span>
-                  <span className="font-medium">{formatCurrency(titleExam)}</span>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Attorney Fees:</span>
+                    <span className="font-medium">{formatCurrency(attorneyFees)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Title Exam:</span>
+                    <span className="font-medium">{formatCurrency(titleExam)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Title Insurance:</span>
+                    <span className="font-medium">{formatCurrency(titleInsurance)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Transfer Tax/Fee:</span>
+                    <span className="font-medium">{formatCurrency(transferFee)}</span>
+                  </div>
+                  {showBuy2ClosingCosts && (
+                    <>
+                      <div className="flex justify-between">
+                        <span>Attorney Fees (Buy2):</span>
+                        <span className="font-medium">{formatCurrency(attorneyFees2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Title Exam (Buy2):</span>
+                        <span className="font-medium">{formatCurrency(titleExam2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Title Insurance (Buy2):</span>
+                        <span className="font-medium">{formatCurrency(titleInsurance2)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold">{formatCurrency(estimatedClosingCostsBuy)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Title Insurance:</span>
-                  <span className="font-medium">{formatCurrency(titleInsurance)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Transfer Tax/Fee:</span>
-                  <span className="font-medium">{formatCurrency(transferFee)}</span>
-                </div>
-                {showBuy2ClosingCosts && (
-                  <>
-                    <div className="flex justify-between">
-                      <span>Attorney Fees (Buy2):</span>
-                      <span className="font-medium">{formatCurrency(attorneyFees2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Title Exam (Buy2):</span>
-                      <span className="font-medium">{formatCurrency(titleExam2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Title Insurance (Buy2):</span>
-                      <span className="font-medium">{formatCurrency(titleInsurance2)}</span>
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-semibold">Total:</span>
-                  <span className="font-semibold">{formatCurrency(estimatedClosingCostsBuy)}</span>
-                </div>
-              </div>
+              )}
             </CollapsibleSection>
 
-            <CollapsibleSection title="Estimated Carrying Costs">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Property Tax ({projectLength} months):</span>
-                  <span className="font-medium">{formatCurrency(propertyTaxTotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Utilities ({projectLength} months):</span>
-                  <span className="font-medium">{formatCurrency(utilitiesTotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Insurance ({projectLength} months):</span>
-                  <span className="font-medium">{formatCurrency(insuranceTotal)}</span>
-                </div>
-                {hoaFeesTotal > 0 && (
-                  <div className="flex justify-between">
-                    <span>HOA ({projectLength} months):</span>
-                    <span className="font-medium">{formatCurrency(hoaFeesTotal)}</span>
+            <CollapsibleSection
+              title="Estimated Carrying Costs"
+              headerAction={
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none py-2">
+                  <Checkbox
+                    checked={editCarryingCostsMobile}
+                    onCheckedChange={(v) => setEditCarryingCostsMobile(v === true)}
+                    data-testid="checkbox-edit-carrying-costs-mobile"
+                  />
+                  Edit
+                </label>
+              }
+            >
+              {editCarryingCostsMobile ? (
+                <div className="w-full space-y-4">
+                  {(["monthlyUtilities", "annualInsurance", "hoaTransferFee", "otherCarryingCosts"] as const).map((fname) => {
+                    const labels: Record<typeof fname, string> = {
+                      monthlyUtilities: "Monthly Utilities",
+                      annualInsurance: "Monthly Insurance",
+                      hoaTransferFee: "HOA Transfer Fee",
+                      otherCarryingCosts: "Other Carrying Costs",
+                    };
+                    const isInsurance = fname === "annualInsurance";
+                    return (
+                      <FormField
+                        key={fname}
+                        control={form.control}
+                        name={fname}
+                        render={({ field, fieldState }) => (
+                          <FormItem>
+                            <FormLabel>{labels[fname]}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                {...field}
+                                value={
+                                  isInsurance
+                                    ? (field.value ? Math.round((field.value as number) / 12) : "")
+                                    : (field.value ?? "")
+                                }
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value
+                                      ? (isInsurance ? parseFloat(e.target.value) * 12 : parseFloat(e.target.value))
+                                      : undefined
+                                  )
+                                }
+                                className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                                data-testid={`input-${fname}-carrying-mobile`}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    );
+                  })}
+                  <div className="flex justify-between border-t pt-2 text-sm">
+                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold">{formatCurrency(estimatedCarryingCosts)}</span>
                   </div>
-                )}
-                {hoaTransferFee > 0 && (
-                  <div className="flex justify-between">
-                    <span>HOA Transfer Fee:</span>
-                    <span className="font-medium">{formatCurrency(hoaTransferFee)}</span>
-                  </div>
-                )}
-                {otherCarryingCosts > 0 && (
-                  <div className="flex justify-between">
-                    <span>Other:</span>
-                    <span className="font-medium">{formatCurrency(otherCarryingCosts)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-semibold">Total:</span>
-                  <span className="font-semibold">{formatCurrency(estimatedCarryingCosts)}</span>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Property Tax ({projectLength} months):</span>
+                    <span className="font-medium">{formatCurrency(propertyTaxTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Utilities ({projectLength} months):</span>
+                    <span className="font-medium">{formatCurrency(utilitiesTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Insurance ({projectLength} months):</span>
+                    <span className="font-medium">{formatCurrency(insuranceTotal)}</span>
+                  </div>
+                  {hoaFeesTotal > 0 && (
+                    <div className="flex justify-between">
+                      <span>HOA ({projectLength} months):</span>
+                      <span className="font-medium">{formatCurrency(hoaFeesTotal)}</span>
+                    </div>
+                  )}
+                  {hoaTransferFee > 0 && (
+                    <div className="flex justify-between">
+                      <span>HOA Transfer Fee:</span>
+                      <span className="font-medium">{formatCurrency(hoaTransferFee)}</span>
+                    </div>
+                  )}
+                  {otherCarryingCosts > 0 && (
+                    <div className="flex justify-between">
+                      <span>Other:</span>
+                      <span className="font-medium">{formatCurrency(otherCarryingCosts)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Total:</span>
+                    <span className="font-semibold">{formatCurrency(estimatedCarryingCosts)}</span>
+                  </div>
+                </div>
+              )}
             </CollapsibleSection>
 
             <CollapsibleSection title="Profitability Analysis">
@@ -553,7 +775,7 @@ export default function Step4HoldingPeriodExit({
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="min-h-12"
+                                className="w-full min-h-12"
                                 data-testid="input-max-lend-buy-mobile"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -579,7 +801,7 @@ export default function Step4HoldingPeriodExit({
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="min-h-12"
+                                className="w-full min-h-12"
                                 data-testid="input-max-lend-rehab-mobile"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -605,7 +827,7 @@ export default function Step4HoldingPeriodExit({
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="min-h-12"
+                                className="w-full min-h-12"
                                 data-testid="input-interest-rate-mobile"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -631,7 +853,7 @@ export default function Step4HoldingPeriodExit({
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="min-h-12"
+                                className="w-full min-h-12"
                                 data-testid="input-points-mobile"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -657,7 +879,7 @@ export default function Step4HoldingPeriodExit({
                                 {...field}
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="min-h-12"
+                                className="w-full min-h-12"
                                 data-testid="input-max-loan-arv-mobile"
                               />
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
@@ -711,7 +933,7 @@ export default function Step4HoldingPeriodExit({
                                   {...field}
                                   value={field.value ?? ""}
                                   onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                  className="pl-7 min-h-12"
+                                  className="w-full pl-7 min-h-12"
                                   data-testid="input-appraisal-fee-mobile"
                                 />
                               </div>

@@ -1049,7 +1049,7 @@ export default function Step3PurchaseRenovation({
                             e.target.value ? parseFloat(e.target.value) : undefined
                           );
                         }}
-                        className={`min-h-12 w-full ${missingFields.includes("purchasePrice") ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                        className={`min-h-12 w-full ${missingFields.includes("purchasePrice") ? "border-destructive focus-visible:ring-destructive" : ""}`}
                         data-testid="input-purchase-price-mobile"
                       />
                     </FormControl>
@@ -1095,7 +1095,7 @@ export default function Step3PurchaseRenovation({
             </CollapsibleSection>
 
             <CollapsibleSection title="After Repair Value (ARV)" defaultOpen={true}>
-              <div className="space-y-3">
+              <div className="w-full space-y-3">
                 <FormField
                   control={form.control}
                   name="arv"
@@ -1116,7 +1116,7 @@ export default function Step3PurchaseRenovation({
                               e.target.value ? parseFloat(e.target.value) : undefined
                             );
                           }}
-                          className={`min-h-12 w-full ${missingFields.includes("arv") ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                          className={`min-h-12 w-full ${missingFields.includes("arv") ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           data-testid="input-arv-mobile"
                         />
                       </FormControl>
@@ -1153,6 +1153,131 @@ export default function Step3PurchaseRenovation({
                     </p>
                   )}
                 </div>
+              </div>
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Transaction & Timeline" defaultOpen={true}>
+              <div className="w-full space-y-4">
+                <FormField
+                  control={form.control}
+                  name="isDoubleClose"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked === true);
+                            if (checked !== true) {
+                              form.setValue("payingForBothSides", false);
+                            }
+                          }}
+                          data-testid="checkbox-double-close-mobile"
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal cursor-pointer">
+                        Click Here if Double Close
+                      </FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("isDoubleClose") === true && (
+                  <FormField
+                    control={form.control}
+                    name="payingForBothSides"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Are you paying for both transactions?</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => field.onChange(value === "yes")}
+                            value={field.value === true ? "yes" : field.value === false ? "no" : ""}
+                            className="flex gap-4"
+                            data-testid="radio-paying-both-sides-mobile"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="yes" id="paying-both-yes-mobile" data-testid="radio-paying-both-yes-mobile" />
+                              <Label htmlFor="paying-both-yes-mobile">Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="no" id="paying-both-no-mobile" data-testid="radio-paying-both-no-mobile" />
+                              <Label htmlFor="paying-both-no-mobile">No</Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="projectLength"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Length (months)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="60"
+                          step="1"
+                          placeholder="Months"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            clearMissing("projectLength");
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined
+                            );
+                          }}
+                          className={`w-full min-h-12 ${missingFields.includes("projectLength") ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                          data-testid="input-project-length-mobile"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="closingTimeline"
+                  render={({ field, fieldState }) => (
+                    <FormItem>
+                      <FormLabel>Close Speed</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                        data-testid="select-closing-timeline-mobile"
+                      >
+                        <FormControl>
+                          <SelectTrigger
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                            data-testid="button-closing-timeline-mobile"
+                          >
+                            <SelectValue placeholder="Select timeline" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {closingTimelineOptions.map((option) => (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value}
+                              data-testid={`option-closing-mobile-${option.value}`}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </CollapsibleSection>
           </form>
