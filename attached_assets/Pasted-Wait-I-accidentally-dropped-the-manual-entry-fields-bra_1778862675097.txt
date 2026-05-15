@@ -1,0 +1,54 @@
+Wait — I accidentally dropped the manual entry fields branch. Let me read and fix.
+
+
+2 actions
+I broke the JSX structure. Let me fix the conditional to properly handle three states (result / search / manual) matching the existing JSX order.
+
+
+5 actions
+The mobile branch now handles all three states correctly. Raw readback (lines 364–543):
+
+364→        <div className="w-full px-4 py-4 space-y-4">
+365→          {isLookupComplete ? (
+366→            <div className="w-full space-y-4" data-testid="container-mobile-property-result">
+367→              {propertyResultCardContent}
+368→            </div>
+369→          ) : !manualEntryPreference ? (
+370→            <>
+371→              {/* Search screen: URL input, Search Property, Enter Manually, Watch a Demo */}
+372→              ... (lines 371–439)
+440→            </>
+441→          ) : (
+442→            <>
+443→              {/* Manual entry: Back button + Address/City/State/ZIP fields */}
+444→              ... (lines 443–498)
+499→            </>
+500→          )}
+501→        </div>
+502→        {mobileVideoModalOpen && ( ... video modal ... )}
+541→      </MobileStepWrapper>
+
+State coverage:
+
+Lookup complete (lines 365–368): renders shared propertyResultCardContent (Property Found card with image + address + missing-fields alert)
+Not looked up, not manual (lines 369–440): search screen (URL input, Search, Enter Manually, Watch a Demo) — unchanged
+Manual entry (lines 441–500): Back button + Address/City/State/ZIP fields — unchanged
+Video modal (lines 502–540): unchanged
+Shared propertyResultCardContent const lives at lines 327–359 (defined once, used by both desktop at line 724 and mobile at line 367). No JSX duplication. Desktop's !isMobile Continue/View Listing button block is preserved.
+
+Let me update the commit message and mark complete.
+
+Mobile property result card is now rendering after a successful lookup. The task is in MERGED state — the fix is committed.
+
+Summary of the fix:
+
+Extracted the result card JSX into a single shared const propertyResultCardContent (lines 327–359) — contains the Property Found card (image + address) and the missing-autofill alert.
+
+Desktop path (line 724) now references {propertyResultCardContent} instead of inline JSX. The !isMobile Continue / View Listing buttons remain.
+
+Mobile path now handles three states via nested ternary (lines 365–500):
+
+isLookupComplete → renders {propertyResultCardContent} inside a full-width wrapper (mobile Continue button is handled by the DealAnalysisOverlay footer)
+!manualEntryPreference → search screen (URL input, Search Property, Enter Manually, Watch a Demo)
+manualEntryPreference → manual entry fields (Back + Address/City/State/ZIP)
+No handler/logic changes, no desktop visual changes, no duplicated JSX.
