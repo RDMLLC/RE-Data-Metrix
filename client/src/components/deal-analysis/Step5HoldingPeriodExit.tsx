@@ -645,10 +645,11 @@ export default function Step4HoldingPeriodExit({
               </div>
               {editCarryingCostsMobile ? (
                 <div className="w-full space-y-4">
-                  {(["monthlyUtilities", "annualInsurance", "hoaTransferFee", "otherCarryingCosts"] as const).map((fname) => {
+                  {(["monthlyUtilities", "annualInsurance", "hoaFees", "hoaTransferFee", "otherCarryingCosts"] as const).map((fname) => {
                     const labels: Record<typeof fname, string> = {
                       monthlyUtilities: "Monthly Utilities",
                       annualInsurance: "Monthly Insurance",
+                      hoaFees: "HOA Monthly",
                       hoaTransferFee: "HOA Transfer Fee",
                       otherCarryingCosts: "Other Carrying Costs",
                     };
@@ -1012,6 +1013,141 @@ export default function Step4HoldingPeriodExit({
                             <FormMessage />
                           </FormItem>
                         )}
+
+                    <FormField
+                      control={form.control}
+                      name="interestDeferred"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interest Payments Deferred?</FormLabel>
+                          <FormDescription className="text-xs">Are interest payments waived until the loan is settled?</FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-interest-deferred-mobile"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="int-defer-yes-mobile" />
+                                <label htmlFor="int-defer-yes-mobile" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="int-defer-no-mobile" />
+                                <label htmlFor="int-defer-no-mobile" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="drawnFundsOnly"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Drawn Funds Only?</FormLabel>
+                          <FormDescription className="text-xs">Interest charged only when funds are received?</FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-drawn-funds-mobile"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="drawn-yes-mobile" />
+                                <label htmlFor="drawn-yes-mobile" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="drawn-no-mobile" />
+                                <label htmlFor="drawn-no-mobile" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="pointsDeferred"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Points Deferred?</FormLabel>
+                          <FormDescription className="text-xs">Are the points deferred until the loan is paid off?</FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-points-deferred-mobile"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="pts-defer-yes-mobile" />
+                                <label htmlFor="pts-defer-yes-mobile" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="pts-defer-no-mobile" />
+                                <label htmlFor="pts-defer-no-mobile" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="drawFees"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Draw Fees (per draw)</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="w-full min-h-12 pl-7"
+                                data-testid="input-draw-fees-mobile"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="loanDocPrepFees"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Doc Prep Fees</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                step="any"
+                                min="0"
+                                {...field}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="w-full min-h-12 pl-7"
+                                data-testid="input-doc-prep-fees-mobile"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                       />
                     )}
                   </div>

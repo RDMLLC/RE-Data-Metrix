@@ -161,7 +161,7 @@ export default function Step2PropertyDetails({
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <FormField
                     control={form.control}
                     name="bedrooms"
@@ -180,7 +180,7 @@ export default function Step2PropertyDetails({
                                 e.target.value ? parseFloat(e.target.value) : undefined
                               )
                             }
-                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                            className={`w-full ${fieldState.error ? "border-destructive" : ""}`}
                             data-testid="input-bedrooms-mobile"
                           />
                         </FormControl>
@@ -206,7 +206,7 @@ export default function Step2PropertyDetails({
                                 e.target.value ? parseFloat(e.target.value) : undefined
                               )
                             }
-                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
+                            className={`w-full ${fieldState.error ? "border-destructive" : ""}`}
                             data-testid="input-bathrooms-mobile"
                           />
                         </FormControl>
@@ -214,111 +214,187 @@ export default function Step2PropertyDetails({
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="sqft"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel>Square Footage</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          min="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
-                          data-testid="input-sqft-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="sqft"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>Square Footage</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseFloat(e.target.value) : undefined
+                              )
+                            }
+                            className={`w-full ${fieldState.error ? "border-destructive" : ""}`}
+                            data-testid="input-sqft-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="lotSize"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel>Lot Size (sq ft)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          min="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          data-testid="input-lot-size-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="lotSize"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>Lot Size (sq ft)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseFloat(e.target.value) : undefined
+                              )
+                            }
+                            className={`w-full ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            data-testid="input-lot-size-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="yearBuilt"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel>Year Built</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          min="1800"
-                          max={new Date().getFullYear() + 1}
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseInt(e.target.value) : undefined
-                            )
-                          }
-                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          data-testid="input-year-built-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="yearBuilt"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>Year Built</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="1800"
+                            max={new Date().getFullYear() + 1}
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseInt(e.target.value) : undefined
+                              )
+                            }
+                            className={`w-full ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            data-testid="input-year-built-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="annualTax"
-                  render={({ field }) => {
-                    const isEmpty = !field.value || field.value === 0;
-                    return (
+                  <FormField
+                    control={form.control}
+                    name="annualTax"
+                    render={({ field }) => {
+                      const isEmpty = !field.value || field.value === 0;
+                      return (
+                        <FormItem>
+                          <div className="flex items-center gap-1">
+                            <FormLabel>Annual Tax ($)</FormLabel>
+                            <button
+                              type="button"
+                              onClick={() => setShowAnnualTaxHelpMobile(v => !v)}
+                              aria-label="Help: Annual Tax"
+                              data-testid="button-help-annual-tax-mobile"
+                            >
+                              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </div>
+                          {showAnnualTaxHelpMobile && (
+                            <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-annual-tax-mobile">
+                              Tax data is not always accurate. Users are encouraged to fetch the data themselves from the county and enter it here if there is a discrepancy.
+                            </div>
+                          )}
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="any"
+                              min="0"
+                              placeholder="0"
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value ? Math.round(parseFloat(e.target.value)) : undefined
+                                )
+                              }
+                              className={`w-full ${isEmpty ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20" : ""}`}
+                              data-testid="input-annual-tax-mobile"
+                            />
+                          </FormControl>
+                          {isEmpty && (
+                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                              Tax data was not found. Please look up the annual property tax from your county records and enter it here.
+                            </p>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="hoaFees"
+                    render={({ field, fieldState }) => (
+                      <FormItem>
+                        <FormLabel>HOA Monthly</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="any"
+                            min="0"
+                            placeholder="0"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value ? parseFloat(e.target.value) : undefined
+                              )
+                            }
+                            className={`w-full ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            data-testid="input-hoa-monthly-mobile"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="hoaTransferFee"
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <div className="flex items-center gap-1">
-                          <FormLabel>Annual Tax ($)</FormLabel>
+                          <FormLabel>HOA Transfer Fee</FormLabel>
                           <button
                             type="button"
-                            onClick={() => setShowAnnualTaxHelpMobile(v => !v)}
-                            aria-label="Help: Annual Tax"
-                            data-testid="button-help-annual-tax-mobile"
+                            onClick={() => setShowHoaTransferHelpMobile(v => !v)}
+                            aria-label="Help: HOA Transfer Fee"
+                            data-testid="button-help-hoa-transfer-mobile"
                           >
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                           </button>
                         </div>
-                        {showAnnualTaxHelpMobile && (
-                          <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-annual-tax-mobile">
-                            Tax data is not always accurate. Users are encouraged to fetch the data themselves from the county and enter it here if there is a discrepancy.
+                        {showHoaTransferHelpMobile && (
+                          <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-hoa-transfer-mobile">
+                            HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.
                           </div>
                         )}
                         <FormControl>
@@ -331,94 +407,18 @@ export default function Step2PropertyDetails({
                             value={field.value ?? ""}
                             onChange={(e) =>
                               field.onChange(
-                                e.target.value ? Math.round(parseFloat(e.target.value)) : undefined
+                                e.target.value ? parseFloat(e.target.value) : undefined
                               )
                             }
-                            className={`w-full min-h-12 ${isEmpty ? "border-amber-500 bg-amber-50 dark:bg-amber-950/20" : ""}`}
-                            data-testid="input-annual-tax-mobile"
+                            className={`w-full ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            data-testid="input-hoa-transfer-fee-mobile"
                           />
                         </FormControl>
-                        {isEmpty && (
-                          <p className="text-sm text-amber-600 dark:text-amber-400">
-                            Tax data was not found. Please look up the annual property tax from your county records and enter it here.
-                          </p>
-                        )}
                         <FormMessage />
                       </FormItem>
-                    );
-                  }}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="hoaFees"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel>HOA Monthly</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          min="0"
-                          placeholder="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          data-testid="input-hoa-monthly-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="hoaTransferFee"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <div className="flex items-center gap-1">
-                        <FormLabel>HOA Transfer Fee</FormLabel>
-                        <button
-                          type="button"
-                          onClick={() => setShowHoaTransferHelpMobile(v => !v)}
-                          aria-label="Help: HOA Transfer Fee"
-                          data-testid="button-help-hoa-transfer-mobile"
-                        >
-                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </div>
-                      {showHoaTransferHelpMobile && (
-                        <div className="bg-muted text-sm p-2 rounded mt-1" data-testid="text-help-hoa-transfer-mobile">
-                          HOA Transfer Fee is not publicly available information. You can get it directly from the HOA, enter one month HOA as an estimate, or leave it blank.
-                        </div>
-                      )}
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="any"
-                          min="0"
-                          placeholder="0"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseFloat(e.target.value) : undefined
-                            )
-                          }
-                          className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                          data-testid="input-hoa-transfer-fee-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    )}
+                  />
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Please fill in the HOA values if there is an HOA
                 </p>
@@ -439,8 +439,7 @@ export default function Step2PropertyDetails({
                           <button
                             type="button"
                             onClick={(e) => { e.preventDefault(); setShowEstValueHelpMobile(v => !v); }}
-                            aria-label="Help: Estimated Value"
-                            data-testid="button-help-est-value-mobile"
+                                            data-testid="button-help-est-value-mobile"
                           >
                             <HelpCircle className="h-4 w-4 text-muted-foreground" />
                           </button>

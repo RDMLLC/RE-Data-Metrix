@@ -1,0 +1,55 @@
+Two UI fixes only. No logic changes. No calculation changes. No desktop changes. No label or copy changes unless explicitly specified.
+
+---
+
+## Fix 1 — Property Found screen: display retrieved property data
+
+Read client/src/components/deal-analysis/Step1PropertyAddress.tsx.
+
+Find the propertyResultCardContent shared const. Below the address line, add a read-only grid displaying all retrieved property data. Use form.watch() to read values.
+
+Display in a 2-column grid inside the existing card, below the address:
+- Property Type: form.watch("propertyType") — format with normalizePropertyTypeToEnum or display as-is
+- Bedrooms: form.watch("bedrooms")
+- Bathrooms: form.watch("bathrooms")  
+- Sq Ft: form.watch("sqft") — toLocaleString()
+- Lot Size: form.watch("lotSize") — toLocaleString() + " sq ft"
+- Year Built: form.watch("yearBuilt")
+- Est. Value: form.watch("estimatedValue") — format as currency
+
+Rules:
+- Only render a row if the value is truthy and non-zero
+- Read-only — no inputs
+- Style: text-sm, muted label on left, font-medium value on right
+- Contained within the existing card, below the address line
+- Do not change the image or address display above it
+
+---
+
+## Fix 2 — Step 2 mobile: 2×2 grid and smaller fields
+
+Read the mobile branch of client/src/components/deal-analysis/Step2PropertyDetails.tsx.
+
+In the Property Info CollapsibleSection:
+1. Remove min-h-12 from all inputs EXCEPT Property Type SelectTrigger — use default input height
+2. Reorganize fields below Property Type into 2-column grid (grid grid-cols-2 gap-2):
+   - Row 1: Bedrooms | Bathrooms (already exists, keep)
+   - Row 2: Square Footage | Lot Size
+   - Row 3: Year Built | Annual Tax
+   - Row 4: HOA Monthly | HOA Transfer Fee
+
+Each field in the grid: label above, input below, w-full.
+
+Valuation section (Estimated Market Value) — do not change, keep single column full width.
+ARV Helper section — do not change.
+
+---
+
+## Verification
+
+After both fixes:
+1. Read back propertyResultCardContent in Step1PropertyAddress.tsx — confirm data grid present below address
+2. Read back Property Info section of Step2 mobile branch — confirm 2-col grid, min-h-12 removed from inputs
+3. List every file modified
+
+Raw code output only. Line numbers required.

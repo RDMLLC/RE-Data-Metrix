@@ -372,6 +372,37 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         <p className="text-sm text-muted-foreground">
           {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
         </p>
+        {(() => {
+          const propertyType = form.watch("propertyType");
+          const bedrooms = form.watch("bedrooms");
+          const bathrooms = form.watch("bathrooms");
+          const sqft = form.watch("sqft");
+          const lotSize = form.watch("lotSize");
+          const yearBuilt = form.watch("yearBuilt");
+          const estimatedValue = form.watch("estimatedValue");
+          const rows: Array<{ label: string; value: string }> = [];
+          if (propertyType) rows.push({ label: "Property Type", value: String(propertyType) });
+          if (bedrooms) rows.push({ label: "Bedrooms", value: String(bedrooms) });
+          if (bathrooms) rows.push({ label: "Bathrooms", value: String(bathrooms) });
+          if (sqft) rows.push({ label: "Sq Ft", value: Number(sqft).toLocaleString() });
+          if (lotSize) rows.push({ label: "Lot Size", value: `${Number(lotSize).toLocaleString()} sq ft` });
+          if (yearBuilt) rows.push({ label: "Year Built", value: String(yearBuilt) });
+          if (estimatedValue) rows.push({
+            label: "Est. Value",
+            value: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number(estimatedValue)),
+          });
+          if (rows.length === 0) return null;
+          return (
+            <div className="mt-3 grid grid-cols-1 gap-1" data-testid="grid-property-data">
+              {rows.map((r) => (
+                <div key={r.label} className="flex items-center justify-between text-sm" data-testid={`row-property-${r.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+                  <span className="text-muted-foreground">{r.label}</span>
+                  <span className="font-medium">{r.value}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {missingAutoFillFields.length > 0 && (
