@@ -321,6 +321,40 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     onNext();
   };
 
+  const propertyResultCardContent = (
+    <>
+      <div className="rounded-lg bg-muted p-4">
+        <h3 className="font-semibold mb-2">Property Found</h3>
+        <div className="mb-3 rounded-md overflow-hidden bg-muted">
+          <img
+            src={propertyImage || "/images/property-placeholder.svg"}
+            alt="Property"
+            className="w-full max-h-64 md:max-h-80 object-contain"
+            data-testid="img-property"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = "/images/property-placeholder.svg";
+            }}
+          />
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
+        </p>
+      </div>
+
+      {missingAutoFillFields.length > 0 && (
+        <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20" data-testid="alert-missing-autofill">
+          <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <AlertDescription className="text-yellow-800 dark:text-yellow-300">
+            <span className="font-medium">Some data couldn't be retrieved automatically:</span>{" "}
+            {missingAutoFillFields.join(", ")}.{" "}
+            Please enter these fields manually on the next step before proceeding.
+          </AlertDescription>
+        </Alert>
+      )}
+    </>
+  );
+
   if (isMobile) {
     return (
       <MobileStepWrapper
@@ -328,7 +362,11 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         subtitle="Search by address or enter manually"
       >
         <div className="w-full px-4 py-4 space-y-4">
-          {!manualEntryPreference ? (
+          {isLookupComplete ? (
+            <div className="w-full space-y-4" data-testid="container-mobile-property-result">
+              {propertyResultCardContent}
+            </div>
+          ) : !manualEntryPreference ? (
             <>
               <div className="space-y-2">
                 <label
@@ -684,35 +722,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
                 {isLookupComplete && (
                   <div className="pt-4 border-t space-y-4">
-                    <div className="rounded-lg bg-muted p-4">
-                      <h3 className="font-semibold mb-2">Property Found</h3>
-                      <div className="mb-3 rounded-md overflow-hidden bg-muted">
-                        <img 
-                          src={propertyImage || "/images/property-placeholder.svg"} 
-                          alt="Property"
-                          className="w-full max-h-64 md:max-h-80 object-contain"
-                          data-testid="img-property"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/images/property-placeholder.svg";
-                          }}
-                        />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {form.getValues("address")}, {form.getValues("city")}, {form.getValues("state")} {form.getValues("zipCode")}
-                      </p>
-                    </div>
-                    
-                    {missingAutoFillFields.length > 0 && (
-                      <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20" data-testid="alert-missing-autofill">
-                        <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        <AlertDescription className="text-yellow-800 dark:text-yellow-300">
-                          <span className="font-medium">Some data couldn't be retrieved automatically:</span>{" "}
-                          {missingAutoFillFields.join(", ")}.{" "}
-                          Please enter these fields manually on the next step before proceeding.
-                        </AlertDescription>
-                      </Alert>
-                    )}
+                    {propertyResultCardContent}
 
                     {!isMobile && (
                       <div className="flex gap-3 flex-wrap">
