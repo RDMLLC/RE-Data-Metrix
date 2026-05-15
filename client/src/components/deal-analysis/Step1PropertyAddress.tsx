@@ -5,7 +5,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Info, ChevronDown, PlayCircle } from "lucide-react";
+import { Loader2, Search, ExternalLink, HardHat, Lock, Sparkles, Info, ChevronDown, PlayCircle, X } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { WizardFormData } from "./DealAnalysisWizard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -42,6 +42,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     if (typeof window === "undefined") return false;
     return new URLSearchParams(window.location.search).get("demo") === "true";
   });
+  const [mobileVideoModalOpen, setMobileVideoModalOpen] = useState(false);
 
   const { data: usageData, isLoading: usageLoading, isError: usageError } = useQuery<{
     isSubscriber: boolean;
@@ -326,7 +327,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         title="Find Your Property"
         subtitle="Search by address or enter manually"
       >
-        <div className="px-4 py-4 space-y-4">
+        <div className="w-full px-4 py-4 space-y-4">
           {!manualEntryPreference ? (
             <>
               <div className="space-y-2">
@@ -391,13 +392,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() =>
-                  window.open(
-                    "https://youtu.be/m6SjKQ3dYe4",
-                    "_blank",
-                    "noopener,noreferrer",
-                  )
-                }
+                onClick={() => setMobileVideoModalOpen(true)}
                 className="w-full min-h-12"
                 data-testid="button-mobile-watch-demo"
               >
@@ -416,7 +411,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
               >
                 Back to Search
               </Button>
-              <div className="space-y-2">
+              <div className="w-full space-y-2">
                 <label
                   htmlFor="mobile-address"
                   className="text-sm font-medium"
@@ -430,7 +425,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   data-testid="input-mobile-address"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="w-full space-y-2">
                 <label htmlFor="mobile-city" className="text-sm font-medium">
                   City
                 </label>
@@ -441,7 +436,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   data-testid="input-mobile-city"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="w-full space-y-2">
                 <label htmlFor="mobile-state" className="text-sm font-medium">
                   State
                 </label>
@@ -452,7 +447,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                   data-testid="input-mobile-state"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="w-full space-y-2">
                 <label htmlFor="mobile-zip" className="text-sm font-medium">
                   ZIP
                 </label>
@@ -466,6 +461,45 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             </>
           )}
         </div>
+        {mobileVideoModalOpen && (
+          <div
+            className="fixed inset-0 z-[10001] bg-black/80 flex items-center justify-center"
+            onClick={() => setMobileVideoModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Watch Demo"
+            data-testid="overlay-mobile-video-modal"
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMobileVideoModalOpen(false);
+              }}
+              aria-label="Close"
+              className="absolute top-4 right-4 min-h-12 min-w-12 flex items-center justify-center text-white rounded-md hover-elevate active-elevate-2"
+              data-testid="button-mobile-video-close"
+            >
+              <X className="h-7 w-7" />
+            </button>
+            <div
+              className="w-full px-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={`https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?rel=0&modestbranding=1&autoplay=1`}
+                  title="RE Data Metrix Demo"
+                  frameBorder={0}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  data-testid="iframe-mobile-video"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </MobileStepWrapper>
     );
   }

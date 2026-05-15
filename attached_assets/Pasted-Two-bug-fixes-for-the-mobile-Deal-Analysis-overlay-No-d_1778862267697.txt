@@ -1,0 +1,45 @@
+Two bug fixes for the mobile Deal Analysis overlay. No desktop changes. No logic or handler changes.
+
+---
+
+## Fix 1 — Manual entry fields spilling off right edge (Step1PropertyAddress.tsx)
+
+In the mobile isMobile branch of client/src/components/deal-analysis/Step1PropertyAddress.tsx, the manual entry form fields (Address, City, State, ZIP) are spilling off the right edge of the screen.
+
+Fix: in the manual entry section of the mobile branch only:
+- Parent container must be w-full with px-4 padding, no fixed widths
+- Each field wrapper div must be w-full
+- Each input must be w-full
+- Remove any min-w values that could exceed viewport width
+
+Do not touch the desktop render path. Do not touch handlers.
+
+---
+
+## Fix 2 — "Watch a Demo" opens modal instead of navigating to YouTube
+
+Currently the "Watch a Demo" button in the mobile branch of Step1PropertyAddress.tsx navigates to https://youtu.be/m6SjKQ3dYe4 in a new tab.
+
+Change: tapping "Watch a Demo" opens a full-screen modal overlay containing an embedded YouTube player. The modal must:
+- Cover the full viewport (fixed inset-0, z-[10001] — above the deal analysis overlay at z-[9999])
+- Dark semi-transparent backdrop (bg-black/80)
+- YouTube iframe embed: https://www.youtube.com/embed/m6SjKQ3dYe4 — 16:9 aspect ratio, full width
+- X close button in top-right corner, white, large touch target (min-h-12 min-w-12)
+- Tapping backdrop also closes the modal
+- Modal open/close state managed with a local useState in the mobile branch
+- No new files — implement the modal inline within Step1PropertyAddress.tsx
+
+Do not navigate away from the page. Do not open a new tab.
+Do not touch the desktop render path. Do not touch handlers.
+
+---
+
+## Verification
+
+After both fixes:
+1. Read back the full mobile isMobile branch of Step1PropertyAddress.tsx with line numbers
+2. Confirm manual entry fields all have w-full
+3. Confirm Watch a Demo uses local modal state, not a link/href
+4. Confirm modal z-index is z-[10001]
+
+Raw code output only. Line numbers required.
