@@ -306,33 +306,6 @@ export default function Step4HoldingPeriodExit({
               <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={form.control}
-                  name="projectLength"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Length (months)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="60"
-                          step="1"
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value ? parseInt(e.target.value) : undefined
-                            )
-                          }
-                          className="w-full min-h-12"
-                          data-testid="input-project-length-exit-mobile"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="sellPrice"
                   render={({ field }) => (
                     <FormItem>
@@ -354,6 +327,33 @@ export default function Step4HoldingPeriodExit({
                         />
                       </FormControl>
                       <p className="text-sm text-muted-foreground mt-1">Defaults to Market Value (Not ARV)</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="projectLength"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Length (months)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="60"
+                          step="1"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined
+                            )
+                          }
+                          className="w-full min-h-12"
+                          data-testid="input-project-length-exit-mobile"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -831,163 +831,225 @@ export default function Step4HoldingPeriodExit({
 
                 {hasExistingLoan === true && (
                   <div className="space-y-4 pt-4 border-t">
-                    <FormField
-                      control={form.control}
-                      name="maxLendBuy"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max % Lend on Purchase</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12"
-                                data-testid="input-max-lend-buy-mobile"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="maxLendRehab"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max % Lend on Rehab</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12"
-                                data-testid="input-max-lend-rehab-mobile"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="loanInterestRate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Interest Rate (Annual)</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12"
-                                data-testid="input-interest-rate-mobile"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="loanPoints"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Points</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12"
-                                data-testid="input-points-mobile"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="maxLoanToArv"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Max % Loan to ARV</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12"
-                                data-testid="input-max-loan-arv-mobile"
-                              />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="appraisalRequired"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Appraisal Required?</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={(value) => field.onChange(value === "true")}
-                              value={field.value === undefined ? undefined : field.value.toString()}
-                              className="flex gap-4"
-                              data-testid="radio-appraisal-required-mobile"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="true" id="appr-yes-mobile" data-testid="radio-appraisal-yes-mobile" />
-                                <label htmlFor="appr-yes-mobile" className="cursor-pointer">Yes</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="maxLendBuy"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Max % Lend on Purchase</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12"
+                                  data-testid="input-max-lend-buy-mobile"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="false" id="appr-no-mobile" data-testid="radio-appraisal-no-mobile" />
-                                <label htmlFor="appr-no-mobile" className="cursor-pointer">No</label>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="maxLendRehab"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Max % Lend on Rehab</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12"
+                                  data-testid="input-max-lend-rehab-mobile"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
                               </div>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="loanInterestRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Interest Rate (Annual)</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12"
+                                  data-testid="input-interest-rate-mobile"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="loanPoints"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Points</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12"
+                                  data-testid="input-points-mobile"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="maxLoanToArv"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Max % Loan to ARV</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12"
+                                  data-testid="input-max-loan-arv-mobile"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="loanDocPrepFees"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Doc Prep Fees</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  min="0"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12 pl-7"
+                                  data-testid="input-doc-prep-fees-mobile"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="drawFees"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Draw Fees (per draw)</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                  type="number"
+                                  step="any"
+                                  min="0"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  className="w-full min-h-12 pl-7"
+                                  data-testid="input-draw-fees-mobile"
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="appraisalRequired"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Appraisal Required?</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={(value) => field.onChange(value === "true")}
+                                value={field.value === undefined ? undefined : field.value.toString()}
+                                className="flex gap-4"
+                                data-testid="radio-appraisal-required-mobile"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="true" id="appr-yes-mobile" data-testid="radio-appraisal-yes-mobile" />
+                                  <label htmlFor="appr-yes-mobile" className="cursor-pointer">Yes</label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="false" id="appr-no-mobile" data-testid="radio-appraisal-no-mobile" />
+                                  <label htmlFor="appr-no-mobile" className="cursor-pointer">No</label>
+                                </div>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
                     {appraisalRequired === true && (
                       <FormField
                         control={form.control}
@@ -1018,34 +1080,6 @@ export default function Step4HoldingPeriodExit({
 
                     <FormField
                       control={form.control}
-                      name="interestDeferred"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Interest Payments Deferred?</FormLabel>
-                          <FormDescription className="text-xs">Are interest payments waived until the loan is settled?</FormDescription>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={(value) => field.onChange(value === "true")}
-                              value={field.value === undefined ? undefined : field.value.toString()}
-                              className="flex gap-4"
-                              data-testid="radio-interest-deferred-mobile"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="true" id="int-defer-yes-mobile" />
-                                <label htmlFor="int-defer-yes-mobile" className="cursor-pointer">Yes</label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="false" id="int-defer-no-mobile" />
-                                <label htmlFor="int-defer-no-mobile" className="cursor-pointer">No</label>
-                              </div>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
                       name="drawnFundsOnly"
                       render={({ field }) => (
                         <FormItem>
@@ -1065,6 +1099,34 @@ export default function Step4HoldingPeriodExit({
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="false" id="drawn-no-mobile" />
                                 <label htmlFor="drawn-no-mobile" className="cursor-pointer">No</label>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="interestDeferred"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interest Payments Deferred?</FormLabel>
+                          <FormDescription className="text-xs">Are interest payments waived until the loan is settled?</FormDescription>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={(value) => field.onChange(value === "true")}
+                              value={field.value === undefined ? undefined : field.value.toString()}
+                              className="flex gap-4"
+                              data-testid="radio-interest-deferred-mobile"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="int-defer-yes-mobile" />
+                                <label htmlFor="int-defer-yes-mobile" className="cursor-pointer">Yes</label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="int-defer-no-mobile" />
+                                <label htmlFor="int-defer-no-mobile" className="cursor-pointer">No</label>
                               </div>
                             </RadioGroup>
                           </FormControl>
@@ -1095,56 +1157,6 @@ export default function Step4HoldingPeriodExit({
                                 <label htmlFor="pts-defer-no-mobile" className="cursor-pointer">No</label>
                               </div>
                             </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="drawFees"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Draw Fees (per draw)</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <Input
-                                type="number"
-                                step="any"
-                                min="0"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12 pl-7"
-                                data-testid="input-draw-fees-mobile"
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="loanDocPrepFees"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Doc Prep Fees</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                              <Input
-                                type="number"
-                                step="any"
-                                min="0"
-                                {...field}
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                className="w-full min-h-12 pl-7"
-                                data-testid="input-doc-prep-fees-mobile"
-                              />
-                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>

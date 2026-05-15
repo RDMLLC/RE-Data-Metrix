@@ -1,0 +1,56 @@
+Two layout changes in the Step 5 mobile branch of client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx. No logic changes. No field additions or removals. No label changes. Desktop unchanged.
+
+---
+
+## Change 1 — Swap Estimated Sell Price and Project Length in Exit Strategy grid
+
+In the mobile branch, find the 2-column grid in the Exit Strategy CollapsibleSection.
+
+Currently:
+- Row 1: Project Length | Estimated Sell Price
+- Row 2: Closing Costs (Sell) % | Real Estate Commission %
+
+Change to:
+- Row 1: Estimated Sell Price (ARV) | Project Length (months)
+- Row 2: Closing Costs (Sell) % | Real Estate Commission %
+
+Swap the two fields in Row 1 only. All props, handlers, labels unchanged.
+
+---
+
+## Change 2 — Reorganize loan fields into 2×2 grid
+
+In the mobile branch, find the {hasExistingLoan === true && ( block inside the "Do You Have a Loan?" CollapsibleSection.
+
+Reorganize the fields into this exact layout:
+
+Row 1 (grid grid-cols-2 gap-3): Max % Lend on Purchase | Max % Lend on Rehab
+Row 2 (grid grid-cols-2 gap-3): Interest Rate (Annual) | Points
+Row 3 (grid grid-cols-2 gap-3): Max % Loan to ARV | Doc Prep Fees
+Row 4 (grid grid-cols-2 gap-3): Draw Fees | Appraisal Required (radio Yes/No)
+
+Below Row 4, full width:
+- Appraisal Fee — conditional, only shows when appraisalRequired === true, full width
+
+Then full width stacked below:
+- Drawn Funds Only? (radio Yes/No)
+- Interest Payments Deferred? (radio Yes/No)  
+- Points Deferred? (radio Yes/No)
+
+Rules:
+- Every input inside a grid cell must have w-full
+- All existing field names, labels, handlers, and form registration unchanged
+- Do not add or remove any fields
+- Do not change desktop render path
+
+---
+
+## Verification
+
+After both changes:
+1. Read back the Exit Strategy section of the mobile branch — confirm field order
+2. Read back the hasExistingLoan block of the mobile branch — confirm 2×2 grid structure
+3. Run npx tsc --noEmit and confirm zero new errors in Step5HoldingPeriodExit.tsx
+4. List every file modified
+
+Raw code output only. Line numbers required.
