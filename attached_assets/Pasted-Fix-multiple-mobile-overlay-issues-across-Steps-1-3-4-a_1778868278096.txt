@@ -1,0 +1,88 @@
+Fix multiple mobile overlay issues across Steps 1, 3, 4, and 5. 
+
+CRITICAL RULE: Do NOT rename, relabel, or reword any existing labels, titles, copy, or button text unless the fix explicitly instructs you to change it. If a fix says "change X to Y" then change it. Otherwise leave all text exactly as it is. No improvising.
+
+---
+
+## Fix 1 — Step 1 property found state
+
+Read the mobile branch of client/src/components/deal-analysis/Step1PropertyAddress.tsx.
+
+When isLookupComplete is true (property found state):
+1. Suppress the toast notification — do not call toast() on successful lookup in the mobile branch. The result card already confirms success visually. Find where toast is called on successful lookup and gate it with !isMobile.
+2. Do not render MobileStepWrapper title/subtitle when isLookupComplete is true — hide "Find Your Property" and "Search by address or enter manually" in this state only. The property card is the only content shown.
+3. Back button — when isLookupComplete is true, the Back button in the overlay footer must reset isLookupComplete and return to the search screen (clear lookup state). Find the correct state setter and wire it up via the onBack prop or a new onBack override.
+
+---
+
+## Fix 2 — Step 1 all elements must stay within screen width
+
+Read the mobile branch of Step1PropertyAddress.tsx in full.
+
+Every single element — inputs, buttons, containers, cards, divs — must have w-full and be bounded within the viewport. Check:
+- The URL input wrapper and input itself
+- Search Property button
+- Enter Manually button  
+- Watch a Demo button
+- The property result card container
+- The address text below the image
+- Every wrapper div in the mobile branch
+
+Remove any inline styles, fixed widths, or min-w values that could cause overflow. Add overflow-hidden to the MobileStepWrapper outer container if needed.
+
+---
+
+## Fix 3 — Step 3 Close Speed dropdown not working on mobile
+
+Read client/src/components/deal-analysis/Step3PurchaseRenovation.tsx.
+
+Find the Close Speed field in both desktop and mobile branches. 
+
+On desktop, identify exactly: what component renders Close Speed, what are all the option values, what is the form registration (register/Controller/name), what is the onChange handler.
+
+In the mobile branch, replace whatever is currently rendering Close Speed with an exact copy of the desktop implementation. Same component, same options, same form registration, same handler. If it uses shadcn Select with Controller, use exactly that. Test that the value updates form state correctly.
+
+---
+
+## Fix 4 — Step 4 fields spilling + credit score validation
+
+Read client/src/components/deal-analysis/Step4InvestorInfo.tsx mobile branch.
+
+1. w-full fix: Every input, select, SelectTrigger, and wrapper div in the mobile branch must have w-full. The Estimated Credit Score SelectTrigger and its wrapper are overflowing — fix them.
+
+2. "Auto-filled from your saved profile" box — add w-full and overflow-hidden to this element and its wrapper so it cannot exceed viewport width.
+
+3. Estimated Credit Score is a required field. Add red border (border-destructive) to the SelectTrigger when the field has not been filled and validation has been triggered. Match the same validation pattern used for other required fields in this file.
+
+---
+
+## Fix 5 — Step 5 copy and layout fixes
+
+Read client/src/components/deal-analysis/Step5HoldingPeriodExit.tsx mobile branch.
+
+Make these exact changes — no other text or label changes:
+
+1. Section headers — shorten "Estimated" to "Est." in these CollapsibleSection titles:
+   - "Estimated Closing Costs (Buy)" → "Est. Closing Costs (Buy)"
+   - "Estimated Carrying Costs" → "Est. Carrying Costs"
+
+2. Edit checkbox label — the text "Edit" next to the checkbox in the section header is spilling off screen. Shorten to just a checkbox with no label, or use a compact pencil icon (Pencil from lucide-react) instead of the text label.
+
+3. "Loan Options" CollapsibleSection title → change to "Do You Have a Loan?"
+
+4. "Defaults to Market Value (Not ARV)" label below Estimated Sell Price — this should be a Select/dropdown showing the current mode (Market Value or ARV) with just a chevron indicator. Remove the plain text label. Replace with a compact inline Select that has two options: "Defaults to Market Value" and "Use ARV". Use the same form field/handler the desktop uses for this toggle. Match desktop implementation exactly.
+
+5. Tighten row spacing in the 2×2 Exit Strategy grid — change gap-3 to gap-2.
+
+---
+
+## Verification
+
+After all fixes:
+1. List every file modified
+2. Read back the full mobile branch of Step1PropertyAddress.tsx — confirm toast suppressed on mobile, title/subtitle hidden when isLookupComplete, Back resets to search screen
+3. Read back the Close Speed section of Step3PurchaseRenovation.tsx mobile branch — confirm exact match with desktop implementation
+4. Read back the mobile branch of Step4InvestorInfo.tsx — confirm w-full on all elements, credit score validation present
+5. Read back the Exit Strategy and section headers of Step5HoldingPeriodExit.tsx mobile branch — confirm all 5 text/layout changes
+
+Raw code output only. Line numbers required.

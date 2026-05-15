@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -25,9 +25,11 @@ interface Step1Props {
   isSubscriber?: boolean;
   isAuthenticated?: boolean;
   isMobile?: boolean;
+  onLookupCompleteChange?: (val: boolean) => void;
+  resetSignal?: number;
 }
 
-export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false, isMobile = false }: Step1Props) {
+export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoaded, isSubscriber = false, isAuthenticated = false, isMobile = false, onLookupCompleteChange, resetSignal }: Step1Props) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { wizardData, updatePropertyData, clearWizardData } = useWizardData();
@@ -70,6 +72,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
         setManualEntryPreference(true);
       } else {
         setIsLookupComplete(true);
+        onLookupCompleteChange?.(true);
         // Restore the previously-fetched property image so the result card
         // doesn't show the "Property Image Not Available" placeholder when
         // the user navigates back to Step 1 from a later step.
@@ -198,6 +201,7 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
       
       onPropertyDataLoaded(data);
       setIsLookupComplete(true);
+      onLookupCompleteChange?.(true);
 
       // Detect fields the API couldn't populate so we can warn the user
       const missing: string[] = [];
@@ -209,10 +213,12 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
 
       queryClient.invalidateQueries({ queryKey: ['/api/user/usage'] });
 
-      toast({
-        title: "Property Found",
-        description: "Property details have been loaded successfully.",
-      });
+      if (!isMobile) {
+        toast({
+          title: "Property Found",
+          description: "Property details have been loaded successfully.",
+        });
+      }
     },
     onError: (error: any) => {
       // Parse error message from API response (format: "500: {"error":"message"}")
@@ -333,6 +339,20 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     onNext();
   };
 
+  const resetSignalDidMount = useRef(false);
+  useEffect(() => {
+    if (resetSignal === undefined) return;
+    if (!resetSignalDidMount.current) {
+      resetSignalDidMount.current = true;
+      return;
+    }
+    setIsLookupComplete(false);
+    setPropertyUrl("");
+    setMissingAutoFillFields([]);
+    onLookupCompleteChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetSignal]);
+
   const propertyResultCardContent = (
     <>
       <div className="rounded-lg bg-muted p-4">
@@ -370,10 +390,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   if (isMobile) {
     return (
       <MobileStepWrapper
-        title="Find Your Property"
-        subtitle="Search by address or enter manually"
+        title={isLookupComplete ? "" : "Find Your Property"}
+        subtitle={isLookupComplete ? undefined : "Search by address or enter manually"}
       >
-        <div className="w-full px-4 py-4 space-y-4">
+        <div className="w-full max-w-full overflow-hidden px-4 py-4 space-y-4">
           {isLookupComplete ? (
             <div className="w-full space-y-4" data-testid="container-mobile-property-result">
               {propertyResultCardContent}

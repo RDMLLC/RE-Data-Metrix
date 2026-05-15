@@ -158,7 +158,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                           <FormLabel>Projects completed (last 12 months)</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="min-h-12" data-testid="select-projects-12-mobile">
+                              <SelectTrigger className="w-full min-h-12" data-testid="select-projects-12-mobile">
                                 <SelectValue placeholder="Select range" />
                               </SelectTrigger>
                             </FormControl>
@@ -183,7 +183,7 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                           <FormLabel>Projects completed (last 36 months)</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="min-h-12" data-testid="select-projects-36-mobile">
+                              <SelectTrigger className="w-full min-h-12" data-testid="select-projects-36-mobile">
                                 <SelectValue placeholder="Select range" />
                               </SelectTrigger>
                             </FormControl>
@@ -205,12 +205,15 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                 <FormField
                   control={form.control}
                   name="creditScore"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Estimated Credit Score</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="min-h-12" data-testid="select-credit-score-mobile">
+                          <SelectTrigger
+                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            data-testid="select-credit-score-mobile"
+                          >
                             <SelectValue placeholder="Select range" />
                           </SelectTrigger>
                         </FormControl>
@@ -228,9 +231,9 @@ export default function Step4InvestorInfo({ form, onNext, onBack, isMobile }: St
                 />
 
                 {investorInfoData?.hasSavedInfo && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md p-2">
-                    <Check className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-                    <span>Auto-filled from your saved profile</span>
+                  <div className="w-full max-w-full overflow-hidden flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md p-2">
+                    <Check className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+                    <span className="truncate">Auto-filled from your saved profile</span>
                   </div>
                 )}
 

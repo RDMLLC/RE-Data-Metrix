@@ -1246,19 +1246,16 @@ export default function Step3PurchaseRenovation({
                 <FormField
                   control={form.control}
                   name="closingTimeline"
-                  render={({ field, fieldState }) => (
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Close Speed</FormLabel>
+                      <FormLabel className="text-sm">Close Speed</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value || ""}
                         data-testid="select-closing-timeline-mobile"
                       >
                         <FormControl>
-                          <SelectTrigger
-                            className={`w-full min-h-12 ${fieldState.error ? "border-destructive" : ""}`}
-                            data-testid="button-closing-timeline-mobile"
-                          >
+                          <SelectTrigger className="w-full min-h-12" data-testid="button-closing-timeline-mobile">
                             <SelectValue placeholder="Select timeline" />
                           </SelectTrigger>
                         </FormControl>

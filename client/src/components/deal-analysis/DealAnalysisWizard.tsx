@@ -128,6 +128,8 @@ export type WizardFormData = z.infer<typeof wizardSchema>;
 export default function DealAnalysisWizard() {
   const { wizardData, updatePropertyData, updateInvestorData, clearWizardData, setCurrentStep: setContextStep } = useWizardData();
   const [currentStep, setCurrentStep] = useState(1);
+  const [step1LookupComplete, setStep1LookupComplete] = useState(false);
+  const [step1ResetSignal, setStep1ResetSignal] = useState(0);
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
   const [propertySnapshot, setPropertySnapshot] = useState<any>(null);
@@ -456,6 +458,11 @@ export default function DealAnalysisWizard() {
   }, [currentStep]);
 
   const handleBack = () => {
+    if (currentStep === 1 && step1LookupComplete) {
+      setStep1ResetSignal((n) => n + 1);
+      setStep1LookupComplete(false);
+      return;
+    }
     if (currentStep > 1) {
       if (currentStep === 2) {
         // Flag that we're intentionally returning to Step 1 via Back so the
@@ -547,6 +554,8 @@ export default function DealAnalysisWizard() {
             isSubscriber={isSubscriber}
             isAuthenticated={isAuthenticated}
             isMobile={isMobile}
+            onLookupCompleteChange={setStep1LookupComplete}
+            resetSignal={step1ResetSignal}
           />
         );
       case 2:
@@ -677,6 +686,7 @@ export default function DealAnalysisWizard() {
         onStartNew={handleStartNew}
         nextLabel={currentStep === 5 ? "View Results" : "Continue"}
         isNextDisabled={isNextDisabled}
+        isBackDisabled={!(currentStep > 1 || step1LookupComplete)}
       >
         {renderStep()}
       </DealAnalysisOverlay>

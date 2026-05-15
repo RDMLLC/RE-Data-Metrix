@@ -14,6 +14,7 @@ interface DealAnalysisOverlayProps {
   nextLabel?: string;
   backLabel?: string;
   isNextDisabled?: boolean;
+  isBackDisabled?: boolean;
 }
 
 const TOTAL_STEPS = 6;
@@ -28,6 +29,7 @@ export default function DealAnalysisOverlay({
   nextLabel = "Continue",
   backLabel = "Back",
   isNextDisabled = false,
+  isBackDisabled,
 }: DealAnalysisOverlayProps) {
   const [, setLocation] = useLocation();
   const [isMobile, setIsMobile] = useState<boolean>(() =>
@@ -120,7 +122,7 @@ export default function DealAnalysisOverlay({
         <Button
           variant="outline"
           onClick={onBack}
-          disabled={safeStep <= 1}
+          disabled={isBackDisabled ?? safeStep <= 1}
           data-testid="button-overlay-back"
         >
           {backLabel}

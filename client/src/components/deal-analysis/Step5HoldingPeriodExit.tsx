@@ -13,13 +13,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   Collapsible, 
   CollapsibleContent, 
   CollapsibleTrigger 
 } from "@/components/ui/collapsible";
-import { TrendingUp, ChevronDown, ChevronUp, HelpCircle, AlertTriangle, MapPin, Bed, Ruler, Calendar, LandPlot } from "lucide-react";
+import { TrendingUp, ChevronDown, ChevronUp, HelpCircle, AlertTriangle, MapPin, Bed, Ruler, Calendar, LandPlot, Pencil } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -60,6 +61,7 @@ export default function Step4HoldingPeriodExit({
   const [editClosingCostsBuyMobile, setEditClosingCostsBuyMobile] = useState(false);
   const [editCarryingCostsMobile, setEditCarryingCostsMobile] = useState(false);
   const [arvRuleExpanded, setArvRuleExpanded] = useState(false);
+  const [sellPriceModeMobile, setSellPriceModeMobile] = useState<"market" | "arv">("market");
 
   const purchasePrice = form.watch("purchasePrice") || 0;
   const rehabBudget = form.watch("rehabBudget") || 0;
@@ -303,7 +305,7 @@ export default function Step4HoldingPeriodExit({
               );
             })()}
             <CollapsibleSection title="Exit Strategy" defaultOpen={true}>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={form.control}
                   name="projectLength"
@@ -353,7 +355,26 @@ export default function Step4HoldingPeriodExit({
                           data-testid="input-sell-price-mobile"
                         />
                       </FormControl>
-                      <FormDescription>Defaults to Market Value (Not ARV)</FormDescription>
+                      <div className="mt-1">
+                        <Select
+                          value={sellPriceModeMobile}
+                          onValueChange={(v) => {
+                            setSellPriceModeMobile(v as "market" | "arv");
+                            if (v === "arv") {
+                              const a = form.getValues("arv");
+                              if (a) form.setValue("sellPrice", a);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-7 px-2 text-xs w-full" data-testid="select-sell-price-mode-mobile">
+                            <SelectValue placeholder="Defaults to Market Value" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="market">Defaults to Market Value</SelectItem>
+                            <SelectItem value="arv">Use ARV</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -420,13 +441,13 @@ export default function Step4HoldingPeriodExit({
             <CollapsibleSection
               title="Project Overview"
               headerAction={
-                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none py-2">
+                <label className="flex items-center gap-1 text-sm font-medium cursor-pointer select-none py-2" aria-label="Edit Project Overview">
                   <Checkbox
                     checked={editProjectOverviewMobile}
                     onCheckedChange={(v) => setEditProjectOverviewMobile(v === true)}
                     data-testid="checkbox-edit-project-overview-mobile"
                   />
-                  Edit
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                 </label>
               }
             >
@@ -504,15 +525,15 @@ export default function Step4HoldingPeriodExit({
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Estimated Closing Costs (Buy)"
+              title="Est. Closing Costs (Buy)"
               headerAction={
-                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none py-2">
+                <label className="flex items-center gap-1 text-sm font-medium cursor-pointer select-none py-2" aria-label="Edit Closing Costs (Buy)">
                   <Checkbox
                     checked={editClosingCostsBuyMobile}
                     onCheckedChange={(v) => setEditClosingCostsBuyMobile(v === true)}
                     data-testid="checkbox-edit-closing-costs-buy-mobile"
                   />
-                  Edit
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                 </label>
               }
             >
@@ -631,15 +652,15 @@ export default function Step4HoldingPeriodExit({
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Estimated Carrying Costs"
+              title="Est. Carrying Costs"
               headerAction={
-                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer select-none py-2">
+                <label className="flex items-center gap-1 text-sm font-medium cursor-pointer select-none py-2" aria-label="Edit Carrying Costs">
                   <Checkbox
                     checked={editCarryingCostsMobile}
                     onCheckedChange={(v) => setEditCarryingCostsMobile(v === true)}
                     data-testid="checkbox-edit-carrying-costs-mobile"
                   />
-                  Edit
+                  <Pencil className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                 </label>
               }
             >
@@ -798,7 +819,7 @@ export default function Step4HoldingPeriodExit({
               </div>
             </CollapsibleSection>
 
-            <CollapsibleSection title="Loan Options">
+            <CollapsibleSection title="Do You Have a Loan?">
               <div className="space-y-4">
                 <FormField
                   control={form.control}
