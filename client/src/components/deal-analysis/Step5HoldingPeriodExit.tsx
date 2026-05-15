@@ -1013,6 +1013,8 @@ export default function Step4HoldingPeriodExit({
                             <FormMessage />
                           </FormItem>
                         )}
+                      />
+                    )}
 
                     <FormField
                       control={form.control}
@@ -1148,8 +1150,6 @@ export default function Step4HoldingPeriodExit({
                         </FormItem>
                       )}
                     />
-                      />
-                    )}
                   </div>
                 )}
               </div>
