@@ -634,12 +634,13 @@ export default function DealAnalysisWizard() {
     lotSize: formValues.lotSize,
   };
 
-  // Mobile: wrap steps 1-5 in the full-screen DealAnalysisOverlay.
+  // Mobile: wrap steps 1-6 in the full-screen DealAnalysisOverlay.
   // Each step component now renders its own MobileStepWrapper internally
   // when isMobile is true, so this branch only owns the overlay chrome
-  // (header, progress, sticky footer). Step 6 (Results) still falls back
-  // to the existing WizardLayout per spec ("Do NOT touch Step6Results.tsx").
-  if (isMobile && currentStep >= 1 && currentStep <= 5) {
+  // (header, progress, sticky footer). Step 6 (Results) renders inside the
+  // overlay too, but with the footer hidden — Step6Results.tsx provides its
+  // own Back and action buttons internally.
+  if (isMobile && currentStep >= 1 && currentStep <= 6) {
     const fv = form.watch();
     // Per-step gating for the overlay's Continue button. Mirrors the
     // minimum data each step requires before advancing. Step components
@@ -687,6 +688,7 @@ export default function DealAnalysisWizard() {
         nextLabel={currentStep === 5 ? "View Results" : "Continue"}
         isNextDisabled={isNextDisabled}
         isBackDisabled={!(currentStep > 1 || step1LookupComplete)}
+        hideFooter={currentStep === 6}
       >
         {renderStep()}
       </DealAnalysisOverlay>

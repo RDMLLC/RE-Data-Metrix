@@ -15,6 +15,7 @@ interface DealAnalysisOverlayProps {
   backLabel?: string;
   isNextDisabled?: boolean;
   isBackDisabled?: boolean;
+  hideFooter?: boolean;
 }
 
 const TOTAL_STEPS = 6;
@@ -30,6 +31,7 @@ export default function DealAnalysisOverlay({
   backLabel = "Back",
   isNextDisabled = false,
   isBackDisabled,
+  hideFooter = false,
 }: DealAnalysisOverlayProps) {
   const [, setLocation] = useLocation();
   const [isMobile, setIsMobile] = useState<boolean>(() =>
@@ -118,23 +120,25 @@ export default function DealAnalysisOverlay({
         {children}
       </main>
 
-      <footer className="border-t border-border bg-background px-4 py-3 flex items-center justify-between gap-3 shrink-0">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          disabled={isBackDisabled ?? safeStep <= 1}
-          data-testid="button-overlay-back"
-        >
-          {backLabel}
-        </Button>
-        <Button
-          onClick={onNext}
-          disabled={isNextDisabled}
-          data-testid="button-overlay-next"
-        >
-          {nextLabel}
-        </Button>
-      </footer>
+      {!hideFooter && (
+        <footer className="border-t border-border bg-background px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            disabled={isBackDisabled ?? safeStep <= 1}
+            data-testid="button-overlay-back"
+          >
+            {backLabel}
+          </Button>
+          <Button
+            onClick={onNext}
+            disabled={isNextDisabled}
+            data-testid="button-overlay-next"
+          >
+            {nextLabel}
+          </Button>
+        </footer>
+      )}
     </div>
   );
 }
