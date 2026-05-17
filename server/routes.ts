@@ -10521,20 +10521,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let resolvedLng: number | undefined = subjectLng != null ? subjectLng : undefined;
 
       if ((resolvedLat == null || resolvedLng == null) && address && city && state) {
+        // Level 1 — RentCast property lookup
         try {
-          console.log(`[Comps Search] Subject coordinates missing — attempting geocoding fallback for: ${address}, ${city}, ${state} ${zipCode || ''}`);
+          console.log(`[Comps Search] Subject coordinates missing — attempting RentCast geocoding fallback for: ${address}, ${city}, ${state} ${zipCode || ''}`);
           const { RentCastAPIService } = await import("./services/rentcast-api.service");
           const rentCastGeo = new RentCastAPIService();
           const geoResult = await rentCastGeo.getPropertyByAddress(address, city, state, zipCode || '');
           if (geoResult?.latitude != null && geoResult?.longitude != null) {
             resolvedLat = geoResult.latitude;
             resolvedLng = geoResult.longitude;
-            console.log(`[Comps Search] Geocoding fallback succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
-          } else {
-            console.log(`[Comps Search] Geocoding fallback returned no coordinates — proceeding without distance filtering`);
+            console.log(`[Comps Search] RentCast geocoding succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
           }
         } catch (geoErr: any) {
-          console.log(`[Comps Search] Geocoding fallback failed (${geoErr?.message}) — proceeding without distance filtering`);
+          console.log(`[Comps Search] RentCast geocoding failed (${geoErr?.message})`);
+        }
+
+        // Level 2 — Google Geocoding API fallback if RentCast didn't return coords
+        if (resolvedLat == null || resolvedLng == null) {
+          try {
+            const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+            if (googleApiKey) {
+              const fullAddress = `${address}, ${city}, ${state} ${zipCode || ''}`.trim();
+              console.log(`[Comps Search] Attempting Google Geocoding fallback for: ${fullAddress}`);
+              const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${googleApiKey}`;
+              const geocodeRes = await fetch(geocodeUrl);
+              if (!geocodeRes.ok) {
+                console.log(`[Comps Search] Google Geocoding HTTP ${geocodeRes.status} — proceeding without distance filtering`);
+              } else {
+                const geocodeData = await geocodeRes.json();
+                if (geocodeData.status === 'OK' && geocodeData.results?.[0]?.geometry?.location) {
+                  resolvedLat = geocodeData.results[0].geometry.location.lat;
+                  resolvedLng = geocodeData.results[0].geometry.location.lng;
+                  console.log(`[Comps Search] Google Geocoding succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
+                } else {
+                  console.log(`[Comps Search] Google Geocoding returned no results (status: ${geocodeData.status}) — proceeding without distance filtering`);
+                }
+              }
+            } else {
+              console.log(`[Comps Search] Google Maps API key not configured — proceeding without distance filtering`);
+            }
+          } catch (geoErr: any) {
+            // Avoid logging geoErr.message verbatim — it can include the request URL which embeds the API key
+            console.log(`[Comps Search] Google Geocoding threw ${geoErr?.name || 'Error'} — proceeding without distance filtering`);
+          }
         }
       }
 

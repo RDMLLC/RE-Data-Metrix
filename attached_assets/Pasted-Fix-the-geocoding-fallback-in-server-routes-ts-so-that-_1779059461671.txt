@@ -1,0 +1,62 @@
+Fix the geocoding fallback in server/routes.ts so that when RentCast fails to return coordinates, we fall back to the Google Geocoding API before giving up.
+
+Read server/routes.ts and find the existing fallback block at lines 10519–10539. It currently only tries RentCast and gives up if that fails.
+
+Replace the fallback block with this two-level fallback:
+
+// Level 1: try RentCast (existing)
+// Level 2: try Google Geocoding API if RentCast fails
+
+Here is the exact replacement logic for lines 10523–10539:
+
+if ((resolvedLat == null || resolvedLng == null) && address && city && state) {
+  // Level 1 — RentCast property lookup
+  try {
+    console.log(`[Comps Search] Subject coordinates missing — attempting RentCast geocoding fallback for: ${address}, ${city}, ${state} ${zipCode || ''}`);
+    const { RentCastAPIService } = await import("./services/rentcast-api.service");
+    const rentCastGeo = new RentCastAPIService();
+    const geoResult = await rentCastGeo.getPropertyByAddress(address, city, state, zipCode || '');
+    if (geoResult?.latitude != null && geoResult?.longitude != null) {
+      resolvedLat = geoResult.latitude;
+      resolvedLng = geoResult.longitude;
+      console.log(`[Comps Search] RentCast geocoding succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
+    }
+  } catch (geoErr: any) {
+    console.log(`[Comps Search] RentCast geocoding failed (${geoErr?.message})`);
+  }
+
+  // Level 2 — Google Geocoding API fallback if RentCast didn't return coords
+  if (resolvedLat == null || resolvedLng == null) {
+    try {
+      const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (googleApiKey) {
+        const fullAddress = `${address}, ${city}, ${state} ${zipCode || ''}`.trim();
+        console.log(`[Comps Search] Attempting Google Geocoding fallback for: ${fullAddress}`);
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${googleApiKey}`;
+        const geocodeRes = await fetch(geocodeUrl);
+        const geocodeData = await geocodeRes.json();
+        if (geocodeData.status === 'OK' && geocodeData.results?.[0]?.geometry?.location) {
+          resolvedLat = geocodeData.results[0].geometry.location.lat;
+          resolvedLng = geocodeData.results[0].geometry.location.lng;
+          console.log(`[Comps Search] Google Geocoding succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
+        } else {
+          console.log(`[Comps Search] Google Geocoding returned no results (status: ${geocodeData.status}) — proceeding without distance filtering`);
+        }
+      } else {
+        console.log(`[Comps Search] Google Maps API key not configured — proceeding without distance filtering`);
+      }
+    } catch (geoErr: any) {
+      console.log(`[Comps Search] Google Geocoding failed (${geoErr?.message}) — proceeding without distance filtering`);
+    }
+  }
+}
+
+Requirements:
+- Replace only the fallback block (lines ~10523–10539) — do not touch anything else in the route
+- The resolvedLat/resolvedLng variables are already declared above this block — just update them in place as shown
+- No new imports needed — fetch is available globally in Node 18+
+- Do not touch hybrid-comps.service.ts or any other file
+
+After the fix:
+- Confirm dev server reloads cleanly
+- Output the modified fallback block with line numbers
