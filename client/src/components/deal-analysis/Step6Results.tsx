@@ -226,6 +226,129 @@ interface DSCRProductWithCalculation {
   };
 }
 
+interface EmailReportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  emailIncludePdf: boolean;
+  setEmailIncludePdf: (v: boolean) => void;
+  emailIncludeCsv: boolean;
+  setEmailIncludeCsv: (v: boolean) => void;
+  emailRecipients: string;
+  setEmailRecipients: (v: string) => void;
+  emailSending: boolean;
+  emailError: string | null;
+  onSend: () => void;
+}
+
+function EmailReportDialog({
+  open,
+  onOpenChange,
+  emailIncludePdf,
+  setEmailIncludePdf,
+  emailIncludeCsv,
+  setEmailIncludeCsv,
+  emailRecipients,
+  setEmailRecipients,
+  emailSending,
+  emailError,
+  onSend,
+}: EmailReportDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => {
+      if (!emailSending) onOpenChange(next);
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Email Report</DialogTitle>
+          <DialogDescription>
+            Send your deal analysis as PDF and/or CSV attachments.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Include</Label>
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="email-include-pdf"
+                checked={emailIncludePdf}
+                onCheckedChange={(checked) => setEmailIncludePdf(checked === true)}
+                disabled={emailSending}
+                data-testid="checkbox-email-include-pdf"
+              />
+              <label htmlFor="email-include-pdf" className="text-sm cursor-pointer select-none flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                PDF Report
+              </label>
+            </div>
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="email-include-csv"
+                checked={emailIncludeCsv}
+                onCheckedChange={(checked) => setEmailIncludeCsv(checked === true)}
+                disabled={emailSending}
+                data-testid="checkbox-email-include-csv"
+              />
+              <label htmlFor="email-include-csv" className="text-sm cursor-pointer select-none flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                CSV Report
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="email-recipients">Send to</Label>
+            <Input
+              id="email-recipients"
+              type="text"
+              value={emailRecipients}
+              onChange={(e) => setEmailRecipients(e.target.value)}
+              placeholder="you@example.com, teammate@example.com"
+              disabled={emailSending}
+              data-testid="input-email-recipients"
+            />
+            <p className="text-xs text-muted-foreground">Separate multiple addresses with commas</p>
+          </div>
+
+          {emailError && (
+            <Alert variant="destructive" data-testid="alert-email-error">
+              <AlertDescription>{emailError}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:justify-end flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={emailSending}
+            data-testid="button-email-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onSend}
+            disabled={emailSending}
+            data-testid="button-email-send"
+          >
+            {emailSending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Send Report
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Step5Results({ form, onBack, isSubscriber = false, viewingDealId, onEditDeal, suppressAutoSave = false, originalResultsSnapshot, isMobile = false }: Step5ResultsProps) {
   const { toast } = useToast();
   const isViewingDeal = !!viewingDealId;
@@ -2331,6 +2454,21 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </Button>
           )}
         </div>
+
+        {/* Email Report Dialog must also be mounted in the mobile branch */}
+        <EmailReportDialog
+          open={emailReportOpen}
+          onOpenChange={setEmailReportOpen}
+          emailIncludePdf={emailIncludePdf}
+          setEmailIncludePdf={setEmailIncludePdf}
+          emailIncludeCsv={emailIncludeCsv}
+          setEmailIncludeCsv={setEmailIncludeCsv}
+          emailRecipients={emailRecipients}
+          setEmailRecipients={setEmailRecipients}
+          emailSending={emailSending}
+          emailError={emailError}
+          onSend={handleSendEmailReport}
+        />
       </div>
     );
   }
@@ -4459,99 +4597,20 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         </DialogContent>
       </Dialog>
 
-      {/* Email Report Dialog */}
-      <Dialog open={emailReportOpen} onOpenChange={(open) => {
-        if (!emailSending) setEmailReportOpen(open);
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Email Report</DialogTitle>
-            <DialogDescription>
-              Send your deal analysis as PDF and/or CSV attachments.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Include</Label>
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="email-include-pdf"
-                  checked={emailIncludePdf}
-                  onCheckedChange={(checked) => setEmailIncludePdf(checked === true)}
-                  disabled={emailSending}
-                  data-testid="checkbox-email-include-pdf"
-                />
-                <label htmlFor="email-include-pdf" className="text-sm cursor-pointer select-none flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  PDF Report
-                </label>
-              </div>
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="email-include-csv"
-                  checked={emailIncludeCsv}
-                  onCheckedChange={(checked) => setEmailIncludeCsv(checked === true)}
-                  disabled={emailSending}
-                  data-testid="checkbox-email-include-csv"
-                />
-                <label htmlFor="email-include-csv" className="text-sm cursor-pointer select-none flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  CSV Report
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="email-recipients">Send to</Label>
-              <Input
-                id="email-recipients"
-                type="text"
-                value={emailRecipients}
-                onChange={(e) => setEmailRecipients(e.target.value)}
-                placeholder="you@example.com, teammate@example.com"
-                disabled={emailSending}
-                data-testid="input-email-recipients"
-              />
-              <p className="text-xs text-muted-foreground">Separate multiple addresses with commas</p>
-            </div>
-
-            {emailError && (
-              <Alert variant="destructive" data-testid="alert-email-error">
-                <AlertDescription>{emailError}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          <DialogFooter className="gap-2 sm:justify-end flex-wrap">
-            <Button
-              variant="outline"
-              onClick={() => setEmailReportOpen(false)}
-              disabled={emailSending}
-              data-testid="button-email-cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendEmailReport}
-              disabled={emailSending}
-              data-testid="button-email-send"
-            >
-              {emailSending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Report
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Email Report Dialog (shared subcomponent) */}
+      <EmailReportDialog
+        open={emailReportOpen}
+        onOpenChange={setEmailReportOpen}
+        emailIncludePdf={emailIncludePdf}
+        setEmailIncludePdf={setEmailIncludePdf}
+        emailIncludeCsv={emailIncludeCsv}
+        setEmailIncludeCsv={setEmailIncludeCsv}
+        emailRecipients={emailRecipients}
+        setEmailRecipients={setEmailRecipients}
+        emailSending={emailSending}
+        emailError={emailError}
+        onSend={handleSendEmailReport}
+      />
 
       <PdfQuotaExhaustedModal
         open={showPdfQuotaModal}
