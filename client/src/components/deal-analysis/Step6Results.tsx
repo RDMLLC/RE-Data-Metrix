@@ -3839,16 +3839,30 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             Download CSV
           </Button>
           {(isAuthenticated || effectiveIsSubscriber) && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleDownloadPDF(false)}
-              disabled={isGeneratingPdf}
-              data-testid="button-mobile-download-pdf"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={isGeneratingPdf}
+                  data-testid="button-mobile-download-pdf"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDownloadPDF(false)} data-testid="mobile-pdf-overview">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Overview (Summary)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadPDF(true)} data-testid="mobile-pdf-detailed">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Detailed (All Expanded)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {isAuthenticated && (
             <Button
