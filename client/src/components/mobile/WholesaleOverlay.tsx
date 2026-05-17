@@ -832,7 +832,7 @@ export default function WholesaleOverlay({ isOpen, onClose }: WholesaleOverlayPr
               >
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-md bg-muted/50 p-2 space-y-1.5">
+                    <div className="rounded-md bg-muted/50 p-2 space-y-1.5 min-w-0 overflow-hidden">
                       <div className="text-[10px] font-medium text-muted-foreground uppercase">
                         Recommended
                       </div>
@@ -849,7 +849,7 @@ export default function WholesaleOverlay({ isOpen, onClose }: WholesaleOverlayPr
                         <Row label="Lender Fee" value={profitabilityComparison.original.lenderFee} />
                       )}
                     </div>
-                    <div className="rounded-md bg-primary/10 border border-primary/20 p-2 space-y-1.5">
+                    <div className="rounded-md bg-primary/10 border border-primary/20 p-2 space-y-1.5 min-w-0 overflow-hidden">
                       <div className="text-[10px] font-medium text-primary uppercase">Your Offer</div>
                       <RowWithDelta
                         label="Buy Price"
@@ -966,7 +966,7 @@ export default function WholesaleOverlay({ isOpen, onClose }: WholesaleOverlayPr
               onClick={handleApplyValues}
               data-testid="button-wo-apply-values"
             >
-              Apply Values to Deal Analysis
+              Use This Offer Price
             </Button>
             <Button
               type="button"
@@ -1029,17 +1029,23 @@ function RowWithDelta({
   const hasDelta = delta !== undefined && delta !== 0;
   const isGood = hasDelta && delta !== undefined && (positiveIsGood ? delta > 0 : delta < 0);
   return (
-    <div className="flex justify-between items-center gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1">
-        <span className={`text-xs ${valueClass ?? "font-medium"}`}>{formatCurrency(value)}</span>
+    <div className="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+      <span className="text-xs text-muted-foreground truncate">{label}</span>
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
+        <span className={`text-xs break-words ${valueClass ?? "font-medium"}`}>
+          {formatCurrency(value)}
+        </span>
         {hasDelta && delta !== undefined && (
           <span
-            className={`text-[10px] flex items-center gap-0.5 ${
+            className={`text-[10px] inline-flex items-center gap-0.5 break-words ${
               isGood ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
             }`}
           >
-            {delta > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
+            {delta > 0 ? (
+              <TrendingUp className="h-2.5 w-2.5 shrink-0" />
+            ) : (
+              <TrendingDown className="h-2.5 w-2.5 shrink-0" />
+            )}
             {formatCurrency(Math.abs(delta))}
           </span>
         )}
