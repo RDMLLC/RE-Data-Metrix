@@ -58,6 +58,7 @@ import { apiRequest } from "@/lib/queryClient";
 import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 import CompReportPdf from "./CompReportPdf";
 import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
+import MaxOfferOverlay from "@/components/mobile/MaxOfferOverlay";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -149,6 +150,7 @@ export default function Step3PurchaseRenovation({
   // Max Offer Calculator state
   const [showMaxOfferCalc, setShowMaxOfferCalc] = useState(false);
   const [showMaxOfferCalcMobile, setShowMaxOfferCalcMobile] = useState(false);
+  const [showMaxOfferOverlay, setShowMaxOfferOverlay] = useState(false);
   const [maxArvPercent, setMaxArvPercent] = useState(70);
   const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
@@ -1021,6 +1023,7 @@ export default function Step3PurchaseRenovation({
 
   if (isMobile) {
     return (
+      <>
       <MobileStepWrapper
         title="Purchase & Renovation"
         subtitle="Enter your purchase price, rehab costs, and closing details"
@@ -1223,6 +1226,20 @@ export default function Step3PurchaseRenovation({
               )}
             />
 
+            {/* Max Offer Calculator trigger (mobile overlay) */}
+            <div className="px-4 py-3 border-b border-border">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-11 gap-1.5"
+                onClick={() => setShowMaxOfferOverlay(true)}
+                data-testid="button-max-offer-overlay-open"
+              >
+                <Lightbulb className="h-4 w-4" />
+                Max Offer Calculator
+              </Button>
+            </div>
+
             {/* Double Close — full width at bottom */}
             <div className="px-4 py-3 space-y-3">
               <FormField
@@ -1283,6 +1300,23 @@ export default function Step3PurchaseRenovation({
           </form>
         </Form>
       </MobileStepWrapper>
+      <MaxOfferOverlay
+        isOpen={showMaxOfferOverlay}
+        onClose={() => setShowMaxOfferOverlay(false)}
+        initialArv={arv}
+        initialRehabBudget={rehabBudget}
+        onApply={({ purchasePrice, arv: applyArv, rehabBudget: applyRehab }) => {
+          form.setValue("purchasePrice", purchasePrice);
+          if (applyArv > 0) form.setValue("arv", applyArv);
+          if (applyRehab > 0) form.setValue("rehabBudget", applyRehab);
+          setShowMaxOfferOverlay(false);
+        }}
+        onOpenArvHelper={() => {
+          setShowMaxOfferOverlay(false);
+          setShowArvHelper(true);
+        }}
+      />
+      </>
     );
   }
 

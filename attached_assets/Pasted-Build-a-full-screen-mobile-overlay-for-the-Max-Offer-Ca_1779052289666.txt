@@ -1,0 +1,133 @@
+Build a full-screen mobile overlay for the Max Offer Calculator. This is a NEW build — do not patch the existing desktop popover or classic mobile code.
+
+Read these files in full before writing any code:
+1. client/src/components/deal-analysis/Step3PurchaseRenovation.tsx (focus on: local state for calcArv, calcRehabBudget, maxArvPercent, maxOfferPrice, maxProjectCost; the desktop popover content lines ~1319–1477; the autofill handler lines ~1431–1443; how arv and rehabBudget are watched from the form)
+2. client/src/components/mobile/DealAnalysisOverlay.tsx (understand the overlay shell pattern — fixed viewport, header, progress bar, sticky footer)
+3. client/src/components/mobile/CollapsibleSection.tsx (for reference on collapsible pattern)
+
+---
+
+## ARCHITECTURE
+
+Create a new file: client/src/components/mobile/MaxOfferOverlay.tsx
+
+This is a full-screen overlay (same visual shell as DealAnalysisOverlay) that slides in on top of the Deal Analysis mobile overlay when triggered from Step 3.
+
+Use the same overlay shell pattern:
+- fixed inset-0 bg-background z-[10001] flex flex-col (z-index above DealAnalysisOverlay's z-[9999])
+- Header: RE Data Metrix logo (left) + "Max Offer Calculator" title (center) + X close button (right). No hamburger menu, no progress bar, no Start New Analysis button.
+- Scrollable content area: flex-1 overflow-y-auto px-4 py-4
+- No sticky footer — action button lives inline at the bottom of the content
+
+---
+
+## INPUTS
+
+Layout goal: show all inputs and results without scrolling on a typical phone screen. Use inline label+field rows (label left, input right) and 2×2 grid where it makes sense.
+
+Three inputs — display as a clean card:
+
+Row 1 (full width, labeled inline):
+- ARV — number input, seeded from the Step 3 form's arv value when overlay opens, min 0
+
+Row 2 — 2×2 grid:
+- Rehab Budget — number input, seeded from rehabBudget form value when overlay opens, min 0
+- Max % of ARV — number input, default 70, min 1, max 100, step 1
+
+Hide spinner arrows on all number inputs (they are already hidden globally via .mobile-overlay CSS — confirm MaxOfferOverlay wrapper also gets className="mobile-overlay" so the existing CSS applies).
+
+---
+
+## CALCULATIONS
+
+Same pure derived values as desktop — no shared calc module needed:
+const maxProjectCost = calcArv * (maxArvPercent / 100)
+const maxOfferPrice = Math.round(Math.max(0, maxProjectCost - calcRehabBudget))
+
+Recalculate on every input change (derived from state, no button needed).
+
+---
+
+## OUTPUTS
+
+Display results below the inputs in a results card:
+
+- Max Project Cost — label + formatted currency value
+- Max Offer / Purchase Price — larger, prominent display (primary color), formatted currency
+
+Include the 70% rule tooltip/explanation — same text as desktop. Use tap-to-toggle pattern (no hover) consistent with the mobile overlay pattern.
+
+---
+
+## AUTOFILL ACTION
+
+"Use This Offer Price" button — full width, primary style, at the bottom of the content area:
+- Disabled when maxOfferPrice <= 0
+- On tap: calls onApply({ purchasePrice: maxOfferPrice, arv: calcArv, rehabBudget: calcRehabBudget })
+- Shows a toast: "Values Applied — Purchase: $X, ARV: $X, Rehab: $X"
+- Closes the overlay (calls onClose())
+
+Include the "Need help determining ARV? Search for comps" link — tapping it calls onOpenArvHelper() and closes the overlay. This matches the desktop behavior.
+
+---
+
+## PROPS INTERFACE
+
+interface MaxOfferOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialArv: number;
+  initialRehabBudget: number;
+  onApply: (values: { purchasePrice: number; arv: number; rehabBudget: number }) => void;
+  onOpenArvHelper: () => void;
+}
+
+---
+
+## INTEGRATION INTO STEP 3
+
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx:
+
+1. Add state: const [showMaxOfferOverlay, setShowMaxOfferOverlay] = useState(false)
+
+2. In the isMobile section of Step 3 (where the !isMobile gate currently hides the classic mobile buttons), add a "Max Offer Calculator" button that:
+   - Sets showMaxOfferOverlay(true)
+   - Is styled consistently with other mobile Step 3 buttons
+
+3. Render <MaxOfferOverlay> when isMobile is true:
+   - isOpen={showMaxOfferOverlay}
+   - onClose={() => setShowMaxOfferOverlay(false)}
+   - initialArv={watchedArv}
+   - initialRehabBudget={watchedRehabBudget}
+   - onApply={({ purchasePrice, arv, rehabBudget }) => {
+       form.setValue("purchasePrice", purchasePrice);
+       if (arv > 0) form.setValue("arv", arv);
+       if (rehabBudget > 0) form.setValue("rehabBudget", rehabBudget);
+       setShowMaxOfferOverlay(false);
+     }}
+   - onOpenArvHelper={() => { setShowMaxOfferOverlay(false); setShowArvHelper(true); }}
+
+4. Do not touch the desktop popover or the classic mobile code (!isMobile block). Do not remove anything.
+
+---
+
+## FORMATTING
+
+- All currency inputs and displays use the existing formatCurrency helper already in Step3PurchaseRenovation.tsx
+- Number inputs should display raw numbers (no $ prefix in the input itself) — consistent with Step 3 mobile inputs
+- Card styling: same rounded border card pattern used in the mobile overlay steps
+
+---
+
+## DO NOT TOUCH
+- Desktop Max Offer Calculator popover
+- Classic mobile block (!isMobile gate)
+- Any calculation logic in Step3PurchaseRenovation.tsx beyond adding the overlay trigger
+- DealAnalysisOverlay.tsx
+- Any other files not listed above
+
+After building:
+1. Confirm TypeScript compiles cleanly
+2. grep -n "MaxOfferOverlay\|showMaxOfferOverlay" client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+3. Confirm dev server reloads cleanly
+4. Output the full MaxOfferOverlay.tsx with line numbers
