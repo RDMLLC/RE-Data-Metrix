@@ -746,7 +746,7 @@ export default function ArvHelperOverlay({ isOpen, onClose, form, onApply }: Arv
       </header>
 
       <main className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="px-3 py-3 space-y-3 pb-32">
+        <div className="px-3 py-3 space-y-3 pb-40">
           {/* Beta notice */}
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
             This ARV calculator is in beta. We are working to refine it. Thank you for your patience and understanding.
@@ -1441,9 +1441,11 @@ export default function ArvHelperOverlay({ isOpen, onClose, form, onApply }: Arv
                               </span>
                               <span>{comp.sqft.toLocaleString()} sqft</span>
                               <span>${comp.pricePerSqft}/sqft</span>
-                              {comp.distanceFromSubject !== undefined && (
-                                <span>{comp.distanceFromSubject.toFixed(1)} mi</span>
-                              )}
+                              <span>
+                                {comp.distanceFromSubject && comp.distanceFromSubject > 0
+                                  ? `${comp.distanceFromSubject.toFixed(1)} mi`
+                                  : "—"}
+                              </span>
                               <span className="ml-auto flex items-center gap-1 text-foreground">
                                 {isExpanded ? (
                                   <>
@@ -1581,47 +1583,27 @@ export default function ArvHelperOverlay({ isOpen, onClose, form, onApply }: Arv
         </div>
       </main>
 
-      {/* Sticky ARV result + Apply footer */}
+      {/* Fixed ARV result footer */}
       {compsData && compsData.comps.length > 0 && (
-        <footer
-          className="shrink-0 border-t border-border bg-background px-3 py-3 space-y-2"
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 pt-3 pb-4 z-[10002]"
           data-testid="footer-arv-result-mobile"
         >
-          {selectedCompIndices.size < 2 && (
-            <div
-              className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-2 py-1.5"
-              data-testid="text-min-comps-warning-mobile"
-            >
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                Select at least 2 comps to calculate an ARV estimate.
-              </p>
-            </div>
-          )}
-          {selectedCompIndices.size === 2 && (
-            <div
-              className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-2 py-1.5"
-              data-testid="text-two-comps-warning-mobile"
-            >
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800 dark:text-amber-200">
-                Only 2 comps selected. Add 1 more for a more reliable estimate.
-              </p>
-            </div>
-          )}
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">Suggested ARV</div>
-              <div className="text-xl font-bold text-primary" data-testid="text-suggested-arv-mobile">
-                {selectedArvData.arv ? formatCurrency(selectedArvData.arv) : "N/A"}
-              </div>
-              {selectedArvData.count >= 2 && selectedArvData.avgPricePerSqft !== null && (
-                <div className="text-[10px] text-muted-foreground">
-                  ${selectedArvData.avgPricePerSqft}/sqft × {effectiveSqft.toLocaleString()} sqft · {selectedArvData.count} comps
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
+          <p className="text-xs text-muted-foreground">Suggested ARV</p>
+          <p
+            className="text-2xl font-bold text-primary"
+            data-testid="text-suggested-arv-mobile"
+          >
+            {selectedArvData.arv ? formatCurrency(selectedArvData.arv) : "N/A"}
+          </p>
+          <p className="text-xs text-muted-foreground whitespace-nowrap truncate">
+            {selectedArvData.count >= 2 && selectedArvData.avgPricePerSqft !== null
+              ? `$${selectedArvData.avgPricePerSqft}/sqft × ${effectiveSqft.toLocaleString()} sqft — ${selectedArvData.count} comps`
+              : "Select at least 2 comps to calculate ARV"}
+          </p>
+          <div className="border-t border-border my-2" />
+          <div className="flex gap-2">
+            <div className="flex-1 [&>button]:w-full">
               <CompReportPdf
                 subjectAddress={address}
                 subjectCity={city}
@@ -1637,18 +1619,18 @@ export default function ArvHelperOverlay({ isOpen, onClose, form, onApply }: Arv
                 avgPricePerSqft={selectedArvData.avgPricePerSqft}
                 selectedComps={(compsData?.comps || []).filter((_, i) => selectedCompIndices.has(i))}
               />
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleApply}
-                disabled={!selectedArvData.arv}
-                data-testid="button-use-suggested-arv-mobile"
-              >
-                Use This ARV
-              </Button>
             </div>
+            <Button
+              type="button"
+              className="flex-1 text-sm"
+              onClick={handleApply}
+              disabled={!selectedArvData.arv}
+              data-testid="button-use-suggested-arv-mobile"
+            >
+              Use This ARV
+            </Button>
           </div>
-        </footer>
+        </div>
       )}
 
       {/* Edit Comp Dialog */}
