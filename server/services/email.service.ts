@@ -1790,6 +1790,88 @@ END:VCALENDAR`;
       return false;
     }
   }
+
+  async sendDealReport(
+    recipients: string[],
+    dealAddress: string,
+    attachments: Array<{ filename: string; content: string; contentType?: string; encoding?: string }>
+  ): Promise<{ sent: string[]; failed: string[] }> {
+    const baseUrl = this.getBaseUrl();
+    const safeAddress = dealAddress && dealAddress.trim().length > 0 ? dealAddress.trim() : 'Untitled Property';
+    const attachmentList = attachments
+      .map(a => `<li style="margin: 4px 0;">${a.filename}</li>`)
+      .join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #1E3A8A 0%, #0F7B49 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+          .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+          .address-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0; }
+          .address-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 0 0 6px 0; }
+          .address-value { font-size: 16px; font-weight: 600; color: #1E3A8A; margin: 0; }
+          .attachments { margin: 16px 0 0 0; padding-left: 20px; color: #475569; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0; font-size: 26px;">Your Deal Report</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">RE Data Metrix</p>
+          </div>
+          <div class="content">
+            <p>Hi there,</p>
+            <p>Please find your deal analysis report attached.</p>
+            <div class="address-card">
+              <p class="address-label">Property</p>
+              <p class="address-value">${safeAddress}</p>
+            </div>
+            <p style="margin-bottom: 4px;">Attached files:</p>
+            <ul class="attachments">${attachmentList}</ul>
+            <p style="margin-top: 24px; font-size: 14px; color: #6b7280;">Need to run another analysis or compare more lenders? <a href="${baseUrl}/deal-analysis" style="color: #1E3A8A;">Open RE Data Metrix</a>.</p>
+            <p style="margin-top: 24px;">Best regards,<br>The RE Data Metrix Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} RE Data Metrix. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const from = await this.getFromForCategory('transactional');
+    const subject = `Your RE Data Metrix Deal Report — ${safeAddress}`;
+
+    // Send a separate message to each recipient so addresses are not exposed to each other.
+    const results = await Promise.all(
+      recipients.map(async (to) => {
+        try {
+          const ok = await this.sendEmail({
+            to,
+            subject,
+            html: htmlContent,
+            attachments,
+            from,
+          });
+          return { to, ok };
+        } catch {
+          return { to, ok: false };
+        }
+      })
+    );
+
+    return {
+      sent: results.filter(r => r.ok).map(r => r.to),
+      failed: results.filter(r => !r.ok).map(r => r.to),
+    };
+  }
+
   async sendWebinarRemovalNotification(
     to: string,
     name: string

@@ -287,6 +287,13 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // PDF column selection dialog state
   const [pdfColumnDialogOpen, setPdfColumnDialogOpen] = useState(false);
   const [selectedPdfColumnIds, setSelectedPdfColumnIds] = useState<string[]>([]);
+  // Email Report dialog state
+  const [emailReportOpen, setEmailReportOpen] = useState(false);
+  const [emailIncludePdf, setEmailIncludePdf] = useState(true);
+  const [emailIncludeCsv, setEmailIncludeCsv] = useState(true);
+  const [emailRecipients, setEmailRecipients] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   // Single-column export state
   const [singleColumnExportData, setSingleColumnExportData] = useState<{ column: LoanComparisonColumn; name: string } | null>(null);
 
@@ -888,10 +895,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     return `${value.toFixed(2)}%`;
   };
 
-  // CSV Export function
-  const generateCSV = () => {
-    if (!results) return;
-    
+  // Build CSV content string (shared by Download CSV and Email Report)
+  const buildResultsCsvContent = (): { content: string; filename: string } | null => {
+    if (!results) return null;
+
     const formData = form.getValues();
     // Apply demo mode transformation to lender columns for CSV export
     const visibleLendersForCSV = getDisplayLenders(results.lenderColumns);
@@ -1122,18 +1129,191 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       }).join(',')
     ).join('\n');
     
-    // Download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    return {
+      content: csvContent,
+      filename: `deal-analysis-${formData.address || 'results'}.csv`,
+    };
+  };
+
+  // CSV Export function (Download CSV button)
+  const generateCSV = () => {
+    const built = buildResultsCsvContent();
+    if (!built) return;
+
+    const blob = new Blob([built.content], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `deal-analysis-${formData.address || 'results'}.csv`;
+    link.download = built.filename;
     link.click();
     URL.revokeObjectURL(link.href);
-    
+
     toast({
       title: "CSV Downloaded",
       description: "Your analysis data has been exported to CSV.",
     });
+  };
+
+  // Generate the Step 6 PDF and return base64 (used by Email Report). Mirrors handleDownloadPDF's
+  // jsPDF flow but skips the quota check and the .save() call.
+  const buildPdfBase64 = async (): Promise<string | null> => {
+    if (!pdfPage1Ref.current || !pdfPage2Ref.current) return null;
+
+    // Expand Loan Terms so it's captured (matches handleDownloadPDF behavior)
+    const wasShowingLoanTerms = showLoanTerms;
+    setShowLoanTerms(true);
+    // Trigger the condensed PDF-style useEffect so the captured layout matches Download PDF
+    setIsGeneratingPdf(true);
+
+    try {
+      // Wait for re-render + condensed-style useEffect
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 400)));
+
+
+      const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false };
+      const c1 = await html2canvas(pdfPage1Ref.current!, opts);
+      const c2 = await html2canvas(pdfPage2Ref.current!, opts);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter', compress: true });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const availW = pageW - margin * 2;
+      const availH = pageH - margin * 2;
+      const c1w = c1.width / 2, c1h = c1.height / 2;
+      const c2w = c2.width / 2, c2h = c2.height / 2;
+      const sharedRatio = Math.min(
+        availW / c1w, availH / c1h,
+        availW / c2w, availH / c2h,
+      );
+      const place = (cv: HTMLCanvasElement, addPage: boolean) => {
+        if (addPage) pdf.addPage();
+        const cw = cv.width / 2;
+        const ch = cv.height / 2;
+        const w = cw * sharedRatio;
+        const h = ch * sharedRatio;
+        const x = margin + (availW - w) / 2;
+        pdf.addImage(cv.toDataURL('image/png', 0.95), 'PNG', x, margin, w, h, undefined, 'FAST');
+      };
+      place(c1, false);
+      place(c2, true);
+
+      // pdf.output('datauristring') -> "data:application/pdf;filename=...;base64,XXXX"
+      const dataUri = pdf.output('datauristring');
+      const base64 = dataUri.substring(dataUri.indexOf(',') + 1);
+      return base64;
+    } finally {
+      if (!wasShowingLoanTerms) setShowLoanTerms(false);
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // Open the Email Report dialog with sensible defaults
+  const openEmailReportDialog = () => {
+    setEmailRecipients(user?.email || "");
+    setEmailIncludePdf(true);
+    setEmailIncludeCsv(true);
+    setEmailError(null);
+    setEmailReportOpen(true);
+  };
+
+  const handleSendEmailReport = async () => {
+    setEmailError(null);
+
+    if (!emailIncludePdf && !emailIncludeCsv) {
+      setEmailError("Select at least one file type to send.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const recipientList = emailRecipients
+      .split(",")
+      .map(e => e.trim())
+      .filter(e => e.length > 0);
+
+    if (recipientList.length === 0) {
+      setEmailError("Enter at least one recipient email address.");
+      return;
+    }
+    const invalid = recipientList.filter(e => !emailRegex.test(e));
+    if (invalid.length > 0) {
+      setEmailError(`Invalid email address${invalid.length > 1 ? "es" : ""}: ${invalid.join(", ")}`);
+      return;
+    }
+
+    const formData = form.getValues();
+    const addressParts = [formData.address, formData.city, formData.state, formData.zipCode]
+      .filter(p => p && String(p).trim().length > 0)
+      .join(", ");
+    const dealAddress = addressParts || "Untitled Property";
+
+    setEmailSending(true);
+    try {
+      const attachments: Array<{ filename: string; content: string; type: string }> = [];
+
+      if (emailIncludeCsv) {
+        const built = buildResultsCsvContent();
+        if (!built) {
+          setEmailError("Unable to build CSV — please re-run the analysis.");
+          setEmailSending(false);
+          return;
+        }
+        const csvBytes = new TextEncoder().encode(built.content);
+        let csvBinary = "";
+        for (let i = 0; i < csvBytes.length; i++) csvBinary += String.fromCharCode(csvBytes[i]);
+        const csvBase64 = window.btoa(csvBinary);
+        attachments.push({
+          filename: built.filename,
+          content: csvBase64,
+          type: "text/csv",
+        });
+      }
+
+      if (emailIncludePdf) {
+        const pdfBase64 = await buildPdfBase64();
+        if (!pdfBase64) {
+          setEmailError("Unable to build PDF — please try again.");
+          setEmailSending(false);
+          return;
+        }
+        const pdfFilename = `deal-analysis-${(formData.address || 'results').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
+        attachments.push({
+          filename: pdfFilename,
+          content: pdfBase64,
+          type: "application/pdf",
+        });
+      }
+
+      const response = await apiRequest("POST", "/api/deals/email-report", {
+        recipients: recipientList,
+        dealAddress,
+        attachments,
+      });
+      const result = await response.json().catch(() => ({} as any));
+      const sentList: string[] = Array.isArray(result?.sent) ? result.sent : recipientList;
+      const failedList: string[] = Array.isArray(result?.failed) ? result.failed : [];
+
+      if (failedList.length > 0) {
+        // Partial success — keep dialog open and prefill recipients with only the failed ones
+        // so a retry does not double-send to recipients who already received it.
+        setEmailRecipients(failedList.join(", "));
+        setEmailError(`Sent to ${sentList.length} of ${recipientList.length}. Failed: ${failedList.join(", ")}. You can retry the failed ones.`);
+        toast({
+          title: "Partially sent",
+          description: `Delivered to ${sentList.length} recipient${sentList.length === 1 ? "" : "s"}; ${failedList.length} failed.`,
+        });
+      } else {
+        setEmailReportOpen(false);
+        toast({
+          title: "Report emailed successfully",
+          description: `Sent to ${sentList.length} recipient${sentList.length > 1 ? "s" : ""}.`,
+        });
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Failed to send report. Please try again.";
+      setEmailError(msg);
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   // Open PDF column selection dialog before generating PDF
@@ -2139,6 +2319,17 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
             </Button>
           )}
+          {isAuthenticated && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={openEmailReportDialog}
+              data-testid="button-mobile-email-report"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Email Report
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -2237,6 +2428,19 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
                 Upgrade for PDF
               </Button>
             </Link>
+          )}
+
+          {isAuthenticated && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openEmailReportDialog}
+              className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
+              data-testid="button-email-report"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Email Report
+            </Button>
           )}
         </div>
       </div>
@@ -4250,6 +4454,100 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             >
               <FileText className="h-4 w-4 mr-2" />
               Detailed PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Report Dialog */}
+      <Dialog open={emailReportOpen} onOpenChange={(open) => {
+        if (!emailSending) setEmailReportOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Email Report</DialogTitle>
+            <DialogDescription>
+              Send your deal analysis as PDF and/or CSV attachments.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Include</Label>
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="email-include-pdf"
+                  checked={emailIncludePdf}
+                  onCheckedChange={(checked) => setEmailIncludePdf(checked === true)}
+                  disabled={emailSending}
+                  data-testid="checkbox-email-include-pdf"
+                />
+                <label htmlFor="email-include-pdf" className="text-sm cursor-pointer select-none flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  PDF Report
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="email-include-csv"
+                  checked={emailIncludeCsv}
+                  onCheckedChange={(checked) => setEmailIncludeCsv(checked === true)}
+                  disabled={emailSending}
+                  data-testid="checkbox-email-include-csv"
+                />
+                <label htmlFor="email-include-csv" className="text-sm cursor-pointer select-none flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  CSV Report
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="email-recipients">Send to</Label>
+              <Input
+                id="email-recipients"
+                type="text"
+                value={emailRecipients}
+                onChange={(e) => setEmailRecipients(e.target.value)}
+                placeholder="you@example.com, teammate@example.com"
+                disabled={emailSending}
+                data-testid="input-email-recipients"
+              />
+              <p className="text-xs text-muted-foreground">Separate multiple addresses with commas</p>
+            </div>
+
+            {emailError && (
+              <Alert variant="destructive" data-testid="alert-email-error">
+                <AlertDescription>{emailError}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => setEmailReportOpen(false)}
+              disabled={emailSending}
+              data-testid="button-email-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendEmailReport}
+              disabled={emailSending}
+              data-testid="button-email-send"
+            >
+              {emailSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Report
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -10365,6 +10365,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email Deal Report - sends generated PDF/CSV attachments to recipients
+  app.post("/api/deals/email-report", ensureAuthenticated, async (req, res) => {
+    try {
+      const emailReportSchema = z.object({
+        recipients: z.array(z.string().email()).min(1, "At least one recipient is required").max(10, "Too many recipients"),
+        dealAddress: z.string().max(500).optional().default(""),
+        attachments: z.array(z.object({
+          filename: z.string().min(1).max(255),
+          content: z.string().min(1, "Attachment content cannot be empty"),
+          type: z.string().optional(),
+        })).min(1, "At least one attachment is required").max(5),
+      });
+
+      const parsed = emailReportSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "Invalid request",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const { recipients, dealAddress, attachments } = parsed.data;
+
+      // Cap total attachment size at ~15MB (base64-encoded) to avoid SMTP rejection
+      const totalSize = attachments.reduce((sum, a) => sum + a.content.length, 0);
+      if (totalSize > 15 * 1024 * 1024) {
+        return res.status(413).json({ error: "Attachments are too large (15MB limit)." });
+      }
+
+      const mailAttachments = attachments.map(a => ({
+        filename: a.filename,
+        content: a.content,
+        encoding: 'base64' as const,
+        contentType: a.type || (a.filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'text/csv'),
+      }));
+
+      const { sent, failed } = await emailService.sendDealReport(recipients, dealAddress || '', mailAttachments);
+
+      if (sent.length === 0) {
+        return res.status(502).json({
+          error: "Failed to send email. Please try again.",
+          sent,
+          failed,
+        });
+      }
+
+      // Partial success: some recipients received the email; do NOT signal a generic failure
+      // (would cause clients to retry and double-send to those already delivered).
+      res.json({
+        success: true,
+        sent,
+        failed,
+        partial: failed.length > 0,
+      });
+    } catch (error) {
+      console.error("Email deal report error:", error);
+      res.status(500).json({ error: "Failed to email deal report" });
+    }
+  });
+
   // Free account self-cancellation
   app.post("/api/user/cancel-free-account", ensureAuthenticated, async (req, res) => {
     try {

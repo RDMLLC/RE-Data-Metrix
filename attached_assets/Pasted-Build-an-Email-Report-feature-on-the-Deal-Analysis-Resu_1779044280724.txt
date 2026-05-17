@@ -1,0 +1,70 @@
+Build an "Email Report" feature on the Deal Analysis Results page (Step 6). Read these files in full before writing any code:
+
+1. client/src/components/deal-analysis/Step6Results.tsx
+2. server/services/email.service.ts (focus on sendCustomEmail at line 1712 and the private sendEmail method at line 1742 — specifically its options interface)
+3. server/routes.ts (find the PDF download quota endpoint around line 10329 and the auth middleware pattern used on protected routes)
+
+---
+
+## FEATURE SPEC
+
+### UI — "Email Report" button
+- Add an "Email Report" button to the Step 6 Results action buttons row, alongside the existing Save Deal / Download CSV / Download PDF buttons
+- Same style as the existing outline buttons (match Download CSV / Download PDF exactly)
+- Works on both desktop and mobile (use the isMobile prop already in Step6Results.tsx)
+- Tapping/clicking opens a modal dialog
+
+### Modal
+- Title: "Email Report"
+- File selection (checkboxes, both checked by default):
+  - ☑ PDF Report
+  - ☑ CSV Report  
+- Recipients field:
+  - Label: "Send to"
+  - Pre-filled with the authenticated user's email address (already available in auth context)
+  - Editable — user can change or add more addresses
+  - Helper text below field: "Separate multiple addresses with commas"
+- Send button: "Send Report"
+- Cancel button closes modal
+- Use the existing Dialog/Modal component pattern already used elsewhere in the codebase — do not introduce a new UI library
+
+### Client behavior on Send
+1. Validate at least one file type is selected and at least one valid email address is present — show inline error if not
+2. Parse comma-separated recipients into an array, trim whitespace, basic email format validation
+3. If PDF selected: use the existing jsPDF generation logic already in Step6Results.tsx to generate the PDF blob, convert to base64 string
+4. If CSV selected: collect the same deal data fields already used for the CSV download in Step6Results.tsx, build CSV string client-side using the same logic
+5. POST to new endpoint /api/deals/email-report with body:
+   {
+     recipients: string[],
+     dealAddress: string,
+     attachments: [
+       { filename: "deal-analysis.pdf", content: string (base64), type: "application/pdf" },  // if PDF selected
+       { filename: "deal-analysis.csv", content: string, type: "text/csv" }  // if CSV selected
+     ]
+   }
+6. Show loading state on Send button while request is in flight
+7. On success: close modal, show toast "Report emailed successfully"
+8. On error: show inline error in modal, do not close
+
+### Server — new endpoint POST /api/deals/email-report
+- Protected route — requires authentication (same auth middleware as existing protected routes)
+- Accepts the body described above
+- Validates: recipients array non-empty, all valid email format, at least one attachment, attachment content non-empty
+- Extends the private sendEmail method's options interface in email.service.ts to support attachments: Array<{ filename: string, content: string, encoding?: string, contentType?: string }> — pass through directly to nodemailer's attachments option
+- Adds a new method sendDealReport(recipients, dealAddress, attachments) to email.service.ts following the existing method pattern:
+  - Category: 'transactional'
+  - Subject: "Your RE Data Metrix Deal Report — [dealAddress]"
+  - HTML body: clean simple email — "Please find your deal analysis report attached." with RE Data Metrix branding matching the existing email templates (navy header, clean body, signature)
+  - Passes attachments array through to sendEmail
+- Calls emailService.sendDealReport(...) and returns { success: true } on success
+
+### Do not touch
+- Existing Download CSV logic
+- Existing Download PDF logic  
+- PDF download quota endpoint
+- Any other routes or components
+
+After building, output:
+1. The full modified Step6Results.tsx with line numbers
+2. The full modified email.service.ts with line numbers (or just the new/modified methods clearly marked)
+3. The new route added to server/routes.ts with line numbers
