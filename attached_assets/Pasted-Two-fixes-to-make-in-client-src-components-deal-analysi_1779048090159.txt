@@ -1,0 +1,72 @@
+Two fixes to make in client/src/components/deal-analysis/Step6Results.tsx. Read the file before starting.
+
+---
+
+FIX 1 — Pass windowWidth to html2canvas in both buildPdfBase64 and handleDownloadPDF
+
+Both functions use these html2canvas options:
+{ useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false }
+
+Change both to:
+{ useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: 1200 }
+
+This ensures Tailwind responsive breakpoints resolve against 1200px (the PDF container width) rather than the actual mobile viewport during capture. Apply this change in both locations — buildPdfBase64 (line ~1296) and handleDownloadPDF (line ~1494).
+
+---
+
+FIX 2 — Add Summary/Detailed choice to buildPdfBase64 and the Email Report dialog
+
+Step A: Update buildPdfBase64 signature to accept a detailed parameter:
+- Change: async function buildPdfBase64()
+- To: async function buildPdfBase64(detailed: boolean = false)
+
+When detailed = true, expand the same 10 sections that handleDownloadPDF expands before capture:
+setExpandProjectCosts(true)
+setExpandClosingCostsBuy(true)
+setExpandLenderFees(true)
+setExpandCarryingCosts(true)
+setExpandSellingCosts(true)
+setExpandOopBreakdown(true)
+setExpandCocBreakdown(true)
+setExpandAnnualizedBreakdown(true)
+setExpandLoanAmountBreakdown(true)
+setExpandOopTableBreakdown(true)
+
+Follow the exact same timing pattern as handleDownloadPDF — after expanding, await a short delay (same delay used in handleDownloadPDF) before calling html2canvas so the DOM updates.
+
+When detailed = false (default), keep existing behavior — only setShowLoanTerms(true).
+
+Step B: Add PDF type state to the email dialog:
+- Add new state: const [emailPdfDetailed, setEmailPdfDetailed] = useState(false)
+- This state lives alongside the other email dialog state (emailIncludePdf, emailIncludeCsv, etc.)
+
+Step C: Update the EmailReportDialog component and its props interface to accept:
+- emailPdfDetailed: boolean
+- setEmailPdfDetailed: (v: boolean) => void
+
+Step D: Inside EmailReportDialog, when emailIncludePdf is checked, show two radio buttons below the PDF checkbox:
+  ● Overview (Summary)     ○ Detailed (All Expanded)
+- Default: Overview (Summary) selected
+- Style to match the existing checkbox/label styling in the dialog
+- The radio buttons should be indented slightly under the PDF checkbox to show they are sub-options of it
+- Hide the radio buttons when emailIncludePdf is unchecked
+
+Step E: Update the handleSendEmailReport function to pass emailPdfDetailed to buildPdfBase64:
+- Change: const pdfBase64 = await buildPdfBase64()
+- To: const pdfBase64 = await buildPdfBase64(emailPdfDetailed)
+
+Step F: Pass emailPdfDetailed and setEmailPdfDetailed as props to both EmailReportDialog render sites (mobile branch and desktop branch).
+
+---
+
+Do not touch:
+- handleDownloadPDF function
+- The Download PDF dropdown buttons
+- Any CSV logic
+- Any other state or handlers
+
+After changes confirm:
+- grep -n "windowWidth\|buildPdfBase64\|emailPdfDetailed" client/src/components/deal-analysis/Step6Results.tsx
+- Dev server hot-reloads cleanly
+
+Output the modified sections with line numbers — buildPdfBase64 function, emailPdfDetailed state declaration, EmailReportDialogProps interface, the radio button JSX inside EmailReportDialog, handleSendEmailReport call site, and both EmailReportDialog render sites.

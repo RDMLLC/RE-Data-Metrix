@@ -38,6 +38,7 @@ import { useWizardData } from "@/contexts/WizardDataContext";
 import { calculateDSCR } from "@shared/utils/dscr-calculator";
 import { getInsuranceCostPerSqFt } from "@shared/data/insurance-costs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import logoImg from "@assets/Transparent Logo_1762969260481.png";
 import { useDemoAccess } from "@/hooks/use-demo-access";
@@ -231,6 +232,8 @@ interface EmailReportDialogProps {
   onOpenChange: (open: boolean) => void;
   emailIncludePdf: boolean;
   setEmailIncludePdf: (v: boolean) => void;
+  emailPdfDetailed: boolean;
+  setEmailPdfDetailed: (v: boolean) => void;
   emailIncludeCsv: boolean;
   setEmailIncludeCsv: (v: boolean) => void;
   emailRecipients: string;
@@ -245,6 +248,8 @@ function EmailReportDialog({
   onOpenChange,
   emailIncludePdf,
   setEmailIncludePdf,
+  emailPdfDetailed,
+  setEmailPdfDetailed,
   emailIncludeCsv,
   setEmailIncludeCsv,
   emailRecipients,
@@ -281,6 +286,28 @@ function EmailReportDialog({
                 PDF Report
               </label>
             </div>
+            {emailIncludePdf && (
+              <RadioGroup
+                value={emailPdfDetailed ? "detailed" : "overview"}
+                onValueChange={(v) => setEmailPdfDetailed(v === "detailed")}
+                disabled={emailSending}
+                className="pl-7 flex flex-col gap-2"
+                data-testid="radiogroup-email-pdf-type"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="overview" id="email-pdf-overview" data-testid="radio-email-pdf-overview" />
+                  <label htmlFor="email-pdf-overview" className="text-sm cursor-pointer select-none">
+                    Overview (Summary)
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="detailed" id="email-pdf-detailed" data-testid="radio-email-pdf-detailed" />
+                  <label htmlFor="email-pdf-detailed" className="text-sm cursor-pointer select-none">
+                    Detailed (All Expanded)
+                  </label>
+                </div>
+              </RadioGroup>
+            )}
             <div className="flex items-center gap-3">
               <Checkbox
                 id="email-include-csv"
@@ -413,6 +440,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   // Email Report dialog state
   const [emailReportOpen, setEmailReportOpen] = useState(false);
   const [emailIncludePdf, setEmailIncludePdf] = useState(true);
+  const [emailPdfDetailed, setEmailPdfDetailed] = useState(false);
   const [emailIncludeCsv, setEmailIncludeCsv] = useState(true);
   const [emailRecipients, setEmailRecipients] = useState("");
   const [emailSending, setEmailSending] = useState(false);
@@ -1278,12 +1306,37 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
   // Generate the Step 6 PDF and return base64 (used by Email Report). Mirrors handleDownloadPDF's
   // jsPDF flow but skips the quota check and the .save() call.
-  const buildPdfBase64 = async (): Promise<string | null> => {
+  const buildPdfBase64 = async (detailed: boolean = false): Promise<string | null> => {
     if (!pdfPage1Ref.current || !pdfPage2Ref.current) return null;
 
     // Expand Loan Terms so it's captured (matches handleDownloadPDF behavior)
     const wasShowingLoanTerms = showLoanTerms;
     setShowLoanTerms(true);
+    // When detailed=true, expand the same 10 sections that handleDownloadPDF expands
+    const wasShowing = {
+      projectCosts: showProjectCosts,
+      closingCostsBuy: showClosingCostsBuy,
+      lenderFees: showLenderFees,
+      carryingCosts: showCarryingCosts,
+      sellingCosts: showSellingCosts,
+      outOfPocketBreakdown: showOutOfPocketBreakdown,
+      cashOnCashBreakdown: showCashOnCashBreakdown,
+      annualizedBreakdown: showAnnualizedBreakdown,
+      loanAmountBreakdown: showLoanAmountBreakdown,
+      oopTableBreakdown: showOopTableBreakdown,
+    };
+    if (detailed) {
+      setShowProjectCosts(true);
+      setShowClosingCostsBuy(true);
+      setShowLenderFees(true);
+      setShowCarryingCosts(true);
+      setShowSellingCosts(true);
+      setShowOutOfPocketBreakdown(true);
+      setShowCashOnCashBreakdown(true);
+      setShowAnnualizedBreakdown(true);
+      setShowLoanAmountBreakdown(true);
+      setShowOopTableBreakdown(true);
+    }
     // Trigger the condensed PDF-style useEffect so the captured layout matches Download PDF
     setIsGeneratingPdf(true);
 
@@ -1293,7 +1346,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 400)));
 
 
-      const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false };
+      const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: 1200 };
       const c1 = await html2canvas(pdfPage1Ref.current!, opts);
       const c2 = await html2canvas(pdfPage2Ref.current!, opts);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter', compress: true });
@@ -1326,6 +1379,18 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       return base64;
     } finally {
       if (!wasShowingLoanTerms) setShowLoanTerms(false);
+      if (detailed) {
+        if (!wasShowing.projectCosts) setShowProjectCosts(false);
+        if (!wasShowing.closingCostsBuy) setShowClosingCostsBuy(false);
+        if (!wasShowing.lenderFees) setShowLenderFees(false);
+        if (!wasShowing.carryingCosts) setShowCarryingCosts(false);
+        if (!wasShowing.sellingCosts) setShowSellingCosts(false);
+        if (!wasShowing.outOfPocketBreakdown) setShowOutOfPocketBreakdown(false);
+        if (!wasShowing.cashOnCashBreakdown) setShowCashOnCashBreakdown(false);
+        if (!wasShowing.annualizedBreakdown) setShowAnnualizedBreakdown(false);
+        if (!wasShowing.loanAmountBreakdown) setShowLoanAmountBreakdown(false);
+        if (!wasShowing.oopTableBreakdown) setShowOopTableBreakdown(false);
+      }
       setIsGeneratingPdf(false);
     }
   };
@@ -1334,6 +1399,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const openEmailReportDialog = () => {
     setEmailRecipients(user?.email || "");
     setEmailIncludePdf(true);
+    setEmailPdfDetailed(false);
     setEmailIncludeCsv(true);
     setEmailError(null);
     setEmailReportOpen(true);
@@ -1392,7 +1458,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       }
 
       if (emailIncludePdf) {
-        const pdfBase64 = await buildPdfBase64();
+        const pdfBase64 = await buildPdfBase64(emailPdfDetailed);
         if (!pdfBase64) {
           setEmailError("Unable to build PDF — please try again.");
           setEmailSending(false);
@@ -1491,7 +1557,7 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     // Wait for the condensed-style useEffect + section expansions to apply
     await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 400)));
     try {
-      const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false };
+      const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false, windowWidth: 1200 };
       if (!pdfPage1Ref.current || !pdfPage2Ref.current) {
         toast({
           title: "PDF generation failed",
@@ -3803,6 +3869,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           onOpenChange={setEmailReportOpen}
           emailIncludePdf={emailIncludePdf}
           setEmailIncludePdf={setEmailIncludePdf}
+          emailPdfDetailed={emailPdfDetailed}
+          setEmailPdfDetailed={setEmailPdfDetailed}
           emailIncludeCsv={emailIncludeCsv}
           setEmailIncludeCsv={setEmailIncludeCsv}
           emailRecipients={emailRecipients}
@@ -4630,6 +4698,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         onOpenChange={setEmailReportOpen}
         emailIncludePdf={emailIncludePdf}
         setEmailIncludePdf={setEmailIncludePdf}
+        emailPdfDetailed={emailPdfDetailed}
+        setEmailPdfDetailed={setEmailPdfDetailed}
         emailIncludeCsv={emailIncludeCsv}
         setEmailIncludeCsv={setEmailIncludeCsv}
         emailRecipients={emailRecipients}
