@@ -1359,6 +1359,12 @@ export default function Step3PurchaseRenovation({
       <WholesaleOverlay
         isOpen={showWholesaleOverlay}
         onClose={() => setShowWholesaleOverlay(false)}
+        onApply={({ purchasePrice, arv: applyArv, rehabBudget: applyRehab }) => {
+          if (purchasePrice > 0) form.setValue("purchasePrice", purchasePrice);
+          if (applyArv > 0) form.setValue("arv", applyArv);
+          if (applyRehab > 0) form.setValue("rehabBudget", applyRehab);
+          setShowWholesaleOverlay(false);
+        }}
       />
       </>
     );

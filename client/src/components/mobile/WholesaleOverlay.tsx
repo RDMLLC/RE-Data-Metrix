@@ -42,6 +42,7 @@ import logoImg from "@assets/Transparent Logo_1762969260481.png";
 interface WholesaleOverlayProps {
   isOpen: boolean;
   onClose: () => void;
+  onApply?: (values: { purchasePrice: number; arv: number; rehabBudget: number }) => void;
 }
 
 function formatCurrency(amount: number): string {
@@ -62,7 +63,7 @@ function parseNumericInput(value: string): number {
 const STRAIGHTLINE_BASE_URL =
   "https://forms.straightlinefunding.com/straightlinefunding/form/TransactionalFundingSubmissionFormREDataMetrix/formperma/mHsvTfwLV7T8fYveRFzlpbECm1HeV3cMWA7cRoGCTRU";
 
-export default function WholesaleOverlay({ isOpen, onClose }: WholesaleOverlayProps) {
+export default function WholesaleOverlay({ isOpen, onClose, onApply }: WholesaleOverlayProps) {
   const { wizardData, updatePropertyData } = useWizardData();
   const { isAuthenticated, isSubscriber, user } = useAuth();
   const { toast } = useToast();
@@ -400,6 +401,12 @@ export default function WholesaleOverlay({ isOpen, onClose }: WholesaleOverlayPr
       wholesaleTransactionType: transactionType,
       wholesaleFee: parseNumericInput(wholesaleFee),
       resalePrice: calculatedResalePrice > 0 ? calculatedResalePrice : undefined,
+    });
+
+    onApply?.({
+      purchasePrice: finalBuyPrice,
+      arv: arvValue,
+      rehabBudget: rehabValue,
     });
 
     toast({
