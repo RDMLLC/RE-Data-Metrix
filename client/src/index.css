@@ -297,3 +297,13 @@
     inset: -1px;
   }
 }
+
+/* Hide number input spinners inside mobile overlay */
+.mobile-overlay input[type=number]::-webkit-inner-spin-button,
+.mobile-overlay input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.mobile-overlay input[type=number] {
+  -moz-appearance: textfield;
+}

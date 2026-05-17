@@ -58,7 +58,7 @@ export default function DealAnalysisOverlay({
 
   return (
     <div
-      className="fixed inset-0 bg-background z-[9999] flex flex-col"
+      className="mobile-overlay fixed inset-0 bg-background z-[9999] flex flex-col"
       style={{ height: "100dvh" }}
       role="dialog"
       aria-modal="true"
