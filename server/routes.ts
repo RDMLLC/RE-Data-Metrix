@@ -10538,7 +10538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 resolvedLng = geocodeData.results[0].geometry.location.lng;
                 console.log(`[Comps Search] Google Geocoding succeeded: lat=${resolvedLat}, lng=${resolvedLng}`);
               } else {
-                console.log(`[Comps Search] Google Geocoding returned no results — trying RentCast fallback`);
+                console.log(`[Comps Search] Google Geocoding returned no results (status: ${geocodeData.status}, error: ${geocodeData.error_message || 'none'}) — trying RentCast fallback`);
               }
             }
           } else {
