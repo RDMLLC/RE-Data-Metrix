@@ -650,8 +650,7 @@ export default function ArvHelperOverlay({ isOpen, onClose, form, onApply }: Arv
       address: "", city: "", state: "", zipCode: "",
       bedrooms: "", bathrooms: "", sqft: "", salePrice: "", saleDate: "",
     });
-    setShowManualForm(false);
-    setShowAddCompForm(false);
+    setManualCompError(null);
     toast({
       title: "Comp Added",
       description:
