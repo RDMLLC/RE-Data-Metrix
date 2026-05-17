@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import logoImg from "@assets/Transparent Logo_1762969260481.png";
+import Navigation from "@/components/Navigation";
 
 interface DealAnalysisOverlayProps {
   currentStep: number;
@@ -65,36 +65,33 @@ export default function DealAnalysisOverlay({
       aria-label="Deal Analysis"
       data-testid="overlay-deal-analysis"
     >
-      <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <img src={logoImg} alt="RE Data Metrix" className="h-8 w-8 shrink-0" />
-          <span className="font-bold text-base text-primary truncate">
-            RE Data Metrix
-          </span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {onStartNew && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onStartNew}
-              aria-label="Start New Analysis"
-              data-testid="button-overlay-start-new"
-            >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Start New Analysis
-            </Button>
-          )}
+      {/* Site mobile nav (logo + user avatar + hamburger menu) */}
+      <div className="shrink-0">
+        <Navigation />
+      </div>
+
+      <header className="flex items-center justify-end gap-2 px-4 py-2 border-b border-border shrink-0">
+        {onStartNew && (
           <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleClose}
-            aria-label="Close"
-            data-testid="button-overlay-close"
+            size="sm"
+            variant="outline"
+            onClick={onStartNew}
+            aria-label="Start New Analysis"
+            data-testid="button-overlay-start-new"
           >
-            <X className="h-5 w-5" />
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Start New Analysis
           </Button>
-        </div>
+        )}
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={handleClose}
+          aria-label="Close"
+          data-testid="button-overlay-close"
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </header>
 
       <div className="px-4 py-2 border-b border-border shrink-0">
