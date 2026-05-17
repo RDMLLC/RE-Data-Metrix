@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Building2, BarChart3, LogOut, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye, Mail, MessageSquare, Bug, LineChart, Wrench } from "lucide-react";
+import { Users, Building2, BarChart3, Key, Gift, Ticket, Plug, CheckCircle, AlertCircle, Loader2, Handshake, Calculator, Database, AlertTriangle, Video, Monitor, RefreshCw, Link2, Code, HardHat, Target, Eye, Mail, MessageSquare, Bug, LineChart, Wrench } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { queryClient } from "@/lib/queryClient";
@@ -33,7 +33,6 @@ export default function AdminDashboard() {
   const [adminEmail, setAdminEmail] = useState("");
   const [userRole, setUserRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [dataHealth, setDataHealth] = useState<DataHealth | null>(null);
@@ -218,74 +217,6 @@ export default function AdminDashboard() {
     );
   }
 
-  const handleLogout = async () => {
-    setIsLoading(true);
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      toast({
-        title: "Logged Out",
-        description: "You've been successfully logged out.",
-      });
-      setLocation("/login");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to log out",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (!adminEmail) {
-      toast({
-        title: "Error",
-        description: "Unable to determine admin email",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      const response = await fetch("/api/auth/request-password-reset", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: adminEmail }),
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Password Reset Email Sent",
-          description: `A password reset link has been sent to ${adminEmail}`,
-        });
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.error || "Failed to send password reset email",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send password reset email",
-        variant: "destructive",
-      });
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
-
   return (
     <Layout>
       <div className="min-h-[calc(100vh-16rem)] py-12">
@@ -296,26 +227,6 @@ export default function AdminDashboard() {
                 {isDeveloper ? 'Developer Dashboard' : 'Admin Dashboard'}
               </h1>
               <p className="text-muted-foreground mt-2">Welcome, {adminName}</p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleChangePassword}
-                disabled={isChangingPassword}
-                data-testid="button-change-password"
-              >
-                <Key className="h-4 w-4 mr-2" />
-                {isChangingPassword ? "Sending..." : "Change Password"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                disabled={isLoading}
-                data-testid="button-admin-logout"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                {isLoading ? "Logging out..." : "Logout"}
-              </Button>
             </div>
           </div>
 
