@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText, Sparkles, Pencil } from "lucide-react";
+import { ArrowLeft, Loader2, TrendingUp, ChevronDown, ChevronRight, Download, Home, Building2, CheckCircle, XCircle, AlertTriangle, ExternalLink, Mail, Send, FileSpreadsheet, FileText, Sparkles, Pencil, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -236,8 +236,10 @@ interface EmailReportDialogProps {
   setEmailPdfDetailed: (v: boolean) => void;
   emailIncludeCsv: boolean;
   setEmailIncludeCsv: (v: boolean) => void;
-  emailRecipients: string;
-  setEmailRecipients: (v: string) => void;
+  emailRecipientChips: string[];
+  setEmailRecipientChips: (v: string[]) => void;
+  emailRecipientInput: string;
+  setEmailRecipientInput: (v: string) => void;
   emailSending: boolean;
   emailError: string | null;
   onSend: () => void;
@@ -252,12 +254,40 @@ function EmailReportDialog({
   setEmailPdfDetailed,
   emailIncludeCsv,
   setEmailIncludeCsv,
-  emailRecipients,
-  setEmailRecipients,
+  emailRecipientChips,
+  setEmailRecipientChips,
+  emailRecipientInput,
+  setEmailRecipientInput,
   emailSending,
   emailError,
   onSend,
 }: EmailReportDialogProps) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const commitRecipientInput = () => {
+    const candidates = emailRecipientInput
+      .split(",")
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
+    if (candidates.length === 0) return;
+    const existing = new Set(emailRecipientChips.map((e) => e.toLowerCase()));
+    const next = [...emailRecipientChips];
+    let remainder = "";
+    for (const c of candidates) {
+      if (!emailRegex.test(c)) {
+        remainder = remainder ? `${remainder}, ${c}` : c;
+        continue;
+      }
+      if (!existing.has(c.toLowerCase())) {
+        existing.add(c.toLowerCase());
+        next.push(c);
+      }
+    }
+    setEmailRecipientChips(next);
+    setEmailRecipientInput(remainder);
+  };
+  const removeChip = (email: string) => {
+    setEmailRecipientChips(emailRecipientChips.filter((e) => e !== email));
+  };
   return (
     <Dialog open={open} onOpenChange={(next) => {
       if (!emailSending) onOpenChange(next);
@@ -323,18 +353,49 @@ function EmailReportDialog({
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="email-recipients">Send to</Label>
+          <div className="space-y-2">
+            <Label htmlFor="email-recipient-input">Send to</Label>
+            {emailRecipientChips.length > 0 && (
+              <div className="flex flex-wrap gap-2" data-testid="list-email-recipient-chips">
+                {emailRecipientChips.map((email) => (
+                  <Badge
+                    key={email}
+                    variant="secondary"
+                    className="gap-1 pr-1 no-default-hover-elevate no-default-active-elevate"
+                    data-testid={`chip-email-recipient-${email}`}
+                  >
+                    <span>{email}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeChip(email)}
+                      disabled={emailSending}
+                      className="rounded-sm hover-elevate active-elevate-2 p-0.5"
+                      aria-label={`Remove ${email}`}
+                      data-testid={`button-remove-chip-${email}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
             <Input
-              id="email-recipients"
+              id="email-recipient-input"
               type="text"
-              value={emailRecipients}
-              onChange={(e) => setEmailRecipients(e.target.value)}
-              placeholder="you@example.com, teammate@example.com"
+              value={emailRecipientInput}
+              onChange={(e) => setEmailRecipientInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  commitRecipientInput();
+                }
+              }}
+              onBlur={() => commitRecipientInput()}
+              placeholder="Add recipient email address"
               disabled={emailSending}
-              data-testid="input-email-recipients"
+              data-testid="input-email-recipient"
             />
-            <p className="text-xs text-muted-foreground">Separate multiple addresses with commas</p>
+            <p className="text-xs text-muted-foreground">Press Enter or comma to add</p>
           </div>
 
           {emailError && (
@@ -442,7 +503,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
   const [emailIncludePdf, setEmailIncludePdf] = useState(true);
   const [emailPdfDetailed, setEmailPdfDetailed] = useState(false);
   const [emailIncludeCsv, setEmailIncludeCsv] = useState(true);
-  const [emailRecipients, setEmailRecipients] = useState("");
+  const [emailRecipientChips, setEmailRecipientChips] = useState<string[]>([]);
+  const [emailRecipientInput, setEmailRecipientInput] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   // Single-column export state
@@ -1397,7 +1459,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
   // Open the Email Report dialog with sensible defaults
   const openEmailReportDialog = () => {
-    setEmailRecipients(user?.email || "");
+    setEmailRecipientChips(user?.email ? [user.email] : []);
+    setEmailRecipientInput("");
     setEmailIncludePdf(true);
     setEmailPdfDetailed(false);
     setEmailIncludeCsv(true);
@@ -1414,20 +1477,38 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const recipientList = emailRecipients
+    const pendingInput = emailRecipientInput.trim();
+    const pendingCandidates = pendingInput
       .split(",")
       .map(e => e.trim())
       .filter(e => e.length > 0);
-
-    if (recipientList.length === 0) {
+    const existing = new Set(emailRecipientChips.map(e => e.toLowerCase()));
+    const mergedChips = [...emailRecipientChips];
+    for (const c of pendingCandidates) {
+      if (emailRegex.test(c) && !existing.has(c.toLowerCase())) {
+        existing.add(c.toLowerCase());
+        mergedChips.push(c);
+      }
+    }
+    const invalidPending = pendingCandidates.filter(e => !emailRegex.test(e));
+    if (invalidPending.length > 0) {
+      setEmailError(`Invalid email address${invalidPending.length > 1 ? "es" : ""}: ${invalidPending.join(", ")}`);
+      return;
+    }
+    if (mergedChips.length === 0) {
       setEmailError("Enter at least one recipient email address.");
       return;
     }
-    const invalid = recipientList.filter(e => !emailRegex.test(e));
+    const invalid = mergedChips.filter(e => !emailRegex.test(e));
     if (invalid.length > 0) {
       setEmailError(`Invalid email address${invalid.length > 1 ? "es" : ""}: ${invalid.join(", ")}`);
       return;
     }
+    if (mergedChips.length !== emailRecipientChips.length) {
+      setEmailRecipientChips(mergedChips);
+      setEmailRecipientInput("");
+    }
+    const recipientList = mergedChips;
 
     const formData = form.getValues();
     const addressParts = [formData.address, formData.city, formData.state, formData.zipCode]
@@ -1484,7 +1565,8 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
       if (failedList.length > 0) {
         // Partial success — keep dialog open and prefill recipients with only the failed ones
         // so a retry does not double-send to recipients who already received it.
-        setEmailRecipients(failedList.join(", "));
+        setEmailRecipientChips(failedList);
+        setEmailRecipientInput("");
         setEmailError(`Sent to ${sentList.length} of ${recipientList.length}. Failed: ${failedList.join(", ")}. You can retry the failed ones.`);
         toast({
           title: "Partially sent",
@@ -3887,8 +3969,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
           setEmailPdfDetailed={setEmailPdfDetailed}
           emailIncludeCsv={emailIncludeCsv}
           setEmailIncludeCsv={setEmailIncludeCsv}
-          emailRecipients={emailRecipients}
-          setEmailRecipients={setEmailRecipients}
+          emailRecipientChips={emailRecipientChips}
+          setEmailRecipientChips={setEmailRecipientChips}
+          emailRecipientInput={emailRecipientInput}
+          setEmailRecipientInput={setEmailRecipientInput}
           emailSending={emailSending}
           emailError={emailError}
           onSend={handleSendEmailReport}
@@ -4716,8 +4800,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
         setEmailPdfDetailed={setEmailPdfDetailed}
         emailIncludeCsv={emailIncludeCsv}
         setEmailIncludeCsv={setEmailIncludeCsv}
-        emailRecipients={emailRecipients}
-        setEmailRecipients={setEmailRecipients}
+        emailRecipientChips={emailRecipientChips}
+        setEmailRecipientChips={setEmailRecipientChips}
+        emailRecipientInput={emailRecipientInput}
+        setEmailRecipientInput={setEmailRecipientInput}
         emailSending={emailSending}
         emailError={emailError}
         onSend={handleSendEmailReport}
