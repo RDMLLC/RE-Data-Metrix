@@ -1492,6 +1492,15 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
     await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 400)));
     try {
       const opts: any = { useCORS: true, scale: 2, backgroundColor: '#ffffff', logging: false };
+      if (!pdfPage1Ref.current || !pdfPage2Ref.current) {
+        toast({
+          title: "PDF generation failed",
+          description: "Please try again in a moment.",
+          variant: "destructive",
+        });
+        setIsGeneratingPdf(false);
+        return;
+      }
       const c1 = await html2canvas(pdfPage1Ref.current!, opts);
       const c2 = await html2canvas(pdfPage2Ref.current!, opts);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter', compress: true });
@@ -1908,869 +1917,9 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
 
   // Mobile render path — clean compact layout. Reuses all existing state,
   // handlers, mutations, and computed values; no new logic.
-  if (isMobile) {
-    const formData = form.getValues();
-    const mobileLendersToShow = showAllLoansMobile
-      ? displayLenderColumns
-      : displayLenderColumns.slice(0, 2);
-    const mobileRemainingLenders = Math.max(
-      0,
-      displayLenderColumns.length - mobileLendersToShow.length,
-    );
-
-    type MobileCol = { key: string; title: string; subtitle?: string; col: LoanComparisonColumn; type: 'cash' | 'user-loan' | 'lender'; lender?: LoanComparisonColumn };
-    const mobileColumns: MobileCol[] = [];
-    if (showCashSale) {
-      mobileColumns.push({ key: 'cash', title: 'Cash Sale', col: results.cashSaleColumn, type: 'cash' });
-    }
-    if (results.userLoanColumn) {
-      mobileColumns.push({ key: 'user', title: 'Entered Loan', col: results.userLoanColumn, type: 'user-loan' });
-    }
-    mobileLendersToShow.forEach((l, i) => {
-      mobileColumns.push({
-        key: `lender-${i}`,
-        title: l.lenderName || `Lender ${i + 1}`,
-        subtitle: l.productName,
-        col: l,
-        type: 'lender',
-        lender: l,
-      });
-    });
-
-    const triggerManualSave = () => {
-      if (!results || !isAuthenticated || saveDealMutation.isPending) return;
-      const fd = form.getValues();
-      const addressParts = [fd.address || '', fd.city || '', fd.state || '', fd.zipCode || '']
-        .filter(p => p.trim() !== '');
-      const propertyAddress = addressParts.length > 0 ? addressParts.join(', ') : 'Manual Entry';
-      const bestColumn = results.userLoanColumn || results.cashSaleColumn;
-      const enrichedDealSnapshot = {
-        ...fd,
-        appliedForStraightline: wizardData.property?.appliedForStraightline,
-        wholesaleTransactionType: wizardData.property?.wholesaleTransactionType,
-        wholesaleFee: wizardData.property?.wholesaleFee,
-        resalePrice: wizardData.property?.resalePrice,
-      };
-      saveDealMutation.mutate({
-        dealSnapshot: enrichedDealSnapshot,
-        resultsSnapshot: results,
-        propertyAddress,
-        arv: fd.arv || editArv,
-        roi: bestColumn?.cashOnCashRoi,
-        profit: bestColumn?.profit,
-        status: 'draft',
-        lendersPresented: results.lenderColumns?.map(l => ({
-          lenderId: l.lenderId,
-          lenderName: l.lenderName,
-          productId: l.productId,
-          productName: l.productName,
-        })),
-      });
-    };
-
-    const renderMobileCellValue = (rowKey: string, c: MobileCol): React.ReactNode => {
-      const col = c.col;
-      switch (rowKey) {
-        case 'netProfitTop': {
-          const v = col.profit;
-          return (
-            <span className={v >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-              {formatCurrency(v)}
-            </span>
-          );
-        }
-        case 'oop':
-          return formatCurrency(col.outOfPocketCost);
-        case 'coc':
-          return formatPercent(col.cashOnCashRoi);
-        case 'annRoi':
-          return formatPercent(col.annualizedRoi);
-        case 'totalLoan':
-          return c.type === 'cash' ? '—' : (col.totalLoanAmount ? formatCurrency(col.totalLoanAmount) : '—');
-        case 'loanTerms':
-          if (c.type === 'cash') return '—';
-          return (
-            <span className="text-xs">
-              {col.interestRate != null ? `${col.interestRate}%` : '—'}
-              {col.points != null ? ` / ${col.points} pts` : ''}
-            </span>
-          );
-        case 'projectCost':
-          return formatCurrency(col.totalProjectCost);
-        case 'closingCostsBuy':
-          return formatCurrency(col.outOfPocketBreakdown?.totalClosingCostsBuy ?? col.closingCostsBuy);
-        case 'lenderFees': {
-          if (c.type === 'cash') return formatCurrency(0);
-          const b = col.outOfPocketBreakdown;
-          const sum =
-            (b?.pointsCost || 0) +
-            (b?.docPrepFee || 0) +
-            (b?.appraisalCost || 0) +
-            (col.lenderDrawFees || 0);
-          return formatCurrency(sum);
-        }
-        case 'carryingCosts':
-          return formatCurrency(col.outOfPocketBreakdown?.carryingCosts ?? col.carryingCosts);
-        case 'estOop':
-          return formatCurrency(col.totalInvestment);
-        case 'salePrice':
-          return formatCurrency(col.sellPrice);
-        case 'grossProfit':
-          return formatCurrency(col.sellPrice - col.totalInvestment);
-        case 'sellingCosts':
-          return formatCurrency((col.closingCostsSell || 0) + (col.commission || 0));
-        case 'netProfitBottom': {
-          const v = col.profit;
-          return (
-            <span className={`font-bold ${v >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(v)}
-            </span>
-          );
-        }
-        case 'contact': {
-          if (c.type !== 'lender' || !c.lender) return null;
-          const l = c.lender;
-          if (!l.lenderId || !l.lenderName || !l.productId || !l.productName) return null;
-          return (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => handleContactLender({
-                lenderId: l.lenderId!,
-                lenderName: l.lenderName!,
-                productId: l.productId!,
-                productName: l.productName!,
-                loanType: '',
-                interestRate: l.interestRate,
-                maxLtvBuy: l.maxLtvBuy,
-                points: l.points,
-                timeToClose: l.timeToClose,
-                profit: l.profit,
-                cashOnCashRoi: l.cashOnCashRoi,
-                annualizedRoi: l.annualizedRoi,
-                outOfPocketCost: l.outOfPocketCost,
-                referralLink: l.referralLink,
-              })}
-              data-testid={`button-mobile-contact-${c.key}`}
-            >
-              <Mail className="h-3 w-3 mr-1" />
-              Contact
-            </Button>
-          );
-        }
-        default:
-          return null;
-      }
-    };
-
-    type MobileRow = {
-      key: string;
-      label: string;
-      divider?: boolean;
-      bold?: boolean;
-      expandKey?: 'oop' | 'closingBuy' | 'lenderFees' | 'carrying' | 'selling';
-    };
-    const mobileRows: MobileRow[] = [
-      { key: 'netProfitTop', label: 'Net Profit' },
-      { key: 'oop', label: 'Out-of-Pocket', expandKey: 'oop' },
-      { key: 'coc', label: 'Cash-on-Cash ROI' },
-      { key: 'annRoi', label: 'Annualized ROI' },
-      { key: 'totalLoan', label: 'Total Loan Amount' },
-      { key: 'loanTerms', label: 'Loan Terms' },
-      { key: 'projectCost', label: 'Project Cost', divider: true },
-      { key: 'closingCostsBuy', label: 'Closing Costs (Buy)', expandKey: 'closingBuy' },
-      { key: 'lenderFees', label: 'Lender Fees', expandKey: 'lenderFees' },
-      { key: 'carryingCosts', label: 'Carrying Costs', expandKey: 'carrying' },
-      { key: 'estOop', label: 'Est Out-of-Pocket' },
-      { key: 'salePrice', label: 'Estimated Sale Price' },
-      { key: 'grossProfit', label: 'Gross Profit' },
-      { key: 'sellingCosts', label: 'Selling Costs', expandKey: 'selling' },
-      { key: 'netProfitBottom', label: 'Net Profit', bold: true },
-    ];
-
-    const projLen = formData.projectLength || 6;
-    const breakdownDefs: Record<
-      'oop' | 'closingBuy' | 'lenderFees' | 'carrying' | 'selling',
-      { isOpen: boolean; toggle: () => void; rows: { label: string; value: (c: MobileCol) => number }[] }
-    > = {
-      oop: {
-        isOpen: mobileExpandOop,
-        toggle: () => setMobileExpandOop(v => !v),
-        rows: [
-          { label: 'Down Payment', value: (c) => c.col.outOfPocketBreakdown?.downPayment ?? (c.type === 'cash' ? c.col.totalProjectCost : 0) },
-          { label: 'Closing Costs', value: (c) => c.col.outOfPocketBreakdown?.totalClosingCostsBuy ?? c.col.closingCostsBuy },
-          { label: 'Lender Fees', value: (c) => {
-              if (c.type === 'cash') return 0;
-              const b = c.col.outOfPocketBreakdown;
-              return (b?.totalPointsCost || b?.pointsCost || 0) + (b?.docPrepFee || 0) + (b?.appraisalCost || 0) + (c.col.lenderDrawFees || 0);
-            } },
-          { label: 'Carrying Costs', value: (c) => c.col.outOfPocketBreakdown?.carryingCosts ?? c.col.carryingCosts },
-          { label: 'Selling Costs', value: (c) => (c.col.closingCostsSell || 0) + (c.col.commission || 0) },
-        ],
-      },
-      closingBuy: {
-        isOpen: mobileExpandClosingCosts,
-        toggle: () => setMobileExpandClosingCosts(v => !v),
-        rows: [
-          { label: 'Attorney Fees', value: () => formData.attorneyFees || 0 },
-          { label: 'Title Exam', value: () => formData.titleExam || 0 },
-          { label: 'Title Insurance', value: () => formData.titleInsurance || 0 },
-          { label: 'Transfer Fee', value: () => formData.transferFee || 0 },
-        ],
-      },
-      lenderFees: {
-        isOpen: mobileExpandLenderFees,
-        toggle: () => setMobileExpandLenderFees(v => !v),
-        rows: [
-          { label: 'Points', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.totalPointsCost || c.col.outOfPocketBreakdown?.pointsCost || 0) },
-          { label: 'Doc Prep', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.docPrepFee || 0) },
-          { label: 'Draw Fees', value: (c) => c.type === 'cash' ? 0 : (c.col.lenderDrawFees || 0) },
-          { label: 'Appraisal', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.appraisalCost || 0) },
-        ],
-      },
-      carrying: {
-        isOpen: mobileExpandCarrying,
-        toggle: () => setMobileExpandCarrying(v => !v),
-        rows: [
-          { label: 'Property Tax', value: () => ((formData.annualTax || 0) / 12) * projLen },
-          { label: 'Utilities', value: () => (formData.monthlyUtilities || 0) * projLen },
-          { label: 'Insurance', value: () => ((formData.annualInsurance || 0) / 12) * projLen },
-          { label: 'HOA', value: () => (formData.hoaFees || 0) * projLen },
-          { label: 'Other', value: () => formData.otherCarryingCosts || 0 },
-        ],
-      },
-      selling: {
-        isOpen: mobileExpandSelling,
-        toggle: () => setMobileExpandSelling(v => !v),
-        rows: [
-          { label: 'Closing Costs (Sell)', value: (c) => c.col.closingCostsSell || 0 },
-          { label: 'Commission', value: (c) => c.col.commission || 0 },
-        ],
-      },
-    };
-
-    const COL_W = 130;
-    const LABEL_W = 130;
-
-    return (
-      <div className="space-y-4 p-4" data-testid="mobile-step6-results">
-        {/* Back button (Step 6 has no overlay footer) */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            data-testid="button-mobile-back-step6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          {isAuthenticated && dealSaved && (
-            <span className="inline-flex items-center text-xs text-green-700 dark:text-green-400">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Saved
-            </span>
-          )}
-        </div>
-
-        {/* Section 1 — Adjust Variables */}
-        <CollapsibleSection title="Adjust Variables" defaultOpen={false}>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="m-buy" className="text-xs">Buy Price</Label>
-              <Input
-                id="m-buy"
-                type="number"
-                value={editBuyPrice || ''}
-                onChange={(e) => setEditBuyPrice(parseFloat(e.target.value) || 0)}
-                className="w-full min-h-11"
-                data-testid="input-mobile-edit-buy-price"
-              />
-            </div>
-            <div>
-              <Label htmlFor="m-rehab" className="text-xs">Rehab</Label>
-              <Input
-                id="m-rehab"
-                type="number"
-                value={editRehab || ''}
-                onChange={(e) => setEditRehab(parseFloat(e.target.value) || 0)}
-                className="w-full min-h-11"
-                data-testid="input-mobile-edit-rehab"
-              />
-            </div>
-            <div>
-              <Label htmlFor="m-proj" className="text-xs">Project (mo.)</Label>
-              <Input
-                id="m-proj"
-                type="number"
-                value={editProjectLength || ''}
-                onChange={(e) => setEditProjectLength(parseInt(e.target.value) || 0)}
-                className="w-full min-h-11"
-                data-testid="input-mobile-edit-project-length"
-              />
-            </div>
-            <div>
-              <Label htmlFor="m-arv" className="text-xs">ARV Sale</Label>
-              <Input
-                id="m-arv"
-                type="number"
-                value={editArv || ''}
-                onChange={(e) => setEditArv(parseFloat(e.target.value) || 0)}
-                className="w-full min-h-11"
-                data-testid="input-mobile-edit-arv"
-              />
-            </div>
-          </div>
-          {calculateResultsMutation.isPending && (
-            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Recalculating...
-            </div>
-          )}
-        </CollapsibleSection>
-
-        {/* Section 2 — Loan Comparison Results */}
-        <div className="space-y-2">
-          <h3 className="text-base font-semibold" data-testid="text-mobile-loan-comparison-title">
-            Loan Comparison Results
-          </h3>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => setShowCashSale(!showCashSale)}
-            data-testid="button-mobile-toggle-cash-sale"
-          >
-            {showCashSale ? 'Hide Cash Sale' : 'Show Cash Sale'}
-          </Button>
-
-          {mobileColumns.length === 0 ? (
-            <div className="text-sm text-muted-foreground text-center py-8 border rounded-md">
-              No loan results to display.
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto border rounded-md">
-              <div className="inline-block min-w-full">
-                {/* Header row */}
-                <div className="flex border-b bg-muted">
-                  <div
-                    className="sticky left-0 z-10 bg-muted px-2 py-2 text-xs font-semibold border-r"
-                    style={{ minWidth: LABEL_W, width: LABEL_W }}
-                  >
-                    &nbsp;
-                  </div>
-                  {mobileColumns.map((c) => (
-                    <div
-                      key={c.key}
-                      className="px-2 py-2 text-xs font-semibold border-r last:border-r-0"
-                      style={{ minWidth: COL_W, width: COL_W }}
-                      data-testid={`header-mobile-col-${c.key}`}
-                    >
-                      <div className="truncate">{c.title}</div>
-                      {c.subtitle && (
-                        <div className="text-[10px] font-normal text-muted-foreground truncate">
-                          {c.subtitle}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Data rows */}
-                {mobileRows.map((r) => {
-                  const def = r.expandKey ? breakdownDefs[r.expandKey] : null;
-                  const isOpen = !!def?.isOpen;
-                  const clickable = !!def;
-                  return (
-                    <div key={r.key}>
-                      <div
-                        className={`flex border-b last:border-b-0 ${r.divider ? 'border-t-2 border-t-muted-foreground/20' : ''} ${clickable ? 'cursor-pointer hover-elevate' : ''}`}
-                        onClick={clickable ? def!.toggle : undefined}
-                        role={clickable ? 'button' : undefined}
-                        data-testid={clickable ? `row-mobile-expandable-${r.expandKey}` : undefined}
-                      >
-                        <div
-                          className={`sticky left-0 z-10 bg-background px-2 py-2 text-xs border-r ${r.bold ? 'font-bold' : 'font-medium'} ${clickable ? 'flex items-center gap-1' : ''}`}
-                          style={{ minWidth: LABEL_W, width: LABEL_W }}
-                        >
-                          {clickable && (
-                            <ChevronRight
-                              className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
-                            />
-                          )}
-                          <span className="truncate">{r.label}</span>
-                        </div>
-                        {mobileColumns.map((c) => (
-                          <div
-                            key={c.key}
-                            className="px-2 py-2 text-xs border-r last:border-r-0 text-right"
-                            style={{ minWidth: COL_W, width: COL_W }}
-                            data-testid={`cell-mobile-${r.key}-${c.key}`}
-                          >
-                            {renderMobileCellValue(r.key, c)}
-                          </div>
-                        ))}
-                      </div>
-                      {def && isOpen && (
-                        <div
-                          className="overflow-hidden transition-all duration-200"
-                          data-testid={`breakdown-mobile-${r.expandKey}`}
-                        >
-                          {def.rows.map((br) => (
-                            <div
-                              key={br.label}
-                              className="flex border-b last:border-b-0 bg-muted/30"
-                            >
-                              <div
-                                className="sticky left-0 z-10 bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground border-r pl-7"
-                                style={{ minWidth: LABEL_W, width: LABEL_W }}
-                              >
-                                <span className="truncate">{br.label}</span>
-                              </div>
-                              {mobileColumns.map((c) => (
-                                <div
-                                  key={c.key}
-                                  className="px-2 py-1.5 text-xs text-muted-foreground border-r last:border-r-0 text-right"
-                                  style={{ minWidth: COL_W, width: COL_W }}
-                                  data-testid={`cell-mobile-${r.expandKey}-${br.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${c.key}`}
-                                >
-                                  {formatCurrency(br.value(c))}
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Contact lender row */}
-                <div className="flex border-b last:border-b-0">
-                  <div
-                    className="sticky left-0 z-10 bg-background px-2 py-2 text-xs font-medium border-r"
-                    style={{ minWidth: LABEL_W, width: LABEL_W }}
-                  >
-                    &nbsp;
-                  </div>
-                  {mobileColumns.map((c) => (
-                    <div
-                      key={c.key}
-                      className="px-2 py-2 border-r last:border-r-0"
-                      style={{ minWidth: COL_W, width: COL_W }}
-                    >
-                      {renderMobileCellValue('contact', c)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {mobileRemainingLenders > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setShowAllLoansMobile(true)}
-              data-testid="button-mobile-show-more-loans"
-            >
-              Show More Loans ({mobileRemainingLenders} remaining)
-            </Button>
-          )}
-          {showAllLoansMobile && displayLenderColumns.length > 2 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full"
-              onClick={() => setShowAllLoansMobile(false)}
-              data-testid="button-mobile-show-fewer-loans"
-            >
-              Show Fewer Loans
-            </Button>
-          )}
-        </div>
-
-        {/* Section 3 — Save / Download actions */}
-        <div className="space-y-2 pt-2 border-t">
-          {isAuthenticated && (
-            <Button
-              variant="default"
-              className="w-full"
-              onClick={triggerManualSave}
-              disabled={dealSaved || saveDealMutation.isPending}
-              data-testid="button-mobile-save-deal"
-            >
-              {saveDealMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : dealSaved ? (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Deal Saved
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Save Deal
-                </>
-              )}
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={generateCSV}
-            data-testid="button-mobile-download-csv"
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Download CSV
-          </Button>
-          {(isAuthenticated || effectiveIsSubscriber) && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => handleDownloadPDF(false)}
-              disabled={isGeneratingPdf}
-              data-testid="button-mobile-download-pdf"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-            </Button>
-          )}
-          {isAuthenticated && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={openEmailReportDialog}
-              data-testid="button-mobile-email-report"
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Email Report
-            </Button>
-          )}
-        </div>
-
-        {/* Email Report Dialog must also be mounted in the mobile branch */}
-        <EmailReportDialog
-          open={emailReportOpen}
-          onOpenChange={setEmailReportOpen}
-          emailIncludePdf={emailIncludePdf}
-          setEmailIncludePdf={setEmailIncludePdf}
-          emailIncludeCsv={emailIncludeCsv}
-          setEmailIncludeCsv={setEmailIncludeCsv}
-          emailRecipients={emailRecipients}
-          setEmailRecipients={setEmailRecipients}
-          emailSending={emailSending}
-          emailError={emailError}
-          onSend={handleSendEmailReport}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between sm:flex-wrap gap-2">
-        <div className="flex gap-2 w-full sm:w-auto">
-          {isViewingDeal ? (
-            <>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onBack}
-                className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
-                data-testid="button-back-to-deals"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              {onEditDeal && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onEditDeal}
-                  className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
-                  data-testid="button-edit-deal"
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit Deal
-                </Button>
-              )}
-            </>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onBack}
-              className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
-              data-testid="button-back"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          )}
-        </div>
-        
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={generateCSV}
-            className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
-            data-testid="button-download-csv"
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Download CSV
-          </Button>
-          
-          {isAuthenticated || effectiveIsSubscriber ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isGeneratingPdf}
-                  className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
-                  data-testid="button-download-pdf"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openPdfDialog()} data-testid="pdf-overview">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Overview (Summary)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openPdfDialog()} data-testid="pdf-detailed">
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Detailed (All Expanded)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link href="/pricing" className="flex-1 sm:flex-initial">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground w-full sm:w-auto min-h-11 sm:min-h-8"
-                data-testid="button-upgrade-pdf"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Upgrade for PDF
-              </Button>
-            </Link>
-          )}
-
-          {isAuthenticated && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openEmailReportDialog}
-              className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
-              data-testid="button-email-report"
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Email Report
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Auto-save status banner */}
-      {isAuthenticated && dealSaved && !isGeneratingPdf && (
-        <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-            <span className="text-green-700 dark:text-green-400">
-              Analysis Automatically Saved
-            </span>
-            <Link href="/portal/deals">
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-400"
-                data-testid="button-view-saved-deals"
-              >
-                <CheckCircle className="h-3 w-3 mr-1" />
-                View Saved Deals
-              </Button>
-            </Link>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Demo access banner */}
-      {hasDemoToken && !isGeneratingPdf && (
-        <Alert className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20 dark:border-cyan-900">
-          <AlertDescription className="text-cyan-700 dark:text-cyan-400">
-            You're viewing this with demo access. Lender information is anonymized.{" "}
-            <Link href="/pricing" className="font-medium underline" data-testid="link-demo-signup">
-              Create an account
-            </Link>{" "}
-            to get started with real lender data.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Prompt for non-authenticated users */}
-      {!isAuthenticated && !hasDemoToken && !isGeneratingPdf && (
-        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
-          <AlertDescription className="text-blue-700 dark:text-blue-400">
-            <Link href="/pricing" className="font-medium underline" data-testid="link-signup-to-save">
-              Create an account
-            </Link>{" "}
-            to save your analyses and access them from your dashboard.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Analysis Type Toggle */}
-      <Tabs value={analysisMode} onValueChange={(value) => { setAnalysisMode(value as 'fix-and-flip' | 'rental-dscr'); if (value === 'rental-dscr') setDscrTabActivated(true); }} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
-          <TabsTrigger value="fix-and-flip" className="flex items-center gap-2" data-testid="tab-fix-and-flip">
-            <Home className="h-4 w-4" />
-            Fix & Flip
-          </TabsTrigger>
-          <TabsTrigger value="rental-dscr" className="flex items-center gap-2" data-testid="tab-rental-dscr">
-            <Building2 className="h-4 w-4" />
-            Rental / DSCR
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Fix & Flip Analysis Tab */}
-        <TabsContent value="fix-and-flip" className="mt-6 space-y-6">
-          {/* Editable Variables Section - MOVED TO TOP */}
-          <Card className="border-primary/20">
-            <CardContent className="pt-4">
-              <p className="text-sm font-medium text-muted-foreground mb-3">
-                Do you want to change any of the variables?
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-5 gap-3 items-end">
-                <div className="space-y-1">
-                  <Label htmlFor="edit-buy-price" className="text-xs sm:text-sm">Buy Price</Label>
-                  <Input
-                    id="edit-buy-price"
-                    type="number"
-                    step="any"
-                    value={editBuyPrice || ''}
-                    onChange={(e) => {
-                      const parsed = parseFloat(e.target.value);
-                      if (!isNaN(parsed)) setEditBuyPrice(parsed);
-                      else if (e.target.value === '') setEditBuyPrice(0);
-                    }}
-                    data-testid="input-edit-buy-price"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-rehab" className="text-xs sm:text-sm">Rehab</Label>
-                  <Input
-                    id="edit-rehab"
-                    type="number"
-                    step="any"
-                    value={editRehab || ''}
-                    onChange={(e) => {
-                      const parsed = parseFloat(e.target.value);
-                      if (!isNaN(parsed)) setEditRehab(parsed);
-                      else if (e.target.value === '') setEditRehab(0);
-                    }}
-                    data-testid="input-edit-rehab"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-project-length" className="text-xs sm:text-sm whitespace-nowrap">Project (mo.)</Label>
-                  <Input
-                    id="edit-project-length"
-                    type="number"
-                    step="any"
-                    value={editProjectLength || ''}
-                    onChange={(e) => {
-                      const parsed = parseFloat(e.target.value);
-                      if (!isNaN(parsed)) setEditProjectLength(parsed);
-                      else if (e.target.value === '') setEditProjectLength(6);
-                    }}
-                    data-testid="input-edit-project-length"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="edit-arv" className="text-xs sm:text-sm whitespace-nowrap">ARV (Sale)</Label>
-                  <Input
-                    id="edit-arv"
-                    type="number"
-                    step="any"
-                    value={editArv || ''}
-                    onChange={(e) => {
-                      const parsed = parseFloat(e.target.value);
-                      if (!isNaN(parsed)) setEditArv(parsed);
-                      else if (e.target.value === '') setEditArv(0);
-                    }}
-                    data-testid="input-edit-arv"
-                  />
-                </div>
-                {calculateResultsMutation.isPending && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Recalculating...
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Outer wrapper kept for layout; PDF capture now uses pdfPage1Ref + pdfPage2Ref */}
-          <div>
-
-          {/* Usage counter for free authenticated users — shows near lender results */}
-          {isAuthenticated && !effectiveIsSubscriber && results && !isGeneratingPdf && (
-            <p className="text-sm text-muted-foreground text-right" data-testid="text-loan-analysis-counter">
-              {usageData?.loanAnalysisCount ?? (results.code === 'LOAN_ANALYSIS_QUOTA_EXCEEDED' ? 2 : 0)} of 2 analyses used this month
-            </p>
-          )}
-
-          {/* Upgrade CTA — for non-subscribers without lender columns */}
-          {!showFullResults && !isGeneratingPdf && (
-            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardContent className="py-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
-                      <Sparkles className="h-8 w-8 text-amber-500" />
-                    </div>
-                    <div>
-                      {isAuthenticated && !effectiveIsSubscriber ? (
-                        <>
-                          <h3 className="font-semibold text-lg">You've used your 2 analyses for the month.</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Upgrade for unlimited loan comparisons and lender referrals.
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <h3 className="font-semibold text-lg">Upgrade for Loan Referrals</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Compare multiple lender options and get connected with lenders who can fund your deals.
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <Link href="/pricing">
-                    <Button data-testid="button-upgrade-loan-referrals">
-                      Upgrade Now
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
+  // PDF render targets — declared once so both mobile and desktop branches can mount them.
+  // Only one branch renders at a time, so the shared refs never collide.
+  const pdfPage1Subtree = (
             <div ref={pdfPage1Ref} className="pdf-page1">
             {/* Company Header for PDF */}
             <div className={`flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5${isGeneratingPdf ? '' : ' hidden sm:flex'}` }>
@@ -3235,12 +2384,10 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
               )}
             </CardContent>
             </div>
-            <CardContent className="pt-0">
-              {/* Mobile Card View - visible only on truly small screens (< sm). 2-col grid; toggles span full width */}
-              
-              {/* Desktop Table View - hidden on mobile */}
+  );
+  const pdfPage2Subtree = (
               <div ref={pdfPage2Ref} className="pdf-page2">
-              <div className="hidden sm:block overflow-x-auto relative" ref={scrollContainerRef}>
+              <div className={`${isGeneratingPdf ? 'block' : 'hidden sm:block'} overflow-x-auto relative`} ref={scrollContainerRef}>
                 <Table className={`min-w-full${pdfHideCash ? ' pdf-hide-col2' : ''}${pdfHideUserLoan ? ' pdf-hide-col3' : ''}`}>
               <TableHeader>
                 <TableRow>
@@ -4101,6 +3248,886 @@ export default function Step5Results({ form, onBack, isSubscriber = false, viewi
             </Table>
           </div>
               </div>
+  );
+
+  if (isMobile) {
+    const formData = form.getValues();
+    const mobileLendersToShow = showAllLoansMobile
+      ? displayLenderColumns
+      : displayLenderColumns.slice(0, 2);
+    const mobileRemainingLenders = Math.max(
+      0,
+      displayLenderColumns.length - mobileLendersToShow.length,
+    );
+
+    type MobileCol = { key: string; title: string; subtitle?: string; col: LoanComparisonColumn; type: 'cash' | 'user-loan' | 'lender'; lender?: LoanComparisonColumn };
+    const mobileColumns: MobileCol[] = [];
+    if (showCashSale) {
+      mobileColumns.push({ key: 'cash', title: 'Cash Sale', col: results.cashSaleColumn, type: 'cash' });
+    }
+    if (results.userLoanColumn) {
+      mobileColumns.push({ key: 'user', title: 'Entered Loan', col: results.userLoanColumn, type: 'user-loan' });
+    }
+    mobileLendersToShow.forEach((l, i) => {
+      mobileColumns.push({
+        key: `lender-${i}`,
+        title: l.lenderName || `Lender ${i + 1}`,
+        subtitle: l.productName,
+        col: l,
+        type: 'lender',
+        lender: l,
+      });
+    });
+
+    const triggerManualSave = () => {
+      if (!results || !isAuthenticated || saveDealMutation.isPending) return;
+      const fd = form.getValues();
+      const addressParts = [fd.address || '', fd.city || '', fd.state || '', fd.zipCode || '']
+        .filter(p => p.trim() !== '');
+      const propertyAddress = addressParts.length > 0 ? addressParts.join(', ') : 'Manual Entry';
+      const bestColumn = results.userLoanColumn || results.cashSaleColumn;
+      const enrichedDealSnapshot = {
+        ...fd,
+        appliedForStraightline: wizardData.property?.appliedForStraightline,
+        wholesaleTransactionType: wizardData.property?.wholesaleTransactionType,
+        wholesaleFee: wizardData.property?.wholesaleFee,
+        resalePrice: wizardData.property?.resalePrice,
+      };
+      saveDealMutation.mutate({
+        dealSnapshot: enrichedDealSnapshot,
+        resultsSnapshot: results,
+        propertyAddress,
+        arv: fd.arv || editArv,
+        roi: bestColumn?.cashOnCashRoi,
+        profit: bestColumn?.profit,
+        status: 'draft',
+        lendersPresented: results.lenderColumns?.map(l => ({
+          lenderId: l.lenderId,
+          lenderName: l.lenderName,
+          productId: l.productId,
+          productName: l.productName,
+        })),
+      });
+    };
+
+    const renderMobileCellValue = (rowKey: string, c: MobileCol): React.ReactNode => {
+      const col = c.col;
+      switch (rowKey) {
+        case 'netProfitTop': {
+          const v = col.profit;
+          return (
+            <span className={v >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+              {formatCurrency(v)}
+            </span>
+          );
+        }
+        case 'oop':
+          return formatCurrency(col.outOfPocketCost);
+        case 'coc':
+          return formatPercent(col.cashOnCashRoi);
+        case 'annRoi':
+          return formatPercent(col.annualizedRoi);
+        case 'totalLoan':
+          return c.type === 'cash' ? '—' : (col.totalLoanAmount ? formatCurrency(col.totalLoanAmount) : '—');
+        case 'loanTerms':
+          if (c.type === 'cash') return '—';
+          return (
+            <span className="text-xs">
+              {col.interestRate != null ? `${col.interestRate}%` : '—'}
+              {col.points != null ? ` / ${col.points} pts` : ''}
+            </span>
+          );
+        case 'projectCost':
+          return formatCurrency(col.totalProjectCost);
+        case 'closingCostsBuy':
+          return formatCurrency(col.outOfPocketBreakdown?.totalClosingCostsBuy ?? col.closingCostsBuy);
+        case 'lenderFees': {
+          if (c.type === 'cash') return formatCurrency(0);
+          const b = col.outOfPocketBreakdown;
+          const sum =
+            (b?.pointsCost || 0) +
+            (b?.docPrepFee || 0) +
+            (b?.appraisalCost || 0) +
+            (col.lenderDrawFees || 0);
+          return formatCurrency(sum);
+        }
+        case 'carryingCosts':
+          return formatCurrency(col.outOfPocketBreakdown?.carryingCosts ?? col.carryingCosts);
+        case 'estOop':
+          return formatCurrency(col.totalInvestment);
+        case 'salePrice':
+          return formatCurrency(col.sellPrice);
+        case 'grossProfit':
+          return formatCurrency(col.sellPrice - col.totalInvestment);
+        case 'sellingCosts':
+          return formatCurrency((col.closingCostsSell || 0) + (col.commission || 0));
+        case 'netProfitBottom': {
+          const v = col.profit;
+          return (
+            <span className={`font-bold ${v >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(v)}
+            </span>
+          );
+        }
+        case 'contact': {
+          if (c.type !== 'lender' || !c.lender) return null;
+          const l = c.lender;
+          if (!l.lenderId || !l.lenderName || !l.productId || !l.productName) return null;
+          return (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => handleContactLender({
+                lenderId: l.lenderId!,
+                lenderName: l.lenderName!,
+                productId: l.productId!,
+                productName: l.productName!,
+                loanType: '',
+                interestRate: l.interestRate,
+                maxLtvBuy: l.maxLtvBuy,
+                points: l.points,
+                timeToClose: l.timeToClose,
+                profit: l.profit,
+                cashOnCashRoi: l.cashOnCashRoi,
+                annualizedRoi: l.annualizedRoi,
+                outOfPocketCost: l.outOfPocketCost,
+                referralLink: l.referralLink,
+              })}
+              data-testid={`button-mobile-contact-${c.key}`}
+            >
+              <Mail className="h-3 w-3 mr-1" />
+              Contact
+            </Button>
+          );
+        }
+        default:
+          return null;
+      }
+    };
+
+    type MobileRow = {
+      key: string;
+      label: string;
+      divider?: boolean;
+      bold?: boolean;
+      expandKey?: 'oop' | 'closingBuy' | 'lenderFees' | 'carrying' | 'selling';
+    };
+    const mobileRows: MobileRow[] = [
+      { key: 'netProfitTop', label: 'Net Profit' },
+      { key: 'oop', label: 'Out-of-Pocket', expandKey: 'oop' },
+      { key: 'coc', label: 'Cash-on-Cash ROI' },
+      { key: 'annRoi', label: 'Annualized ROI' },
+      { key: 'totalLoan', label: 'Total Loan Amount' },
+      { key: 'loanTerms', label: 'Loan Terms' },
+      { key: 'projectCost', label: 'Project Cost', divider: true },
+      { key: 'closingCostsBuy', label: 'Closing Costs (Buy)', expandKey: 'closingBuy' },
+      { key: 'lenderFees', label: 'Lender Fees', expandKey: 'lenderFees' },
+      { key: 'carryingCosts', label: 'Carrying Costs', expandKey: 'carrying' },
+      { key: 'estOop', label: 'Est Out-of-Pocket' },
+      { key: 'salePrice', label: 'Estimated Sale Price' },
+      { key: 'grossProfit', label: 'Gross Profit' },
+      { key: 'sellingCosts', label: 'Selling Costs', expandKey: 'selling' },
+      { key: 'netProfitBottom', label: 'Net Profit', bold: true },
+    ];
+
+    const projLen = formData.projectLength || 6;
+    const breakdownDefs: Record<
+      'oop' | 'closingBuy' | 'lenderFees' | 'carrying' | 'selling',
+      { isOpen: boolean; toggle: () => void; rows: { label: string; value: (c: MobileCol) => number }[] }
+    > = {
+      oop: {
+        isOpen: mobileExpandOop,
+        toggle: () => setMobileExpandOop(v => !v),
+        rows: [
+          { label: 'Down Payment', value: (c) => c.col.outOfPocketBreakdown?.downPayment ?? (c.type === 'cash' ? c.col.totalProjectCost : 0) },
+          { label: 'Closing Costs', value: (c) => c.col.outOfPocketBreakdown?.totalClosingCostsBuy ?? c.col.closingCostsBuy },
+          { label: 'Lender Fees', value: (c) => {
+              if (c.type === 'cash') return 0;
+              const b = c.col.outOfPocketBreakdown;
+              return (b?.totalPointsCost || b?.pointsCost || 0) + (b?.docPrepFee || 0) + (b?.appraisalCost || 0) + (c.col.lenderDrawFees || 0);
+            } },
+          { label: 'Carrying Costs', value: (c) => c.col.outOfPocketBreakdown?.carryingCosts ?? c.col.carryingCosts },
+          { label: 'Selling Costs', value: (c) => (c.col.closingCostsSell || 0) + (c.col.commission || 0) },
+        ],
+      },
+      closingBuy: {
+        isOpen: mobileExpandClosingCosts,
+        toggle: () => setMobileExpandClosingCosts(v => !v),
+        rows: [
+          { label: 'Attorney Fees', value: () => formData.attorneyFees || 0 },
+          { label: 'Title Exam', value: () => formData.titleExam || 0 },
+          { label: 'Title Insurance', value: () => formData.titleInsurance || 0 },
+          { label: 'Transfer Fee', value: () => formData.transferFee || 0 },
+        ],
+      },
+      lenderFees: {
+        isOpen: mobileExpandLenderFees,
+        toggle: () => setMobileExpandLenderFees(v => !v),
+        rows: [
+          { label: 'Points', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.totalPointsCost || c.col.outOfPocketBreakdown?.pointsCost || 0) },
+          { label: 'Doc Prep', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.docPrepFee || 0) },
+          { label: 'Draw Fees', value: (c) => c.type === 'cash' ? 0 : (c.col.lenderDrawFees || 0) },
+          { label: 'Appraisal', value: (c) => c.type === 'cash' ? 0 : (c.col.outOfPocketBreakdown?.appraisalCost || 0) },
+        ],
+      },
+      carrying: {
+        isOpen: mobileExpandCarrying,
+        toggle: () => setMobileExpandCarrying(v => !v),
+        rows: [
+          { label: 'Property Tax', value: () => ((formData.annualTax || 0) / 12) * projLen },
+          { label: 'Utilities', value: () => (formData.monthlyUtilities || 0) * projLen },
+          { label: 'Insurance', value: () => ((formData.annualInsurance || 0) / 12) * projLen },
+          { label: 'HOA', value: () => (formData.hoaFees || 0) * projLen },
+          { label: 'Other', value: () => formData.otherCarryingCosts || 0 },
+        ],
+      },
+      selling: {
+        isOpen: mobileExpandSelling,
+        toggle: () => setMobileExpandSelling(v => !v),
+        rows: [
+          { label: 'Closing Costs (Sell)', value: (c) => c.col.closingCostsSell || 0 },
+          { label: 'Commission', value: (c) => c.col.commission || 0 },
+        ],
+      },
+    };
+
+    const COL_W = 130;
+    const LABEL_W = 130;
+
+    return (
+      <div className="space-y-4 p-4" data-testid="mobile-step6-results">
+        {/* Back button (Step 6 has no overlay footer) */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            data-testid="button-mobile-back-step6"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
+          {isAuthenticated && dealSaved && (
+            <span className="inline-flex items-center text-xs text-green-700 dark:text-green-400">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Saved
+            </span>
+          )}
+        </div>
+
+        {/* Section 1 — Adjust Variables */}
+        <CollapsibleSection title="Adjust Variables" defaultOpen={false}>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="m-buy" className="text-xs">Buy Price</Label>
+              <Input
+                id="m-buy"
+                type="number"
+                value={editBuyPrice || ''}
+                onChange={(e) => setEditBuyPrice(parseFloat(e.target.value) || 0)}
+                className="w-full min-h-11"
+                data-testid="input-mobile-edit-buy-price"
+              />
+            </div>
+            <div>
+              <Label htmlFor="m-rehab" className="text-xs">Rehab</Label>
+              <Input
+                id="m-rehab"
+                type="number"
+                value={editRehab || ''}
+                onChange={(e) => setEditRehab(parseFloat(e.target.value) || 0)}
+                className="w-full min-h-11"
+                data-testid="input-mobile-edit-rehab"
+              />
+            </div>
+            <div>
+              <Label htmlFor="m-proj" className="text-xs">Project (mo.)</Label>
+              <Input
+                id="m-proj"
+                type="number"
+                value={editProjectLength || ''}
+                onChange={(e) => setEditProjectLength(parseInt(e.target.value) || 0)}
+                className="w-full min-h-11"
+                data-testid="input-mobile-edit-project-length"
+              />
+            </div>
+            <div>
+              <Label htmlFor="m-arv" className="text-xs">ARV Sale</Label>
+              <Input
+                id="m-arv"
+                type="number"
+                value={editArv || ''}
+                onChange={(e) => setEditArv(parseFloat(e.target.value) || 0)}
+                className="w-full min-h-11"
+                data-testid="input-mobile-edit-arv"
+              />
+            </div>
+          </div>
+          {calculateResultsMutation.isPending && (
+            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Recalculating...
+            </div>
+          )}
+        </CollapsibleSection>
+
+        {/* Section 2 — Loan Comparison Results */}
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold" data-testid="text-mobile-loan-comparison-title">
+            Loan Comparison Results
+          </h3>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => setShowCashSale(!showCashSale)}
+            data-testid="button-mobile-toggle-cash-sale"
+          >
+            {showCashSale ? 'Hide Cash Sale' : 'Show Cash Sale'}
+          </Button>
+
+          {mobileColumns.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-8 border rounded-md">
+              No loan results to display.
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto border rounded-md">
+              <div className="inline-block min-w-full">
+                {/* Header row */}
+                <div className="flex border-b bg-muted">
+                  <div
+                    className="sticky left-0 z-10 bg-muted px-2 py-2 text-xs font-semibold border-r"
+                    style={{ minWidth: LABEL_W, width: LABEL_W }}
+                  >
+                    &nbsp;
+                  </div>
+                  {mobileColumns.map((c) => (
+                    <div
+                      key={c.key}
+                      className="px-2 py-2 text-xs font-semibold border-r last:border-r-0"
+                      style={{ minWidth: COL_W, width: COL_W }}
+                      data-testid={`header-mobile-col-${c.key}`}
+                    >
+                      <div className="truncate">{c.title}</div>
+                      {c.subtitle && (
+                        <div className="text-[10px] font-normal text-muted-foreground truncate">
+                          {c.subtitle}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Data rows */}
+                {mobileRows.map((r) => {
+                  const def = r.expandKey ? breakdownDefs[r.expandKey] : null;
+                  const isOpen = !!def?.isOpen;
+                  const clickable = !!def;
+                  return (
+                    <div key={r.key}>
+                      <div
+                        className={`flex border-b last:border-b-0 ${r.divider ? 'border-t-2 border-t-muted-foreground/20' : ''} ${clickable ? 'cursor-pointer hover-elevate' : ''}`}
+                        onClick={clickable ? def!.toggle : undefined}
+                        role={clickable ? 'button' : undefined}
+                        data-testid={clickable ? `row-mobile-expandable-${r.expandKey}` : undefined}
+                      >
+                        <div
+                          className={`sticky left-0 z-10 bg-background px-2 py-2 text-xs border-r ${r.bold ? 'font-bold' : 'font-medium'} ${clickable ? 'flex items-center gap-1' : ''}`}
+                          style={{ minWidth: LABEL_W, width: LABEL_W }}
+                        >
+                          {clickable && (
+                            <ChevronRight
+                              className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                            />
+                          )}
+                          <span className="truncate">{r.label}</span>
+                        </div>
+                        {mobileColumns.map((c) => (
+                          <div
+                            key={c.key}
+                            className="px-2 py-2 text-xs border-r last:border-r-0 text-right"
+                            style={{ minWidth: COL_W, width: COL_W }}
+                            data-testid={`cell-mobile-${r.key}-${c.key}`}
+                          >
+                            {renderMobileCellValue(r.key, c)}
+                          </div>
+                        ))}
+                      </div>
+                      {def && isOpen && (
+                        <div
+                          className="overflow-hidden transition-all duration-200"
+                          data-testid={`breakdown-mobile-${r.expandKey}`}
+                        >
+                          {def.rows.map((br) => (
+                            <div
+                              key={br.label}
+                              className="flex border-b last:border-b-0 bg-muted/30"
+                            >
+                              <div
+                                className="sticky left-0 z-10 bg-muted/30 px-2 py-1.5 text-xs text-muted-foreground border-r pl-7"
+                                style={{ minWidth: LABEL_W, width: LABEL_W }}
+                              >
+                                <span className="truncate">{br.label}</span>
+                              </div>
+                              {mobileColumns.map((c) => (
+                                <div
+                                  key={c.key}
+                                  className="px-2 py-1.5 text-xs text-muted-foreground border-r last:border-r-0 text-right"
+                                  style={{ minWidth: COL_W, width: COL_W }}
+                                  data-testid={`cell-mobile-${r.expandKey}-${br.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${c.key}`}
+                                >
+                                  {formatCurrency(br.value(c))}
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Contact lender row */}
+                <div className="flex border-b last:border-b-0">
+                  <div
+                    className="sticky left-0 z-10 bg-background px-2 py-2 text-xs font-medium border-r"
+                    style={{ minWidth: LABEL_W, width: LABEL_W }}
+                  >
+                    &nbsp;
+                  </div>
+                  {mobileColumns.map((c) => (
+                    <div
+                      key={c.key}
+                      className="px-2 py-2 border-r last:border-r-0"
+                      style={{ minWidth: COL_W, width: COL_W }}
+                    >
+                      {renderMobileCellValue('contact', c)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mobileRemainingLenders > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowAllLoansMobile(true)}
+              data-testid="button-mobile-show-more-loans"
+            >
+              Show More Loans ({mobileRemainingLenders} remaining)
+            </Button>
+          )}
+          {showAllLoansMobile && displayLenderColumns.length > 2 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowAllLoansMobile(false)}
+              data-testid="button-mobile-show-fewer-loans"
+            >
+              Show Fewer Loans
+            </Button>
+          )}
+        </div>
+
+        {/* Section 3 — Save / Download actions */}
+        <div className="space-y-2 pt-2 border-t">
+          {isAuthenticated && (
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={triggerManualSave}
+              disabled={dealSaved || saveDealMutation.isPending}
+              data-testid="button-mobile-save-deal"
+            >
+              {saveDealMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : dealSaved ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Deal Saved
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Save Deal
+                </>
+              )}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={generateCSV}
+            data-testid="button-mobile-download-csv"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download CSV
+          </Button>
+          {(isAuthenticated || effectiveIsSubscriber) && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => handleDownloadPDF(false)}
+              disabled={isGeneratingPdf}
+              data-testid="button-mobile-download-pdf"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+            </Button>
+          )}
+          {isAuthenticated && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={openEmailReportDialog}
+              data-testid="button-mobile-email-report"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Email Report
+            </Button>
+          )}
+        </div>
+
+        {/* Email Report Dialog must also be mounted in the mobile branch */}
+        <EmailReportDialog
+          open={emailReportOpen}
+          onOpenChange={setEmailReportOpen}
+          emailIncludePdf={emailIncludePdf}
+          setEmailIncludePdf={setEmailIncludePdf}
+          emailIncludeCsv={emailIncludeCsv}
+          setEmailIncludeCsv={setEmailIncludeCsv}
+          emailRecipients={emailRecipients}
+          setEmailRecipients={setEmailRecipients}
+          emailSending={emailSending}
+          emailError={emailError}
+          onSend={handleSendEmailReport}
+        />
+        {/* Off-screen PDF render targets so mobile Download/Email PDF can find pdfPage1Ref/pdfPage2Ref */}
+        <div
+          aria-hidden="true"
+          className="absolute -left-[9999px] top-0 w-[1200px] pointer-events-none overflow-hidden"
+          data-testid="pdf-mobile-mirror"
+        >
+          {pdfPage1Subtree}
+          {pdfPage2Subtree}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between sm:flex-wrap gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
+          {isViewingDeal ? (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onBack}
+                className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
+                data-testid="button-back-to-deals"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              {onEditDeal && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onEditDeal}
+                  className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
+                  data-testid="button-edit-deal"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit Deal
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onBack}
+              className="flex-1 sm:flex-initial min-h-11 sm:min-h-9"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={generateCSV}
+            className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
+            data-testid="button-download-csv"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Download CSV
+          </Button>
+          
+          {isAuthenticated || effectiveIsSubscriber ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isGeneratingPdf}
+                  className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
+                  data-testid="button-download-pdf"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openPdfDialog()} data-testid="pdf-overview">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Overview (Summary)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openPdfDialog()} data-testid="pdf-detailed">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Detailed (All Expanded)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/pricing" className="flex-1 sm:flex-initial">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground w-full sm:w-auto min-h-11 sm:min-h-8"
+                data-testid="button-upgrade-pdf"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Upgrade for PDF
+              </Button>
+            </Link>
+          )}
+
+          {isAuthenticated && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openEmailReportDialog}
+              className="flex-1 sm:flex-initial min-h-11 sm:min-h-8"
+              data-testid="button-email-report"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Email Report
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Auto-save status banner */}
+      {isAuthenticated && dealSaved && !isGeneratingPdf && (
+        <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-green-700 dark:text-green-400">
+              Analysis Automatically Saved
+            </span>
+            <Link href="/portal/deals">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-green-300 text-green-700 dark:border-green-700 dark:text-green-400"
+                data-testid="button-view-saved-deals"
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                View Saved Deals
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Demo access banner */}
+      {hasDemoToken && !isGeneratingPdf && (
+        <Alert className="border-cyan-200 bg-cyan-50 dark:bg-cyan-950/20 dark:border-cyan-900">
+          <AlertDescription className="text-cyan-700 dark:text-cyan-400">
+            You're viewing this with demo access. Lender information is anonymized.{" "}
+            <Link href="/pricing" className="font-medium underline" data-testid="link-demo-signup">
+              Create an account
+            </Link>{" "}
+            to get started with real lender data.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Prompt for non-authenticated users */}
+      {!isAuthenticated && !hasDemoToken && !isGeneratingPdf && (
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
+          <AlertDescription className="text-blue-700 dark:text-blue-400">
+            <Link href="/pricing" className="font-medium underline" data-testid="link-signup-to-save">
+              Create an account
+            </Link>{" "}
+            to save your analyses and access them from your dashboard.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Analysis Type Toggle */}
+      <Tabs value={analysisMode} onValueChange={(value) => { setAnalysisMode(value as 'fix-and-flip' | 'rental-dscr'); if (value === 'rental-dscr') setDscrTabActivated(true); }} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+          <TabsTrigger value="fix-and-flip" className="flex items-center gap-2" data-testid="tab-fix-and-flip">
+            <Home className="h-4 w-4" />
+            Fix & Flip
+          </TabsTrigger>
+          <TabsTrigger value="rental-dscr" className="flex items-center gap-2" data-testid="tab-rental-dscr">
+            <Building2 className="h-4 w-4" />
+            Rental / DSCR
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Fix & Flip Analysis Tab */}
+        <TabsContent value="fix-and-flip" className="mt-6 space-y-6">
+          {/* Editable Variables Section - MOVED TO TOP */}
+          <Card className="border-primary/20">
+            <CardContent className="pt-4">
+              <p className="text-sm font-medium text-muted-foreground mb-3">
+                Do you want to change any of the variables?
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-4 md:grid-cols-5 gap-3 items-end">
+                <div className="space-y-1">
+                  <Label htmlFor="edit-buy-price" className="text-xs sm:text-sm">Buy Price</Label>
+                  <Input
+                    id="edit-buy-price"
+                    type="number"
+                    step="any"
+                    value={editBuyPrice || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditBuyPrice(parsed);
+                      else if (e.target.value === '') setEditBuyPrice(0);
+                    }}
+                    data-testid="input-edit-buy-price"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-rehab" className="text-xs sm:text-sm">Rehab</Label>
+                  <Input
+                    id="edit-rehab"
+                    type="number"
+                    step="any"
+                    value={editRehab || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditRehab(parsed);
+                      else if (e.target.value === '') setEditRehab(0);
+                    }}
+                    data-testid="input-edit-rehab"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-project-length" className="text-xs sm:text-sm whitespace-nowrap">Project (mo.)</Label>
+                  <Input
+                    id="edit-project-length"
+                    type="number"
+                    step="any"
+                    value={editProjectLength || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditProjectLength(parsed);
+                      else if (e.target.value === '') setEditProjectLength(6);
+                    }}
+                    data-testid="input-edit-project-length"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-arv" className="text-xs sm:text-sm whitespace-nowrap">ARV (Sale)</Label>
+                  <Input
+                    id="edit-arv"
+                    type="number"
+                    step="any"
+                    value={editArv || ''}
+                    onChange={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      if (!isNaN(parsed)) setEditArv(parsed);
+                      else if (e.target.value === '') setEditArv(0);
+                    }}
+                    data-testid="input-edit-arv"
+                  />
+                </div>
+                {calculateResultsMutation.isPending && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Recalculating...
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Outer wrapper kept for layout; PDF capture now uses pdfPage1Ref + pdfPage2Ref */}
+          <div>
+
+          {/* Usage counter for free authenticated users — shows near lender results */}
+          {isAuthenticated && !effectiveIsSubscriber && results && !isGeneratingPdf && (
+            <p className="text-sm text-muted-foreground text-right" data-testid="text-loan-analysis-counter">
+              {usageData?.loanAnalysisCount ?? (results.code === 'LOAN_ANALYSIS_QUOTA_EXCEEDED' ? 2 : 0)} of 2 analyses used this month
+            </p>
+          )}
+
+          {/* Upgrade CTA — for non-subscribers without lender columns */}
+          {!showFullResults && !isGeneratingPdf && (
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+              <CardContent className="py-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                      <Sparkles className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <div>
+                      {isAuthenticated && !effectiveIsSubscriber ? (
+                        <>
+                          <h3 className="font-semibold text-lg">You've used your 2 analyses for the month.</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Upgrade for unlimited loan comparisons and lender referrals.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="font-semibold text-lg">Upgrade for Loan Referrals</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Compare multiple lender options and get connected with lenders who can fund your deals.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <Link href="/pricing">
+                    <Button data-testid="button-upgrade-loan-referrals">
+                      Upgrade Now
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            {pdfPage1Subtree}
+            <CardContent className="pt-0">
+              {/* Mobile Card View - visible only on truly small screens (< sm). 2-col grid; toggles span full width */}
+              
+              {/* Desktop Table View - hidden on mobile */}
+              {pdfPage2Subtree}
 
           {/* Show More Loans Button - Desktop table pagination only (hidden on mobile; mobile uses sm:hidden toggle inside the lg:hidden card view) */}
           {hasMoreLenders && !isGeneratingPdf && (
