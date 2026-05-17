@@ -744,6 +744,23 @@ export default function Navigation() {
                 </Button>
               </Link>
             )}
+
+            {/* Log Out link in mobile menu (only when authenticated) */}
+            {isAuthenticated && (
+              <div className="border-t border-border pt-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-foreground hover:text-primary"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  data-testid="button-mobile-menu-logout"
+                >
+                  Log Out
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
