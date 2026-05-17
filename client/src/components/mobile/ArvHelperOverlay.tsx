@@ -571,7 +571,6 @@ export default function ArvHelperOverlay({ isOpen, onClose, form, onApply }: Arv
           return newSet;
         });
         setCustomCompUrl("");
-        setShowAddCompForm(false);
         toast({
           title: "Comp Added",
           description:

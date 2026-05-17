@@ -483,22 +483,17 @@ export default function Step2PropertyDetails({
               </div>
             </CollapsibleSection>
 
-            <CollapsibleSection title="ARV Helper" defaultOpen={false}>
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Use comparable sales to estimate ARV
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full min-h-12"
-                  onClick={handleArvHelperOpen}
-                  data-testid="button-open-arv-helper-mobile"
-                >
-                  Open ARV Helper
-                </Button>
-              </div>
-            </CollapsibleSection>
+            <div className="border-b border-border last:border-b-0">
+              <button
+                type="button"
+                onClick={handleArvHelperOpen}
+                className="w-full flex items-center justify-between py-4 px-4 text-left hover-elevate active-elevate-2 -mx-2 rounded-md"
+                data-testid="button-open-arv-helper-mobile"
+              >
+                <span className="font-medium text-base">ARV Helper</span>
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </button>
+            </div>
 
             <ArvHelperOverlay
               isOpen={showArvHelper}

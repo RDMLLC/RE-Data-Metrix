@@ -1,0 +1,34 @@
+Two fixes needed. Read both files before making changes:
+1. client/src/components/deal-analysis/Step2PropertyDetails.tsx
+2. client/src/components/mobile/ArvHelperOverlay.tsx
+
+---
+
+FIX 1 — Remove redundant button in Step 2 ARV Helper collapsible
+
+In Step2PropertyDetails.tsx, find the isMobile branch ARV Helper CollapsibleSection (around lines 485–506). Currently it contains a description text and an "Open ARV Helper" button inside the collapsible body.
+
+Change the behavior: tapping the CollapsibleSection header should directly open the ArvHelperOverlay — do not expand to show a button inside. 
+
+Two options — pick whichever is cleaner given the CollapsibleSection component's API:
+A) Make the CollapsibleSection header itself call setShowArvHelperOverlay(true) directly and remove the collapsible body content entirely (no expand/collapse, just a direct tap-to-open trigger styled like the other collapsible sections)
+B) Keep the CollapsibleSection but on open immediately fire setShowArvHelperOverlay(true) so the overlay opens as soon as the header is tapped
+
+Check how CollapsibleSection.tsx works (read it) and pick the cleanest approach. The end result: one tap on "ARV Helper" opens the overlay. No intermediate expanded state with a button inside.
+
+---
+
+FIX 2 — Zillow URL Add Comp scrolls to top of Step 2
+
+In ArvHelperOverlay.tsx, find the "Add from Zillow URL" fetch handler (POST /api/comps/fetch-from-url). 
+
+The issue: after the fetch completes and the comp is added to compsData, something is causing the page to scroll to the top of Step 2 — likely a form state update or a re-render that resets scroll position.
+
+Investigate and fix:
+1. Check if the fetch handler is calling any form.setValue or form methods that would trigger Step 2 to re-render and reset scroll
+2. Check if the fetch response handling updates any state that lives outside the overlay (in Step 2 or wizard context) 
+3. The fix should ensure that after a successful Zillow URL fetch, the user stays in the ArvHelperOverlay with the new comp appearing in the Search Results section — no scroll reset, no navigation
+
+Do not touch the desktop ArvHelper.tsx.
+
+After fixes confirm dev server reloads cleanly. Output the modified sections with line numbers.
