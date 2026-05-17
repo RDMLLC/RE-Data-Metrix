@@ -1,0 +1,233 @@
+Build a full-screen mobile overlay for the ARV Helper. This is a NEW build — do not patch ArvHelper.tsx or Step2PropertyDetails.tsx existing code.
+
+Read these files in full before writing any code:
+1. client/src/components/deal-analysis/ArvHelper.tsx (2,168 lines — read every useState, every API call, every handler, every section)
+2. client/src/components/deal-analysis/CompReportPdf.tsx (464 lines — read in full)
+3. client/src/components/mobile/WholesaleOverlay.tsx (use as primary pattern reference)
+4. client/src/components/mobile/CollapsibleSection.tsx
+5. client/src/components/deal-analysis/Step2PropertyDetails.tsx (find all 3 ArvHelper trigger sites and the handleArvHelperOpen/Close handlers)
+
+---
+
+## ARCHITECTURE
+
+Create a new file: client/src/components/mobile/ArvHelperOverlay.tsx
+
+Full-screen overlay:
+- fixed inset-0 bg-background z-[10001] flex flex-col
+- className="mobile-overlay" on outermost div
+- Header: RE Data Metrix logo (left) + "ARV Helper" title (center) + X close button (right)
+- Scrollable body: flex-1 overflow-y-auto px-4 py-4 space-y-3
+- Sticky footer action bar (see Section 7)
+
+State management: mirror ArvHelper.tsx state exactly — same useState hooks, same variable names where possible. This overlay is self-contained and reads initial values from the form prop on open (wasOpenRef pattern for hydration-only-on-open, same as WholesaleOverlay).
+
+---
+
+## SECTION 1 — Subject Property (CollapsibleSection, default open)
+
+Display inline label+value rows (not inputs — read-only display):
+- Address (full width)
+- 2×2 grid: Beds | Baths | Sqft | Year Built
+- Lot Size (if available)
+- "Modified" badge if any repair override is active
+- "View on Zillow" link (same logic as ArvHelper.tsx)
+
+Nested inside: "Repair Overrides" CollapsibleSection (default collapsed):
+- 3 inline label+input rows: Beds after repair | Baths after repair | Sqft after repair
+- Pre-seeded from form values on open
+- "Apply Overrides" button — updates the local repair state and triggers new search if comps already loaded
+- Same logic as ArvHelper.tsx repair panel
+
+---
+
+## SECTION 2 — Search Controls (CollapsibleSection, default open)
+
+Radius — label + two rows of pills (5 options: 0.5, 1, 2, 3, 5 mi):
+Row 1: 0.5 mi | 1 mi | 2 mi
+Row 2: 3 mi | 5 mi
+Active pill: primary filled style. Inactive: outline.
+
+Date Range — label + single row of pills (3 options: 180, 270, 365 days):
+180 days | 270 days | 365 days
+Same pill styling.
+
+Include Pending Sales — inline label + toggle switch (same as ArvHelper.tsx)
+
+"Search Comps" button — full width, primary, loading state ("Searching...") while isSearchingComps.
+
+---
+
+## SECTION 3 — Add Comp (CollapsibleSection, default collapsed)
+
+Two sub-tabs or two nested CollapsibleSections: "Add from Zillow URL" and "Add Manually"
+
+Add from Zillow URL:
+- Text input for URL + "Add" button
+- Loading state while isFetchingCustomComp
+- Same POST /api/comps/fetch-from-url logic as ArvHelper.tsx
+
+Add Manually (9 fields in 2×2 groupings):
+Row 1: Address (full width)
+Row 2: City | State
+Row 3: Zip | Property Type (Select)
+Row 4: Beds | Baths
+Row 5: Sqft | Sale Price
+Row 6: Sale Date (full width)
+"Add Comp" button — same validation and local comp object creation as ArvHelper.tsx
+
+---
+
+## SECTION 4 — Search Results (CollapsibleSection, default open after first search)
+
+Show only after first successful search. Before search: show "Run a search to see comparable sales."
+
+Sort dropdown at top: "Sort by:" with options matching ArvHelper.tsx sortable columns:
+- Distance (default)
+- Sale Price
+- Sale Date
+- Price per Sqft
+- Square Footage
+Sort direction toggle (↑↓) next to dropdown.
+
+Search stats bar (compact, 1 line): "X comps found • Y selected • Avg $/sqft: $Z"
+If radius or date range was auto-expanded: show amber badge "Expanded to X mi / Y days"
+
+PropStream callout card — same amber warning logic as ArvHelper.tsx (turns warning color when <3 suitable comps). Always visible below search stats.
+
+Comp cards — one card per comp:
+
+┌─────────────────────────────────────────┐
+│ ☑  123 Main St, Atlanta GA              │
+│    $285,000 • $196/sqft                 │
+│    3bd / 2ba • 1,450 sqft • 0.3 mi     │
+│    Sold Jan 15, 2026                    │
+│    [Edit]  [Zillow ↗]  [▼ Photo]       │
+│    ⚠ Outlier  (tap icon to see reason) │
+└─────────────────────────────────────────┘
+
+Card details:
+- Checkbox top-left to include/exclude from ARV calc (same selectedCompIndices Set logic)
+- Address + city bold on first line
+- Sale price + $/sqft on second line
+- Beds/baths/sqft/distance on third line
+- Sale date on fourth line
+- Action row: Edit button (opens dialog) + View on Zillow link + Photo expand toggle
+- Flag icons (distressed/outlier/city-mismatch) with tap-to-toggle inline label (not hover tooltip)
+- Expandable photo: tapping ▼ Photo shows the comp image below the card (same image URL logic as ArvHelper.tsx)
+- Distressed comps: amber left border. Manually added comps: show "Manual" badge.
+
+Edit comp dialog:
+- Same fields as ArvHelper.tsx edit dialog: Sale Price + Property Type
+- Dialog at z-[10002]
+- Same save logic: updates compsData in place
+
+---
+
+## SECTION 5 — Pending Sales (only visible when includePending is true)
+
+CollapsibleSection "Pending Sales", default open when visible.
+Same card layout as comp cards but read-only (no checkbox, no edit).
+Loading state while isSearchingPending.
+Same POST /api/comps/search-pending logic.
+
+---
+
+## SECTION 6 — ARV Result (always visible after search, sticky-feeling card)
+
+Show only after comps loaded and at least 1 comp selected.
+
+Card contents:
+- "Estimated ARV" label
+- Large primary-colored ARV value (same calculation as ArvHelper.tsx: avgPricePerSqft × effectiveSqft)
+- Avg $/sqft value
+- "Based on X selected comps" subtext
+- Suggested ARV from server (compsData.suggestedArv) shown as secondary reference: "Server suggested: $X"
+
+---
+
+## SECTION 7 — Sticky Footer Action Bar
+
+Fixed at bottom, above keyboard, white background with top border:
+- "Apply ARV" button — primary, flex-1. Disabled when no comps selected or ARV = 0.
+  On tap: calls onApply({ arv: calculatedArv }) then onClose()
+- "Export Comp Report" button — outline, flex-1. Disabled when <2 comps selected.
+  Same CompReportPdf logic as ArvHelper.tsx — renders off-screen PDF component and triggers download.
+  Loading state while generating.
+
+Both buttons side by side in a flex row.
+
+---
+
+## COMP REPORT PDF
+
+Import and use CompReportPdf.tsx exactly as ArvHelper.tsx uses it — same off-screen render pattern, same props. The PDF includes the Google Static Map via /api/property/comp-map which works regardless of mobile/desktop.
+
+---
+
+## API CALLS
+
+Mirror ArvHelper.tsx exactly:
+- POST /api/comps/search — same request body, same response handling, same error toasts
+- POST /api/comps/search-pending — same
+- POST /api/comps/fetch-from-url — same
+All use the same auth headers / fetch pattern already in ArvHelper.tsx.
+
+---
+
+## PROPS INTERFACE
+
+interface ArvHelperOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  form: UseFormReturn<WizardFormData>;
+  onApply: (values: { arv: number }) => void;
+}
+
+---
+
+## INTEGRATION INTO STEP 2
+
+In client/src/components/deal-analysis/Step2PropertyDetails.tsx:
+
+1. Add state: const [showArvHelperOverlay, setShowArvHelperOverlay] = useState(false)
+
+2. In the isMobile branch of Step 2, find the existing "Open ARV Helper" button inside the "ARV Helper" CollapsibleSection (lines ~485–506). Replace its onClick to set showArvHelperOverlay(true) instead of showArvHelper(true). Remove the inline <ArvHelper> render that currently appears in the isMobile branch.
+
+3. Render <ArvHelperOverlay> when isMobile is true:
+   isOpen={showArvHelperOverlay}
+   onClose={() => setShowArvHelperOverlay(false)}
+   form={form}
+   onApply={({ arv }) => {
+     form.setValue("arv", arv);
+     form.setValue("estimatedValue", arv);
+     setShowArvHelperOverlay(false);
+   }}
+
+4. Do not touch the desktop ArvHelper inline render in Step2PropertyDetails.tsx.
+5. Do not touch ArvHelper.tsx at all.
+6. Do not touch the third trigger site (legacy mobile fallback below Continue) — leave it as-is.
+
+---
+
+## FORMATTING RULES
+- All currency: use formatCurrency helper (import from ArvHelper.tsx or reimplement inline)
+- All number inputs: type="number" (spinner arrows already hidden by .mobile-overlay CSS)
+- Inline label+value rows: label text-sm text-muted-foreground, value text-sm font-medium
+- Cards: rounded-lg border bg-card p-3 space-y-1
+- Section spacing: space-y-3 between sections
+- Pill buttons: consistent with WholesaleOverlay RadioGroup-style or inline flex buttons
+
+---
+
+## DO NOT TOUCH
+- ArvHelper.tsx
+- CompReportPdf.tsx (import and use as-is)
+- Step2PropertyDetails.tsx desktop ArvHelper render
+- Any other existing files not listed above
+
+After building:
+1. Confirm TypeScript compiles cleanly — run npx tsc --noEmit and report any errors in the new files only
+2. grep -n "ArvHelperOverlay\|showArvHelperOverlay" client/src/components/deal-analysis/Step2PropertyDetails.tsx
+3. Confirm dev server reloads cleanly
+4. Output the full ArvHelperOverlay.tsx with line numbers

@@ -30,6 +30,7 @@ import {
 import ArvHelper from "./ArvHelper";
 import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
 import CollapsibleSection from "@/components/mobile/CollapsibleSection";
+import ArvHelperOverlay from "@/components/mobile/ArvHelperOverlay";
 
 interface Step2PropertyDetailsProps {
   form: UseFormReturn<WizardFormData>;
@@ -499,11 +500,15 @@ export default function Step2PropertyDetails({
               </div>
             </CollapsibleSection>
 
-            {showArvHelper && (
-              <div className="px-4 py-4">
-                <ArvHelper form={form} onClose={handleArvHelperClose} />
-              </div>
-            )}
+            <ArvHelperOverlay
+              isOpen={showArvHelper}
+              onClose={handleArvHelperClose}
+              form={form}
+              onApply={(arv) => {
+                form.setValue("arv", arv);
+                form.setValue("estimatedValue", arv);
+              }}
+            />
           </form>
         </Form>
       </MobileStepWrapper>
