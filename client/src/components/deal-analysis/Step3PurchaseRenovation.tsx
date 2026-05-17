@@ -59,6 +59,7 @@ import ArvQuotaExhaustedModal from "./ArvQuotaExhaustedModal";
 import CompReportPdf from "./CompReportPdf";
 import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
 import MaxOfferOverlay from "@/components/mobile/MaxOfferOverlay";
+import WholesaleOverlay from "@/components/mobile/WholesaleOverlay";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -151,6 +152,7 @@ export default function Step3PurchaseRenovation({
   const [showMaxOfferCalc, setShowMaxOfferCalc] = useState(false);
   const [showMaxOfferCalcMobile, setShowMaxOfferCalcMobile] = useState(false);
   const [showMaxOfferOverlay, setShowMaxOfferOverlay] = useState(false);
+  const [showWholesaleOverlay, setShowWholesaleOverlay] = useState(false);
   const [maxArvPercent, setMaxArvPercent] = useState(70);
   const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
@@ -1226,8 +1228,8 @@ export default function Step3PurchaseRenovation({
               )}
             />
 
-            {/* Max Offer Calculator trigger (mobile overlay) */}
-            <div className="px-4 py-3 border-b border-border">
+            {/* Max Offer Calculator + Wholesale triggers (mobile overlays) */}
+            <div className="px-4 py-3 border-b border-border space-y-2">
               <Button
                 type="button"
                 variant="outline"
@@ -1237,6 +1239,44 @@ export default function Step3PurchaseRenovation({
               >
                 <Lightbulb className="h-4 w-4" />
                 Max Offer Calculator
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-11 gap-1.5"
+                onClick={() => {
+                  const formData = form.getValues();
+                  updatePropertyData({
+                    address: formData.address,
+                    city: formData.city,
+                    state: formData.state,
+                    zip: formData.zipCode,
+                    bedrooms: formData.bedrooms,
+                    bathrooms: formData.bathrooms,
+                    squareFootage: formData.sqft,
+                    purchasePrice: formData.purchasePrice,
+                    arv: formData.arv,
+                    rehabBudget: formData.rehabBudget,
+                    taxAssessedValue: formData.taxAssessedValue,
+                    annualInsurance: formData.annualInsurance,
+                    monthlyUtilities: formData.monthlyUtilities,
+                    hoaFees: formData.hoaFees,
+                    hoaTransferFee: formData.hoaTransferFee,
+                    projectLength: formData.projectLength,
+                    sellPrice: formData.sellPrice,
+                    closingCostsSellPercent: formData.closingCostsSellPercent,
+                    realEstateCommissionPercent: formData.realEstateCommissionPercent,
+                    attorneyFees: formData.attorneyFees,
+                    docPrepFees: formData.docPrepFees,
+                    titleExam: formData.titleExam,
+                    titleInsurance: formData.titleInsurance,
+                  });
+                  setShowWholesaleOverlay(true);
+                }}
+                data-testid="button-wholesale-overlay-open"
+              >
+                <Calculator className="h-4 w-4" />
+                Wholesale Max Offer Calculator
               </Button>
             </div>
 
@@ -1315,6 +1355,10 @@ export default function Step3PurchaseRenovation({
           setShowMaxOfferOverlay(false);
           setShowArvHelper(true);
         }}
+      />
+      <WholesaleOverlay
+        isOpen={showWholesaleOverlay}
+        onClose={() => setShowWholesaleOverlay(false)}
       />
       </>
     );

@@ -1,0 +1,170 @@
+Build a full-screen mobile overlay for the Wholesale Max Offer Calculator. This is a NEW build — do not patch the existing WholesaleCalculator.tsx page or any classic mobile code.
+
+Read these files in full before writing any code:
+1. client/src/pages/WholesaleCalculator.tsx — read every input, calculation, output, and the handleBack autofill logic
+2. shared/calculations/wholesale-calculations.ts — read all exported functions
+3. client/src/components/mobile/MaxOfferOverlay.tsx — use as the pattern for this overlay
+4. client/src/components/mobile/DealAnalysisOverlay.tsx — for the overlay shell pattern
+5. client/src/components/mobile/CollapsibleSection.tsx — for collapsible sections
+6. client/src/components/deal-analysis/Step3PurchaseRenovation.tsx — find the "Calculate Wholesale Max Offer Price" button handler (lines ~2806–2845) to understand how the desktop version saves wizard data and navigates to /deal-analysis/wholesale-calculator
+
+---
+
+## ARCHITECTURE
+
+Create a new file: client/src/components/mobile/WholesaleOverlay.tsx
+
+Full-screen overlay, same shell as MaxOfferOverlay:
+- fixed inset-0 bg-background z-[10001] flex flex-col
+- Header: RE Data Metrix logo (left) + "Wholesale Max Offer" title (center) + X close button (right)
+- Scrollable content area: flex-1 overflow-y-auto px-4 py-4
+- className="mobile-overlay" on the outermost div so spinner-hide CSS applies
+
+---
+
+## LAYOUT PHILOSOPHY
+- Inline label+field rows to reduce vertical space
+- 2×2 grid where it makes sense
+- Collapsible sections for Transaction 1 Closing Costs (double-close only) and Profitability Comparison (conditional)
+- Show as much as possible without scrolling on a typical phone
+- All functionality that exists on desktop exists on mobile
+
+---
+
+## SECTION 1 — Transaction Type
+
+RadioGroup — same two options as desktop:
+- Assignment (default)
+- Double Close
+
+When Double Close selected, show funding source RadioGroup:
+- Transactional Funding (default)
+- Own Cash
+
+---
+
+## SECTION 2 — Deal Information
+
+Display as inline label+field rows. Use 2×2 grid for fields that pair naturally.
+
+Fields (all match desktop exactly):
+- Buy Price — text/currency input. Auto-populated from Max Offer Price (same logic as desktop: only auto-fills when buyPriceManuallySet is false). Seeded from wizardData.property.purchasePrice on open.
+- ARV — seeded from wizardData.property.arv
+- Estimated Rehab Budget — seeded from wizardData.property.rehabBudget
+- Buyer's Max Buy Price % of ARV — default "75"
+- Your Wholesale Fee — default "15000", load from GET /api/profile/wholesale-fee if available. Include "Save to Profile" button when manually edited (same PUT /api/profile/wholesale-fee logic as desktop)
+
+---
+
+## SECTION 3 — Transaction 1 Closing Costs (Double Close only)
+
+Wrap in a CollapsibleSection component, default collapsed.
+Same 6 fields as desktop with same dynamic defaults from calculateDynamicClosingCosts(buyPrice, propertyState):
+- Title Search
+- Title Insurance
+- Recording Fees
+- Transfer Tax/Fee
+- Attorney Fees
+- Other Fees
+
+Same behavior: any manual edit sets userEditedClosingCosts=true, freezing auto-recalculation. Include "Reset to defaults" button.
+
+propertyState seeded from wizardData.property.state.
+
+---
+
+## SECTION 4 — Calculation Results
+
+Always visible (not collapsible). Same outputs as desktop:
+- Buyer's Max Price (ARV × Buyer's Max %)
+- Less: Rehab Budget
+- Less: Wholesale Fee
+- (Double Close only) Less: Closing Costs
+- (Double Close + Transactional) Less: Lender Fee (1.25%, minimum $1,000)
+- (Double Close + Own Cash) "Lender Fee: $0 (Using Own Cash)"
+- Max Offer Price — large, prominent, primary color
+
+Free-user quota bar: "X of 2 wholesale calculations used this month" + "Run Calculation" button consuming quota via POST /api/user/wholesale-calc. Same gate as desktop.
+
+---
+
+## SECTION 5 — Profitability Comparison (conditional)
+
+Same condition as desktop: only show when user has manually edited Buy Price away from the recommended Max Offer Price.
+
+Wrap in a CollapsibleSection, default open when visible.
+
+Same two-column layout (Recommended vs Your Offer) with delta indicators. Include "Change to Recommended Price" reset button.
+
+---
+
+## SECTION 6 — Apply for Transactional Funding (Double Close only)
+
+Replace the desktop Straightline iframe (800px, unusable on mobile) with:
+- A summary of Estimated Costs (same as desktop: Purchase Price A→B, Closing Costs, Funded Amount, Lender Fee, Payoff Amount)
+- A prominent "Apply for Transactional Funding" button that opens the Straightline application URL in a new browser tab
+- Use the same pre-fill URL parameters that the desktop iframe uses — construct the same URL but open via window.open(url, '_blank') instead of rendering an iframe
+
+---
+
+## SECTION 7 — Action Buttons
+
+At the bottom of the scrollable content:
+- "Download PDF" button — same pdf export logic as desktop (react-to-pdf, isPdfMode toggle, PrintableInput swap). Use same pattern.
+- "Apply Values to Deal Analysis" button — primary style, full width:
+  - Calls onApply() which writes back to wizard via updatePropertyData() — same fields as desktop handleBack:
+    arv, rehabBudget, purchasePrice, wholesaleTransactionType, wholesaleFee, resalePrice
+  - Then calls onClose()
+  - Show toast confirming values applied
+
+---
+
+## PROPS INTERFACE
+
+interface WholesaleOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+The overlay reads all initial values from useWizardData() and useAuth() directly — same as the standalone page. No need to pass initial values as props since it has access to the same contexts.
+
+---
+
+## INTEGRATION INTO STEP 3
+
+In client/src/components/deal-analysis/Step3PurchaseRenovation.tsx:
+
+1. Add state: const [showWholesaleOverlay, setShowWholesaleOverlay] = useState(false)
+
+2. In the isMobile section of Step 3, add a "Wholesale Max Offer Calculator" button that:
+   - Saves current form values to wizardData (same as the desktop handler at lines ~2806–2845 — call the same save logic before opening)
+   - Sets showWholesaleOverlay(true)
+   - Styled consistently with the Max Offer Calculator button added in the previous task
+
+3. Render <WholesaleOverlay> when isMobile is true:
+   - isOpen={showWholesaleOverlay}
+   - onClose={() => setShowWholesaleOverlay(false)}
+
+4. Do not touch the desktop "Calculate Wholesale Max Offer Price" button or its handler. Do not touch the classic mobile block (!isMobile gate). Do not remove anything.
+
+---
+
+## CALCULATIONS
+
+Use the exact same functions from shared/calculations/wholesale-calculations.ts as the desktop page. Do not reimplement any calculation logic.
+
+---
+
+## DO NOT TOUCH
+- WholesaleCalculator.tsx (standalone desktop page)
+- Desktop wholesale button and handler in Step3PurchaseRenovation.tsx
+- Classic mobile block (!isMobile gate)
+- MaxOfferOverlay.tsx
+- DealAnalysisOverlay.tsx
+- Any other files not listed above
+
+After building:
+1. Confirm TypeScript compiles cleanly with no new errors
+2. grep -n "WholesaleOverlay\|showWholesaleOverlay" client/src/components/deal-analysis/Step3PurchaseRenovation.tsx
+3. Confirm dev server reloads cleanly
+4. Output the full WholesaleOverlay.tsx with line numbers
