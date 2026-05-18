@@ -1,0 +1,170 @@
+Build three new standalone calculator pages for RE Data Metrix. Read the existing `client/src/pages/RentalPropertyCalculator.tsx` and `client/src/lib/rentalCalculations.ts` first — use those as the pattern for layout, style, and PDF generation. All three calculators are public (no auth required), no saving to database, Download PDF button in results.
+
+---
+
+## CALCULATOR 1 — Max Offer Calculator
+**Route:** `/max-offer-calculator`
+**File:** `client/src/pages/MaxOfferCalculator.tsx`
+
+### Inputs
+- After Repair Value / ARV (dollar)
+- Rehab Budget (dollar)
+- Maximum % of ARV (default 70%, adjustable)
+
+### Outputs (live — recalculate on every input change, no Calculate button needed)
+- Max Project Cost (ARV × Max %)
+- Max Offer Price (Max Project Cost − Rehab Budget)
+- Remaining Profit Buffer (ARV − Max Project Cost, shown as dollar and %)
+
+### UI notes
+- Simple single-column layout — this is a small calculator
+- Large color-coded Max Offer Price result: green if positive, red if zero or negative
+- Explainer callout box: "The 70% rule means you pay no more than 70% of the ARV minus rehab costs. This protects your profit margin on fix-and-flip deals."
+- If Max Offer Price ≤ 0, show: "At these numbers the deal does not work at this ARV or rehab budget."
+- Download PDF button shows inputs + outputs
+
+---
+
+## CALCULATOR 2 — Wholesale Max Offer Calculator
+**Route:** `/wholesale-calculator`
+**File:** `client/src/pages/WholesaleCalculator.tsx`
+
+### Inputs
+**Deal Information**
+- ARV (dollar)
+- Rehab Budget (dollar)
+- Buyer's Max % of ARV (default 75%)
+- Your Wholesale Fee (dollar, default 15000)
+
+**Transaction Type** — radio: Assignment / Double Close
+- If Double Close, show Closing Costs section:
+  - Attorney / Title Fees (dollar, default 1500)
+  - Title Insurance (dollar, default 800)
+  - Transfer Tax (dollar, default 500)
+  - Other Closing Costs (dollar, default 0)
+
+### Outputs
+- Buyer's Max Offer (ARV × Buyer's Max % − Rehab Budget)
+- Your Max Buy Price (Buyer's Max Offer − Wholesale Fee − Closing Costs if Double Close)
+- Your Wholesale Fee
+- Total Closing Costs (Double Close only)
+- Net Profit
+
+### UI notes
+- Two-column layout on desktop matching Rental Property Calculator pattern
+- Color-code Net Profit: green if positive, red if zero or negative
+- If Double Close closing costs section: use CollapsibleSection pattern
+- Download PDF shows all inputs + outputs
+
+---
+
+## CALCULATOR 3 — DSCR Calculator
+**Route:** `/dscr-calculator`
+**File:** `client/src/pages/DscrCalculator.tsx`
+
+### Inputs
+**Property & Loan section**
+- Purchase Price (dollar)
+- Down Payment (%) — whole numbers only, no decimals
+- Interest Rate (%) — 2 decimal places
+- Loan Term — pill toggle: 15 / 20 / 30 years (default 30)
+- Interest Only? Yes/No radio — if Yes, monthly payment = interest only (loan × rate/12)
+
+**Income & Expenses section**
+- Monthly Rent (dollar)
+- Other Monthly Income (dollar, default 0) — label: "Other Income (laundry, parking, etc.)"
+- Annual Property Tax (dollar)
+- Annual Insurance (dollar)
+- HOA Fee (monthly dollar, default 0)
+- Vacancy Rate (%) — default 5%
+
+### Outputs
+
+**Primary result — large DSCR ratio, color-coded:**
+- ≥ 1.25 → green — "Strong. Most lenders will approve."
+- 1.00–1.24 → yellow/amber — "Marginal. Some lenders may approve."
+- 0.75–0.99 → orange — "Negative cash flow. Limited lender options."
+- < 0.75 → red — "Does not qualify for most DSCR programs."
+
+**Secondary metrics (shown in a grid below the primary result):**
+- Loan Amount
+- Monthly P&I Payment (or Interest Only payment)
+- Monthly PITIA (P&I + taxes/12 + insurance/12 + HOA)
+- Monthly Cash Flow (monthly rent + other income − PITIA)
+- Annual Cash Flow
+- NOI (gross rent × (1 − vacancy%) − annual tax − annual insurance − HOA×12)
+- Cap Rate (NOI / purchase price × 100)
+
+**"What would it take to hit 1.25 DSCR?" section:**
+- Required Monthly Rent to reach 1.25 DSCR (PITIA × 1.25)
+- Required Down Payment % to reach 1.25 DSCR (solve for down payment where new PITIA × 1.25 = current rent)
+- Show both as: current value → required value, with the gap highlighted
+
+### Formulas
+loanAmount = purchasePrice × (1 − downPayment/100)
+monthlyPI = interestOnly
+? loanAmount × (rate/12)
+: loanAmount × (r × (1+r)^n) / ((1+r)^n − 1)   where r = rate/1200, n = term×12
+monthlyPITIA = monthlyPI + annualTax/12 + annualInsurance/12 + hoaMonthly
+effectiveMonthlyIncome = (monthlyRent + otherMonthlyIncome) × (1 − vacancyRate/100)
+DSCR = (monthlyRent + otherMonthlyIncome) / monthlyPITIA  // gross rent, not NOI — matches lender underwriting
+annualNOI = (monthlyRent + otherMonthlyIncome) × 12 × (1 − vacancyRate/100) − annualTax − annualInsurance − hoaMonthly×12
+capRate = annualNOI / purchasePrice × 100
+monthlyCashFlow = effectiveMonthlyIncome − monthlyPITIA
+
+### UI notes
+- Two-column layout: Property & Loan left, Income & Expenses right — matching Rental Property Calculator
+- Calculate button (not live recalc) — same pattern as Rental Property Calculator
+- Results section appears below after Calculate clicked
+- DSCR ratio displayed very large (text-5xl or larger), color matches threshold
+- "What would it take" section uses a two-column comparison: "Current" vs "Required for 1.25"
+- Download PDF: branded RE Data Metrix header, inputs summary, all outputs including "what would it take" section
+
+---
+
+## SHARED REQUIREMENTS FOR ALL THREE
+
+**"Access Lenders Today" CTA button** — appears in the results section of all three calculators:
+- Check if user is logged in via `useAuth()`
+- If NOT logged in: button text "Access Lenders Today" → navigates to `/calculator-access`
+- If logged in: button text "Browse Lenders" → navigates to `/lenders`
+- Style: gold background `#e0b32e`, navy text `#1d408b`, full width on mobile
+
+**Back button behavior** — use `useNavigate()` from wouter with `navigate(-1)` so the back button returns to wherever the user came from (Toolbox, Deal Analysis, etc.)
+
+**No auth gate** — these pages are fully public. Do not wrap in any auth check.
+
+**Page structure** — each page includes:
+- `<Navigation />` component at top
+- Page title + brief one-line description
+- Calculator inputs + results
+- "No account required. Results are estimates for educational purposes." footer note
+
+---
+
+## ROUTES — add all three to `client/src/App.tsx`
+```tsx
+<Route path="/max-offer-calculator" component={MaxOfferCalculator} />
+<Route path="/wholesale-calculator" component={WholesaleCalculator} />
+<Route path="/dscr-calculator" component={DscrCalculator} />
+```
+
+---
+
+## TOOLBOX CARDS — update `client/src/pages/Resources.tsx`
+Update the existing Free Calculators section card links:
+- Max Offer Calculator card → `/max-offer-calculator`
+- Wholesale Max Offer Calculator card → `/wholesale-calculator`  
+- DSCR Calculator card → `/dscr-calculator`
+- Rental Property Calculator card → `/rental-property-calculator` (already correct, leave it)
+
+Also remove the heading "Build Your Real Estate Investing Stack" and its subheading paragraph that appears above the Free Calculators section. Leave the Free Calculators section heading intact.
+
+---
+
+## RENTAL PROPERTY CALCULATOR — fix back button
+In `client/src/pages/RentalPropertyCalculator.tsx`, fix the back button to use `navigate(-1)` from wouter so it returns to the previous page instead of going to the dashboard.
+
+---
+
+Make sure typecheck passes with no new errors on all new and modified files.

@@ -404,13 +404,6 @@ export default function Resources() {
           </p>
         </div>
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-primary mb-3">Build Your Real Estate Investing Stack</h2>
-          <p className="text-muted-foreground">
-            Successful investors rely on the right combination of tools to manage deals, analyze opportunities, and streamline operations. Our toolbox helps you identify which platforms best fit your strategy.
-          </p>
-        </div>
-
         <section className="mb-10" data-testid="section-free-calculators">
           <div className="flex items-center gap-3 mb-2">
             <Calculator className="h-7 w-7 text-accent" />
@@ -431,21 +424,21 @@ export default function Resources() {
               {
                 title: "DSCR Calculator",
                 description: "Project rental income, expenses, and DSCR to qualify properties for long-term financing.",
-                href: "/rental-analysis",
+                href: "/dscr-calculator",
                 Icon: TrendingUp,
                 testId: "dscr",
               },
               {
                 title: "Max Offer Calculator",
                 description: "Calculate the maximum you can pay on a fix & flip while protecting your target profit.",
-                href: "/deal-analysis",
+                href: "/max-offer-calculator",
                 Icon: Calculator,
                 testId: "max-offer",
               },
               {
                 title: "Wholesale Max Offer Calculator",
                 description: "Determine assignment or double-close offer prices for wholesale deals with full fee breakdowns.",
-                href: "/deal-analysis/wholesale-calculator",
+                href: "/wholesale-calculator",
                 Icon: DollarSign,
                 testId: "wholesale-max-offer",
               },

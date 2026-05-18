@@ -1,0 +1,208 @@
+import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
+import { ArrowLeft, Calculator, Download, ArrowRight } from "lucide-react";
+import { usePDF } from "react-to-pdf";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import Navigation from "@/components/Navigation";
+import { SEO } from "@/components/SEO";
+import { useAuth } from "@/contexts/AuthContext";
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(isFinite(n) ? n : 0);
+}
+
+function goBack() {
+  if (window.history.length > 1) window.history.back();
+  else window.location.href = "/toolbox";
+}
+
+export default function MaxOfferCalculator() {
+  const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [arv, setArv] = useState<number>(300000);
+  const [rehab, setRehab] = useState<number>(40000);
+  const [maxPct, setMaxPct] = useState<number>(70);
+
+  const { toPDF, targetRef } = usePDF({
+    filename: "max-offer-calculator.pdf",
+    page: { format: "letter", margin: 20 },
+    canvas: { qualityRatio: 1 },
+  });
+
+  const { maxProjectCost, maxOffer, bufferDollar, bufferPct } = useMemo(() => {
+    const mpc = arv * (maxPct / 100);
+    const mo = mpc - rehab;
+    const buf = arv - mpc;
+    const bufPct = arv > 0 ? (buf / arv) * 100 : 0;
+    return { maxProjectCost: mpc, maxOffer: mo, bufferDollar: buf, bufferPct: bufPct };
+  }, [arv, rehab, maxPct]);
+
+  const offerOk = maxOffer > 0;
+
+  const handleAccessLenders = () => {
+    setLocation(isAuthenticated ? "/lenders" : "/calculator-access");
+  };
+
+  return (
+    <>
+      <SEO
+        title="Max Offer Calculator (70% Rule)"
+        description="Free 70% rule max offer calculator for fix-and-flip investors. Calculate the maximum offer price that protects your profit margin."
+      />
+      <Navigation />
+      <div className="container max-w-2xl mx-auto py-6 px-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-3"
+          onClick={goBack}
+          data-testid="button-mo-back"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+
+        <div className="mb-5">
+          <div className="flex items-center gap-3 mb-1">
+            <Calculator className="h-7 w-7" style={{ color: "#1d408b" }} />
+            <h1
+              className="text-2xl md:text-3xl font-bold"
+              style={{ color: "#1d408b" }}
+              data-testid="text-mo-title"
+            >
+              Max Offer Calculator
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            The 70% rule for fix-and-flip investors — find the maximum you should pay.
+          </p>
+        </div>
+
+        <div ref={targetRef} className="space-y-4">
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="mo-arv">After Repair Value (ARV)</Label>
+                <Input
+                  id="mo-arv"
+                  type="number"
+                  inputMode="decimal"
+                  step="1000"
+                  value={arv || ""}
+                  onChange={(e) => setArv(parseFloat(e.target.value) || 0)}
+                  data-testid="input-mo-arv"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mo-rehab">Rehab Budget</Label>
+                <Input
+                  id="mo-rehab"
+                  type="number"
+                  inputMode="decimal"
+                  step="1000"
+                  value={rehab || ""}
+                  onChange={(e) => setRehab(parseFloat(e.target.value) || 0)}
+                  data-testid="input-mo-rehab"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mo-pct">Maximum % of ARV</Label>
+                <div className="relative">
+                  <Input
+                    id="mo-pct"
+                    type="number"
+                    inputMode="decimal"
+                    step="1"
+                    value={maxPct || ""}
+                    onChange={(e) => setMaxPct(parseFloat(e.target.value) || 0)}
+                    className="pr-8"
+                    data-testid="input-mo-pct"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    %
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <div className="text-center py-4 border-b">
+                <div className="text-sm text-muted-foreground mb-1">Max Offer Price</div>
+                <div
+                  className={`text-4xl md:text-5xl font-bold ${
+                    offerOk ? "text-green-600" : "text-red-600"
+                  }`}
+                  data-testid="text-mo-result"
+                >
+                  {fmt(maxOffer)}
+                </div>
+                {!offerOk && (
+                  <p className="text-sm text-red-600 mt-2" data-testid="text-mo-warning">
+                    At these numbers the deal does not work at this ARV or rehab budget.
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Max Project Cost</div>
+                  <div className="font-semibold" data-testid="text-mo-mpc">
+                    {fmt(maxProjectCost)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Profit Buffer</div>
+                  <div className="font-semibold" data-testid="text-mo-buffer">
+                    {fmt(bufferDollar)} ({bufferPct.toFixed(1)}%)
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="rounded-md border p-3 text-sm"
+                style={{ background: "#fff8e1", borderColor: "#e0b32e" }}
+              >
+                The 70% rule means you pay no more than 70% of the ARV minus rehab costs.
+                This protects your profit margin on fix-and-flip deals.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+          <Button
+            variant="outline"
+            onClick={() => toPDF()}
+            className="gap-2"
+            data-testid="button-mo-pdf"
+          >
+            <Download className="h-4 w-4" />
+            Download PDF
+          </Button>
+          <Button
+            onClick={handleAccessLenders}
+            className="gap-2 w-full sm:w-auto"
+            style={{ background: "#e0b32e", color: "#1d408b" }}
+            data-testid="button-mo-lenders"
+          >
+            {isAuthenticated ? "Browse Lenders" : "Access Lenders Today"}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">
+          No account required. Results are estimates for educational purposes.
+        </div>
+      </div>
+    </>
+  );
+}

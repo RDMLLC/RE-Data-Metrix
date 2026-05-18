@@ -1,9 +1,13 @@
-import { Link } from "wouter";
 import { ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import RentalCalculatorForm from "@/components/RentalCalculatorForm";
 import { SEO } from "@/components/SEO";
+
+function goBack() {
+  if (window.history.length > 1) window.history.back();
+  else window.location.href = "/toolbox";
+}
 
 export default function RentalPropertyCalculator() {
   return (
@@ -14,17 +18,16 @@ export default function RentalPropertyCalculator() {
       />
       <Navigation />
       <div className="container max-w-5xl mx-auto py-6 px-4">
-        <Link href="/">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-3"
-            data-testid="button-rc-back-home"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-3"
+          onClick={goBack}
+          data-testid="button-rc-back-home"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
 
         <div className="mb-5">
           <div className="flex items-center gap-3 mb-1">

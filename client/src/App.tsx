@@ -104,6 +104,9 @@ const CheckoutSuccess = lazy(() => import("@/pages/CheckoutSuccess"));
 const CheckoutComplete = lazy(() => import("@/pages/CheckoutComplete"));
 const WholesaleCalculator = lazy(() => import("@/pages/WholesaleCalculator"));
 const RentalPropertyCalculator = lazy(() => import("@/pages/RentalPropertyCalculator"));
+const MaxOfferCalculator = lazy(() => import("@/pages/MaxOfferCalculator"));
+const WholesaleMaxOfferCalculator = lazy(() => import("@/pages/WholesaleMaxOfferCalculator"));
+const DscrCalculator = lazy(() => import("@/pages/DscrCalculator"));
 // WEBINAR_ENABLED = false — webinar feature deactivated
 // const Webinar = lazy(() => import("@/pages/Webinar"));
 // const WebinarRsvpThankYou = lazy(() => import("@/pages/WebinarRsvpThankYou"));
@@ -189,6 +192,9 @@ function Router() {
         <Route path="/deal-analysis/about" component={DealAnalysisAbout} />
         <Route path="/deal-analysis/wholesale-calculator" component={WholesaleCalculator} />
         <Route path="/rental-property-calculator" component={RentalPropertyCalculator} />
+        <Route path="/max-offer-calculator" component={MaxOfferCalculator} />
+        <Route path="/wholesale-calculator" component={WholesaleMaxOfferCalculator} />
+        <Route path="/dscr-calculator" component={DscrCalculator} />
         <Route path="/rental-analysis" component={RentalAnalysis} />
         <Route path="/lenders" component={Lenders} />
         <Route path="/lenders/:id" component={LenderProfile} />
