@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users, Shield, ExternalLink, Newspaper, ArrowRight } from "lucide-react";
+import { Wrench, CheckCircle, Lock, Play, Video, HardHat, BookOpen, Scale, Users, Shield, ExternalLink, Newspaper, ArrowRight, Home, Calculator, DollarSign, TrendingUp } from "lucide-react";
 import { blogPosts } from "../data/blogPosts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -410,6 +410,82 @@ export default function Resources() {
             Successful investors rely on the right combination of tools to manage deals, analyze opportunities, and streamline operations. Our toolbox helps you identify which platforms best fit your strategy.
           </p>
         </div>
+
+        <section className="mb-10" data-testid="section-free-calculators">
+          <div className="flex items-center gap-3 mb-2">
+            <Calculator className="h-7 w-7 text-accent" />
+            <h2 className="text-2xl font-semibold">Free Calculators</h2>
+          </div>
+          <p className="text-muted-foreground mb-6">
+            Run quick numbers on any deal with our free, no-account-required investing calculators.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                title: "Rental Property Calculator",
+                description: "Analyze buy-and-hold rentals: cash flow, cap rate, IRR, and projected returns at sale.",
+                href: "/rental-property-calculator",
+                Icon: Home,
+                testId: "rental-property",
+              },
+              {
+                title: "DSCR Calculator",
+                description: "Project rental income, expenses, and DSCR to qualify properties for long-term financing.",
+                href: "/rental-analysis",
+                Icon: TrendingUp,
+                testId: "dscr",
+              },
+              {
+                title: "Max Offer Calculator",
+                description: "Calculate the maximum you can pay on a fix & flip while protecting your target profit.",
+                href: "/deal-analysis",
+                Icon: Calculator,
+                testId: "max-offer",
+              },
+              {
+                title: "Wholesale Max Offer Calculator",
+                description: "Determine assignment or double-close offer prices for wholesale deals with full fee breakdowns.",
+                href: "/deal-analysis/wholesale-calculator",
+                Icon: DollarSign,
+                testId: "wholesale-max-offer",
+              },
+            ].map(({ title, description, href, Icon, testId }) => (
+              <Card
+                key={testId}
+                className="hover-elevate flex flex-col"
+                data-testid={`card-calculator-${testId}`}
+              >
+                <CardContent className="p-5 flex flex-col flex-1">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-md bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3
+                      className="font-semibold text-base leading-tight"
+                      data-testid={`text-calculator-title-${testId}`}
+                    >
+                      {title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4 flex-1">
+                    {description}
+                  </p>
+                  <Link href={href}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-1"
+                      data-testid={`button-open-calculator-${testId}`}
+                    >
+                      Open Calculator
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
 
         <Tabs defaultValue="about" className="space-y-6">
           {/* Hide category tabs on mobile for non-subscribers */}
