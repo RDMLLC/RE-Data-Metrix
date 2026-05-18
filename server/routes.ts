@@ -2164,6 +2164,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode: 'subscription',
         phone_number_collection: { enabled: true },
         billing_address_collection: 'required',
+        payment_method_options: {
+          link: {
+            display_preference: {
+              preference: 'none',
+            },
+          },
+        },
         success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/checkout?canceled=true`,
         metadata: {
