@@ -67,7 +67,7 @@ class EmailService {
         secure: this.config.secure,
         auth: this.config.auth,
         pool: true,
-        maxConnections: 2,
+        maxConnections: 1,
         connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 15000,

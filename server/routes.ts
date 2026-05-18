@@ -5085,7 +5085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           let ok = await emailService.sendCustomEmail(r.email, renderedSubject, html, 'marketing');
           if (!ok) {
-            await sleep(2000);
+            await sleep(3000);
             ok = await emailService.sendCustomEmail(r.email, renderedSubject, html, 'marketing');
           }
           if (ok) {
@@ -5096,7 +5096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (err: any) {
           try {
-            await sleep(2000);
+            await sleep(3000);
             const renderedSubjectRetry = applyMerge(subject, {
               firstName: (((r.fullName || '').trim().split(/\s+/)[0]) || 'there'),
               fullName: (r.fullName || '').trim() || r.username || '',
@@ -5127,7 +5127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errors.push(`${r.email}: ${err?.message || 'Unknown error'}`);
           }
         }
-        await sleep(500);
+        await sleep(2000);
       }
 
       const missing = userIds.length - recipients.length;
