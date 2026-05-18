@@ -5054,7 +5054,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let failed = 0;
       const errors: string[] = [];
 
-      await Promise.all(recipients.map(async (r) => {
+      const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+      for (const r of recipients) {
         try {
           const fullName = (r.fullName || '').trim();
           const derivedFirst = fullName.split(/\s+/)[0] || '';
@@ -5081,7 +5083,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const html = `<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">${renderedBodyHtml}</body></html>`;
 
-          const ok = await emailService.sendCustomEmail(r.email, renderedSubject, html, 'marketing');
+          let ok = await emailService.sendCustomEmail(r.email, renderedSubject, html, 'marketing');
+          if (!ok) {
+            await sleep(2000);
+            ok = await emailService.sendCustomEmail(r.email, renderedSubject, html, 'marketing');
+          }
           if (ok) {
             sent++;
           } else {
@@ -5089,10 +5095,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errors.push(`${r.email}: SMTP send failed`);
           }
         } catch (err: any) {
-          failed++;
-          errors.push(`${r.email}: ${err?.message || 'Unknown error'}`);
+          try {
+            await sleep(2000);
+            const renderedSubjectRetry = applyMerge(subject, {
+              firstName: (((r.fullName || '').trim().split(/\s+/)[0]) || 'there'),
+              fullName: (r.fullName || '').trim() || r.username || '',
+              email: r.email,
+              username: r.username || '',
+              signupDate: formatSignupDate(r.createdAt),
+              dealCount: '0',
+            });
+            const renderedBodyTextRetry = applyMerge(body, {
+              firstName: (((r.fullName || '').trim().split(/\s+/)[0]) || 'there'),
+              fullName: (r.fullName || '').trim() || r.username || '',
+              email: r.email,
+              username: r.username || '',
+              signupDate: formatSignupDate(r.createdAt),
+              dealCount: '0',
+            });
+            const renderedBodyHtmlRetry = escapeHtml(renderedBodyTextRetry).replace(/\r?\n/g, '<br>');
+            const htmlRetry = `<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">${renderedBodyHtmlRetry}</body></html>`;
+            const okRetry = await emailService.sendCustomEmail(r.email, renderedSubjectRetry, htmlRetry, 'marketing');
+            if (okRetry) {
+              sent++;
+            } else {
+              failed++;
+              errors.push(`${r.email}: ${err?.message || 'Unknown error'}`);
+            }
+          } catch (retryErr: any) {
+            failed++;
+            errors.push(`${r.email}: ${err?.message || 'Unknown error'}`);
+          }
         }
-      }));
+        await sleep(500);
+      }
 
       const missing = userIds.length - recipients.length;
       if (missing > 0) {
