@@ -575,6 +575,100 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
               </div>
             )}
 
+            <div className="border border-border rounded-md overflow-hidden mb-4">
+              <SectionHeader title="Inputs Summary" />
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="space-y-2">
+                  <BD label="Purchase Price" value={fmtCurrency(inputs.purchasePrice)} />
+                  <BD
+                    label="Loan Amount"
+                    value={
+                      inputs.useLoan
+                        ? fmtCurrency(
+                            inputs.purchasePrice *
+                              (1 - inputs.downPaymentPct / 100)
+                          )
+                        : "—"
+                    }
+                  />
+                  <BD
+                    label="Down Payment %"
+                    value={inputs.useLoan ? `${inputs.downPaymentPct}%` : "—"}
+                  />
+                  <BD
+                    label="Interest Rate"
+                    value={inputs.useLoan ? `${inputs.interestRate}%` : "—"}
+                  />
+                  <BD
+                    label="Loan Term"
+                    value={inputs.useLoan ? `${inputs.loanTerm} yrs` : "—"}
+                  />
+                  <BD
+                    label="Closing Cost"
+                    value={fmtCurrency(inputs.closingCost)}
+                  />
+                  {inputs.needsRepairs && (
+                    <BD
+                      label="Repair Cost"
+                      value={fmtCurrency(inputs.repairCost)}
+                    />
+                  )}
+                  {inputs.needsRepairs && (
+                    <BD
+                      label="Value After Repairs"
+                      value={fmtCurrency(inputs.valueAfterRepairs)}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <BD
+                    label="Monthly Rent"
+                    value={fmtCurrency(inputs.monthlyRent)}
+                  />
+                  <BD
+                    label="Vacancy Rate"
+                    value={`${inputs.vacancyRate}%`}
+                  />
+                  <BD
+                    label="Management Fee"
+                    value={`${inputs.managementFee}%`}
+                  />
+                  <BD
+                    label="Property Tax (yr)"
+                    value={fmtCurrency(inputs.propertyTax.amount)}
+                  />
+                  <BD
+                    label="Total Insurance (yr)"
+                    value={fmtCurrency(inputs.totalInsurance.amount)}
+                  />
+                  <BD
+                    label="HOA Fee (yr)"
+                    value={fmtCurrency(inputs.hoaFee.amount)}
+                  />
+                  <BD
+                    label="Maintenance (yr)"
+                    value={fmtCurrency(inputs.maintenance.amount)}
+                  />
+                  <BD
+                    label="Other Costs (yr)"
+                    value={fmtCurrency(inputs.otherCosts.amount)}
+                  />
+                  <BD
+                    label="Holding Length"
+                    value={`${inputs.holdingLength} yrs`}
+                  />
+                  <BD
+                    label="Value Appreciation"
+                    value={`${inputs.valueAppreciation}%`}
+                  />
+                  <BD
+                    label="Cost to Sell"
+                    value={`${inputs.costToSell}%`}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <MetricCard
                 label="IRR"
