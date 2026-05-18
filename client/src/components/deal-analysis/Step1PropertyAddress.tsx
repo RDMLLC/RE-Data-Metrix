@@ -40,6 +40,17 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   const [groundUpModalOpen, setGroundUpModalOpen] = useState(false);
   const [quotaExhaustedModalOpen, setQuotaExhaustedModalOpen] = useState(false);
   const [missingAutoFillFields, setMissingAutoFillFields] = useState<string[]>([]);
+  const [buildingListings, setBuildingListings] = useState<Array<{
+    url: string;
+    displayAddress: string;
+    beds?: number;
+    baths?: number;
+    sqft?: number;
+    price?: number;
+    status?: string;
+    image?: string;
+  }> | null>(null);
+  const [buildingAddress, setBuildingAddress] = useState<string | null>(null);
   const [videoOpen, setVideoOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     return new URLSearchParams(window.location.search).get("demo") === "true";
@@ -240,6 +251,11 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
             if (errorJson.code) {
               errorCode = errorJson.code;
             }
+            if (errorJson.code === "BUILDING_URL" && Array.isArray(errorJson.listings)) {
+              setBuildingListings(errorJson.listings);
+              setBuildingAddress(errorJson.buildingAddress ?? null);
+              return;
+            }
           } catch {
             // JSON parse failed, use default message
           }
@@ -273,6 +289,8 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
   });
 
   const handleLookup = () => {
+    setBuildingListings(null);
+    setBuildingAddress(null);
     if (!propertyUrl.trim()) {
       toast({
         variant: "destructive",
@@ -353,6 +371,68 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetSignal]);
 
+  const unitPickerContent = buildingListings && buildingListings.length > 0 ? (
+    <div className="space-y-3" data-testid="card-unit-picker">
+      <div>
+        <h3 className="font-semibold">Select a unit to analyze</h3>
+        {buildingAddress && (
+          <p className="text-sm text-muted-foreground" data-testid="text-building-address">
+            {buildingAddress}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground mt-1">
+          This Zillow link points to a building with multiple units. Pick a specific unit to continue.
+        </p>
+      </div>
+      <div className="grid gap-2">
+        {buildingListings.map((listing, idx) => {
+          const specs: string[] = [];
+          if (listing.beds) specs.push(`${listing.beds} bd`);
+          if (listing.baths) specs.push(`${listing.baths} ba`);
+          if (listing.sqft) specs.push(`${listing.sqft.toLocaleString()} sqft`);
+          if (listing.price) specs.push(`$${listing.price.toLocaleString()}`);
+          const statusLabel = listing.status ? listing.status.replace(/_/g, " ").toLowerCase() : null;
+          return (
+            <Button
+              key={listing.url}
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setBuildingListings(null);
+                setBuildingAddress(null);
+                setPropertyUrl(listing.url);
+                propertyLookupMutation.mutate(listing.url);
+              }}
+              disabled={propertyLookupMutation.isPending}
+              className="w-full justify-start h-auto py-3 text-left"
+              data-testid={`button-select-unit-${idx}`}
+            >
+              <div className="flex flex-col items-start gap-1 w-full">
+                <span className="font-medium capitalize">{listing.displayAddress}</span>
+                <span className="text-xs text-muted-foreground">
+                  {specs.length > 0 ? specs.join(" · ") : "Details unavailable"}
+                  {statusLabel ? ` · ${statusLabel}` : ""}
+                </span>
+              </div>
+            </Button>
+          );
+        })}
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          setBuildingListings(null);
+          setBuildingAddress(null);
+        }}
+        data-testid="button-cancel-unit-picker"
+      >
+        Cancel
+      </Button>
+    </div>
+  ) : null;
+
   const propertyResultCardContent = (
     <>
       <div className="rounded-lg bg-muted p-4">
@@ -428,6 +508,10 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
           {isLookupComplete ? (
             <div className="w-full space-y-4" data-testid="container-mobile-property-result">
               {propertyResultCardContent}
+            </div>
+          ) : unitPickerContent ? (
+            <div className="w-full" data-testid="container-mobile-unit-picker">
+              {unitPickerContent}
             </div>
           ) : !manualEntryPreference ? (
             <>
@@ -782,6 +866,12 @@ export default function Step1PropertyAddress({ form, onNext, onPropertyDataLoade
                     Example: https://www.zillow.com/homedetails/123-Main-St-Anytown-CA-12345/123456789_zpid/
                   </p>
                 </div>
+
+                {unitPickerContent && (
+                  <div className="pt-4 border-t">
+                    {unitPickerContent}
+                  </div>
+                )}
 
                 {isLookupComplete && (
                   <div className="pt-4 border-t space-y-4">

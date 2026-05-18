@@ -1,6 +1,13 @@
-import type { IPropertyAPIService, PropertyData } from "./property-api.interface";
+import type { IPropertyAPIService, PropertyData, BuildingListing } from "./property-api.interface";
+import { BuildingUrlError } from "./property-api.interface";
 
 const HASDATA_BASE_URL = "https://api.hasdata.com";
+
+function parseAddressFromHomedetailsSlug(url: string): string | undefined {
+  const m = url.match(/\/homedetails\/([^/]+)\/\d+_zpid/);
+  if (!m) return undefined;
+  return m[1].replace(/-/g, " ");
+}
 
 // Interface for property sale history entry
 export interface PropertySaleEntry {
@@ -225,7 +232,33 @@ export class HasDataAPIService implements IPropertyAPIService {
       const data = await response.json();
       
       console.log("HasData API raw response:", JSON.stringify(data, null, 2));
-      
+
+      // Detect Zillow building (/b/) responses and surface listings to caller
+      // so the frontend can show a unit picker rather than a near-empty result.
+      if (isZillow) {
+        const isBuildingUrl = /\/b\//.test(url);
+        const rawProp = data.property || data;
+        const isBuildingHome = rawProp?.homeType === "Building";
+        const rawListings = Array.isArray(rawProp?.listings) ? rawProp.listings : [];
+        if ((isBuildingUrl || isBuildingHome) && rawListings.length > 0) {
+          const listings: BuildingListing[] = rawListings
+            .filter((l: any) => typeof l?.url === "string" && /\/homedetails\//.test(l.url))
+            .map((l: any) => ({
+              url: l.url,
+              displayAddress: parseAddressFromHomedetailsSlug(l.url) ?? l.url,
+              beds: this.parseNumber(l.beds ?? l.bedrooms),
+              baths: this.parseNumber(l.baths ?? l.bathrooms),
+              sqft: this.parseNumber(l.area ?? l.livingArea),
+              price: this.parseNumber(l.price),
+              status: l.status,
+              image: l.image,
+            }));
+          if (listings.length > 0) {
+            throw new BuildingUrlError(listings, rawProp?.address?.addressRaw);
+          }
+        }
+      }
+
       // Log ALL property keys to help identify missing field mappings
       const property = data.property || data;
       console.log("=== ALL PROPERTY KEYS ===");

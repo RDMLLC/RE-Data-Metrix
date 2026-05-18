@@ -42,3 +42,27 @@ export interface IPropertyAPIService {
   /** Optional: fetch AVM long-term rent estimate for a full formatted address */
   getRentEstimateByAddress?(fullAddress: string): Promise<number | null>;
 }
+
+export interface BuildingListing {
+  url: string;
+  displayAddress: string;
+  beds?: number;
+  baths?: number;
+  sqft?: number;
+  price?: number;
+  status?: string;
+  image?: string;
+}
+
+export class BuildingUrlError extends Error {
+  readonly code = "BUILDING_URL" as const;
+  constructor(
+    public listings: BuildingListing[],
+    public buildingAddress?: string,
+  ) {
+    super(
+      "This Zillow URL points to a building with multiple units. Please select a specific unit to analyze.",
+    );
+    this.name = "BuildingUrlError";
+  }
+}

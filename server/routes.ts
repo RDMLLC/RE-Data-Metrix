@@ -5,6 +5,7 @@ import { insertLenderQuestionnaireSchema, insertLoanProductSchema, insertPropert
 import { z } from "zod";
 import { propertyAPIService, PropertyAPIFactory } from "./services/property-api.factory";
 import { HasDataAPIService } from "./services/hasdata-api.service";
+import { BuildingUrlError } from "./services/property-api.interface";
 import { db } from "./db";
 import { eq, inArray, desc, asc, and, sql, count, gt, or, ne } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./auth";
@@ -11202,28 +11203,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Cache miss — now check and gate free-user quota
+      // Cache miss — pre-check free-user quota WITHOUT incrementing so users at
+      // their limit don't trigger an upstream HasData call. The actual increment
+      // happens AFTER the lookup so /b/ building URLs (which return a unit
+      // picker, not data) don't burn one of a free user's monthly lookups.
       const user = req.user as User | undefined;
-      let usageResult: { canLookup: boolean; remainingLookups: number } | null = null;
-      
-      if (user) {
-        const isSubscriber = user.role === 'admin' || user.role === 'auditor' || 
-          ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus);
-        
-        if (!isSubscriber) {
-          // Check and increment usage for free users
-          usageResult = await storage.incrementUserPropertyLookup(user.id);
-          
-          if (!usageResult.canLookup) {
-            return res.status(403).json({ 
-              error: "You've reached your free monthly limit of 2 property lookups. Upgrade to continue using automated lookups, or enter property information manually.",
-              code: "LOOKUP_LIMIT_REACHED",
-              remainingLookups: 0
-            });
-          }
+      const isSubscriber = !!user && (user.role === 'admin' || user.role === 'auditor' ||
+        ['active', 'cancelling', 'referral_trial', 'comped'].includes(user.subscriptionStatus));
+
+      if (user && !isSubscriber) {
+        const currentUsage = await storage.getUserUsageCounter(user.id);
+        if (currentUsage && currentUsage.remainingLookups <= 0) {
+          return res.status(403).json({
+            error: "You've reached your free monthly limit of 2 property lookups. Upgrade to continue using automated lookups, or enter property information manually.",
+            code: "LOOKUP_LIMIT_REACHED",
+            remainingLookups: 0,
+          });
         }
       }
-      
+
       // Bug 2 fix: bypass CachedPropertyAPIService (broken after schema migration) —
       // use HasDataAPIService directly. Route-level 7-day cache (above) handles caching.
       const hasDataDirectService = new HasDataAPIService();
@@ -11232,6 +11230,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         propertyData = await hasDataDirectService.getPropertyByUrl(url);
       } catch (primaryError: any) {
+        // Surface Zillow building-page detection BEFORE falling back to RentCast,
+        // since RentCast cannot help here and would mask the unit-picker UX.
+        if (primaryError instanceof BuildingUrlError) {
+          return res.status(422).json({
+            error: primaryError.message,
+            code: "BUILDING_URL",
+            listings: primaryError.listings,
+            buildingAddress: primaryError.buildingAddress,
+          });
+        }
         console.log(`[Property Lookup] Primary lookup (HasData) failed: ${primaryError.message}. Trying RentCast fallback...`);
         try {
           rentCastFallbackService = PropertyAPIFactory.getService("rentcast");
@@ -11249,9 +11257,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!propertyData) {
-        return res.status(404).json({ 
-          error: "Property not found. Please check the URL and try again." 
+        return res.status(404).json({
+          error: "Property not found. Please check the URL and try again."
         });
+      }
+
+      // Charge free-user quota only for usable results
+      let usageResult: { canLookup: boolean; remainingLookups: number } | null = null;
+      if (user && !isSubscriber) {
+        usageResult = await storage.incrementUserPropertyLookup(user.id);
+        if (!usageResult.canLookup) {
+          return res.status(403).json({
+            error: "You've reached your free monthly limit of 2 property lookups. Upgrade to continue using automated lookups, or enter property information manually.",
+            code: "LOOKUP_LIMIT_REACHED",
+            remainingLookups: 0,
+          });
+        }
       }
       
       // Fetch supplemental data from HasData/Zillow (image, rent Zestimate, HOA)
