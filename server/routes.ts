@@ -5034,14 +5034,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const escapeHtml = (s: string) =>
         s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string; username: string; signupDate: string; dealCount: string }) =>
+      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string; username: string; signupDate: string; dealCount: string; dealWord: string }) =>
         template
           .replace(/\{\{\s*firstName\s*\}\}/gi, ctx.firstName)
           .replace(/\{\{\s*fullName\s*\}\}/gi, ctx.fullName)
           .replace(/\{\{\s*email\s*\}\}/gi, ctx.email)
           .replace(/\{\{\s*username\s*\}\}/gi, ctx.username)
           .replace(/\{\{\s*signupDate\s*\}\}/gi, ctx.signupDate)
-          .replace(/\{\{\s*dealCount\s*\}\}/gi, ctx.dealCount);
+          .replace(/\{\{\s*dealCount\s*\}\}/gi, ctx.dealCount)
+          .replace(/\{\{\s*dealWord\s*\}\}/gi, ctx.dealWord);
 
       const formatSignupDate = (d: Date | string | null | undefined): string => {
         if (!d) return '';
@@ -5063,9 +5064,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const firstName = derivedFirst || 'there';
 
           const dealCountRows = await db
-            .select({ count: sql<number>`count(*)` })
-            .from(dealAnalyses)
-            .where(eq(dealAnalyses.userId, r.id));
+            .select({ count: count() })
+            .from(savedDeals)
+            .where(eq(savedDeals.userId, r.id));
           const dealCount = Number(dealCountRows[0]?.count || 0);
 
           const ctx = {
@@ -5075,6 +5076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             username: r.username || '',
             signupDate: formatSignupDate(r.createdAt),
             dealCount: String(dealCount),
+            dealWord: dealCount === 1 ? 'analysis' : 'analyses',
           };
 
           const renderedSubject = applyMerge(subject, ctx);
@@ -5104,6 +5106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               username: r.username || '',
               signupDate: formatSignupDate(r.createdAt),
               dealCount: '0',
+              dealWord: 'analyses',
             });
             const renderedBodyTextRetry = applyMerge(body, {
               firstName: (((r.fullName || '').trim().split(/\s+/)[0]) || 'there'),
@@ -5112,6 +5115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               username: r.username || '',
               signupDate: formatSignupDate(r.createdAt),
               dealCount: '0',
+              dealWord: 'analyses',
             });
             const renderedBodyHtmlRetry = escapeHtml(renderedBodyTextRetry).replace(/\r?\n/g, '<br>');
             const htmlRetry = `<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">${renderedBodyHtmlRetry}</body></html>`;

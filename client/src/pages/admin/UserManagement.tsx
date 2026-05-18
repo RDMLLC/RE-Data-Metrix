@@ -1611,6 +1611,7 @@ export default function UserManagement() {
                   <li><code>{`{{username}}`}</code> — recipient's username</li>
                   <li><code>{`{{signupDate}}`}</code> — recipient's signup date (e.g. "January 14, 2026")</li>
                   <li><code>{`{{dealCount}}`}</code> — number of deals saved by the recipient</li>
+                  <li><code>{`{{dealWord}}`}</code> — analysis or analyses depending on deal count</li>
                 </ul>
               </div>
             </div>
