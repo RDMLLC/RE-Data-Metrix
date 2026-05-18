@@ -18,6 +18,7 @@ import { webinarReminderService } from './services/webinar-reminder.service';
 import { signupFollowupService } from './services/signupFollowup.service';
 import { verificationReminderService } from './services/verificationReminder.service';
 import { subscriptionRetentionService } from './services/subscriptionRetention.service';
+import { startDbKeepAlive } from './services/dbKeepAlive.service';
 import { storage } from './storage';
 
 async function runCacheCleanup() {
@@ -489,6 +490,7 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    startDbKeepAlive();
 
     // Start background services
     closingRemindersService.start();
