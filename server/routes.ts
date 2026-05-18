@@ -5025,6 +5025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: users.id,
           email: users.email,
           username: users.username,
+          createdAt: users.createdAt,
           fullName: userProfiles.fullName,
         })
         .from(users)
@@ -5033,12 +5034,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const escapeHtml = (s: string) =>
         s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string; username: string }) =>
+      const applyMerge = (template: string, ctx: { firstName: string; fullName: string; email: string; username: string; signupDate: string; dealCount: string }) =>
         template
           .replace(/\{\{\s*firstName\s*\}\}/gi, ctx.firstName)
           .replace(/\{\{\s*fullName\s*\}\}/gi, ctx.fullName)
           .replace(/\{\{\s*email\s*\}\}/gi, ctx.email)
-          .replace(/\{\{\s*username\s*\}\}/gi, ctx.username);
+          .replace(/\{\{\s*username\s*\}\}/gi, ctx.username)
+          .replace(/\{\{\s*signupDate\s*\}\}/gi, ctx.signupDate)
+          .replace(/\{\{\s*dealCount\s*\}\}/gi, ctx.dealCount);
+
+      const formatSignupDate = (d: Date | string | null | undefined): string => {
+        if (!d) return '';
+        const dt = d instanceof Date ? d : new Date(d);
+        if (isNaN(dt.getTime())) return '';
+        return dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      };
 
       let sent = 0;
       let failed = 0;
@@ -5049,11 +5059,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fullName = (r.fullName || '').trim();
           const derivedFirst = fullName.split(/\s+/)[0] || '';
           const firstName = derivedFirst || 'there';
+
+          const dealCountRows = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(dealAnalyses)
+            .where(eq(dealAnalyses.userId, r.id));
+          const dealCount = Number(dealCountRows[0]?.count || 0);
+
           const ctx = {
             firstName,
             fullName: fullName || r.username || '',
             email: r.email,
             username: r.username || '',
+            signupDate: formatSignupDate(r.createdAt),
+            dealCount: String(dealCount),
           };
 
           const renderedSubject = applyMerge(subject, ctx);
