@@ -1,0 +1,212 @@
+Build a new Rental Property Calculator feature for RE Data Metrix. This is a standalone calculator page accessible from three places: a direct route, the Toolbox page, and as a "side street" from within the Deal Analysis wizard (same pattern as Max Offer Calculator and Wholesale Max Offer Calculator).
+
+Read the existing codebase before building — specifically look at:
+- `client/src/components/mobile/MaxOfferOverlay.tsx` — pattern for side street overlay integration
+- `client/src/components/mobile/WholesaleOverlay.tsx` — pattern for side street overlay + PDF download
+- How Step 3 of Deal Analysis (`client/src/components/deal-analysis/Step3PurchaseRenovation.tsx`) triggers those overlays
+- `client/src/App.tsx` — to understand routing patterns
+- The Toolbox page (`/toolbox`) — to understand how to add a new tool card there
+
+---
+
+## FILES TO CREATE
+
+### 1. `client/src/pages/RentalPropertyCalculator.tsx`
+Full standalone page at route `/rental-property-calculator`.
+
+**Layout:** Two-column desktop layout (matching calculator.net/rental-property-calculator.html), single column on mobile. RDM brand: navy `#1d408b` section headers, gold `#e0b32e` accents, shadcn/ui components, Tailwind.
+
+**Left Column — Purchase section:**
+- Purchase Price (dollar input)
+- Use Loan? Yes/No radio
+  - If Yes: Down Payment (%), Interest Rate (%), Loan Term (years)
+- Closing Cost (dollar input)
+- Need Repairs? Yes/No radio
+  - If Yes: Repair Cost (dollar), Value After Repairs (dollar)
+
+**Left Column — Recurring Operating Expenses section:**
+Table with columns: Item | Annual Amount | Annual Increase %
+Rows: Property Tax, Total Insurance, HOA Fee, Maintenance, Other Costs
+
+**Right Column — Income section:**
+- Monthly Rent (dollar) + Annual Increase %
+- Other Monthly Income (dollar) + Annual Increase %
+- Vacancy Rate (%)
+- Management Fee (%)
+
+**Right Column — Sell section:**
+- Do You Know the Sell Price? Yes/No radio
+  - If No: Value Appreciation % per year, Holding Length (years), Cost to Sell %
+  - If Yes: Sell Price (dollar), Cost to Sell %
+
+**Buttons:** Calculate (navy/gold) + Clear — at bottom between input sections and results
+
+**Results section** (hidden until Calculate clicked, then scrolls into view):
+Display all of the following in a clean results grid/cards:
+- IRR (Internal Rate of Return / Annualized Total Return)
+- Cap Rate
+- Cash-on-Cash Return (CFROI)
+- Monthly Cash Flow
+- Annual Cash Flow
+- Net Operating Income (NOI)
+- Total Profit (at sale)
+- Equity at Sale
+
+Show a breakdown section below the metrics showing: Total Investment, Loan Amount, Monthly Payment (if loan), Annual Gross Income, Annual Operating Expenses, Year-by-Year Cash Flow summary table (Year | Gross Income | Expenses | Cash Flow | Cumulative CF).
+
+**Download PDF button** in results — generates a branded PDF report with:
+- RE Data Metrix header (navy bar with logo text)
+- All input values summarized
+- All output metrics
+- Use jsPDF + html2canvas, same pattern as existing Deal Analysis PDF code
+
+**Calculations — implement these exactly:**
+
+```typescript
+// Total Investment (cash out of pocket)
+const loanAmount = useLoan ? purchasePrice * (1 - downPaymentPct/100) : 0;
+const downPayment = purchasePrice - loanAmount;
+const totalInvestment = downPayment + closingCost + (needsRepairs ? repairCost : 0);
+
+// Monthly mortgage payment
+const monthlyRate = interestRate / 100 / 12;
+const numPayments = loanTerm * 12;
+const monthlyPayment = useLoan && monthlyRate > 0
+  ? loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1)
+  : 0;
+
+// Annual gross income (Year 1)
+const annualRent = monthlyRent * 12 * (1 - vacancyRate/100);
+const annualOtherIncome = otherMonthlyIncome * 12 * (1 - vacancyRate/100);
+const annualGrossIncome = annualRent + annualOtherIncome;
+
+// Annual operating expenses (Year 1) — excludes mortgage
+const managementFeeAmount = annualGrossIncome * (managementFee/100);
+const annualOperatingExpenses = propertyTax + totalInsurance + hoaFee + maintenance + otherCosts + managementFeeAmount;
+
+// NOI
+const noi = annualGrossIncome - annualOperatingExpenses;
+
+// Cap Rate
+const propertyValue = needsRepairs ? valueAfterRepairs : purchasePrice;
+const capRate = (noi / propertyValue) * 100;
+
+// Annual Cash Flow (Year 1)
+const annualMortgage = monthlyPayment * 12;
+const annualCashFlow = noi - annualMortgage;
+
+// Cash-on-Cash Return
+const cashOnCashReturn = totalInvestment > 0 ? (annualCashFlow / totalInvestment) * 100 : 0;
+
+// Sell price calculation
+function calcSellPrice(year: number): number {
+  if (knowSellPrice) return sellPrice;
+  const startValue = needsRepairs ? valueAfterRepairs : purchasePrice;
+  return startValue * Math.pow(1 + valueAppreciation/100, year);
+}
+
+// IRR — use Newton's method / bisection over holdingLength years
+// Build cash flow array: [-totalInvestment, CF_year1, CF_year2, ..., CF_lastYear + (sellPrice - remainingLoanBalance - sellCosts)]
+// Remaining loan balance at sale: standard amortization formula
+// Net sale proceeds = sellPrice * (1 - costToSell/100) - remainingLoanBalance
+
+// Year-by-year loop for projections (apply annual increase % to income/expenses each year):
+function buildYearlyCashFlows(): YearData[] {
+  // Each year: gross income grows by rent/otherIncome annual increase %, 
+  // operating expenses grow by their respective annual increase %
+  // mortgage payment is fixed
+}
+
+// Equity at Sale
+const remainingBalance = /* amortization at holdingLength years */;
+const finalSellPrice = calcSellPrice(holdingLength);
+const equityAtSale = finalSellPrice - remainingBalance;
+const totalProfit = equityAtSale - totalInvestment + cumulativeCashFlow;
+```
+
+**Page includes:** Navigation header (same `<Navigation />` component used everywhere), page title "Rental Property Calculator", brief description, the calculator, results, and a footer note "No account required. Results are estimates for educational purposes."
+
+**Mobile:** Full responsive single-column layout. All inputs stack vertically. Results section fully visible on mobile.
+
+---
+
+### 2. `client/src/components/mobile/RentalPropertyOverlay.tsx`
+Full-screen overlay at `z-[10001]` — same pattern as `MaxOfferOverlay.tsx` and `WholesaleOverlay.tsx`.
+
+This overlay is triggered from within the Deal Analysis wizard as a "side street" tool. It should be a complete self-contained version of the calculator (all inputs + results) inside the overlay pattern.
+
+**Props:**
+```typescript
+interface RentalPropertyOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+```
+
+The overlay does NOT need to write back to Deal Analysis — it's informational only (investor can use it to evaluate the property as a rental). No `onApply` callback needed.
+
+**Structure:**
+- Header: "Rental Property Calculator" title + X close button (same pattern as other overlays)
+- Scrollable content area: all input sections + Calculate button
+- Results appear below inputs after Calculate is clicked
+- Download PDF button in results
+- Use `CollapsibleSection` pattern for Purchase, Operating Expenses, Income, Sell sections on mobile
+
+**Styling:** Match existing overlay styles — `fixed inset-0 z-[10001] bg-white flex flex-col`, header with navy background, body with padding, same font/color system.
+
+---
+
+## FILES TO MODIFY
+
+### 3. `client/src/App.tsx`
+Add route:
+```tsx
+<Route path="/rental-property-calculator" component={RentalPropertyCalculator} />
+```
+Import `RentalPropertyCalculator` from `./pages/RentalPropertyCalculator`.
+
+### 4. Toolbox page (find the file that renders `/toolbox` — search for the tools grid/cards)
+Add a new tool card for "Rental Property Calculator":
+- Title: "Rental Property Calculator"
+- Description: "Analyze buy-and-hold rental properties — cash flow, cap rate, IRR, and projected returns at sale."
+- Icon: use a house or chart icon from lucide-react
+- Link: `/rental-property-calculator`
+- Badge: "Free" (no gate)
+- Place it near the DSCR Calculator card (they're related rental property tools)
+
+### 5. Deal Analysis Step 3 — `client/src/components/deal-analysis/Step3PurchaseRenovation.tsx`
+In the mobile branch of Step 3 (where Max Offer Calculator and Wholesale Calculator buttons already exist), add a third button:
+[ Rental Property Calculator ]
+
+This button sets a state flag `showRentalCalc` to true, which renders:
+```tsx
+<RentalPropertyOverlay isOpen={showRentalCalc} onClose={() => setShowRentalCalc(false)} />
+```
+
+Import `RentalPropertyOverlay` from `../../components/mobile/RentalPropertyOverlay`.
+
+Also add a desktop version in the Step 3 desktop branch — a text link or small button labeled "Rental Property Calculator →" that navigates to `/rental-property-calculator` (opens in same tab via `window.location.href` or react-router `useNavigate`).
+
+---
+
+## IMPLEMENTATION NOTES
+
+- No authentication required — this is free/ungated (but `useAuth()` can be used to optionally show user's name in the PDF header if logged in)
+- No saving to database — purely client-side calculations
+- PDF generation: use jsPDF + html2canvas (already in project dependencies). Capture a hidden ref div containing a styled print layout. Navy header bar with "RE Data Metrix" text, then inputs summary table, then results metrics, then year-by-year table.
+- All dollar inputs should format with commas on blur (same pattern used elsewhere in the codebase)
+- Percentage inputs: allow one decimal place
+- IRR calculation: implement bisection method — iterate from -99% to +500%, narrow to 0.001% precision
+- If IRR cannot be computed (e.g., always negative cash flows), display "N/A"
+- Color-code results: green for positive cash flow / good returns, red/amber for negative
+- Section headers use the navy `bg-[#1d408b] text-white` style matching the screenshot
+- The Calculate button: navy background, gold text or gold border — match RDM primary CTA style
+- Input field widths: match calculator.net layout — dollar fields ~120px, percentage fields ~60px on desktop; full width on mobile
+
+Make sure all TypeScript types are correct and the build passes with no errors.
+
+Key things to note before pasting:
+
+No files need to be pasted at the bottom — all new files are described inline in the prompt
+The Agent should search for the Toolbox page file itself (it's rendered at /toolbox — likely client/src/pages/Toolbox.tsx or similar, but the project state says "There is no Toolbox.tsx" so it may be named differently — the Agent should grep for the tools grid)
+The Agent should also look at how CollapsibleSection is imported/used in the existing overlay files before writing the mobile overlay

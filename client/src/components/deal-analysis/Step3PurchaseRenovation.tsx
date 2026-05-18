@@ -60,6 +60,7 @@ import CompReportPdf from "./CompReportPdf";
 import MobileStepWrapper from "@/components/mobile/MobileStepWrapper";
 import MaxOfferOverlay from "@/components/mobile/MaxOfferOverlay";
 import WholesaleOverlay from "@/components/mobile/WholesaleOverlay";
+import RentalPropertyOverlay from "@/components/mobile/RentalPropertyOverlay";
 
 // Interface for comparable property
 interface SoldPropertyComp {
@@ -153,6 +154,7 @@ export default function Step3PurchaseRenovation({
   const [showMaxOfferCalcMobile, setShowMaxOfferCalcMobile] = useState(false);
   const [showMaxOfferOverlay, setShowMaxOfferOverlay] = useState(false);
   const [showWholesaleOverlay, setShowWholesaleOverlay] = useState(false);
+  const [showRentalOverlay, setShowRentalOverlay] = useState(false);
   const [maxArvPercent, setMaxArvPercent] = useState(70);
   const [calcArv, setCalcArv] = useState(arv || 0);
   const [calcRehabBudget, setCalcRehabBudget] = useState(rehabBudget || 0);
@@ -1278,6 +1280,16 @@ export default function Step3PurchaseRenovation({
                 <Calculator className="h-4 w-4" />
                 Wholesale Max Offer Calculator
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-11 gap-1.5"
+                onClick={() => setShowRentalOverlay(true)}
+                data-testid="button-rental-overlay-open"
+              >
+                <Calculator className="h-4 w-4" />
+                Rental Property Calculator
+              </Button>
             </div>
 
             {/* Double Close — full width at bottom */}
@@ -1365,6 +1377,10 @@ export default function Step3PurchaseRenovation({
           if (applyRehab > 0) form.setValue("rehabBudget", applyRehab);
           setShowWholesaleOverlay(false);
         }}
+      />
+      <RentalPropertyOverlay
+        isOpen={showRentalOverlay}
+        onClose={() => setShowRentalOverlay(false)}
       />
       </>
     );
@@ -1559,6 +1575,16 @@ export default function Step3PurchaseRenovation({
                     </div>
                   </PopoverContent>
                 </Popover>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-primary"
+                  onClick={() => window.open("/rental-property-calculator", "_blank")}
+                  data-testid="button-open-rental-calculator-desktop"
+                >
+                  Rental Property Calculator →
+                </Button>
                 </div>
               </div>
               <CardDescription>
