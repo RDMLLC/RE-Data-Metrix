@@ -46,6 +46,8 @@ function NumberField({
   testId,
   step = "1",
   className = "",
+  roundOnBlur = false,
+  decimalsOnBlur,
 }: {
   id: string;
   value: number;
@@ -55,7 +57,24 @@ function NumberField({
   testId?: string;
   step?: string;
   className?: string;
+  roundOnBlur?: boolean;
+  decimalsOnBlur?: number;
 }) {
+  const [display, setDisplay] = useState<string>(value === 0 ? "" : String(value));
+  const [focused, setFocused] = useState(false);
+
+  if (!focused) {
+    const expected =
+      value === 0
+        ? ""
+        : decimalsOnBlur !== undefined
+          ? value.toFixed(decimalsOnBlur)
+          : String(value);
+    if (display !== expected) {
+      setDisplay(expected);
+    }
+  }
+
   return (
     <div className={`relative flex items-center ${className}`}>
       {prefix && (
@@ -65,11 +84,31 @@ function NumberField({
       )}
       <Input
         id={id}
-        type="number"
+        type="text"
         inputMode="decimal"
         step={step}
-        value={value === 0 ? "" : value}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        value={display}
+        onFocus={() => setFocused(true)}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setDisplay(raw);
+          const n = parseFloat(raw);
+          onChange(isNaN(n) ? 0 : n);
+        }}
+        onBlur={() => {
+          setFocused(false);
+          let n = parseFloat(display);
+          if (isNaN(n)) n = 0;
+          if (roundOnBlur) n = Math.round(n);
+          onChange(n);
+          if (n === 0) {
+            setDisplay("");
+          } else if (decimalsOnBlur !== undefined) {
+            setDisplay(n.toFixed(decimalsOnBlur));
+          } else {
+            setDisplay(String(n));
+          }
+        }}
         className={`text-right ${prefix ? "pl-6" : ""} ${suffix ? "pr-7" : ""}`}
         data-testid={testId}
       />
@@ -203,7 +242,8 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
                   value={inputs.downPaymentPct}
                   onChange={(n) => update("downPaymentPct", n)}
                   suffix="%"
-                  step="0.1"
+                  step="1"
+                  roundOnBlur
                   testId="input-rc-down"
                 />
               </div>
@@ -216,7 +256,8 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
                   value={inputs.interestRate}
                   onChange={(n) => update("interestRate", n)}
                   suffix="%"
-                  step="0.1"
+                  step="0.01"
+                  decimalsOnBlur={2}
                   testId="input-rc-rate"
                 />
               </div>
