@@ -876,7 +876,6 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
       <PdfSignupDialog
         open={showPdfDialog}
         onOpenChange={setShowPdfDialog}
-        onDownloadAnyway={() => void performDownload()}
       />
     </div>
   );

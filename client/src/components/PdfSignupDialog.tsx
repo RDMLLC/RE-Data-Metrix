@@ -10,18 +10,12 @@ import {
 interface PdfSignupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDownloadAnyway: () => void;
 }
 
-export function PdfSignupDialog({ open, onOpenChange, onDownloadAnyway }: PdfSignupDialogProps) {
+export function PdfSignupDialog({ open, onOpenChange }: PdfSignupDialogProps) {
   const handleCreate = () => {
     onOpenChange(false);
     window.location.href = "/register";
-  };
-
-  const handleDownloadAnyway = () => {
-    onOpenChange(false);
-    onDownloadAnyway();
   };
 
   return (
@@ -49,14 +43,6 @@ export function PdfSignupDialog({ open, onOpenChange, onDownloadAnyway }: PdfSig
           >
             Create Free Account
           </Button>
-          <button
-            type="button"
-            onClick={handleDownloadAnyway}
-            className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline self-center"
-            data-testid="button-pdf-signup-anyway"
-          >
-            No thanks, download anyway
-          </button>
         </div>
       </DialogContent>
     </Dialog>

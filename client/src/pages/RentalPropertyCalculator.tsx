@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -29,16 +29,6 @@ const RENTAL_FAQS: FAQItem[] = [
 ];
 
 export default function RentalPropertyCalculator() {
-  const [, navigate] = useLocation();
-
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      navigate("/toolbox");
-    }
-  };
-
   return (
     <>
       <SEO
@@ -49,14 +39,16 @@ export default function RentalPropertyCalculator() {
       <Navigation />
       <div className="container max-w-5xl mx-auto py-6 px-4">
         <Button
+          asChild
           variant="ghost"
           size="sm"
           className="mb-3"
-          onClick={handleBack}
           data-testid="button-rc-back-home"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          <Link href="/toolbox">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Link>
         </Button>
 
         <div className="mb-5">

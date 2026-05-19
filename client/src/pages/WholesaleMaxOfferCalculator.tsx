@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowLeft, DollarSign, Download, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { usePDF } from "react-to-pdf";
 import { Button } from "@/components/ui/button";
@@ -88,14 +88,6 @@ export default function WholesaleMaxOfferCalculator() {
   const [otherCc, setOtherCc] = useState(0);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
 
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      setLocation("/toolbox");
-    }
-  };
-
   const handleDownloadPdf = () => {
     if (!isAuthenticated) {
       setShowPdfDialog(true);
@@ -135,14 +127,16 @@ export default function WholesaleMaxOfferCalculator() {
       <Navigation />
       <div className="container max-w-5xl mx-auto py-6 px-4">
         <Button
+          asChild
           variant="ghost"
           size="sm"
           className="mb-3"
-          onClick={handleBack}
           data-testid="button-wm-back"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          <Link href="/toolbox">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Link>
         </Button>
 
         <div className="mb-5">
@@ -401,7 +395,6 @@ export default function WholesaleMaxOfferCalculator() {
         <PdfSignupDialog
           open={showPdfDialog}
           onOpenChange={setShowPdfDialog}
-          onDownloadAnyway={() => toPDF()}
         />
 
         <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">

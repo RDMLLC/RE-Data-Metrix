@@ -1,5 +1,5 @@
-import { useLocation } from "wouter";
-import { Check, X } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { ArrowLeft, Check, X } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,6 +71,19 @@ export default function CalculatorAccess() {
         className="min-h-screen bg-background"
       >
         <div className="max-w-4xl mx-auto px-4 pt-4 pb-10 md:py-14">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="mb-3"
+            data-testid="button-ca-back"
+          >
+            <Link href="/toolbox">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Link>
+          </Button>
+
           {/* 1. Hero */}
           <section className="text-center mb-3 md:mb-14" data-testid="section-ca-hero">
             <h1
