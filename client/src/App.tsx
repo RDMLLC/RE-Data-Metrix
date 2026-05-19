@@ -114,6 +114,7 @@ const BetaSignup = lazy(() => import("@/pages/BetaSignup"));
 const FeatureFeedback = lazy(() => import("@/pages/FeatureFeedback"));
 const AdminFeatureFeedback = lazy(() => import("@/pages/admin/FeatureFeedback"));
 const MetaOffer = lazy(() => import("@/pages/MetaOffer"));
+const CalculatorAccess = lazy(() => import("@/pages/CalculatorAccess"));
 const BlogTrafficOffer = lazy(() => import("@/pages/BlogTrafficOffer"));
 const GoogleOffer = lazy(() => import("@/pages/GoogleOffer"));
 const Cancelled = lazy(() => import("@/pages/Cancelled"));
@@ -266,6 +267,7 @@ function Router() {
         <Route path="/checkout" component={Checkout} />
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/complete" component={CheckoutComplete} />
+        <Route path="/calculator-access" component={CalculatorAccess} />
         <Route path="/meta-offer" component={MetaOffer} />
         <Route path="/linkedin-offer" component={MetaOffer} />
         <Route path="/blog-traffic" component={BlogTrafficOffer} />

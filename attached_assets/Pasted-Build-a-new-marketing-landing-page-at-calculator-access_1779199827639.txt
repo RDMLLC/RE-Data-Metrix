@@ -1,0 +1,110 @@
+Build a new marketing landing page at `/calculator-access`. This page is the destination for the "Access Lenders Today" CTA button on all four standalone calculator pages. It is a conversion page — lean layout, no distractions, no sidebar. Do not use the standard portal layout. Use the same lean landing page pattern as `/meta-offer` or `/linkedin-offer` — read one of those files first to understand the structure.
+
+---
+
+## Route
+Add to `client/src/App.tsx`:
+```tsx
+<Route path="/calculator-access" component={CalculatorAccess} />
+```
+This route must be PUBLIC — no auth required.
+
+---
+
+## File
+`client/src/pages/CalculatorAccess.tsx`
+
+---
+
+## Page Structure (top to bottom)
+
+### 1. Navigation
+Use the standard `<Navigation />` component at the top.
+
+### 2. Hero Section
+Headline (large, navy `#1d408b`):
+"Your calculators are just the beginning."
+
+Subheadline (medium, gray):
+"A free RE Data Metrix account gives you deal analysis, lender access, and a full investing toolset — no credit card required."
+
+CTA button below subheadline:
+"Create Free Account" → `/register`
+Style: gold background `#e0b32e`, navy text `#1d408b`, large, prominent
+
+### 3. Free vs Paid Comparison Table
+Place this immediately below the hero — this is the primary content block.
+
+Use a clean responsive table with three columns: Feature | Free | Paid
+On mobile, the table should scroll horizontally or stack cleanly.
+
+Use a checkmark (✓) in green for included features, an X or dash for not available, and the exact text values below where applicable.
+
+| Feature | Free | Paid |
+|---|---|---|
+| Property Lookups | 2/month automated | Unlimited |
+| Wholesale Calculator | 2/month | Unlimited |
+| ARV/Comp Reports | 2/month | Unlimited |
+| Deal Analysis | 2 auto + manual | Unlimited |
+| Lender Directory | Unlimited | Unlimited |
+| Automated Lender Comparisons | 2/month | Unlimited |
+| Manual Loan Entry + Analysis | Unlimited | Unlimited |
+| Save Deals & Lenders | Not available | Unlimited |
+| Export PDF/CSV | Not available | Included |
+| State-Specific Calculators | Not available | Included |
+| Priority Support | Standard | Priority |
+
+Style: navy `#1d408b` header row with white text. Alternating light gray row backgrounds. Free column and Paid column headers should visually distinguish — Paid column header uses gold `#e0b32e` accent or bold treatment.
+
+### 4. Pricing Cards
+Two cards side by side on desktop, stacked on mobile.
+
+**Card 1 — Monthly**
+- Label: "Monthly"
+- Price: $25/month
+- Subtext: "Cancel anytime. No contracts."
+- CTA button: "Get Started" → `/register`
+
+**Card 2 — Annual (highlighted as best value)**
+- Label: "Annual" with a "Best Value" badge
+- Price: $250/year
+- Subtext: "Save $50 — that's 2 months free."
+- CTA button: "Get Started" → `/register`
+- Style: slightly elevated or bordered in gold to indicate recommended
+
+### 5. Secondary CTA
+Below the pricing cards, a subtle text link:
+"Want to see everything that's included? → See All Features"
+Links to `/features`
+
+### 6. Footer note
+Small gray text: "No credit card required. Free account is yours to keep forever."
+
+---
+
+## SEO
+Add `<SEO>` component with:
+- title: "Unlock the Full Platform | RE Data Metrix"
+- description: "A free RE Data Metrix account gives you deal analysis, lender access, and a full investing toolset. See what's included and create your free account today."
+
+---
+
+## PageSense Tracking
+This page needs to be trackable separately from other landing pages. Add a `data-page="calculator-access"` attribute to the root div of the page content. This allows PageSense to identify and segment this page's traffic separately.
+
+---
+
+## Sitemap
+Add `/calculator-access` to `client/public/sitemap.xml` with:
+- `<changefreq>monthly</changefreq>`
+- `<priority>0.6</priority>`
+
+---
+
+## Style notes
+- Match RDM brand: navy `#1d408b`, gold `#e0b32e`, shadcn/ui components, Tailwind
+- Max content width: `max-w-4xl mx-auto` — keep it focused and readable
+- No right sidebar, no deal portal chrome, no dashboard nav elements
+- Mobile first — table, cards, and CTAs all fully functional on mobile
+
+Typecheck must pass with no new errors.
