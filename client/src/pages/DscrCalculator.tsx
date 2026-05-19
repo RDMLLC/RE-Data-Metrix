@@ -9,7 +9,30 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Navigation from "@/components/Navigation";
 import { SEO } from "@/components/SEO";
+import { FAQSchema } from "@/components/StructuredData";
+import { CalculatorContent, type FAQItem } from "@/components/CalculatorContent";
 import { useAuth } from "@/contexts/AuthContext";
+
+const DSCR_EXPLAINER =
+  "A DSCR loan lets real estate investors qualify for financing based on a property's rental income rather than personal income — no W-2s, no tax returns, no pay stubs required. The Debt Service Coverage Ratio measures whether a property generates enough rent to cover its loan payments. Lenders calculate it by dividing the gross monthly rent by the total monthly PITIA — principal, interest, taxes, insurance, and HOA dues. A DSCR of 1.25 means the property earns 25% more than it costs to operate each month, which is the threshold most DSCR lenders require for their best rates. Use this calculator to test scenarios, model different down payments, and see exactly what rent or down payment would be needed to qualify.";
+
+const DSCR_FAQS: FAQItem[] = [
+  {
+    question: "What is DSCR and why do lenders use it?",
+    answer:
+      "DSCR stands for Debt Service Coverage Ratio. It measures a rental property's ability to cover its loan payments using its own rental income. Lenders use it to qualify real estate investors without requiring personal income documentation — the property's cash flow is the qualification metric, not your W-2 or tax returns. This makes DSCR loans especially useful for self-employed investors or those with complex tax situations.",
+  },
+  {
+    question: "What DSCR do I need to qualify for a loan?",
+    answer:
+      "Most DSCR lenders set a minimum ratio of 1.20 to 1.25, meaning the property's rent should exceed its total monthly payment by 20–25%. A ratio of exactly 1.0 means the property breaks even — some lenders will approve at this level but typically require higher down payments, stronger credit, and larger cash reserves as compensating factors. A DSCR of 1.25 or above is where you unlock the most competitive rates and terms.",
+  },
+  {
+    question: "What's the difference between a DSCR loan and a conventional mortgage?",
+    answer:
+      "A conventional mortgage qualifies you based on your personal income, employment history, and debt-to-income ratio. A DSCR loan qualifies you based entirely on the rental property's income — your personal finances are largely irrelevant. This makes DSCR loans faster to close, available to investors with multiple properties, and accessible to self-employed borrowers whose tax write-offs reduce their reportable income below conventional thresholds.",
+  },
+];
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -124,11 +147,20 @@ function compute(i: DscrInputs): DscrResults {
 
 function dscrBand(dscr: number) {
   if (dscr >= 1.25)
-    return { color: "text-green-600", label: "Strong. Most lenders will approve." };
+    return {
+      color: "text-green-600",
+      label: "Strong. Most lenders will approve at competitive rates.",
+    };
+  if (dscr >= 1.2)
+    return {
+      color: "text-teal-600",
+      label: "Good. Most lenders will approve, rates may vary.",
+    };
   if (dscr >= 1.0)
-    return { color: "text-yellow-600", label: "Marginal. Some lenders may approve." };
-  if (dscr >= 0.75)
-    return { color: "text-orange-600", label: "Negative cash flow. Limited lender options." };
+    return {
+      color: "text-amber-500",
+      label: "Marginal. Some lenders may approve with stronger credit and reserves.",
+    };
   return { color: "text-red-600", label: "Does not qualify for most DSCR programs." };
 }
 
@@ -185,9 +217,10 @@ export default function DscrCalculator() {
   return (
     <>
       <SEO
-        title="DSCR Calculator"
-        description="Free DSCR calculator for real estate investors. Check if your rental property qualifies for DSCR financing and see what it takes to hit 1.25."
+        fullTitle="DSCR Calculator — Debt Service Coverage Ratio for Rental Properties | RE Data Metrix"
+        description="Calculate your DSCR instantly. See if your rental property qualifies for a DSCR loan, your monthly cash flow, and what it would take to hit the 1.25 lender threshold."
       />
+      <FAQSchema faqs={DSCR_FAQS} />
       <Navigation />
       <div className="container max-w-5xl mx-auto py-6 px-4">
         <Button
@@ -583,6 +616,12 @@ export default function DscrCalculator() {
             </Button>
           </div>
         )}
+
+        <CalculatorContent
+          explainer={DSCR_EXPLAINER}
+          faqs={DSCR_FAQS}
+          testIdPrefix="dscr"
+        />
 
         <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">
           No account required. Results are estimates for educational purposes.

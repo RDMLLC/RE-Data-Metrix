@@ -1,0 +1,136 @@
+Make the following updates across four calculator pages. Read each file in full before editing.
+
+---
+
+## PART 1 — DSCR Calculator updates (`client/src/pages/DscrCalculator.tsx`)
+
+### 1A — Update color band thresholds and labels
+Replace the existing DSCR color bands with these exact four bands:
+
+- DSCR ≥ 1.25 → green — "Strong. Most lenders will approve at competitive rates."
+- DSCR 1.20–1.24 → teal (use `#0d9488` or Tailwind `text-teal-600`) — "Good. Most lenders will approve, rates may vary."
+- DSCR 1.00–1.19 → yellow/amber (`text-amber-500`) — "Marginal. Some lenders may approve with stronger credit and reserves."
+- DSCR < 1.00 → red (`text-red-600`) — "Does not qualify for most DSCR programs."
+
+Remove the orange band entirely. Anything below 1.00 is red.
+
+Apply the same color logic to the DSCR ratio number AND the label text below it.
+
+---
+
+## PART 2 — Add explainer paragraphs, FAQs, and glossary link to all four calculator pages
+
+For each page, add the following content block BELOW the results section (or below the calculator if no results have been calculated yet — always visible, not conditional):
+
+Structure:
+1. Explainer paragraph
+2. FAQ section — visible on desktop, collapsed on mobile (use `isMobile` detection or a Tailwind `md:` breakpoint approach — on mobile wrap FAQs in a collapsible accordion, on desktop show all expanded)
+3. Subtle glossary link: "New to these terms? Visit our Real Estate Glossary →" linking to `/toolbox` (the glossary lives there under the Glossary tab)
+
+Use the existing shadcn/ui `Accordion` component for the mobile collapsed FAQ behavior. On desktop (`md:` and above), render the FAQs as static expanded sections without the accordion wrapper.
+
+---
+
+### DSCR Calculator (`client/src/pages/DscrCalculator.tsx`)
+
+**Explainer:**
+A DSCR loan lets real estate investors qualify for financing based on a property's rental income rather than personal income — no W-2s, no tax returns, no pay stubs required. The Debt Service Coverage Ratio measures whether a property generates enough rent to cover its loan payments. Lenders calculate it by dividing the gross monthly rent by the total monthly PITIA — principal, interest, taxes, insurance, and HOA dues. A DSCR of 1.25 means the property earns 25% more than it costs to finance, which is the threshold most lenders prefer. A ratio of 1.00 means the property breaks even. Below 1.00 means the rent doesn't fully cover the payment. Use this calculator to instantly see your DSCR, your monthly cash flow, and — critically — what rent or down payment would be required to hit the 1.25 threshold your lender is looking for.
+
+**FAQs:**
+
+Q: What is DSCR and why do lenders use it?
+A: DSCR stands for Debt Service Coverage Ratio. It measures a rental property's ability to cover its loan payments using its own rental income. Lenders use it to qualify real estate investors without requiring personal income documentation — the property's cash flow is the qualification metric, not your W-2 or tax returns. This makes DSCR loans especially useful for self-employed investors or those with complex tax situations.
+
+Q: What DSCR do I need to qualify for a loan?
+A: Most DSCR lenders set a minimum ratio of 1.20 to 1.25, meaning the property's rent should exceed its total monthly payment by 20–25%. A ratio of exactly 1.0 means the property breaks even — some lenders will approve at this level but typically require higher down payments, stronger credit, and larger cash reserves as compensating factors. A DSCR of 1.25 or above is where you unlock the most competitive rates and terms.
+
+Q: What's the difference between a DSCR loan and a conventional mortgage?
+A: A conventional mortgage qualifies you based on your personal income, employment history, and debt-to-income ratio. A DSCR loan qualifies you based entirely on the rental property's income — your personal finances are largely irrelevant. This makes DSCR loans faster to close, available to investors with multiple properties, and accessible to self-employed borrowers whose tax write-offs reduce their reportable income below conventional thresholds.
+
+---
+
+### Max Offer Calculator (`client/src/pages/MaxOfferCalculator.tsx`)
+
+**Explainer:**
+The 70% rule is one of the most reliable frameworks in fix-and-flip investing. It states that an investor should pay no more than 70% of a property's After Repair Value (ARV) minus the estimated rehab costs. This protects your profit margin by accounting for holding costs, closing costs, financing, and unexpected expenses that inevitably arise during renovation. The rule isn't rigid — experienced investors sometimes stretch to 75% on lower-risk deals or tighten to 65% in uncertain markets — but 70% is the industry standard starting point. Use this calculator to find your maximum allowable offer before you make a bid. Enter your ARV, your rehab estimate, and your target percentage to instantly see the highest price you can pay and still hit your profit target. Adjust the percentage to model different risk scenarios before you commit.
+
+**FAQs:**
+
+Q: What is the 70% rule in real estate?
+A: The 70% rule is a quick-analysis tool fix-and-flip investors use to determine the maximum price they should pay for a property. It caps your purchase price at 70% of the ARV minus your rehab costs, leaving room for holding costs, closing costs, financing, and profit. It's a starting point, not a guarantee — always run a full deal analysis before making an offer.
+
+Q: How do I calculate my maximum offer on a fix and flip?
+A: Multiply the ARV by your target percentage (typically 70%), then subtract your estimated rehab budget. The result is the highest price you can pay and still protect your profit margin. For example, on a $300,000 ARV property with $50,000 in rehab, your max offer at 70% would be $160,000.
+
+Q: What repairs and costs should I factor into my rehab budget?
+A: Beyond materials and labor, experienced investors budget for permits, inspections, a contractor contingency (typically 10–15% of hard costs), holding costs during renovation, and utility bills. Underestimating rehab is the most common reason fix-and-flip deals lose money. When in doubt, get a contractor walkthrough before finalizing your offer.
+
+---
+
+### Wholesale Max Offer Calculator (`client/src/pages/WholesaleMaxOfferCalculator.tsx`)
+
+**Explainer:**
+Wholesaling is a real estate strategy where you contract a property at a below-market price and then assign that contract — or execute a double close — to an end buyer for a fee. Your profit comes from the spread between what you pay and what your buyer pays, so knowing your maximum buy price before you negotiate is essential. This calculator helps you work backwards from your buyer's maximum offer to determine the highest price you can pay the seller while still protecting your wholesale fee. Enter your ARV, the rehab budget your end buyer will face, their maximum percentage of ARV, and your desired wholesale fee. Switch between Assignment and Double Close to see how closing costs affect your net. The result tells you exactly where your ceiling is before you ever sit down with a seller.
+
+**FAQs:**
+
+Q: What is wholesaling in real estate?
+A: Wholesaling is the practice of putting a property under contract at a discounted price and then selling that contract to an investor buyer for a fee — without ever renovating or owning the property. Wholesalers make money on the spread between the seller's price and the buyer's price. It requires no renovation capital but depends entirely on finding properties priced below what investors are willing to pay.
+
+Q: What's the difference between assignment and double close?
+A: In an assignment, you sell your contract to the end buyer — your fee is visible to all parties. In a double close, you actually purchase the property and immediately resell it to your buyer in a separate transaction, keeping your fee private. Double closes involve two sets of closing costs but are preferred when sellers or buyers object to seeing the wholesale spread.
+
+Q: How do I determine my wholesale fee?
+A: Most wholesalers target $10,000–$20,000 per deal, but the right fee depends on the deal size, your market, and how much margin exists between the seller's price and the buyer's maximum offer. A fee that leaves your buyer with a strong enough profit to close is more important than maximizing your spread — buyers who make money come back for more deals.
+
+---
+
+### Rental Property Calculator (`client/src/pages/RentalPropertyCalculator.tsx`)
+
+**Explainer:**
+Buying a rental property is one of the most powerful long-term wealth-building strategies available to individual investors — but only if the numbers work. This calculator gives you a complete financial picture of any buy-and-hold rental: monthly and annual cash flow, net operating income, cap rate, cash-on-cash return, and the projected IRR over your full holding period. Unlike simple rent-minus-mortgage calculators, this tool accounts for vacancy, property management fees, annual expense increases, and the eventual sale of the property — giving you a realistic view of total return, not just Year 1 cash flow. Enter your purchase details, financing terms, operating expenses, and rental income to see exactly how the deal performs today and over time. The year-by-year projection table shows you how cash flow grows as rents increase and your mortgage balance pays down.
+
+**FAQs:**
+
+Q: What is a good cap rate for a rental property?
+A: Cap rate measures a property's annual net operating income as a percentage of its purchase price, independent of financing. A cap rate between 5% and 10% is generally considered reasonable for residential rentals, though what's "good" depends heavily on your market — a 5% cap rate in a high-appreciation urban market may outperform an 8% cap rate in a stagnant one. Cap rate is best used to compare similar properties in the same market, not across different regions.
+
+Q: What is cash-on-cash return and how is it different from IRR?
+A: Cash-on-cash return measures your annual cash flow as a percentage of the cash you actually invested — your down payment, closing costs, and repairs. It tells you how hard your money is working each year. IRR (Internal Rate of Return) is a more complete measure that accounts for all cash flows over the entire holding period, including the profit at sale. A property can have a modest cash-on-cash return in early years but a strong IRR if it appreciates significantly by the time you sell.
+
+Q: How do vacancy rate and management fee affect my cash flow?
+A: Vacancy rate represents the percentage of time your property sits unrented — even a 5% vacancy rate reduces your effective annual income by one month's rent. Management fees, typically 8–12% of collected rent, are the cost of having a property manager handle tenant relations, maintenance coordination, and rent collection. Together these two factors can reduce your gross rental income by 13–17% before you pay a single expense, which is why accurate estimates of both are critical to evaluating whether a deal actually pencils out.
+
+---
+
+## PART 3 — SEO meta tags on all four calculator pages
+
+Add or update the `<SEO>` component on each page with these exact values:
+
+**DSCR Calculator:**
+- title: "DSCR Calculator — Debt Service Coverage Ratio for Rental Properties | RE Data Metrix"
+- description: "Calculate your DSCR instantly. See if your rental property qualifies for a DSCR loan, your monthly cash flow, and what it would take to hit the 1.25 lender threshold."
+
+**Max Offer Calculator:**
+- title: "Max Offer Calculator — 70% Rule for Fix and Flip Investors | RE Data Metrix"
+- description: "Find your maximum allowable offer on any fix-and-flip deal. Enter ARV and rehab costs to instantly calculate your max offer price using the 70% rule."
+
+**Wholesale Max Offer Calculator:**
+- title: "Wholesale Max Offer Calculator — Assignment & Double Close | RE Data Metrix"
+- description: "Calculate your maximum buy price for wholesale deals. Model assignment or double-close transactions with full fee breakdowns and net profit."
+
+**Rental Property Calculator:**
+- title: "Rental Property Calculator — Cash Flow, Cap Rate & IRR | RE Data Metrix"
+- description: "Analyze any buy-and-hold rental property. Calculate monthly cash flow, cap rate, cash-on-cash return, NOI, and IRR over your full holding period."
+
+---
+
+## PART 4 — Add FAQ schema (JSON-LD) to all four calculator pages
+
+Add a FAQPage JSON-LD script tag to each page's `<SEO>` component or directly in the page's `<head>` using a `<script type="application/ld+json">` tag. Use the three FAQ questions and answers for each page exactly as written above.
+
+Follow the same pattern already used on the pricing and landing pages in this codebase for FAQPage schema.
+
+---
+
+Typecheck must pass with no new errors on all modified files.

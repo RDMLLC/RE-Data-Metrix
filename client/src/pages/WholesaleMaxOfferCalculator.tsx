@@ -9,7 +9,30 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Navigation from "@/components/Navigation";
 import { SEO } from "@/components/SEO";
+import { FAQSchema } from "@/components/StructuredData";
+import { CalculatorContent, type FAQItem } from "@/components/CalculatorContent";
 import { useAuth } from "@/contexts/AuthContext";
+
+const WHOLESALE_EXPLAINER =
+  "Wholesaling is a real estate strategy where you contract a property at a below-market price and then assign that contract — or execute a double close — to an end buyer for a fee. Your profit comes from the spread between what you pay and what your buyer pays, so knowing your maximum buy price before you negotiate is essential. This calculator helps you work backwards from your buyer's maximum offer to determine the highest price you can pay the seller while still protecting your wholesale fee and covering closing costs. Toggle between assignment and double-close transaction types to see how each affects your net profit, and add closing costs to see the true number you need to hit on the buy side.";
+
+const WHOLESALE_FAQS: FAQItem[] = [
+  {
+    question: "What is wholesaling in real estate?",
+    answer:
+      "Wholesaling is the practice of putting a property under contract at a discounted price and then selling that contract to an investor buyer for a fee — without ever renovating or owning the property. Wholesalers make money on the spread between the seller's price and the buyer's price. It requires no renovation capital but depends entirely on finding properties priced below what investors are willing to pay.",
+  },
+  {
+    question: "What's the difference between assignment and double close?",
+    answer:
+      "In an assignment, you sell your contract to the end buyer — your fee is visible to all parties. In a double close, you actually purchase the property and immediately resell it to your buyer in a separate transaction, keeping your fee private. Double closes involve two sets of closing costs but are preferred when sellers or buyers object to seeing the wholesale spread.",
+  },
+  {
+    question: "How do I determine my wholesale fee?",
+    answer:
+      "Most wholesalers target $10,000–$20,000 per deal, but the right fee depends on the deal size, your market, and how much margin exists between the seller's price and the buyer's maximum offer. A fee that leaves your buyer with a strong enough profit to close is more important than maximizing your spread — buyers who make money come back for more deals.",
+  },
+];
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
@@ -91,9 +114,10 @@ export default function WholesaleMaxOfferCalculator() {
   return (
     <>
       <SEO
-        title="Wholesale Max Offer Calculator"
-        description="Free wholesale calculator for assignment or double-close deals. Calculate your max buy price, wholesale fee, and net profit."
+        fullTitle="Wholesale Max Offer Calculator — Assignment & Double Close | RE Data Metrix"
+        description="Calculate your maximum buy price for wholesale deals. Model assignment or double-close transactions with full fee breakdowns and net profit."
       />
+      <FAQSchema faqs={WHOLESALE_FAQS} />
       <Navigation />
       <div className="container max-w-5xl mx-auto py-6 px-4">
         <Button
@@ -353,6 +377,12 @@ export default function WholesaleMaxOfferCalculator() {
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
+
+        <CalculatorContent
+          explainer={WHOLESALE_EXPLAINER}
+          faqs={WHOLESALE_FAQS}
+          testIdPrefix="wm"
+        />
 
         <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">
           No account required. Results are estimates for educational purposes.
