@@ -81,21 +81,12 @@ export default function CalculatorAccess() {
               Your calculators are just the beginning.
             </h1>
             <p
-              className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6"
+              className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto"
               data-testid="text-ca-subheadline"
             >
               A free RE Data Metrix account gives you deal analysis, lender access,
               and a full investing toolset — no credit card required.
             </p>
-            <Button
-              size="lg"
-              onClick={goRegister}
-              className="border-transparent"
-              style={{ backgroundColor: GOLD, color: NAVY }}
-              data-testid="button-ca-hero-cta"
-            >
-              Create Free Account
-            </Button>
           </section>
 
           {/* 2. Comparison Table */}
