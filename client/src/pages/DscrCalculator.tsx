@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, TrendingUp, Download, ArrowRight } from "lucide-react";
+import { ArrowLeft, TrendingUp, Download, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { usePDF } from "react-to-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,6 +181,8 @@ export default function DscrCalculator() {
 
   const [results, setResults] = useState<DscrResults | null>(null);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const [propertyOpen, setPropertyOpen] = useState(true);
+  const [incomeOpen, setIncomeOpen] = useState(true);
 
   const handleDownloadPdf = () => {
     if (!isAuthenticated) {
@@ -212,6 +214,8 @@ export default function DscrCalculator() {
         vacancyPct,
       })
     );
+    setPropertyOpen(false);
+    setIncomeOpen(false);
   };
 
   const handleAccessLenders = () => {
@@ -262,10 +266,24 @@ export default function DscrCalculator() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardContent className="p-5 space-y-3">
-                <h2 className="font-semibold" style={{ color: "#1d408b" }}>
-                  Property &amp; Loan
-                </h2>
+                <button
+                  type="button"
+                  onClick={() => setPropertyOpen((o) => !o)}
+                  className="flex items-center justify-between w-full text-left md:cursor-default md:pointer-events-none"
+                  aria-expanded={propertyOpen}
+                  data-testid="button-dscr-toggle-property"
+                >
+                  <h2 className="font-semibold" style={{ color: "#1d408b" }}>
+                    Property &amp; Loan
+                  </h2>
+                  {propertyOpen ? (
+                    <ChevronUp className="h-5 w-5 md:hidden" style={{ color: "#1d408b" }} />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 md:hidden" style={{ color: "#1d408b" }} />
+                  )}
+                </button>
 
+                <div className={`${propertyOpen ? "block" : "hidden"} md:block space-y-3`}>
                 <div className="space-y-2">
                   <Label htmlFor="d-price">Purchase Price</Label>
                   <Input
@@ -383,15 +401,30 @@ export default function DscrCalculator() {
                     </div>
                   </RadioGroup>
                 </div>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-5 space-y-3">
-                <h2 className="font-semibold" style={{ color: "#1d408b" }}>
-                  Income &amp; Expenses
-                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIncomeOpen((o) => !o)}
+                  className="flex items-center justify-between w-full text-left md:cursor-default md:pointer-events-none"
+                  aria-expanded={incomeOpen}
+                  data-testid="button-dscr-toggle-income"
+                >
+                  <h2 className="font-semibold" style={{ color: "#1d408b" }}>
+                    Income &amp; Expenses
+                  </h2>
+                  {incomeOpen ? (
+                    <ChevronUp className="h-5 w-5 md:hidden" style={{ color: "#1d408b" }} />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 md:hidden" style={{ color: "#1d408b" }} />
+                  )}
+                </button>
 
+                <div className={`${incomeOpen ? "block" : "hidden"} md:block space-y-3`}>
                 <div className="space-y-2">
                   <Label htmlFor="d-rent">Monthly Rent</Label>
                   <Input
@@ -468,6 +501,7 @@ export default function DscrCalculator() {
                       %
                     </span>
                   </div>
+                </div>
                 </div>
               </CardContent>
             </Card>
