@@ -6,31 +6,49 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2, DollarSign, Video, Info } from "lucide-react";
+import { ExternalLink, Check, X, Search, RotateCcw, Lock, Loader2, DollarSign, Video, Info, ChevronDown, ChevronUp } from "lucide-react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
 const TOOL_FINDER_VIDEO_ID = "5hfQdtC42fk";
 
 export function ToolFinderTutorial() {
+  const [open, setOpen] = useState(false);
   return (
     <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 p-6">
-      <div className="flex items-center gap-2 mb-2">
-        <Video className="h-5 w-5 text-accent" />
-        <h3 className="font-semibold text-lg">Tool Finder Tutorial</h3>
-      </div>
-      <p className="text-sm text-muted-foreground mb-4">
-        Learn how to use the Tool Finder to discover the perfect tools for your real estate investing needs.
-      </p>
-      <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20" data-testid="video-tool-finder-tutorial">
-        <iframe
-          className="absolute inset-0 w-full h-full"
-          src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
-          title="Tool Finder Tutorial"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-between w-full hover-elevate rounded-md -m-1 p-1"
+        aria-expanded={open}
+        data-testid="button-toggle-tool-finder-tutorial"
+      >
+        <span className="flex items-center gap-2">
+          <Video className="h-5 w-5 text-accent" />
+          <h3 className="font-semibold text-lg">Tool Finder Tutorial</h3>
+        </span>
+        {open ? (
+          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        )}
+      </button>
+      {open && (
+        <>
+          <p className="text-sm text-muted-foreground mt-3 mb-4">
+            Learn how to use the Tool Finder to discover the perfect tools for your real estate investing needs.
+          </p>
+          <div className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-white/20" data-testid="video-tool-finder-tutorial">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
+              title="Tool Finder Tutorial"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,0 +1,68 @@
+Fix the following issues on the mobile Toolbox page and calculator pages. Read all affected files in full before editing.
+
+---
+
+## Fix 1 — Remove Contractor Search from mobile Toolbox
+
+In the mobile Toolbox file (search for the file that renders `/m/toolbox`), remove the Contractor Search list item entirely. Do not touch the desktop Toolbox/Resources page.
+
+---
+
+## Fix 2 — Fix scrolling on `/m/toolbox`
+
+The mobile Toolbox page content is cut off and cannot be scrolled. Find the root container or layout wrapper and ensure it allows full vertical scrolling. Check for any `overflow-hidden`, fixed height, or `h-screen` constraints that might be preventing scroll. The page should scroll naturally to reveal all content.
+
+---
+
+## Fix 3 — Add Free Calculators section to `/m/toolbox`
+
+In the mobile Toolbox file, add a "Free Calculators" section at the TOP of the page content, above the existing Resources section.
+
+Show four calculator cards in a stacked list (same pattern as the existing Resources list items):
+1. Rental Property Calculator → `/rental-property-calculator`
+2. DSCR Calculator → `/dscr-calculator`
+3. Max Offer Calculator → `/max-offer-calculator`
+4. Wholesale Max Offer Calculator → `/wholesale-calculator`
+
+Each item should show:
+- A relevant lucide-react icon (Home, TrendingUp, Calculator, DollarSign)
+- Calculator name
+- One-line description (same descriptions used on the desktop Resources page)
+- Tapping the row navigates to the calculator route
+
+Section heading: "Free Calculators" — same style as the existing "Resources" heading.
+
+---
+
+## Fix 4 — Collapse explainer paragraph under "About" on mobile calculator pages
+
+In `client/src/components/CalculatorContent.tsx`, wrap the explainer paragraph in a collapsible accordion on mobile only.
+
+On mobile (below `md:` breakpoint):
+- Show a collapsed accordion item labeled "About" 
+- The explainer paragraph is hidden inside it by default
+- User taps "About" to expand and read the explainer
+- Use the same shadcn/ui Accordion component already used for the FAQs on mobile
+
+On desktop (`md:` and above):
+- Explainer paragraph remains fully visible as it is now, no accordion wrapper
+
+The FAQs should remain unchanged — already collapsed on mobile, expanded on desktop.
+
+---
+
+## Fix 5 — Collapse Tool Finder video by default on both desktop and mobile
+
+Find the Tool Finder Tutorial / Tool Finder video section on both the desktop Resources page (`client/src/pages/Resources.tsx`) and the mobile Toolbox page. 
+
+On both:
+- The video should be hidden by default
+- Show a "Tool Finder Tutorial" heading with a chevron/expand icon
+- Clicking the heading toggles the video visible/hidden
+- Start collapsed (video not visible on page load)
+
+Use a simple `useState` toggle — no need for the shadcn Accordion here, just a clickable header with a ChevronDown/ChevronUp icon that toggles the video container.
+
+---
+
+Typecheck must pass with no new errors.

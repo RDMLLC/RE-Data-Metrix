@@ -24,9 +24,30 @@ export function CalculatorContent({ explainer, faqs, testIdPrefix }: CalculatorC
     <div className="mt-8 space-y-6">
       <Card>
         <CardContent className="p-5">
+          <div className="md:hidden">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="about" className="border-b-0">
+                <AccordionTrigger
+                  className="text-left text-base font-semibold py-0"
+                  data-testid={`accordion-${testIdPrefix}-about`}
+                >
+                  About
+                </AccordionTrigger>
+                <AccordionContent className="pt-3">
+                  <p
+                    className="text-sm leading-relaxed text-foreground"
+                    data-testid={`text-${testIdPrefix}-explainer`}
+                  >
+                    {explainer}
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
           <p
-            className="text-sm leading-relaxed text-foreground"
-            data-testid={`text-${testIdPrefix}-explainer`}
+            className="hidden md:block text-sm leading-relaxed text-foreground"
+            data-testid={`text-${testIdPrefix}-explainer-desktop`}
           >
             {explainer}
           </p>

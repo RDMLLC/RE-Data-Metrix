@@ -30,7 +30,11 @@ import {
   BookOpen,
   GraduationCap,
   Scale,
-  HardHat,
+  Home,
+  TrendingUp,
+  Calculator,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import type { Affiliate, AffiliateCategory } from "@shared/schema";
 
@@ -93,6 +97,7 @@ export default function MobileToolbox() {
   const [, setLocation] = useLocation();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [showToolFinderVideo, setShowToolFinderVideo] = useState(false);
 
   const backHref = isAuthenticated ? "/portal/dashboard" : "/";
 
@@ -101,12 +106,48 @@ export default function MobileToolbox() {
     setLocation("/toolbox");
   };
 
-  const handleContractorsDesktop = () => {
-    setDeviceMode("desktop");
-    setLocation("/toolbox");
-  };
-
   const effectiveIsSubscriber = isSubscriber || hasDemoToken;
+
+  const FREE_CALCULATORS: Array<{
+    title: string;
+    description: string;
+    href: string;
+    Icon: typeof Home;
+    testId: string;
+  }> = [
+    {
+      title: "Rental Property Calculator",
+      description:
+        "Analyze buy-and-hold rentals: cash flow, cap rate, IRR, and projected returns at sale.",
+      href: "/rental-property-calculator",
+      Icon: Home,
+      testId: "rental-property",
+    },
+    {
+      title: "DSCR Calculator",
+      description:
+        "Project rental income, expenses, and DSCR to qualify properties for long-term financing.",
+      href: "/dscr-calculator",
+      Icon: TrendingUp,
+      testId: "dscr",
+    },
+    {
+      title: "Max Offer Calculator",
+      description:
+        "Calculate the maximum you can pay on a fix & flip while protecting your target profit.",
+      href: "/max-offer-calculator",
+      Icon: Calculator,
+      testId: "max-offer",
+    },
+    {
+      title: "Wholesale Max Offer Calculator",
+      description:
+        "Determine assignment or double-close offer prices for wholesale deals with full fee breakdowns.",
+      href: "/wholesale-calculator",
+      Icon: DollarSign,
+      testId: "wholesale-max-offer",
+    },
+  ];
 
   const { data: affiliates = [] } = useQuery<Affiliate[]>({
     queryKey: ["/api/affiliates"],
@@ -195,7 +236,34 @@ export default function MobileToolbox() {
         </div>
       </header>
 
-      <main className="p-4 pb-6 space-y-4">
+      <main className="p-4 pb-12 space-y-4">
+        {/* Free Calculators — always shown at top */}
+        <div className="space-y-2" data-testid="section-free-calculators">
+          <h3 className="text-sm font-semibold" data-testid="heading-free-calculators">
+            Free Calculators
+          </h3>
+          <div className="space-y-2">
+            {FREE_CALCULATORS.map(({ title, description, href, Icon, testId }) => (
+              <Link key={testId} href={href}>
+                <Card
+                  className="p-3 hover-elevate cursor-pointer"
+                  data-testid={`card-calc-${testId}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{title}</p>
+                      <p className="text-[11px] text-muted-foreground">{description}</p>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {!authLoading && effectiveIsSubscriber && (
           <Sheet open={showFilters} onOpenChange={setShowFilters}>
             <SheetTrigger asChild>
@@ -395,44 +463,42 @@ export default function MobileToolbox() {
           </div>
         </div>
 
-        {/* Contractors — desktop-only for now */}
-        <Card className="p-3" data-testid="card-contractors-desktop-note">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 p-2 rounded-lg bg-muted">
-              <HardHat className="h-4 w-4 text-muted-foreground" />
+        {/* Tool Finder Tutorial Video — collapsed by default */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => setShowToolFinderVideo((v) => !v)}
+            className="flex items-center justify-between w-full p-3 rounded-md border border-border hover-elevate"
+            data-testid="button-toggle-tool-finder-video"
+            aria-expanded={showToolFinderVideo}
+          >
+            <span className="flex items-center gap-2">
+              <Video className="h-4 w-4 text-accent" />
+              <span className="text-sm font-medium">{TOOL_FINDER_VIDEO_TITLE}</span>
+            </span>
+            {showToolFinderVideo ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          {showToolFinderVideo && (
+            <div className="mt-2 w-full">
+              <div
+                className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border"
+                data-testid="video-tool-finder-tutorial"
+              >
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
+                  title={TOOL_FINDER_VIDEO_TITLE}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">Contractor Search</p>
-              <p className="text-[11px] text-muted-foreground">Available on the desktop site</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleContractorsDesktop} data-testid="button-contractors-desktop">
-              <Monitor className="h-3 w-3 mr-1" />
-              View
-            </Button>
-          </div>
-        </Card>
-
-        {/* Tool Finder Tutorial Video — moved below the fold */}
-        <div className="space-y-2 pt-2">
-          <div className="flex items-center gap-1.5">
-            <Video className="h-4 w-4 text-accent" />
-            <span className="text-xs font-medium text-muted-foreground">{TOOL_FINDER_VIDEO_TITLE}</span>
-          </div>
-          <div className="w-full">
-            <div
-              className="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg border border-border"
-              data-testid="video-tool-finder-tutorial"
-            >
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src={`https://www.youtube.com/embed/${TOOL_FINDER_VIDEO_ID}?rel=0&modestbranding=1`}
-                title={TOOL_FINDER_VIDEO_TITLE}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
