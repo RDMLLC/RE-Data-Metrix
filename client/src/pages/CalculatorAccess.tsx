@@ -70,11 +70,11 @@ export default function CalculatorAccess() {
         data-testid="page-calculator-access"
         className="min-h-screen bg-background"
       >
-        <div className="max-w-4xl mx-auto px-4 py-10 md:py-14">
+        <div className="max-w-4xl mx-auto px-4 pt-4 pb-10 md:py-14">
           {/* 1. Hero */}
-          <section className="text-center mb-10 md:mb-14" data-testid="section-ca-hero">
+          <section className="text-center mb-3 md:mb-14" data-testid="section-ca-hero">
             <h1
-              className="text-3xl md:text-5xl font-bold leading-tight mb-4"
+              className="text-3xl md:text-5xl font-bold leading-tight mb-2 md:mb-4"
               style={{ color: NAVY }}
               data-testid="text-ca-headline"
             >
