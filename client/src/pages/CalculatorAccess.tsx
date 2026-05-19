@@ -133,7 +133,7 @@ export default function CalculatorAccess() {
           </section>
 
           {/* Mid-page CTA */}
-          <div className="flex justify-center pt-4 pb-6" data-testid="section-ca-mid-cta">
+          <div className="flex justify-center pt-2 pb-4" data-testid="section-ca-mid-cta">
             <Button
               size="lg"
               onClick={goRegister}
