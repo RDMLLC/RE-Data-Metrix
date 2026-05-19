@@ -11,6 +11,8 @@ import {
   type RentalInputs,
   type RentalResults,
 } from "@/lib/rentalCalculations";
+import { PdfSignupDialog } from "@/components/PdfSignupDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   variant?: "page" | "overlay";
@@ -142,6 +144,8 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
     canvas: { qualityRatio: 1 },
   });
   const [isPdfMode, setIsPdfMode] = useState(false);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const update = <K extends keyof RentalInputs>(
     key: K,
@@ -171,7 +175,7 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
     setResults(null);
   };
 
-  const handleDownloadPdf = async () => {
+  const performDownload = async () => {
     if (!results) return;
     setIsPdfMode(true);
     await new Promise((r) => setTimeout(r, 200));
@@ -179,6 +183,15 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
       await toPDF();
     } finally {
       setIsPdfMode(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!results) return;
+    if (!isAuthenticated) {
+      setShowPdfDialog(true);
+    } else {
+      void performDownload();
     }
   };
 
@@ -859,6 +872,12 @@ export default function RentalCalculatorForm({ variant = "page" }: Props) {
           )}
         </div>
       )}
+
+      <PdfSignupDialog
+        open={showPdfDialog}
+        onOpenChange={setShowPdfDialog}
+        onDownloadAnyway={() => void performDownload()}
+      />
     </div>
   );
 }

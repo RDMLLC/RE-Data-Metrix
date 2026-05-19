@@ -11,6 +11,7 @@ import Navigation from "@/components/Navigation";
 import { SEO } from "@/components/SEO";
 import { FAQSchema } from "@/components/StructuredData";
 import { CalculatorContent, type FAQItem } from "@/components/CalculatorContent";
+import { PdfSignupDialog } from "@/components/PdfSignupDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
 const WHOLESALE_EXPLAINER =
@@ -43,10 +44,6 @@ function fmt(n: number) {
   }).format(isFinite(n) ? n : 0);
 }
 
-function goBack() {
-  if (window.history.length > 1) window.history.back();
-  else window.location.href = "/toolbox";
-}
 
 function NumInput({
   id,
@@ -89,6 +86,23 @@ export default function WholesaleMaxOfferCalculator() {
   const [titleIns, setTitleIns] = useState(800);
   const [transferTax, setTransferTax] = useState(500);
   const [otherCc, setOtherCc] = useState(0);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation("/toolbox");
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!isAuthenticated) {
+      setShowPdfDialog(true);
+    } else {
+      toPDF();
+    }
+  };
 
   const { toPDF, targetRef } = usePDF({
     filename: "wholesale-max-offer-calculator.pdf",
@@ -124,7 +138,7 @@ export default function WholesaleMaxOfferCalculator() {
           variant="ghost"
           size="sm"
           className="mb-3"
-          onClick={goBack}
+          onClick={handleBack}
           data-testid="button-wm-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -360,7 +374,7 @@ export default function WholesaleMaxOfferCalculator() {
         <div className="flex flex-col sm:flex-row gap-3 mt-4">
           <Button
             variant="outline"
-            onClick={() => toPDF()}
+            onClick={handleDownloadPdf}
             className="gap-2"
             data-testid="button-wm-pdf"
           >
@@ -382,6 +396,12 @@ export default function WholesaleMaxOfferCalculator() {
           explainer={WHOLESALE_EXPLAINER}
           faqs={WHOLESALE_FAQS}
           testIdPrefix="wm"
+        />
+
+        <PdfSignupDialog
+          open={showPdfDialog}
+          onOpenChange={setShowPdfDialog}
+          onDownloadAnyway={() => toPDF()}
         />
 
         <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">

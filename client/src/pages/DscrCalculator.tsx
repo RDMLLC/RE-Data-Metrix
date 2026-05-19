@@ -11,6 +11,7 @@ import Navigation from "@/components/Navigation";
 import { SEO } from "@/components/SEO";
 import { FAQSchema } from "@/components/StructuredData";
 import { CalculatorContent, type FAQItem } from "@/components/CalculatorContent";
+import { PdfSignupDialog } from "@/components/PdfSignupDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DSCR_EXPLAINER =
@@ -43,10 +44,6 @@ function fmt(n: number) {
   }).format(isFinite(n) ? n : 0);
 }
 
-function goBack() {
-  if (window.history.length > 1) window.history.back();
-  else window.location.href = "/toolbox";
-}
 
 interface DscrInputs {
   purchasePrice: number;
@@ -183,6 +180,23 @@ export default function DscrCalculator() {
   const [vacancyPct, setVacancyPct] = useState(5);
 
   const [results, setResults] = useState<DscrResults | null>(null);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation("/toolbox");
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!isAuthenticated) {
+      setShowPdfDialog(true);
+    } else {
+      toPDF();
+    }
+  };
 
   const { toPDF, targetRef } = usePDF({
     filename: "dscr-calculator.pdf",
@@ -227,7 +241,7 @@ export default function DscrCalculator() {
           variant="ghost"
           size="sm"
           className="mb-3"
-          onClick={goBack}
+          onClick={handleBack}
           data-testid="button-dscr-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -598,7 +612,7 @@ export default function DscrCalculator() {
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <Button
               variant="outline"
-              onClick={() => toPDF()}
+              onClick={handleDownloadPdf}
               className="gap-2"
               data-testid="button-dscr-pdf"
             >
@@ -621,6 +635,12 @@ export default function DscrCalculator() {
           explainer={DSCR_EXPLAINER}
           faqs={DSCR_FAQS}
           testIdPrefix="dscr"
+        />
+
+        <PdfSignupDialog
+          open={showPdfDialog}
+          onOpenChange={setShowPdfDialog}
+          onDownloadAnyway={() => toPDF()}
         />
 
         <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">

@@ -1,3 +1,4 @@
+import { useLocation } from "wouter";
 import { ArrowLeft, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -27,12 +28,17 @@ const RENTAL_FAQS: FAQItem[] = [
   },
 ];
 
-function goBack() {
-  if (window.history.length > 1) window.history.back();
-  else window.location.href = "/toolbox";
-}
-
 export default function RentalPropertyCalculator() {
+  const [, navigate] = useLocation();
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate("/toolbox");
+    }
+  };
+
   return (
     <>
       <SEO
@@ -46,7 +52,7 @@ export default function RentalPropertyCalculator() {
           variant="ghost"
           size="sm"
           className="mb-3"
-          onClick={goBack}
+          onClick={handleBack}
           data-testid="button-rc-back-home"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />

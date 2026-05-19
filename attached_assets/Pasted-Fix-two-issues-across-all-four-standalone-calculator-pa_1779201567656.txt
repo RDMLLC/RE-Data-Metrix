@@ -1,0 +1,50 @@
+Fix two issues across all four standalone calculator pages: MaxOfferCalculator.tsx, WholesaleMaxOfferCalculator.tsx, DscrCalculator.tsx, and RentalPropertyCalculator.tsx. Read each file before editing.
+
+---
+
+## Fix 1 — Back button not working
+
+The current `window.history.back()` call does nothing when the user navigated directly to the page with no prior history.
+
+Replace the back button logic on all four pages with this pattern:
+
+```tsx
+import { useLocation } from 'wouter';
+
+const [, navigate] = useLocation();
+
+const handleBack = () => {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    navigate('/toolbox');
+  }
+};
+```
+
+The back button should call `handleBack()` on click. This way it goes back if there is history, and falls back to `/toolbox` if the user landed directly on the page.
+
+---
+
+## Fix 2 — PDF download signup prompt for logged-out users
+
+On all four calculator pages, when a user who is NOT logged in clicks the Download PDF button, do NOT download immediately. Instead show a modal overlay with:
+
+**Modal content:**
+- Title: "Get your free report"
+- Body: "Create a free RE Data Metrix account to download your analysis report — plus get access to our lender network, deal analysis tools, and more."
+- Primary button: "Create Free Account" → navigates to `/register` (full page navigation, not a link in a new tab)
+- Secondary text link below: "No thanks, download anyway" — clicking this closes the modal and proceeds with the PDF download as normal
+- Close X button in the top right corner — closes the modal without downloading
+
+**Modal style:**
+- Use shadcn/ui `Dialog` component — same pattern used elsewhere in the codebase
+- Standard RDM styling: navy `#1d408b` title, gold `#e0b32e` primary button, clean white background
+
+**For logged-in users:** PDF downloads immediately as before — no modal shown.
+
+**Auth check:** use `useAuth()` hook — check `user` or `isAuthenticated` — same pattern used elsewhere in the codebase for auth checks.
+
+---
+
+Apply both fixes to all four calculator pages. Typecheck must pass with no new errors.

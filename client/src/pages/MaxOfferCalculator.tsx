@@ -10,6 +10,7 @@ import Navigation from "@/components/Navigation";
 import { SEO } from "@/components/SEO";
 import { FAQSchema } from "@/components/StructuredData";
 import { CalculatorContent, type FAQItem } from "@/components/CalculatorContent";
+import { PdfSignupDialog } from "@/components/PdfSignupDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
 const MAX_OFFER_EXPLAINER =
@@ -42,10 +43,6 @@ function fmt(n: number) {
   }).format(isFinite(n) ? n : 0);
 }
 
-function goBack() {
-  if (window.history.length > 1) window.history.back();
-  else window.location.href = "/toolbox";
-}
 
 export default function MaxOfferCalculator() {
   const [, setLocation] = useLocation();
@@ -53,6 +50,23 @@ export default function MaxOfferCalculator() {
   const [arv, setArv] = useState<number>(300000);
   const [rehab, setRehab] = useState<number>(40000);
   const [maxPct, setMaxPct] = useState<number>(70);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation("/toolbox");
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!isAuthenticated) {
+      setShowPdfDialog(true);
+    } else {
+      toPDF();
+    }
+  };
 
   const { toPDF, targetRef } = usePDF({
     filename: "max-offer-calculator.pdf",
@@ -87,7 +101,7 @@ export default function MaxOfferCalculator() {
           variant="ghost"
           size="sm"
           className="mb-3"
-          onClick={goBack}
+          onClick={handleBack}
           data-testid="button-mo-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -211,7 +225,7 @@ export default function MaxOfferCalculator() {
         <div className="flex flex-col sm:flex-row gap-3 mt-4">
           <Button
             variant="outline"
-            onClick={() => toPDF()}
+            onClick={handleDownloadPdf}
             className="gap-2"
             data-testid="button-mo-pdf"
           >
@@ -233,6 +247,12 @@ export default function MaxOfferCalculator() {
           explainer={MAX_OFFER_EXPLAINER}
           faqs={MAX_OFFER_FAQS}
           testIdPrefix="mo"
+        />
+
+        <PdfSignupDialog
+          open={showPdfDialog}
+          onOpenChange={setShowPdfDialog}
+          onDownloadAnyway={() => toPDF()}
         />
 
         <div className="text-xs text-muted-foreground text-center mt-8 pt-6 border-t">
