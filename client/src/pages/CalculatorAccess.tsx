@@ -132,6 +132,19 @@ export default function CalculatorAccess() {
             </div>
           </section>
 
+          {/* Mid-page CTA */}
+          <div className="flex justify-center py-8" data-testid="section-ca-mid-cta">
+            <Button
+              size="lg"
+              onClick={goRegister}
+              className="w-full md:w-auto md:min-w-[200px] font-bold border-transparent"
+              style={{ backgroundColor: GOLD, color: NAVY }}
+              data-testid="button-ca-mid-cta"
+            >
+              Create Free Account
+            </Button>
+          </div>
+
           {/* 3. Pricing cards */}
           <section
             className="grid gap-4 md:grid-cols-2 mb-8"
