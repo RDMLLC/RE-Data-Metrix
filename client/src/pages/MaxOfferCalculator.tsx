@@ -135,32 +135,38 @@ export default function MaxOfferCalculator() {
           </Card>
 
           <Card>
-            <CardContent className="p-5 space-y-4">
-              <div className="text-center py-4 border-b">
-                <div className="text-sm text-muted-foreground mb-1">Max Offer Price</div>
-                <div
-                  className={`text-4xl md:text-5xl font-bold ${
-                    offerOk ? "text-green-600" : "text-red-600"
-                  }`}
-                  data-testid="text-mo-result"
-                >
-                  {fmt(maxOffer)}
-                </div>
-                {!offerOk && (
-                  <p className="text-sm text-red-600 mt-2" data-testid="text-mo-warning">
-                    At these numbers the deal does not work at this ARV or rehab budget.
-                  </p>
-                )}
+            <CardContent className="p-5 text-center">
+              <div className="text-sm text-muted-foreground mb-1">Max Offer Price</div>
+              <div
+                className={`text-5xl md:text-6xl font-bold ${
+                  offerOk ? "text-green-600" : "text-red-600"
+                }`}
+                data-testid="text-mo-result"
+              >
+                {fmt(maxOffer)}
               </div>
+              {!offerOk && (
+                <p className="text-sm text-red-600 mt-2" data-testid="text-mo-warning">
+                  At these numbers the deal does not work at this ARV or rehab budget.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-5">
+              <h3 className="font-semibold mb-3" style={{ color: "#1d408b" }}>
+                Key Metrics
+              </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <div className="text-muted-foreground">Max Project Cost</div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Max Project Cost</div>
                   <div className="font-semibold" data-testid="text-mo-mpc">
                     {fmt(maxProjectCost)}
                   </div>
                 </div>
-                <div>
-                  <div className="text-muted-foreground">Profit Buffer</div>
+                <div className="border rounded-md p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Profit Buffer</div>
                   <div className="font-semibold" data-testid="text-mo-buffer">
                     {fmt(bufferDollar)} ({bufferPct.toFixed(1)}%)
                   </div>
@@ -168,7 +174,7 @@ export default function MaxOfferCalculator() {
               </div>
 
               <div
-                className="rounded-md border p-3 text-sm"
+                className="rounded-md border p-3 text-sm mt-4"
                 style={{ background: "#fff8e1", borderColor: "#e0b32e" }}
               >
                 The 70% rule means you pay no more than 70% of the ARV minus rehab costs.

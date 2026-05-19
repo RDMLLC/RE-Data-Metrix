@@ -82,6 +82,7 @@ export default function WholesaleMaxOfferCalculator() {
   }, [arv, rehab, buyerMaxPct, wholesaleFee, txType, attorney, titleIns, transferTax, otherCc]);
 
   const profitOk = result.netProfit > 0;
+  const buyOk = result.yourMaxBuy > 0;
 
   const handleAccessLenders = () => {
     setLocation(isAuthenticated ? "/lenders" : "/calculator-access");
@@ -263,60 +264,73 @@ export default function WholesaleMaxOfferCalculator() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-5 space-y-4">
-              <h2 className="font-semibold" style={{ color: "#1d408b" }}>
-                Results
-              </h2>
-
-              <div className="text-center py-3 border rounded-md">
-                <div className="text-sm text-muted-foreground mb-1">Net Profit</div>
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="p-5 text-center">
+                <div className="text-sm text-muted-foreground mb-1">Your Max Buy Price</div>
                 <div
-                  className={`text-3xl md:text-4xl font-bold ${
-                    profitOk ? "text-green-600" : "text-red-600"
+                  className={`text-5xl md:text-6xl font-bold ${
+                    buyOk ? "text-green-600" : "text-red-600"
                   }`}
-                  data-testid="text-wm-netprofit"
+                  data-testid="text-wm-yourmax-hero"
                 >
-                  {fmt(result.netProfit)}
+                  {fmt(result.yourMaxBuy)}
                 </div>
-              </div>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Buyer's Max Offer</span>
-                  <span className="font-semibold" data-testid="text-wm-buyermax">
-                    {fmt(result.buyerMaxOffer)}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Your Max Buy Price</span>
-                  <span className="font-semibold" data-testid="text-wm-yourmax">
-                    {fmt(result.yourMaxBuy)}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Your Wholesale Fee</span>
-                  <span className="font-semibold" data-testid="text-wm-feeout">
-                    {fmt(wholesaleFee)}
-                  </span>
-                </div>
-                {txType === "double-close" && (
-                  <div className="flex justify-between border-b pb-2">
-                    <span className="text-muted-foreground">Total Closing Costs</span>
-                    <span className="font-semibold" data-testid="text-wm-totalcc">
-                      {fmt(result.totalCC)}
-                    </span>
-                  </div>
+                {!buyOk && (
+                  <p className="text-sm text-red-600 mt-2" data-testid="text-wm-warning">
+                    At these numbers the deal does not work for you as the wholesaler.
+                  </p>
                 )}
-                <div className="flex justify-between pt-1">
-                  <span className="text-muted-foreground">Transaction Type</span>
-                  <span className="font-semibold capitalize">
-                    {txType === "assignment" ? "Assignment" : "Double Close"}
-                  </span>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-5">
+                <h3 className="font-semibold mb-3" style={{ color: "#1d408b" }}>
+                  Key Metrics
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="border rounded-md p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Buyer's Max Offer</div>
+                    <div className="font-semibold" data-testid="text-wm-buyermax">
+                      {fmt(result.buyerMaxOffer)}
+                    </div>
+                  </div>
+                  <div className="border rounded-md p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Your Wholesale Fee</div>
+                    <div className="font-semibold" data-testid="text-wm-feeout">
+                      {fmt(wholesaleFee)}
+                    </div>
+                  </div>
+                  <div className="border rounded-md p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Net Profit</div>
+                    <div
+                      className={`font-semibold ${
+                        profitOk ? "text-green-600" : "text-red-600"
+                      }`}
+                      data-testid="text-wm-netprofit"
+                    >
+                      {fmt(result.netProfit)}
+                    </div>
+                  </div>
+                  {txType === "double-close" && (
+                    <div className="border rounded-md p-3">
+                      <div className="text-xs text-muted-foreground mb-1">Total Closing Costs</div>
+                      <div className="font-semibold" data-testid="text-wm-totalcc">
+                        {fmt(result.totalCC)}
+                      </div>
+                    </div>
+                  )}
+                  <div className="border rounded-md p-3">
+                    <div className="text-xs text-muted-foreground mb-1">Transaction Type</div>
+                    <div className="font-semibold capitalize">
+                      {txType === "assignment" ? "Assignment" : "Double Close"}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 mt-4">
