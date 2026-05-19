@@ -90,7 +90,7 @@ export default function CalculatorAccess() {
           </section>
 
           {/* 2. Comparison Table */}
-          <section className="mb-10 md:mb-14" data-testid="section-ca-comparison">
+          <section className="mb-2" data-testid="section-ca-comparison">
             <div className="rounded-md border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="table-ca-comparison">
@@ -133,7 +133,7 @@ export default function CalculatorAccess() {
           </section>
 
           {/* Mid-page CTA */}
-          <div className="flex justify-center pt-2 pb-4" data-testid="section-ca-mid-cta">
+          <div className="flex justify-center mt-2 mb-4" data-testid="section-ca-mid-cta">
             <Button
               size="lg"
               onClick={goRegister}
